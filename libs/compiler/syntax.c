@@ -514,7 +514,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+	return type == TYPE_INTEGER;
 }
 
 bool type_is_floating(const item_t type)

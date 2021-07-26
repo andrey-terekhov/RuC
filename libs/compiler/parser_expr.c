@@ -36,6 +36,7 @@ typedef enum PRECEDENCE
 	PREC_MULTIPLICATIVE,	/**< Multiplicative operators precedence */
 } precedence_t;
 
+
 /** Return the precedence of the specified binary/ternary operator token */
 static precedence_t get_operator_precedence(const token_t token)
 {

@@ -301,10 +301,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "UPB");
 					break;
 				case 1:
-					sprintf(buffer, "type=");
+					sprintf(buffer, "type");
 					break;
 				case 2:
-					sprintf(buffer, "designation=");
+					sprintf(buffer, "designation");
 					break;
 			}
 			break;

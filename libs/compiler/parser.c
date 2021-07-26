@@ -93,7 +93,7 @@ int parse(const workspace *const ws, syntax *const sx)
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr.is_recovery_disabled && (prs->sx->was_error))
+	if (prs->lxr.is_recovery_disabled && prs->sx->was_error)
 	{
 		return;
 	}

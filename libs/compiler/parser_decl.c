@@ -300,6 +300,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						{
 							parser_error(prs, wrong_init);
 						}
+
 						if (prs->flag_strings_only == 1)
 						{
 							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
@@ -409,6 +410,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			{
 				 parser_error(prs, wrong_init);
 			}
+			
 			if (prs->flag_strings_only == 1)
 			{
 				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);

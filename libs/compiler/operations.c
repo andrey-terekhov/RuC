@@ -33,7 +33,7 @@ unary_t token_to_unary(const token_t token)
 		case TK_ABS:			return UN_ABS;
 
 		default:
-			// Unreachable
+			system_error(node_unexpected);
 			return 0;
 	}
 }
@@ -74,7 +74,7 @@ binary_t token_to_binary(const token_t token)
 		case TK_COMMA:					return BIN_COMMA;
 
 		default:
-			// Unreachable
+			system_error(node_unexpected);
 			return 0;
 	}
 }
@@ -121,7 +121,7 @@ instruction_t builtin_to_instruction(const builtin_t func)
 		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
 
 		default:
-			// Unreachable
+			system_error(node_unexpected);
 			return 0;
 	}
 }

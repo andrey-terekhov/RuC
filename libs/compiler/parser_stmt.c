@@ -542,17 +542,18 @@ static void parse_print_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
 
-	node node_print = node_add_child(parent, OP_PRINT);
+	node nd_print = node_add_child(parent, OP_PRINT);
 
-	node_copy(&prs->sx->nd, &node_print);
-	const node expr = parse_assignment_expression(prs);
-	if (!node_is_correct(&expr))
+	node_copy(&prs->sx->nd, &nd_print);
+	const node nd_expr = parse_assignment_expression(prs);
+	if (!node_is_correct(&nd_expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		token_try_consume(prs, TK_SEMICOLON);
 		return;
 	}
-	const item_t type = expression_get_type(&expr);
+	
+	const item_t type = expression_get_type(&nd_expr);
 	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
@@ -665,7 +666,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	item_t format_types[MAX_PRINTF_ARGS];
 
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);
-	node printf_node = node_add_child(parent, OP_PRINTF);
+	node nd_printf = node_add_child(parent, OP_PRINTF);
 
 	if (prs->token != TK_STRING)
 	{
@@ -676,15 +677,15 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 
 	const size_t expected_args = evaluate_args(prs, prs->lxr.lexstr, format_types, placeholders);
 
-	node_copy(&prs->sx->nd, &printf_node);
+	node_copy(&prs->sx->nd, &nd_printf);
 	parse_assignment_expression(prs);
 
 	size_t actual_args = 0;
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
-		node_copy(&prs->sx->nd, &printf_node);
-		const node expr = parse_assignment_expression(prs);
-		const item_t type = expression_get_type(&expr);
+		node_copy(&prs->sx->nd, &nd_printf);
+		const node nd_expr = parse_assignment_expression(prs);
+		const item_t type = expression_get_type(&nd_expr);
 		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
 		{
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);

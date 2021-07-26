@@ -26,28 +26,18 @@
 #include "vector.h"
 
 
-#define MAX_STRING_LENGTH 128
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct node node;
-
-typedef struct location
-{
-	size_t begin;
-	size_t end;
-} location;
+static const size_t MAX_STRING_LENGTH = 128;
 
 /** Type qualifiers */
 enum TYPE
 {
 	TYPE_VOID			= -6,
 	TYPE_FLOATING		= -3,
-	TYPE_CHARACTER,
-	TYPE_INTEGER,
+	TYPE_INTEGER		= -1,
 	TYPE_UNDEFINED,
 
 	TYPE_MSG_INFO 		= 2,
@@ -57,6 +47,13 @@ enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 };
+
+
+typedef struct location
+{
+	size_t begin;
+	size_t end;
+} location;
 
 
 /** Global vars definition */

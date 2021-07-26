@@ -53,15 +53,6 @@ typedef struct lexer
 lexer lexer_create(const workspace *const ws, syntax *const sx);
 
 /**
- *	Free allocated memory
- *
- *	@param	lxr		Lexer
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int lexer_clear(lexer *const lxr);
-
-/**
  *	Lex next token from io
  *
  *	@param	lxr		Lexer
@@ -78,6 +69,15 @@ token_t lex(lexer *const lxr);
  *	@return	Peeked token
  */
 token_t peek(lexer *const lxr);
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	lxr		Lexer
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int lexer_clear(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -26,7 +26,6 @@
 extern "C" {
 #endif
 
-
 /**
  *	Get expression type
  *
