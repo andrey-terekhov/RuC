@@ -19,26 +19,26 @@
 
 expression_list expression_list_create(void)
 {
-	return (expression_list){ .saved_nodes = vector_create(12) };
+	return (expression_list){ .nodes = vector_create(12) };
 }
 
-void expression_list_add(expression_list *exprs, const node *const expr)
+void expression_list_add(expression_list *exprs, const node *const nd_expr)
 {
-	exprs->tree = expr->tree;	// TODO: node_get_tree()
-	vector_add(&exprs->saved_nodes, (item_t)node_save(expr));
+	exprs->tree = nd_expr->tree;	// TODO: node_get_tree()
+	vector_add(&exprs->nodes, (item_t)node_save(nd_expr));
 }
 
 node expression_list_get(const expression_list *exprs, const size_t index)
 {
-	return node_load(exprs->tree, (size_t)vector_get(&exprs->saved_nodes, index));
+	return node_load(exprs->tree, (size_t)vector_get(&exprs->nodes, index));
 }
 
 size_t expression_list_size(const expression_list *exprs)
 {
-	return vector_size(&exprs->saved_nodes);
+	return vector_size(&exprs->nodes);
 }
 
 int expression_list_clear(expression_list *exprs)
 {
-	return vector_clear(&exprs->saved_nodes);
+	return vector_clear(&exprs->nodes);
 }

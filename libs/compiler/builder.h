@@ -84,35 +84,35 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
  *	Build a subscript expression
  *
  *	@param	sx				Syntax structure
- *	@param	base			First operand of subscripting expression
- *	@param	index			Second operand of subscripting expression
+ *	@param	nd_base			First operand of subscripting expression
+ *	@param	nd_index		Second operand of subscripting expression
  *	@param	l_loc			Left square bracket location
  *	@param	r_loc			Right square bracket location
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
+node build_subscript_expression(syntax *const sx, const node *const nd_base, const node *const nd_index
 								, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	callee			Callee expression
+ *	@param	nd_callee			Callee expression
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const callee, const expression_list *args
+node build_call_expression(syntax *const sx, const node *const nd_callee, const expression_list *args
 						   , const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
  *
  *	@param	sx				Syntax structure
- *	@param	base			First operand of member expression
+ *	@param	nd_base			First operand of member expression
  *	@param	is_arrow		Set if operator is arrow
  *	@param	op_loc			Operator source location
  *	@param	name			Second operand of member expression
@@ -120,59 +120,60 @@ node build_call_expression(syntax *const sx, const node *const callee, const exp
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const base, const bool is_arrow, const size_t name
+node build_member_expression(syntax *const sx, const node *const nd_base, const bool is_arrow, const size_t name
 							 , const location op_loc, const location id_loc);
 
 /**
  *	Build a upb expression
  *
  *	@param	sx				Syntax structure
- *	@param	dimension		First operand of upb expression
- *	@param	array			Second operand of upb expression
+ *	@param	nd_dimension	First operand of upb expression
+ *	@param	nd_array		Second operand of upb expression
  *
  *	@return	Upb expression node
  */
-node build_upb_expression(syntax *const sx, const node *const dimension, const node *const array);
+node build_upb_expression(syntax *const sx, const node *const nd_dimension, const node *const nd_array);
 
 /**
  *	Build an unary expression
  *
  *	@param	sx				Syntax structure
- *	@param	operand			Operand of unary operator
+ *	@param	nd_operand		Operand of unary operator
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(syntax *const sx, const node *const operand, const unary_t op_kind, const location op_loc);
+node build_unary_expression(syntax *const sx, const node *const nd_operand
+							, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
  *
  *	@param	sx				Syntax structure
- *	@param	left			Left operand
- *	@param	right			Right operand
+ *	@param	nd_left			Left operand
+ *	@param	nd_right		Right operand
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(syntax *const sx, const node *const left, const node *const right
+node build_binary_expression(syntax *const sx, const node *const nd_left, const node *const nd_right
 							 , const binary_t op_kind, const location op_loc);
 
 /**
  *	Build a ternary expression
  *
  *	@param	sx				Syntax structure
- *	@param	left			First operand
- *	@param	middle			Second operand
- *	@param	right			Third operand
+ *	@param	nd_left			First operand
+ *	@param	nd_middle		Second operand
+ *	@param	nd_right		Third operand
  *	@param	op_loc			Operator location
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, const node *const left, const node *const middle
-							  , const node *const right, const location op_loc);
+node build_ternary_expression(syntax *const sx, const node *const nd_left, const node *const nd_middle
+							  , const node *const nd_right, const location op_loc);
 
 /**
  *	Build an initializer list

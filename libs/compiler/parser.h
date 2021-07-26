@@ -136,7 +136,7 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
  *		unary-expression assignment-operator assignment-expression
  *
  *	assignment-operator: one of
- *		'=' '*=' '/=' '%=' '+=' '-=' '<<=' '>>=' '&=' 'ˆ=' '|='
+ *		'=', '*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '&=', 'ˆ=', '|='
  *
  *	@param	prs			Parser
  *

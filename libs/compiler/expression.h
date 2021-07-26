@@ -29,29 +29,29 @@ extern "C" {
 /**
  *	Get expression type
  *
- *	@param	expr	Expression
+ *	@param	nd_expr	Expression
  *
  *	@return	Expression type
  */
-item_t expression_get_type(const node *const expr);
+item_t expression_get_type(const node *const nd_expr);
 
 /**
  *	Check if expression is lvalue
  *
- *	@param	expr	Expression for check
+ *	@param	nd_expr	Expression for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool expression_is_lvalue(const node *const expr);
+bool expression_is_lvalue(const node *const nd_expr);
 
 /**
  *	Get expression location
  *
- *	@param	expr	Expression
+ *	@param	nd_expr	Expression
  *
  *	@return	Expression location
  */
-location expression_get_location(const node *const expr);
+location expression_get_location(const node *const nd_expr);
 
 #ifdef __cplusplus
 extern "C" }

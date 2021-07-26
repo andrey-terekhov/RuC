@@ -158,7 +158,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_L_PAREN:
 		{
 			const location l_loc = token_consume(prs);
-			const node result = parse_expression(prs);
+			const node nd_result = parse_expression(prs);
 
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
@@ -166,7 +166,7 @@ static node parse_primary_expression(parser *const prs)
 				return node_broken();
 			}
 
-			return result;
+			return nd_result;
 		}
 
 		default:
@@ -234,14 +234,14 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
  */
 static node parse_postfix_expression(parser *const prs)
 {
-	node operand = parse_primary_expression(prs);
+	node nd_operand = parse_primary_expression(prs);
 
 	while (true)
 	{
 		switch (prs->token)
 		{
 			default:
-				return operand;
+				return nd_operand;
 
 			case TK_L_SQUARE:
 			{
@@ -251,14 +251,14 @@ static node parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_SQUARE)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_subscript_expression(prs->sx, &operand, &index, l_loc, r_loc);
+					nd_operand = build_subscript_expression(prs->sx, &nd_operand, &index, l_loc, r_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_r_square, l_loc);
 					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_SQUARE);
-					operand = node_broken();
+					nd_operand = node_broken();
 				}
 
 				continue;
@@ -271,23 +271,23 @@ static node parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_call_expression(prs->sx, &operand, NULL, l_loc, r_loc);
+					nd_operand = build_call_expression(prs->sx, &nd_operand, NULL, l_loc, r_loc);
 
 					continue;
 				}
 
-				expression_list args = parse_expression_list(prs, expression_get_type(&operand));
+				expression_list args = parse_expression_list(prs, expression_get_type(&nd_operand));
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_call_expression(prs->sx, &operand, &args, l_loc, r_loc);
+					nd_operand = build_call_expression(prs->sx, &nd_operand, &args, l_loc, r_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
-					operand = node_broken();
+					nd_operand = node_broken();
 				}
 
 				expression_list_clear(&args);
@@ -305,12 +305,12 @@ static node parse_postfix_expression(parser *const prs)
 					const size_t name = prs->lxr.repr;
 					const location id_loc = token_consume(prs);
 
-					operand = build_member_expression(prs->sx, &operand, is_arrow, name, op_loc, id_loc);
+					nd_operand = build_member_expression(prs->sx, &nd_operand, is_arrow, name, op_loc, id_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_identifier);
-					operand = node_broken();
+					nd_operand = node_broken();
 				}
 
 				continue;
@@ -319,14 +319,14 @@ static node parse_postfix_expression(parser *const prs)
 			case TK_PLUS_PLUS:
 			{
 				const location op_loc = token_consume(prs);
-				operand = build_unary_expression(prs->sx, &operand, UN_POSTINC, op_loc);
+				nd_operand = build_unary_expression(prs->sx, &nd_operand, UN_POSTINC, op_loc);
 				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
 				const location op_loc = token_consume(prs);
-				operand = build_unary_expression(prs->sx, &operand, UN_POSTDEC, op_loc);
+				nd_operand = build_unary_expression(prs->sx, &nd_operand, UN_POSTDEC, op_loc);
 				continue;
 			}
 		}
@@ -343,7 +343,7 @@ static node parse_postfix_expression(parser *const prs)
  *		unary-operator unary-expression
  *
  *	unary-operator: one of
- *		'&' '*' '+' '-' '~' '!' 'abs'
+ *		'&', '*', '+', '-', '~', '!', 'abs'
  *
  *	@param	prs			Parser
  *
@@ -368,20 +368,20 @@ static node parse_unary_expression(parser *const prs)
 		{
 			const unary_t operator = token_to_unary(prs->token);
 			const location op_loc = token_consume(prs);
-			const node operand = parse_unary_expression(prs);
+			const node nd_operand = parse_unary_expression(prs);
 
-			return build_unary_expression(prs->sx, &operand, operator, op_loc);
+			return build_unary_expression(prs->sx, &nd_operand, operator, op_loc);
 		}
 
 		case TK_UPB:
 		{
 			token_consume(prs);
 			token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_stand_func);
-			const node dimension = parse_assignment_expression(prs);
+			const node nd_dimension = parse_assignment_expression(prs);
 			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			const node array = parse_assignment_expression(prs);
+			const node nd_array = parse_assignment_expression(prs);
 			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-			return build_upb_expression(prs->sx, &dimension, &array);
+			return build_upb_expression(prs->sx, &nd_dimension, &nd_array);
 		}
 	}
 }
@@ -488,22 +488,22 @@ node parse_initializer(parser *const prs, const item_t type)
 		}
 
 		expression_list inits = parse_expression_list(prs, type);
-		node result;
+		node nd_result;
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = token_consume(prs);
-			result = build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
+			nd_result = build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
 		}
 		else
 		{
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
-			result = node_broken();
+			nd_result = node_broken();
 		}
 
 		expression_list_clear(&inits);
-		return result;
+		return nd_result;
 	}
 
 	return parse_assignment_expression(prs);

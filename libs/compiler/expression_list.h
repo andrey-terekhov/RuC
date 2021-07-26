@@ -29,7 +29,7 @@ extern "C" {
 typedef struct expression_list
 {
 	vector *tree;			/**< Tree */
-	vector saved_nodes;		/**< Node in AST */
+	vector nodes;			/**< Nodes in AST */
 } expression_list;
 
 /**
@@ -40,15 +40,15 @@ typedef struct expression_list
 expression_list expression_list_create(void);
 
 /**
- *	Add new expression
+ *	Add new expression node
  *
  *	@param	exprs			Expression list
- *	@param	expr			Expression
+ *	@param	nd_expr			Expression node
  */
-void expression_list_add(expression_list *exprs, const node *const expr);
+void expression_list_add(expression_list *exprs, const node *const nd_expr);
 
 /**
- *	Get expression
+ *	Get expression node
  *
  *	@param	exprs			Expression list
  *	@param	index			Index
