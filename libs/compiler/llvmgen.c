@@ -63,6 +63,8 @@ typedef struct information
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
+	item_t label_break;					/**< Метка перехода для break */
+	item_t label_continue;				/**< Метка перехода для continue */
 
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -1662,12 +1664,16 @@ static void statement(information *const info, node *const nd)
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_end = info->label_num++;
 
 			info->label_true = label_body;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
 
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label_condition);
@@ -1684,17 +1690,23 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		case OP_DO:
 		{
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_loop = info->label_num++;
 			const item_t label_end = info->label_num++;
 
 			info->label_true = label_loop;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_loop;
 
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label_loop);
@@ -1710,6 +1722,8 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
@@ -1721,6 +1735,8 @@ static void statement(information *const info, node *const nd)
 			const item_t ref_incr = node_get_arg(nd, 2);
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
 			const item_t label_condition = info->label_num++;
 			const item_t label_body = info->label_num++;
 			const item_t label_incr = info->label_num++;
@@ -1728,6 +1744,8 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = label_body;
 			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
 
 			node_set_next(nd);
 
@@ -1760,19 +1778,37 @@ static void statement(information *const info, node *const nd)
 
 			info->label_true = old_label_true;
 			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
 		}
 		break;
 		case OP_LABEL:
 		{
+			const item_t label = -node_get_arg(nd, 0);
 			node_set_next(nd);
-			statement(info, nd);
+			to_code_unconditional_branch(info, label);
+			to_code_label(info, label);
 		}
 		break;
 		case OP_BREAK:
-		case OP_CONTINUE:
-		case OP_GOTO:
+		{
 			node_set_next(nd);
-			break;
+			to_code_unconditional_branch(info, info->label_break);
+		}
+		break;
+		case OP_CONTINUE:
+		{
+			node_set_next(nd);
+			to_code_unconditional_branch(info, info->label_continue);
+		}
+		break;
+		case OP_GOTO:
+		{
+			const item_t label = node_get_arg(nd, 0) < 0 ? node_get_arg(nd, 0) : -node_get_arg(nd, 0);
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label);
+		}
+		break;
 		case OP_RETURN_VOID:
 		{
 			if (info->was_dynamic)
