@@ -2124,6 +2124,72 @@ static void ident_declaration(information *const info, node *const nd)
 	}
 }
 
+static void array_declaration(information *const info, node *const nd)
+{
+		node id = node_get_child(nd, node_get_amount(nd) - 1);
+		if (node_get_type(&id) != OP_DECL_ID)
+		{
+			id = node_get_child(nd, node_get_amount(nd) - 2);
+		}
+
+		const item_t displ = node_get_arg(&id, 0);
+		const item_t elem_type = node_get_arg(&id, 1);
+		const size_t N = (size_t)node_get_arg(&id, 2);
+		const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
+		const size_t index = hash_add(&info->arrays, displ, 1 + N);
+		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+
+		node_set_next(nd);
+		// получение и сохранение границ
+		for (size_t i = 1; i <= N && !all; i++)
+		{
+			info->variable_location = LFREE;
+			expression(info, nd);
+
+			if (info->answer_type == ACONST)
+			{
+				if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+				{
+					system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+				}
+
+				hash_set_by_index(&info->arrays, index, i, info->answer_const);
+			}
+			else // if (info->answer_type == AREG) динамический массив
+			{
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+				{
+					system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+				}
+
+				hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+				hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+			}
+		}
+		node_set_next(nd);	// OP_DECL_ID
+
+		// объявление массива без инициализации, с инициализацией объявление происходит в init
+		// объявление массива, если он статический
+		if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
+		{
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+		}
+		else if (!all) // объявление массива, если он динамический
+		{
+			if (!info->was_dynamic)
+			{
+				to_code_stack_save(info);
+			}
+			to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			info->was_dynamic = 1;
+		}
+
+		if (all)
+		{
+			init(info, nd, displ, elem_type);
+		}
+}
+
 static void block(information *const info, node *const nd)
 {
 	node_set_next(nd); // OP_BLOCK
@@ -2132,71 +2198,8 @@ static void block(information *const info, node *const nd)
 		switch (node_get_type(nd))
 		{
 			case OP_DECL_ARR:
-			{
-				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != OP_DECL_ID)
-				{
-					id = node_get_child(nd, node_get_amount(nd) - 2);
-				}
-
-				const item_t displ = node_get_arg(&id, 0);
-				const item_t elem_type = node_get_arg(&id, 1);
-				const size_t N = (size_t)node_get_arg(&id, 2);
-				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
-				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
-
-				node_set_next(nd);
-				// получение и сохранение границ
-				for (size_t i = 1; i <= N && !all; i++)
-				{
-					info->variable_location = LFREE;
-					expression(info, nd);
-
-					if (info->answer_type == ACONST)
-					{
-						if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
-						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
-
-						hash_set_by_index(&info->arrays, index, i, info->answer_const);
-					}
-					else // if (info->answer_type == AREG) динамический массив
-					{
-						if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
-						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
-
-						hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
-					}
-				}
-				node_set_next(nd);	// OP_DECL_ID
-
-				// объявление массива без инициализации, с инициализацией объявление происходит в init
-				// объявление массива, если он статический
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
-				{
-					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-				}
-				else if (!all)// объявление массива, если он динамический
-				{
-					if (!info->was_dynamic)
-					{
-						to_code_stack_save(info);
-					}
-					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-					info->was_dynamic = 1;
-				}
-
-				if (all)
-				{
-					init(info, nd, displ, elem_type);
-				}
-			}
-			break;
+				array_declaration(info, nd);
+				break;
 			case OP_DECL_ID:
 				ident_declaration(info, nd);
 				break;
@@ -2280,6 +2283,9 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
+			case OP_DECL_ARR: // глобальные массивы
+				array_declaration(info, nd);
+				break;
 			case OP_DECL_ID: // глобальные переменные
 				ident_declaration(info, &root);
 				break;
