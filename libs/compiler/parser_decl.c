@@ -183,8 +183,8 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		else
 		{
 			node_copy(&prs->sx->nd, parent);
-			expression size = parse_constant_expression(prs);
-			const item_t size_type = expression_get_type(size);
+			const node size = parse_constant_expression(prs);
+			const item_t size_type = expression_get_type(&size);
 			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
@@ -289,14 +289,14 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						node_set_arg(&nd_decl_id, 3, 1);
 
 						node_copy(&prs->sx->nd, &nd_decl_arr);
-						expression initializer = parse_initializer(prs, type);
-						if (!expression_is_valid(initializer))
+						const node initializer = parse_initializer(prs, type);
+						if (!node_is_correct(&initializer))
 						{
 							token_skip_until(prs, TK_SEMICOLON);
 							continue;
 						}
 
-						if (type != expression_get_type(initializer))
+						if (type != expression_get_type(&initializer))
 						{
 							parser_error(prs, wrong_init);
 						}
@@ -398,14 +398,14 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 
 			prs->flag_strings_only = 2;
 			node_copy(&prs->sx->nd, &nd_decl_arr);
-			expression initializer = parse_initializer(prs, type);
-			if (!expression_is_valid(initializer))
+			const node initializer = parse_initializer(prs, type);
+			if (!node_is_correct(&initializer))
 			{
 				token_skip_until(prs, TK_SEMICOLON);
 				return;
 			}
 
-			if (type != expression_get_type(initializer))
+			if (type != expression_get_type(&initializer))
 			{
 				 parser_error(prs, wrong_init);
 			}
@@ -417,14 +417,14 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		else
 		{
 			node_copy(&prs->sx->nd, &nd);
-			expression initializer = parse_initializer(prs, type);
-			if (!expression_is_valid(initializer))
+			const node initializer = parse_initializer(prs, type);
+			if (!node_is_correct(&initializer))
 			{
 				token_skip_until(prs, TK_SEMICOLON);
 				return;
 			}
 
-			const item_t actual_type = node_get_arg(&initializer.nd, 0);
+			const item_t actual_type = expression_get_type(&initializer);
 			if (type != actual_type && !(type_is_floating(type) && type_is_integer(actual_type)))
 			{
 				parser_error(prs, wrong_init);

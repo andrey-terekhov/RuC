@@ -29,6 +29,12 @@
 extern "C" {
 #endif
 
+/**
+ *	Build a broken node
+ *
+ *	@return	Broken node
+ */
+node node_broken(void);
 
 /**
  *	Build an identifier expression
@@ -37,9 +43,9 @@ extern "C" {
  *	@param	name			Identifier name
  *	@param	loc				Source location
  *
- *	@return	Identifier expression
+ *	@return	Identifier expression node
  */
-expression build_identifier_expression(syntax *const sx, const size_t name, const location loc);
+node build_identifier_expression(syntax *const sx, const size_t name, const location loc);
 
 /**
  *	Build an integer literal expression
@@ -48,9 +54,9 @@ expression build_identifier_expression(syntax *const sx, const size_t name, cons
  *	@param	value			Literal value
  *	@param	loc				Source location
  *
- *	@return	Integer literal expression
+ *	@return	Integer literal expression node
  */
-expression build_integer_literal_expression(syntax *const sx, const int value, const location loc);
+node build_integer_literal_expression(syntax *const sx, const int value, const location loc);
 
 /**
  *	Build a floating literal expression
@@ -59,9 +65,9 @@ expression build_integer_literal_expression(syntax *const sx, const int value, c
  *	@param	value			Literal value
  *	@param	loc				Source location
  *
- *	@return	Floating literal expression
+ *	@return	Floating literal expression node
  */
-expression build_floating_literal_expression(syntax *const sx, const double value, const location loc);
+node build_floating_literal_expression(syntax *const sx, const double value, const location loc);
 
 /**
  *	Build a string literal expression
@@ -70,9 +76,9 @@ expression build_floating_literal_expression(syntax *const sx, const double valu
  *	@param	value			Literal value
  *	@param	loc				Source location
  *
- *	@return	String literal expression
+ *	@return	String literal expression node
  */
-expression build_string_literal_expression(syntax *const sx, const vector value, const location loc);
+node build_string_literal_expression(syntax *const sx, const vector *const value, const location loc);
 
 /**
  *	Build a subscript expression
@@ -83,10 +89,10 @@ expression build_string_literal_expression(syntax *const sx, const vector value,
  *	@param	l_loc			Left square bracket location
  *	@param	r_loc			Right square bracket location
  *
- *	@return	Subscript expression
+ *	@return	Subscript expression node
  */
-expression build_subscript_expression(syntax *const sx, const expression base, const expression index
-									  , const location l_loc, const location r_loc);
+node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
+								, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
@@ -97,10 +103,10 @@ expression build_subscript_expression(syntax *const sx, const expression base, c
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
- *	@return	Call expression
+ *	@return	Call expression node
  */
-expression build_call_expression(syntax *const sx, const expression callee, const expression_list *args
-								, const location l_loc, const location r_loc);
+node build_call_expression(syntax *const sx, const node *const callee, const expression_list *args
+						   , const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
@@ -112,10 +118,10 @@ expression build_call_expression(syntax *const sx, const expression callee, cons
  *	@param	name			Second operand of member expression
  *	@param	id_loc			Identifier source location
  *
- *	@return	Member expression
+ *	@return	Member expression node
  */
-expression build_member_expression(syntax *const sx, const expression base, const bool is_arrow, const size_t name
-								   , const location op_loc, const location id_loc);
+node build_member_expression(syntax *const sx, const node *const base, const bool is_arrow, const size_t name
+							 , const location op_loc, const location id_loc);
 
 /**
  *	Build a upb expression
@@ -124,9 +130,9 @@ expression build_member_expression(syntax *const sx, const expression base, cons
  *	@param	dimension		First operand of upb expression
  *	@param	array			Second operand of upb expression
  *
- *	@return	Upb expression
+ *	@return	Upb expression node
  */
-expression build_upb_expression(syntax *const sx, const expression dimension, const expression array);
+node build_upb_expression(syntax *const sx, const node *const dimension, const node *const array);
 
 /**
  *	Build an unary expression
@@ -136,10 +142,9 @@ expression build_upb_expression(syntax *const sx, const expression dimension, co
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
- *	@return	Unary expression
+ *	@return	Unary expression node
  */
-expression build_unary_expression(syntax *const sx, const expression operand
-								  , const unary_t op_kind, const location op_loc);
+node build_unary_expression(syntax *const sx, const node *const operand, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
@@ -150,10 +155,10 @@ expression build_unary_expression(syntax *const sx, const expression operand
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
- *	@return	Binary expression
+ *	@return	Binary expression node
  */
-expression build_binary_expression(syntax *const sx, const expression left, const expression right
-								   , const binary_t op_kind, const location op_loc);
+node build_binary_expression(syntax *const sx, const node *const left, const node *const right
+							 , const binary_t op_kind, const location op_loc);
 
 /**
  *	Build a ternary expression
@@ -164,10 +169,10 @@ expression build_binary_expression(syntax *const sx, const expression left, cons
  *	@param	right			Third operand
  *	@param	op_loc			Operator location
  *
- *	@return	Ternary expression
+ *	@return	Ternary expression node
  */
-expression build_ternary_expression(syntax *const sx, const expression left, const expression middle
-									, const expression right, const location op_loc);
+node build_ternary_expression(syntax *const sx, const node *const left, const node *const middle
+							  , const node *const right, const location op_loc);
 
 /**
  *	Build an initializer list
@@ -178,10 +183,10 @@ expression build_ternary_expression(syntax *const sx, const expression left, con
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer list expression
+ *	@return	Initializer list expression node
  */
-expression build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
-									  , const location l_loc, const location r_loc);
+node build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
+								, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus
 extern "C" }

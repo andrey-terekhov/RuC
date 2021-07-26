@@ -115,9 +115,9 @@ static precedence_t get_operator_precedence(const token_t token)
  *
  *	@param	prs			Parser
  *
- *	@return	Primary expression
+ *	@return	Primary expression node
  */
-static expression parse_primary_expression(parser *const prs)
+static node parse_primary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -148,7 +148,7 @@ static expression parse_primary_expression(parser *const prs)
 
 		case TK_STRING:
 		{
-			const vector value = prs->lxr.lexstr;
+			const vector *const value = &prs->lxr.lexstr;
 			const location loc = token_consume(prs);
 
 			return build_string_literal_expression(prs->sx, value, loc);
@@ -157,12 +157,12 @@ static expression parse_primary_expression(parser *const prs)
 		case TK_L_PAREN:
 		{
 			const location l_loc = token_consume(prs);
-			const expression result = parse_expression(prs);
+			const node result = parse_expression(prs);
 
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
 				parser_error(prs, expected_r_paren, l_loc);
-				return expression_broken();
+				return node_broken();
 			}
 
 			return result;
@@ -170,7 +170,7 @@ static expression parse_primary_expression(parser *const prs)
 
 		default:
 			parser_error(prs, expected_expression);
-			return expression_broken();
+			return node_broken();
 	}
 }
 
@@ -184,7 +184,7 @@ static expression parse_primary_expression(parser *const prs)
  *	@param	prs			Parser
  *	@param	type		Target type
  *
- *	@return	Postfix expression
+ *	@return	Expression nodes list
  */
 static expression_list parse_expression_list(parser *const prs, const item_t type)
 {
@@ -207,7 +207,8 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
 			item_type = type_get(prs->sx, (size_t)type + 1);
 		}
 
-		expression_list_add(&result, parse_initializer(prs, item_type));
+		const node initializer = parse_initializer(prs, item_type);
+		expression_list_add(&result, &initializer);
 		i++;
 	} while (token_try_consume(prs, TK_COMMA));
 
@@ -228,11 +229,11 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
  *
  *	@param	prs			Parser
  *
- *	@return	Postfix expression
+ *	@return	Postfix expression node
  */
-static expression parse_postfix_expression(parser *const prs)
+static node parse_postfix_expression(parser *const prs)
 {
-	expression operand = parse_primary_expression(prs);
+	node operand = parse_primary_expression(prs);
 
 	while (true)
 	{
@@ -244,19 +245,19 @@ static expression parse_postfix_expression(parser *const prs)
 			case TK_L_SQUARE:
 			{
 				const location l_loc = token_consume(prs);
-				const expression index = parse_expression(prs);
+				const node index = parse_expression(prs);
 
 				if (prs->token == TK_R_SQUARE)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_subscript_expression(prs->sx, operand, index, l_loc, r_loc);
+					operand = build_subscript_expression(prs->sx, &operand, &index, l_loc, r_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_r_square, l_loc);
 					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_SQUARE);
-					operand = expression_broken();
+					operand = node_broken();
 				}
 
 				continue;
@@ -269,23 +270,23 @@ static expression parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_call_expression(prs->sx, operand, NULL, l_loc, r_loc);
+					operand = build_call_expression(prs->sx, &operand, NULL, l_loc, r_loc);
 
 					continue;
 				}
 
-				expression_list args = parse_expression_list(prs, expression_get_type(operand));
+				expression_list args = parse_expression_list(prs, expression_get_type(&operand));
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
-					operand = build_call_expression(prs->sx, operand, &args, l_loc, r_loc);
+					operand = build_call_expression(prs->sx, &operand, &args, l_loc, r_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
-					operand = expression_broken();
+					operand = node_broken();
 				}
 
 				expression_list_clear(&args);
@@ -303,12 +304,12 @@ static expression parse_postfix_expression(parser *const prs)
 					const size_t name = prs->lxr.repr;
 					const location id_loc = token_consume(prs);
 
-					operand = build_member_expression(prs->sx, operand, is_arrow, name, op_loc, id_loc);
+					operand = build_member_expression(prs->sx, &operand, is_arrow, name, op_loc, id_loc);
 				}
 				else
 				{
 					parser_error(prs, expected_identifier);
-					operand = expression_broken();
+					operand = node_broken();
 				}
 
 				continue;
@@ -317,14 +318,14 @@ static expression parse_postfix_expression(parser *const prs)
 			case TK_PLUS_PLUS:
 			{
 				const location op_loc = token_consume(prs);
-				operand = build_unary_expression(prs->sx, operand, UN_POSTINC, op_loc);
+				operand = build_unary_expression(prs->sx, &operand, UN_POSTINC, op_loc);
 				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
 				const location op_loc = token_consume(prs);
-				operand = build_unary_expression(prs->sx, operand, UN_POSTDEC, op_loc);
+				operand = build_unary_expression(prs->sx, &operand, UN_POSTDEC, op_loc);
 				continue;
 			}
 		}
@@ -345,9 +346,9 @@ static expression parse_postfix_expression(parser *const prs)
  *
  *	@param	prs			Parser
  *
- *	@return	Unary expression
+ *	@return	Unary expression node
  */
-static expression parse_unary_expression(parser *const prs)
+static node parse_unary_expression(parser *const prs)
 {
 	switch (prs->token)
 	{
@@ -366,20 +367,20 @@ static expression parse_unary_expression(parser *const prs)
 		{
 			const unary_t operator = token_to_unary(prs->token);
 			const location op_loc = token_consume(prs);
-			const expression operand = parse_unary_expression(prs);
+			const node operand = parse_unary_expression(prs);
 
-			return build_unary_expression(prs->sx, operand, operator, op_loc);
+			return build_unary_expression(prs->sx, &operand, operator, op_loc);
 		}
 
 		case TK_UPB:
 		{
 			token_consume(prs);
 			token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_stand_func);
-			const expression dimension = parse_assignment_expression(prs);
+			const node dimension = parse_assignment_expression(prs);
 			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			const expression array = parse_assignment_expression(prs);
+			const node array = parse_assignment_expression(prs);
 			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-			return build_upb_expression(prs->sx, dimension, array);
+			return build_upb_expression(prs->sx, &dimension, &array);
 		}
 	}
 }
@@ -391,9 +392,9 @@ static expression parse_unary_expression(parser *const prs)
  *	@param	LHS			Start of a binary expression
  *	@param	min_prec	Minimal precedence level
  *
- *	@return Binary expression
+ *	@return Binary expression node
  */
-static expression parse_RHS_of_binary_expression(parser *const prs, expression LHS, const precedence_t min_prec)
+static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, const precedence_t min_prec)
 {
 	precedence_t next_token_prec = get_operator_precedence(prs->token);
 	while (next_token_prec >= min_prec)
@@ -402,7 +403,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 		location op_loc = token_consume(prs);
 
 		bool is_binary = true;
-		expression middle = expression_broken();
+		node middle = node_broken();
 		if (next_token_prec == PREC_CONDITIONAL)
 		{
 			is_binary = false;
@@ -416,7 +417,7 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 			op_loc = token_consume(prs);
 		}
 
-		expression RHS = (prs->token == TK_L_BRACE)
+		node RHS = (prs->token == TK_L_BRACE)
 			? parse_initializer(prs, expression_get_type(LHS))
 			: parse_unary_expression(prs);
 
@@ -426,22 +427,22 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
 		const bool is_right_associative = this_prec == PREC_CONDITIONAL || this_prec == PREC_ASSIGNMENT;
 		if (this_prec < next_token_prec || (this_prec == next_token_prec && is_right_associative))
 		{
-			RHS = parse_RHS_of_binary_expression(prs, RHS, (this_prec + !is_right_associative));
+			RHS = parse_RHS_of_binary_expression(prs, &RHS, (this_prec + !is_right_associative));
 			next_token_prec = get_operator_precedence(prs->token);
 		}
 
 		if (is_binary)
 		{
 			const binary_t op_kind = token_to_binary(op_token);
-			LHS = build_binary_expression(prs->sx, LHS, RHS, op_kind, op_loc);
+			*LHS = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
 		}
 		else
 		{
-			LHS = build_ternary_expression(prs->sx, LHS, middle, RHS, op_loc);
+			*LHS = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
 		}
 	}
 
-	return LHS;
+	return *LHS;
 }
 
 
@@ -454,25 +455,25 @@ static expression parse_RHS_of_binary_expression(parser *const prs, expression L
  */
 
 
-expression parse_assignment_expression(parser *const prs)
+node parse_assignment_expression(parser *const prs)
 {
-	const expression LHS = parse_unary_expression(prs);
-	return parse_RHS_of_binary_expression(prs, LHS, PREC_ASSIGNMENT);
+	node LHS = parse_unary_expression(prs);
+	return parse_RHS_of_binary_expression(prs, &LHS, PREC_ASSIGNMENT);
 }
 
-expression parse_expression(parser *const prs)
+node parse_expression(parser *const prs)
 {
-	const expression LHS = parse_assignment_expression(prs);
-	return parse_RHS_of_binary_expression(prs, LHS, PREC_COMMA);
+	node LHS = parse_assignment_expression(prs);
+	return parse_RHS_of_binary_expression(prs, &LHS, PREC_COMMA);
 }
 
-expression parse_constant_expression(parser *const prs)
+node parse_constant_expression(parser *const prs)
 {
-	const expression LHS = parse_unary_expression(prs);
-	return parse_RHS_of_binary_expression(prs, LHS, PREC_CONDITIONAL);
+	node LHS = parse_unary_expression(prs);
+	return parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
 }
 
-expression parse_initializer(parser *const prs, const item_t type)
+node parse_initializer(parser *const prs, const item_t type)
 {
 	if (prs->token == TK_L_BRACE)
 	{
@@ -482,11 +483,11 @@ expression parse_initializer(parser *const prs, const item_t type)
 		{
 			token_consume(prs);
 			parser_error(prs, empty_init);
-			return expression_broken();
+			return node_broken();
 		}
 
 		expression_list inits = parse_expression_list(prs, type);
-		expression result;
+		node result;
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = token_consume(prs);
@@ -497,7 +498,7 @@ expression parse_initializer(parser *const prs, const item_t type)
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
-			result = expression_broken();
+			result = node_broken();
 		}
 
 		expression_list_clear(&inits);

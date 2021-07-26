@@ -118,9 +118,9 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_case
 	node nd = node_add_child(parent, OP_CASE);
 	node_copy(&prs->sx->nd, &nd);
-	const expression condition = parse_constant_expression(prs);
-	const item_t condition_type = expression_get_type(condition);
-	if (expression_is_valid(condition) && !type_is_integer(condition_type))
+	const node condition = parse_constant_expression(prs);
+	const item_t condition_type = expression_get_type(&condition);
+	if (node_is_correct(&condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -163,8 +163,8 @@ static void parse_default_statement(parser *const prs, node *const parent)
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
-	expression expr = parse_expression(prs);
-	if (!expression_is_valid(expr))
+	node expr = parse_expression(prs);
+	if (!node_is_correct(&expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
@@ -217,10 +217,10 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 
 	node_copy(&prs->sx->nd, &nd);
 	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
-	const expression condition = parse_expression(prs);
+	const node condition = parse_expression(prs);
 	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
-	const item_t condition_type = expression_get_type(condition);
-	if (expression_is_valid(condition) && !type_is_integer(condition_type))
+	const item_t condition_type = expression_get_type(&condition);
+	if (node_is_correct(&condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -480,8 +480,8 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		node_add_arg(&nd, (item_t)type_size(prs->sx, return_type));
 
 		node_copy(&prs->sx->nd, &nd);
-		expression expr = parse_assignment_expression(prs);
-		const item_t expr_type = expression_get_type(expr);
+		const node expr = parse_assignment_expression(prs);
+		const item_t expr_type = expression_get_type(&expr);
 		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
 			if (type_is_floating(return_type) && type_is_integer(expr_type))
@@ -545,14 +545,14 @@ static void parse_print_statement(parser *const prs, node *const parent)
 	node node_print = node_add_child(parent, OP_PRINT);
 
 	node_copy(&prs->sx->nd, &node_print);
-	const expression expr = parse_assignment_expression(prs);
-	if (!expr.is_valid)
+	const node expr = parse_assignment_expression(prs);
+	if (!node_is_correct(&expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		token_try_consume(prs, TK_SEMICOLON);
 		return;
 	}
-	const item_t type = expression_get_type(expr);
+	const item_t type = expression_get_type(&expr);
 	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
@@ -683,8 +683,8 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
 		node_copy(&prs->sx->nd, &printf_node);
-		const expression expr = parse_assignment_expression(prs);
-		const item_t type = expression_get_type(expr);
+		const node expr = parse_assignment_expression(prs);
+		const item_t type = expression_get_type(&expr);
 		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
 		{
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);

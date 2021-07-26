@@ -27,38 +27,6 @@ extern "C" {
 #endif
 
 
-/** Expression structure */
-typedef struct expression
-{
-	bool is_valid;			/**< Set if is valid */
-	node nd;				/**< Node in AST */
-} expression;
-
-/**
- *	Return valid expression from AST node
- *
- *	@param	expr	Expression node
- *
- *	@return	Expression
- */
-expression expression_create(const node expr);
-
-/**
- *	Return invalid expression
- *
- *	@return	Invalid expression
- */
-expression expression_broken(void);
-
-/**
- *	Check if expression is valid
- *
- *	@param	expr	Expression for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool expression_is_valid(const expression expr);
-
 /**
  *	Get expression type
  *
@@ -66,7 +34,7 @@ bool expression_is_valid(const expression expr);
  *
  *	@return	Expression type
  */
-item_t expression_get_type(const expression expr);
+item_t expression_get_type(const node *const expr);
 
 /**
  *	Check if expression is lvalue
@@ -75,7 +43,7 @@ item_t expression_get_type(const expression expr);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool expression_is_lvalue(const expression expr);
+bool expression_is_lvalue(const node *const expr);
 
 /**
  *	Get expression location
@@ -84,16 +52,7 @@ bool expression_is_lvalue(const expression expr);
  *
  *	@return	Expression location
  */
-location expression_get_location(const expression expr);
-
-/**
- *	Get expression node
- *
- *	@param	expr	Expression
- *
- *	@return	Expression node
- */
-node expression_get_node(const expression expr);
+location expression_get_location(const node *const expr);
 
 #ifdef __cplusplus
 extern "C" }
