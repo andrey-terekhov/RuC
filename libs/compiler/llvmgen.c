@@ -2284,7 +2284,7 @@ static int codegen(information *const info)
 			}
 			break;
 			case OP_DECL_ARR: // глобальные массивы
-				array_declaration(info, nd);
+				array_declaration(info, &root);
 				break;
 			case OP_DECL_ID: // глобальные переменные
 				ident_declaration(info, &root);
