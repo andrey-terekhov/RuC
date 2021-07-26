@@ -599,16 +599,17 @@ static void parse_getid_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
-static size_t evaluate_args(parser *const prs, const vector format_str
+static size_t evaluate_args(parser *const prs, const vector *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
 {
 	size_t args = 0;
-	for (size_t i = 0, length = vector_size(&format_str); i < length; i++)
+	const size_t length = vector_size(format_str);
+	for (size_t i = 0; i < length; i++)
 	{
-		if (vector_get(&format_str, i) == '%')
+		if (vector_get(format_str, i) == '%')
 		{
 			i++;
-			const char32_t placeholder = (char32_t)vector_get(&format_str, i);
+			const char32_t placeholder = (char32_t)vector_get(format_str, i);
 			if (placeholder != '%')
 			{
 				if (args == MAX_PRINTF_ARGS)
@@ -675,7 +676,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 		return;
 	}
 
-	const size_t expected_args = evaluate_args(prs, prs->lxr.lexstr, format_types, placeholders);
+	const size_t expected_args = evaluate_args(prs, &prs->lxr.lexstr, format_types, placeholders);
 
 	node_copy(&prs->sx->nd, &nd_printf);
 	parse_assignment_expression(prs);

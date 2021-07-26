@@ -26,11 +26,12 @@
 #include "vector.h"
 
 
+#define MAX_STRING_LENGTH 128
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static const size_t MAX_STRING_LENGTH = 128;
 
 /** Type qualifiers */
 enum TYPE
