@@ -2100,6 +2100,30 @@ static void init(information *const info, node *const nd, const item_t displ, co
 	}
 }
 
+static void ident_declaration(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t elem_type = node_get_arg(nd, 1);
+	const item_t N = node_get_arg(nd, 2);
+	const item_t all = node_get_arg(nd, 3);
+
+	if (N == 0) // обычная переменная int a; или struct point p;
+	{
+		uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+		type_to_io(info, elem_type);
+		uni_printf(info->io, ", align 4\n");
+
+		info->variable_location = LMEM;
+		info->request_reg = displ;
+	}
+
+	node_set_next(nd);
+	if (all)
+	{
+		init(info, nd, displ, elem_type);
+	}
+}
+
 static void block(information *const info, node *const nd)
 {
 	node_set_next(nd); // OP_BLOCK
@@ -2174,29 +2198,8 @@ static void block(information *const info, node *const nd)
 			}
 			break;
 			case OP_DECL_ID:
-			{
-				const item_t displ = node_get_arg(nd, 0);
-				const item_t elem_type = node_get_arg(nd, 1);
-				const item_t N = node_get_arg(nd, 2);
-				const item_t all = node_get_arg(nd, 3);
-
-				if (N == 0) // обычная переменная int a; или struct point p;
-				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
-					type_to_io(info, elem_type);
-					uni_printf(info->io, ", align 4\n");
-
-					info->variable_location = LMEM;
-					info->request_reg = displ;
-				}
-
-				node_set_next(nd);
-				if (all)
-				{
-					init(info, nd, displ, elem_type);
-				}
-			}
-			break;
+				ident_declaration(info, nd);
+				break;
 			case OP_NOP:
 			case OP_DECL_STRUCT:
 			case OP_DECL_STRUCT_END:
@@ -2277,6 +2280,9 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
+			case OP_DECL_ID: // глобальные переменные
+				ident_declaration(info, &root);
+				break;
 			case OP_BLOCK_END:
 				break;
 			default:
