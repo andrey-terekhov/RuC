@@ -1788,6 +1788,7 @@ static void statement(information *const info, node *const nd)
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label);
 			to_code_label(info, label);
+			statement(info, nd);
 		}
 		break;
 		case OP_BREAK:
