@@ -57,7 +57,6 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 	prs.stk.tokens = stack_create(MAX_STACK);
 	prs.stk.nodes = stack_create(MAX_STACK);
 	prs.anonymous = stack_create(MAX_STACK);
-	prs.is_for_vm = true;
 	token_consume(&prs);
 
 	return prs;
@@ -93,16 +92,6 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 	lexer lxr = create_lexer(ws, io, sx);
 	parser prs = parser_create(sx, &lxr);
 	node root = node_get_root(&sx->tree);
-
-	for (size_t i = 0, args = ws_get_flags_num(ws); i < args; i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-
-		if (strcmp(flag, "-LLVM") == 0)
-		{
-			return prs.is_for_vm = false;
-		}
-	}
 
 	do
 	{

@@ -384,11 +384,6 @@ static void parse_standard_function_call(parser *const prs)
 
 		operands_push(prs, VALUE, TYPE_INTEGER);
 		to_tree(prs, OP_FREAD);
-
-		if (prs->is_for_vm)
-		{
-			parser_error(prs, wrong_func_for_vm);
-		}
 	}
 
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);

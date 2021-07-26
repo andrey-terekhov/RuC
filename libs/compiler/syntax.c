@@ -226,8 +226,8 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
 
 	builtin_add(sx, U"fopen", U"фоткрыть", type_function(sx, type_pointer(sx, TYPE_FILE), "ss"));
-	builtin_add(sx, U"fgetc", U"фсимвол", type_function(sx, TYPE_CHARACTER, "P"));
-	builtin_add(sx, U"fputc", U"фписать", type_function(sx, TYPE_CHARACTER, "iP"));
+	builtin_add(sx, U"fgetc", U"фчитать_символ", type_function(sx, TYPE_CHARACTER, "P"));
+	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_CHARACTER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 }
 
