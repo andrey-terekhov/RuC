@@ -237,7 +237,7 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (mode_is_pointer(info->sx, type) || mode_is_array(info->sx, type))
+	else if (mode_is_pointer(info->sx, type))
 	{
 		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
 		uni_printf(info->io, "*");
