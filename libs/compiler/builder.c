@@ -347,7 +347,7 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 		case UN_POSTINC:
 		case UN_POSTDEC:
 			is_prefix = false;
-			// fallthrough;
+			// fallthrough
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
