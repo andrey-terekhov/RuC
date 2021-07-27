@@ -85,6 +85,49 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			token_consume(prs);
 			return parse_struct_or_union_specifier(prs, parent);
 
+		case TK_TYPEDEF:
+		{
+			token_consume(prs);
+			item_t type = parse_type_specifier(prs, parent);
+			if (type_is_undefined(type))
+			{
+				token_skip_until(prs, TK_SEMICOLON);
+				return TYPE_UNDEFINED;
+			}
+			if (prs->token == TK_STAR)
+			{
+				token_consume(prs);
+				if (type_is_void(type))
+				{
+					type = TYPE_VOID_POINTER;
+				}
+				else
+				{
+					type = type_pointer(prs->sx, type);
+				}
+			}
+			if (prs->token == TK_IDENTIFIER)
+			{
+				const size_t repr = prs->lxr->repr;
+				token_consume(prs);
+				to_identab(prs, repr, 1000, type);
+				prs->was_type_def = true;
+				if (prs->token != TK_SEMICOLON)
+				{
+					parser_error(prs, expected_semi_after_decl);
+					return TYPE_UNDEFINED;
+
+				}
+				return type;
+			}
+			else
+			{
+				parser_error(prs, typedef_requires_a_name);
+				token_skip_until(prs, TK_SEMICOLON);
+				return TYPE_UNDEFINED;
+			}
+		}
+
 		default:
 			parser_error(prs, not_decl);
 			return TYPE_UNDEFINED;
