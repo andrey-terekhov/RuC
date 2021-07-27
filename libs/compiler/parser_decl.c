@@ -91,7 +91,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			item_t type = parse_type_specifier(prs, parent);
 			if (type_is_undefined(type))
 			{
-				token_skip_until(prs, TK_COMMA);
+				token_skip_until(prs, TK_SEMICOLON);
 				return TYPE_UNDEFINED;
 			}
 			if (prs->token == TK_STAR)
@@ -114,7 +114,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 				prs->was_type_def = true;
 				if (prs->token != TK_SEMICOLON)
 				{
-					parser_error(prs, expected_semi_after_stmt);
+					parser_error(prs, expected_semi_after_decl);
 					return TYPE_UNDEFINED;
 
 				}
@@ -122,7 +122,8 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			}
 			else
 			{
-				token_skip_until(prs, TK_COMMA);
+				parser_error(prs, typedef_requires_a_name);
+				token_skip_until(prs, TK_SEMICOLON);
 				return TYPE_UNDEFINED;
 			}
 		}
