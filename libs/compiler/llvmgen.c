@@ -34,6 +34,7 @@ typedef enum ANSWER
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
 	ALOGIC,								/**< Ответ является логическим значением */
+	AMEM,								/**< Ответ находится в памяти */
 } answer_t;
 
 typedef enum LOCATION
@@ -235,6 +236,11 @@ static void type_to_io(information *const info, const item_t type)
 	else if (mode_is_struct(info->sx, type))
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
+	}
+	else if (mode_is_pointer(info->sx, type) || mode_is_array(info->sx, type))
+	{
+		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
+		uni_printf(info->io, "*");
 	}
 }
 
@@ -472,23 +478,23 @@ static void to_code_operation_const_reg_double(information *const info, const it
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array)
+	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
-	uni_printf(info->io, ", ");
+	uni_printf(info->io, "%s, ", is_pointer ? "*" : "");
 	type_to_io(info, type);
-	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
-	, const int is_array)
+	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->io, " %%.%" PRIitem ", ", reg);
+	uni_printf(info->io, "%s %%%s.%" PRIitem ", ", is_pointer ? "*" : "", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
@@ -667,6 +673,8 @@ static void check_type_and_branch(information *const info)
 		case ALOGIC:
 			to_code_conditional_branch(info);
 			break;
+		case AMEM:
+			break;
 	}
 }
 
@@ -682,25 +690,41 @@ static void operand(information *const info, node *const nd)
 	{
 		case OP_IDENT:
 		case OP_SELECT:
-		case OP_IDENT_TO_ADDR:
 			node_set_next(nd);
 			break;
+		case OP_IDENT_TO_ADDR:
+		{
+			info->answer_reg = node_get_arg(nd, 0);
+			info->answer_type = AMEM;
+			node_set_next(nd);
+		}
+		break;
 		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
+			int is_addr_to_val = 0;
 
-			to_code_load(info, info->register_num, displ, mode_integer, 0);
+			node_set_next(nd);
+			if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			{
+				to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+				info->register_num++;
+				info->variable_location = LREG;
+				node_set_next(nd);
+				is_addr_to_val = 1;
+			}
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
+				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_integer;
-			node_set_next(nd);
 		}
 		break;
 		case OP_IDENT_TO_VAL_D:
 		{
 			const item_t displ = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, mode_float, 0);
+			to_code_load(info, info->register_num, displ, mode_float, 0, 0);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = mode_float;
@@ -812,7 +836,7 @@ static void operand(information *const info, node *const nd)
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+				to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
 				info->register_num++;
 			}
 
@@ -946,7 +970,7 @@ static void assignment_expression(information *const info, node *const nd)
 		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
 		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -968,9 +992,10 @@ static void assignment_expression(information *const info, node *const nd)
 		info->answer_type = AREG;
 	}
 
-	if (info->answer_type == AREG)
+	if (info->answer_type == AREG || info->answer_type == AMEM)
 	{
-		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
+			, info->answer_type == AMEM ? 1 : 0);
 	}
 	// ACONST && =
 	else if (!is_double(assignment_type))
@@ -1139,7 +1164,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const item_t memory_reg = info->answer_reg;
 
 	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation));
+		, is_array_operation(operation), 0);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
@@ -1192,7 +1217,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	}
 
 	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation));
+		, is_array_operation(operation), 0);
 	info->register_num++;
 }
 
