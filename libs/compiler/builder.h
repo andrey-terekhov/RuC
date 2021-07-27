@@ -30,13 +30,6 @@ extern "C" {
 #endif
 
 /**
- *	Build a broken node
- *
- *	@return	Broken node
- */
-node node_broken(void);
-
-/**
  *	Build an identifier expression
  *
  *	@param	sx				Syntax structure
@@ -92,7 +85,7 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
  *	@return	Subscript expression node
  */
 node build_subscript_expression(syntax *const sx, const node *const nd_base, const node *const nd_index
-								, const location l_loc, const location r_loc);
+	, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
@@ -106,7 +99,7 @@ node build_subscript_expression(syntax *const sx, const node *const nd_base, con
  *	@return	Call expression node
  */
 node build_call_expression(syntax *const sx, const node *const nd_callee, const node_vector *args
-						   , const location l_loc, const location r_loc);
+	, const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
@@ -114,25 +107,25 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
  *	@param	sx				Syntax structure
  *	@param	nd_base			First operand of member expression
  *	@param	is_arrow		Set if operator is arrow
- *	@param	op_loc			Operator source location
  *	@param	name			Second operand of member expression
+ *	@param	op_loc			Operator source location
  *	@param	id_loc			Identifier source location
  *
  *	@return	Member expression node
  */
 node build_member_expression(syntax *const sx, const node *const nd_base, const bool is_arrow, const size_t name
-							 , const location op_loc, const location id_loc);
+	, const location op_loc, const location id_loc);
 
 /**
  *	Build a upb expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_dimension	First operand of upb expression
- *	@param	nd_array		Second operand of upb expression
+ *	@param	nd_fst			First operand of upb expression
+ *	@param	nd_snd			Second operand of upb expression
  *
  *	@return	Upb expression node
  */
-node build_upb_expression(syntax *const sx, const node *const nd_dimension, const node *const nd_array);
+node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd);
 
 /**
  *	Build an unary expression
@@ -145,7 +138,7 @@ node build_upb_expression(syntax *const sx, const node *const nd_dimension, cons
  *	@return	Unary expression node
  */
 node build_unary_expression(syntax *const sx, const node *const nd_operand
-							, const unary_t op_kind, const location op_loc);
+	, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
@@ -159,7 +152,7 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
  *	@return	Binary expression node
  */
 node build_binary_expression(syntax *const sx, const node *const nd_left, const node *const nd_right
-							 , const binary_t op_kind, const location op_loc);
+	, const binary_t op_kind, const location op_loc);
 
 /**
  *	Build a ternary expression
@@ -173,22 +166,29 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
  *	@return	Ternary expression node
  */
 node build_ternary_expression(syntax *const sx, const node *const nd_left, const node *const nd_middle
-							  , const node *const nd_right, const location op_loc);
+	, const node *const nd_right, const location op_loc);
 
 /**
  *	Build an initializer list
  *
  *	@param	sx				Syntax structure
- *	@param	inits			List of initializers
+ *	@param	vec				Vector of initializer nodes
  *	@param	type			Target type for initializer list
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
  *	@return	Initializer list expression node
  */
-node build_init_list_expression(syntax *const sx, const node_vector *inits, const item_t type
-								, const location l_loc, const location r_loc);
+node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
+	, const location l_loc, const location r_loc);
+
+/**
+ *	Build a broken expression
+ *
+ *	@return	Broken expression node
+ */
+node build_broken_expression(void);
 
 #ifdef __cplusplus
-extern "C" }
+} /* extern "C" */
 #endif

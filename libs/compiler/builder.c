@@ -18,12 +18,12 @@
 #include <string.h>
 
 
-static node node_create(syntax *const sx, operation_t type)
+static inline node node_create(syntax *const sx, operation_t type)
 {
 	return node_add_child(&sx->nd, type);
 }
 
-static void node_set_child(const node *const parent, const node *const child)
+static inline void node_set_child(const node *const parent, const node *const child)
 {
 	node temp = node_add_child(parent, OP_NOP);
 	node_swap(child, &temp);
@@ -31,19 +31,19 @@ static void node_set_child(const node *const parent, const node *const child)
 }
 
 /**
- *	Emit a semantics error
+ *	Emit a semantic error
  *
  *	@param	sx			Syntax structure
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantics_error(syntax *const sx, const location loc, error_t num, ...)
+static void semantic_error(syntax *const sx, const location loc, error_t num, ...)
 {
-	va_list args;
-	va_start(args, num);
-
 	const size_t prev_loc = in_get_position(sx->io);
 	in_set_position(sx->io, loc.begin);
+
+	va_list args;
+	va_start(args, num);
 
 	verror(sx->io, num, args);
 	sx->was_error = true;
@@ -63,30 +63,25 @@ static void semantics_error(syntax *const sx, const location loc, error_t num, .
  */
 
 
-node node_broken()
-{
-	return node_load(NULL, SIZE_MAX);
-}
-
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
 {
 	const item_t identifier = repr_get_reference(sx, name);
 
 	if (identifier == ITEM_MAX)
 	{
-		semantics_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
-		return node_broken();
+		semantic_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
+		return build_broken_expression();
 	}
 
 	const item_t type = ident_get_type(sx, (size_t)identifier);
 	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
 
 	node nd = node_create(sx, OP_IDENTIFIER);
-	node_add_arg(&nd, type);					// Тип значения идентификатора
-	node_add_arg(&nd, category);				// Категория значения идентификатора
-	node_add_arg(&nd, (item_t)loc.begin);		// Начальная позиция идентификатора
-	node_add_arg(&nd, (item_t)loc.end);			// Конечная позиция идентификатора
-	node_add_arg(&nd, identifier);				// Индекс в таблице идентификаторов
+	node_add_arg(&nd, type);						// Тип значения идентификатора
+	node_add_arg(&nd, category);					// Категория значения идентификатора
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция идентификатора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция идентификатора
+	node_add_arg(&nd, identifier);					// Индекс в таблице идентификаторов
 
 	return nd;
 }
@@ -94,26 +89,30 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 node build_integer_literal_expression(syntax *const sx, const int value, const location loc)
 {
 	node nd = node_create(sx, OP_CONSTANT);
-	node_add_arg(&nd, TYPE_INTEGER);			// Тип значения константы
-	node_add_arg(&nd, RVALUE);					// Категория значения константы
-	node_add_arg(&nd, (item_t)loc.begin);		// Начальная позиция константы
-	node_add_arg(&nd, (item_t)loc.end);			// Конечная позиция константы
-	node_add_arg(&nd, value);					// Значение константы
+	node_add_arg(&nd, TYPE_INTEGER);				// Тип значения константы
+	node_add_arg(&nd, RVALUE);						// Категория значения константы
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
+	node_add_arg(&nd, value);						// Значение константы
 
 	return nd;
 }
 
 node build_floating_literal_expression(syntax *const sx, const double value, const location loc)
 {
-	item_t temp;
-	memcpy(&temp, &value, sizeof(double));
+	uint64_t num64;
+	memcpy(&num64, &value, sizeof(int64_t));
+
+	const item_t fst = num64 & 0x00000000ffffffff;
+	const item_t snd = (num64 & 0xffffffff00000000) >> 32;
 
 	node nd = node_create(sx, OP_CONSTANT);
-	node_add_arg(&nd, TYPE_FLOATING);			// Тип значения константы
-	node_add_arg(&nd, RVALUE);					// Категория значения константы
-	node_add_arg(&nd, (item_t)loc.begin);		// Начальная позиция константы
-	node_add_arg(&nd, (item_t)loc.end);			// Конечная позиция константы
-	node_add_arg(&nd, temp);					// Значение константы
+	node_add_arg(&nd, TYPE_FLOATING);				// Тип значения константы
+	node_add_arg(&nd, RVALUE);						// Категория значения константы
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
+	node_add_arg(&nd, fst);							// Первая часть значения константы
+	node_add_arg(&nd, snd);							// Вторая часть значения константы
 
 	return nd;
 }
@@ -127,7 +126,9 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
 	node_add_arg(&nd, LVALUE);						// Категория значения строки
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция строки
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки
-	for (size_t i = 0, length = vector_size(value); i < length; i++)
+
+	const size_t length = vector_size(value);
+	for (size_t i = 0; i < length; i++)
 	{
 		node_add_arg(&nd, vector_get(value, i));	// i-ый символ строки
 	}
@@ -136,25 +137,25 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
 }
 
 node build_subscript_expression(syntax *const sx, const node *const nd_base, const node *const nd_index
-								, const location l_loc, const location r_loc)
+	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(nd_base) || !node_is_correct(nd_index))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t base_type = expression_get_type(nd_base);
 	if (!type_is_array(sx, base_type))
 	{
-		semantics_error(sx, l_loc, typecheck_subscript_value);
-		return node_broken();
+		semantic_error(sx, l_loc, typecheck_subscript_value);
+		return build_broken_expression();
 	}
 
 	const item_t index_type = expression_get_type(nd_index);
 	if (!type_is_integer(index_type))
 	{
-		semantics_error(sx, expression_get_location(nd_index), typecheck_subscript_not_integer);
-		return node_broken();
+		semantic_error(sx, expression_get_location(nd_index), typecheck_subscript_not_integer);
+		return build_broken_expression();
 	}
 
 	const item_t element_type = type_get(sx, (size_t)base_type + 1);
@@ -172,37 +173,36 @@ node build_subscript_expression(syntax *const sx, const node *const nd_base, con
 }
 
 node build_call_expression(syntax *const sx, const node *const nd_callee, const node_vector *args
-						   , const location l_loc, const location r_loc)
+	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(nd_callee))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t operand_type = expression_get_type(nd_callee);
 	if (!type_is_function(sx, operand_type))
 	{
-		semantics_error(sx, l_loc, typecheck_call_not_function);
-		return node_broken();
+		semantic_error(sx, l_loc, typecheck_call_not_function);
+		return build_broken_expression();
 	}
 
 	const size_t expected_args = (size_t)type_get(sx, (size_t)operand_type + 2);
-	const size_t actual_args = args == NULL ? 0 : node_vector_size(args);
+	const size_t actual_args = args != NULL ? node_vector_size(args) : 0;
 
 	if (expected_args != actual_args)
 	{
-		semantics_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
-		return node_broken();
+		semantic_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
+		return build_broken_expression();
 	}
 
-	size_t ref_arg_type = (size_t)operand_type + 3;
-
+	const size_t ref_arg_type = (size_t)operand_type + 3;
 	for (size_t i = 0; i < actual_args; i++)
 	{
 		const node nd_argument = node_vector_get(args, i);
 		if (!node_is_correct(&nd_argument))
 		{
-			return node_broken();
+			return build_broken_expression();
 		}
 
 		const item_t expected_type = type_get(sx, ref_arg_type + i);
@@ -211,8 +211,8 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
 		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
 		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 		{
-			semantics_error(sx, expression_get_location(&nd_argument), typecheck_convert_incompatible);
-			return node_broken();
+			semantic_error(sx, expression_get_location(&nd_argument), typecheck_convert_incompatible);
+			return build_broken_expression();
 		}
 	}
 
@@ -220,26 +220,26 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
 	const size_t expr_start = expression_get_location(nd_callee).begin;
 
 	node nd = node_create(sx, OP_CALL);
-	node_add_arg(&nd, return_type);						// Тип возвращамого значения
-	node_add_arg(&nd, RVALUE);							// Категория значения вызова
-	node_add_arg(&nd, (item_t)expr_start);				// Начальная позиция вызова
-	node_add_arg(&nd, (item_t)r_loc.end);				// Конечная позиция вызова
-	node_set_child(&nd, nd_callee);						// Операнд вызова
+	node_add_arg(&nd, return_type);					// Тип возвращамого значения
+	node_add_arg(&nd, RVALUE);						// Категория значения вызова
+	node_add_arg(&nd, (item_t)expr_start);			// Начальная позиция вызова
+	node_add_arg(&nd, (item_t)r_loc.end);			// Конечная позиция вызова
+	node_set_child(&nd, nd_callee);					// Операнд вызова
 	for (size_t i = 0; i < actual_args; i++)
 	{
 		const node nd_argument = node_vector_get(args, i);
-		node_set_child(&nd, &nd_argument);				// i-ый аргумент вызова
+		node_set_child(&nd, &nd_argument);			// i-ый аргумент вызова
 	}
 
 	return nd;
 }
 
 node build_member_expression(syntax *const sx, const node *const nd_base, const bool is_arrow, const size_t name
-							 , const location op_loc, const location id_loc)
+	, const location op_loc, const location id_loc)
 {
 	if (!node_is_correct(nd_base))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t operand_type = expression_get_type(nd_base);
@@ -250,8 +250,8 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 	{
 		if (!type_is_structure(sx, operand_type))
 		{
-			semantics_error(sx, op_loc, typecheck_member_reference_struct);
-			return node_broken();
+			semantic_error(sx, op_loc, typecheck_member_reference_struct);
+			return build_broken_expression();
 		}
 
 		struct_type = operand_type;
@@ -261,8 +261,8 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 	{
 		if (!type_is_struct_pointer(sx, operand_type))
 		{
-			semantics_error(sx, op_loc, typecheck_member_reference_arrow);
-			return node_broken();
+			semantic_error(sx, op_loc, typecheck_member_reference_arrow);
+			return build_broken_expression();
 		}
 
 		struct_type = type_get(sx, (size_t)operand_type + 1);
@@ -279,12 +279,12 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 			const size_t expr_start = expression_get_location(nd_base).begin;
 
 			node nd = node_create(sx, OP_SELECT);
-			node_add_arg(&nd, member_type);				// Тип значения поля
-			node_add_arg(&nd, category);				// Категория значения выборкм
-			node_add_arg(&nd, (item_t)expr_start);		// Начальная позиция выборкм
-			node_add_arg(&nd, (item_t)id_loc.end);		// Конечная позиция выборкм
-			node_add_arg(&nd, member_displ);			// Смещение поля структуры
-			node_set_child(&nd, nd_base);					// Выражение-операнд
+			node_add_arg(&nd, member_type);			// Тип значения поля
+			node_add_arg(&nd, category);			// Категория значения выборкм
+			node_add_arg(&nd, (item_t)expr_start);	// Начальная позиция выборкм
+			node_add_arg(&nd, (item_t)id_loc.end);	// Конечная позиция выборкм
+			node_add_arg(&nd, member_displ);		// Смещение поля структуры
+			node_set_child(&nd, nd_base);			// Выражение-операнд
 
 			return nd;
 		}
@@ -292,48 +292,48 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 		member_displ += (item_t)type_size(sx, member_type);
 	}
 
-	semantics_error(sx, id_loc, no_member, repr_get_name(sx, name));
-	return node_broken();
+	semantic_error(sx, id_loc, no_member, repr_get_name(sx, name));
+	return build_broken_expression();
 }
 
-node build_upb_expression(syntax *const sx, const node *const nd_dimension, const node *const nd_array)
+node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd)
 {
-	if (!node_is_correct(nd_dimension) || !node_is_correct(nd_array))
+	if (!node_is_correct(nd_fst) || !node_is_correct(nd_snd))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
-	const item_t dimension_type = expression_get_type(nd_dimension);
-	if (!type_is_integer(dimension_type))
+	const item_t fst_type = expression_get_type(nd_fst);
+	if (!type_is_integer(fst_type))
 	{
-		semantics_error(sx, expression_get_location(nd_dimension), not_int_in_stanfunc);
-		return node_broken();
+		semantic_error(sx, expression_get_location(nd_fst), not_int_in_stanfunc);
+		return build_broken_expression();
 	}
 
-	const item_t array_type = expression_get_type(nd_array);
-	if (!type_is_array(sx, array_type))
+	const item_t snd_type = expression_get_type(nd_snd);
+	if (!type_is_array(sx, snd_type))
 	{
-		semantics_error(sx, expression_get_location(nd_array), not_array_in_stanfunc);
-		return node_broken();
+		semantic_error(sx, expression_get_location(nd_snd), not_array_in_stanfunc);
+		return build_broken_expression();
 	}
 
 	node nd = node_create(sx, OP_UPB);
-	node_add_arg(&nd, TYPE_INTEGER);		// Тип значения поля
-	node_add_arg(&nd, RVALUE);				// Категория значения поля
-	node_add_arg(&nd, (item_t)expression_get_location(nd_dimension).begin);
-	node_add_arg(&nd, (item_t)expression_get_location(nd_array).begin);
-	node_set_child(&nd, nd_dimension);		// Выражение-операнд
-	node_set_child(&nd, nd_array);			// Выражение-операнд
+	node_add_arg(&nd, TYPE_INTEGER);				// Тип значения поля
+	node_add_arg(&nd, RVALUE);						// Категория значения поля
+	node_add_arg(&nd, (item_t)expression_get_location(nd_fst).begin);
+	node_add_arg(&nd, (item_t)expression_get_location(nd_snd).begin);
+	node_set_child(&nd, nd_fst);					// Выражение-операнд
+	node_set_child(&nd, nd_snd);					// Выражение-операнд
 
 	return nd;
 }
 
 node build_unary_expression(syntax *const sx, const node *const nd_operand
-							, const unary_t op_kind, const location op_loc)
+	, const unary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(nd_operand))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t operand_type = expression_get_type(nd_operand);
@@ -353,44 +353,44 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 		{
 			if (!type_is_arithmetic(operand_type))
 			{
-				semantics_error(sx, op_loc, typecheck_illegal_increment, op_kind);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_illegal_increment, op_kind);
+				return build_broken_expression();
 			}
 
 			if (!expression_is_lvalue(nd_operand))
 			{
-				semantics_error(sx, op_loc, typecheck_expression_not_lvalue);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_expression_not_lvalue);
+				return build_broken_expression();
 			}
 
 			result_type = operand_type;
-			break;
 		}
+		break;
 
 		case UN_ADDRESS:
 		{
 			if (!expression_is_lvalue(nd_operand))
 			{
-				semantics_error(sx, op_loc, typecheck_invalid_lvalue_addrof);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_invalid_lvalue_addrof);
+				return build_broken_expression();
 			}
 
 			result_type = type_pointer(sx, operand_type);
-			break;
 		}
+		break;
 
 		case UN_INDIRECTION:
 		{
 			if (!type_is_pointer(sx, operand_type))
 			{
-				semantics_error(sx, op_loc, typecheck_indirection_requires_pointer);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_indirection_requires_pointer);
+				return build_broken_expression();
 			}
 
 			result_type = type_get(sx, (size_t)operand_type + 1);
 			category = LVALUE;
-			break;
 		}
+		break;
 
 		case UN_ABS:
 		case UN_PLUS:
@@ -398,37 +398,37 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 		{
 			if (!type_is_arithmetic(operand_type))
 			{
-				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				return build_broken_expression();
 			}
 
 			result_type = operand_type;
-			break;
 		}
+		break;
 
 		case UN_NOT:
 		{
 			if (!type_is_integer(operand_type))
 			{
-				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				return build_broken_expression();
 			}
 
 			result_type = TYPE_INTEGER;
-			break;
 		}
+		break;
 
 		case UN_LOGNOT:
 		{
 			if (!type_is_scalar(sx, operand_type))
 			{
-				semantics_error(sx, op_loc, typecheck_unary_expr, operand_type);
-				return node_broken();
+				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				return build_broken_expression();
 			}
 
 			result_type = TYPE_INTEGER;
-			break;
 		}
+		break;
 	}
 
 	const location loc = is_prefix
@@ -436,22 +436,22 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
 
 	node nd = node_create(sx, OP_UNARY);
-	node_add_arg(&nd, result_type);						// Тип значения выражения
-	node_add_arg(&nd, category);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)loc.begin);				// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);					// Конечная позиция выражения
-	node_add_arg(&nd, op_kind);							// Тип унарного оператора
-	node_set_child(&nd, nd_operand);					// Выражение-операнд
+	node_add_arg(&nd, result_type);					// Тип значения выражения
+	node_add_arg(&nd, category);					// Категория значения выражения
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+	node_add_arg(&nd, op_kind);						// Тип унарного оператора
+	node_set_child(&nd, nd_operand);				// Выражение-операнд
 
 	return nd;
 }
 
 node build_binary_expression(syntax *const sx, const node *const nd_left, const node *const nd_right
-							 , const binary_t op_kind, const location op_loc)
+	, const binary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(nd_left) || !node_is_correct(nd_right))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t left_type = expression_get_type(nd_left);
@@ -460,8 +460,8 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	if (operation_is_assignment(op_kind)
 		&& (!expression_is_lvalue(nd_left) || (type_is_floating(right_type) && type_is_integer(left_type))))
 	{
-		semantics_error(sx, op_loc, unassignable);
-		return node_broken();
+		semantic_error(sx, op_loc, unassignable);
+		return build_broken_expression();
 	}
 
 	item_t result_type;
@@ -473,11 +473,11 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	{
 		// Особый случай, так как тут могут быть операции с агрегатными типами
 
-		// Несовпадение типов может быть только в случае, когда слева floating, а справа integer
+		// Несовпадение типов может быть только в случае, когда слева вещественный, а справа целочисленный
 		if (left_type != right_type && !(type_is_floating(left_type) && type_is_integer(right_type)))
 		{
-			semantics_error(sx, op_loc, typecheck_convert_incompatible);
-			return node_broken();
+			semantic_error(sx, op_loc, typecheck_convert_incompatible);
+			return build_broken_expression();
 		}
 
 		result_type = left_type;
@@ -486,14 +486,14 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	{
 		if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
 		{
-			semantics_error(sx, op_loc, typecheck_binary_expr);
-			return node_broken();
+			semantic_error(sx, op_loc, typecheck_binary_expr);
+			return build_broken_expression();
 		}
 
 		if (operation_is_assignment(op_kind) && !expression_is_lvalue(nd_left))
 		{
-			semantics_error(sx, op_loc, unassignable);
-			return node_broken();
+			semantic_error(sx, op_loc, unassignable);
+			return build_broken_expression();
 		}
 
 		switch (op_kind)
@@ -515,13 +515,14 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 			{
 				if (!type_is_integer(left_type) || !type_is_integer(right_type))
 				{
-					semantics_error(sx, op_loc, int_op_for_float);
-					return node_broken();
+					semantic_error(sx, op_loc, int_op_for_float);
+					return build_broken_expression();
 				}
 
 				result_type = TYPE_INTEGER;
-				break;
 			}
+			break;
+
 			case BIN_EQ:
 			case BIN_NE:
 			case BIN_LE:
@@ -538,23 +539,23 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	}
 
 	node nd = node_create(sx, OP_BINARY);
-	node_add_arg(&nd, result_type);		// Тип значения
-	node_add_arg(&nd, RVALUE);			// Категория значения
+	node_add_arg(&nd, result_type);					// Тип значения
+	node_add_arg(&nd, RVALUE);						// Категория значения
 	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
 	node_add_arg(&nd, (item_t)expression_get_location(nd_right).end);
-	node_add_arg(&nd, op_kind);			// Вид оператора
-	node_set_child(&nd, nd_left);			// Первый операнд
-	node_set_child(&nd, nd_right);			// Второй операнд
+	node_add_arg(&nd, op_kind);						// Вид оператора
+	node_set_child(&nd, nd_left);					// Первый операнд
+	node_set_child(&nd, nd_right);					// Второй операнд
 
 	return nd;
 }
 
 node build_ternary_expression(syntax *const sx, const node *const nd_left, const node *const nd_middle
-							  , const node *const nd_right, const location op_loc)
+	, const node *const nd_right, const location op_loc)
 {
 	if (!node_is_correct(nd_left) || !node_is_correct(nd_middle) || !node_is_correct(nd_right))
 	{
-		return node_broken();
+		return build_broken_expression();
 	}
 
 	const item_t left_type = expression_get_type(nd_left);
@@ -563,8 +564,8 @@ node build_ternary_expression(syntax *const sx, const node *const nd_left, const
 
 	if (!type_is_scalar(sx, left_type))
 	{
-		semantics_error(sx, expression_get_location(nd_left), typecheck_statement_requires_scalar);
-		return node_broken();
+		semantic_error(sx, expression_get_location(nd_left), typecheck_statement_requires_scalar);
+		return build_broken_expression();
 	}
 
 	item_t result_type = middle_type;
@@ -576,30 +577,30 @@ node build_ternary_expression(syntax *const sx, const node *const nd_left, const
 	}
 	else if (middle_type != right_type)
 	{
-		semantics_error(sx, op_loc, typecheck_cond_incompatible_operands);
-		return node_broken();
+		semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
+		return build_broken_expression();
 	}
 
 	node nd = node_create(sx, OP_TERNARY);
-	node_add_arg(&nd, result_type);		// Тип значения
-	node_add_arg(&nd, RVALUE);			// Категория значения
+	node_add_arg(&nd, result_type);					// Тип значения
+	node_add_arg(&nd, RVALUE);						// Категория значения
 	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
 	node_add_arg(&nd, (item_t)expression_get_location(nd_right).begin);
-	node_set_child(&nd, nd_left);			// Первый операнд
-	node_set_child(&nd, nd_middle);		// Второй операнд
-	node_set_child(&nd, nd_right);			// Третий операнд
+	node_set_child(&nd, nd_left);					// Первый операнд
+	node_set_child(&nd, nd_middle);					// Второй операнд
+	node_set_child(&nd, nd_right);					// Третий операнд
 
 	return nd;
 }
 
-node build_init_list_expression(syntax *const sx, const node_vector *inits, const item_t type
-								, const location l_loc, const location r_loc)
+node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
+	, const location l_loc, const location r_loc)
 {
-	const size_t actual_inits = node_vector_size(inits);
+	const size_t actual_inits = node_vector_size(vec);
 	if (actual_inits == 0)
 	{
-		semantics_error(sx, l_loc, empty_init);
-		return node_broken();
+		semantic_error(sx, l_loc, empty_init);
+		return build_broken_expression();
 	}
 
 	if (type_is_structure(sx, type))
@@ -608,27 +609,27 @@ node build_init_list_expression(syntax *const sx, const node_vector *inits, cons
 
 		if (expected_inits != actual_inits)
 		{
-			semantics_error(sx, r_loc, wrong_init_in_actparam, expected_inits, actual_inits);
-			return node_broken();
+			semantic_error(sx, r_loc, wrong_init_in_actparam, expected_inits, actual_inits);
+			return build_broken_expression();
 		}
 
 		size_t ref_next_field = (size_t)type + 3;
 		for (size_t i = 0; i < actual_inits; i++)
 		{
-			const node nd_initializer = node_vector_get(inits, i);
+			const node nd_initializer = node_vector_get(vec, i);
 			if (!node_is_correct(&nd_initializer))
 			{
-				return node_broken();
+				return build_broken_expression();
 			}
 
 			const item_t expected_type = type_get(sx, ref_next_field);
 			const item_t actual_type = expression_get_type(&nd_initializer);
 
-			// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+			// Несовпадение типов может быть только в случае, когда параметр - вещественный, а аргумент - целочисленный
 			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 			{
-				semantics_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
-				return node_broken();
+				semantic_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
+				return build_broken_expression();
 			}
 
 			ref_next_field += 2;
@@ -639,26 +640,26 @@ node build_init_list_expression(syntax *const sx, const node_vector *inits, cons
 		const item_t expected_type = type_get(sx, (size_t)type + 1);
 		for (size_t i = 0; i < actual_inits; i++)
 		{
-			const node nd_initializer = node_vector_get(inits, i);
+			const node nd_initializer = node_vector_get(vec, i);
 			if (!node_is_correct(&nd_initializer))
 			{
-				return node_broken();
+				return build_broken_expression();
 			}
 
 			const item_t actual_type = expression_get_type(&nd_initializer);
 
-			// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+			// Несовпадение типов может быть только в случае, когда параметр - вещественный, а аргумент - целочисленный
 			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
 			{
-				semantics_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
-				return node_broken();
+				semantic_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
+				return build_broken_expression();
 			}
 		}
 	}
 	else
 	{
-		semantics_error(sx, l_loc, wrong_init);
-		return node_broken();
+		semantic_error(sx, l_loc, wrong_init);
+		return build_broken_expression();
 	}
 
 	node nd = node_create(sx, OP_LIST);
@@ -668,9 +669,14 @@ node build_init_list_expression(syntax *const sx, const node_vector *inits, cons
 	node_add_arg(&nd, (item_t)r_loc.end);
 	for (size_t i = 0; i < actual_inits; i++)
 	{
-		const node nd_initializer = node_vector_get(inits, i);
+		const node nd_initializer = node_vector_get(vec, i);
 		node_set_child(&nd, &nd_initializer);			// i-ый инициализатор в списке
 	}
 
 	return nd;
+}
+
+node build_broken_expression()
+{
+	return node_load(NULL, SIZE_MAX);
 }
