@@ -1743,6 +1743,7 @@ static void expression(information *const info, node *const nd)
 
 	if (node_get_type(nd) == OP_EXPR_END)
 	{
+		printf("here 1\n");
 		node_set_next(nd);
 	}
 }
@@ -2290,7 +2291,9 @@ static int codegen(information *const info)
 				array_declaration(info, &root);
 				break;
 			case OP_DECL_ID: // глобальные переменные
+				printf("here 2\n");
 				ident_declaration(info, &root);
+				printf("%i\n", node_get_type(&root));
 				break;
 			case OP_BLOCK_END:
 				break;
