@@ -33,7 +33,10 @@ extern "C" {
  *
  *	@return	Expression type
  */
-item_t expression_get_type(const node *const nd);
+inline item_t expression_get_type(const node *const nd)
+{
+   return node_get_arg(nd, 0);
+}
 
 /**
  *	Check if expression is lvalue
@@ -42,7 +45,10 @@ item_t expression_get_type(const node *const nd);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool expression_is_lvalue(const node *const nd);
+inline bool expression_is_lvalue(const node *const nd)
+{
+   return node_get_arg(nd, 1) == LVALUE;
+}
 
 /**
  *	Get expression location
@@ -51,7 +57,10 @@ bool expression_is_lvalue(const node *const nd);
  *
  *	@return	Expression location
  */
-location expression_get_location(const node *const nd);
+inline location expression_get_location(const node *const nd)
+{
+   return (location){ (size_t)node_get_arg(nd, 2), (size_t)node_get_arg(nd, 3) };
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

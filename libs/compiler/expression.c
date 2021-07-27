@@ -17,18 +17,6 @@
 #include "expression.h"
 
 
-
-inline item_t expression_get_type(const node *const nd)
-{
-   return node_get_arg(nd, 0);
-}
-
-inline bool expression_is_lvalue(const node *const nd)
-{
-   return node_get_arg(nd, 1) == LVALUE;
-}
-
-inline location expression_get_location(const node *const nd)
-{
-   return (location){ (size_t)node_get_arg(nd, 2), (size_t)node_get_arg(nd, 3) };
-}
+extern item_t expression_get_type(const node *const nd);
+extern bool expression_is_lvalue(const node *const nd);
+extern location expression_get_location(const node *const nd);
