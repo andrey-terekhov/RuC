@@ -185,12 +185,12 @@ static node parse_primary_expression(parser *const prs)
  *	@param	prs			Parser
  *	@param	type		Target type
  *
- *	@return	Expression nodes list
+ *	@return	Expression nodes vector
  */
-static expression_list parse_expression_list(parser *const prs, const item_t type)
+static node_vector parse_expression_list(parser *const prs, const item_t type)
 {
 	unsigned i = 0;
-	expression_list result = expression_list_create();
+	node_vector result = node_vector_create();
 
 	do
 	{
@@ -209,7 +209,7 @@ static expression_list parse_expression_list(parser *const prs, const item_t typ
 		}
 
 		const node initializer = parse_initializer(prs, item_type);
-		expression_list_add(&result, &initializer);
+		node_vector_add(&result, &initializer);
 		i++;
 	} while (token_try_consume(prs, TK_COMMA));
 
@@ -276,7 +276,7 @@ static node parse_postfix_expression(parser *const prs)
 					continue;
 				}
 
-				expression_list args = parse_expression_list(prs, expression_get_type(&nd_operand));
+				node_vector args = parse_expression_list(prs, expression_get_type(&nd_operand));
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
@@ -290,7 +290,7 @@ static node parse_postfix_expression(parser *const prs)
 					nd_operand = node_broken();
 				}
 
-				expression_list_clear(&args);
+				node_vector_clear(&args);
 				continue;
 			}
 
@@ -487,7 +487,7 @@ node parse_initializer(parser *const prs, const item_t type)
 			return node_broken();
 		}
 
-		expression_list inits = parse_expression_list(prs, type);
+		node_vector inits = parse_expression_list(prs, type);
 		node nd_result;
 		if (prs->token == TK_R_BRACE)
 		{
@@ -502,7 +502,7 @@ node parse_initializer(parser *const prs, const item_t type)
 			nd_result = node_broken();
 		}
 
-		expression_list_clear(&inits);
+		node_vector_clear(&inits);
 		return nd_result;
 	}
 

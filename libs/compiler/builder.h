@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include "errors.h"
 #include "expression.h"
-#include "expression_list.h"
+#include "node_vector.h"
 #include "operations.h"
 #include "syntax.h"
 #include "tree.h"
@@ -105,7 +105,7 @@ node build_subscript_expression(syntax *const sx, const node *const nd_base, con
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_callee, const expression_list *args
+node build_call_expression(syntax *const sx, const node *const nd_callee, const node_vector *args
 						   , const location l_loc, const location r_loc);
 
 /**
@@ -186,7 +186,7 @@ node build_ternary_expression(syntax *const sx, const node *const nd_left, const
  *
  *	@return	Initializer list expression node
  */
-node build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
+node build_init_list_expression(syntax *const sx, const node_vector *inits, const item_t type
 								, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus

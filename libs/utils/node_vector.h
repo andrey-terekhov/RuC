@@ -16,65 +16,66 @@
 
 #pragma once
 
-#include "expression.h"
-#include "vector.h"
+#include "tree.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-/** Expression list structure */
-typedef struct expression_list
+/** Node vector structure */
+typedef struct node_vector
 {
 	vector *tree;			/**< Tree */
 	vector nodes;			/**< Nodes in AST */
-} expression_list;
+} node_vector;
+
 
 /**
- *	Create empty expression list
+ *	Create empty node vector
  *
- *	@return	Expression list
+ *	@return	Node vector
  */
-expression_list expression_list_create(void);
+node_vector node_vector_create(void);
 
 /**
- *	Add new expression node
+ *	Add new node
  *
- *	@param	exprs			Expression list
- *	@param	nd_expr			Expression node
+ *	@param	vec				Node vector
+ *	@param	nd				New node
+ *
+ *	@return	Index, @c SIZE_MAX on failure
  */
-void expression_list_add(expression_list *exprs, const node *const nd_expr);
+size_t node_vector_add(node_vector *const vec, const node *const nd);
 
 /**
- *	Get expression node
+ *	Get node
  *
- *	@param	exprs			Expression list
+ *	@param	vec				Node vector
  *	@param	index			Index
  *
  *	@return	Expression
  */
-node expression_list_get(const expression_list *exprs, const size_t index);
+node node_vector_get(const node_vector *const vec, const size_t index);
 
 /**
- *	Get expression list size
+ *	Get node vector size
  *
- *	@param	exprs			Expression list
+ *	@param	vec				Node vector
  *
- *	@return	Size of list, @c SIZE_MAX on failure
+ *	@return	Size of node vector, @c SIZE_MAX on failure
  */
-size_t expression_list_size(const expression_list *exprs);
+size_t node_vector_size(const node_vector *const vec);
 
 /**
  *	Free allocated memory
  *
- *	@param	exprs			Expression list
+ *	@param	vec				Node vector
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int expression_list_clear(expression_list *exprs);
+int node_vector_clear(node_vector *const vec);
 
 #ifdef __cplusplus
-extern "C" }
+} /* extern "C" */
 #endif

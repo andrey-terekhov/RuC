@@ -171,7 +171,7 @@ node build_subscript_expression(syntax *const sx, const node *const nd_base, con
 	return nd;
 }
 
-node build_call_expression(syntax *const sx, const node *const nd_callee, const expression_list *args
+node build_call_expression(syntax *const sx, const node *const nd_callee, const node_vector *args
 						   , const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(nd_callee))
@@ -187,7 +187,7 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
 	}
 
 	const size_t expected_args = (size_t)type_get(sx, (size_t)operand_type + 2);
-	const size_t actual_args = args == NULL ? 0 : expression_list_size(args);
+	const size_t actual_args = args == NULL ? 0 : node_vector_size(args);
 
 	if (expected_args != actual_args)
 	{
@@ -199,7 +199,7 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
 
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		const node nd_argument = expression_list_get(args, i);
+		const node nd_argument = node_vector_get(args, i);
 		if (!node_is_correct(&nd_argument))
 		{
 			return node_broken();
@@ -227,7 +227,7 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
 	node_set_child(&nd, nd_callee);						// Операнд вызова
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		const node nd_argument = expression_list_get(args, i);
+		const node nd_argument = node_vector_get(args, i);
 		node_set_child(&nd, &nd_argument);				// i-ый аргумент вызова
 	}
 
@@ -592,10 +592,10 @@ node build_ternary_expression(syntax *const sx, const node *const nd_left, const
 	return nd;
 }
 
-node build_init_list_expression(syntax *const sx, const expression_list *inits, const item_t type
+node build_init_list_expression(syntax *const sx, const node_vector *inits, const item_t type
 								, const location l_loc, const location r_loc)
 {
-	const size_t actual_inits = expression_list_size(inits);
+	const size_t actual_inits = node_vector_size(inits);
 	if (actual_inits == 0)
 	{
 		semantics_error(sx, l_loc, empty_init);
@@ -615,7 +615,7 @@ node build_init_list_expression(syntax *const sx, const expression_list *inits, 
 		size_t ref_next_field = (size_t)type + 3;
 		for (size_t i = 0; i < actual_inits; i++)
 		{
-			const node nd_initializer = expression_list_get(inits, i);
+			const node nd_initializer = node_vector_get(inits, i);
 			if (!node_is_correct(&nd_initializer))
 			{
 				return node_broken();
@@ -639,7 +639,7 @@ node build_init_list_expression(syntax *const sx, const expression_list *inits, 
 		const item_t expected_type = type_get(sx, (size_t)type + 1);
 		for (size_t i = 0; i < actual_inits; i++)
 		{
-			const node nd_initializer = expression_list_get(inits, i);
+			const node nd_initializer = node_vector_get(inits, i);
 			if (!node_is_correct(&nd_initializer))
 			{
 				return node_broken();
@@ -668,7 +668,7 @@ node build_init_list_expression(syntax *const sx, const expression_list *inits, 
 	node_add_arg(&nd, (item_t)r_loc.end);
 	for (size_t i = 0; i < actual_inits; i++)
 	{
-		const node nd_initializer = expression_list_get(inits, i);
+		const node nd_initializer = node_vector_get(inits, i);
 		node_set_child(&nd, &nd_initializer);			// i-ый инициализатор в списке
 	}
 
