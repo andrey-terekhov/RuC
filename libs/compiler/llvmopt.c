@@ -55,6 +55,7 @@ typedef struct information
 	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
 
 	// TODO: может стоит и тут сделать функцию печать типа?
+	// PULL REQUEST ARRAY INIT
 	item_t arr_init_type;							/**< Тип массива при инициализации */
 } information;
 
@@ -316,6 +317,7 @@ static int node_recursive(information *const info, node *const nd)
 		info->slice_depth++;
 	}
 
+	// PULL REQUEST ARRAY INIT
 	if (node_get_type(nd) == OP_ARRAY_INIT)
 	{
 		uni_printf(info->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
@@ -425,6 +427,7 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+			// PULL REQUEST ARRAY INIT
 			case OP_DECL_ID:
 				info->arr_init_type = node_get_arg(&child, 1);
 			break;
@@ -438,6 +441,7 @@ static int node_recursive(information *const info, node *const nd)
 				{
 					case OPERAND:
 					{
+						// PULL REQUEST ARRAY INIT
 						switch (node_get_type(&child))
 						{
 							case OP_CONST:

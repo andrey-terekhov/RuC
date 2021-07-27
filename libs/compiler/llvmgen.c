@@ -35,7 +35,6 @@ typedef enum ANSWER
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
 	ALOGIC,								/**< Ответ является логическим значением */
-	// PULL REQUEST POINTER
 	AMEM,								/**< Ответ находится в памяти */
 } answer_t;
 
@@ -246,7 +245,6 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
-	// PULL REQUEST POINTER
 	else if (mode_is_pointer(info->sx, type) || mode_is_array(info->sx, type))
 	{
 		// TODO: пока сделано для одномерного указателя
@@ -487,7 +485,6 @@ static void to_code_operation_const_reg_double(information *const info, const it
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
-// PULL REQUEST POINTER
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -497,7 +494,6 @@ static void to_code_load(information *const info, const item_t result, const ite
 	type_to_io(info, type);
 	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
-// PULL REQUEST POINTER
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -775,7 +771,6 @@ static void check_type_and_branch(information *const info)
 		case ALOGIC:
 			to_code_conditional_branch(info);
 			break;
-		// PULL REQUEST POINTER
 		case AMEM:
 			break;
 	}
@@ -795,7 +790,6 @@ static void operand(information *const info, node *const nd)
 		case OP_SELECT:
 			node_set_next(nd);
 			break;
-		// PULL REQUEST POINTER
 		case OP_IDENT_TO_ADDR:
 		{
 			info->answer_reg = node_get_arg(nd, 0);
@@ -803,7 +797,6 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		// PULL REQUEST POINTER
 		case OP_IDENT_TO_VAL:
 		{
 			const item_t displ = node_get_arg(nd, 0);
@@ -1095,7 +1088,6 @@ static void assignment_expression(information *const info, node *const nd)
 		result = info->register_num++;
 		info->answer_type = AREG;
 	}
-// PULL REQUEST POINTER
 	if (info->answer_type == AREG || info->answer_type == AMEM)
 	{
 		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
@@ -2052,6 +2044,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 {
 	switch (node_get_type(nd))
 	{
+		// PULL REQUEST ARRAY INIT
 		// TODO: пока реализовано только для одномерных массивов
 		case OP_ARRAY_INIT: 
 		{
@@ -2141,6 +2134,7 @@ static void array_declaration(information *const info, node *const nd)
 
 		node_set_next(nd);
 		// получение и сохранение границ
+		// PULL REQUEST ARRAY INIT (all)
 		for (size_t i = 1; i <= N && !all; i++)
 		{
 			info->variable_location = LFREE;
@@ -2170,6 +2164,7 @@ static void array_declaration(information *const info, node *const nd)
 
 		// объявление массива без инициализации, с инициализацией объявление происходит в init
 		// объявление массива, если он статический
+		// PULL REQUEST ARRAY INIT (all)
 		if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 		{
 			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
