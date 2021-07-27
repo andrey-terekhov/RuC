@@ -2091,6 +2091,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		}
 		break;
 		default:
+		printf("here\n");
 			expression(info, nd);
 			break;
 	}
