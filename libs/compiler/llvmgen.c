@@ -2061,6 +2061,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 				info->variable_location = LFREE;
 				expression(info, nd);
 			}
+
+			node_set_next(nd); // TExprend
 		}
 		break;
 		// массивы char могут инициализироваться строками
@@ -2074,6 +2076,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			to_code_init_array(info, index, mode_character, 1);
 
 			node_set_next(nd);
+			node_set_next(nd); // TExprend
 		}
 		break;
 		case OP_STRUCT_INIT:
@@ -2135,29 +2138,33 @@ static void array_declaration(information *const info, node *const nd)
 		node_set_next(nd);
 		// получение и сохранение границ
 		// PULL REQUEST ARRAY INIT (all)
-		for (size_t i = 1; i <= N && !all; i++)
+		int is_borders = node_get_type(nd) == OP_DECL_ID ? 0 : 1;
+		for (size_t i = 1; i <= N && is_borders; i++)
 		{
 			info->variable_location = LFREE;
 			expression(info, nd);
 
-			if (info->answer_type == ACONST)
+			if (!all)
 			{
-				if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+				if (info->answer_type == ACONST)
 				{
-					system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-				}
+					if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+					{
+						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+					}
 
-				hash_set_by_index(&info->arrays, index, i, info->answer_const);
-			}
-			else // if (info->answer_type == AREG) динамический массив
-			{
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+					hash_set_by_index(&info->arrays, index, i, info->answer_const);
+				}
+				else // if (info->answer_type == AREG) динамический массив
 				{
-					system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-				}
+					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+					{
+						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+					}
 
-				hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-				hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+					hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+					hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+				}
 			}
 		}
 		node_set_next(nd);	// OP_DECL_ID
