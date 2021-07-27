@@ -40,6 +40,7 @@ typedef struct information
 	syntax *sx;										/**< Структура syntax с таблицами */
 
 	item_t string_num;								/**< Номер строки */
+	item_t init_num;								/**< Счётчик для инициализации */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
 	stack nodes;									/**< Стек нод для преобразования выражений */
@@ -48,7 +49,21 @@ typedef struct information
 	// TODO: а если в выражении вырезки есть вырезка, надо обдумать и этот случай
 	size_t slice_depth;								/**< Количество узлов после OP_SLICE_IDENT */
 	size_t slice_stack_size;						/**< Размер стека в начале вырезки */
+
+	// TODO: может стоит и тут сделать функцию печать типа?
+	item_t arr_init_type;							/**< Тип массива при инициализации */
 } information;
+
+
+// TODO: это уже есть в llvmgen, объединить бы
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+
+	return numdouble;
+}
 
 
 static inline void stack_resize(information *const info, const size_t size)
@@ -272,6 +287,15 @@ static int node_recursive(information *const info, node *const nd)
 		info->slice_depth++;
 	}
 
+	if (node_get_type(nd) == OP_ARRAY_INIT)
+	{
+		uni_printf(info->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
+		info->init_num++;
+		// TODO: а для многомерных как?
+		uni_printf(info->io, "[%" PRIitem " x %s] [", node_get_arg(nd, 0)
+			, info->arr_init_type == mode_integer ? "i32" : "double");
+	}
+
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
 		node child = node_get_child(nd, i);
@@ -371,6 +395,9 @@ static int node_recursive(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_DECL_ID:
+				info->arr_init_type = node_get_arg(&child, 1);
+			break;
 
 			default:
 			{
@@ -379,6 +406,28 @@ static int node_recursive(information *const info, node *const nd)
 				{
 					case OPERAND:
 					{
+						switch (node_get_type(&child))
+						{
+							case OP_CONST:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "i32 %" PRIitem "%s", node_get_arg(&child, 0)
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 4\n");
+								}
+							}
+							break;
+							case OP_CONST_D:
+							{
+								if (node_get_type(nd) == OP_ARRAY_INIT)
+								{
+									uni_printf(info->io, "double %f%s", to_double(node_get_arg(&child, 0), node_get_arg(&child, 1))
+										, i < node_get_amount(nd) - 2 ? ", " : "], align 8\n");
+								}
+							}
+							break;
+						}
+
 						stack_push(&info->nodes, (item_t)node_save(&child));
 						stack_push(&info->depths, 1);
 					}
@@ -538,6 +587,7 @@ int optimize_for_llvm(const workspace *const ws, universal_io *const io, syntax 
 	info.io = io;
 	info.sx = sx;
 	info.string_num = 1;
+	info.init_num = 1;
 	info.was_printf = 0;
 	info.slice_depth = 0;
 	info.slice_stack_size = 0;
