@@ -15,7 +15,6 @@
  */
 
 #include "parser.h"
-#include <string.h>
 #include "codes.h"
 #include "tree.h"
 

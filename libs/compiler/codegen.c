@@ -347,7 +347,7 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 		{
 			case OP_FREAD:
 			{
-				error(NULL, wrong_func_for_vm);
+				system_error(node_unexpected, operation);
 				vm->was_error = true;
 			}
 			break;
