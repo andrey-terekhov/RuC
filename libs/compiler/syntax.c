@@ -59,6 +59,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
 	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
 	repr_add_keyword(reprtab, U"file", U"файл", TK_FILE);
+	repr_add_keyword(reprtab, U"typedef", U"типопр", TK_TYPEDEF);
 	repr_add_keyword(reprtab, U"if", U"если", TK_IF);
 	repr_add_keyword(reprtab, U"else", U"иначе", TK_ELSE);
 	repr_add_keyword(reprtab, U"do", U"цикл", TK_DO);
