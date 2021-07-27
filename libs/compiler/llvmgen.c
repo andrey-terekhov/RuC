@@ -1927,11 +1927,30 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd)
+static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_ARRAY_INIT:
+		// TODO: пока реализовано только для одномерных массивов
+		case OP_ARRAY_INIT: 
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N);
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			// to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				info->variable_location = LFREE;
+				expression(info, nd);
+			}
+
+			node_set_next(nd); // TExprend
+		}
+		break;
 		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
@@ -1967,41 +1986,47 @@ static void block(information *const info, node *const nd)
 				const item_t displ = node_get_arg(&id, 0);
 				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
+				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
-				for (size_t i = 1; i <= N; i++)
+				const bool is_borders = node_get_type(nd) != OP_DECL_ID;
+				for (size_t i = 1; i <= N && is_borders; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
 
-					if (info->answer_type == ACONST)
+					if (!all)
 					{
-						if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+						if (info->answer_type == ACONST)
 						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
+							if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+							{
+								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+							}
 
-						hash_set_by_index(&info->arrays, index, i, info->answer_const);
-					}
-					else // if (info->answer_type == AREG) динамический массив
-					{
-						if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+							hash_set_by_index(&info->arrays, index, i, info->answer_const);
+						}
+						else // if (info->answer_type == AREG) динамический массив
 						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
+							if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+							{
+								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+							}
 
-						hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+							hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+							hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+						}
 					}
 				}
+				// node_set_next(nd);	// OP_DECL_ID
 
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 				{
 					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 				}
-				else
+				else if (!all)
 				{
 					if (!info->was_dynamic)
 					{
@@ -2009,6 +2034,11 @@ static void block(information *const info, node *const nd)
 					}
 					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 					info->was_dynamic = 1;
+				}
+
+				if (all)
+				{
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -2032,7 +2062,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				if (all)
 				{
-					init(info, nd);
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
