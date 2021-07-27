@@ -36,7 +36,7 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-node_vector node_vector_create(void);
+EXPORTED node_vector node_vector_create(void);
 
 /**
  *	Add new node
@@ -46,7 +46,7 @@ node_vector node_vector_create(void);
  *
  *	@return	Index, @c SIZE_MAX on failure
  */
-size_t node_vector_add(node_vector *const vec, const node *const nd);
+EXPORTED size_t node_vector_add(node_vector *const vec, const node *const nd);
 
 /**
  *	Get node
@@ -56,7 +56,7 @@ size_t node_vector_add(node_vector *const vec, const node *const nd);
  *
  *	@return	Expression
  */
-node node_vector_get(const node_vector *const vec, const size_t index);
+EXPORTED node node_vector_get(const node_vector *const vec, const size_t index);
 
 /**
  *	Get node vector size
@@ -65,7 +65,7 @@ node node_vector_get(const node_vector *const vec, const size_t index);
  *
  *	@return	Size of node vector, @c SIZE_MAX on failure
  */
-size_t node_vector_size(const node_vector *const vec);
+EXPORTED size_t node_vector_size(const node_vector *const vec);
 
 /**
  *	Free allocated memory
@@ -74,7 +74,7 @@ size_t node_vector_size(const node_vector *const vec);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int node_vector_clear(node_vector *const vec);
+EXPORTED int node_vector_clear(node_vector *const vec);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -56,7 +56,6 @@ typedef struct location
 	size_t end;
 } location;
 
-
 /** Global vars definition */
 typedef struct syntax
 {

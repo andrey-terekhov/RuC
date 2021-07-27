@@ -18,17 +18,17 @@
 
 
 
-item_t expression_get_type(const node *const nd_expr)
+inline item_t expression_get_type(const node *const nd)
 {
-   return node_get_arg(nd_expr, 0);
+   return node_get_arg(nd, 0);
 }
 
-bool expression_is_lvalue(const node *const nd_expr)
+inline bool expression_is_lvalue(const node *const nd)
 {
-   return node_get_arg(nd_expr, 1) == LVALUE;
+   return node_get_arg(nd, 1) == LVALUE;
 }
 
-location expression_get_location(const node *const nd_expr)
+inline location expression_get_location(const node *const nd)
 {
-   return (location){ (size_t)node_get_arg(nd_expr, 2), (size_t)node_get_arg(nd_expr, 3) };
+   return (location){ (size_t)node_get_arg(nd, 2), (size_t)node_get_arg(nd, 3) };
 }

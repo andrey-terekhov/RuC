@@ -163,8 +163,8 @@ static void parse_default_statement(parser *const prs, node *const parent)
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
-	node expr = parse_expression(prs);
-	if (!node_is_correct(&expr))
+	node nd_expr = parse_expression(prs);
+	if (!node_is_correct(&nd_expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
@@ -480,15 +480,11 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		node_add_arg(&nd, (item_t)type_size(prs->sx, return_type));
 
 		node_copy(&prs->sx->nd, &nd);
-		const node expr = parse_assignment_expression(prs);
-		const item_t expr_type = expression_get_type(&expr);
+		const node nd_expr = parse_assignment_expression(prs);
+		const item_t expr_type = expression_get_type(&nd_expr);
 		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
-			if (type_is_floating(return_type) && type_is_integer(expr_type))
-			{
-				;
-			}
-			else if (return_type != expr_type)
+			if (return_type != expr_type && (!type_is_floating(return_type) || !type_is_integer(expr_type)))
 			{
 				parser_error(prs, bad_type_in_ret);
 			}
