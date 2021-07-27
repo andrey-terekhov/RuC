@@ -237,33 +237,6 @@ binary_t token_to_binary(const token_t token);
 instruction_t builtin_to_instruction(const builtin_t func);
 
 /**
- *	Convert to corresponding address version of operation
- *
- *	@param	operation	Operation
- *
- *	@return	Address version of operation
- */
-operation_t operation_to_address_ver(const operation_t operation);
-
-/**
- *	Convert to corresponding void version of operation
- *
- *	@param	operation	Operation
- *
- *	@return	Void version of operation
- */
-operation_t operation_to_void_ver(const operation_t operation);
-
-/**
- *	Convert to corresponding float version of operation
- *
- *	@param	operation	Operation
- *
- *	@return	Float version of operation
- */
-operation_t operation_to_float_ver(const operation_t operation);
-
-/**
  *	Check if operator is assignment
  *
  *	@param	operator	Operator
