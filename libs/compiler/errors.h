@@ -177,7 +177,6 @@ typedef enum ERROR
 
 	not_float_in_stanfunc,
 	not_array_in_stanfunc,
-	wrong_func_for_vm,
 
 	// Tree parsing errors
 	tree_expression_not_block,
