@@ -15,7 +15,6 @@
  */
 
 #include "item.h"
-#include <stddef.h>
 #include <string.h>
 
 
@@ -153,6 +152,21 @@ item_t item_get_max(const item_status status)
 			return 0;
 	}
 }
+
+
+size_t item_store_double(const double value, item_t *const stg);
+
+size_t item_store_double_for_target(const item_status status, const double value, item_t *const stg);
+
+double item_restore_double(const item_t *const stg);
+
+
+size_t item_store_int64(const int64_t value, item_t *const stg);
+
+size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg);
+
+int64_t item_restore_int64(const item_t *const stg);
+
 
 bool item_check_var(const item_status status, const item_t var)
 {
