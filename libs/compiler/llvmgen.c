@@ -659,7 +659,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	info->register_num++;
 }
 
-static void to_code_init_array(information *const info, const size_t index, const item_t type, const int is_string)
+static void to_code_init_array(information *const info, const size_t index, const item_t type)
 {
 	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
 	info->register_num++;
@@ -677,57 +677,24 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	}
 	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
 
-	// TODO: со строками и char работает неправильно, надо исправить
-	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* ", info->register_num - 1);
-	if (!is_string)
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
+	for (size_t i = 1; i <= dim; i++)
 	{
-		uni_printf(info->io, "bitcast (");
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-		}
-		type_to_io(info, type);
-
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "]");
-		}
-		uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*)", info->init_num);
-
-		uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
-		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
-	else
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
 	{
-		uni_printf(info->io, "getelementptr inbounds (");
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-		}
-		uni_printf(info->io, "i8");
-
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "]");
-		}
-
-		uni_printf(info->io, ", ");
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-		}
-		uni_printf(info->io, "i8");
-
-		for (size_t i = 1; i <= dim; i++)
-		{
-			uni_printf(info->io, "]");
-		}
-		uni_printf(info->io, "* @.str%" PRIitem ", i32 0, i32 0)", info->string_num);
-
-		uni_printf(info->io, ", i32 %" PRIitem ", i32 1, i1 false)\n", hash_get_by_index(&info->arrays, index, 1));
+		uni_printf(info->io, "]");
 	}
+	
+	uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, info->init_num
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
+		, mode_is_float(type) ? 8 : 4);
 
-	is_string ? info->string_num++ : info->init_num++;
+	info->init_num++;
 	info->was_memcpy = 1;
 }
 
@@ -2013,7 +1980,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			const size_t index = hash_get_index(&info->arrays, displ);
 			hash_set_by_index(&info->arrays, index, 1, N);
 			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
