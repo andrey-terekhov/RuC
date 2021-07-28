@@ -19,6 +19,11 @@
 #include <string.h>
 
 
+#ifndef abs
+	#define abs(a) ((a) < 0 ? -(a) : (a))
+#endif
+
+
 static const item_status DEFAULT_STATUS = item_int32;
 
 
@@ -240,7 +245,39 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 	return size;
 }
 
-int64_t item_restore_int64(const item_t *const stg);
+int64_t item_restore_int64(const item_t *const stg)
+{
+	if (stg == NULL)
+	{
+		return LLONG_MAX;
+	}
+
+#if abs(ITEM) > 32
+	return stg[0];
+#elif abs(ITEM) > 16
+	const size_t size = 2;
+	const size_t shift = 32;
+	const int64_t mask = 0x00000000FFFFFFFF;
+#elif abs(ITEM) > 8
+	const size_t size = 4;
+	const size_t shift = 16;
+	const int64_t mask = 0x000000000000FFFF;
+#elif
+	const size_t size = 8;
+	const size_t shift = 8;
+	const int64_t mask = 0x00000000000000FF;
+#endif
+
+#if abs(ITEM) <= 32
+	int64_t value = 0;
+	for (size_t i = 0; i < size; i++)
+	{
+		value |= ((int64_t)stg[i] & mask) << (shift * i);
+	}
+
+	return value;
+#endif
+}
 
 
 bool item_check_var(const item_status status, const item_t var)
