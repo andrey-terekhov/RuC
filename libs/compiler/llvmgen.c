@@ -1937,7 +1937,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			const item_t N = node_get_arg(nd, 0);
 
 			const size_t index = hash_get_index(&info->arrays, displ);
-			// printf("%i\n", index);
+			printf("%i\n", index);
 			hash_set_by_index(&info->arrays, index, 1, N);
 			// to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 			// to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
@@ -1989,7 +1989,7 @@ static void block(information *const info, node *const nd)
 				const size_t N = (size_t)node_get_arg(&id, 2);
 				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				// printf("%i\n", index);
+				printf("%i\n", index);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);

@@ -279,7 +279,6 @@ static item_t parse_braced_init_list(parser *const prs, const item_t type)
 	} while (token_try_consume(prs, TK_COMMA));
 
 	node_set_arg(&nd_init_list, 0, length);
-	to_tree(prs, OP_EXPR_END);
 	if (!token_try_consume(prs, TK_R_BRACE))
 	{
 		parser_error(prs, no_comma_or_end);
@@ -845,6 +844,7 @@ static void parse_function_call(parser *const prs, const size_t function_id)
 			else if (mode_is_array(prs->sx, expected_arg_mode) && prs->token == TK_L_BRACE)
 			{
 				parse_braced_init_list(prs, mode_get(prs->sx, (size_t)expected_arg_mode + 1));
+				to_tree(prs, OP_EXPR_END);
 			}
 			else
 			{
@@ -1437,7 +1437,7 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const item_t type = prs->left_mode;
 		if (mode_is_struct(prs->sx, type) || mode_is_array(prs->sx, type))
 		{
-			parse_initializer(prs, &prs->nd, type);
+			parse_braced_initializer(prs, &prs->nd, type);
 			prs->left_mode = type;
 		}
 		else
