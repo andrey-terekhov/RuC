@@ -345,6 +345,12 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 
 		switch (operation)
 		{
+			case OP_FREAD:
+			{
+				system_error(node_unexpected, operation);
+				vm->was_error = true;
+			}
+			break;
 			case OP_IDENT:
 				break;
 			case OP_IDENT_TO_ADDR:
