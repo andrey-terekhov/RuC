@@ -15,6 +15,7 @@
  */
 
 #include "item.h"
+#include <math.h>
 #include <string.h>
 
 
@@ -203,7 +204,41 @@ size_t item_store_int64(const int64_t value, item_t *const stg)
 #endif
 }
 
-size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg);
+size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg)
+{
+	if (stg == NULL || status <= item_error || status >= item_types)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t size = status == item_int64 || status == item_uint64
+					? 1
+					: status == item_int32 || status == item_uint32
+						? 2
+						: status == item_int16 || status == item_uint16
+							? 4
+							: 8;
+
+	if (abs(ITEM) < 8 * size)
+	{
+		size = ceil((double)abs(ITEM) / 8);
+	}
+
+	const size_t shift = 64 / size;
+	int64_t mask = 0x00000000000000FF;
+	for (size_t i = 16; i < shift; i *= 2)
+	{
+		mask = (mask << i) | mask;
+	}
+
+	for (size_t i = 0; i < size; i++)
+	{
+		stg[i] = (item_t)((value & mask) >> (shift * i));
+		mask <<= shift;
+	}
+
+	return size;
+}
 
 int64_t item_restore_int64(const item_t *const stg);
 
