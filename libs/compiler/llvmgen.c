@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "codes.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
@@ -52,6 +53,7 @@ typedef struct information
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
+	item_t init_num;					/**< Счётчик для инициализации */
 
 	item_t request_reg;					/**< Регистр на запрос */
 	location_t variable_location;		/**< Расположение переменной */
@@ -72,6 +74,7 @@ typedef struct information
 												@c value[0]	 - флаг статичности
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
 
 
@@ -221,7 +224,12 @@ static bool is_array_operation(const item_t operation)
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (mode_is_int(type))
+	// временное решение без русских символов
+	if (type == mode_character)
+	{
+		uni_printf(info->io, "i8");
+	}
+	else if (mode_is_int(type))
 	{
 		uni_printf(info->io, "i32");
 	}
@@ -237,8 +245,9 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (mode_is_pointer(info->sx, type))
+	else if (mode_is_pointer(info->sx, type) || mode_is_array(info->sx, type))
 	{
+		// TODO: пока сделано для одномерного указателя
 		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
 		uni_printf(info->io, "*");
 	}
@@ -476,7 +485,6 @@ static void to_code_operation_const_reg_double(information *const info, const it
 	operation_to_io(info->io, operation);
 	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
-
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -486,7 +494,6 @@ static void to_code_load(information *const info, const item_t result, const ite
 	type_to_io(info, type);
 	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
-
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -655,6 +662,97 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 
 	info->register_num++;
+}
+
+static void to_code_init_array(information *const info, const size_t index, const item_t type, const int is_string)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
+	info->register_num++;
+
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
+
+	// TODO: со строками и char работает неправильно, надо исправить
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* ", info->register_num - 1);
+	if (!is_string)
+	{
+		uni_printf(info->io, "bitcast (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		type_to_io(info, type);
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*)", info->init_num);
+
+		uni_printf(info->io, ", i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1), mode_is_float(type) ? 8 : 4);
+	}
+	else
+	{
+		uni_printf(info->io, "getelementptr inbounds (");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+
+		uni_printf(info->io, ", ");
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		}
+		uni_printf(info->io, "i8");
+
+		for (size_t i = 1; i <= dim; i++)
+		{
+			uni_printf(info->io, "]");
+		}
+		uni_printf(info->io, "* @.str%" PRIitem ", i32 0, i32 0)", info->string_num);
+
+		uni_printf(info->io, ", i32 %" PRIitem ", i32 1, i1 false)\n", hash_get_by_index(&info->arrays, index, 1));
+	}
+
+	is_string ? info->string_num++ : info->init_num++;
+	info->was_memcpy = 1;
+}
+
+static void to_code_widen(information *const info, const item_t operation_type)
+{
+	if (info->answer_type == ACONST)
+	{
+		info->answer_const_double = (double)info->answer_const;
+	}
+	else
+	{
+		uni_printf(info->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_value_type);
+		uni_printf(info->io, " %%.%" PRIitem " to ", info->answer_reg);
+		type_to_io(info, operation_type);
+		uni_printf(info->io, "\n");
+
+		info->answer_value_type = operation_type;
+		info->answer_reg = info->register_num++;
+	}
 }
 
 
@@ -848,10 +946,9 @@ static void operand(information *const info, node *const nd)
 		case OP_CALL1:
 		{
 			const item_t args = node_get_arg(nd, 0);
-			item_t arguments[128];
-			double arguments_double[128];
-			answer_t arguments_type[128];
-			item_t arguments_value_type[128];
+			item_t parameters[128];
+			answer_t parameters_type[128];
+			item_t parameters_value_type[128];
 
 			node_set_next(nd);
 			node_set_next(nd); // OP_IDENT
@@ -860,19 +957,15 @@ static void operand(information *const info, node *const nd)
 				info->variable_location = LFREE;
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
-				arguments_type[i] = info->answer_type;
-				arguments_value_type[i] = info->answer_value_type;
+				parameters_type[i] = info->answer_type;
+				parameters_value_type[i] = info->answer_value_type;
 				if (info->answer_type == AREG)
 				{
-					arguments[i] = info->answer_reg;
+					parameters[i] = info->answer_reg;
 				}
-				else if (mode_is_int(info->answer_value_type)) // ACONST
+				else // ACONST
 				{
-					arguments[i] = info->answer_const;
-				}
-				else // double
-				{
-					arguments_double[i] = info->answer_const_double;
+					parameters[i] = info->answer_const;
 				}
 			}
 
@@ -899,20 +992,13 @@ static void operand(information *const info, node *const nd)
 					uni_printf(info->io, ", ");
 				}
 
-				type_to_io(info, arguments_value_type[i]);
+				type_to_io(info, parameters_value_type[i]);
 				uni_printf(info->io, " signext ");
-				if (arguments_type[i] == AREG)
+				if (parameters_type[i] == AREG)
 				{
-					uni_printf(info->io, "%%.%" PRIitem, arguments[i]);
+					uni_printf(info->io, "%%.");
 				}
-				else if (mode_is_int(arguments_value_type[i])) // ACONST
-				{
-					uni_printf(info->io, "%" PRIitem, arguments[i]);
-				}
-				else // double
-				{
-					uni_printf(info->io, "%f", arguments_double[i]);
-				}
+				uni_printf(info->io, "%" PRIitem, parameters[i]);
 			}
 			uni_printf(info->io, ")\n");
 		}
@@ -953,8 +1039,15 @@ static void assignment_expression(information *const info, node *const nd)
 	const item_t assignment_type = node_get_type(nd);
 	const item_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
 	const int is_array = is_array_operation(assignment_type);
+	int is_widen = 0;
 
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+
 	info->variable_location = LMEM;
 	operand(info, nd); // Tident or OP_SLICE_IDENT
 	const item_t memory_reg = info->answer_reg;
@@ -963,6 +1056,10 @@ static void assignment_expression(information *const info, node *const nd)
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen)
+	{
+		to_code_widen(info, operation_type);
+	}
 	item_t result = info->answer_reg;
 
 	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
@@ -991,7 +1088,6 @@ static void assignment_expression(information *const info, node *const nd)
 		result = info->register_num++;
 		info->answer_type = AREG;
 	}
-
 	if (info->answer_type == AREG || info->answer_type == AMEM)
 	{
 		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
@@ -1012,12 +1108,28 @@ static void integral_expression(information *const info, node *const nd, const a
 {
 	const item_t operation = node_get_type(nd);
 	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	int is_widen = 0, is_widen1 = 0;
+
 	node_set_next(nd);
+	if (node_get_type(nd) == OP_WIDEN)
+	{
+		is_widen = 1;
+		node_set_next(nd);
+	}
+	else if (node_get_type(nd) == OP_WIDEN1)
+	{
+		is_widen1 = 1;
+		node_set_next(nd);
+	}
 
 	info->variable_location = LFREE;
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen1)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t left_type = info->answer_type;
 	const item_t left_reg = info->answer_reg;
@@ -1028,6 +1140,10 @@ static void integral_expression(information *const info, node *const nd, const a
 	expression(info, nd);
 
 	to_code_try_zext_to(info);
+	if (is_widen)
+	{
+		to_code_widen(info, operation_type);
+	}
 
 	const answer_t right_type = info->answer_type;
 	const item_t right_reg = info->answer_reg;
@@ -1627,6 +1743,7 @@ static void expression(information *const info, node *const nd)
 
 	if (node_get_type(nd) == OP_EXPR_END)
 	{
+		printf("here 1\n");
 		node_set_next(nd);
 	}
 }
@@ -1813,7 +1930,6 @@ static void statement(information *const info, node *const nd)
 			node_set_next(nd);
 			to_code_unconditional_branch(info, label);
 			to_code_label(info, label);
-			statement(info, nd);
 		}
 		break;
 		case OP_BREAK:
@@ -1876,11 +1992,9 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		case OP_GETID:
-			// здесь будет печать llvm для ввода
-			node_set_next(nd);
-			break;
+		// они будут сделаны в парсере через printf
 		case OP_PRINTID:
-			// здесь будет печать llvm для вывода
+		case OP_PRINT:
 			node_set_next(nd);
 			break;
 		case OP_PRINTF:
@@ -1931,16 +2045,16 @@ static void init(information *const info, node *const nd, const item_t displ, co
 {
 	switch (node_get_type(nd))
 	{
+		// PULL REQUEST ARRAY INIT
 		// TODO: пока реализовано только для одномерных массивов
 		case OP_ARRAY_INIT: 
 		{
 			const item_t N = node_get_arg(nd, 0);
 
 			const size_t index = hash_get_index(&info->arrays, displ);
-			printf("%i\n", index);
 			hash_set_by_index(&info->arrays, index, 1, N);
-			// to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-			// to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float, 0);
 
 			node_set_next(nd);
 			for (item_t i = 0; i < N; i++)
@@ -1949,6 +2063,20 @@ static void init(information *const info, node *const nd, const item_t displ, co
 				expression(info, nd);
 			}
 
+			node_set_next(nd); // TExprend
+		}
+		break;
+		// массивы char могут инициализироваться строками
+		case OP_STRING:
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N + 1);
+			to_code_alloc_array_static(info, index, mode_character);
+			to_code_init_array(info, index, mode_character, 1);
+
+			node_set_next(nd);
 			node_set_next(nd); // TExprend
 		}
 		break;
@@ -1964,9 +2092,106 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		}
 		break;
 		default:
+		printf("here\n");
 			expression(info, nd);
 			break;
 	}
+}
+
+static void ident_declaration(information *const info, node *const nd)
+{
+	const item_t displ = node_get_arg(nd, 0);
+	const item_t elem_type = node_get_arg(nd, 1);
+	const item_t N = node_get_arg(nd, 2);
+	const item_t all = node_get_arg(nd, 3);
+
+	if (N == 0) // обычная переменная int a; или struct point p;
+	{
+		uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+		type_to_io(info, elem_type);
+		uni_printf(info->io, ", align 4\n");
+
+		info->variable_location = LMEM;
+		info->request_reg = displ;
+	}
+
+	node_set_next(nd);
+	if (all)
+	{
+		init(info, nd, displ, elem_type);
+	}
+}
+
+static void array_declaration(information *const info, node *const nd)
+{
+		node id = node_get_child(nd, node_get_amount(nd) - 1);
+		if (node_get_type(&id) != OP_DECL_ID)
+		{
+			id = node_get_child(nd, node_get_amount(nd) - 2);
+		}
+
+		const item_t displ = node_get_arg(&id, 0);
+		const item_t elem_type = node_get_arg(&id, 1);
+		const size_t N = (size_t)node_get_arg(&id, 2);
+		const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
+		const size_t index = hash_add(&info->arrays, displ, 1 + N);
+		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+
+		node_set_next(nd);
+		// получение и сохранение границ
+		// PULL REQUEST ARRAY INIT (all)
+		int is_borders = node_get_type(nd) == OP_DECL_ID ? 0 : 1;
+		for (size_t i = 1; i <= N && is_borders; i++)
+		{
+			info->variable_location = LFREE;
+			expression(info, nd);
+
+			if (!all)
+			{
+				if (info->answer_type == ACONST)
+				{
+					if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+					{
+						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+					}
+
+					hash_set_by_index(&info->arrays, index, i, info->answer_const);
+				}
+				else // if (info->answer_type == AREG) динамический массив
+				{
+					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+					{
+						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+					}
+
+					hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+					hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+				}
+			}
+		}
+		node_set_next(nd);	// OP_DECL_ID
+
+		// объявление массива без инициализации, с инициализацией объявление происходит в init
+		// объявление массива, если он статический
+		// PULL REQUEST ARRAY INIT (all)
+		if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
+		{
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+		}
+		else if (!all) // объявление массива, если он динамический
+		{
+			if (!info->was_dynamic)
+			{
+				to_code_stack_save(info);
+			}
+			to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			info->was_dynamic = 1;
+		}
+
+		if (all)
+		{
+			init(info, nd, displ, elem_type);
+		}
 }
 
 static void block(information *const info, node *const nd)
@@ -1977,100 +2202,11 @@ static void block(information *const info, node *const nd)
 		switch (node_get_type(nd))
 		{
 			case OP_DECL_ARR:
-			{
-				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != OP_DECL_ID)
-				{
-					id = node_get_child(nd, node_get_amount(nd) - 2);
-				}
-
-				const item_t displ = node_get_arg(&id, 0);
-				const item_t elem_type = node_get_arg(&id, 1);
-				const size_t N = (size_t)node_get_arg(&id, 2);
-				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
-				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				printf("%i\n", index);
-				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
-
-				node_set_next(nd);
-				// получение и сохранение границ
-				const bool is_borders = node_get_type(nd) != OP_DECL_ID;
-				for (size_t i = 1; i <= N && is_borders; i++)
-				{
-					info->variable_location = LFREE;
-					expression(info, nd);
-
-					if (!all)
-					{
-						if (info->answer_type == ACONST)
-						{
-							if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
-							{
-								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-							}
-
-							hash_set_by_index(&info->arrays, index, i, info->answer_const);
-						}
-						else // if (info->answer_type == AREG) динамический массив
-						{
-							if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
-							{
-								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-							}
-
-							hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-							hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
-						}
-					}
-				}
-				node_set_next(nd);	// OP_DECL_ID
-
-				// объявление массива без инициализации, с инициализацией объявление происходит в init
-				// объявление массива, если он статический
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
-				{
-					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-				}
-				else if (!all) // объявление массива, если он динамический
-				{
-					if (!info->was_dynamic)
-					{
-						to_code_stack_save(info);
-					}
-					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-					info->was_dynamic = 1;
-				}
-
-				if (all)
-				{
-					init(info, nd, displ, elem_type);
-				}
-			}
-			break;
+				array_declaration(info, nd);
+				break;
 			case OP_DECL_ID:
-			{
-				const item_t displ = node_get_arg(nd, 0);
-				const item_t elem_type = node_get_arg(nd, 1);
-				const item_t N = node_get_arg(nd, 2);
-				const item_t all = node_get_arg(nd, 3);
-
-				if (N == 0) // обычная переменная int a; или struct point p;
-				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
-					type_to_io(info, elem_type);
-					uni_printf(info->io, ", align 4\n");
-
-					info->variable_location = LMEM;
-					info->request_reg = displ;
-				}
-
-				node_set_next(nd);
-				if (all)
-				{
-					init(info, nd, displ, elem_type);
-				}
-			}
-			break;
+				ident_declaration(info, nd);
+				break;
 			case OP_NOP:
 			case OP_DECL_STRUCT:
 			case OP_DECL_STRUCT_END:
@@ -2109,6 +2245,7 @@ static int codegen(information *const info)
 					type_to_io(info, func_type);
 					uni_printf(info->io, " @func%zi(", ref_ident);
 				}
+
 				for (size_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->io, i == 0 ? "" : ", ");
@@ -2118,7 +2255,8 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
+					uni_printf(info->io, " %%%s.%" PRIitem " = alloca "
+						, mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))) ? "arr" : "var"
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 					uni_printf(info->io, ", align 4\n");
@@ -2127,8 +2265,19 @@ static int codegen(information *const info)
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
 					uni_printf(info->io, " %%%" PRIitem ", ", i);
 					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n"
+					uni_printf(info->io, "* %%%s.%" PRIitem ", align 4\n"
+						, mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))) ? "arr" : "var"
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+
+					// занесение параметра-массива в хэш-таблицу
+					// TODO: сделать для многомерных массивов
+					if (mode_is_array(info->sx, ident_get_mode(info->sx, ref_ident + 4 * (i + 1))))
+					{
+						hash_add(&info->arrays, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)), 1 + 1);
+						uni_printf(info->io, " %%dynarr.%" PRIitem " = load i32*, i32** %%arr.%" PRIitem ", align 4\n"
+							, ident_get_displ(info->sx, ref_ident + 4 * (i + 1))
+							, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					}
 				}
 
 				node_set_next(&root);
@@ -2138,6 +2287,14 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
+			case OP_DECL_ARR: // глобальные массивы
+				array_declaration(info, &root);
+				break;
+			case OP_DECL_ID: // глобальные переменные
+				printf("here 2\n");
+				ident_declaration(info, &root);
+				printf("%i\n", node_get_type(&root));
+				break;
 			case OP_BLOCK_END:
 				break;
 			default:
@@ -2150,6 +2307,10 @@ static int codegen(information *const info)
 	{
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
+	}
+	if (info->was_memcpy)
+	{
+		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 	}
 
 	return 0;
@@ -2189,10 +2350,12 @@ static void structs_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
 {
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 	if (optimize_for_llvm(ws, io, sx))
 	{
 		return -1;
 	}
+	tables_and_tree("tree1.txt", &(sx->identifiers), &(sx->modes), &(sx->tree));
 
 	information info;
 	info.io = io;
@@ -2200,9 +2363,11 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.init_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.was_memcpy = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
