@@ -17,9 +17,6 @@
 #include "node_vector.h"
 
 
-static const size_t NODE_VECTOR_SIZE = 12;
-
-
 node_vector node_vector_create()
 {
 	return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };

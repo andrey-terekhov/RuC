@@ -23,6 +23,10 @@
 extern "C" {
 #endif
 
+
+static const size_t NODE_VECTOR_SIZE = 12;
+
+
 /** Node vector structure */
 typedef struct node_vector
 {
@@ -36,7 +40,7 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-EXPORTED node_vector node_vector_create(void);
+EXPORTED node_vector node_vector_create();
 
 /**
  *	Add new node

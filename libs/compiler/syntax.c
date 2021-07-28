@@ -735,3 +735,7 @@ item_t scope_func_exit(syntax *const sx, const item_t displ)
 
 	return sx->max_displ;
 }
+
+extern item_t expression_get_type(const node *const nd);
+extern bool expression_is_lvalue(const node *const nd);
+extern location expression_get_location(const node *const nd);

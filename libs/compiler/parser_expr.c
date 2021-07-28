@@ -305,7 +305,7 @@ static node parse_postfix_expression(parser *const prs)
 					const size_t name = prs->lxr.repr;
 					const location id_loc = token_consume(prs);
 
-					nd_operand = build_member_expression(prs->sx, &nd_operand, is_arrow, name, op_loc, id_loc);
+					nd_operand = build_member_expression(prs->sx, &nd_operand, name, is_arrow, op_loc, id_loc);
 				}
 				else
 				{

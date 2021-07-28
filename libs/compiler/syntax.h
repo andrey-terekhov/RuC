@@ -49,6 +49,13 @@ enum TYPE
 	TYPE_POINTER,
 };
 
+/** Value category */
+typedef enum VALUE
+{
+	LVALUE,		/**< An expression that designates an object */
+	RVALUE,		/**< An expression detached from any specific storage */
+} category_t;
+
 
 typedef struct location
 {
@@ -523,6 +530,47 @@ item_t scope_func_enter(syntax *const sx);
  *	@return	Max displacement of the function, @c ITEM_MAX on failure
  */
 item_t scope_func_exit(syntax *const sx, const item_t displ);
+
+#include "operations.h"
+
+/**
+ *	Get expression type
+ *
+ *	@param	nd	Expression
+ *
+ *	@return	Expression type
+ */
+inline item_t expression_get_type(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return node_get_arg(nd, argc - 4);
+}
+
+/**
+ *	Check if expression is lvalue
+ *
+ *	@param	nd	Expression for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+inline bool expression_is_lvalue(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return node_get_arg(nd, argc - 3) == LVALUE;
+}
+
+/**
+ *	Get expression location
+ *
+ *	@param	nd	Expression
+ *
+ *	@return	Expression location
+ */
+inline location expression_get_location(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

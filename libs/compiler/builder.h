@@ -18,7 +18,6 @@
 
 #include <stdbool.h>
 #include "errors.h"
-#include "expression.h"
 #include "node_vector.h"
 #include "operations.h"
 #include "syntax.h"
@@ -33,7 +32,7 @@ extern "C" {
  *	Build an identifier expression
  *
  *	@param	sx				Syntax structure
- *	@param	name			Identifier name
+ *	@param	name			Index of record in representations table
  *	@param	loc				Source location
  *
  *	@return	Identifier expression node
@@ -77,28 +76,28 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
  *	Build a subscript expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_base			First operand of subscripting expression
- *	@param	nd_index		Second operand of subscripting expression
+ *	@param	nd_fst			First operand of subscripting expression
+ *	@param	nd_snd			Second operand of subscripting expression
  *	@param	l_loc			Left square bracket location
  *	@param	r_loc			Right square bracket location
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, const node *const nd_base, const node *const nd_index
+node build_subscript_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd
 	, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_callee			Callee expression
+ *	@param	nd_fn			Called function
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_callee, const node_vector *args
+node build_call_expression(syntax *const sx, const node *const nd_fn, const node_vector *args
 	, const location l_loc, const location r_loc);
 
 /**
@@ -106,14 +105,14 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, const 
  *
  *	@param	sx				Syntax structure
  *	@param	nd_base			First operand of member expression
- *	@param	is_arrow		Set if operator is arrow
  *	@param	name			Second operand of member expression
+ *	@param	is_arrow		Set if operator is '->'
  *	@param	op_loc			Operator source location
  *	@param	id_loc			Identifier source location
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const nd_base, const bool is_arrow, const size_t name
+node build_member_expression(syntax *const sx, const node *const nd_base, const size_t name, const bool is_arrow
 	, const location op_loc, const location id_loc);
 
 /**
@@ -187,7 +186,7 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
  *
  *	@return	Broken expression node
  */
-node build_broken_expression(void);
+node build_broken_expression();
 
 #ifdef __cplusplus
 } /* extern "C" */

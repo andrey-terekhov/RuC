@@ -163,7 +163,7 @@ static void parse_default_statement(parser *const prs, node *const parent)
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
-	node nd_expr = parse_expression(prs);
+	const node nd_expr = parse_expression(prs);
 	if (!node_is_correct(&nd_expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
