@@ -357,31 +357,6 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
  */
 
 
-size_t utf8_size(const char32_t symbol)
-{
-	if ((symbol & 0xFFFFFF80) == 0)
-	{
-		return 1;
-	}
-
-	if ((symbol & 0xFFFFF800) == 0)
-	{
-		return 2;
-	}
-
-	if ((symbol & 0xFFFF0000) == 0)
-	{
-		return 3;
-	}
-
-	if ((symbol & 0xFFE00000) == 0)
-	{
-		return 4;
-	}
-
-	return 0;
-}
-
 size_t utf8_symbol_size(const char symbol)
 {
 	if ((symbol & 0b10000000) == 0b00000000)

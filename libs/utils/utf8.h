@@ -34,15 +34,6 @@ extern "C" {
 #endif
 
 /**
- *	Number of UTF-8 character bytes
- *
- *	@param	symbol	UTF-8 сharacter
- *
- *	@return	Number of bytes
- */
-EXPORTED size_t utf8_size(const char32_t symbol);
-
-/**
  *	Number of UTF-8 character octets
  *
  *	@param	symbol	Character

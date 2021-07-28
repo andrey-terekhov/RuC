@@ -381,7 +381,6 @@ static void expression(virtual *const vm, node *const nd, int mode)
 			}
 
 			final_operation(vm, nd);
-			node_set_next(nd); // TExprend
 		}
 	}
 }

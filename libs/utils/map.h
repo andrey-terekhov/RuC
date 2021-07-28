@@ -224,15 +224,6 @@ EXPORTED item_t map_get_by_index(const map *const as, const size_t index);
 EXPORTED const char *map_to_string(const map *const as, const size_t index);
 
 /**
- *	Return the last read key
- *
- *	@param	as				Map structure
- *
- *	@return	Key, @c NULL on failure
- */
-EXPORTED const char *map_last_read(const map *const as);
-
-/**
  *	Check that map is correct
  *
  *	@param	as				Map structure

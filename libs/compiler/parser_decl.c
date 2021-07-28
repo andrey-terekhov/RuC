@@ -20,7 +20,6 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
-static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -369,6 +368,7 @@ static void parse_struct_initializer(parser *const prs, node *const parent, cons
 	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
+	node_add_child(&nd_struct_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
 	node_copy(&prs->nd, &nd_struct_init);
@@ -395,7 +395,6 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 		}
 		parse_string_literal(prs, parent);
 		to_tree(prs, OP_EXPR_END);
-		node_copy(&prs->nd, parent);
 		return;
 	}
 
@@ -403,9 +402,6 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 	{
 		parser_error(prs, arr_init_must_start_from_BEGIN);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
-
-		// Это для продолжения парсинга
-		node_copy(&prs->nd, parent);
 		return;
 	}
 
@@ -432,6 +428,7 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
 
 	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
 	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
+	node_add_child(&nd_arr_init, OP_EXPR_END);
 
 	// Это для продолжения выражений, если инициализатор был вызван не для объявления
 	node_copy(&prs->nd, &nd_arr_init);
@@ -498,7 +495,6 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 
 			prs->flag_strings_only = 2;
 			parse_array_initializer(prs, &nd_decl_arr, type);
-			node_add_child(&prs->nd, OP_EXPR_END);
 			if (prs->flag_strings_only == 1)
 			{
 				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
@@ -916,17 +912,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			}
 		}
 	}
-	else
-	{
-		parse_braced_initializer(prs, parent, type);
-		// Инициализатор вызывается только для деклараций и аргументов, всегда нужен expr_end
-		node_add_child(&prs->nd, OP_EXPR_END);
-	}
-}
-
-void parse_braced_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (mode_is_struct(prs->sx, type))
+	else if (mode_is_struct(prs->sx, type))
 	{
 		parse_struct_initializer(prs, parent, type);
 	}
@@ -936,7 +922,6 @@ void parse_braced_initializer(parser *const prs, node *const parent, const item_
 	}
 	else
 	{
-		node_copy(&prs->nd, parent);
 		parser_error(prs, wrong_init);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}
