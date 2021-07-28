@@ -32,7 +32,42 @@ static inline size_t get_hash(const item_t key)
 	return (size_t)key % MAX_HASH;
 }
 
-static size_t get_index(const hash *const hs, const item_t key)
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+hash hash_create(const size_t alloc)
+{
+	hash hs = vector_create(MAX_HASH + alloc * (3 + VALUE_SIZE));
+	vector_resize(&hs, MAX_HASH);	// All set by zero
+	return hs;
+}
+
+
+size_t hash_add(hash *const hs, const item_t key, const size_t amount)
+{
+	const size_t index = hash_get_index(hs, key);
+	if (vector_get(hs, index) != 0)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t size = vector_size(hs);
+	vector_set(hs, index, size);
+	vector_resize(hs, size + 3 + amount);	// New elements set by zero
+
+	vector_set(hs, size + 1, key);
+	vector_set(hs, size + 2, amount);
+	return size;
+}
+
+size_t hash_get_index(const hash *const hs, const item_t key)
 {
 	if (!hash_is_correct(hs))
 	{
@@ -60,55 +95,9 @@ static size_t get_index(const hash *const hs, const item_t key)
 	return next != ITEM_MAX ? index : SIZE_MAX;
 }
 
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
-
-
-hash hash_create(const size_t alloc)
-{
-	hash hs = vector_create(MAX_HASH + alloc * (3 + VALUE_SIZE));
-	vector_resize(&hs, MAX_HASH);	// All set by zero
-	return hs;
-}
-
-
-size_t hash_add(hash *const hs, const item_t key, const size_t amount)
-{
-	const size_t index = get_index(hs, key);
-	if (vector_get(hs, index) != 0)
-	{
-		return SIZE_MAX;
-	}
-
-	const size_t size = vector_size(hs);
-	vector_set(hs, index, size);
-	vector_resize(hs, size + 3 + amount);	// New elements set by zero
-
-	vector_set(hs, size + 1, key);
-	vector_set(hs, size + 2, amount);
-	return size;
-}
-
-size_t hash_get_index(const hash *const hs, const item_t key)
-{
-	const item_t index = vector_get(hs, get_index(hs, key));
-	if (index == 0 || index == ITEM_MAX)
-	{
-		return SIZE_MAX;
-	}
-
-	return (size_t)index;
-}
-
 size_t hash_get_amount(const hash *const hs, const item_t key)
 {
-	const item_t index = vector_get(hs, get_index(hs, key));
+	const item_t index = vector_get(hs, hash_get_index(hs, key));
 	if (index == 0 || index == ITEM_MAX)
 	{
 		return SIZE_MAX;
@@ -119,7 +108,7 @@ size_t hash_get_amount(const hash *const hs, const item_t key)
 
 item_t hash_get(const hash *const hs, const item_t key, const size_t num)
 {
-	const item_t index = vector_get(hs, get_index(hs, key));
+	const item_t index = vector_get(hs, hash_get_index(hs, key));
 	if (index == 0 || index == ITEM_MAX)
 	{
 		return ITEM_MAX;
@@ -130,7 +119,7 @@ item_t hash_get(const hash *const hs, const item_t key, const size_t num)
 
 size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
 {
-	const item_t index = vector_get(hs, get_index(hs, key));
+	const item_t index = vector_get(hs, hash_get_index(hs, key));
 	if (index == 0 || index == ITEM_MAX)
 	{
 		return SIZE_MAX;
