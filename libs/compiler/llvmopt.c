@@ -18,6 +18,7 @@
 #include <string.h>
 #include "errors.h"
 #include "operations.h"
+#include "parser.h"
 #include "stack.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -293,7 +294,7 @@ static int node_recursive(information *const info, node *const nd)
 		info->init_num++;
 		// TODO: а для многомерных как?
 		uni_printf(info->io, "[%" PRIitem " x %s] [", node_get_arg(nd, 0)
-			, info->arr_init_type == mode_integer ? "i32" : "double");
+			, mode_is_int(info->arr_init_type) ? "i32" : "double");
 	}
 
 	for (size_t i = 0; i < node_get_amount(nd); i++)

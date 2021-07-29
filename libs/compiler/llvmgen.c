@@ -2027,19 +2027,19 @@ static void block(information *const info, node *const nd)
 				const item_t displ = node_get_arg(&id, 0);
 				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
-				const item_t all = node_get_arg(&id, 3);	// 0 если нет инициализации
+				const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
 				// получение и сохранение границ
-				const bool is_borders = node_get_type(nd) != OP_DECL_ID;
-				for (size_t i = 1; i <= N && is_borders; i++)
+				const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
+				for (size_t i = 1; i <= N && has_bounds; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
 
-					if (!all)
+					if (!has_initializer)
 					{
 						if (info->answer_type == ACONST)
 						{
@@ -2066,11 +2066,11 @@ static void block(information *const info, node *const nd)
 
 				// объявление массива без инициализации, с инициализацией объявление происходит в init
 				// объявление массива, если он статический
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_initializer)
 				{
 					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 				}
-				else if (!all) // объявление массива, если он динамический
+				else if (!has_initializer) // объявление массива, если он динамический
 				{
 					if (!info->was_dynamic)
 					{
@@ -2080,7 +2080,7 @@ static void block(information *const info, node *const nd)
 					info->was_dynamic = 1;
 				}
 
-				if (all)
+				if (has_initializer)
 				{
 					init(info, nd, displ, elem_type);
 				}
