@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include "dll.h"
 #include "item.h"
 
