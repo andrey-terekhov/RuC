@@ -40,7 +40,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 	switch (elem)
 	{
 		case OP_IDENTIFIER:
-			argc = 5;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -54,18 +54,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
-				case 5:
 					sprintf(buffer, "id");
 					break;
 			}
 			break;
 		case OP_CONSTANT:
-			argc = 5;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -79,18 +73,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
-				case 5:
 					sprintf(buffer, "value");
 					break;
 			}
 			break;
 		case OP_STRING:
-			argc = 4;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -103,16 +91,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 				case 2:
 					sprintf(buffer, "designation");
 					break;
-				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
 			}
 			break;
 		case OP_CALL:
-			argc = 4;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -125,16 +107,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 				case 2:
 					sprintf(buffer, "designation");
 					break;
-				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
 			}
 			break;
 		case OP_SELECT:
-			argc = 5;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -148,18 +124,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
-				case 5:
 					sprintf(buffer, "displ");
 					break;
 			}
 			break;
 		case OP_SLICE:
-			argc = 4;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -172,16 +142,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 				case 2:
 					sprintf(buffer, "designation");
 					break;
-				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
 			}
 			break;
 		case OP_UNARY:
-			argc = 5;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -195,18 +159,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
-				case 5:
 					sprintf(buffer, "operator");
 					break;
 			}
 			break;
 		case OP_BINARY:
-			argc = 5;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -220,18 +178,12 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					sprintf(buffer, "designation");
 					break;
 				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
-				case 5:
 					sprintf(buffer, "operator");
 					break;
 			}
 			break;
 		case OP_TERNARY:
-			argc = 4;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -244,16 +196,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 				case 2:
 					sprintf(buffer, "designation");
 					break;
-				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
-					break;
 			}
 			break;
 		case OP_LIST:
-			argc = 4;
+			argc = 2;
 			was_switch = true;
 			switch (num)
 			{
@@ -265,12 +211,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 				case 2:
 					sprintf(buffer, "designation");
-					break;
-				case 3:
-					sprintf(buffer, "begin");
-					break;
-				case 4:
-					sprintf(buffer, "end");
 					break;
 			}
 			break;
@@ -974,7 +914,7 @@ static size_t tree_print_recursive(universal_io *const io, node *const nd, size_
 		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != OP_STRING) || i != argc)
 		{
 			elem_get_name(type, 0, buffer);
-			warning(NULL, node_argc, index, buffer);
+			//warning(NULL, node_argc, index, buffer);
 		}
 	}
 

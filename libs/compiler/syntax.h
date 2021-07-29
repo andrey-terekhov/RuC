@@ -541,8 +541,7 @@ item_t scope_func_exit(syntax *const sx, const item_t displ);
  */
 inline item_t expression_get_type(const node *const nd)
 {
-	const size_t argc = node_get_argc(nd);
-	return node_get_arg(nd, argc - 4);
+	return node_get_arg(nd, 0);
 }
 
 /**
@@ -554,8 +553,7 @@ inline item_t expression_get_type(const node *const nd)
  */
 inline bool expression_is_lvalue(const node *const nd)
 {
-	const size_t argc = node_get_argc(nd);
-	return node_get_arg(nd, argc - 3) == LVALUE;
+	return node_get_arg(nd, 1) == LVALUE;
 }
 
 /**
