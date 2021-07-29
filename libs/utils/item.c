@@ -224,14 +224,14 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 							? 4
 							: 8;
 
-	if (abs(ITEM) < 8 * size)
+	if (abs(ITEM) <= 32 / size)
 	{
-		size = ceil((double)abs(ITEM) / 8);
+		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
 	}
 
 	const size_t shift = 64 / size;
 	int64_t mask = 0x00000000000000FF;
-	for (size_t i = 16; i < shift; i *= 2)
+	for (size_t i = 8; i < shift; i *= 2)
 	{
 		mask = (mask << i) | mask;
 	}
