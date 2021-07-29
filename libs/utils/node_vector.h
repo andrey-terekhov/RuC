@@ -19,13 +19,12 @@
 #include "tree.h"
 
 
+#define NODE_VECTOR_SIZE 12
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-static const size_t NODE_VECTOR_SIZE = 12;
-
 
 /** Node vector structure */
 typedef struct node_vector
@@ -40,7 +39,10 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-EXPORTED node_vector node_vector_create();
+inline node_vector node_vector_create()
+{
+	return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };
+}
 
 /**
  *	Add new node
@@ -50,7 +52,13 @@ EXPORTED node_vector node_vector_create();
  *
  *	@return	Index, @c SIZE_MAX on failure
  */
-EXPORTED size_t node_vector_add(node_vector *const vec, const node *const nd);
+inline size_t node_vector_add(node_vector *const vec, const node *const nd)
+{
+	vec->tree = vec->tree != NULL ? vec->tree : nd->tree;
+	return vec->tree == nd->tree
+		? vector_add(&vec->nodes, (item_t)node_save(nd))
+		: SIZE_MAX;
+}
 
 /**
  *	Get node
@@ -60,7 +68,10 @@ EXPORTED size_t node_vector_add(node_vector *const vec, const node *const nd);
  *
  *	@return	Expression
  */
-EXPORTED node node_vector_get(const node_vector *const vec, const size_t index);
+inline node node_vector_get(const node_vector *const vec, const size_t index)
+{
+	return node_load(vec->tree, (size_t)vector_get(&vec->nodes, index));
+}
 
 /**
  *	Get node vector size
@@ -69,7 +80,10 @@ EXPORTED node node_vector_get(const node_vector *const vec, const size_t index);
  *
  *	@return	Size of node vector, @c SIZE_MAX on failure
  */
-EXPORTED size_t node_vector_size(const node_vector *const vec);
+inline size_t node_vector_size(const node_vector *const vec)
+{
+	return vector_size(&vec->nodes);
+}
 
 /**
  *	Free allocated memory
@@ -78,7 +92,10 @@ EXPORTED size_t node_vector_size(const node_vector *const vec);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-EXPORTED int node_vector_clear(node_vector *const vec);
+inline int node_vector_clear(node_vector *const vec)
+{
+	return vector_clear(&vec->nodes);
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -17,30 +17,8 @@
 #include "node_vector.h"
 
 
-node_vector node_vector_create()
-{
-	return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };
-}
-
-inline size_t node_vector_add(node_vector *const vec, const node *const nd)
-{
-	vec->tree = vec->tree != NULL ? vec->tree : nd->tree;
-	return vec->tree == nd->tree
-		? vector_add(&vec->nodes, (item_t)node_save(nd))
-		: SIZE_MAX;
-}
-
-node node_vector_get(const node_vector *const vec, const size_t index)
-{
-	return node_load(vec->tree, (size_t)vector_get(&vec->nodes, index));
-}
-
-size_t node_vector_size(const node_vector *const vec)
-{
-	return vector_size(&vec->nodes);
-}
-
-int node_vector_clear(node_vector *const vec)
-{
-	return vector_clear(&vec->nodes);
-}
+extern node_vector node_vector_create();
+extern size_t node_vector_add(node_vector *const vec, const node *const nd);
+extern node node_vector_get(const node_vector *const vec, const size_t index);
+extern size_t node_vector_size(const node_vector *const vec);
+extern int node_vector_clear(node_vector *const vec);

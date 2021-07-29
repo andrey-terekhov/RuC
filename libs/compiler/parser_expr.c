@@ -435,11 +435,13 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		if (is_binary)
 		{
 			const binary_t op_kind = token_to_binary(op_token);
-			*LHS = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
+			const node nd_temp = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
+			node_copy(LHS, &nd_temp);
 		}
 		else
 		{
-			*LHS = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
+			const node nd_temp = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
+			node_copy(LHS, &nd_temp);
 		}
 	}
 

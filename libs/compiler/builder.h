@@ -90,14 +90,14 @@ node build_subscript_expression(syntax *const sx, const node *const nd_fst, cons
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_fn			Called function
+ *	@param	nd_func			Called function
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_fn, const node_vector *args
+node build_call_expression(syntax *const sx, const node *const nd_func, const node_vector *args
 	, const location l_loc, const location r_loc);
 
 /**

@@ -531,7 +531,6 @@ item_t scope_func_enter(syntax *const sx);
  */
 item_t scope_func_exit(syntax *const sx, const item_t displ);
 
-#include "operations.h"
 
 /**
  *	Get expression type

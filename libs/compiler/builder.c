@@ -173,15 +173,15 @@ node build_subscript_expression(syntax *const sx, const node *const nd_fst, cons
 	return nd;
 }
 
-node build_call_expression(syntax *const sx, const node *const nd_fn, const node_vector *args
+node build_call_expression(syntax *const sx, const node *const nd_func, const node_vector *args
 	, const location l_loc, const location r_loc)
 {
-	if (!node_is_correct(nd_fn))
+	if (!node_is_correct(nd_func))
 	{
 		return build_broken_expression();
 	}
 
-	const item_t operand_type = expression_get_type(nd_fn);
+	const item_t operand_type = expression_get_type(nd_func);
 	if (!type_is_function(sx, operand_type))
 	{
 		semantic_error(sx, l_loc, typecheck_call_not_function);
@@ -218,14 +218,14 @@ node build_call_expression(syntax *const sx, const node *const nd_fn, const node
 	}
 
 	const item_t return_type = type_get(sx, (size_t)operand_type + 1);
-	const size_t expr_start = expression_get_location(nd_fn).begin;
+	const size_t expr_start = expression_get_location(nd_func).begin;
 
 	node nd = node_create(sx, OP_CALL);
 	node_add_arg(&nd, return_type);					// Тип возвращамого значения
 	node_add_arg(&nd, RVALUE);						// Категория значения вызова
 	node_add_arg(&nd, (item_t)expr_start);			// Начальная позиция вызова
 	node_add_arg(&nd, (item_t)r_loc.end);			// Конечная позиция вызова
-	node_set_child(&nd, nd_fn);						// Операнд вызова
+	node_set_child(&nd, nd_func);						// Операнд вызова
 	for (size_t i = 0; i < actual_args; i++)
 	{
 		const node nd_argument = node_vector_get(args, i);
