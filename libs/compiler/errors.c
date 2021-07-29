@@ -59,10 +59,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "строка не заканчивается символом \"");
 			break;
 
-		case string_too_long:	// test_exist
-			sprintf(msg, "слишком длинная строка (больше, чем MAXSTRINGL)");
-			break;
-
 		case unterminated_block_comment:
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
@@ -169,18 +165,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_colon_after_case: // test_exist
 			sprintf(msg, "после выражения в выборе нет :");
 			break;
-		case no_ident_after_goto: // need_test
-			sprintf(msg, "после goto должна быть метка, т.е. идентификатор");
-			break;
-		case no_leftbr_in_for: // test_exist
-			sprintf(msg, "в операторе цикла ДЛЯ нет (");
-			break;
-		case no_semicolon_in_for: // test_exist
-			sprintf(msg, "в операторе цикла ДЛЯ нет ;");
-			break;
-		case no_rightbr_in_for: // test_exist
-			sprintf(msg, "в операторе цикла ДЛЯ нет )");
-			break;
 		case int_op_for_float:	// test_exist
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
 			break;
@@ -199,17 +183,11 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_ident_in_printid: // need_test
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
 			break;
-		case no_leftbr_in_getid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
-			break;
 		case no_rightbr_in_getid: // test_exist
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
 			break;
 		case no_ident_in_getid: // need_test
 			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
-			break;
-		case float_in_switch: // need_test
-			sprintf(msg, "в условии переключателя можно использовать только типы ЛИТЕРА и ЦЕЛ");
 			break;
 		case init_int_by_float:	// test_exist
 			sprintf(msg, "целая или литерная переменная инициализируется значением типа ВЕЩ");

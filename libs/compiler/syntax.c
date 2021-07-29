@@ -27,6 +27,11 @@ static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
 
+extern item_t expression_get_type(const node *const nd);
+extern bool expression_is_lvalue(const node *const nd);
+extern location expression_get_location(const node *const nd);
+
+
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
 	char32_t buffer[MAX_STRING_LENGTH];
@@ -234,9 +239,10 @@ static void ident_init(syntax *const sx)
  */
 
 
-syntax sx_create()
+syntax sx_create(universal_io *const io)
 {
 	syntax sx;
+	sx.io = io;
 	sx.procd = 1;
 
 	sx.predef = vector_create(FUNCTIONS_SIZE);
@@ -264,16 +270,17 @@ syntax sx_create()
 	sx.displ = -3;
 	sx.lg = -1;
 
+	sx.was_error = false;
+
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
-	bool is_correct = true;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = false;
+		sx->was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -281,11 +288,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = false;
+			sx->was_error = true;
 		}
 	}
 
-	return is_correct;
+	return !sx->was_error;
 }
 
 int sx_clear(syntax *const sx)
@@ -512,7 +519,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+	return type == TYPE_INTEGER;
 }
 
 bool type_is_floating(const item_t type)
@@ -606,10 +613,10 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				local_modetab[3 + i] = TYPE_VOID_POINTER;
 				break;
 			case 's':
-				local_modetab[3 + i] = type_array(sx, TYPE_CHARACTER);
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
 				break;
 			case 'S':
-				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_CHARACTER));
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
 				break;
 			case 'i':
 				local_modetab[3 + i] = TYPE_INTEGER;
@@ -632,7 +639,6 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 	}
 
 	local_modetab[2] = (item_t)i;
-
 	return type_add(sx, local_modetab, i + 3);
 }
 
