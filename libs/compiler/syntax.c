@@ -596,6 +596,11 @@ size_t type_structure_get_name(const syntax *const sx, const item_t structure)
 	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
 }
 
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t structure)
+{
+	return type_is_structure(sx, structure) ? (size_t)type_get(sx, (size_t)structure + 2) / 2 : SIZE_MAX;
+}
+
 size_t type_structure_get_member_name(const syntax *const sx, const item_t structure, const size_t index)
 {
 	return type_is_structure(sx, structure) ? (size_t)type_get(sx, (size_t)structure + 4 + 2 * index) : SIZE_MAX;
@@ -603,7 +608,7 @@ size_t type_structure_get_member_name(const syntax *const sx, const item_t struc
 
 item_t type_structure_get_member_type(const syntax *const sx, const item_t structure, const size_t index)
 {
-	return type_is_function(sx, structure) ? type_get(sx, (size_t)structure + 3 + 2 * index) : ITEM_MAX;
+	return type_is_structure(sx, structure) ? type_get(sx, (size_t)structure + 3 + 2 * index) : ITEM_MAX;
 }
 
 item_t type_function_get_return_type(const syntax *const sx, const item_t function)

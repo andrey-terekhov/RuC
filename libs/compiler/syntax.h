@@ -74,8 +74,6 @@ typedef struct syntax
 
 	vector tree;				/**< Tree table */
 
-
-
 	vector identifiers;			/**< Identifiers table */
 	size_t cur_id;				/**< Start of current scope in identifiers table */
 
@@ -447,6 +445,16 @@ bool type_structure_has_name(const syntax *const sx, const item_t structure);
  *	@return	Structure name, @c SIZE_MAX on failure
  */
 size_t type_structure_get_name(const syntax *const sx, const item_t structure);
+
+/**
+ *	Get member amount
+ *
+ *	@param	sx			Syntax structure
+ *	@param	structure	Structure type	
+ *
+ *	@return	Member amount, @c SIZE_MAX on failure
+ */
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t structure);
 
 /**
  *	Get member name by its index

@@ -159,7 +159,7 @@ node build_subscript_expression(syntax *const sx, const node *const nd_fst, cons
 		return build_broken_expression();
 	}
 
-	const item_t element_type = type_get(sx, (size_t)base_type + 1);
+	const item_t element_type = type_array_get_element_type(sx, base_type);
 	const size_t expr_start = expression_get_location(nd_fst).begin;
 
 	node nd = node_create(sx, OP_SLICE);
@@ -188,7 +188,7 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 		return build_broken_expression();
 	}
 
-	const size_t expected_args = (size_t)type_get(sx, (size_t)operand_type + 2);
+	const size_t expected_args = type_function_get_parameter_amount(sx, operand_type);
 	const size_t actual_args = args != NULL ? node_vector_size(args) : 0;
 
 	if (expected_args != actual_args)
@@ -197,7 +197,6 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 		return build_broken_expression();
 	}
 
-	const size_t ref_arg_type = (size_t)operand_type + 3;
 	for (size_t i = 0; i < actual_args; i++)
 	{
 		const node nd_argument = node_vector_get(args, i);
@@ -206,7 +205,7 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 			return build_broken_expression();
 		}
 
-		const item_t expected_type = type_get(sx, ref_arg_type + i);
+		const item_t expected_type = type_function_get_parameter_type(sx, operand_type, i);
 		const item_t actual_type = expression_get_type(&nd_argument);
 
 		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
@@ -217,7 +216,7 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 		}
 	}
 
-	const item_t return_type = type_get(sx, (size_t)operand_type + 1);
+	const item_t return_type = type_function_get_return_type(sx, operand_type);
 	const size_t expr_start = expression_get_location(nd_func).begin;
 
 	node nd = node_create(sx, OP_CALL);
@@ -266,16 +265,16 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 			return build_broken_expression();
 		}
 
-		struct_type = type_get(sx, (size_t)operand_type + 1);
+		struct_type = type_pointer_get_element_type(sx, operand_type);
 		category = LVALUE;
 	}
 
 	item_t member_displ = 0;
-	const size_t record_length = (size_t)type_get(sx, (size_t)struct_type + 2);
-	for (size_t i = 0; i < record_length; i += 2)
+	const size_t member_amount = type_structure_get_member_amount(sx, struct_type);
+	for (size_t i = 0; i < member_amount; i++)
 	{
-		const item_t member_type = type_get(sx, (size_t)struct_type + 3 + i);
-		if (name == (size_t)type_get(sx, (size_t)struct_type + 4 + i))
+		const item_t member_type = type_structure_get_member_type(sx, struct_type, i);
+		if (name == type_structure_get_member_name(sx, struct_type, i))
 		{
 			const size_t expr_start = expression_get_location(nd_base).begin;
 
@@ -388,7 +387,7 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 				return build_broken_expression();
 			}
 
-			result_type = type_get(sx, (size_t)operand_type + 1);
+			result_type = type_pointer_get_element_type(sx, operand_type);
 			category = LVALUE;
 		}
 		break;
@@ -606,7 +605,7 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 
 	if (type_is_structure(sx, type))
 	{
-		const size_t expected_inits = (size_t)(type_get(sx, (size_t)type + 2) / 2);
+		const size_t expected_inits = type_structure_get_member_amount(sx, type);
 
 		if (expected_inits != actual_inits)
 		{
@@ -614,7 +613,6 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 			return build_broken_expression();
 		}
 
-		size_t ref_next_field = (size_t)type + 3;
 		for (size_t i = 0; i < actual_inits; i++)
 		{
 			const node nd_initializer = node_vector_get(vec, i);
@@ -623,7 +621,7 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 				return build_broken_expression();
 			}
 
-			const item_t expected_type = type_get(sx, ref_next_field);
+			const item_t expected_type = type_structure_get_member_type(sx, type, i);
 			const item_t actual_type = expression_get_type(&nd_initializer);
 
 			// Несовпадение типов может быть только в случае, когда параметр - вещественный, а аргумент - целочисленный
@@ -632,13 +630,11 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 				semantic_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
 				return build_broken_expression();
 			}
-
-			ref_next_field += 2;
 		}
 	}
 	else if (type_is_array(sx, type))
 	{
-		const item_t expected_type = type_get(sx, (size_t)type + 1);
+		const item_t expected_type = type_array_get_element_type(sx, type);
 		for (size_t i = 0; i < actual_inits; i++)
 		{
 			const node nd_initializer = node_vector_get(vec, i);
