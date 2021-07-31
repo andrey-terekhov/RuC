@@ -77,9 +77,9 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
 
 	node nd = node_create(sx, OP_IDENTIFIER);
-	node_add_arg(&nd, identifier);					// Индекс в таблице идентификаторов
 	node_add_arg(&nd, type);						// Тип значения идентификатора
 	node_add_arg(&nd, category);					// Категория значения идентификатора
+	node_add_arg(&nd, identifier);					// Индекс в таблице идентификаторов
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция идентификатора
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция идентификатора
 
@@ -89,9 +89,9 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 node build_integer_literal_expression(syntax *const sx, const int value, const location loc)
 {
 	node nd = node_create(sx, OP_CONSTANT);
-	node_add_arg(&nd, value);						// Значение константы
 	node_add_arg(&nd, TYPE_INTEGER);				// Тип значения константы
 	node_add_arg(&nd, RVALUE);						// Категория значения константы
+	node_add_arg(&nd, value);						// Значение константы
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
 
@@ -107,10 +107,10 @@ node build_floating_literal_expression(syntax *const sx, const double value, con
 	const item_t snd = (num64 & 0xffffffff00000000) >> 32;
 
 	node nd = node_create(sx, OP_CONSTANT);
-	node_add_arg(&nd, fst);							// Первая часть значения константы
-	node_add_arg(&nd, snd);							// Вторая часть значения константы
 	node_add_arg(&nd, TYPE_FLOATING);				// Тип значения константы
 	node_add_arg(&nd, RVALUE);						// Категория значения константы
+	node_add_arg(&nd, fst);							// Первая часть значения константы
+	node_add_arg(&nd, snd);							// Вторая часть значения константы
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
 
@@ -122,6 +122,8 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
 	const item_t type = type_array(sx, TYPE_INTEGER);
 
 	node nd = node_create(sx, OP_STRING);
+	node_add_arg(&nd, type);						// Тип строки
+	node_add_arg(&nd, LVALUE);						// Категория значения строки
 
 	const size_t length = vector_size(value);
 	for (size_t i = 0; i < length; i++)
@@ -129,8 +131,6 @@ node build_string_literal_expression(syntax *const sx, const vector *const value
 		node_add_arg(&nd, vector_get(value, i));	// i-ый символ строки
 	}
 
-	node_add_arg(&nd, type);						// Тип строки
-	node_add_arg(&nd, LVALUE);						// Категория значения строки
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция строки
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки
 
@@ -225,7 +225,7 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 	node_add_arg(&nd, RVALUE);						// Категория значения вызова
 	node_add_arg(&nd, (item_t)expr_start);			// Начальная позиция вызова
 	node_add_arg(&nd, (item_t)r_loc.end);			// Конечная позиция вызова
-	node_set_child(&nd, nd_func);						// Операнд вызова
+	node_set_child(&nd, nd_func);					// Операнд вызова
 	for (size_t i = 0; i < actual_args; i++)
 	{
 		const node nd_argument = node_vector_get(args, i);
@@ -280,9 +280,9 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 			const size_t expr_start = expression_get_location(nd_base).begin;
 
 			node nd = node_create(sx, OP_SELECT);
-			node_add_arg(&nd, member_displ);		// Смещение поля структуры
 			node_add_arg(&nd, member_type);			// Тип значения поля
-			node_add_arg(&nd, category);			// Категория значения выборкм
+			node_add_arg(&nd, category);			// Категория значения выборки
+			node_add_arg(&nd, member_displ);		// Смещение поля структуры
 			node_add_arg(&nd, (item_t)expr_start);	// Начальная позиция выборкм
 			node_add_arg(&nd, (item_t)id_loc.end);	// Конечная позиция выборкм
 			node_set_child(&nd, nd_base);			// Выражение-операнд
@@ -437,9 +437,9 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
 
 	node nd = node_create(sx, OP_UNARY);
-	node_add_arg(&nd, op_kind);						// Тип унарного оператора
 	node_add_arg(&nd, result_type);					// Тип значения выражения
 	node_add_arg(&nd, category);					// Категория значения выражения
+	node_add_arg(&nd, op_kind);						// Тип унарного оператора
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 	node_set_child(&nd, nd_operand);				// Выражение-операнд
@@ -540,9 +540,9 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	}
 
 	node nd = node_create(sx, OP_BINARY);
-	node_add_arg(&nd, op_kind);						// Вид оператора
 	node_add_arg(&nd, result_type);					// Тип значения
 	node_add_arg(&nd, RVALUE);						// Категория значения
+	node_add_arg(&nd, op_kind);						// Вид оператора
 	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
 	node_add_arg(&nd, (item_t)expression_get_location(nd_right).end);
 	node_set_child(&nd, nd_left);					// Первый операнд
