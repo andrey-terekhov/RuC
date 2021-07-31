@@ -577,6 +577,55 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
 }
 
+item_t type_array_get_element_type(const syntax *const sx, const item_t array)
+{
+	return type_is_array(sx, array) ? type_get(sx, (size_t)array + 1) : ITEM_MAX;
+}
+
+bool type_structure_has_name(const syntax *const sx, const item_t structure)
+{
+	(void)sx;
+	(void)structure;
+	return false;		// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_name(const syntax *const sx, const item_t structure)
+{
+	(void)sx;
+	(void)structure;
+	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_member_name(const syntax *const sx, const item_t structure, const size_t index)
+{
+	return type_is_structure(sx, structure) ? (size_t)type_get(sx, (size_t)structure + 4 + 2 * index) : SIZE_MAX;
+}
+
+item_t type_structure_get_member_type(const syntax *const sx, const item_t structure, const size_t index)
+{
+	return type_is_function(sx, structure) ? type_get(sx, (size_t)structure + 3 + 2 * index) : ITEM_MAX;
+}
+
+item_t type_function_get_return_type(const syntax *const sx, const item_t function)
+{
+	return type_is_function(sx, function) ? type_get(sx, (size_t)function + 1) : ITEM_MAX;
+}
+
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t function)
+{
+	return type_is_function(sx, function) ? (size_t)type_get(sx, (size_t)function + 2) : SIZE_MAX;
+}
+
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t function, const size_t index)
+{
+	return type_is_function(sx, function) ? type_get(sx, (size_t)function + 3 + index) : ITEM_MAX;
+}
+
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t pointer)
+{
+	return type_is_pointer(sx, pointer) ? type_get(sx, (size_t)pointer + 1) : ITEM_MAX;
+}
+
 item_t type_array(syntax *const sx, const item_t type)
 {
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
