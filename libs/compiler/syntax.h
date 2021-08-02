@@ -420,104 +420,104 @@ bool type_is_undefined(const item_t type);
  *	Get element type
  *
  *	@param	sx			Syntax structure
- *	@param	array		Array type
+ *	@param	type		Array type
  *
  *	@return	Element type, @c ITEM_MAX on failure
  */
-item_t type_array_get_element_type(const syntax *const sx, const item_t array);
+item_t type_array_get_element_type(const syntax *const sx, const item_t type);
 
 /**
  *	Check if structure has a name
  *
  *	@param	sx			Syntax structure
- *	@param	structure	Structure type
+ *	@param	type		Structure type
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_structure_has_name(const syntax *const sx, const item_t structure);
+bool type_structure_has_name(const syntax *const sx, const item_t type);
 
 /**
  *	Get structure name
  *
  *	@param	sx			Syntax structure
- *	@param	structure	Structure type
+ *	@param	type		Structure type
  *
  *	@return	Structure name, @c SIZE_MAX on failure
  */
-size_t type_structure_get_name(const syntax *const sx, const item_t structure);
+size_t type_structure_get_name(const syntax *const sx, const item_t type);
 
 /**
  *	Get member amount
  *
  *	@param	sx			Syntax structure
- *	@param	structure	Structure type	
+ *	@param	type		Structure type
  *
  *	@return	Member amount, @c SIZE_MAX on failure
  */
-size_t type_structure_get_member_amount(const syntax *const sx, const item_t structure);
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t type);
 
 /**
  *	Get member name by its index
  *
  *	@param	sx			Syntax structure
- *	@param	structure	Structure type
+ *	@param	type		Structure type
  *	@param	index		Member number
  *
  *	@return	Member name, @c SIZE_MAX on failure
  */
-size_t type_structure_get_member_name(const syntax *const sx, const item_t structure, const size_t index);
+size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index);
 
 /**
  *	Get member type by its index
  *
  *	@param	sx			Syntax structure
- *	@param	structure	Structure type
+ *	@param	type		Structure type
  *	@param	index		Member number
  *
  *	@return	Member type, @c ITEM_MAX on failure
  */
-item_t type_structure_get_member_type(const syntax *const sx, const item_t structure, const size_t index);
+item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index);
 
 /**
  *	Get return type
  *
  *	@param	sx			Syntax structure
- *	@param	function	Function type
+ *	@param	type		Function type
  *
  *	@return	Return type, @c ITEM_MAX on failure
  */
-item_t type_function_get_return_type(const syntax *const sx, const item_t function);
+item_t type_function_get_return_type(const syntax *const sx, const item_t type);
 
 /**
  *	Get parameter amount
  *
  *	@param	sx			Syntax structure
- *	@param	function	Function type
+ *	@param	type		Function type
  *
  *	@return	Parameter amount, @c SIZE_MAX on failure
  */
-size_t type_function_get_parameter_amount(const syntax *const sx, const item_t function);
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type);
 
 /**
  *	Get parameter type by its index
  *
  *	@param	sx			Syntax structure
- *	@param	function	Function type
+ *	@param	type		Function type
  *	@param	index		Parameter number
  *
  *	@return	Parameter type, @c ITEM_MAX on failure
  */
-item_t type_function_get_parameter_type(const syntax *const sx, const item_t function, const size_t index);
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t type, const size_t index);
 
 /**
  *	Get element type
  *
  *	@param	sx			Syntax structure
- *	@param	pointer		Pointer type
+ *	@param	type		Pointer type
  *
  *	@return	Element type, @c ITEM_MAX on failure
  */
-item_t type_pointer_get_element_type(const syntax *const sx, const item_t pointer);
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
 
 /**
  *	Create array type
