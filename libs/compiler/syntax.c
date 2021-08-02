@@ -227,6 +227,8 @@ static void ident_init(syntax *const sx)
 
 	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
 	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
+
+	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 }
 
 
