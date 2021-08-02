@@ -32,24 +32,24 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_FLOAT:
 		case TK_DOUBLE:
 		case TK_STRUCT:
-			return 1;
+			return true;
 
 		case TK_IDENTIFIER:
 		{
-			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t id = repr_get_reference(prs->sx, prs->lxr.repr);
 			if (id == ITEM_MAX)
 			{
-				return 0;
+				return false;
 			}
 
 			return ident_get_displ(prs->sx, (size_t)id) >= 1000;
 		}
 
 		default:
-			return 0;
-
+			return false;
 	}
 }
+
 
 /**
  *	Parse labeled statement [C99 6.8.1]
@@ -57,14 +57,14 @@ static bool is_declaration_specifier(parser *const prs)
  *	labeled-statement:
  *		identifier ':' statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_labeled_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // identifier
 	node nd = node_add_child(parent, OP_LABEL);
-	const size_t repr = prs->lxr->repr;
+	const size_t repr = prs->lxr.repr;
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	token_consume(prs);
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
@@ -83,19 +83,19 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 				vector_set(&prs->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
 			}
 
-			ident_set_mode(prs->sx, (size_t)id, 1);
+			ident_set_type(prs->sx, (size_t)id, 1);
 			parse_statement(prs, &nd);
 			return;
 		}
 	}
 
 	// Это определение метки, если она встретилась до переходов на нее
-	const item_t id = (size_t)to_identab(prs, repr, 1, 0);
+	const item_t id = (item_t)to_identab(prs, repr, 1, 0);
 	node_add_arg(&nd, id);
 	vector_add(&prs->labels, id);
 	vector_add(&prs->labels, -1);	// TODO: здесь должен быть номер строки
 
-	ident_set_mode(prs->sx, (size_t)id, 1);
+	ident_set_type(prs->sx, (size_t)id, 1);
 	parse_statement(prs, &nd);
 }
 
@@ -117,8 +117,10 @@ static void parse_case_statement(parser *const prs, node *const parent)
 
 	token_consume(prs); // kw_case
 	node nd = node_add_child(parent, OP_CASE);
-	const item_t condition_type = parse_constant_expression(prs, &nd);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	node_copy(&prs->sx->nd, &nd);
+	const node condition = parse_constant_expression(prs);
+	const item_t condition_type = expression_get_type(&condition);
+	if (node_is_correct(&condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -155,12 +157,18 @@ static void parse_default_statement(parser *const prs, node *const parent)
  *	expression-statement:
  *		expression ';'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
-	parse_expression(prs, parent);
+	node_copy(&prs->sx->nd, parent);
+	const node nd_expr = parse_expression(prs);
+	if (!node_is_correct(&nd_expr))
+	{
+		token_skip_until(prs, TK_SEMICOLON);
+		return;
+	}
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
@@ -168,10 +176,10 @@ static void parse_expression_statement(parser *const prs, node *const parent)
  *	Parse if statement [C99 6.8.4.1]
  *
  *	if-statement:
- *		'if' parenthesized-expression statement
- *		'if' parenthesized-expression statement 'else' statement
+ *		'if' '(' expression ')' statement
+ *		'if' '(' expression ')' statement 'else' statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_if_statement(parser *const prs, node *const parent)
@@ -180,7 +188,10 @@ static void parse_if_statement(parser *const prs, node *const parent)
 	node nd = node_add_child(parent, OP_IF);
 	node_add_arg(&nd, 0); // ref_else
 
-	parse_parenthesized_expression(prs, &nd);
+	node_copy(&prs->sx->nd, &nd);
+	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
+	parse_expression(prs);
+	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	parse_statement(prs, &nd);
 
 	if (token_try_consume(prs, TK_ELSE))
@@ -194,9 +205,9 @@ static void parse_if_statement(parser *const prs, node *const parent)
  *	Parse switch statement [C99 6.8.4.2]
  *
  *	switch-statement:
- *		'switch' parenthesized-expression statement
+ *		'switch' '(' expression ')' statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_switch_statement(parser *const prs, node *const parent)
@@ -204,8 +215,12 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_switch
 	node nd = node_add_child(parent, OP_SWITCH);
 
-	const item_t condition_type = parse_parenthesized_expression(prs, &nd);
-	if (!mode_is_int(condition_type) && !mode_is_undefined(condition_type))
+	node_copy(&prs->sx->nd, &nd);
+	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
+	const node condition = parse_expression(prs);
+	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
+	const item_t condition_type = expression_get_type(&condition);
+	if (node_is_correct(&condition) && !type_is_integer(condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -220,9 +235,9 @@ static void parse_switch_statement(parser *const prs, node *const parent)
  *	Parse while statement [C99 6.8.5.1]
  *
  *	while-statement:
- *		'while' parenthesized-expression statement
+ *		'while' '(' expression ')' statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_while_statement(parser *const prs, node *const parent)
@@ -230,7 +245,10 @@ static void parse_while_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_while
 	node nd = node_add_child(parent, OP_WHILE);
 
-	parse_parenthesized_expression(prs, &nd);
+	node_copy(&prs->sx->nd, &nd);
+	token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
+	parse_expression(prs);
+	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 
 	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
@@ -242,9 +260,9 @@ static void parse_while_statement(parser *const prs, node *const parent)
  *	Parse do statement [C99 6.8.5.2]
  *
  *	do-statement:
- *		'do' statement 'while' parenthesized-expression ';'
+ *		'do' statement 'while' '(' expression ')' ';'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_do_statement(parser *const prs, node *const parent)
@@ -259,7 +277,10 @@ static void parse_do_statement(parser *const prs, node *const parent)
 
 	if (token_try_consume(prs, TK_WHILE))
 	{
-		parse_parenthesized_expression(prs, &nd);
+		node_copy(&prs->sx->nd, &nd);
+		token_expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
+		parse_expression(prs);
+		token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	}
 	else
 	{
@@ -303,7 +324,8 @@ static void parse_for_statement(parser *const prs, node *const parent)
 		}
 		else
 		{
-			parse_expression(prs, &nd);
+			node_copy(&prs->sx->nd, &nd);
+			parse_expression(prs);
 			token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 		}
 	}
@@ -311,14 +333,16 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	if (!token_try_consume(prs, TK_SEMICOLON))
 	{
 		node_set_arg(&nd, 1, 1); // ref_condition
-		parse_condition(prs, &nd);
+		node_copy(&prs->sx->nd, &nd);
+		parse_expression(prs);
 		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 	}
 
 	if (!token_try_consume(prs, TK_R_PAREN))
 	{
 		node_set_arg(&nd, 2, 1); // ref_increment
-		parse_expression(prs, &nd);
+		node_copy(&prs->sx->nd, &nd);
+		parse_expression(prs);
 		token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_for);
 	}
 
@@ -351,7 +375,7 @@ static void parse_goto_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_goto
 	node nd = node_add_child(parent, OP_GOTO);
 	token_expect_and_consume(prs, TK_IDENTIFIER, no_ident_after_goto);
-	const size_t repr = prs->lxr->repr;
+	const size_t repr = prs->lxr.repr;
 
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
 	{
@@ -386,7 +410,7 @@ static void parse_goto_statement(parser *const prs, node *const parent)
  *	jump-statement:
  *		'continue' ';'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_continue_statement(parser *const prs, node *const parent)
@@ -407,7 +431,7 @@ static void parse_continue_statement(parser *const prs, node *const parent)
  *	jump-statement:
  *		'break' ';'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_break_statement(parser *const prs, node *const parent)
@@ -428,41 +452,39 @@ static void parse_break_statement(parser *const prs, node *const parent)
  *	jump-statement:
  *		'return' expression[opt] ';'
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 static void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
-	const item_t return_type = mode_get(prs->sx, prs->function_mode + 1);
+	const item_t return_type = type_get(prs->sx, prs->function_mode + 1);
 	prs->was_return = true;
 
 	if (token_try_consume(prs, TK_SEMICOLON))
 	{
 		node_add_child(parent, OP_RETURN_VOID);
-		if (!mode_is_void(return_type))
+		if (!type_is_void(return_type))
 		{
 			parser_error(prs, no_ret_in_func);
 		}
 	}
-	else if (return_type != mode_void_pointer)
+	else if (return_type != TYPE_VOID_POINTER)
 	{
-		if (mode_is_void(return_type))
+		if (type_is_void(return_type))
 		{
 			parser_error(prs, notvoidret_in_void_func);
 		}
 
 		node nd = node_add_child(parent, OP_RETURN_VAL);
-		node_add_arg(&nd, (item_t)size_of(prs->sx, return_type));
+		node_add_arg(&nd, (item_t)type_size(prs->sx, return_type));
 
-		const item_t expr_type = parse_assignment_expression(prs, &nd);
-		if (!mode_is_undefined(expr_type) && !mode_is_undefined(return_type))
+		node_copy(&prs->sx->nd, &nd);
+		const node nd_expr = parse_assignment_expression(prs);
+		const item_t expr_type = expression_get_type(&nd_expr);
+		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
-			if (mode_is_float(return_type) && mode_is_int(expr_type))
-			{
-				parse_insert_widen(prs);
-			}
-			else if (return_type != expr_type)
+			if (return_type != expr_type && (!type_is_floating(return_type) || !type_is_integer(expr_type)))
 			{
 				parser_error(prs, bad_type_in_ret);
 			}
@@ -475,9 +497,8 @@ static void parse_return_statement(parser *const prs, node *const parent)
 /**	Parse t_create_direct statement [RuC] */
 static void parse_create_direct_statement(parser *const prs, node *const parent)
 {
-	node nd = node_add_child(parent, OP_CREATE_DIRECT);
+	node nd = node_add_child(parent, OP_THREAD);
 	parse_statement_compound(prs, &nd, THREAD);
-	node_add_child(&nd, OP_EXIT_DIRECT);
 }
 
 /**	Parse printid statement [RuC] */
@@ -490,7 +511,7 @@ static void parse_printid_statement(parser *const prs, node *const parent)
 	{
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
@@ -517,18 +538,29 @@ static void parse_print_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
 
-	const item_t type = parse_assignment_expression(prs, parent);
-	if (mode_is_pointer(prs->sx, type))
+	node nd_print = node_add_child(parent, OP_PRINT);
+
+	node_copy(&prs->sx->nd, &nd_print);
+	const node nd_expr = parse_assignment_expression(prs);
+	if (!node_is_correct(&nd_expr))
+	{
+		token_skip_until(prs, TK_SEMICOLON);
+		token_try_consume(prs, TK_SEMICOLON);
+		return;
+	}
+	
+	const item_t type = expression_get_type(&nd_expr);
+	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
 	}
 
-	// Сейчас последней нодой в поддереве выражения является OP_EXPR_END, просто меняем ее тип
-	node_set_type(&prs->nd, OP_PRINT);
-	node_add_arg(&prs->nd, type);
-	to_tree(prs, OP_EXPR_END);
-
-	token_expect_and_consume(prs, TK_R_PAREN, print_without_br);
+	if (!token_try_consume(prs, TK_R_PAREN))
+	{
+		parser_error(prs, print_without_br);
+		token_skip_until(prs, TK_SEMICOLON);
+	}
+	
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
@@ -542,7 +574,7 @@ static void parse_getid_statement(parser *const prs, node *const parent)
 	{
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			const item_t id = repr_get_reference(prs->sx, repr);
 			if (id == ITEM_MAX)
 			{
@@ -563,15 +595,17 @@ static void parse_getid_statement(parser *const prs, node *const parent)
 	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
-static size_t evaluate_args(parser *const prs, const size_t length, const char32_t *const format_str
+static size_t evaluate_args(parser *const prs, const vector *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
 {
 	size_t args = 0;
+	const size_t length = vector_size(format_str);
 	for (size_t i = 0; i < length; i++)
 	{
-		if (format_str[i] == '%')
+		if (vector_get(format_str, i) == '%')
 		{
-			const char32_t placeholder = format_str[++i];
+			i++;
+			const char32_t placeholder = (char32_t)vector_get(format_str, i);
 			if (placeholder != '%')
 			{
 				if (args == MAX_PRINTF_ARGS)
@@ -586,22 +620,19 @@ static size_t evaluate_args(parser *const prs, const size_t length, const char32
 			{
 				case 'i':
 				case U'ц':
-					format_types[args++] = mode_integer;
-					break;
-
 				case 'c':
 				case U'л':
-					format_types[args++] = mode_character;
+					format_types[args++] = TYPE_INTEGER;
 					break;
 
 				case 'f':
 				case U'в':
-					format_types[args++] = mode_float;
+					format_types[args++] = TYPE_FLOATING;
 					break;
 
 				case 's':
 				case U'с':
-					format_types[args++] = to_modetab(prs, mode_array, mode_character);
+					format_types[args++] = type_array(prs->sx, TYPE_INTEGER);
 					break;
 
 				case '%':
@@ -629,11 +660,10 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_printf
 	char32_t placeholders[MAX_PRINTF_ARGS];
-	char32_t format_str[MAX_STRING_LENGTH + 1];
 	item_t format_types[MAX_PRINTF_ARGS];
-	size_t sum_size = 0;
 
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);
+	node nd_printf = node_add_child(parent, OP_PRINTF);
 
 	if (prs->token != TK_STRING)
 	{
@@ -642,29 +672,22 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 		return;
 	}
 
-	const size_t format_length = (size_t)prs->lxr->num;
-	for (size_t i = 0; i < format_length; i++)
-	{
-		format_str[i] = prs->lxr->lexstr[i];
-	}
-	format_str[format_length] = '\0';
-	token_consume(prs);	// Для форматирующей строки
+	const size_t expected_args = evaluate_args(prs, &prs->lxr.lexstr, format_types, placeholders);
+
+	node_copy(&prs->sx->nd, &nd_printf);
+	parse_assignment_expression(prs);
 
 	size_t actual_args = 0;
-	const size_t expected_args = evaluate_args(prs, format_length, format_str, format_types, placeholders);
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
-		const item_t type = parse_assignment_expression(prs, parent);
-		if (mode_is_float(format_types[actual_args]) && mode_is_int(type))
-		{
-			parse_insert_widen(prs);
-		}
-		else if (format_types[actual_args] != type)
+		node_copy(&prs->sx->nd, &nd_printf);
+		const node nd_expr = parse_assignment_expression(prs);
+		const item_t type = expression_get_type(&nd_expr);
+		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
 		{
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
 		}
 
-		sum_size += size_of(prs->sx, type);
 		actual_args++;
 	}
 
@@ -675,19 +698,9 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	{
 		parser_error(prs, wrong_printf_param_number);
 	}
-
-	node nd_string = node_add_child(parent, OP_STRING);
-	node_add_arg(&nd_string, (item_t)format_length);
-
-	for (size_t i = 0; i < format_length; i++)
-	{
-		node_add_arg(&nd_string, format_str[i]);
-	}
-	node_add_child(&nd_string, OP_EXPR_END);
-
-	node nd_printf = node_add_child(parent, OP_PRINTF);
-	node_add_arg(&nd_printf, (item_t)sum_size);
 }
+
+
 
 
 /*
@@ -767,7 +780,7 @@ void parse_statement(parser *const prs, node *const parent)
 			break;
 
 		case TK_IDENTIFIER:
-			if (peek(prs->lxr) == TK_COLON)
+			if (peek(&prs->lxr) == TK_COLON)
 			{
 				parse_labeled_statement(prs, parent);
 				break;
@@ -792,7 +805,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
 
-	const token_t end_token = (type == THREAD) ? TK_EXIT : TK_R_BRACE;
+	const token_t end_token = (type == THREAD) ? TK_EXIT_DIRECT : TK_R_BRACE;
 	if (!token_try_consume(prs, end_token))
 	{
 		while (prs->token != TK_EOF && prs->token != end_token)
@@ -819,6 +832,4 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 	{
 		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
-
-	node_add_child(&nd_block, OP_BLOCK_END);
 }

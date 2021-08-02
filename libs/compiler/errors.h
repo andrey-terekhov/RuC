@@ -27,13 +27,36 @@ extern "C" {
 typedef enum ERROR
 {
 	// Lexer errors
-	bad_character,						/**< Bad character in source */
-	empty_character,					/**< Empty character constant */
-	unknown_escape_sequence,			/**< Unknown escape sequence */
-	expected_apost_after_char_const,	/**< Missing terminating ' character */
-	missing_terminating_quote_char,		/**< Missing terminating '"' character */
-	string_too_long,					/**< String literal exceeds maximum length */
-	unterminated_block_comment,			/**< Unterminated block comment */
+	bad_character,							/**< Bad character in source */
+	empty_character,						/**< Empty character constant */
+	unknown_escape_sequence,				/**< Unknown escape sequence */
+	expected_apost_after_char_const,		/**< Missing terminating ' character */
+	missing_terminating_quote_char,			/**< Missing terminating '"' character */
+	unterminated_block_comment,				/**< Unterminated block comment */
+
+	// Expression errors
+	undeclared_var_use,						/**< Use of undeclared identifier */
+	expected_r_paren,						/**< Expected ')' */
+	typecheck_subscript_value,				/**< Subscripted value is not an array */
+	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
+	expected_r_square,						/**< Expected ']' */
+	expected_r_brace,						/**< Expected '}' */
+	expected_identifier,					/**< Expected identifier */
+	typecheck_call_not_function,			/**< Called object type is not a function */
+	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
+	typecheck_member_reference_struct,		/**< Member reference base type is not a structure */
+	typecheck_member_reference_arrow,		/**< Member reference type is not a pointer */
+	typecheck_member_reference_ivar,		/**< Struct does not have a member named that */
+	no_member,								/**< No member named that */
+	typecheck_illegal_increment,			/**< Cannot increment/decrement value of that type */
+	typecheck_expression_not_lvalue,		/**< Expression is not assignable */
+	typecheck_invalid_lvalue_addrof,		/**< Cannot take the address of an rvalue */
+	typecheck_indirection_requires_pointer,	/**< Indirection requires pointer operand */
+	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
+	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
+	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
+	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
+	typecheck_statement_requires_scalar,	/**< Condition must be of scalar type */
 
 	// Statement errors
 	expected_semi_after_stmt,			/**< Expected ';' after statement */
@@ -54,8 +77,8 @@ typedef enum ERROR
 	notvoidret_in_void_func,
 
 	// Environment errors
-	no_main_in_program,					/**< Undefined main */
-	predef_but_notdef,					/**< Undefined function */
+	no_main_in_program,						/**< Undefined main */
+	predef_but_notdef,						/**< Undefined function */
 
 	// Other errors
 	after_type_must_be_ident = 201,
