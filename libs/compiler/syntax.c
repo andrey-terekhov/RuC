@@ -23,8 +23,13 @@
 static const size_t REPRESENTATIONS_SIZE = 10000;
 static const size_t IDENTIFIERS_SIZE = 10000;
 static const size_t FUNCTIONS_SIZE = 100;
-static const size_t MODES_SIZE = 1000;
+static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
+
+
+extern item_t expression_get_type(const node *const nd);
+extern bool expression_is_lvalue(const node *const nd);
+extern location expression_get_location(const node *const nd);
 
 
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
@@ -77,86 +82,38 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
-	repr_add_keyword(reprtab, U"sqrt", U"квкор", TK_SQRT);
-	repr_add_keyword(reprtab, U"exp", U"эксп", TK_EXP);
-	repr_add_keyword(reprtab, U"sin", U"син", TK_SIN);
-	repr_add_keyword(reprtab, U"cos", U"кос", TK_COS);
-	repr_add_keyword(reprtab, U"log", U"лог", TK_LOG);
-	repr_add_keyword(reprtab, U"log10", U"лог10", TK_LOG10);
-	repr_add_keyword(reprtab, U"asin", U"асин", TK_ASIN);
-	repr_add_keyword(reprtab, U"rand", U"случ", TK_RAND);
-	repr_add_keyword(reprtab, U"round", U"округл", TK_ROUND);
-	repr_add_keyword(reprtab, U"strcpy", U"копир_строку", TK_STRCPY);
-	repr_add_keyword(reprtab, U"strncpy", U"копир_н_симв", TK_STRNCPY);
-	repr_add_keyword(reprtab, U"strcat", U"конкат_строки", TK_STRCAT);
-	repr_add_keyword(reprtab, U"strncat", U"конкат_н_симв", TK_STRNCAT);
-	repr_add_keyword(reprtab, U"strcmp", U"сравн_строк", TK_STRCMP);
-	repr_add_keyword(reprtab, U"strncmp", U"сравн_н_симв", TK_STRNCMP);
-	repr_add_keyword(reprtab, U"strstr", U"нач_подстрок", TK_STRSTR);
-	repr_add_keyword(reprtab, U"strlen", U"длина", TK_STRLEN);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
-
-	repr_add_keyword(reprtab, U"t_msg_send", U"н_послать", TK_MSG_SEND);
-	repr_add_keyword(reprtab, U"t_msg_receive", U"н_получить", TK_MSG_RECEIVE);
-	repr_add_keyword(reprtab, U"t_join", U"н_присоед", TK_JOIN);
-	repr_add_keyword(reprtab, U"t_sleep", U"н_спать", TK_SLEEP);
-	repr_add_keyword(reprtab, U"t_sem_create", U"н_создать_сем", TK_SEM_CREATE);
-	repr_add_keyword(reprtab, U"t_sem_wait", U"н_вниз_сем", TK_SEM_WAIT);
-	repr_add_keyword(reprtab, U"t_sem_post", U"н_вверх_сем", TK_SEM_POST);
-	repr_add_keyword(reprtab, U"t_create", U"н_создать", TK_CREATE);
-	repr_add_keyword(reprtab, U"t_init", U"н_начать", TK_INIT);
-	repr_add_keyword(reprtab, U"t_destroy", U"н_закончить", TK_DESTROY);
-	repr_add_keyword(reprtab, U"t_exit", U"н_конец", TK_EXIT);
-	repr_add_keyword(reprtab, U"t_getnum", U"н_номер_нити", TK_GETNUM);
-
-	repr_add_keyword(reprtab, U"assert", U"проверить", TK_ASSERT);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
-
-	repr_add_keyword(reprtab, U"send_int_to_robot", U"послать_цел_на_робот", TK_ROBOT_SEND_INT);
-	repr_add_keyword(reprtab, U"send_float_to_robot", U"послать_вещ_на_робот", TK_ROBOT_SEND_FLOAT);
-	repr_add_keyword(reprtab, U"send_string_to_robot", U"послать_строку_на_робот", TK_ROBOT_SEND_STRING);
-	repr_add_keyword(reprtab, U"receive_int_from_robot", U"получить_цел_от_робота", TK_ROBOT_RECEIVE_INT);
-	repr_add_keyword(reprtab, U"receive_float_from_robot", U"получить_вещ_от_робота", TK_ROBOT_RECEIVE_FLOAT);
-	repr_add_keyword(reprtab, U"receive_string_from_robot", U"получить_строку_от_робота", TK_ROBOT_RECEIVE_STRING);
 }
 
 
-static inline void mode_init(syntax *const sx)
+static inline void type_init(syntax *const sx)
 {
-	vector_increase(&sx->modes, 1);
-	// занесение в modetab описателя struct {int numTh; int inf; }
-	vector_add(&sx->modes, 0);
-	vector_add(&sx->modes, mode_struct);
-	vector_add(&sx->modes, 2);
-	vector_add(&sx->modes, 4);
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "numTh"));
-	vector_add(&sx->modes, mode_integer);
-	vector_add(&sx->modes, (item_t)map_reserve(&sx->representations, "data"));
+	vector_increase(&sx->types, 1);
+	// занесение в types описателя struct {int numTh; int inf; }
+	sx->start_type = vector_add(&sx->types, 0);
+	vector_add(&sx->types, TYPE_STRUCTURE);
+	vector_add(&sx->types, 2);
+	vector_add(&sx->types, 4);
+	vector_add(&sx->types, TYPE_INTEGER);
+	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
+	vector_add(&sx->types, TYPE_INTEGER);
+	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
 
-	// занесение в modetab описателя функции void t_msg_send(struct msg_info m)
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, 2);
-
-	// занесение в modetab описателя функции void* interpreter(void* n)
-	vector_add(&sx->modes, 9);
-	vector_add(&sx->modes, mode_function);
-	vector_add(&sx->modes, mode_void_pointer);
-	vector_add(&sx->modes, 1);
-	vector_add(&sx->modes, mode_void_pointer);
-
-	sx->start_mode = 14;
+	// занесение в types описателя функции void* interpreter(void* n)
+	sx->start_type = vector_add(&sx->types, sx->start_type);
+	vector_add(&sx->types, TYPE_FUNCTION);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
+	vector_add(&sx->types, 1);
+	vector_add(&sx->types, TYPE_VOID_POINTER);
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * size_of(sx, type);
+	sx->displ += sx->lg * type_size(sx, type);
 
 	if (sx->lg > 0)
 	{
@@ -170,32 +127,106 @@ static inline item_t get_static(syntax *const sx, const item_t type)
 	return old_displ;
 }
 
-/**	Check if modes are equal */
-static inline bool mode_is_equal(const syntax *const sx, const size_t first, const size_t second)
+/**	Check if types are equal */
+static inline bool type_is_equal(const syntax *const sx, const size_t first, const size_t second)
 {
-	if (vector_get(&sx->modes, first) != vector_get(&sx->modes, second))
+	if (vector_get(&sx->types, first) != vector_get(&sx->types, second))
 	{
 		return false;
 	}
 
 	size_t length = 1;
-	const item_t mode = vector_get(&sx->modes, first);
+	const item_t type = vector_get(&sx->types, first);
 
 	// Определяем, сколько полей надо сравнивать для различных типов записей
-	if (mode == mode_struct || mode == mode_function)
+	if (type == TYPE_STRUCTURE || type == TYPE_FUNCTION)
 	{
-		length = 2 + (size_t)vector_get(&sx->modes, first + 2);
+		length = 2 + (size_t)vector_get(&sx->types, first + 2);
 	}
 
 	for (size_t i = 1; i <= length; i++)
 	{
-		if (vector_get(&sx->modes, first + i) != vector_get(&sx->modes, second + i))
+		if (vector_get(&sx->types, first + i) != vector_get(&sx->types, second + i))
 		{
 			return false;
 		}
 	}
 
 	return true;
+}
+
+static void builtin_add(syntax *const sx, const char32_t *const eng, const char32_t *const rus, const item_t type)
+{
+	// Добавляем одно из написаний в таблицу representations
+	const size_t repr = map_add_by_utf8(&sx->representations, eng, ITEM_MAX);
+
+	// Добавляем идентификатор в identifiers
+	const item_t id = (item_t)ident_add(sx, repr, 2, type, 1);
+
+	// Добавляем остальные варианты написания, все будут ссылаться на id
+	char32_t buffer[MAX_STRING_LENGTH];
+
+	buffer[0] = utf8_to_upper(eng[0]);
+	for (size_t i = 1; eng[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(eng[i]);
+	}
+	map_add_by_utf8(&sx->representations, buffer, id);
+
+	buffer[0] = utf8_to_upper(rus[0]);
+	for (size_t i = 1; rus[i - 1] != '\0'; i++)
+	{
+		buffer[i] = utf8_to_upper(rus[i]);
+	}
+	map_add_by_utf8(&sx->representations, rus, id);
+	map_add_by_utf8(&sx->representations, buffer, id);
+}
+
+
+static void ident_init(syntax *const sx)
+{
+	builtin_add(sx, U"assert", U"проверить", type_function(sx, TYPE_VOID, "is"));
+
+	builtin_add(sx, U"asin", U"асин", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"cos", U"кос", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sin", U"син", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"exp", U"эксп", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log", U"лог", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"log10", U"лог10", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"sqrt", U"квкор", type_function(sx, TYPE_FLOATING, "f"));
+	builtin_add(sx, U"rand", U"случ", type_function(sx, TYPE_FLOATING, ""));
+	builtin_add(sx, U"round", U"округл", type_function(sx, TYPE_INTEGER, "f"));
+
+	builtin_add(sx, U"strcpy", U"копир_строку", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncpy", U"копир_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcat", U"конкат_строки", type_function(sx, TYPE_VOID, "Ss"));
+	builtin_add(sx, U"strncat", U"конкат_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strcmp", U"сравн_строк", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_function(sx, TYPE_INTEGER, "ssi"));
+	builtin_add(sx, U"strstr", U"нач_подстрок", type_function(sx, TYPE_INTEGER, "ss"));
+	builtin_add(sx, U"strlen", U"длина", type_function(sx, TYPE_INTEGER, "s"));
+
+	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_function(sx, TYPE_VOID, "iI"));
+	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_function(sx, TYPE_VOID, "iF"));
+	builtin_add(sx, U"send_string_to_robot", U"послать_строку_на_робот", type_function(sx, TYPE_VOID, "is"));
+	builtin_add(sx, U"receive_int_from_robot", U"получить_цел_от_робота", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
+	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
+
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "V"));
+	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
+	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_exit", U"н_конец", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_init", U"н_начать", type_function(sx, TYPE_VOID, ""));
+	builtin_add(sx, U"t_destroy", U"н_закончить", type_function(sx, TYPE_VOID, ""));
+
+	builtin_add(sx, U"t_sem_create", U"н_создать_сем", type_function(sx, TYPE_INTEGER, "i"));
+	builtin_add(sx, U"t_sem_wait", U"н_вниз_сем", type_function(sx, TYPE_VOID, "i"));
+	builtin_add(sx, U"t_sem_post", U"н_вверх_сем", type_function(sx, TYPE_VOID, "i"));
+
+	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
+	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
 }
 
 
@@ -208,9 +239,10 @@ static inline bool mode_is_equal(const syntax *const sx, const size_t first, con
  */
 
 
-syntax sx_create()
+syntax sx_create(universal_io *const io)
 {
 	syntax sx;
+	sx.io = io;
 	sx.procd = 1;
 
 	sx.predef = vector_create(FUNCTIONS_SIZE);
@@ -226,8 +258,10 @@ syntax sx_create()
 	sx.representations = map_create(REPRESENTATIONS_SIZE);
 	repr_init(&sx.representations);
 
-	sx.modes = vector_create(MODES_SIZE);
-	mode_init(&sx);
+	sx.types = vector_create(TYPES_SIZE);
+	type_init(&sx);
+
+	ident_init(&sx);
 
 	sx.max_displg = 3;
 	sx.ref_main = 0;
@@ -236,16 +270,17 @@ syntax sx_create()
 	sx.displ = -3;
 	sx.lg = -1;
 
+	sx.was_error = false;
+
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
-	bool is_correct = true;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = false;
+		sx->was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -253,11 +288,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = false;
+			sx->was_error = true;
 		}
 	}
 
-	return is_correct;
+	return !sx->was_error;
 }
 
 int sx_clear(syntax *const sx)
@@ -273,7 +308,7 @@ int sx_clear(syntax *const sx)
 	vector_clear(&sx->tree);
 
 	vector_clear(&sx->identifiers);
-	vector_clear(&sx->modes);
+	vector_clear(&sx->types);
 	map_clear(&sx->representations);
 
 	return 0;
@@ -307,7 +342,7 @@ size_t func_reserve(syntax *const sx)
 }
 
 
-size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const item_t mode, const int func_def)
+size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const item_t type, const int func_def)
 {
 	const size_t last_id = vector_size(&sx->identifiers);
 	const item_t ref = repr_get_reference(sx, repr);
@@ -333,7 +368,7 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	// Один и тот же идентификатор м.б. переменной и меткой
-	if (type != 1 && ident_get_prev(sx, last_id) != ITEM_MAX - 1
+	if (kind != 1 && ident_get_prev(sx, last_id) != ITEM_MAX - 1
 		&& prev >= sx->cur_id && (func_def != 1 || ident_get_repr(sx, prev) > 0))
 	{
 		// Только определение функции может иметь 2 описания, то есть иметь предописание
@@ -341,35 +376,35 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t type, const i
 	}
 
 	ident_set_repr(sx, last_id, (item_t)repr);
-	ident_set_mode(sx, last_id, mode);
+	ident_set_type(sx, last_id, type);
 
-	if (type < 0)
+	if (kind < 0)
 	{
 		// Так как < 0, это функция-параметр
 		ident_set_displ(sx, last_id, -(sx->displ++));
 		sx->max_displ = sx->displ;
 	}
-	else if (type == 0)
+	else if (kind == 0)
 	{
-		ident_set_displ(sx, last_id, get_static(sx, mode));
+		ident_set_displ(sx, last_id, get_static(sx, type));
 	}
-	else if (type == 1)
+	else if (kind == 1)
 	{
 		// Это метка
 		// В поле mode: 0, если первым встретился goto; когда встретим метку, поставим 1
 		// В поле displ: при генерации кода, когда встретим метку, поставим pc
-		ident_set_mode(sx, last_id, 0);
+		ident_set_type(sx, last_id, 0);
 		ident_set_displ(sx, last_id, 0);
 	}
-	else if (type >= 1000)
+	else if (kind >= 1000)
 	{
 		// Это описание типа, а (type-1000) – это номер инициирующей процедуры
-		ident_set_displ(sx, last_id, type);
+		ident_set_displ(sx, last_id, kind);
 	}
-	else if (type > 1 && type < 1000)
+	else if (kind > 1 && type < 1000)
 	{
 		// Это функция, и в поле displ находится её номер
-		ident_set_displ(sx, last_id, type);
+		ident_set_displ(sx, last_id, kind);
 
 		if (func_def == 2)
 		{
@@ -402,7 +437,7 @@ item_t ident_get_repr(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->identifiers, index + 1) : ITEM_MAX;
 }
 
-item_t ident_get_mode(const syntax *const sx, const size_t index)
+item_t ident_get_type(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 2) : ITEM_MAX;
 }
@@ -417,9 +452,9 @@ int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 1, repr) : -1;
 }
 
-int ident_set_mode(syntax *const sx, const size_t index, const item_t mode)
+int ident_set_type(syntax *const sx, const size_t index, const item_t type)
 {
-	return sx != NULL ? vector_set(&sx->identifiers, index + 2, mode) : -1;
+	return sx != NULL ? vector_set(&sx->identifiers, index + 2, type) : -1;
 }
 
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
@@ -428,51 +463,193 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 }
 
 
-size_t size_of(const syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct
-		? (size_t)mode_get(sx, (size_t)mode + 1)
-		: mode == mode_float
-			? 2
-			: 1;
-}
-
-size_t mode_add(syntax *const sx, const item_t *const record, const size_t size)
+item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
 	if (sx == NULL || record == NULL)
 	{
-		return SIZE_MAX;
+		return ITEM_MAX;
 	}
 
-	vector_add(&sx->modes, (item_t)sx->start_mode);
-	sx->start_mode = vector_size(&sx->modes) - 1;
+	vector_add(&sx->types, (item_t)sx->start_type);
+	sx->start_type = vector_size(&sx->types) - 1;
 	for (size_t i = 0; i < size; i++)
 	{
-		vector_add(&sx->modes, record[i]);
+		vector_add(&sx->types, record[i]);
 	}
 
 	// Checking mode duplicates
-	size_t old = (size_t)vector_get(&sx->modes, sx->start_mode);
+	size_t old = (size_t)vector_get(&sx->types, sx->start_type);
 	while (old)
 	{
-		if (mode_is_equal(sx, sx->start_mode + 1, old + 1))
+		if (type_is_equal(sx, sx->start_type + 1, old + 1))
 		{
-			vector_resize(&sx->modes, sx->start_mode + 1);
-			sx->start_mode = (size_t)vector_get(&sx->modes, sx->start_mode);
-			return old + 1;
+			vector_resize(&sx->types, sx->start_type + 1);
+			sx->start_type = (size_t)vector_get(&sx->types, sx->start_type);
+			return (item_t)old + 1;
 		}
 		else
 		{
-			old = (size_t)vector_get(&sx->modes, old);
+			old = (size_t)vector_get(&sx->types, old);
 		}
 	}
 
-	return sx->start_mode + 1;
+	return (item_t)sx->start_type + 1;
 }
 
-item_t mode_get(const syntax *const sx, const size_t index)
+item_t type_get(const syntax *const sx, const size_t index)
 {
-	return sx != NULL ? vector_get(&sx->modes, index) : ITEM_MAX;
+	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
+}
+
+size_t type_size(const syntax *const sx, const item_t type)
+{
+	if (type_is_structure(sx, type))
+	{
+		return (size_t)type_get(sx, (size_t)type + 1);
+	}
+	else if (type_is_floating(type))
+	{
+		return 2;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+bool type_is_integer(const item_t type)
+{
+	return type == TYPE_INTEGER;
+}
+
+bool type_is_floating(const item_t type)
+{
+	return type == TYPE_FLOATING;
+}
+
+bool type_is_arithmetic(const item_t type)
+{
+	return type_is_integer(type) || type_is_floating(type);
+}
+
+bool type_is_void(const item_t type)
+{
+	return type == TYPE_VOID;
+}
+
+bool type_is_array(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ARRAY;
+}
+
+bool type_is_structure(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_function(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
+}
+
+bool type_is_pointer(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_POINTER;
+}
+
+bool type_is_scalar(const syntax *const sx, const item_t type)
+{
+	return type_is_arithmetic(type) || type_is_pointer(sx, type);
+}
+
+bool type_is_aggregate(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) || type_is_structure(sx, type);
+}
+
+bool type_is_string(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) && type_is_integer(type_get(sx, (size_t)type + 1));
+}
+
+bool type_is_struct_pointer(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
+}
+
+item_t type_array(syntax *const sx, const item_t type)
+{
+	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
+}
+
+/*
+ *	args = list of characters each for one argument
+ *		v -> void
+ *		V -> void*
+ *		s -> char[]
+ *		S -> char[]*
+ *		i -> int
+ *		I -> int[]
+ *		f -> float
+ *		F -> float[]
+ *		m -> msg_info
+ */
+item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
+{
+	item_t local_modetab[6];
+	size_t i = 0;
+
+	local_modetab[0] = TYPE_FUNCTION;
+	local_modetab[1] = return_type;
+
+	while (args[i] != '\0')
+	{
+		switch (args[i])
+		{
+			case 'v':
+				local_modetab[3 + i] = TYPE_VOID;
+				break;
+			case 'V':
+				local_modetab[3 + i] = TYPE_VOID_POINTER;
+				break;
+			case 's':
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+				break;
+			case 'S':
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
+				break;
+			case 'i':
+				local_modetab[3 + i] = TYPE_INTEGER;
+				break;
+			case 'I':
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+				break;
+			case 'f':
+				local_modetab[3 + i] = TYPE_FLOATING;
+				break;
+			case 'F':
+				local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
+				break;
+			case 'm':
+				local_modetab[3 + i] = TYPE_MSG_INFO;
+				break;
+		}
+
+		i++;
+	}
+
+	local_modetab[2] = (item_t)i;
+	return type_add(sx, local_modetab, i + 3);
+}
+
+item_t type_pointer(syntax *const sx, const item_t type)
+{
+	return type_add(sx, (item_t[]){ TYPE_POINTER, type }, 2);
+}
+
+bool type_is_undefined(const item_t type)
+{
+	return type == TYPE_UNDEFINED;
 }
 
 
