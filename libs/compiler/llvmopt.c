@@ -398,7 +398,7 @@ static int node_recursive(information *const info, node *const nd)
 			break;
 			case OP_DECL_ID:
 				info->arr_init_type = node_get_arg(&child, 1);
-			break;
+				break;
 
 			default:
 			{
