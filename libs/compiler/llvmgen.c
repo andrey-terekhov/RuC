@@ -52,6 +52,7 @@ typedef struct information
 	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
+	item_t init_num;					/**< Счётчик для инициализации */
 
 	item_t request_reg;					/**< Регистр на запрос */
 	location_t variable_location;		/**< Расположение переменной */
@@ -72,6 +73,7 @@ typedef struct information
 												@c value[0]	 - флаг статичности
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
 
 
@@ -655,6 +657,45 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 
 	info->register_num++;
+}
+
+static void to_code_init_array(information *const info, const size_t index, const item_t type)
+{
+	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
+	info->register_num++;
+
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
+
+	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
+
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->io, "]");
+	}
+	
+	uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
+		, info->init_num
+		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
+		, mode_is_float(type) ? 8 : 4);
+
+	info->init_num++;
+	info->was_memcpy = 1;
 }
 
 
@@ -1927,11 +1968,30 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd)
+static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_ARRAY_INIT:
+		// TODO: пока реализовано только для одномерных массивов
+		case OP_ARRAY_INIT: 
+		{
+			const item_t N = node_get_arg(nd, 0);
+
+			const size_t index = hash_get_index(&info->arrays, displ);
+			hash_set_by_index(&info->arrays, index, 1, N);
+			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+
+			node_set_next(nd);
+			for (item_t i = 0; i < N; i++)
+			{
+				info->variable_location = LFREE;
+				expression(info, nd);
+			}
+
+			node_set_next(nd); // TExprend
+		}
+		break;
 		case OP_STRUCT_INIT:
 		{
 			const item_t N = node_get_arg(nd, 0);
@@ -1967,41 +2027,50 @@ static void block(information *const info, node *const nd)
 				const item_t displ = node_get_arg(&id, 0);
 				const item_t elem_type = node_get_arg(&id, 1);
 				const size_t N = (size_t)node_get_arg(&id, 2);
+				const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
 				const size_t index = hash_add(&info->arrays, displ, 1 + N);
 				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 				node_set_next(nd);
-				for (size_t i = 1; i <= N; i++)
+				// получение и сохранение границ
+				const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
+				for (size_t i = 1; i <= N && has_bounds; i++)
 				{
 					info->variable_location = LFREE;
 					expression(info, nd);
 
-					if (info->answer_type == ACONST)
+					if (!has_initializer)
 					{
-						if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+						if (info->answer_type == ACONST)
 						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
+							if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+							{
+								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+							}
 
-						hash_set_by_index(&info->arrays, index, i, info->answer_const);
-					}
-					else // if (info->answer_type == AREG) динамический массив
-					{
-						if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+							hash_set_by_index(&info->arrays, index, i, info->answer_const);
+						}
+						else // if (info->answer_type == AREG) динамический массив
 						{
-							system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-						}
+							if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+							{
+								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+							}
 
-						hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-						hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+							hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+							hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+						}
 					}
 				}
+				node_set_next(nd);	// OP_DECL_ID
 
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC))
+				// объявление массива без инициализации, с инициализацией объявление происходит в init
+				// объявление массива, если он статический
+				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_initializer)
 				{
 					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 				}
-				else
+				else if (!has_initializer) // объявление массива, если он динамический
 				{
 					if (!info->was_dynamic)
 					{
@@ -2009,6 +2078,11 @@ static void block(information *const info, node *const nd)
 					}
 					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
 					info->was_dynamic = 1;
+				}
+
+				if (has_initializer)
+				{
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -2032,7 +2106,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				if (all)
 				{
-					init(info, nd);
+					init(info, nd, displ, elem_type);
 				}
 			}
 			break;
@@ -2116,6 +2190,10 @@ static int codegen(information *const info)
 		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
 		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
+	if (info->was_memcpy)
+	{
+		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
+	}
 
 	return 0;
 }
@@ -2165,9 +2243,11 @@ int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *co
 	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.init_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.was_memcpy = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
