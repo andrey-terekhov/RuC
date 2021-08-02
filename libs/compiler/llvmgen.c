@@ -36,7 +36,7 @@
 
 int encode_to_llvm(const workspace *const ws, syntax *const sx)
 {
-	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
+	// tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 	if (optimize_for_llvm(ws, sx))
 	{
 		return -1;
