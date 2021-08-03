@@ -76,6 +76,9 @@ typedef struct information
 } information;
 
 
+static void block(information *const info, node *const nd);
+
+
 static void type_to_io(information *const info, const item_t type)
 {
 	if (type_is_integer(type))
@@ -99,6 +102,30 @@ static void type_to_io(information *const info, const item_t type)
 		type_to_io(info, type_get(info->sx, (size_t)type + 1));
 		uni_printf(info->sx->io, "*");
 	}
+}
+
+static inline void to_code_label(information *const info, const item_t label_num)
+{
+	uni_printf(info->sx->io, " label%" PRIitem ":\n", label_num);
+}
+
+static inline void to_code_unconditional_branch(information *const info, const item_t label_num)
+{
+	uni_printf(info->sx->io, " br label %%label%" PRIitem "\n", label_num);
+}
+
+static inline void to_code_conditional_branch(information *const info)
+{
+	uni_printf(info->sx->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n"
+		, info->answer_reg, info->label_true, info->label_false);
+}
+
+static void to_code_stack_load(information *const info)
+{
+	// команды восстановления состояния стека
+	uni_printf(info->sx->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
+	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
+	info->register_num++;
 }
 
 static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
@@ -156,6 +183,322 @@ static void to_code_init_array(information *const info, const size_t index, cons
 
 	info->init_num++;
 	info->was_memcpy = 1;
+}
+
+static void check_type_and_branch(information *const info)
+{
+	switch (info->answer_type)
+	{
+		case ACONST:
+			to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
+			break;
+		case AREG:
+		{
+			// to_code_operation_reg_const_i32(info, BIN_NE, info->answer_reg, 0);
+			info->answer_reg = info->register_num++;
+		}
+		case ALOGIC:
+			to_code_conditional_branch(info);
+			break;
+		case AMEM:
+			break;
+	}
+}
+
+static void statement(information *const info, node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case OP_BLOCK:
+		{
+			block(info, nd);
+			node_set_next(nd); // OP_BLOCK_END
+		}
+		break;
+		case OP_IF:
+		{
+			const item_t ref_else = node_get_arg(nd, 0);
+			const item_t old_label_true = info->label_true;
+			const item_t old_label_false = info->label_false;
+			const item_t label_if = info->label_num++;
+			const item_t label_else = info->label_num++;
+			const item_t label_end = info->label_num++;
+
+			info->label_true = label_if;
+			info->label_false = label_else;
+
+			node_set_next(nd);
+			info->variable_location = LFREE;
+			// expression(info, nd);
+
+			check_type_and_branch(info);
+
+			to_code_label(info, label_if);
+			statement(info, nd);
+			to_code_unconditional_branch(info, label_end);
+			to_code_label(info, label_else);
+
+			if (ref_else)
+			{
+				statement(info, nd);
+			}
+
+			to_code_unconditional_branch(info, label_end);
+			to_code_label(info, label_end);
+
+			info->label_true = old_label_true;
+			info->label_false = old_label_false;
+		}
+		break;
+		case OP_SWITCH:
+		case OP_CASE:
+		case OP_DEFAULT:
+		{
+			node_set_next(nd);
+			// expression(info, nd);
+			statement(info, nd);
+		}
+		break;
+		case OP_WHILE:
+		{
+			const item_t old_label_true = info->label_true;
+			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
+			const item_t label_condition = info->label_num++;
+			const item_t label_body = info->label_num++;
+			const item_t label_end = info->label_num++;
+
+			info->label_true = label_body;
+			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
+
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_condition);
+			info->variable_location = LFREE;
+			// expression(info, nd);
+
+			check_type_and_branch(info);
+
+			to_code_label(info, label_body);
+			statement(info, nd);
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_end);
+
+			info->label_true = old_label_true;
+			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
+		}
+		break;
+		case OP_DO:
+		{
+			const item_t old_label_true = info->label_true;
+			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
+			const item_t label_loop = info->label_num++;
+			const item_t label_end = info->label_num++;
+
+			info->label_true = label_loop;
+			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_loop;
+
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label_loop);
+			to_code_label(info, label_loop);
+			statement(info, nd);
+
+			info->variable_location = LFREE;
+			// expression(info, nd);
+
+			check_type_and_branch(info);
+
+			to_code_label(info, label_end);
+
+			info->label_true = old_label_true;
+			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
+		}
+		break;
+		// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
+		// нужно проверить и реализовать случаи, когда какие-нибудь из этих блоков отсутсвуют
+		case OP_FOR:
+		{
+			const item_t ref_from = node_get_arg(nd, 0);
+			const item_t ref_cond = node_get_arg(nd, 1);
+			const item_t ref_incr = node_get_arg(nd, 2);
+			const item_t old_label_true = info->label_true;
+			const item_t old_label_false = info->label_false;
+			const item_t old_label_break = info->label_break;
+			const item_t old_label_continue = info->label_continue;
+			const item_t label_condition = info->label_num++;
+			const item_t label_body = info->label_num++;
+			const item_t label_incr = info->label_num++;
+			const item_t label_end = info->label_num++;
+
+			info->label_true = label_body;
+			info->label_false = label_end;
+			info->label_break = label_end;
+			info->label_continue = label_body;
+
+			node_set_next(nd);
+
+			if (ref_from)
+			{
+				// expression(info, nd);
+			}
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_condition);
+
+			if (ref_cond)
+			{
+				// expression(info, nd);
+			}
+			// TODO: проверить разные типы условий: const, reg
+			check_type_and_branch(info);
+
+			to_code_label(info, label_incr);
+			if (ref_incr)
+			{
+				// expression(info, nd);
+			}
+
+			to_code_unconditional_branch(info, label_condition);
+			to_code_label(info, label_body);
+			statement(info, nd);
+			to_code_unconditional_branch(info, label_incr);
+			to_code_label(info, label_end);
+
+			info->label_true = old_label_true;
+			info->label_false = old_label_false;
+			info->label_break = old_label_break;
+			info->label_continue = old_label_continue;
+		}
+		break;
+		case OP_LABEL:
+		{
+			const item_t label = -node_get_arg(nd, 0);
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label);
+			to_code_label(info, label);
+			statement(info, nd);
+		}
+		break;
+		case OP_BREAK:
+		{
+			node_set_next(nd);
+			to_code_unconditional_branch(info, info->label_break);
+		}
+		break;
+		case OP_CONTINUE:
+		{
+			node_set_next(nd);
+			to_code_unconditional_branch(info, info->label_continue);
+		}
+		break;
+		case OP_GOTO:
+		{
+			const item_t label = node_get_arg(nd, 0) < 0 ? node_get_arg(nd, 0) : -node_get_arg(nd, 0);
+			node_set_next(nd);
+			to_code_unconditional_branch(info, label);
+		}
+		break;
+		case OP_RETURN_VOID:
+		{
+			if (info->was_dynamic)
+			{
+				to_code_stack_load(info);
+			}
+
+			node_set_next(nd);
+			uni_printf(info->sx->io, " ret void\n");
+		}
+		break;
+		case OP_RETURN_VAL:
+		{
+			if (info->was_dynamic)
+			{
+				to_code_stack_load(info);
+			}
+
+			node_set_next(nd);
+			info->variable_location = LREG;
+			// expression(info, nd);
+
+			// TODO: добавить обработку других ответов (ALOGIC)
+			if (info->answer_type == ACONST && type_is_integer(info->answer_value_type))
+			{
+				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
+			}
+			else if (info->answer_type == ACONST && type_is_floating(info->answer_value_type))
+			{
+				uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
+			}
+			else if (info->answer_type == AREG)
+			{
+				uni_printf(info->sx->io, " ret ");
+				type_to_io(info, info->answer_value_type);
+				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
+			}
+			node_set_next(nd); // OP_RETURN_VOID
+		}
+		break;
+		case OP_GETID:
+			// здесь будет печать llvm для ввода
+			node_set_next(nd);
+			break;
+		case OP_PRINTID:
+			// здесь будет печать llvm для вывода
+			node_set_next(nd);
+			break;
+		case OP_PRINTF:
+		{
+			const item_t N = node_get_arg(nd, 0);
+			item_t args[128];
+			item_t args_type[128];
+
+			node_set_next(nd);
+			const item_t string_length = node_get_arg(nd, 0);
+			node_set_next(nd); // OP_STRING
+			node_set_next(nd); // OP_EXPR_END
+			for (item_t i = 0; i < N; i++)
+			{
+				info->variable_location = LREG;
+				// expression(info, nd);
+				args[i] = info->answer_reg;
+				args_type[i] = info->answer_value_type;
+			}
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
+				, info->register_num
+				, string_length + 1
+				, string_length + 1
+				, info->string_num);
+
+			info->register_num++;
+			info->string_num++;
+
+			for (item_t i = 0; i < N; i++)
+			{
+				uni_printf(info->sx->io, ", ");
+				type_to_io(info, args_type[i]);
+				uni_printf(info->sx->io, " signext %%.%" PRIitem, args[i]);
+			}
+
+			uni_printf(info->sx->io, ")\n");
+		}
+		break;
+		default:
+			// expression(info, nd);
+			break;
+	}
 }
 
 static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
@@ -302,7 +645,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				break;
 			default:
-				// statement(info, nd);
+				statement(info, nd);
 				break;
 		}
 	}
