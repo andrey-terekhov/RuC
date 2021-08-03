@@ -457,7 +457,7 @@ size_t type_structure_get_name(const syntax *const sx, const item_t type);
 size_t type_structure_get_member_amount(const syntax *const sx, const item_t type);
 
 /**
- *	Get member name by its index
+ *	Get member name by index
  *
  *	@param	sx			Syntax structure
  *	@param	type		Structure type
@@ -468,7 +468,7 @@ size_t type_structure_get_member_amount(const syntax *const sx, const item_t typ
 size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index);
 
 /**
- *	Get member type by its index
+ *	Get member type by index
  *
  *	@param	sx			Syntax structure
  *	@param	type		Structure type
@@ -499,7 +499,7 @@ item_t type_function_get_return_type(const syntax *const sx, const item_t type);
 size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type);
 
 /**
- *	Get parameter type by its index
+ *	Get parameter type by index
  *
  *	@param	sx			Syntax structure
  *	@param	type		Function type
