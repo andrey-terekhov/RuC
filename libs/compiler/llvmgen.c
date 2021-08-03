@@ -110,24 +110,24 @@ static void block(information *const info, node *const nd)
 	{
 		switch (node_get_type(nd))
 		{
-			case OP_DECL_ARR:
-			{
-				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != OP_DECL_ID)
-				{
-					id = node_get_child(nd, node_get_amount(nd) - 2);
-				}
+			// case OP_DECL_ARR:
+			// {
+			// 	node id = node_get_child(nd, node_get_amount(nd) - 1);
+			// 	if (node_get_type(&id) != OP_DECL_ID)
+			// 	{
+			// 		id = node_get_child(nd, node_get_amount(nd) - 2);
+			// 	}
 
-				const item_t displ = node_get_arg(&id, 0);
-				const item_t elem_type = node_get_arg(&id, 1);
-				const size_t N = (size_t)node_get_arg(&id, 2);
-				const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
-				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+			// 	const item_t displ = node_get_arg(&id, 0);
+			// 	const item_t elem_type = node_get_arg(&id, 1);
+			// 	const size_t N = (size_t)node_get_arg(&id, 2);
+			// 	const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
+			// 	const size_t index = hash_add(&info->arrays, displ, 1 + N);
+			// 	hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
-				node_set_next(nd);
-				// получение и сохранение границ
-				const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
+			// 	node_set_next(nd);
+			// 	// получение и сохранение границ
+				// const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
 				// for (size_t i = 1; i <= N && has_bounds; i++)
 				// {
 				// 	info->variable_location = LFREE;
@@ -178,8 +178,8 @@ static void block(information *const info, node *const nd)
 	// 			{
 	// 				init(info, nd, displ, elem_type);
 	// 			}
-			}
-			break;
+			// }
+			// break;
 			case OP_DECL_ID:
 			{
 				const item_t displ = node_get_arg(nd, 0);
