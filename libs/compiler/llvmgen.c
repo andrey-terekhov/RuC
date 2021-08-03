@@ -73,6 +73,8 @@ typedef struct information
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
+	// костыль, жду исправлений в дереве
+	int was_return;
 } information;
 
 
@@ -113,13 +115,22 @@ static void type_to_io(information *const info, const item_t type)
 	}
 }
 
+static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
+	, const int is_array, const int is_pointer)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "%s, ", is_pointer ? "*" : "");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+}
+
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
 	, const int is_array)
 {
 	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
 }
-
 
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
 	, const int is_array)
@@ -248,38 +259,28 @@ static void operand(information *const info, node *const nd)
 		// 	node_set_next(nd);
 		// }
 		// break;
-		// case OP_IDENT_TO_VAL:
-		// {
-		// 	const item_t displ = node_get_arg(nd, 0);
-		// 	int is_addr_to_val = 0;
+		case OP_IDENTIFIER:
+		{
+			const item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			int is_addr_to_val = 0;
 
-		// 	node_set_next(nd);
-		// 	if (node_get_type(nd) == OP_ADDR_TO_VAL)
-		// 	{
-		// 		to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
-		// 		info->register_num++;
-		// 		info->variable_location = LREG;
-		// 		node_set_next(nd);
-		// 		is_addr_to_val = 1;
-		// 	}
-		// 	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
-		// 		, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
-		// 	info->answer_reg = info->register_num++;
-		// 	info->answer_type = AREG;
-		// 	info->answer_value_type = mode_integer;
-		// }
-		// break;
-		// case OP_IDENT_TO_VAL_D:
-		// {
-		// 	const item_t displ = node_get_arg(nd, 0);
-
-		// 	to_code_load(info, info->register_num, displ, mode_float, 0, 0);
-		// 	info->answer_reg = info->register_num++;
-		// 	info->answer_type = AREG;
-		// 	info->answer_value_type = mode_float;
-		// 	node_set_next(nd);
-		// }
-		// break;
+			node_set_next(nd);
+			// if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			// {
+			// 	to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+			// 	info->register_num++;
+			// 	info->variable_location = LREG;
+			// 	node_set_next(nd);
+			// 	is_addr_to_val = 1;
+			// }
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
+				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
+			info->answer_reg = info->register_num++;
+			info->answer_type = AREG;
+			info->answer_value_type = type;
+		}
+		break;
 		case OP_CONSTANT:
 		{
 			const item_t type = node_get_arg(nd, 0);
@@ -320,25 +321,6 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		// case OP_CONST_D:
-		// {
-		// 	const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
-
-		// 	if (info->variable_location == LMEM)
-		// 	{
-		// 		to_code_store_const_double(info, num, info->request_reg, 0);
-		// 		info->answer_type = AREG;
-		// 	}
-		// 	else
-		// 	{
-		// 		info->answer_type = ACONST;
-		// 		info->answer_const_double = num;
-		// 		info->answer_value_type = mode_float;
-		// 	}
-
-		// 	node_set_next(nd);
-		// }
-		// break;
 		// case OP_STRING:
 		// 	node_set_next(nd);
 		// 	break;
@@ -715,6 +697,13 @@ static void statement(information *const info, node *const nd)
 		break;
 		case OP_RETURN_VOID:
 		{
+			if (info->was_return)
+			{
+				info->was_return = 0;
+				node_set_next(nd);
+				break;
+			}
+
 			if (info->was_dynamic)
 			{
 				to_code_stack_load(info);
@@ -726,6 +715,8 @@ static void statement(information *const info, node *const nd)
 		break;
 		case OP_RETURN_VAL:
 		{
+			info->was_return = 1;
+
 			if (info->was_dynamic)
 			{
 				to_code_stack_load(info);
@@ -768,7 +759,7 @@ static void statement(information *const info, node *const nd)
 			item_t args_type[128];
 
 			node_set_next(nd);
-			const item_t string_length = node_get_arg(nd, 0);
+			const item_t string_length = node_get_argc(nd) - 4;
 			node_set_next(nd); // OP_STRING
 			for (item_t i = 0; i < N; i++)
 			{
@@ -1078,6 +1069,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.request_reg = 0;
 	info.answer_reg = 0;
 	info.was_memcpy = 0;
+	info.was_return = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
