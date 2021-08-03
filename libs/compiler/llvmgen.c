@@ -101,6 +101,121 @@ static void type_to_io(information *const info, const item_t type)
 	}
 }
 
+static void block(information *const info, node *const nd)
+{
+	const size_t block_size = node_get_amount(nd);
+	node_set_next(nd); // OP_BLOCK
+
+	for (size_t i = 0; i < block_size; i++)
+	{
+		switch (node_get_type(nd))
+		{
+			case OP_DECL_ARR:
+			{
+				node id = node_get_child(nd, node_get_amount(nd) - 1);
+				if (node_get_type(&id) != OP_DECL_ID)
+				{
+					id = node_get_child(nd, node_get_amount(nd) - 2);
+				}
+
+				const item_t displ = node_get_arg(&id, 0);
+				const item_t elem_type = node_get_arg(&id, 1);
+				const size_t N = (size_t)node_get_arg(&id, 2);
+				const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
+				const size_t index = hash_add(&info->arrays, displ, 1 + N);
+				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+
+				node_set_next(nd);
+				// получение и сохранение границ
+				const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
+				// for (size_t i = 1; i <= N && has_bounds; i++)
+				// {
+				// 	info->variable_location = LFREE;
+				// 	expression(info, nd);
+
+				// 	if (!has_initializer)
+				// 	{
+				// 		if (info->answer_type == ACONST)
+				// 		{
+				// 			if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+				// 			{
+				// 				system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+				// 			}
+
+				// 			hash_set_by_index(&info->arrays, index, i, info->answer_const);
+				// 		}
+				// 		else // if (info->answer_type == AREG) динамический массив
+				// 		{
+				// 			if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+				// 			{
+				// 				system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+				// 			}
+
+				// 			hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+				// 			hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+				// 		}
+				// 	}
+				// }
+	// 			node_set_next(nd);	// OP_DECL_ID
+
+	// 			// объявление массива без инициализации, с инициализацией объявление происходит в init
+	// 			// объявление массива, если он статический
+	// 			if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_initializer)
+	// 			{
+	// 				to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+	// 			}
+	// 			else if (!has_initializer) // объявление массива, если он динамический
+	// 			{
+	// 				if (!info->was_dynamic)
+	// 				{
+	// 					to_code_stack_save(info);
+	// 				}
+	// 				to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
+	// 				info->was_dynamic = 1;
+	// 			}
+
+	// 			if (has_initializer)
+	// 			{
+	// 				init(info, nd, displ, elem_type);
+	// 			}
+			}
+			break;
+			case OP_DECL_ID:
+			{
+				const item_t displ = node_get_arg(nd, 0);
+				const item_t elem_type = node_get_arg(nd, 1);
+				const item_t N = node_get_arg(nd, 2);
+				const item_t all = node_get_arg(nd, 3);
+
+				if (N == 0) // обычная переменная int a; или struct point p;
+				{
+					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
+					type_to_io(info, elem_type);
+					uni_printf(info->sx->io, ", align 4\n");
+
+					info->variable_location = LMEM;
+					info->request_reg = displ;
+				}
+
+				node_set_next(nd);
+				if (all)
+				{
+					// init(info, nd, displ, elem_type);
+				}
+			}
+			break;
+			case OP_NOP:
+			case OP_DECL_STRUCT:
+			case OP_DECL_STRUCT_END:
+				node_set_next(nd);
+				break;
+			default:
+				// statement(info, nd);
+				break;
+		}
+	}
+}
+
 static int codegen(information *const info)
 {
 	int was_stack_functions = 0;
@@ -150,7 +265,7 @@ static int codegen(information *const info)
 				}
 
 				node_set_next(&root);
-				// block(info, &root);
+				block(info, &root);
 				uni_printf(info->sx->io, "}\n\n");
 
 				was_stack_functions |= info->was_dynamic;
