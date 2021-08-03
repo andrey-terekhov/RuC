@@ -78,7 +78,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 		case OP_STRING:
-			argc = 2;
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
@@ -90,6 +90,9 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 				case 2:
 					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "index");
 					break;
 			}
 			break;
