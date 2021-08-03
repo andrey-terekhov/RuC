@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "errors.h"
 #include "map.h"
+#include "strings.h"
 #include "tree.h"
 #include "vector.h"
 
@@ -68,6 +69,8 @@ typedef struct syntax
 {
 	universal_io *io;			/**< Universal io structure */
 	node nd;					/**< Node for expression subtree [temp] */
+
+	strings string_literals;	/**< String literals list */
 
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
@@ -121,6 +124,27 @@ bool sx_is_correct(syntax *const sx);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int sx_clear(syntax *const sx);
+
+
+/**
+ *	Add new dynamic UTF-8 string to string literal vector
+ *
+ *	@param	sx				Syntax structure
+ *	@param	str				Dynamic UTF-8 string
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+size_t string_add(syntax *const sx, const vector *const str);
+
+/**
+ *	Get string
+ *
+ *	@param	sx				Syntax structure
+ *	@param	index			Index
+ *
+ *	@return	String, @c NULL on failure
+ */
+const char* string_get(const syntax *const sx, const size_t index);
 
 
 /**

@@ -358,6 +358,7 @@ static token_t lex_string_literal(lexer *const lxr)
 		skip_whitespace(lxr);
 	}
 
+	lxr->num_string = string_add(lxr->sx, &lxr->lexstr);
 	return TK_STRING;
 }
 
