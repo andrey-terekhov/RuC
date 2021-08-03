@@ -16,7 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
-// #include "codes.h"
+#include "codes.h"
 #include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
@@ -75,6 +75,31 @@ typedef struct information
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
 
+
+static void type_to_io(information *const info, const item_t type)
+{
+	if (type_is_integer(type))
+	{
+		uni_printf(info->sx->io, "i32");
+	}
+	else if (type_is_floating(type))
+	{
+		uni_printf(info->sx->io, "double");
+	}
+	else if (type_is_void(type))
+	{
+		uni_printf(info->sx->io, "void");
+	}
+	else if (type_is_structure(info->sx, type))
+	{
+		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
+	}
+	else if (type_is_pointer(info->sx, type))
+	{
+		type_to_io(info, type_get(info->sx, (size_t)type + 1));
+		uni_printf(info->sx->io, "*");
+	}
+}
 
 static int codegen(information *const info)
 {
@@ -154,22 +179,22 @@ static int codegen(information *const info)
 
 static void structs_declaration(information *const info)
 {
-	const size_t modes_size = vector_size(&info->sx->types);
-	for (size_t i = 0; i < modes_size; i++)
+	const size_t types_size = vector_size(&info->sx->types);
+	for (size_t i = 0; i < types_size; i++)
 	{
-		// if (type_is_struct(info->sx, i) && i != 2)
-		// {
-		// 	uni_printf(info->sx->io, "%%struct_opt.%zi = type { ", i);
+		if (type_is_structure(info->sx, i) && i != 2)
+		{
+			uni_printf(info->sx->io, "%%struct_opt.%zi = type { ", i);
 
-		// 	const size_t fields = (size_t)type_get(info->sx, i + 2);
-		// 	for (size_t j = 0; j < fields; j += 2)
-		// 	{
-		// 		uni_printf(info->sx->io, j == 0 ? "" : ", ");
-		// 		// type_to_io(info, mode_get(info->sx, i + 3 + j));
-		// 	}
+			const size_t fields = (size_t)type_get(info->sx, i + 2);
+			for (size_t j = 0; j < fields; j += 2)
+			{
+				uni_printf(info->sx->io, j == 0 ? "" : ", ");
+				type_to_io(info, type_get(info->sx, i + 3 + j));
+			}
 
-		// 	uni_printf(info->sx->io, " }\n");
-		// }
+			uni_printf(info->sx->io, " }\n");
+		}
 	}
 	uni_printf(info->sx->io, " \n");
 }
@@ -186,7 +211,7 @@ static void structs_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, syntax *const sx)
 {
-	// tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 	if (optimize_for_llvm(ws, sx))
 	{
 		return -1;
