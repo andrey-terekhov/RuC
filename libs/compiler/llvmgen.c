@@ -108,60 +108,58 @@ static int codegen(information *const info)
 
 	while (node_set_next(&root) == 0)
 	{
-		// switch (node_get_type(&root))
-		// {
-		// 	case OP_FUNC_DEF:
-		// 	{
-		// 		const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-		// 		const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
-		// 		const size_t parameters = (size_t)mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
-		// 		info->was_dynamic = 0;
+		switch (node_get_type(&root))
+		{
+			case OP_FUNC_DEF:
+			{
+				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
+				const item_t func_type = type_get(info->sx, (size_t)ident_get_type(info->sx, ref_ident) + 1);
+				const size_t parameters = (size_t)type_get(info->sx, (size_t)ident_get_type(info->sx, ref_ident) + 2);
+				info->was_dynamic = 0;
 
-		// 		if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
-		// 		{
-		// 			uni_printf(info->io, "define i32 @main(");
-		// 		}
-		// 		else
-		// 		{
-		// 			uni_printf(info->io, "define ");
-		// 			type_to_io(info, func_type);
-		// 			uni_printf(info->io, " @func%zi(", ref_ident);
-		// 		}
-		// 		for (size_t i = 0; i < parameters; i++)
-		// 		{
-		// 			uni_printf(info->io, i == 0 ? "" : ", ");
-		// 			type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-		// 		}
-		// 		uni_printf(info->io, ") {\n");
+				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
+				{
+					uni_printf(info->sx->io, "define i32 @main(");
+				}
+				else
+				{
+					uni_printf(info->sx->io, "define ");
+					type_to_io(info, func_type);
+					uni_printf(info->sx->io, " @func%zi(", ref_ident);
+				}
+				for (size_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->sx->io, i == 0 ? "" : ", ");
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+				}
+				uni_printf(info->sx->io, ") {\n");
 
-		// 		for (size_t i = 0; i < parameters; i++)
-		// 		{
-		// 			uni_printf(info->io, " %%var.%" PRIitem " = alloca "
-		// 				, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
-		// 			type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-		// 			uni_printf(info->io, ", align 4\n");
+				for (size_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca "
+						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, ", align 4\n");
 
-		// 			uni_printf(info->io, " store ");
-		// 			type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-		// 			uni_printf(info->io, " %%%" PRIitem ", ", i);
-		// 			type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-		// 			uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n"
-		// 				, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
-		// 		}
+					uni_printf(info->sx->io, " store ");
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, " %%%" PRIitem ", ", i);
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n"
+						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
+				}
 
-		// 		node_set_next(&root);
-		// 		block(info, &root);
-		// 		uni_printf(info->io, "}\n\n");
+				node_set_next(&root);
+				// block(info, &root);
+				uni_printf(info->sx->io, "}\n\n");
 
-		// 		was_stack_functions |= info->was_dynamic;
-		// 	}
-		// 	break;
-		// 	case OP_BLOCK_END:
-		// 		break;
-		// 	default:
-		// 		system_error(node_unexpected, node_get_type(&root));
-		// 		return -1;
-		// }
+				was_stack_functions |= info->was_dynamic;
+			}
+			break;
+			// default:
+			// 	system_error(node_unexpected, node_get_type(&root));
+			// 	return -1;
+		}
 	}
 
 	if (was_stack_functions)
