@@ -79,6 +79,15 @@ typedef struct information
 static void block(information *const info, node *const nd);
 
 
+static double to_double(const int64_t fst, const int64_t snd)
+{
+	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+	double numdouble;
+	memcpy(&numdouble, &num, sizeof(double));
+
+	return numdouble;
+}
+
 static void type_to_io(information *const info, const item_t type)
 {
 	if (type_is_integer(type))
@@ -102,6 +111,20 @@ static void type_to_io(information *const info, const item_t type)
 		type_to_io(info, type_get(info->sx, (size_t)type + 1));
 		uni_printf(info->sx->io, "*");
 	}
+}
+
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
+	, const int is_array)
+{
+	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
+		, arg, is_array ? "" : "var", displ);
+}
+
+
+static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
+	, const int is_array)
+{
+	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
 }
 
 static inline void to_code_label(information *const info, const item_t label_num)
@@ -205,6 +228,287 @@ static void check_type_and_branch(information *const info)
 	}
 }
 
+static void operand(information *const info, node *const nd)
+{
+	if (node_get_type(nd) == OP_NOP)
+	{
+		node_set_next(nd);
+	}
+
+	switch (node_get_type(nd))
+	{
+		// case OP_IDENT:
+		case OP_SELECT:
+			node_set_next(nd);
+			break;
+		// case OP_IDENT_TO_ADDR:
+		// {
+		// 	info->answer_reg = node_get_arg(nd, 0);
+		// 	info->answer_type = AMEM;
+		// 	node_set_next(nd);
+		// }
+		// break;
+		// case OP_IDENT_TO_VAL:
+		// {
+		// 	const item_t displ = node_get_arg(nd, 0);
+		// 	int is_addr_to_val = 0;
+
+		// 	node_set_next(nd);
+		// 	if (node_get_type(nd) == OP_ADDR_TO_VAL)
+		// 	{
+		// 		to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+		// 		info->register_num++;
+		// 		info->variable_location = LREG;
+		// 		node_set_next(nd);
+		// 		is_addr_to_val = 1;
+		// 	}
+		// 	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
+		// 		, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
+		// 	info->answer_reg = info->register_num++;
+		// 	info->answer_type = AREG;
+		// 	info->answer_value_type = mode_integer;
+		// }
+		// break;
+		// case OP_IDENT_TO_VAL_D:
+		// {
+		// 	const item_t displ = node_get_arg(nd, 0);
+
+		// 	to_code_load(info, info->register_num, displ, mode_float, 0, 0);
+		// 	info->answer_reg = info->register_num++;
+		// 	info->answer_type = AREG;
+		// 	info->answer_value_type = mode_float;
+		// 	node_set_next(nd);
+		// }
+		// break;
+		case OP_CONSTANT:
+		{
+			const item_t type = node_get_arg(nd, 0);
+
+			if (type_is_integer(type))
+			{
+				const item_t num = node_get_arg(nd, 2);
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_i32(info, num, info->request_reg, 0);
+					info->answer_type = AREG;
+				}
+				else
+				{
+					info->answer_type = ACONST;
+					info->answer_const = num;
+					info->answer_value_type = TYPE_INTEGER;
+				}
+			}
+			else
+			{
+				const double num = to_double(node_get_arg(nd, 2), node_get_arg(nd, 3));
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_double(info, num, info->request_reg, 0);
+					info->answer_type = AREG;
+				}
+				else
+				{
+					info->answer_type = ACONST;
+					info->answer_const_double = num;
+					info->answer_value_type = TYPE_FLOATING;
+				}
+			}
+
+			node_set_next(nd);
+		}
+		break;
+		// case OP_CONST_D:
+		// {
+		// 	const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
+
+		// 	if (info->variable_location == LMEM)
+		// 	{
+		// 		to_code_store_const_double(info, num, info->request_reg, 0);
+		// 		info->answer_type = AREG;
+		// 	}
+		// 	else
+		// 	{
+		// 		info->answer_type = ACONST;
+		// 		info->answer_const_double = num;
+		// 		info->answer_value_type = mode_float;
+		// 	}
+
+		// 	node_set_next(nd);
+		// }
+		// break;
+		// case OP_STRING:
+		// 	node_set_next(nd);
+		// 	break;
+		// case OP_SLICE_IDENT:
+		// {
+		// 	const item_t displ = node_get_arg(nd, 0);
+		// 	// TODO: как и в llvmopt, это работает только для двумерных массивов,
+		// 	// 	надо подумать над этим потом (может общую функцию сделать?)
+		// 	const item_t type = node_get_arg(nd, 1) > 0
+		// 							? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
+		// 							: node_get_arg(nd, 1);
+		// 	item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+		// 	const location_t location = info->variable_location;
+		// 	node_set_next(nd);
+
+		// 	info->variable_location = LFREE;
+		// 	expression(info, nd);
+
+		// 	// TODO: пока только для динамических массивов размерности 2
+		// 	if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
+		// 	{
+		// 		if (info->answer_type == ACONST)
+		// 		{
+		// 			to_code_operation_const_reg_i32(info, OP_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
+		// 		}
+		// 		else // if (info->answer_type == AREG)
+		// 		{
+		// 			to_code_operation_reg_reg(info, OP_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
+		// 				mode_integer);
+		// 		}
+
+		// 		info->answer_type = AREG;
+		// 		info->answer_reg = info->register_num++;
+		// 	}
+
+		// 	// Проверка, что значение cur_dimension корректное и в пределах допустимого
+		// 	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+		// 	if (-1 < cur_dimension && cur_dimension < 5)
+		// 	{
+		// 		to_code_slice(info, displ, cur_dimension, 0, type);
+		// 	}
+
+		// 	item_t prev_slice = info->register_num - 1;
+		// 	while (node_get_type(nd) == OP_SLICE)
+		// 	{
+		// 		node_set_next(nd);
+		// 		info->variable_location = LFREE;
+		// 		expression(info, nd);
+		// 		cur_dimension--;
+
+		// 		// Проверка, что значение cur_dimension корректное и в пределах допустимого
+		// 		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+		// 		if (-1 < cur_dimension && cur_dimension < 5)
+		// 		{
+		// 			to_code_slice(info, displ, cur_dimension, prev_slice, type);
+		// 		}
+		// 		prev_slice = info->register_num - 1;
+		// 	}
+
+		// 	// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
+		// 	if (node_get_type(nd) == OP_ADDR_TO_VAL)
+		// 	{
+		// 		node_set_next(nd);
+		// 	}
+
+		// 	if (location != LMEM)
+		// 	{
+		// 		to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
+		// 		info->register_num++;
+		// 	}
+
+		// 	info->answer_reg = info->register_num - 1;
+		// 	info->answer_type = AREG;
+		// 	info->answer_value_type = type;
+		// }
+		// break;
+		// case OP_CALL1:
+		// {
+		// 	const item_t args = node_get_arg(nd, 0);
+		// 	item_t arguments[128];
+		// 	double arguments_double[128];
+		// 	answer_t arguments_type[128];
+		// 	item_t arguments_value_type[128];
+
+		// 	node_set_next(nd);
+		// 	node_set_next(nd); // OP_IDENT
+		// 	for (item_t i = 0; i < args; i++)
+		// 	{
+		// 		info->variable_location = LFREE;
+		// 		expression(info, nd);
+		// 		// TODO: сделать параметры других типов (логическое)
+		// 		arguments_type[i] = info->answer_type;
+		// 		arguments_value_type[i] = info->answer_value_type;
+		// 		if (info->answer_type == AREG)
+		// 		{
+		// 			arguments[i] = info->answer_reg;
+		// 		}
+		// 		else if (mode_is_int(info->answer_value_type)) // ACONST
+		// 		{
+		// 			arguments[i] = info->answer_const;
+		// 		}
+		// 		else // double
+		// 		{
+		// 			arguments_double[i] = info->answer_const_double;
+		// 		}
+		// 	}
+
+		// 	const size_t ref_ident = (size_t)node_get_arg(nd, 0);
+		// 	const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+
+		// 	node_set_next(nd); // OP_CALL2
+
+		// 	if (func_type != mode_void)
+		// 	{
+		// 		uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
+		// 		info->answer_type = AREG;
+		// 		info->answer_value_type = func_type;
+		// 		info->answer_reg = info->register_num++;
+		// 	}
+		// 	uni_printf(info->sx->io, " call ");
+		// 	type_to_io(info, func_type);
+		// 	uni_printf(info->sx->io, " @func%zi(", ref_ident);
+
+		// 	for (item_t i = 0; i < args; i++)
+		// 	{
+		// 		if (i != 0)
+		// 		{
+		// 			uni_printf(info->sx->io, ", ");
+		// 		}
+
+		// 		type_to_io(info, arguments_value_type[i]);
+		// 		uni_printf(info->sx->io, " signext ");
+		// 		if (arguments_type[i] == AREG)
+		// 		{
+		// 			uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
+		// 		}
+		// 		else if (mode_is_int(arguments_value_type[i])) // ACONST
+		// 		{
+		// 			uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
+		// 		}
+		// 		else // double
+		// 		{
+		// 			uni_printf(info->sx->io, "%f", arguments_double[i]);
+		// 		}
+		// 	}
+		// 	uni_printf(info->sx->io, ")\n");
+		// }
+		// break;
+		default:
+			node_set_next(nd);
+			break;
+	}
+}
+
+static void expression(information *const info, node *const nd)
+{
+	switch (node_get_type(nd))
+	{
+		case OP_UNARY:
+			// unary_operation(info, nd);
+			break;
+		case OP_BINARY:
+			// binary_operation(info, nd);
+			break;
+		default:
+			operand(info, nd);
+			break;
+	}
+}
+
 static void statement(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
@@ -229,7 +533,7 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			info->variable_location = LFREE;
-			// expression(info, nd);
+			expression(info, nd);
 
 			check_type_and_branch(info);
 
@@ -255,7 +559,7 @@ static void statement(information *const info, node *const nd)
 		case OP_DEFAULT:
 		{
 			node_set_next(nd);
-			// expression(info, nd);
+			expression(info, nd);
 			statement(info, nd);
 		}
 		break;
@@ -278,7 +582,7 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label_condition);
 			to_code_label(info, label_condition);
 			info->variable_location = LFREE;
-			// expression(info, nd);
+			expression(info, nd);
 
 			check_type_and_branch(info);
 
@@ -313,7 +617,7 @@ static void statement(information *const info, node *const nd)
 			statement(info, nd);
 
 			info->variable_location = LFREE;
-			// expression(info, nd);
+			expression(info, nd);
 
 			check_type_and_branch(info);
 
@@ -350,7 +654,7 @@ static void statement(information *const info, node *const nd)
 
 			if (ref_from)
 			{
-				// expression(info, nd);
+				expression(info, nd);
 			}
 
 			to_code_unconditional_branch(info, label_condition);
@@ -358,7 +662,7 @@ static void statement(information *const info, node *const nd)
 
 			if (ref_cond)
 			{
-				// expression(info, nd);
+				expression(info, nd);
 			}
 			// TODO: проверить разные типы условий: const, reg
 			check_type_and_branch(info);
@@ -366,7 +670,7 @@ static void statement(information *const info, node *const nd)
 			to_code_label(info, label_incr);
 			if (ref_incr)
 			{
-				// expression(info, nd);
+				expression(info, nd);
 			}
 
 			to_code_unconditional_branch(info, label_condition);
@@ -429,7 +733,7 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			info->variable_location = LREG;
-			// expression(info, nd);
+			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
 			if (info->answer_type == ACONST && type_is_integer(info->answer_value_type))
@@ -459,18 +763,17 @@ static void statement(information *const info, node *const nd)
 			break;
 		case OP_PRINTF:
 		{
-			const item_t N = node_get_arg(nd, 0);
+			const item_t N = node_get_amount(nd) - 1;
 			item_t args[128];
 			item_t args_type[128];
 
 			node_set_next(nd);
 			const item_t string_length = node_get_arg(nd, 0);
 			node_set_next(nd); // OP_STRING
-			node_set_next(nd); // OP_EXPR_END
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
-				// expression(info, nd);
+				expression(info, nd);
 				args[i] = info->answer_reg;
 				args_type[i] = info->answer_value_type;
 			}
@@ -496,7 +799,7 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		default:
-			// expression(info, nd);
+			expression(info, nd);
 			break;
 	}
 }
@@ -517,7 +820,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		for (item_t i = 0; i < N; i++)
 		{
 			info->variable_location = LFREE;
-			// expression(info, nd);
+			expression(info, nd);
 		}
 	}
 	else if (node_get_type(nd) == OP_STRUCT_INIT)
@@ -527,12 +830,12 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
 		{
-			// expression(info, nd);
+			expression(info, nd);
 		}
 	}
 	else
 	{
-		// expression(info, nd);
+		expression(info, nd);
 	}
 }
 
