@@ -183,13 +183,13 @@ typedef enum builtin
 	BI_ROBOT_RECEIVE_STRING	= 94,
 
 	// Thread functions
-	BI_CREATE				= 98,
-	BI_GETNUM				= 102,
-	BI_SLEEP				= 106,
-	BI_JOIN					= 110,
-	BI_EXIT					= 114,
-	BI_INIT					= 118,
-	BI_DESTROY				= 122,
+	BI_T_CREATE				= 98,
+	BI_T_GETNUM				= 102,
+	BI_T_SLEEP				= 106,
+	BI_T_JOIN				= 110,
+	BI_T_EXIT				= 114,
+	BI_T_INIT				= 118,
+	BI_T_DESTROY			= 122,
 
 	BI_SEM_CREATE			= 126,
 	BI_SEM_WAIT				= 130,
@@ -198,7 +198,9 @@ typedef enum builtin
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
 
-	BEGIN_USER_FUNC			= 144,
+	BI_EXIT					= 146,
+
+	BEGIN_USER_FUNC			= 150,
 } builtin_t;
 
 
