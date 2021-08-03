@@ -62,9 +62,9 @@ int main()
 	// j += 3 + *pointer;
 	// struct point a, b, c;
 	// char image_file[] = "i0001.bmp";
-	// double f[4] = {1.1, 2.2, 3.3, 4.4};
+	double f[4] = {1.1, 2.2, 3.3, 4.4};
 	// int f1[] = {1, 2, 3};
-	double a[5][3];
+	// double a[5][3];
 	// int a[5];
 	// int a1[5][6];						
 	// double c[j][i];
