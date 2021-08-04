@@ -78,6 +78,7 @@ typedef struct information
 } information;
 
 
+static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
@@ -125,6 +126,16 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->sx->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
 }
 
+static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
+	, const int is_array, const int is_pointer)
+{
+	uni_printf(info->sx->io, " store ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "%s %%%s.%" PRIitem ", ", is_pointer ? "*" : "", is_pointer ? "var" : "", reg);
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+}
+
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
 	, const int is_array)
 {
@@ -136,6 +147,18 @@ static inline void to_code_store_const_double(information *const info, const dou
 	, const int is_array)
 {
 	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
+}
+
+static void to_code_try_zext_to(information *const info)
+{
+	if (info->answer_type != ALOGIC)
+	{
+		return;
+	}
+
+	uni_printf(info->sx->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
 }
 
 static inline void to_code_label(information *const info, const item_t label_num)
@@ -475,6 +498,82 @@ static void operand(information *const info, node *const nd)
 	}
 }
 
+static void assignment_expression(information *const info, node *const nd)
+{
+	const item_t assignment_type = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
+	item_t displ = 0, memory_reg = 0;
+	int is_array;
+
+	node_set_next(nd);
+	if (node_get_type(nd) == OP_IDENTIFIER)
+	{
+		is_array = 0;
+		displ = ident_get_displ(info->sx, node_get_arg(nd, 2));
+		node_set_next(nd);
+	}
+	else // OP_SLICE_IDENT
+	{
+		info->variable_location = LMEM;
+		operand(info, nd); // OP_SLICE_IDENT
+		memory_reg = info->answer_reg;
+	}
+
+	info->variable_location = LFREE;
+	expression(info, nd);
+
+	to_code_try_zext_to(info);
+	item_t result = info->answer_reg;
+
+	if (assignment_type != BIN_ASSIGN)
+	{
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+		info->register_num++;
+
+		if (info->answer_type == AREG)
+		{
+			// to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
+		}
+		// ACONST
+		else if (type_is_integer(operation_type))
+		{
+			// to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
+		}
+		else
+		{
+			// to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
+			// 	, info->answer_const_double);
+		}
+
+		result = info->register_num++;
+		info->answer_type = AREG;
+	}
+
+	if (info->answer_type == AREG || info->answer_type == AMEM)
+	{
+		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
+			, info->answer_type == AMEM ? 1 : 0);
+	}
+	// ACONST && =
+	else if (type_is_integer(operation_type))
+	{
+		to_code_store_const_i32(info, info->answer_const, is_array ? memory_reg : displ, is_array);
+	}
+	else
+	{
+		to_code_store_const_double(info, info->answer_const_double, is_array ? memory_reg : displ, is_array);
+	}
+}
+
+static void binary_operation(information *const info, node *const nd)
+{
+	if (operation_is_assignment(node_get_arg(nd, 2)))
+	{
+		assignment_expression(info, nd);
+		return;
+	}
+}
+
 static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
@@ -483,7 +582,7 @@ static void expression(information *const info, node *const nd)
 			// unary_operation(info, nd);
 			break;
 		case OP_BINARY:
-			// binary_operation(info, nd);
+			binary_operation(info, nd);
 			break;
 		default:
 			operand(info, nd);
@@ -496,11 +595,8 @@ static void statement(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case OP_BLOCK:
-		{
 			block(info, nd);
-			node_set_next(nd); // OP_BLOCK_END
-		}
-		break;
+			break;
 		case OP_IF:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
