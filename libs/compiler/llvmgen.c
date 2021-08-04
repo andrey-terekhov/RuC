@@ -116,15 +116,15 @@ static void type_to_io(information *const info, const item_t type)
 	}
 }
 
-static void operation_to_io(universal_io *const io, const item_t type)
+static void operation_to_io(universal_io *const io, const item_t operation_type, const item_t type)
 {
-	switch (type)
+	switch (operation_type)
 	{
 		// case UN_PREINC:
 		// case UN_POSTINC:
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			uni_printf(io, "add nsw");
+			uni_printf(io, "%s", type_is_integer(type) ? "add nsw" : "fadd");
 			break;
 
 		// case UN_PREDEC:
@@ -132,17 +132,17 @@ static void operation_to_io(universal_io *const io, const item_t type)
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
 		// case UN_MINUS:
-			uni_printf(io, "sub nsw");
+			uni_printf(io, "%s", type_is_integer(type) ? "sub nsw" : "fsub");
 			break;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
-			uni_printf(io, "mul nsw");
+			uni_printf(io, "%s", type_is_integer(type) ? "mul nsw" : "fmul");
 			break;
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			uni_printf(io, "sdiv");
+			uni_printf(io, "%s", type_is_integer(type) ? "sdiv nsw" : "fdiv");
 			break;
 
 		case BIN_REM_ASSIGN:
@@ -177,91 +177,23 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			break;
 
 		case BIN_EQ:
-			uni_printf(io, "icmp eq");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp eq" : "fcmp oeq");
 			break;
 		case BIN_NE:
-			uni_printf(io, "icmp ne");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp ne" : "fcmp one");
 			break;
 		case BIN_LT:
-			uni_printf(io, "icmp slt");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp slt" : "fcmp olt");
 			break;
 		case BIN_GT:
-			uni_printf(io, "icmp sgt");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp sgt" : "fcmp ogt");
 			break;
 		case BIN_LE:
-			uni_printf(io, "icmp sle");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp sle" : "fcmp ole");
 			break;
 		case BIN_GE:
-			uni_printf(io, "icmp sge");
+			uni_printf(io, "%s", type_is_integer(type) ? "icmp sge" : "fcmp oge");
 			break;
-
-		// case OP_PRE_INC_R:
-		// case OP_PRE_INC_R_V:
-		// case OP_POST_INC_R:
-		// case OP_POST_INC_R_V:
-		// case OP_ADD_ASSIGN_R:
-		// case OP_ADD_ASSIGN_R_V:
-		// case OP_ADD_R:
-		// case OP_ADD_ASSIGN_AT_R:
-		// case OP_ADD_ASSIGN_AT_R_V:
-		// case OP_PRE_INC_AT_R:
-		// case OP_PRE_INC_AT_R_V:
-		// case OP_POST_INC_AT_R:
-		// case OP_POST_INC_AT_R_V:
-		// 	uni_printf(io, "fadd");
-		// 	break;
-
-		// case OP_PRE_DEC_R:
-		// case OP_PRE_DEC_R_V:
-		// case OP_POST_DEC_R:
-		// case OP_POST_DEC_R_V:
-		// case OP_SUB_ASSIGN_R:
-		// case OP_SUB_ASSIGN_R_V:
-		// case OP_SUB_R:
-		// case OP_UNMINUS_R:
-		// case OP_SUB_ASSIGN_AT_R:
-		// case OP_SUB_ASSIGN_AT_R_V:
-		// case OP_PRE_DEC_AT_R:
-		// case OP_PRE_DEC_AT_R_V:
-		// case OP_POST_DEC_AT_R:
-		// case OP_POST_DEC_AT_R_V:
-		// 	uni_printf(io, "fsub");
-		// 	break;
-
-		// case OP_MUL_ASSIGN_R:
-		// case OP_MUL_ASSIGN_R_V:
-		// case OP_MUL_R:
-		// case OP_MUL_ASSIGN_AT_R:
-		// case OP_MUL_ASSIGN_AT_R_V:
-		// 	uni_printf(io, "fmul");
-		// 	break;
-
-		// case OP_DIV_ASSIGN_R:
-		// case OP_DIV_ASSIGN_R_V:
-		// case OP_DIV_R:
-		// case OP_DIV_ASSIGN_AT_R:
-		// case OP_DIV_ASSIGN_AT_R_V:
-		// 	uni_printf(io, "fdiv");
-		// 	break;
-
-		// case OP_EQ_R:
-		// 	uni_printf(io, "fcmp oeq");
-		// 	break;
-		// case OP_NE_R:
-		// 	uni_printf(io, "fcmp one");
-		// 	break;
-		// case OP_LT_R:
-		// 	uni_printf(io, "fcmp olt");
-		// 	break;
-		// case OP_GT_R:
-		// 	uni_printf(io, "fcmp ogt");
-		// 	break;
-		// case OP_LE_R:
-		// 	uni_printf(io, "fcmp ole");
-		// 	break;
-		// case OP_GE_R:
-		// 	uni_printf(io, "fcmp oge");
-		// 	break;
 	}
 }
 
@@ -269,7 +201,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation);
+	operation_to_io(info->sx->io, operation, type);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
