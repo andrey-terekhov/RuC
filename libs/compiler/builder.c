@@ -117,14 +117,14 @@ node build_floating_literal_expression(syntax *const sx, const double value, con
 	return nd;
 }
 
-node build_string_literal_expression(syntax *const sx, const size_t string, const location loc)
+node build_string_literal_expression(syntax *const sx, const size_t index, const location loc)
 {
 	const item_t type = type_array(sx, TYPE_INTEGER);
 
 	node nd = node_create(sx, OP_STRING);
 	node_add_arg(&nd, type);						// Тип строки
 	node_add_arg(&nd, LVALUE);						// Категория значения строки
-	node_add_arg(&nd, (item_t)string);				// Индекс в списке строк
+	node_add_arg(&nd, (item_t)index);				// Индекс в списке строк
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция строки
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки
 
