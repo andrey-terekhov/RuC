@@ -116,6 +116,177 @@ static void type_to_io(information *const info, const item_t type)
 	}
 }
 
+static void operation_to_io(universal_io *const io, const item_t type)
+{
+	switch (type)
+	{
+		case UN_PREINC:
+		case UN_POSTINC:
+		case BIN_ADD_ASSIGN:
+		case BIN_ADD:
+			uni_printf(io, "add nsw");
+			break;
+
+		case UN_PREDEC:
+		case UN_POSTDEC:
+		case BIN_SUB_ASSIGN:
+		case BIN_SUB:
+		case UN_MINUS:
+			uni_printf(io, "sub nsw");
+			break;
+
+		case BIN_MUL_ASSIGN:
+		case BIN_MUL:
+			uni_printf(io, "mul nsw");
+			break;
+
+		case BIN_DIV_ASSIGN:
+		case BIN_DIV:
+			uni_printf(io, "sdiv");
+			break;
+
+		case BIN_REM_ASSIGN:
+		case BIN_REM:
+			uni_printf(io, "srem");
+			break;
+
+		case BIN_SHL_ASSIGN:
+		case BIN_SHL:
+			uni_printf(io, "shl");
+			break;
+
+		// case OP_SHR_ASSIGN:
+		// case OP_SHR_ASSIGN_V:
+		// case OP_SHR:
+		// case OP_SHR_ASSIGN_AT:
+		// case OP_SHR_ASSIGN_AT_V:
+		// 	uni_printf(io, "ashr");
+		// 	break;
+
+		// case OP_AND_ASSIGN:
+		// case OP_AND_ASSIGN_V:
+		// case OP_AND:
+		// case OP_AND_ASSIGN_AT:
+		// case OP_AND_ASSIGN_AT_V:
+		// 	uni_printf(io, "and");
+		// 	break;
+
+		// case OP_XOR_ASSIGN:
+		// case OP_XOR_ASSIGN_V:
+		// case OP_XOR:
+		// case OP_NOT:
+		// case OP_XOR_ASSIGN_AT:
+		// case OP_XOR_ASSIGN_AT_V:
+		// 	uni_printf(io, "xor");
+		// 	break;
+
+		// case OP_OR_ASSIGN:
+		// case OP_OR_ASSIGN_V:
+		// case OP_OR:
+		// case OP_OR_ASSIGN_AT:
+		// case OP_OR_ASSIGN_AT_V:
+		// 	uni_printf(io, "or");
+		// 	break;
+
+		// case OP_EQ:
+		// 	uni_printf(io, "icmp eq");
+		// 	break;
+		// case OP_NE:
+		// 	uni_printf(io, "icmp ne");
+		// 	break;
+		// case OP_LT:
+		// 	uni_printf(io, "icmp slt");
+		// 	break;
+		// case OP_GT:
+		// 	uni_printf(io, "icmp sgt");
+		// 	break;
+		// case OP_LE:
+		// 	uni_printf(io, "icmp sle");
+		// 	break;
+		// case OP_GE:
+		// 	uni_printf(io, "icmp sge");
+		// 	break;
+
+		// case OP_PRE_INC_R:
+		// case OP_PRE_INC_R_V:
+		// case OP_POST_INC_R:
+		// case OP_POST_INC_R_V:
+		// case OP_ADD_ASSIGN_R:
+		// case OP_ADD_ASSIGN_R_V:
+		// case OP_ADD_R:
+		// case OP_ADD_ASSIGN_AT_R:
+		// case OP_ADD_ASSIGN_AT_R_V:
+		// case OP_PRE_INC_AT_R:
+		// case OP_PRE_INC_AT_R_V:
+		// case OP_POST_INC_AT_R:
+		// case OP_POST_INC_AT_R_V:
+		// 	uni_printf(io, "fadd");
+		// 	break;
+
+		// case OP_PRE_DEC_R:
+		// case OP_PRE_DEC_R_V:
+		// case OP_POST_DEC_R:
+		// case OP_POST_DEC_R_V:
+		// case OP_SUB_ASSIGN_R:
+		// case OP_SUB_ASSIGN_R_V:
+		// case OP_SUB_R:
+		// case OP_UNMINUS_R:
+		// case OP_SUB_ASSIGN_AT_R:
+		// case OP_SUB_ASSIGN_AT_R_V:
+		// case OP_PRE_DEC_AT_R:
+		// case OP_PRE_DEC_AT_R_V:
+		// case OP_POST_DEC_AT_R:
+		// case OP_POST_DEC_AT_R_V:
+		// 	uni_printf(io, "fsub");
+		// 	break;
+
+		// case OP_MUL_ASSIGN_R:
+		// case OP_MUL_ASSIGN_R_V:
+		// case OP_MUL_R:
+		// case OP_MUL_ASSIGN_AT_R:
+		// case OP_MUL_ASSIGN_AT_R_V:
+		// 	uni_printf(io, "fmul");
+		// 	break;
+
+		// case OP_DIV_ASSIGN_R:
+		// case OP_DIV_ASSIGN_R_V:
+		// case OP_DIV_R:
+		// case OP_DIV_ASSIGN_AT_R:
+		// case OP_DIV_ASSIGN_AT_R_V:
+		// 	uni_printf(io, "fdiv");
+		// 	break;
+
+		// case OP_EQ_R:
+		// 	uni_printf(io, "fcmp oeq");
+		// 	break;
+		// case OP_NE_R:
+		// 	uni_printf(io, "fcmp one");
+		// 	break;
+		// case OP_LT_R:
+		// 	uni_printf(io, "fcmp olt");
+		// 	break;
+		// case OP_GT_R:
+		// 	uni_printf(io, "fcmp ogt");
+		// 	break;
+		// case OP_LE_R:
+		// 	uni_printf(io, "fcmp ole");
+		// 	break;
+		// case OP_GE_R:
+		// 	uni_printf(io, "fcmp oge");
+		// 	break;
+	}
+}
+
+static void to_code_operation_reg_reg(information *const info, const item_t operation
+	, const item_t fst, const item_t snd, const item_t type)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation);
+	uni_printf(info->sx->io, " ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -533,7 +704,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 		if (info->answer_type == AREG)
 		{
-			// to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
+			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
 		// ACONST
 		else if (type_is_integer(operation_type))
