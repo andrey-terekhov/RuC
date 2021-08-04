@@ -514,6 +514,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 	else // OP_SLICE_IDENT
 	{
+		is_array = 1;
 		info->variable_location = LMEM;
 		operand(info, nd); // OP_SLICE_IDENT
 		memory_reg = info->answer_reg;
