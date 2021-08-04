@@ -120,18 +120,18 @@ static void operation_to_io(universal_io *const io, const item_t type)
 {
 	switch (type)
 	{
-		case UN_PREINC:
-		case UN_POSTINC:
+		// case UN_PREINC:
+		// case UN_POSTINC:
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
 			uni_printf(io, "add nsw");
 			break;
 
-		case UN_PREDEC:
-		case UN_POSTDEC:
+		// case UN_PREDEC:
+		// case UN_POSTDEC:
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-		case UN_MINUS:
+		// case UN_MINUS:
 			uni_printf(io, "sub nsw");
 			break;
 
@@ -155,57 +155,45 @@ static void operation_to_io(universal_io *const io, const item_t type)
 			uni_printf(io, "shl");
 			break;
 
-		// case OP_SHR_ASSIGN:
-		// case OP_SHR_ASSIGN_V:
-		// case OP_SHR:
-		// case OP_SHR_ASSIGN_AT:
-		// case OP_SHR_ASSIGN_AT_V:
-		// 	uni_printf(io, "ashr");
-		// 	break;
+		case BIN_SHR_ASSIGN:
+		case BIN_SHR:
+			uni_printf(io, "ashr");
+			break;
 
-		// case OP_AND_ASSIGN:
-		// case OP_AND_ASSIGN_V:
-		// case OP_AND:
-		// case OP_AND_ASSIGN_AT:
-		// case OP_AND_ASSIGN_AT_V:
-		// 	uni_printf(io, "and");
-		// 	break;
+		case BIN_AND_ASSIGN:
+		case BIN_AND:
+			uni_printf(io, "and");
+			break;
 
-		// case OP_XOR_ASSIGN:
-		// case OP_XOR_ASSIGN_V:
-		// case OP_XOR:
-		// case OP_NOT:
-		// case OP_XOR_ASSIGN_AT:
-		// case OP_XOR_ASSIGN_AT_V:
-		// 	uni_printf(io, "xor");
-		// 	break;
+		case BIN_XOR_ASSIGN:
+		case BIN_XOR:
+		// case UN_NOT:
+			uni_printf(io, "xor");
+			break;
 
-		// case OP_OR_ASSIGN:
-		// case OP_OR_ASSIGN_V:
-		// case OP_OR:
-		// case OP_OR_ASSIGN_AT:
-		// case OP_OR_ASSIGN_AT_V:
-		// 	uni_printf(io, "or");
-		// 	break;
+		case BIN_OR_ASSIGN:
+		case BIN_OR:
+			uni_printf(io, "or");
+			break;
 
-		// case OP_EQ:
-		// 	uni_printf(io, "icmp eq");
-		// 	break;
-		// case OP_NE:
-		// 	uni_printf(io, "icmp ne");
-		// 	break;
-		// case OP_LT:
-		// 	uni_printf(io, "icmp slt");
-		// 	break;
-		// case OP_GT:
-		// 	uni_printf(io, "icmp sgt");
-		// 	break;
-		// case OP_LE:
-		// 	uni_printf(io, "icmp sle");
-		// 	break;
-		// case OP_GE:
-		// 	uni_printf(io, "icmp sge");
-		// 	break;
+		case BIN_EQ:
+			uni_printf(io, "icmp eq");
+			break;
+		case BIN_NE:
+			uni_printf(io, "icmp ne");
+			break;
+		case BIN_LT:
+			uni_printf(io, "icmp slt");
+			break;
+		case BIN_GT:
+			uni_printf(io, "icmp sgt");
+			break;
+		case BIN_LE:
+			uni_printf(io, "icmp sle");
+			break;
+		case BIN_GE:
+			uni_printf(io, "icmp sge");
+			break;
 
 		// case OP_PRE_INC_R:
 		// case OP_PRE_INC_R_V:
