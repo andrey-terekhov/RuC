@@ -207,6 +207,22 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	uni_printf(info->sx->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
+static void to_code_operation_reg_const_i32(information *const info, const item_t operation
+	, const item_t fst, const item_t snd)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
+}
+
+static void to_code_operation_reg_const_double(information *const info, const item_t operation
+	, const item_t fst, const double snd)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	uni_printf(info->sx->io, " double %%.%" PRIitem ", %f\n", fst, snd);
+}
+
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -342,7 +358,7 @@ static void check_type_and_branch(information *const info)
 			break;
 		case AREG:
 		{
-			// to_code_operation_reg_const_i32(info, BIN_NE, info->answer_reg, 0);
+			to_code_operation_reg_const_i32(info, BIN_NE, info->answer_reg, 0);
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -629,12 +645,12 @@ static void assignment_expression(information *const info, node *const nd)
 		// ACONST
 		else if (type_is_integer(operation_type))
 		{
-			// to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
+			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
 		else
 		{
-			// to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
-			// 	, info->answer_const_double);
+			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
+				, info->answer_const_double);
 		}
 
 		result = info->register_num++;
