@@ -120,18 +120,13 @@ static void operation_to_io(universal_io *const io, const item_t operation_type,
 {
 	switch (operation_type)
 	{
-		// case UN_PREINC:
-		// case UN_POSTINC:
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
 			uni_printf(io, "%s", type_is_integer(type) ? "add nsw" : "fadd");
 			break;
 
-		// case UN_PREDEC:
-		// case UN_POSTDEC:
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-		// case UN_MINUS:
 			uni_printf(io, "%s", type_is_integer(type) ? "sub nsw" : "fsub");
 			break;
 
@@ -167,7 +162,6 @@ static void operation_to_io(universal_io *const io, const item_t operation_type,
 
 		case BIN_XOR_ASSIGN:
 		case BIN_XOR:
-		// case UN_NOT:
 			uni_printf(io, "xor");
 			break;
 
@@ -904,47 +898,47 @@ static void unary_operation(information *const info, node *const nd)
 		case UN_PREDEC:
 			inc_dec_expression(info, nd);
 			break;
-		// case OP_UNMINUS:
-		// case OP_NOT:
-		// case OP_UNMINUS_R:
-		// {
-		// 	const item_t operation_type = node_get_type(nd);
-		// 	node_set_next(nd);
+		case UN_MINUS:
+		case UN_NOT:
+		{
+			const item_t operation = node_get_arg(nd, 2);
+			const item_t operation_type = node_get_arg(nd, 0);
+			node_set_next(nd);
 
-		// 	info->variable_location = LREG;
-		// 	expression(info, nd);
+			info->variable_location = LREG;
+			expression(info, nd);
 
-		// 	to_code_try_zext_to(info);
+			to_code_try_zext_to(info);
 
-		// 	info->answer_value_type = mode_integer;
-		// 	if (operation_type == OP_UNMINUS)
-		// 	{
-		// 		to_code_operation_const_reg_i32(info, OP_UNMINUS, 0, info->answer_reg);
-		// 	}
-		// 	else if (operation_type == OP_NOT)
-		// 	{
-		// 		to_code_operation_reg_const_i32(info, OP_NOT, info->answer_reg, -1);
-		// 	}
-		// 	else // OP_UNMINUS_R
-		// 	{
-		// 		to_code_operation_const_reg_double(info, OP_UNMINUS_R, 0, info->answer_reg);
-		// 		info->answer_value_type = mode_float;
-		// 	}
+			info->answer_value_type = TYPE_INTEGER;
+			if (operation == UN_MINUS && type_is_integer(operation_type))
+			{
+				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
+			}
+			else if (operation == UN_NOT)
+			{
+				to_code_operation_reg_const_i32(info, BIN_XOR, info->answer_reg, -1);
+			}
+			else if (operation == UN_MINUS && type_is_floating(operation_type))
+			{
+				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
+				info->answer_value_type = TYPE_FLOATING;
+			}
 
-		// 	info->answer_type = AREG;
-		// 	info->answer_reg = info->register_num++;
-		// }
-		// break;
-		// case OP_LOG_NOT:
-		// {
-		// 	const item_t temp = info->label_true;
-		// 	info->label_true =  info->label_false;
-		// 	info->label_false = temp;
+			info->answer_type = AREG;
+			info->answer_reg = info->register_num++;
+		}
+		break;
+		case UN_LOGNOT:
+		{
+			const item_t temp = info->label_true;
+			info->label_true =  info->label_false;
+			info->label_false = temp;
 
-		// 	node_set_next(nd);
-		// 	expression(info, nd);
-		// }
-		// break;
+			node_set_next(nd);
+			expression(info, nd);
+		}
+		break;
 		default:
 		{
 			node_set_next(nd);
