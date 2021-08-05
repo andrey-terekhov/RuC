@@ -840,6 +840,120 @@ static void integral_expression(information *const info, node *const nd, const a
 	info->answer_type = type;
 }
 
+// Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
+static void inc_dec_expression(information *const info, node *const nd)
+{
+	const item_t operation = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
+	item_t displ = 0, memory_reg = 0;
+	int is_array;
+
+	node_set_next(nd);
+	if (node_get_type(nd) == OP_IDENTIFIER)
+	{
+		is_array = 0;
+		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+		node_set_next(nd);
+	}
+	else // OP_SLICE_IDENT
+	{
+		is_array = 1;
+		info->variable_location = LMEM;
+		operand(info, nd); // OP_SLICE_IDENT
+		memory_reg = info->answer_reg;
+	}
+
+	to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+	info->answer_type = AREG;
+	info->answer_reg = info->register_num++;
+	info->answer_value_type = operation_type;
+
+	switch (operation)
+	{
+		case UN_PREINC:
+		case UN_PREDEC:
+			info->answer_reg = info->register_num;
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		{
+			if (type_is_integer(operation_type))
+			{
+				to_code_operation_reg_const_i32(info, operation == UN_PREINC || operation == UN_POSTINC ? BIN_ADD : BIN_SUB
+					, info->register_num - 1, 1);
+			}
+			else // double
+			{
+				to_code_operation_reg_const_double(info, operation == UN_PREINC || operation == UN_POSTINC ? BIN_ADD : BIN_SUB
+					, info->register_num - 1, 1.0);
+			}
+		}
+		break;
+	}
+
+	to_code_store_reg(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+	info->register_num++;
+}
+
+static void unary_operation(information *const info, node *const nd)
+{
+	switch (node_get_arg(nd, 2))
+	{
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		case UN_PREINC:
+		case UN_PREDEC:
+			inc_dec_expression(info, nd);
+			break;
+		// case OP_UNMINUS:
+		// case OP_NOT:
+		// case OP_UNMINUS_R:
+		// {
+		// 	const item_t operation_type = node_get_type(nd);
+		// 	node_set_next(nd);
+
+		// 	info->variable_location = LREG;
+		// 	expression(info, nd);
+
+		// 	to_code_try_zext_to(info);
+
+		// 	info->answer_value_type = mode_integer;
+		// 	if (operation_type == OP_UNMINUS)
+		// 	{
+		// 		to_code_operation_const_reg_i32(info, OP_UNMINUS, 0, info->answer_reg);
+		// 	}
+		// 	else if (operation_type == OP_NOT)
+		// 	{
+		// 		to_code_operation_reg_const_i32(info, OP_NOT, info->answer_reg, -1);
+		// 	}
+		// 	else // OP_UNMINUS_R
+		// 	{
+		// 		to_code_operation_const_reg_double(info, OP_UNMINUS_R, 0, info->answer_reg);
+		// 		info->answer_value_type = mode_float;
+		// 	}
+
+		// 	info->answer_type = AREG;
+		// 	info->answer_reg = info->register_num++;
+		// }
+		// break;
+		// case OP_LOG_NOT:
+		// {
+		// 	const item_t temp = info->label_true;
+		// 	info->label_true =  info->label_false;
+		// 	info->label_false = temp;
+
+		// 	node_set_next(nd);
+		// 	expression(info, nd);
+		// }
+		// break;
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+		}
+		break;
+	}
+}
+
 static void binary_operation(information *const info, node *const nd)
 {
 	if (operation_is_assignment(node_get_arg(nd, 2)))
@@ -923,7 +1037,7 @@ static void expression(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case OP_UNARY:
-			// unary_operation(info, nd);
+			unary_operation(info, nd);
 			break;
 		case OP_BINARY:
 			binary_operation(info, nd);
