@@ -142,7 +142,7 @@ static void operation_to_io(universal_io *const io, const item_t operation_type,
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			uni_printf(io, "%s", type_is_integer(type) ? "sdiv nsw" : "fdiv");
+			uni_printf(io, "%s", type_is_integer(type) ? "sdiv" : "fdiv");
 			break;
 
 		case BIN_REM_ASSIGN:
@@ -872,6 +872,49 @@ static void binary_operation(information *const info, node *const nd)
 		case BIN_GE:
 			integral_expression(info, nd, ALOGIC);
 			break;
+
+		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
+		case BIN_LOG_OR:
+		case BIN_LOG_AND:
+		{
+			const item_t label_next = info->label_num++;
+			const item_t old_label_true = info->label_true;
+			const item_t old_label_false = info->label_false;
+
+			if (node_get_arg(nd, 2) == BIN_LOG_OR)
+			{
+				info->label_false = label_next;
+			}
+			else // (node_get_arg(nd, 2) == OP_LOG_AND)
+			{
+				info->label_true = label_next;
+			}
+
+			node_set_next(nd);
+			expression(info, nd);
+
+			// TODO: сделать обработку других ответов
+			// постараться использовать функцию check_type_and_branch
+			if (info->answer_type == ALOGIC)
+			{
+				to_code_conditional_branch(info);
+			}
+
+			to_code_label(info, label_next);
+			info->label_true = old_label_true;
+			info->label_false = old_label_false;
+
+			expression(info, nd);
+		}
+		break;
+
+		default:
+		{
+			node_set_next(nd);
+			expression(info, nd);
+			expression(info, nd);
+		}
+		break;
 	}
 }
 
