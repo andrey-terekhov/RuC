@@ -1289,7 +1289,6 @@ static void statement(information *const info, node *const nd)
 				type_to_io(info, info->answer_value_type);
 				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
-			node_set_next(nd); // OP_RETURN_VOID
 		}
 		break;
 		case OP_GETID:
@@ -1498,7 +1497,7 @@ static int codegen(information *const info)
 	int was_stack_functions = 0;
 	node root = node_get_root(&info->sx->tree);
 
-	while (node_set_next(&root) == 0)
+	while (true)
 	{
 		switch (node_get_type(&root))
 		{
@@ -1548,7 +1547,13 @@ static int codegen(information *const info)
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
-			// default:
+			default:
+			{
+				if (node_set_next(&root) != 0)
+				{
+					return 0;
+				}
+			}
 			// 	system_error(node_unexpected, node_get_type(&root));
 			// 	return -1;
 		}
