@@ -632,7 +632,7 @@ static void assignment_expression(information *const info, node *const nd)
 	if (node_get_type(nd) == OP_IDENTIFIER)
 	{
 		is_array = 0;
-		displ = ident_get_displ(info->sx, node_get_arg(nd, 2));
+		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 		node_set_next(nd);
 	}
 	else // OP_SLICE_IDENT
