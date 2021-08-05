@@ -537,36 +537,37 @@ static void operand(information *const info, node *const nd)
 		// 	info->answer_value_type = type;
 		// }
 		// break;
-		// case OP_CALL1:
-		// {
-		// 	const item_t args = node_get_arg(nd, 0);
-		// 	item_t arguments[128];
-		// 	double arguments_double[128];
-		// 	answer_t arguments_type[128];
-		// 	item_t arguments_value_type[128];
+		case OP_CALL:
+		{
+			item_t arguments[128];
+			double arguments_double[128];
+			answer_t arguments_type[128];
+			item_t arguments_value_type[128];
 
-		// 	node_set_next(nd);
-		// 	node_set_next(nd); // OP_IDENT
-		// 	for (item_t i = 0; i < args; i++)
-		// 	{
-		// 		info->variable_location = LFREE;
-		// 		expression(info, nd);
-		// 		// TODO: сделать параметры других типов (логическое)
-		// 		arguments_type[i] = info->answer_type;
-		// 		arguments_value_type[i] = info->answer_value_type;
-		// 		if (info->answer_type == AREG)
-		// 		{
-		// 			arguments[i] = info->answer_reg;
-		// 		}
-		// 		else if (mode_is_int(info->answer_value_type)) // ACONST
-		// 		{
-		// 			arguments[i] = info->answer_const;
-		// 		}
-		// 		else // double
-		// 		{
-		// 			arguments_double[i] = info->answer_const_double;
-		// 		}
-		// 	}
+			node_set_next(nd);
+
+			const item_t args = type_get(info->sx, node_get_arg(nd, 0) + 2);
+			node_set_next(nd); // OP_IDENT
+			for (item_t i = 0; i < args; i++)
+			{
+				info->variable_location = LFREE;
+				expression(info, nd);
+				// TODO: сделать параметры других типов (логическое)
+				arguments_type[i] = info->answer_type;
+				arguments_value_type[i] = info->answer_value_type;
+				if (info->answer_type == AREG)
+				{
+					arguments[i] = info->answer_reg;
+				}
+				else if (type_is_integer(info->answer_value_type)) // ACONST
+				{
+					arguments[i] = info->answer_const;
+				}
+				else // double
+				{
+					arguments_double[i] = info->answer_const_double;
+				}
+			}
 
 		// 	const size_t ref_ident = (size_t)node_get_arg(nd, 0);
 		// 	const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
@@ -607,8 +608,8 @@ static void operand(information *const info, node *const nd)
 		// 		}
 		// 	}
 		// 	uni_printf(info->sx->io, ")\n");
-		// }
-		// break;
+		}
+		break;
 		default:
 			node_set_next(nd);
 			break;
