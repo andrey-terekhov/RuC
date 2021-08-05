@@ -223,6 +223,22 @@ static void to_code_operation_reg_const_double(information *const info, const it
 	uni_printf(info->sx->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
+static void to_code_operation_const_reg_i32(information *const info, const item_t operation
+	, const item_t fst, const item_t snd)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+}
+
+static void to_code_operation_const_reg_double(information *const info, const item_t operation
+	, const double fst, const item_t snd)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	uni_printf(info->sx->io, " double %f, %%.%" PRIitem "\n", fst, snd);
+}
+
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
@@ -675,145 +691,153 @@ static void assignment_expression(information *const info, node *const nd)
 
 static void integral_expression(information *const info, node *const nd, const answer_t type)
 {
-	// const item_t operation = node_get_type(nd);
-	// const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
-	// node_set_next(nd);
+	const item_t operation = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
+	node_set_next(nd);
 
-	// info->variable_location = LFREE;
-	// expression(info, nd);
+	info->variable_location = LFREE;
+	expression(info, nd);
 
-	// to_code_try_zext_to(info);
+	to_code_try_zext_to(info);
 
-	// const answer_t left_type = info->answer_type;
-	// const item_t left_reg = info->answer_reg;
-	// const item_t left_const = info->answer_const;
-	// const double left_const_double = info->answer_const_double;
+	const answer_t left_type = info->answer_type;
+	const item_t left_reg = info->answer_reg;
+	const item_t left_const = info->answer_const;
+	const double left_const_double = info->answer_const_double;
 
-	// info->variable_location = LFREE;
-	// expression(info, nd);
+	info->variable_location = LFREE;
+	expression(info, nd);
 
-	// to_code_try_zext_to(info);
+	to_code_try_zext_to(info);
 
-	// const answer_t right_type = info->answer_type;
-	// const item_t right_reg = info->answer_reg;
-	// const item_t right_const = info->answer_const;
-	// const double right_const_double = info->answer_const_double;
+	const answer_t right_type = info->answer_type;
+	const item_t right_reg = info->answer_reg;
+	const item_t right_const = info->answer_const;
+	const double right_const_double = info->answer_const_double;
 
-	// info->answer_value_type = type != ALOGIC ? operation_type : mode_integer;
+	info->answer_value_type = type != ALOGIC ? operation_type : TYPE_INTEGER;
 
-	// if (left_type == AREG && right_type == AREG)
-	// {
-	// 	to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
-	// }
-	// else if (left_type == AREG && right_type == ACONST && !is_double(operation))
-	// {
-	// 	to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
-	// }
-	// else if (left_type == AREG && right_type == ACONST) // double
-	// {
-	// 	to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
-	// }
-	// else if (left_type == ACONST && right_type == AREG && !is_double(operation))
-	// {
-	// 	to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
-	// }
-	// 	else if (left_type == ACONST && right_type == AREG) // double
-	// {
-	// 	to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
-	// }
-	// else // if (left_type == ACONST && right_type == ACONST)
-	// {
-	// 	info->answer_type = ACONST;
+	if (left_type == AREG && right_type == AREG)
+	{
+		to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
+	}
+	else if (left_type == AREG && right_type == ACONST && type_is_integer(operation_type))
+	{
+		to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
+	}
+	else if (left_type == AREG && right_type == ACONST) // double
+	{
+		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
+	}
+	else if (left_type == ACONST && right_type == AREG && operation_type)
+	{
+		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
+	}
+	else if (left_type == ACONST && right_type == AREG) // double
+	{
+		to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
+	}
+	else if (left_type == ACONST && right_type == ACONST && type_is_integer(operation_type))
+	{
+		info->answer_type = ACONST;
 
-	// 	switch (operation)
-	// 	{
-	// 		case OP_ADD:
-	// 			info->answer_const = left_const + right_const;
-	// 			break;
-	// 		case OP_SUB:
-	// 			info->answer_const = left_const - right_const;
-	// 			break;
-	// 		case OP_MUL:
-	// 			info->answer_const = left_const * right_const;
-	// 			break;
-	// 		case OP_DIV:
-	// 			info->answer_const = left_const / right_const;
-	// 			break;
-	// 		case OP_REM:
-	// 			info->answer_const = left_const % right_const;
-	// 			break;
-	// 		case OP_SHL:
-	// 			info->answer_const = left_const << right_const;
-	// 			break;
-	// 		case OP_SHR:
-	// 			info->answer_const = left_const >> right_const;
-	// 			break;
-	// 		case OP_AND:
-	// 			info->answer_const = left_const & right_const;
-	// 			break;
-	// 		case OP_XOR:
-	// 			info->answer_const = left_const ^ right_const;
-	// 			break;
-	// 		case OP_OR:
-	// 			info->answer_const = left_const | right_const;
-	// 			break;
+		switch (operation)
+		{
+			case BIN_ADD:
+				info->answer_const = left_const + right_const;
+				break;
+			case BIN_SUB:
+				info->answer_const = left_const - right_const;
+				break;
+			case BIN_MUL:
+				info->answer_const = left_const * right_const;
+				break;
+			case BIN_DIV:
+				info->answer_const = left_const / right_const;
+				break;
+			case BIN_REM:
+				info->answer_const = left_const % right_const;
+				break;
+			case BIN_SHL:
+				info->answer_const = left_const << right_const;
+				break;
+			case BIN_SHR:
+				info->answer_const = left_const >> right_const;
+				break;
+			case BIN_AND:
+				info->answer_const = left_const & right_const;
+				break;
+			case BIN_XOR:
+				info->answer_const = left_const ^ right_const;
+				break;
+			case BIN_OR:
+				info->answer_const = left_const | right_const;
+				break;
 
-	// 		case OP_EQ:
-	// 			info->answer_const = left_const == right_const;
-	// 			break;
-	// 		case OP_NE:
-	// 			info->answer_const = left_const != right_const;
-	// 			break;
-	// 		case OP_LT:
-	// 			info->answer_const = left_const < right_const;
-	// 			break;
-	// 		case OP_GT:
-	// 			info->answer_const = left_const > right_const;
-	// 			break;
-	// 		case OP_LE:
-	// 			info->answer_const = left_const <= right_const;
-	// 			break;
-	// 		case OP_GE:
-	// 			info->answer_const = left_const >= right_const;
-	// 			break;
+			case BIN_EQ:
+				info->answer_const = left_const == right_const;
+				break;
+			case BIN_NE:
+				info->answer_const = left_const != right_const;
+				break;
+			case BIN_LT:
+				info->answer_const = left_const < right_const;
+				break;
+			case BIN_GT:
+				info->answer_const = left_const > right_const;
+				break;
+			case BIN_LE:
+				info->answer_const = left_const <= right_const;
+				break;
+			case BIN_GE:
+				info->answer_const = left_const >= right_const;
+				break;
+		}
+		return;
+	}
+	else // double
+	{
+		info->answer_type = ACONST;
 
-	// 		case OP_ADD_R:
-	// 			info->answer_const_double = left_const_double + right_const_double;
-	// 			break;
-	// 		case OP_SUB_R:
-	// 			info->answer_const_double = left_const_double - right_const_double;
-	// 			break;
-	// 		case OP_MUL_R:
-	// 			info->answer_const_double = left_const_double * right_const_double;
-	// 			break;
-	// 		case OP_DIV_R:
-	// 			info->answer_const_double = left_const_double / right_const_double;
-	// 			break;
+		switch (operation)
+		{
+			case BIN_ADD:
+				info->answer_const_double = left_const_double + right_const_double;
+				break;
+			case BIN_SUB:
+				info->answer_const_double = left_const_double - right_const_double;
+				break;
+			case BIN_MUL:
+				info->answer_const_double = left_const_double * right_const_double;
+				break;
+			case BIN_DIV:
+				info->answer_const_double = left_const_double / right_const_double;
+				break;
 
-	// 		case OP_EQ_R:
-	// 			info->answer_const = left_const_double == right_const_double;
-	// 			break;
-	// 		case OP_NE_R:
-	// 			info->answer_const = left_const_double != right_const_double;
-	// 			break;
-	// 		case OP_LT_R:
-	// 			info->answer_const = left_const_double < right_const_double;
-	// 			break;
-	// 		case OP_GT_R:
-	// 			info->answer_const = left_const_double > right_const_double;
-	// 			break;
-	// 		case OP_LE_R:
-	// 			info->answer_const = left_const_double <= right_const_double;
-	// 			break;
-	// 		case OP_GE_R:
-	// 			info->answer_const = left_const_double >= right_const_double;
-	// 			break;
-	// 	}
-	// 	return;
-	// }
+			case BIN_EQ:
+				info->answer_const = left_const_double == right_const_double;
+				break;
+			case BIN_NE:
+				info->answer_const = left_const_double != right_const_double;
+				break;
+			case BIN_LT:
+				info->answer_const = left_const_double < right_const_double;
+				break;
+			case BIN_GT:
+				info->answer_const = left_const_double > right_const_double;
+				break;
+			case BIN_LE:
+				info->answer_const = left_const_double <= right_const_double;
+				break;
+			case BIN_GE:
+				info->answer_const = left_const_double >= right_const_double;
+				break;
+		}
+		return;
+	}
 
-	// info->answer_reg = info->register_num++;
-	// info->answer_type = type;
+	info->answer_reg = info->register_num++;
+	info->answer_type = type;
 }
 
 static void binary_operation(information *const info, node *const nd)
