@@ -26,10 +26,10 @@
 // 	return i + j;
 // }
 
-double func2d(double i, double j)
-{
-	return i + j;
-}
+// double func2d(double i, double j)
+// {
+// 	return i + j;
+// }
 
 // int func_arr(int arr[])
 // {
@@ -194,7 +194,7 @@ int main()
 	// i += 1 + j;
 	// i = ~j;
 	// x /= 2.3 * --z + y - 1.5;
-	x = func2d(1.0, z);
+	// x = func2d(1.0, z);
 	// x -= 3.2;
 	// b[0][1] = b[0][1] * 3.1; // ОШИБКА!!!
 	// a.x = 0;

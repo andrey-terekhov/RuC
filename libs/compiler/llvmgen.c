@@ -544,9 +544,11 @@ static void operand(information *const info, node *const nd)
 			answer_t arguments_type[128];
 			item_t arguments_value_type[128];
 
+			const item_t func_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			const item_t args = type_get(info->sx, node_get_arg(nd, 0) + 2);
+			const item_t type_ref = node_get_arg(nd, 0);
+			const item_t args = type_get(info->sx, type_ref + 2);
 			node_set_next(nd); // OP_IDENT
 			for (item_t i = 0; i < args; i++)
 			{
@@ -569,45 +571,40 @@ static void operand(information *const info, node *const nd)
 				}
 			}
 
-		// 	const size_t ref_ident = (size_t)node_get_arg(nd, 0);
-		// 	const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
+			if (func_type != TYPE_VOID)
+			{
+				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
+				info->answer_type = AREG;
+				info->answer_value_type = func_type;
+				info->answer_reg = info->register_num++;
+			}
+			uni_printf(info->sx->io, " call ");
+			type_to_io(info, func_type);
+			uni_printf(info->sx->io, " @func%zi(", type_ref);
 
-		// 	node_set_next(nd); // OP_CALL2
+			for (item_t i = 0; i < args; i++)
+			{
+				if (i != 0)
+				{
+					uni_printf(info->sx->io, ", ");
+				}
 
-		// 	if (func_type != mode_void)
-		// 	{
-		// 		uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
-		// 		info->answer_type = AREG;
-		// 		info->answer_value_type = func_type;
-		// 		info->answer_reg = info->register_num++;
-		// 	}
-		// 	uni_printf(info->sx->io, " call ");
-		// 	type_to_io(info, func_type);
-		// 	uni_printf(info->sx->io, " @func%zi(", ref_ident);
-
-		// 	for (item_t i = 0; i < args; i++)
-		// 	{
-		// 		if (i != 0)
-		// 		{
-		// 			uni_printf(info->sx->io, ", ");
-		// 		}
-
-		// 		type_to_io(info, arguments_value_type[i]);
-		// 		uni_printf(info->sx->io, " signext ");
-		// 		if (arguments_type[i] == AREG)
-		// 		{
-		// 			uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
-		// 		}
-		// 		else if (mode_is_int(arguments_value_type[i])) // ACONST
-		// 		{
-		// 			uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
-		// 		}
-		// 		else // double
-		// 		{
-		// 			uni_printf(info->sx->io, "%f", arguments_double[i]);
-		// 		}
-		// 	}
-		// 	uni_printf(info->sx->io, ")\n");
+				type_to_io(info, arguments_value_type[i]);
+				uni_printf(info->sx->io, " signext ");
+				if (arguments_type[i] == AREG)
+				{
+					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
+				}
+				else if (type_is_integer(arguments_value_type[i])) // ACONST
+				{
+					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
+				}
+				else // double
+				{
+					uni_printf(info->sx->io, "%f", arguments_double[i]);
+				}
+			}
+			uni_printf(info->sx->io, ")\n");
 		}
 		break;
 		default:
@@ -1517,7 +1514,7 @@ static int codegen(information *const info)
 				{
 					uni_printf(info->sx->io, "define ");
 					type_to_io(info, func_type);
-					uni_printf(info->sx->io, " @func%zi(", ref_ident);
+					uni_printf(info->sx->io, " @func%zi(", ident_get_type(info->sx, ref_ident));
 				}
 				for (size_t i = 0; i < parameters; i++)
 				{
