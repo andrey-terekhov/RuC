@@ -302,62 +302,62 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
-{
-	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+// static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
+// {
+// 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
+// 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+// 	}
+// 	type_to_io(info, type);
 
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "]");
-	}
-	uni_printf(info->sx->io, ", align 4\n");
-}
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "]");
+// 	}
+// 	uni_printf(info->sx->io, ", align 4\n");
+// }
 
-static void to_code_init_array(information *const info, const size_t index, const item_t type)
-{
-	uni_printf(info->sx->io, " %%.%" PRIitem " = bitcast ", info->register_num);
-	info->register_num++;
+// static void to_code_init_array(information *const info, const size_t index, const item_t type)
+// {
+// 	uni_printf(info->sx->io, " %%.%" PRIitem " = bitcast ", info->register_num);
+// 	info->register_num++;
 
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
+// 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+// 	}
+// 	type_to_io(info, type);
 
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "]");
-	}
-	uni_printf(info->sx->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "]");
+// 	}
+// 	uni_printf(info->sx->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
 
-	uni_printf(info->sx->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
+// 	uni_printf(info->sx->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+// 	}
+// 	type_to_io(info, type);
 
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "]");
-	}
+// 	for (size_t i = 1; i <= dim; i++)
+// 	{
+// 		uni_printf(info->sx->io, "]");
+// 	}
 	
-	uni_printf(info->sx->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
-		, info->init_num
-		, (type_is_floating(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
-		, type_is_floating(type) ? 8 : 4);
+// 	uni_printf(info->sx->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
+// 		, info->init_num
+// 		, (type_is_floating(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
+// 		, type_is_floating(type) ? 8 : 4);
 
-	info->init_num++;
-	info->was_memcpy = 1;
-}
+// 	info->init_num++;
+// 	info->was_memcpy = 1;
+// }
 
 static void check_type_and_branch(information *const info)
 {
@@ -1340,7 +1340,7 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
+static void init(information *const info, node *const nd, const item_t displ/*, const item_t elem_type*/)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
@@ -1349,8 +1349,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 		const size_t index = hash_get_index(&info->arrays, displ);
 		hash_set_by_index(&info->arrays, index, 1, N);
-		to_code_alloc_array_static(info, index, elem_type == TYPE_INTEGER ? TYPE_INTEGER : TYPE_FLOATING);
-		to_code_init_array(info, index, elem_type == TYPE_INTEGER ? TYPE_INTEGER : TYPE_FLOATING);
+		// to_code_alloc_array_static(info, index, elem_type == TYPE_INTEGER ? TYPE_INTEGER : TYPE_FLOATING);
+		// to_code_init_array(info, index, elem_type == TYPE_INTEGER ? TYPE_INTEGER : TYPE_FLOATING);
 
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
@@ -1474,7 +1474,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				if (all)
 				{
-					init(info, nd, displ, elem_type);
+					init(info, nd, displ/*, elem_type*/);
 				}
 			}
 			break;
