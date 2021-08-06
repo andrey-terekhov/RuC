@@ -152,65 +152,6 @@ static void parse_default_statement(parser *const prs, node *const parent)
 }
 
 /**
- *	Parse compound statement [C99 6.8.2]
- *
- *	compound-statement:
- *  	'{' block-item-list[opt] '}'
- *
- *	block-item-list:
- *		block-item
- *		block-item-list block-item
- *
- *	block-item:
- *		declaration
- *		statement
- *
- *	@param	prs			Parser
- *	@param	parent		Parent node in AST
- */
-static void parse_compound_statement(parser *const prs, node *const parent, const block_t type)
-{
-	token_consume(prs); // '{' or kw_create_direct
-	node nd_block = node_add_child(parent, OP_BLOCK);
-
-	item_t old_displ = 0;
-	item_t old_lg = 0;
-
-	if (type != FUNCBODY && type != FORBLOCK)
-	{
-		scope_block_enter(prs->sx, &old_displ, &old_lg);
-	}
-
-	const token_t end_token = (type == THREAD) ? TK_EXIT_DIRECT : TK_R_BRACE;
-	if (!token_try_consume(prs, end_token))
-	{
-		while (prs->token != TK_EOF && prs->token != end_token)
-		{
-			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
-			if (is_declaration_specifier(prs))
-			{
-				parse_declaration_inner(prs, &nd_block);
-			}
-			else
-			{
-				parse_statement(prs, &nd_block);
-			}
-		}
-
-		token_expect_and_consume(prs, end_token, expected_end);
-	}
-
-	if (type == FUNCBODY)
-	{
-		node_add_child(&nd_block, OP_RETURN_VOID);
-	}
-	else if (type != FORBLOCK)
-	{
-		scope_block_exit(prs->sx, old_displ, old_lg);
-	}
-}
-
-/**
  *	Parse expression statement [C99 6.8.3]
  *
  *	expression-statement:
@@ -409,7 +350,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	prs->is_in_loop = true;
 	if (prs->token == TK_L_BRACE)
 	{
-		parse_compound_statement(prs, &nd, FORBLOCK);
+		parse_statement_compound(prs, &nd, FORBLOCK);
 	}
 	else
 	{
@@ -557,7 +498,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 static void parse_create_direct_statement(parser *const prs, node *const parent)
 {
 	node nd = node_add_child(parent, OP_THREAD);
-	parse_compound_statement(prs, &nd, THREAD);
+	parse_statement_compound(prs, &nd, THREAD);
 }
 
 /**	Parse printid statement [RuC] */
@@ -788,7 +729,7 @@ void parse_statement(parser *const prs, node *const parent)
 			break;
 
 		case TK_L_BRACE:
-			parse_compound_statement(prs, parent, REGBLOCK);
+			parse_statement_compound(prs, parent, REGBLOCK);
 			break;
 
 		case TK_IF:
@@ -848,5 +789,47 @@ void parse_statement(parser *const prs, node *const parent)
 		default:
 			parse_expression_statement(prs, parent);
 			break;
+	}
+}
+
+void parse_statement_compound(parser *const prs, node *const parent, const block_t type)
+{
+	token_consume(prs); // '{' or kw_create_direct
+	node nd_block = node_add_child(parent, OP_BLOCK);
+
+	item_t old_displ = 0;
+	item_t old_lg = 0;
+
+	if (type != FUNCBODY && type != FORBLOCK)
+	{
+		scope_block_enter(prs->sx, &old_displ, &old_lg);
+	}
+
+	const token_t end_token = (type == THREAD) ? TK_EXIT_DIRECT : TK_R_BRACE;
+	if (!token_try_consume(prs, end_token))
+	{
+		while (prs->token != TK_EOF && prs->token != end_token)
+		{
+			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
+			if (is_declaration_specifier(prs))
+			{
+				parse_declaration_inner(prs, &nd_block);
+			}
+			else
+			{
+				parse_statement(prs, &nd_block);
+			}
+		}
+
+		token_expect_and_consume(prs, end_token, expected_end);
+	}
+
+	if (type == FUNCBODY)
+	{
+		node_add_child(&nd_block, OP_RETURN_VOID);
+	}
+	else if (type != FORBLOCK)
+	{
+		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
 }

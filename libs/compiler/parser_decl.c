@@ -647,7 +647,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	func_set(prs->sx, function_number, node_save(&nd)); // Ссылка на расположение в дереве
 
-	parse_statement(prs, &nd);
+	parse_statement_compound(prs, &nd, FUNCBODY);
 
 	if (type_get(prs->sx, prs->function_mode + 1) != TYPE_VOID && !prs->was_return)
 	{
