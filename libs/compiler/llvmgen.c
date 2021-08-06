@@ -548,7 +548,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 
 			const item_t type_ref = node_get_arg(nd, 0);
-			const item_t args = type_get(info->sx, type_ref + 2);
+			const item_t args = type_get(info->sx, (size_t)type_ref + 2);
 			node_set_next(nd); // OP_IDENT
 			for (item_t i = 0; i < args; i++)
 			{
