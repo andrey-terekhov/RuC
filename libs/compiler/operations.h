@@ -125,8 +125,7 @@ typedef enum OPERATION
 	OP_GOTO,				/**< Goto statement node */
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
-	OP_RETURN_VOID,			/**< Void return statement node */
-	OP_RETURN_VAL,			/**< Valued return statement node */
+	OP_RETURN,				/**< Return statement node */
 	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations

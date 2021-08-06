@@ -332,12 +332,8 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_CONTINUE:
 			sprintf(buffer, "TContinue");
 			break;
-		case OP_RETURN_VOID:
+		case OP_RETURN:
 			sprintf(buffer, "TReturn");
-			break;
-		case OP_RETURN_VAL:
-			argc = 1;
-			sprintf(buffer, "TReturnval");
 			break;
 		case OP_GOTO:
 			argc = 1;

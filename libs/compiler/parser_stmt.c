@@ -454,9 +454,10 @@ static void parse_return_statement(parser *const prs, node *const parent)
 	const item_t return_type = type_get(prs->sx, prs->function_mode + 1);
 	prs->was_return = true;
 
+	node nd = node_add_child(parent, OP_RETURN);
+
 	if (token_try_consume(prs, TK_SEMICOLON))
 	{
-		node_add_child(parent, OP_RETURN_VOID);
 		if (!type_is_void(return_type))
 		{
 			parser_error(prs, no_ret_in_func);
@@ -468,9 +469,6 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		{
 			parser_error(prs, notvoidret_in_void_func);
 		}
-
-		node nd = node_add_child(parent, OP_RETURN_VAL);
-		node_add_arg(&nd, (item_t)type_size(prs->sx, return_type));
 
 		node_copy(&prs->sx->nd, &nd);
 		const node nd_expr = parse_assignment_expression(prs);
