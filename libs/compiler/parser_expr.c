@@ -149,7 +149,7 @@ static node parse_primary_expression(parser *const prs)
 
 		case TK_STRING:
 		{
-			const vector *const value = &prs->lxr.lexstr;
+			const size_t value = prs->lxr.num_string;
 			const location loc = token_consume(prs);
 
 			return build_string_literal_expression(prs->sx, value, loc);

@@ -65,12 +65,12 @@ node build_floating_literal_expression(syntax *const sx, const double value, con
  *	Build a string literal expression
  *
  *	@param	sx				Syntax structure
- *	@param	value			Literal value
+ *	@param	index			Literal index in strings vector
  *	@param	loc				Source location
  *
  *	@return	String literal expression node
  */
-node build_string_literal_expression(syntax *const sx, const vector *const value, const location loc);
+node build_string_literal_expression(syntax *const sx, const size_t index, const location loc);
 
 /**
  *	Build a subscript expression

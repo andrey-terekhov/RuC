@@ -23,6 +23,7 @@
 static const size_t REPRESENTATIONS_SIZE = 10000;
 static const size_t IDENTIFIERS_SIZE = 10000;
 static const size_t FUNCTIONS_SIZE = 100;
+static const size_t STRINGS_SIZE = 80;
 static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
@@ -247,6 +248,8 @@ syntax sx_create(universal_io *const io)
 	sx.io = io;
 	sx.procd = 1;
 
+	sx.string_literals = strings_create(STRINGS_SIZE);
+
 	sx.predef = vector_create(FUNCTIONS_SIZE);
 	sx.functions = vector_create(FUNCTIONS_SIZE);
 	vector_increase(&sx.functions, 2);
@@ -304,6 +307,8 @@ int sx_clear(syntax *const sx)
 		return -1;
 	}
 
+	strings_clear(&sx->string_literals);
+
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
 
@@ -314,6 +319,17 @@ int sx_clear(syntax *const sx)
 	map_clear(&sx->representations);
 
 	return 0;
+}
+
+
+size_t string_add(syntax *const sx, const vector *const str)
+{
+	return strings_add_by_vector(&sx->string_literals, str);
+}
+
+const char* string_get(const syntax *const sx, const size_t index)
+{
+	return strings_get(&sx->string_literals, index);
 }
 
 
