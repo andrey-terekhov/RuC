@@ -595,6 +595,60 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
 }
 
+item_t type_array_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+bool type_structure_has_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return false;		// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) / 2 : SIZE_MAX;
+}
+
+size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 4 + 2 * index) : SIZE_MAX;
+}
+
+item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? type_get(sx, (size_t)type + 3 + 2 * index) : ITEM_MAX;
+}
+
+item_t type_function_get_return_type(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) : SIZE_MAX;
+}
+
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 3 + index) : ITEM_MAX;
+}
+
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
 item_t type_array(syntax *const sx, const item_t type)
 {
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
