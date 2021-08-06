@@ -221,25 +221,6 @@ void parse_declaration_external(parser *const prs, node *const root);
  */
 void parse_statement(parser *const prs, node *const parent);
 
-/**
- *	Parse '{}' block [C99 6.8.2]
- *
- *	compound-statement:
- *  	'{' block-item-list[opt] '}'
- *
- *	block-item-list:
- *		block-item
- *		block-item-list block-item
- *
- *	block-item:
- *		declaration
- *		statement
- *
- *	@param	prs			Parser
- *	@param	parent		Parent node in AST
- */
-void parse_statement_compound(parser *const prs, node *const parent, const block_t type);
-
 
 /**
  *	Add new item to identifiers table
