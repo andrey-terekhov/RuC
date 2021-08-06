@@ -130,15 +130,9 @@ typedef enum OPERATION
 	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations
-	OP_DECL_ID,				/**< Identifier declaration node */
-	OP_DECL_ARR,			/**< Array declaration node */
-	OP_DECL_STRUCT,			/**< Struct declaration node */
+	OP_DECL_VAR,			/**< Variable declaration node */
+	OP_DECL_TYPE,			/**< Type declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
-	OP_ARRAY_INIT,			/**< Array inition node */
-	OP_STRUCT_INIT,			/**< Struct inition node */
-
-	// End nodes
-	OP_DECL_STRUCT_END,		/**< End of struct declaration node */
 
 	// Built-in functions
 	OP_PRINTID,

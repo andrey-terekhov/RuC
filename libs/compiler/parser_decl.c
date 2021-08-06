@@ -235,8 +235,8 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t fields = 0;
 	size_t displ = 0;
 
-	node nd;
-	bool was_array = false;
+	node nd = node_add_child(parent, OP_DECL_TYPE);
+	node_add_arg(&nd, 0);	// Тут будет индекс для таблицы types
 
 	do
 	{
@@ -258,53 +258,32 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		{
 			if (prs->token == TK_L_SQUARE)
 			{
-				if (!was_array)
-				{
-					nd = node_add_child(parent, OP_DECL_STRUCT);
-					node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
-					was_array = true;
-				}
+				node nd_decl = node_add_child(&nd, OP_DECL_VAR);
+				node_add_arg(&nd_decl, 0);	// Вместо id подставим тип
+				node_add_arg(&nd_decl, 0);	// Тут будет размерность
 
-				node nd_decl_arr = node_add_child(&nd, OP_DECL_ARR);
-				node_add_arg(&nd_decl_arr, 0);
 				// Меняем тип (увеличиваем размерность массива)
-				type = parse_array_definition(prs, &nd_decl_arr, element_type);
-				node_set_arg(&nd_decl_arr, 0, prs->flag_empty_bounds
-							 ? (item_t)prs->array_dimensions
-							 : (item_t)prs->array_dimensions - 1);
-				node nd_decl_id = node_add_child(&nd_decl_arr, OP_DECL_ID);
-				node_add_arg(&nd_decl_id, (item_t)displ);
-				node_add_arg(&nd_decl_id, element_type);
-				node_add_arg(&nd_decl_id, (item_t)prs->array_dimensions);
-				node_add_arg(&nd_decl_id, 0);
-				node_add_arg(&nd_decl_id, prs->flag_array_in_struct);	// proc
-				node_add_arg(&nd_decl_id, prs->flag_empty_bounds);		// usual
-				node_add_arg(&nd_decl_id, 1);							// Признак, что массив в структуре
+				type = parse_array_definition(prs, &nd_decl, element_type);
 
-				if (token_try_consume(prs, TK_EQUAL))
+				node_set_arg(&nd, 0, type);
+				node_set_arg(&nd, 1, (item_t)prs->array_dimensions);
+
+				if (token_try_consume(prs, TK_EQUAL) && type_is_array(prs->sx, type))
 				{
-					if (type_is_array(prs->sx, type))
+					node_set_arg(&nd, 2, true);
+					node_copy(&prs->sx->nd, &nd);
+
+					const node initializer = parse_initializer(prs, type);
+					if (!node_is_correct(&initializer))
 					{
-						prs->flag_strings_only = 2;
-						node_set_arg(&nd_decl_id, 3, 1);
+						token_skip_until(prs, TK_SEMICOLON);
+						continue;
+					}
 
-						node_copy(&prs->sx->nd, &nd_decl_arr);
-						const node initializer = parse_initializer(prs, type);
-						if (!node_is_correct(&initializer))
-						{
-							token_skip_until(prs, TK_SEMICOLON);
-							continue;
-						}
-
-						if (type != expression_get_type(&initializer))
-						{
-							parser_error(prs, wrong_init);
-						}
-
-						if (prs->flag_strings_only == 1)
-						{
-							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
-						}
+					const item_t init_type = expression_get_type(&initializer);
+					if (type != init_type)
+					{
+						 parser_error(prs, wrong_init);
 					}
 				}
 			}
@@ -323,19 +302,13 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_struct);
 	} while (!token_try_consume(prs, TK_R_BRACE));
 
-	if (was_array)
-	{
-		node nd_struct_end = node_add_child(&nd, OP_DECL_STRUCT_END);
-		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
-		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
-		prs->flag_array_in_struct = (int)prs->sx->procd++;
-	}
-
 	local_modetab[0] = TYPE_STRUCTURE;
 	local_modetab[1] = (item_t)displ;
 	local_modetab[2] = (item_t)fields * 2;
 
-	return type_add(prs->sx, local_modetab, local_md);
+	const item_t result = type_add(prs->sx, local_modetab, local_md);
+	node_set_arg(&nd, 0, result);
+	return result;
 }
 
 /**
@@ -353,84 +326,44 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
  */
 static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 {
-	const size_t old_id = to_identab(prs, prs->lxr.repr, 0, type);
+	const size_t id = to_identab(prs, prs->lxr.repr, 0, type);
 
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
-	const item_t element_type = type;
 
-	node nd_decl_arr;
-	bool is_array = false;
+	node nd = node_add_child(parent, OP_DECL_VAR);
+	node_add_arg(&nd, (item_t)id);
+	node_add_arg(&nd, 0);	// Тут будет размерность
+	node_add_arg(&nd, 0);	// Тут будет флаг наличия инициализатора
 
 	if (prs->token == TK_L_SQUARE)
 	{
-		nd_decl_arr = node_add_child(parent, OP_DECL_ARR);
-		node_add_arg(&nd_decl_arr, 0); // Здесь будет размерность
-		is_array = true;
-
 		// Меняем тип (увеличиваем размерность массива)
-		type = parse_array_definition(prs, &nd_decl_arr, type);
-		ident_set_type(prs->sx, old_id, type);
-		node_set_arg(&nd_decl_arr, 0, (item_t)prs->array_dimensions);
+		type = parse_array_definition(prs, &nd, type);
+		ident_set_type(prs->sx, id, type);
+		node_set_arg(&nd, 1, (item_t)prs->array_dimensions);
 		if (!prs->flag_empty_bounds && prs->token != TK_EQUAL)
 		{
 			parser_error(prs, empty_bound_without_init);
 		}
 	}
 
-	node nd = node_add_child(is_array ? &nd_decl_arr : parent, OP_DECL_ID);
-	node_add_arg(&nd, ident_get_displ(prs->sx, old_id));
-	node_add_arg(&nd, element_type);
-	node_add_arg(&nd, (item_t)prs->array_dimensions);
-	node_add_arg(&nd, 0);
-	node_add_arg(&nd, type_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
-	node_add_arg(&nd, prs->flag_empty_bounds);
-	node_add_arg(&nd, 0);	// Признак того, что массив не в структуре
-
 	if (token_try_consume(prs, TK_EQUAL))
 	{
-		node_set_arg(&nd, 3, (item_t)type_size(prs->sx, type));
-		if (type_is_array(prs->sx, type))
+		node_set_arg(&nd, 2, true);
+		node_copy(&prs->sx->nd, &nd);
+
+		const node initializer = parse_initializer(prs, type);
+		if (!node_is_correct(&initializer))
 		{
-			if (!prs->flag_empty_bounds)
-			{
-				node_set_arg(&nd_decl_arr, 0, node_get_arg(&nd, 2) - 1);
-			}
-
-			prs->flag_strings_only = 2;
-			node_copy(&prs->sx->nd, &nd_decl_arr);
-			const node initializer = parse_initializer(prs, type);
-			if (!node_is_correct(&initializer))
-			{
-				token_skip_until(prs, TK_SEMICOLON);
-				return;
-			}
-
-			if (type != expression_get_type(&initializer))
-			{
-				 parser_error(prs, wrong_init);
-			}
-			
-			if (prs->flag_strings_only == 1)
-			{
-				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
-			}
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
 		}
-		else
-		{
-			node_copy(&prs->sx->nd, &nd);
-			const node initializer = parse_initializer(prs, type);
-			if (!node_is_correct(&initializer))
-			{
-				token_skip_until(prs, TK_SEMICOLON);
-				return;
-			}
 
-			const item_t actual_type = expression_get_type(&initializer);
-			if (type != actual_type && !(type_is_floating(type) && type_is_integer(actual_type)))
-			{
-				parser_error(prs, wrong_init);
-			}
+		const item_t init_type = expression_get_type(&initializer);
+		if (type != init_type && !(type_is_floating(type) && type_is_integer(init_type)))
+		{
+			 parser_error(prs, wrong_init);
 		}
 	}
 }
@@ -645,7 +578,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	node_add_arg(&nd, (item_t)function_id);
 	node_add_arg(&nd, 0); // for max_displ
 
-	func_set(prs->sx, function_number, node_save(&nd)); // Ссылка на расположение в дереве
+	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 

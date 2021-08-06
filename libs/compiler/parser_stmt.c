@@ -694,8 +694,6 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 }
 
 
-
-
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
