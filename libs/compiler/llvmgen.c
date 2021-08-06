@@ -406,9 +406,9 @@ static void operand(information *const info, node *const nd)
 			int is_addr_to_val = 0;
 
 			node_set_next(nd);
-			// if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			// if (info->variable_location == LMEM)
 			// {
-			// 	to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+			// 	to_code_load(info, info->register_num, displ, TYPE_INTEGER, 0, 1);
 			// 	info->register_num++;
 			// 	info->variable_location = LREG;
 			// 	node_set_next(nd);
@@ -935,6 +935,14 @@ static void unary_operation(information *const info, node *const nd)
 
 			node_set_next(nd);
 			expression(info, nd);
+		}
+		break;
+		case UN_ADDRESS:
+		{
+			node_set_next(nd);
+		// 	info->answer_reg = node_get_arg(nd, 0);
+		// 	info->answer_type = AMEM;
+			node_set_next(nd); // Ident
 		}
 		break;
 		default:

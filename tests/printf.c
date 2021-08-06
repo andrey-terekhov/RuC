@@ -54,8 +54,8 @@ int main()
 	// char c = 'x';
 	// long li = 13;
 	double x = 3.14, y = 2.72, z = 5.1;
-	// int *pointer; 
-	// pointer = &i;
+	int *pointer; 
+	pointer = &i;
 	// *pointer += 1;
 	// (*pointer)++;
 	// *pointer = -1;
