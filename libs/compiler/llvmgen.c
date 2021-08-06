@@ -248,9 +248,9 @@ static inline void to_code_store_reg(information *const info, const item_t reg, 
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "%s %%%s.%" PRIitem ", ", is_pointer ? "*" : "", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
@@ -940,8 +940,8 @@ static void unary_operation(information *const info, node *const nd)
 		case UN_ADDRESS:
 		{
 			node_set_next(nd);
-		// 	info->answer_reg = node_get_arg(nd, 0);
-		// 	info->answer_type = AMEM;
+			info->answer_reg = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			info->answer_type = AMEM;
 			node_set_next(nd); // Ident
 		}
 		break;
