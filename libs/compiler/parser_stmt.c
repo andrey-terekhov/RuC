@@ -348,14 +348,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 
 	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
-	if (prs->token == TK_L_BRACE)
-	{
-		parse_statement_compound(prs, &nd, FORBLOCK);
-	}
-	else
-	{
-		parse_statement(prs, &nd);
-	}
+	parse_statement(prs, &nd);
 
 	prs->is_in_loop = old_in_loop;
 	scope_block_exit(prs->sx, old_displ, old_lg);
@@ -800,7 +793,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 	item_t old_displ = 0;
 	item_t old_lg = 0;
 
-	if (type != FUNCBODY && type != FORBLOCK)
+	if (type != FUNCBODY)
 	{
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
@@ -824,11 +817,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		token_expect_and_consume(prs, end_token, expected_end);
 	}
 
-	if (type == FUNCBODY)
-	{
-		node_add_child(&nd_block, OP_RETURN_VOID);
-	}
-	else if (type != FORBLOCK)
+	if (type != FUNCBODY)
 	{
 		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
