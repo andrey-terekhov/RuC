@@ -268,78 +268,40 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_DECL_ARR:
+		case OP_DECL_VAR:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "DECL_VAR");
+					break;
+				case 1:
+					sprintf(buffer, "id");
+					break;
+				case 2:
+					sprintf(buffer, "dim");
+					break;
+				case 3:
+					sprintf(buffer, "init");
+					break;
+			}
+			break;
+		case OP_DECL_TYPE:
 			argc = 1;
 			was_switch = true;
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "TDeclarr");
+					sprintf(buffer, "DECL_TYPE");
 					break;
 				case 1:
-					sprintf(buffer, "N");
-					break;
-			}
-			break;
-		case OP_DECL_ID:
-			argc = 7;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TDeclid");
-					break;
-				case 1:
-					sprintf(buffer, "displ");
-					break;
-				case 2:
-					sprintf(buffer, "eltype");
-					break;
-				case 3:
-					sprintf(buffer, "N");
-					break;
-				case 4:
-					sprintf(buffer, "all");
-					break;
-				case 5:
-					sprintf(buffer, "iniproc");
-					break;
-				case 6:
-					sprintf(buffer, "usual");
-					break;
-				case 7:
-					sprintf(buffer, "instuct");
+					sprintf(buffer, "type_id");
 					break;
 			}
 			break;
 		case OP_BLOCK:
 			sprintf(buffer, "TBegin");
-			break;
-		case OP_ARRAY_INIT:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TBeginit");
-					break;
-				case 1:
-					sprintf(buffer, "n");
-					break;
-			}
-			break;
-		case OP_STRUCT_INIT:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TStructinit");
-					break;
-				case 1:
-					sprintf(buffer, "n");
-					break;
-			}
 			break;
 		case OP_IF:
 			argc = 1;
@@ -370,12 +332,8 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_CONTINUE:
 			sprintf(buffer, "TContinue");
 			break;
-		case OP_RETURN_VOID:
+		case OP_RETURN:
 			sprintf(buffer, "TReturn");
-			break;
-		case OP_RETURN_VAL:
-			argc = 1;
-			sprintf(buffer, "TReturnval");
 			break;
 		case OP_GOTO:
 			argc = 1;
@@ -518,14 +476,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_LABEL:
 			argc = 1;
 			sprintf(buffer, "TLabel");
-			break;
-		case OP_DECL_STRUCT:
-			argc = 1;
-			sprintf(buffer, "TStructbeg");
-			break;
-		case OP_DECL_STRUCT_END:
-			argc = 1;
-			sprintf(buffer, "TStructend");
 			break;
 		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
