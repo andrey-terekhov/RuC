@@ -274,7 +274,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "VAR_DECL");
+					sprintf(buffer, "DECL_VAR");
 					break;
 				case 1:
 					sprintf(buffer, "id");
@@ -293,7 +293,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "TYPE_DECL");
+					sprintf(buffer, "DECL_TYPE");
 					break;
 				case 1:
 					sprintf(buffer, "type_id");
