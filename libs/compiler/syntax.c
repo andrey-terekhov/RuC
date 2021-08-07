@@ -58,6 +58,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"long", U"длин", TK_LONG);
 	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
 	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
+	repr_add_keyword(reprtab, U"file", U"файл", TK_FILE);
 	repr_add_keyword(reprtab, U"typedef", U"типопр", TK_TYPEDEF);
 	repr_add_keyword(reprtab, U"if", U"если", TK_IF);
 	repr_add_keyword(reprtab, U"else", U"иначе", TK_ELSE);
@@ -79,6 +80,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
 	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
+	repr_add_keyword(reprtab, U"fread", U"фчитать", TK_FREAD);
 
 	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
 	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
@@ -223,6 +225,11 @@ static void ident_init(syntax *const sx)
 
 	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
 	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
+
+	builtin_add(sx, U"fopen", U"фоткрыть", type_function(sx, type_pointer(sx, TYPE_FILE), "ss"));
+	builtin_add(sx, U"fgetc", U"фчитать_символ", type_function(sx, TYPE_CHARACTER, "P"));
+	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_CHARACTER, "iP"));
+	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 }
 
 
@@ -464,8 +471,7 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 		return ITEM_MAX;
 	}
 
-	vector_add(&sx->types, (item_t)sx->start_type);
-	sx->start_type = vector_size(&sx->types) - 1;
+	sx->start_type = vector_add(&sx->types, (item_t)sx->start_type);
 	for (size_t i = 0; i < size; i++)
 	{
 		vector_add(&sx->types, record[i]);
@@ -477,8 +483,9 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 	{
 		if (type_is_equal(sx, sx->start_type + 1, old + 1))
 		{
-			vector_resize(&sx->types, sx->start_type + 1);
+			const size_t start_type = sx->start_type;
 			sx->start_type = (size_t)vector_get(&sx->types, sx->start_type);
+			vector_resize(&sx->types, start_type);
 			return (item_t)old + 1;
 		}
 		else
@@ -571,6 +578,11 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
 }
 
+bool type_is_file(const item_t type)
+{
+	return type == TYPE_FILE;
+}
+
 item_t type_array(syntax *const sx, const item_t type)
 {
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
@@ -587,6 +599,7 @@ item_t type_array(syntax *const sx, const item_t type)
  *		f -> float
  *		F -> float[]
  *		m -> msg_info
+ *		P -> FILE*
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
@@ -626,6 +639,9 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				break;
 			case 'm':
 				local_modetab[3 + i] = TYPE_MSG_INFO;
+				break;
+			case 'P':
+				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
 				break;
 		}
 
