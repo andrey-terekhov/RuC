@@ -386,17 +386,9 @@ static void operand(information *const info, node *const nd)
 
 	switch (node_get_type(nd))
 	{
-		// case OP_IDENT:
 		case OP_SELECT:
 			node_set_next(nd);
 			break;
-		// case OP_IDENT_TO_ADDR:
-		// {
-		// 	info->answer_reg = node_get_arg(nd, 0);
-		// 	info->answer_type = AMEM;
-		// 	node_set_next(nd);
-		// }
-		// break;
 		case OP_IDENTIFIER:
 		{
 			const item_t type = node_get_arg(nd, 0);
@@ -629,7 +621,7 @@ static void assignment_expression(information *const info, node *const nd)
 	{
 		is_array = 1;
 		info->variable_location = LMEM;
-		operand(info, nd); // OP_SLICE_IDENT
+		expression(info, nd); // OP_SLICE_IDENT or UN_ADDRESS
 		memory_reg = info->answer_reg;
 	}
 
@@ -941,6 +933,13 @@ static void unary_operation(information *const info, node *const nd)
 			info->answer_reg = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 			info->answer_type = AMEM;
 			node_set_next(nd); // Ident
+		}
+		break;
+		case UN_INDIRECTION:
+		{
+			node_set_next(nd);
+			info->variable_location = LREG;
+			operand(info, nd);
 		}
 		break;
 		default:
