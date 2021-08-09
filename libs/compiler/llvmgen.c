@@ -1249,25 +1249,25 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label);
 		}
 		break;
-		case OP_RETURN_VOID:
-		{
-			if (info->was_return)
-			{
-				info->was_return = 0;
-				node_set_next(nd);
-				break;
-			}
+		// case OP_RETURN_VOID:
+		// {
+		// 	if (info->was_return)
+		// 	{
+		// 		info->was_return = 0;
+		// 		node_set_next(nd);
+		// 		break;
+		// 	}
 
-			if (info->was_dynamic)
-			{
-				to_code_stack_load(info);
-			}
+		// 	if (info->was_dynamic)
+		// 	{
+		// 		to_code_stack_load(info);
+		// 	}
 
-			node_set_next(nd);
-			uni_printf(info->sx->io, " ret void\n");
-		}
+		// 	node_set_next(nd);
+		// 	uni_printf(info->sx->io, " ret void\n");
+		// }
 		break;
-		case OP_RETURN_VAL:
+		case OP_RETURN:
 		{
 			info->was_return = 1;
 
@@ -1312,8 +1312,13 @@ static void statement(information *const info, node *const nd)
 			item_t args_type[128];
 
 			node_set_next(nd);
-			const item_t string_length = node_get_argc(nd) - 4;
+			const size_t index = node_get_arg(nd, 2);
+			const char *string = string_get(info->sx, index);
+			item_t string_length = 0;
+			for (string_length = 0; *(string + string_length) != 0; string_length++)
+				;
 			node_set_next(nd); // OP_STRING
+
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
@@ -1367,16 +1372,16 @@ static void init(information *const info, node *const nd, const item_t displ/*, 
 			expression(info, nd);
 		}
 	}
-	else if (node_get_type(nd) == OP_STRUCT_INIT)
-	{
-		const item_t N = node_get_arg(nd, 0);
+	// else if (node_get_type(nd) == OP_STRUCT_INIT)
+	// {
+	// 	const item_t N = node_get_arg(nd, 0);
 
-		node_set_next(nd);
-		for (item_t i = 0; i < N; i++)
-		{
-			expression(info, nd);
-		}
-	}
+	// 	node_set_next(nd);
+	// 	for (item_t i = 0; i < N; i++)
+	// 	{
+	// 		expression(info, nd);
+	// 	}
+	// }
 	else
 	{
 		expression(info, nd);
@@ -1462,7 +1467,7 @@ static void block(information *const info, node *const nd)
 	// 			}
 			// }
 			// break;
-			case OP_DECL_ID:
+			case OP_DECL_VAR:
 			{
 				const item_t displ = node_get_arg(nd, 0);
 				const item_t elem_type = node_get_arg(nd, 1);
@@ -1487,8 +1492,6 @@ static void block(information *const info, node *const nd)
 			}
 			break;
 			case OP_NOP:
-			case OP_DECL_STRUCT:
-			case OP_DECL_STRUCT_END:
 				node_set_next(nd);
 				break;
 			default:
