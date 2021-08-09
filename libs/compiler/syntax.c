@@ -23,6 +23,7 @@
 static const size_t REPRESENTATIONS_SIZE = 10000;
 static const size_t IDENTIFIERS_SIZE = 10000;
 static const size_t FUNCTIONS_SIZE = 100;
+static const size_t STRINGS_SIZE = 80;
 static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
@@ -227,6 +228,8 @@ static void ident_init(syntax *const sx)
 
 	builtin_add(sx, U"t_msg_send", U"н_послать", type_function(sx, TYPE_VOID, "m"));
 	builtin_add(sx, U"t_msg_receive", U"н_получить", type_function(sx, TYPE_MSG_INFO, ""));
+
+	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 }
 
 
@@ -244,6 +247,8 @@ syntax sx_create(universal_io *const io)
 	syntax sx;
 	sx.io = io;
 	sx.procd = 1;
+
+	sx.string_literals = strings_create(STRINGS_SIZE);
 
 	sx.predef = vector_create(FUNCTIONS_SIZE);
 	sx.functions = vector_create(FUNCTIONS_SIZE);
@@ -302,6 +307,8 @@ int sx_clear(syntax *const sx)
 		return -1;
 	}
 
+	strings_clear(&sx->string_literals);
+
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
 
@@ -312,6 +319,17 @@ int sx_clear(syntax *const sx)
 	map_clear(&sx->representations);
 
 	return 0;
+}
+
+
+size_t string_add(syntax *const sx, const vector *const str)
+{
+	return strings_add_by_vector(&sx->string_literals, str);
+}
+
+const char* string_get(const syntax *const sx, const size_t index)
+{
+	return strings_get(&sx->string_literals, index);
 }
 
 
@@ -575,6 +593,60 @@ bool type_is_string(const syntax *const sx, const item_t type)
 bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 {
 	return type_is_pointer(sx, type) && type_is_structure(sx, type_get(sx, (size_t)type + 1));
+}
+
+item_t type_array_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+bool type_structure_has_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return false;		// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) / 2 : SIZE_MAX;
+}
+
+size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 4 + 2 * index) : SIZE_MAX;
+}
+
+item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? type_get(sx, (size_t)type + 3 + 2 * index) : ITEM_MAX;
+}
+
+item_t type_function_get_return_type(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) : SIZE_MAX;
+}
+
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 3 + index) : ITEM_MAX;
+}
+
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 
 item_t type_array(syntax *const sx, const item_t type)

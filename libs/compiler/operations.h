@@ -125,20 +125,13 @@ typedef enum OPERATION
 	OP_GOTO,				/**< Goto statement node */
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
-	OP_RETURN_VOID,			/**< Void return statement node */
-	OP_RETURN_VAL,			/**< Valued return statement node */
+	OP_RETURN,				/**< Return statement node */
 	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations
-	OP_DECL_ID,				/**< Identifier declaration node */
-	OP_DECL_ARR,			/**< Array declaration node */
-	OP_DECL_STRUCT,			/**< Struct declaration node */
+	OP_DECL_VAR,			/**< Variable declaration node */
+	OP_DECL_TYPE,			/**< Type declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
-	OP_ARRAY_INIT,			/**< Array inition node */
-	OP_STRUCT_INIT,			/**< Struct inition node */
-
-	// End nodes
-	OP_DECL_STRUCT_END,		/**< End of struct declaration node */
 
 	// Built-in functions
 	OP_PRINTID,
@@ -183,13 +176,13 @@ typedef enum builtin
 	BI_ROBOT_RECEIVE_STRING	= 94,
 
 	// Thread functions
-	BI_CREATE				= 98,
-	BI_GETNUM				= 102,
-	BI_SLEEP				= 106,
-	BI_JOIN					= 110,
-	BI_EXIT					= 114,
-	BI_INIT					= 118,
-	BI_DESTROY				= 122,
+	BI_T_CREATE				= 98,
+	BI_T_GETNUM				= 102,
+	BI_T_SLEEP				= 106,
+	BI_T_JOIN				= 110,
+	BI_T_EXIT				= 114,
+	BI_T_INIT				= 118,
+	BI_T_DESTROY			= 122,
 
 	BI_SEM_CREATE			= 126,
 	BI_SEM_WAIT				= 130,
@@ -198,7 +191,9 @@ typedef enum builtin
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
 
-	BEGIN_USER_FUNC			= 144,
+	BI_EXIT					= 146,
+
+	BEGIN_USER_FUNC			= 150,
 } builtin_t;
 
 

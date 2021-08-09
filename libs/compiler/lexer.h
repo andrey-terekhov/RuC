@@ -37,6 +37,8 @@ typedef struct lexer
 	size_t repr;							/**< Pointer to representation of the read identifier */
 	int num;								/**< Value of the read integer number */
 	double num_double;						/**< Value of the read double number */
+	size_t num_string;						/**< Index of string literal in strings vector */
+
 	vector lexstr;							/**< Representation of the read string literal */
 
 	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
