@@ -73,8 +73,6 @@ typedef struct information
 												@c value[1..MAX] - границы массива */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
-	// костыль, жду исправлений в дереве
-	int was_return;
 } information;
 
 
@@ -1249,28 +1247,8 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label);
 		}
 		break;
-		// case OP_RETURN_VOID:
-		// {
-		// 	if (info->was_return)
-		// 	{
-		// 		info->was_return = 0;
-		// 		node_set_next(nd);
-		// 		break;
-		// 	}
-
-		// 	if (info->was_dynamic)
-		// 	{
-		// 		to_code_stack_load(info);
-		// 	}
-
-		// 	node_set_next(nd);
-		// 	uni_printf(info->sx->io, " ret void\n");
-		// }
-		break;
 		case OP_RETURN:
 		{
-			info->was_return = 1;
-
 			if (info->was_dynamic)
 			{
 				to_code_stack_load(info);
@@ -1551,6 +1529,15 @@ static int codegen(information *const info)
 
 				node_set_next(&root);
 				block(info, &root);
+
+				if (type_is_void(func_type))
+				{
+					if (info->was_dynamic)
+					{
+						to_code_stack_load(info);
+					}
+					uni_printf(info->sx->io, " ret void\n");
+				}
 				uni_printf(info->sx->io, "}\n\n");
 
 				was_stack_functions |= info->was_dynamic;
@@ -1631,7 +1618,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.request_reg = 0;
 	info.answer_reg = 0;
 	info.was_memcpy = 0;
-	info.was_return = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
