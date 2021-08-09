@@ -54,12 +54,12 @@ int main()
 	// char c = 'x';
 	// long li = 13;
 	double x = 3.14, y = 2.72, z = 5.1;
-	int *pointer; 
-	pointer = &i;
-	*pointer = 1;
+	// int *pointer; 
+	// pointer = &i;
+	// *pointer = 1;
 	// (*pointer)++;
 	// *pointer = -1;
-	j += 3 + *pointer;
+	// j += 3 + *pointer;
 	// struct point a, b, c;
 	// char image_file[] = "i0001.bmp";
 	// double f[4] = {1.1, 2.2, 3.3, 4.4};
@@ -195,7 +195,7 @@ int main()
 	// i = ~j;
 	// x /= 2.3 * --z + y - 1.5;
 	// x = func2d(1.0, z);
-	// x -= 3.2;
+	x -= i - y;
 	// b[0][1] = b[0][1] * 3.1; // ОШИБКА!!!
 	// a.x = 0;
 	// a.y = -1;

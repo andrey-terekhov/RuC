@@ -357,6 +357,30 @@ static void to_code_stack_load(information *const info)
 // 	info->was_memcpy = 1;
 // }
 
+static void to_code_try_widen(information *const info, const item_t operation_type)
+{
+	if (operation_type == info->answer_value_type)
+	{
+		return;
+	}
+
+	if (info->answer_type == ACONST)
+	{
+		info->answer_const_double = (double)info->answer_const;
+	}
+	else
+	{
+		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_value_type);
+		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
+		type_to_io(info, operation_type);
+		uni_printf(info->sx->io, "\n");
+
+		info->answer_value_type = operation_type;
+		info->answer_reg = info->register_num++;
+	}
+}
+
 static void check_type_and_branch(information *const info)
 {
 	switch (info->answer_type)
@@ -628,6 +652,7 @@ static void assignment_expression(information *const info, node *const nd)
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
@@ -680,6 +705,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
 	const answer_t left_type = info->answer_type;
@@ -690,6 +716,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
 	const answer_t right_type = info->answer_type;
