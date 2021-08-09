@@ -1469,10 +1469,10 @@ static void block(information *const info, node *const nd)
 			// break;
 			case OP_DECL_VAR:
 			{
-				const item_t displ = node_get_arg(nd, 0);
-				const item_t elem_type = node_get_arg(nd, 1);
-				const item_t N = node_get_arg(nd, 2);
-				const item_t all = node_get_arg(nd, 3);
+				const item_t displ = ident_get_displ(info->sx, node_get_arg(nd, 0));
+				const item_t N = node_get_arg(nd, 1);
+				const item_t all = node_get_arg(nd, 2);
+				const item_t elem_type = ident_get_type(info->sx, node_get_arg(nd, 0));
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
