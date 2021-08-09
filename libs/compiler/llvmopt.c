@@ -63,7 +63,7 @@ static int node_recursive(information *const info, node *const nd)
 		{
 			case OP_STRING:
 			{
-				const size_t index = node_get_arg(&child, 2);
+				const size_t index = (size_t)node_get_arg(&child, 2);
 				const char *string = string_get(info->sx, index);
 				size_t length = 0;
 				for (length = 0; *(string + length) != 0; length++)

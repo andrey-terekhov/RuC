@@ -1290,7 +1290,7 @@ static void statement(information *const info, node *const nd)
 			item_t args_type[128];
 
 			node_set_next(nd);
-			const size_t index = node_get_arg(nd, 2);
+			const size_t index = (size_t)node_get_arg(nd, 2);
 			const char *string = string_get(info->sx, index);
 			item_t string_length = 0;
 			for (string_length = 0; *(string + string_length) != 0; string_length++)
@@ -1447,10 +1447,10 @@ static void block(information *const info, node *const nd)
 			// break;
 			case OP_DECL_VAR:
 			{
-				const item_t displ = ident_get_displ(info->sx, node_get_arg(nd, 0));
+				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 0));
 				const item_t N = node_get_arg(nd, 1);
 				const item_t all = node_get_arg(nd, 2);
-				const item_t elem_type = ident_get_type(info->sx, node_get_arg(nd, 0));
+				const item_t elem_type = ident_get_type(info->sx, (size_t)node_get_arg(nd, 0));
 
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
