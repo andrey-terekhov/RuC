@@ -232,13 +232,13 @@ static void to_code_operation_const_reg_double(information *const info, const it
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array, const int is_pointer)
+	, const int is_array)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "%s, ", is_pointer ? "*" : "");
+	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
@@ -391,21 +391,21 @@ static void operand(information *const info, node *const nd)
 			break;
 		case OP_IDENTIFIER:
 		{
-			const item_t type = node_get_arg(nd, 0);
+			item_t type = node_get_arg(nd, 0);
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 			int is_addr_to_val = 0;
 
 			node_set_next(nd);
-			// if (info->variable_location == LMEM)
-			// {
-			// 	to_code_load(info, info->register_num, displ, TYPE_INTEGER, 0, 1);
-			// 	info->register_num++;
-			// 	info->variable_location = LREG;
-			// 	node_set_next(nd);
-			// 	is_addr_to_val = 1;
-			// }
+			if (info->variable_location == LMEM)
+			{
+				to_code_load(info, info->register_num, displ, type, 0);
+				info->register_num++;
+				info->variable_location = LREG;
+				is_addr_to_val = 1;
+				type = type_get(info->sx, (size_t)type + 1);
+			}
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
-				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
+				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
 			info->answer_type = AREG;
 			info->answer_value_type = type;
@@ -518,7 +518,7 @@ static void operand(information *const info, node *const nd)
 
 		// 	if (location != LMEM)
 		// 	{
-		// 		to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
+		// 		to_code_load(info, info->register_num, info->register_num - 1, type, 1);
 		// 		info->register_num++;
 		// 	}
 
@@ -633,7 +633,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
 
 		if (info->answer_type == AREG)
@@ -845,7 +845,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 		memory_reg = info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+	to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 	info->answer_type = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_value_type = operation_type;
@@ -938,7 +938,7 @@ static void unary_operation(information *const info, node *const nd)
 		case UN_INDIRECTION:
 		{
 			node_set_next(nd);
-			info->variable_location = LREG;
+			info->variable_location = info->variable_location == LMEM ? LREG : LMEM;
 			operand(info, nd);
 		}
 		break;

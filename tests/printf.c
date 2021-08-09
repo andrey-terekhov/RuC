@@ -59,7 +59,7 @@ int main()
 	*pointer = 1;
 	// (*pointer)++;
 	// *pointer = -1;
-	// j += 3 + *pointer;
+	j += 3 + *pointer;
 	// struct point a, b, c;
 	// char image_file[] = "i0001.bmp";
 	// double f[4] = {1.1, 2.2, 3.3, 4.4};
