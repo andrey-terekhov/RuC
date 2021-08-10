@@ -300,23 +300,23 @@ static void to_code_stack_load(information *const info)
 	info->register_num++;
 }
 
-// static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
-// {
-// 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
+{
+	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
-// 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-// 	for (size_t i = 1; i <= dim; i++)
-// 	{
-// 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-// 	}
-// 	type_to_io(info, type);
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+	}
+	type_to_io(info, type);
 
-// 	for (size_t i = 1; i <= dim; i++)
-// 	{
-// 		uni_printf(info->sx->io, "]");
-// 	}
-// 	uni_printf(info->sx->io, ", align 4\n");
-// }
+	for (size_t i = 1; i <= dim; i++)
+	{
+		uni_printf(info->sx->io, "]");
+	}
+	uni_printf(info->sx->io, ", align 4\n");
+}
 
 // static void to_code_init_array(information *const info, const size_t index, const item_t type)
 // {
@@ -1478,6 +1478,7 @@ static void block(information *const info, node *const nd)
 				const item_t all = node_get_arg(nd, 2);
 				const item_t elem_type = ident_get_type(info->sx, (size_t)node_get_arg(nd, 0));
 
+				node_set_next(nd);
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
@@ -1487,8 +1488,52 @@ static void block(information *const info, node *const nd)
 					info->variable_location = LMEM;
 					info->request_reg = displ;
 				}
+				else // массив
+				{
+					const size_t index = hash_add(&info->arrays, displ, 1 + N);
+					hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
-				node_set_next(nd);
+					for (item_t i = 1; i <= N; i++)
+					{
+						info->variable_location = LFREE;
+						expression(info, nd);
+
+						if (!all)
+						{
+							if (info->answer_type == ACONST)
+							{
+								// if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+								// {
+								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								// }
+
+								hash_set_by_index(&info->arrays, index, i, info->answer_const);
+							}
+							else // if (info->answer_type == AREG) динамический массив
+							{
+								// if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+								// {
+								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								// }
+
+								hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+								hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+							}
+						}
+					}
+
+					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
+					{	
+						item_t type = elem_type;
+						while (!type_is_floating(type) && !type_is_integer(type))
+						{
+							type = type_get(info->sx, type + 1);
+						}
+
+						to_code_alloc_array_static(info, index, type);
+					}
+				}
+
 				if (all)
 				{
 					init(info, nd, displ/*, elem_type*/);
