@@ -180,6 +180,16 @@ item_t node_get_arg(const node *const nd, const size_t index)
 	return index < node_get_argc(nd) ? vector_get(nd->tree, ref_get_argc(nd) + 1 + index) : ITEM_MAX;
 }
 
+double node_get_arg_double(const node *const nd, const size_t index)
+{
+	return index + DOUBLE_SIZE <= node_get_argc(nd) ? vector_get_double(nd->tree, ref_get_argc(nd) + 1 + index) : DBL_MAX;
+}
+
+int64_t node_get_arg_int64(const node *const nd, const size_t index)
+{
+	return index + INT64_SIZE <= node_get_argc(nd) ? vector_get_int64(nd->tree, ref_get_argc(nd) + 1 + index) : LLONG_MAX;
+}
+
 size_t node_get_amount(const node *const nd)
 {
 	return node_is_correct(nd) ? (size_t)vector_get(nd->tree, ref_get_amount(nd)) : 0;
@@ -285,6 +295,42 @@ int node_add_arg(const node *const nd, const item_t arg)
 	return 0;
 }
 
+int node_add_arg_double(const node *const nd, const double arg)
+{
+	if (!node_is_correct(nd))
+	{
+		return -1;
+	}
+
+	if (node_get_amount(nd) != 0)
+	{
+		return -2;
+	}
+	
+	vector_add_double(nd->tree, arg);
+	ref_set_argc(nd, (item_t)node_get_argc(nd) + DOUBLE_SIZE);
+
+	return 0;
+}
+
+int node_add_arg_int64(const node *const nd, const int64_t arg)
+{
+	if (!node_is_correct(nd))
+	{
+		return -1;
+	}
+
+	if (node_get_amount(nd) != 0)
+	{
+		return -2;
+	}
+	
+	vector_add_int64(nd->tree, arg);
+	ref_set_argc(nd, (item_t)node_get_argc(nd) + INT64_SIZE);
+
+	return 0;
+}
+
 int node_set_arg(const node *const nd, const size_t index, const item_t arg)
 {
 	if (index >= node_get_argc(nd))
@@ -293,6 +339,26 @@ int node_set_arg(const node *const nd, const size_t index, const item_t arg)
 	}
 
 	return vector_set(nd->tree, ref_get_argc(nd) + 1 + index, arg);
+}
+
+size_t node_set_arg_double(const node *const nd, const size_t index, const double arg)
+{
+	if (index + DOUBLE_SIZE > node_get_argc(nd))
+	{
+		return SIZE_MAX;
+	}
+
+	return vector_set_double(nd->tree, ref_get_argc(nd) + 1 + index, arg);
+}
+
+size_t node_set_arg_int64(const node *const nd, const size_t index, const int64_t arg)
+{
+	if (index + INT64_SIZE > node_get_argc(nd))
+	{
+		return SIZE_MAX;
+	}
+
+	return vector_set_int64(nd->tree, ref_get_argc(nd) + 1 + index, arg);
 }
 
 
