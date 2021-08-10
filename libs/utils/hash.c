@@ -20,8 +20,12 @@
 extern item_t hash_get_key(const hash *const hs, const size_t index);
 extern size_t hash_get_amount_by_index(const hash *const hs, const size_t index);
 extern item_t hash_get_by_index(const hash *const hs, const size_t index, const size_t num);
+extern double hash_get_double_by_index(const hash *const hs, const size_t index, const size_t num);
+extern int64_t hash_get_int64_by_index(const hash *const hs, const size_t index, const size_t num);
 
 extern int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value);
+extern size_t hash_set_double_by_index(hash *const hs, const size_t index, const size_t num, const double value);
+extern size_t hash_set_int64_by_index(hash *const hs, const size_t index, const size_t num, const int64_t value);
 
 extern bool hash_is_correct(const hash *const hs);
 extern int hash_clear(hash *const hs);
@@ -128,6 +132,28 @@ item_t hash_get(const hash *const hs, const item_t key, const size_t num)
 	return hash_get_by_index(hs, (size_t)index, num);
 }
 
+double hash_get_double(const hash *const hs, const item_t key, const size_t num)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return DBL_MAX;
+	}
+
+	return hash_get_double_by_index(hs, (size_t)index, num);
+}
+
+int64_t hash_get_int64(const hash *const hs, const item_t key, const size_t num)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return LLONG_MAX;
+	}
+
+	return hash_get_int64_by_index(hs, (size_t)index, num);
+}
+
 size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
 {
 	const item_t index = vector_get(hs, get_index(hs, key));
@@ -137,4 +163,26 @@ size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t
 	}
 
 	return hash_set_by_index(hs, (size_t)index, num, value) == 0 ? (size_t)index : SIZE_MAX;
+}
+
+size_t hash_set_double(hash *const hs, const item_t key, const size_t num, const double value)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	return hash_set_double_by_index(hs, (size_t)index, num, value) != DBL_MAX ? (size_t)index : SIZE_MAX;
+}
+
+size_t hash_set_int64(hash *const hs, const item_t key, const size_t num, const int64_t value)
+{
+	const item_t index = vector_get(hs, get_index(hs, key));
+	if (index == 0 || index == ITEM_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	return hash_set_int64_by_index(hs, (size_t)index, num, value) != LLONG_MAX ? (size_t)index : SIZE_MAX;
 }
