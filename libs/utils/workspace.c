@@ -26,35 +26,26 @@
 #endif
 
 
-static inline void ws_init(workspace *const ws)
-{
-	ws->files_num = 0;
-	ws->dirs_num = 0;
-	ws->flags_num = 0;
-
-	ws->output[0] = '\0';
-	ws->was_error = false;
-}
-
 static inline void ws_add_error(workspace *const ws)
 {
-	if (ws == NULL)
+	if (ws != NULL)
 	{
-		return;
+		ws->was_error = true;
 	}
-
-	ws->was_error = true;
 }
 
-static void ws_unix_path(const char *const path, char *const buffer)
+static vector ws_unix_path(const char *const path)
 {
 	size_t i = 0;
 	size_t j = 0;
 	size_t last = 0;
 
+	vector buffer = vector_create(MAX_ARG_SIZE);
+
 	while (path[i] != '\0')
 	{
-		buffer[j++] = path[i] == '\\' ? '/' : path[i];
+		//buffer[j++] = path[i] == '\\' ? '/' : path[i];
+		vector_add(&vec,)
 
 		if (buffer[j - 1] == '/')
 		{
@@ -80,6 +71,7 @@ static void ws_unix_path(const char *const path, char *const buffer)
 	}
 
 	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
+	return buffer;
 }
 
 static size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
@@ -112,8 +104,7 @@ static inline bool ws_is_dir_flag(const char *const flag)
 
 workspace ws_parse_args(const int argc, const char *const *const argv)
 {
-	workspace ws;
-	ws_init(&ws);
+	workspace ws = ws_create();
 
 	if (argv == NULL)
 	{
@@ -161,7 +152,14 @@ workspace ws_parse_args(const int argc, const char *const *const argv)
 workspace ws_create()
 {
 	workspace ws;
-	ws_init(&ws);
+
+	ws.files = strings_create(MAX_PATHS);
+	ws.dirs = strings_create(MAX_PATHS);
+	ws.flags = strings_create(MAX_FLAGS);
+
+	ws.output[0] = '\0';
+	ws.was_error = false;
+
 	return ws;
 }
 
@@ -174,6 +172,7 @@ size_t ws_add_file(workspace *const ws, const char *const path)
 		return SIZE_MAX;
 	}
 
+	char buffer[]
 	ws_unix_path(path, ws->files[ws->files_num]);
 	if (access(ws->files[ws->files_num], F_OK) == -1)
 	{
@@ -359,12 +358,10 @@ int ws_clear(workspace *const ws)
 		return -1;
 	}
 
-	ws->files_num = 0;
-	ws->dirs_num = 0;
-	ws->flags_num = 0;
+	strings_clear(&ws->files);
+	strings_clear(&ws->dirs);
+	strings_clear(&ws->flags);
 
-	ws->output[0] = '\0';
-	ws->was_error = false;
-
+	ws_add_error(ws);
 	return 0;
 }
