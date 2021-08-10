@@ -318,6 +318,73 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->sx->io, ", align 4\n");
 }
 
+static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimension
+	, const item_t prev_slice, const item_t type)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
+	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
+
+	if (hash_get(&info->arrays, displ, IS_STATIC))
+	{
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		{
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+		}
+		type_to_io(info, type);
+
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		{
+			uni_printf(info->sx->io, "]");
+		}
+		uni_printf(info->sx->io, ", ");
+
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		{
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+		}
+		type_to_io(info, type);
+
+		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		{
+			uni_printf(info->sx->io, "]");
+		}
+
+		if (cur_dimension == dimensions - 1)
+		{
+			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", displ);
+		}
+		else
+		{
+			uni_printf(info->sx->io, "* %%.%" PRIitem ", i32 0", prev_slice);
+		}
+	}
+	else if (cur_dimension == dimensions - 1)
+	{
+		type_to_io(info, type);
+		uni_printf(info->sx->io, ", ");
+		type_to_io(info, type);
+		uni_printf(info->sx->io, "* %%dynarr.%" PRIitem, displ);
+	}
+	else
+	{
+		type_to_io(info, type);
+		uni_printf(info->sx->io, ", ");
+		type_to_io(info, type);
+		uni_printf(info->sx->io, "* %%.%" PRIitem, prev_slice);
+	}
+
+	if (info->answer_type == AREG)
+	{
+		uni_printf(info->sx->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
+	}
+	else // if (info->answer_type == ACONST)
+	{
+		uni_printf(info->sx->io, ", i32 %" PRIitem "\n", info->answer_const);
+	}
+
+	info->register_num++;
+}
+
 // static void to_code_init_array(information *const info, const size_t index, const item_t type)
 // {
 // 	uni_printf(info->sx->io, " %%.%" PRIitem " = bitcast ", info->register_num);
@@ -475,23 +542,17 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 		}
 		break;
-		// case OP_STRING:
-		// 	node_set_next(nd);
-		// 	break;
-		// case OP_SLICE_IDENT:
-		// {
-		// 	const item_t displ = node_get_arg(nd, 0);
-		// 	// TODO: как и в llvmopt, это работает только для двумерных массивов,
-		// 	// 	надо подумать над этим потом (может общую функцию сделать?)
-		// 	const item_t type = node_get_arg(nd, 1) > 0
-		// 							? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
-		// 							: node_get_arg(nd, 1);
-		// 	item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
-		// 	const location_t location = info->variable_location;
-		// 	node_set_next(nd);
+		case OP_SLICE:
+		{
+			const item_t type = node_get_arg(nd, 0);
+			node_set_next(nd);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			node_set_next(nd);
+			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+			const location_t location = info->variable_location;
 
-		// 	info->variable_location = LFREE;
-		// 	expression(info, nd);
+			info->variable_location = LFREE;
+			expression(info, nd);
 
 		// 	// TODO: пока только для динамических массивов размерности 2
 		// 	if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
@@ -510,12 +571,12 @@ static void operand(information *const info, node *const nd)
 		// 		info->answer_reg = info->register_num++;
 		// 	}
 
-		// 	// Проверка, что значение cur_dimension корректное и в пределах допустимого
-		// 	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-		// 	if (-1 < cur_dimension && cur_dimension < 5)
-		// 	{
-		// 		to_code_slice(info, displ, cur_dimension, 0, type);
-		// 	}
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			if (-1 < cur_dimension && cur_dimension < 5)
+			{
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
 
 		// 	item_t prev_slice = info->register_num - 1;
 		// 	while (node_get_type(nd) == OP_SLICE)
@@ -540,17 +601,17 @@ static void operand(information *const info, node *const nd)
 		// 		node_set_next(nd);
 		// 	}
 
-		// 	if (location != LMEM)
-		// 	{
-		// 		to_code_load(info, info->register_num, info->register_num - 1, type, 1);
-		// 		info->register_num++;
-		// 	}
+			if (location != LMEM)
+			{
+				to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+				info->register_num++;
+			}
 
-		// 	info->answer_reg = info->register_num - 1;
-		// 	info->answer_type = AREG;
-		// 	info->answer_value_type = type;
-		// }
-		// break;
+			info->answer_reg = info->register_num - 1;
+			info->answer_type = AREG;
+			info->answer_value_type = type;
+		}
+		break;
 		case OP_CALL:
 		{
 			item_t arguments[128];
