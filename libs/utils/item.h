@@ -72,6 +72,9 @@
 	#define PRIitem PRIi64
 #endif
 
+#define DOUBLE_SIZE (sizeof(double) / sizeof(ITEM_TYPE))
+#define INT64_SIZE (sizeof(int64_t) / sizeof(ITEM_TYPE))
+
 
 #ifdef __cplusplus
 extern "C" {

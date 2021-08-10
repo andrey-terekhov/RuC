@@ -19,10 +19,6 @@
 #include <string.h>
 
 
-static const size_t DOUBLE_SIZE = sizeof(double) / sizeof(item_t);
-static const size_t INT64_SIZE = sizeof(int64_t) / sizeof(item_t);
-
-
 static int change_size(vector *const vec, const size_t size)
 {
 	if (size > vec->size_alloc)
