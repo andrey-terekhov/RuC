@@ -4,7 +4,7 @@
 //  Copyright (c) 2012 Andrey Terekhov. All rights reserved.
 //
 
-/*
+/*AXM
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
@@ -17,28 +17,27 @@
 
 int main()
 {
-  /*
-    FILE *input;
-    
+
+    DOUBLE input;
+/*
     clock_t start_time, end_time;
     start_time = clock();
-    */
+*/
     int maxk, maxl;
 	float Fr, maxFr, ar[m][n];
     char nxt, z[m][N];    
     int s[m][N], s2[m][N], z2[m][N];    
-    float zvr, zzr, valr, sqrzzr;    
+    float zvr, zzr, valr, sqrzzr, aux = 0, aux1;
     int i, ii, iii, i4, jj, k, l, kk, ll, flagend, calca;
     k=0; l=0; i=0; flagend=0; calca=1;    
     maxFr=-1000000;
-    
-//    input = fopen("/Users/ant/Desktop/Reutov/Reutov/frame3.bmp", "r");
+    input = fopen("/Users/ant/Desktop/Reutov/Reutov/frame3.bmp");
 	for (ii=0; ii<1078; ++ii)
-  //      fscanf(input, "%c", &nxt);
+        nxt = fgetc(input);
 	;
     while (flagend == 0)
     {        
-        //fscanf(input, "%c", &nxt);
+        nxt = fgetc(input);
         z[i][l]=nxt;        
         z2[i][l]=nxt*nxt;        
         if (l == 0)
@@ -47,69 +46,93 @@ int main()
         }
         else
         {
-            s[i][l]=s[i][l-1] - ((l >= n) ? z[i][l-n] : 0) + nxt;
-            
-            s2[i][l]=s2[i][l-1] - ((l >= n) ? z2[i][l-n] : 0) + z2[i][l];  // s 12 bit, s2 20
-        }        
+			if(l >= n)
+			{
+				s[i][l]=s[i][l-1] - z[i][l-n] + nxt;
+				s2[i][l]=s2[i][l-1] - z2[i][l-n] + z2[i][l];  // s 12 bit, s2 20
+			}
+			else
+			{
+				s[i][l]=s[i][l-1] + nxt;
+				s2[i][l]=s2[i][l-1] + z2[i][l];  // s 12 bit, s2 20
+			}
+		}
         if (k >= m-1 && l >= n-1)
         {
+//			aux1 = cos(k);
+
             zvr=s[0][l]; zzr=s2[0][l];
             
             for (ii=1; ii<m; ++ii)
             {
-                zvr+=s[ii][l];  zzr+=s2[ii][l];
+                zvr=zvr+s[ii][l];  zzr=zzr+s2[ii][l];
             }            
-            zvr/=mn;  zzr/=mn; zzr-=zvr*zvr;            
-            if ((zzr > 0 ? zzr : -zzr) < 0.001) zzr=1;            
-            sqrzzr = sqrt(zzr);            
-            kk=k-m+1; ll=l-n+1; Fr=0;            
-            iii=(i+1 == m) ? 0 : i+1;
-            
+            zvr/=mn;  zzr/=mn; zzr-=zvr*zvr;
+			zzr = abs(zzr);
+            if (zzr < 0.001) zzr=1;
+            sqrzzr = sqrt(zzr);
+            kk=k-m+1; ll=l-n+1; Fr=0;
+			if (i+1 == m)
+				iii = 0;
+			else iii = i+1;
             for (ii=0; ii<m; ++ii)
             {
-                i4=iii + ii;                
-                i4=(i4 >= m) ? i4-m : i4;                
+                i4=iii + ii;
+				if(i4 >= m)
+					i4 = i4 - m;
                 for (jj=0; jj<n; ++jj)
                 {
-                    valr=(z[i4][ll+jj]-zvr)/zzr;                    
-                    if ( calca == 1)
-                        ar[ii][jj]=valr;
+                    valr=(z[i4][ll+jj]-zvr)/sqrzzr;
+					if ( calca == 1)
+						ar[ii][jj]=valr;
                     else
                         Fr += ar[ii][jj] * valr;
                     
                 }                
-            }            
-            if (calca == 0 && Fr > maxFr)
+            }
+//			aux = sin(i); aux = sin(l);
+			aux = sin(ll);
+
+            if (calca == 0)
             {
-                maxFr=Fr; maxk=kk; maxl=ll;
-            }           
-        }        
+				printid(kk, ll);
+				if(Fr >= maxFr)
+				{
+					maxFr=Fr; maxk=kk; maxl=ll;
+//					printid(maxk, maxl, Fr);
+					
+				}
+            }
+        }
+//		aux1 = cos(k);
         if (calca == 1 && k == m-1 && l == n-1)
         {
             calca=0; k=0; l=0; i=0;
             
- //           fclose(input);
-//            input = fopen("/Users/ant/Desktop/Reutov/Reutov/image3.bmp", "r");
+            fclose(input);
+            input = fopen("/Users/ant/Desktop/Reutov/Reutov/image3.bmp");
             for (ii=0; ii<1078; ++ii)
-			;//fscanf(input, "%c", &nxt);
-            
-        }        
-        else if (++l == N && k == M-1)                
-                flagend=1;        
-             else if (l == (( calca == 1) ? n : N))
+				nxt = fgetc(input);
+			printid(ii);
+        }
+        else if (++l == N && k == M-1)
+			flagend=1;
+             else if ((calca == 1 && l == n) || ( calca == 0 && l == N))
              {
+				 //aux1 = cos(k);
                  ++k; l=0;                
                  if (++i == m)                    
                      i=0;
              }
     };
- //   fclose(input);
-    printf("maxk =%i maxl=%i maxF=%f\n", maxk, maxl, maxFr);
-    
-//    end_time = clock();
- //   clock_t diffTime = end_time - start_time;
-//    printf("%li\n", diffTime);
-    
+    fclose(input);
+	printid(maxk, maxl, maxFr);
+//    printf("maxk =%i maxl=%i maxF=%f\n", maxk, maxl, maxFr);
+	/*
+	end_time = clock();
+   clock_t diffTime = end_time - start_time;
+    printf("%li\n", diffTime);
+    */
     return 0;
 }
 

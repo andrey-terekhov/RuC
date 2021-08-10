@@ -22,7 +22,7 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/executable/files/selftest.c";
+const char *name = "../tests/reutovr.c";
 
 
 int main(int argc, const char *argv[])
