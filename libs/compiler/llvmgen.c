@@ -337,6 +337,10 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	if (dim < 1 || dim > 5)
+	{
+		return;
+	}
 	for (size_t i = 2; i <= dim; i++)
 	{
 		uni_printf(info->sx->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
@@ -421,6 +425,10 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	info->register_num++;
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	if (dim < 1 || dim > 5)
+	{
+		return;
+	}
 	for (size_t i = 1; i <= dim; i++)
 	{
 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
