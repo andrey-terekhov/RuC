@@ -67,7 +67,7 @@ int main()
 	// double a[5][3];
 	// int a[5];
 	// int a1[5][6];						
-	double c[j][i];
+	double c[j];
 	// double b[5][4];
 	// int d[i][j];
 
@@ -166,7 +166,7 @@ int main()
 	// func();
 	// i += func1() / 3 - 2;
 	// i = func2(j, 3) + 1;
-	// a[3][2] = 0;
+	c[3] = 0;
 	// i = a[3] + 3;
 
 	// for (i = 0; i < 5; i++)
@@ -203,7 +203,7 @@ int main()
 	// func_arr(a);
 	// if (i != 5)
 	// 	exit(0);
-	printf("%i %i %f\n", i, j, x);
+	printf("%i %i %f\n", i, j, c[3]);
 	// printf("hello world!\n");
 	// a:
 

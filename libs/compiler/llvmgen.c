@@ -584,9 +584,25 @@ static void operand(information *const info, node *const nd)
 				item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 				const location_t location = info->variable_location;
 
-				// item_t prev_slice = info->register_num - 1;
 				info->variable_location = LFREE;
 				expression(info, nd);
+
+				// TODO: пока только для динамических массивов размерности 2
+				if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
+				{
+					if (info->answer_type == ACONST)
+					{
+						to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
+					}
+					else // if (info->answer_type == AREG)
+					{
+						to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
+							TYPE_INTEGER);
+					}
+
+					info->answer_type = AREG;
+					info->answer_reg = info->register_num++;
+				}
 
 				if (-1 < cur_dimension && cur_dimension < 5)
 				{
