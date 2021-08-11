@@ -546,8 +546,55 @@ static void operand(information *const info, node *const nd)
 		{
 			const item_t type = node_get_arg(nd, 0);
 			node_set_next(nd);
+
+			// двумерная вырезка, КОСТЫЛЬ, но работает)))
+			if (node_get_type(nd) == OP_SLICE)
+			{
+				node_set_next(nd);
+
+				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+				node_set_next(nd);
+
+				item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+				const location_t location = info->variable_location;
+
+				// item_t prev_slice = info->register_num - 1;
+				info->variable_location = LFREE;
+				expression(info, nd);
+
+				if (-1 < cur_dimension && cur_dimension < 5)
+				{
+					to_code_slice(info, displ, cur_dimension, 0, type);
+				}
+
+				item_t prev_slice = info->register_num - 1;
+				info->variable_location = LFREE;
+				expression(info, nd);
+				cur_dimension--;
+
+				// Проверка, что значение cur_dimension корректное и в пределах допустимого
+				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+				if (-1 < cur_dimension && cur_dimension < 5)
+				{
+					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
+				prev_slice = info->register_num - 1;
+
+				if (location != LMEM)
+				{
+					to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+					info->register_num++;
+				}
+
+				info->answer_reg = info->register_num - 1;
+				info->answer_type = AREG;
+				info->answer_value_type = type;
+				break;
+			}
+
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 			node_set_next(nd);
+
 			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 
@@ -577,23 +624,6 @@ static void operand(information *const info, node *const nd)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
-
-		// 	item_t prev_slice = info->register_num - 1;
-		// 	while (node_get_type(nd) == OP_SLICE)
-		// 	{
-		// 		node_set_next(nd);
-		// 		info->variable_location = LFREE;
-		// 		expression(info, nd);
-		// 		cur_dimension--;
-
-		// 		// Проверка, что значение cur_dimension корректное и в пределах допустимого
-		// 		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-		// 		if (-1 < cur_dimension && cur_dimension < 5)
-		// 		{
-		// 			to_code_slice(info, displ, cur_dimension, prev_slice, type);
-		// 		}
-		// 		prev_slice = info->register_num - 1;
-		// 	}
 
 		// 	// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
 		// 	if (node_get_type(nd) == OP_ADDR_TO_VAL)
