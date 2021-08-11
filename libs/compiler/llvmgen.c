@@ -292,6 +292,15 @@ static inline void to_code_conditional_branch(information *const info)
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
+static void to_code_stack_save(information *const info)
+{
+	// команды сохранения состояния стека
+	uni_printf(info->sx->io, " %%dyn = alloca i8*, align 4\n");
+	uni_printf(info->sx->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
+	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
+	info->register_num++;
+}
+
 static void to_code_stack_load(information *const info)
 {
 	// команды восстановления состояния стека
@@ -316,6 +325,23 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 		uni_printf(info->sx->io, "]");
 	}
 	uni_printf(info->sx->io, ", align 4\n");
+}
+
+static void to_code_alloc_array_dynamic(information *const info, const size_t index, const item_t type)
+{
+	// выделение памяти на стеке
+	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
+
+	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	for (size_t i = 2; i <= dim; i++)
+	{
+		uni_printf(info->sx->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+			, info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
+		to_alloc = info->register_num++;
+	}
+	uni_printf(info->sx->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	type_to_io(info, type);
+	uni_printf(info->sx->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
 static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimension
@@ -1623,6 +1649,21 @@ static void block(information *const info, node *const nd)
 
 						to_code_alloc_array_static(info, index, type);
 					}
+					else if (!all) // объявление массива, если он динамический
+					{
+						if (!info->was_dynamic)
+						{
+							to_code_stack_save(info);
+						}
+
+						item_t type = elem_type;
+						while (!type_is_floating(type) && !type_is_integer(type))
+						{
+							type = type_get(info->sx, type + 1);
+						}
+						to_code_alloc_array_dynamic(info, index, type);
+						info->was_dynamic = 1;
+					}
 				}
 
 				if (all)
@@ -1709,22 +1750,23 @@ static int codegen(information *const info)
 			{
 				if (node_set_next(&root) != 0)
 				{
+					if (was_stack_functions)
+					{
+						uni_printf(info->sx->io, "declare i8* @llvm.stacksave()\n");
+						uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
+					}
+					if (info->was_memcpy)
+					{
+						uni_printf(info->sx->io, "declare void @llvm.memcpy.p0i8.p0i8.i32"
+						"(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
+					}
+
 					return 0;
 				}
 			}
 			// 	system_error(node_unexpected, node_get_type(&root));
 			// 	return -1;
 		}
-	}
-
-	if (was_stack_functions)
-	{
-		uni_printf(info->sx->io, "declare i8* @llvm.stacksave()\n");
-		uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
-	}
-	if (info->was_memcpy)
-	{
-		uni_printf(info->sx->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 	}
 
 	return 0;
