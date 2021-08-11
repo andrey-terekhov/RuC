@@ -573,7 +573,7 @@ static void operand(information *const info, node *const nd)
 			const item_t type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			// двумерная вырезка, КОСТЫЛЬ, но работает)))
+			// двумерная вырезка, плохое решение, более общее решение будет, когда будут реализовываться массивы бОльшей размерности
 			if (node_get_type(nd) == OP_SLICE)
 			{
 				node_set_next(nd);
@@ -1623,10 +1623,10 @@ static void block(information *const info, node *const nd)
 				}
 				else // массив
 				{
-					const size_t index = hash_add(&info->arrays, displ, 1 + N);
+					const size_t index = hash_add(&info->arrays, displ, 1 + (size_t)N);
 					hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
-					for (item_t i = 1; i <= N; i++)
+					for (item_t j = 1; j <= N; j++)
 					{
 						info->variable_location = LFREE;
 						expression(info, nd);
@@ -1640,7 +1640,7 @@ static void block(information *const info, node *const nd)
 								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 								// }
 
-								hash_set_by_index(&info->arrays, index, i, info->answer_const);
+								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
 							}
 							else // if (info->answer_type == AREG) динамический массив
 							{
@@ -1649,7 +1649,7 @@ static void block(information *const info, node *const nd)
 								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 								// }
 
-								hash_set_by_index(&info->arrays, index, i, info->answer_reg);
+								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_reg);
 								hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 							}
 						}
@@ -1660,7 +1660,7 @@ static void block(information *const info, node *const nd)
 						item_t type = elem_type;
 						while (!type_is_floating(type) && !type_is_integer(type))
 						{
-							type = type_get(info->sx, type + 1);
+							type = type_get(info->sx, (size_t)type + 1);
 						}
 
 						to_code_alloc_array_static(info, index, type);
@@ -1675,7 +1675,7 @@ static void block(information *const info, node *const nd)
 						item_t type = elem_type;
 						while (!type_is_floating(type) && !type_is_integer(type))
 						{
-							type = type_get(info->sx, type + 1);
+							type = type_get(info->sx, (size_t)type + 1);
 						}
 						to_code_alloc_array_dynamic(info, index, type);
 						info->was_dynamic = 1;
