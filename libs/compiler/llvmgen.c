@@ -643,35 +643,12 @@ static void operand(information *const info, node *const nd)
 			info->variable_location = LFREE;
 			expression(info, nd);
 
-		// 	// TODO: пока только для динамических массивов размерности 2
-		// 	if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
-		// 	{
-		// 		if (info->answer_type == ACONST)
-		// 		{
-		// 			to_code_operation_const_reg_i32(info, OP_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
-		// 		}
-		// 		else // if (info->answer_type == AREG)
-		// 		{
-		// 			to_code_operation_reg_reg(info, OP_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
-		// 				mode_integer);
-		// 		}
-
-		// 		info->answer_type = AREG;
-		// 		info->answer_reg = info->register_num++;
-		// 	}
-
 			// Проверка, что значение cur_dimension корректное и в пределах допустимого
 			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 			if (-1 < cur_dimension && cur_dimension < 5)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
-
-		// 	// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
-		// 	if (node_get_type(nd) == OP_ADDR_TO_VAL)
-		// 	{
-		// 		node_set_next(nd);
-		// 	}
 
 			if (location != LMEM)
 			{
@@ -1501,9 +1478,15 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		hash_set_by_index(&info->arrays, index, 1, N);
 
 		item_t type = elem_type;
+		int stop_flag = 0;
 		while (!type_is_floating(type) && !type_is_integer(type))
 		{
 			type = type_get(info->sx, (size_t)type + 1);
+			stop_flag++;
+			if (stop_flag > 10)
+			{
+				break;
+			}
 		}
 
 		to_code_alloc_array_static(info, index, type);
@@ -1541,76 +1524,6 @@ static void block(information *const info, node *const nd)
 	{
 		switch (node_get_type(nd))
 		{
-			// case OP_DECL_ARR:
-			// {
-			// 	node id = node_get_child(nd, node_get_amount(nd) - 1);
-			// 	if (node_get_type(&id) != OP_DECL_ID)
-			// 	{
-			// 		id = node_get_child(nd, node_get_amount(nd) - 2);
-			// 	}
-
-			// 	const item_t displ = node_get_arg(&id, 0);
-			// 	const item_t elem_type = node_get_arg(&id, 1);
-			// 	const size_t N = (size_t)node_get_arg(&id, 2);
-			// 	const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
-			// 	const size_t index = hash_add(&info->arrays, displ, 1 + N);
-			// 	hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
-
-			// 	node_set_next(nd);
-			// 	// получение и сохранение границ
-				// const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
-				// for (size_t i = 1; i <= N && has_bounds; i++)
-				// {
-				// 	info->variable_location = LFREE;
-				// 	expression(info, nd);
-
-				// 	if (!has_initializer)
-				// 	{
-				// 		if (info->answer_type == ACONST)
-				// 		{
-				// 			if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
-				// 			{
-				// 				system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-				// 			}
-
-				// 			hash_set_by_index(&info->arrays, index, i, info->answer_const);
-				// 		}
-				// 		else // if (info->answer_type == AREG) динамический массив
-				// 		{
-				// 			if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
-				// 			{
-				// 				system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-				// 			}
-
-				// 			hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-				// 			hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
-				// 		}
-				// 	}
-				// }
-	// 			node_set_next(nd);	// OP_DECL_ID
-
-	// 			// объявление массива без инициализации, с инициализацией объявление происходит в init
-	// 			// объявление массива, если он статический
-	// 			if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_initializer)
-	// 			{
-	// 				to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-	// 			}
-	// 			else if (!has_initializer) // объявление массива, если он динамический
-	// 			{
-	// 				if (!info->was_dynamic)
-	// 				{
-	// 					to_code_stack_save(info);
-	// 				}
-	// 				to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-	// 				info->was_dynamic = 1;
-	// 			}
-
-	// 			if (has_initializer)
-	// 			{
-	// 				init(info, nd, displ, elem_type);
-	// 			}
-			// }
-			// break;
 			case OP_DECL_VAR:
 			{
 				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 0));
@@ -1663,15 +1576,21 @@ static void block(information *const info, node *const nd)
 							}
 						}
 					}
-
+					printf("here\n");
 					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
-					{	
+					{
 						item_t type = elem_type;
+						int stop_flag = 0;
 						while (!type_is_floating(type) && !type_is_integer(type))
 						{
 							type = type_get(info->sx, (size_t)type + 1);
+							stop_flag++;
+							if (stop_flag > 10)
+							{
+								break;
+							}
 						}
-
+						printf("here2\n");
 						to_code_alloc_array_static(info, index, type);
 					}
 					else if (!all) // объявление массива, если он динамический
@@ -1682,9 +1601,15 @@ static void block(information *const info, node *const nd)
 						}
 
 						item_t type = elem_type;
+						int stop_flag = 0;
 						while (!type_is_floating(type) && !type_is_integer(type))
 						{
 							type = type_get(info->sx, (size_t)type + 1);
+							stop_flag++;
+							if (stop_flag > 10)
+							{
+								break;
+							}
 						}
 						to_code_alloc_array_dynamic(info, index, type);
 						info->was_dynamic = 1;
@@ -1701,6 +1626,7 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				break;
 			default:
+					printf("here1\n");
 				statement(info, nd);
 				break;
 		}
