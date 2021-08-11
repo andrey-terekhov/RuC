@@ -314,6 +314,10 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	if (dim < 1 || dim > 5)
+	{
+		return;
+	}
 	for (size_t i = 1; i <= dim; i++)
 	{
 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
@@ -1576,7 +1580,6 @@ static void block(information *const info, node *const nd)
 							}
 						}
 					}
-					printf("here\n");
 					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 					{
 						item_t type = elem_type;
@@ -1590,7 +1593,6 @@ static void block(information *const info, node *const nd)
 								break;
 							}
 						}
-						printf("here2\n");
 						to_code_alloc_array_static(info, index, type);
 					}
 					else if (!all) // объявление массива, если он динамический
@@ -1626,7 +1628,6 @@ static void block(information *const info, node *const nd)
 				node_set_next(nd);
 				break;
 			default:
-					printf("here1\n");
 				statement(info, nd);
 				break;
 		}
