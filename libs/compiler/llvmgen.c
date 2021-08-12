@@ -1479,7 +1479,7 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
+static void init(information *const info, node *const nd/*, const item_t displ*/, const item_t elem_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
@@ -1628,7 +1628,7 @@ static void block(information *const info, node *const nd)
 
 				if (all)
 				{
-					init(info, nd, displ, elem_type);
+					init(info, nd,/* displ,*/ elem_type);
 				}
 			}
 			break;
