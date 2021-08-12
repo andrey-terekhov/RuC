@@ -105,23 +105,23 @@ static int node_recursive(information *const info, node *const nd)
 				info->arr_init_type = type;
 			}
 			break;
-			// case OP_CONSTANT:
-			// {
-			// 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
-			// 	{
-			// 		if (type_is_integer(node_get_arg(&child, 0)))
-			// 		{
-			// 			uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 2)
-			// 				, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
-			// 		}
-			// 		else
-			// 		{
-			// 			uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
-			// 				, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
-			// 		}
-			// 	}
-			// }
-			// break;
+			case OP_CONSTANT:
+			{
+				if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
+				{
+					if (type_is_integer(node_get_arg(&child, 0)))
+					{
+						uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 2)
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
+					}
+					else
+					{
+						uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
+					}
+				}
+			}
+			break;
 			default:
 				break;
 		}
