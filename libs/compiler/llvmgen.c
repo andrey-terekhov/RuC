@@ -1479,17 +1479,17 @@ static void statement(information *const info, node *const nd)
 	}
 }
 
-static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
+static void init(information *const info, node *const nd/*, const item_t displ, const item_t elem_type*/)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const item_t N = node_get_argc(nd);
 
-		const size_t index = hash_get_index(&info->arrays, displ);
-		hash_set_by_index(&info->arrays, index, 1, N);
+		// const size_t index = hash_get_index(&info->arrays, displ);
+		// hash_set_by_index(&info->arrays, index, 1, N);
 
-		item_t type = elem_type;
+		// item_t type = elem_type;
 		// int stop_flag = 0;
 		// while (!type_is_floating(type) && !type_is_integer(type))
 		// {
@@ -1501,8 +1501,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		// 	}
 		// }
 
-		to_code_alloc_array_static(info, index, type);
-		to_code_init_array(info, index, type);
+		// to_code_alloc_array_static(info, index, type);
+		// to_code_init_array(info, index, type);
 
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
@@ -1628,7 +1628,7 @@ static void block(information *const info, node *const nd)
 
 				if (all)
 				{
-					init(info, nd, displ, elem_type);
+					init(info, nd/*, displ, elem_type*/);
 				}
 			}
 			break;
