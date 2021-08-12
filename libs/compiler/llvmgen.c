@@ -1486,8 +1486,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 	{
 		const item_t N = node_get_argc(nd);
 
-		const size_t index = hash_get_index(&info->arrays, displ);
-		hash_set_by_index(&info->arrays, index, 1, N);
+		// const size_t index = hash_get_index(&info->arrays, displ);
+		// hash_set_by_index(&info->arrays, index, 1, N);
 
 		item_t type = elem_type;
 		int stop_flag = 0;
