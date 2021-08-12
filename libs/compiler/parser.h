@@ -327,97 +327,6 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 
 
 /**
- *	Check if mode is function
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_function(syntax *const sx, const item_t mode);
-
-/**
- *	Check if mode is array
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_array(syntax *const sx, const item_t mode);
-
-/**
- *	Check if mode is string
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_string(syntax *const sx, const item_t mode);
-
-/**
- *	Check if mode is pointer
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_pointer(syntax *const sx, const item_t mode);
-
-/**
- *	Check if mode is struct
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_struct(syntax *const sx, const item_t mode);
-
-/**
- *	Check if mode is floating point
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_float(const item_t mode);
-
-/**
- *	Check if mode is integer
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_int(const item_t mode);
-
-/**
- *	Check if mode is void
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_void(const item_t mode);
-
-/**
- *	Check if mode is undefined
- *
- *	@param	sx			Syntax structure
- *	@param	mode		Mode for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool mode_is_undefined(const item_t mode);
-
-
-/**
  *	Add new item to identifiers table
  *
  *	@param	prs			Parser structure
@@ -432,17 +341,6 @@ bool mode_is_undefined(const item_t mode);
  *	@return	Index of the last item in identifiers table
  */
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
-
-/**
- *	Add a new record to modes table
- *
- *	@param	prs			Parser structure
- *	@param	mode		@c mode_pointer or @c mode_array
- *	@param	element		Type of element
- *
- *	@return	Index of the new record in modes table, @c SIZE_MAX on failure
- */
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element);
 
 /**
  *	Add a new node to expression subtree
