@@ -1488,7 +1488,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 		item_t type = elem_type;
 		int stop_flag = 0;
-		while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
+		while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
 		{
 			type = type_get(info->sx, (size_t)type + 1);
 			stop_flag++;
@@ -1565,7 +1565,7 @@ static void block(information *const info, node *const nd)
 					{
 						item_t type = elem_type;
 						int stop_flag = 0;
-						while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
+						while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
 						{
 							type = type_get(info->sx, (size_t)type + 1);
 							stop_flag++;
@@ -1581,7 +1581,7 @@ static void block(information *const info, node *const nd)
 
 						item_t type = elem_type;
 						int stop_flag = 0;
-						while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
+						while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
 						{
 							type = type_get(info->sx, (size_t)type + 1);
 							stop_flag++;

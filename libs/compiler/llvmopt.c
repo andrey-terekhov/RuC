@@ -93,7 +93,7 @@ static int node_recursive(information *const info, node *const nd)
 			{
 				item_t type = ident_get_type(info->sx, (size_t)node_get_arg(&child, 0));
 				int stop_flag = 0;
-				while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
+				while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
 				{
 					type = type_get(info->sx, (size_t)type + 1);
 					stop_flag++;
