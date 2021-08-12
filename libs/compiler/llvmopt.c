@@ -116,7 +116,7 @@ static int node_recursive(information *const info, node *const nd)
 					}
 					else
 					{
-						int64_t num = (node_get_arg(&child, 3) << 32) | (node_get_arg(&child, 2) & 0x00000000ffffffff);
+						long num = (node_get_arg(&child, 3) << 32) | (node_get_arg(&child, 2) & 0x00000000ffffffff);
 						double numdouble = 1.1;
 						printf("%ld\n", num);
 						// memcpy(&numdouble, &num, sizeof(double));
