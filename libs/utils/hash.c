@@ -77,7 +77,7 @@ static size_t get_index(const hash *const hs, const item_t key)
 hash hash_create(const size_t alloc)
 {
 	hash hs = vector_create(MAX_HASH + alloc * (3 + VALUE_SIZE));
-	vector_resize(&hs, MAX_HASH);	// All set by zero
+	vector_increase(&hs, MAX_HASH);	// All set by zero
 	return hs;
 }
 
@@ -92,7 +92,7 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 
 	const size_t size = vector_size(hs);
 	vector_set(hs, index, size);
-	vector_resize(hs, size + 3 + amount);	// New elements set by zero
+	vector_increase(hs, 3 + amount);	// New elements set by zero
 
 	vector_set(hs, size + 1, key);
 	vector_set(hs, size + 2, amount);

@@ -129,9 +129,7 @@ node node_get_root(vector *const tree)
 	const size_t size = vector_size(tree);
 	if (size == 0)
 	{
-		vector_add(tree, 0);
-		vector_add(tree, 5);
-		vector_add(tree, 0);
+		vector_increase(tree, 3);
 	}
 	else if (size == SIZE_MAX || size < 3 || vector_get(tree, 2) < 0)
 	{
@@ -243,8 +241,7 @@ node node_add_child(const node *const nd, const item_t type)
 	vector_add(nd->tree, to_negative(nd->index));
 	vector_add(nd->tree, type);
 	node child = { nd->tree, vector_add(nd->tree, 0) };
-	vector_add(nd->tree, 0);
-	vector_add(nd->tree, 0);
+	vector_increase(nd->tree, 2);
 
 	const size_t amount = node_get_amount(nd);
 	ref_set_amount(nd, amount + 1);
