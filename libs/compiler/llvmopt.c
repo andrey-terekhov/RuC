@@ -46,14 +46,14 @@ static double to_double(const int64_t fst, const int64_t snd)
 
 static int node_recursive(information *const info, node *const nd)
 {
-	// if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
-	// {
-	// 	uni_printf(info->sx->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
-	// 	info->init_num++;
-	// 	// TODO: а для многомерных как?
-	// 	uni_printf(info->sx->io, "[%" PRIitem " x %s] [", node_get_amount(nd)
-	// 		, type_is_integer(info->arr_init_type) ? "i32" : "double");
-	// }
+	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	{
+		uni_printf(info->sx->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
+		info->init_num++;
+		// TODO: а для многомерных как?
+		uni_printf(info->sx->io, "[%" PRIitem " x %s] [", node_get_amount(nd)
+			, type_is_integer(info->arr_init_type) ? "i32" : "double");
+	}
 
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
@@ -89,26 +89,39 @@ static int node_recursive(information *const info, node *const nd)
 			case OP_PRINTF:
 				info->was_printf = 1;
 				break;
-			// case OP_DECL_VAR:
-			// 	info->arr_init_type = node_get_arg(&child, 1);
-			// 	break;
-			// case OP_CONSTANT:
-			// {
-			// 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
-			// 	{
-			// 		if (type_is_integer(node_get_arg(&child, 0)))
-			// 		{
-			// 			uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 2)
-			// 				, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
-			// 		}
-			// 		else
-			// 		{
-			// 			uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
-			// 				, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
-			// 		}
-			// 	}
-			// }
-			// break;
+			case OP_DECL_VAR:
+			{
+				item_t type = ident_get_type(info->sx, (size_t)node_get_arg(&child, 0));
+				int stop_flag = 0;
+				while (!type_is_floating(type) && !type_is_integer(type))
+				{
+					type = type_get(info->sx, (size_t)type + 1);
+					stop_flag++;
+					if (stop_flag > 10)
+					{
+						break;
+					}
+				}
+				info->arr_init_type = type;
+			}
+			break;
+			case OP_CONSTANT:
+			{
+				if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
+				{
+					if (type_is_integer(node_get_arg(&child, 0)))
+					{
+						uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 2)
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
+					}
+					else
+					{
+						uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
+					}
+				}
+			}
+			break;
 			default:
 				break;
 		}

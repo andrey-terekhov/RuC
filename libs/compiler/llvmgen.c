@@ -1484,7 +1484,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 	// TODO: пока реализовано только для одномерных массивов
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
-		const item_t N = node_get_argc(nd);
+		const item_t N = node_get_amount(nd);
 
 		const size_t index = hash_get_index(&info->arrays, displ);
 		hash_set_by_index(&info->arrays, index, 1, N);

@@ -62,8 +62,8 @@ int main()
 	// j += 3 + *pointer;
 	// struct point a, b, c;
 	// char image_file[] = "i0001.bmp";
-	double f[4] = {1.1, 2.2, 3.3, 4.4};
-	// int f1[] = {1, 2, 3};
+	// double f[4] = {1.1, 2.2, 3.3, 4.4};
+	int f1[] = {1, 2, 3};
 	// double a[5][3];
 	// int a[5];
 	// int a1[5][6];						
@@ -203,7 +203,7 @@ int main()
 	// func_arr(a);
 	// if (i != 5)
 	// 	exit(0);
-	printf("%i %i %f\n", i, j, f[1]);
+	printf("%i %i %f\n", i, f1[1], x);
 	// printf("hello world!\n");
 	// a:
 
