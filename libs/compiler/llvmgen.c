@@ -1501,8 +1501,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			}
 		}
 
-		to_code_alloc_array_static(info, index, type);
-		to_code_init_array(info, index, type);
+		// to_code_alloc_array_static(info, index, type);
+		// to_code_init_array(info, index, type);
 
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
