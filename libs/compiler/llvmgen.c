@@ -16,8 +16,6 @@
 
 #include "llvmgen.h"
 #include <string.h>
-#include "codes.h"
-#include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
 #include "operations.h"
@@ -632,7 +630,6 @@ static void operand(information *const info, node *const nd)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
-				prev_slice = info->register_num - 1;
 
 				if (location != LMEM)
 				{
@@ -1491,14 +1488,10 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 		item_t type = elem_type;
 		int stop_flag = 0;
-		while (!type_is_floating(type) && !type_is_integer(type))
+		while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
 		{
 			type = type_get(info->sx, (size_t)type + 1);
 			stop_flag++;
-			if (stop_flag > 10)
-			{
-				break;
-			}
 		}
 
 		to_code_alloc_array_static(info, index, type);
@@ -1511,16 +1504,6 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			expression(info, nd);
 		}
 	}
-	// else if (node_get_type(nd) == OP_STRUCT_INIT)
-	// {
-	// 	const item_t N = node_get_arg(nd, 0);
-
-	// 	node_set_next(nd);
-	// 	for (item_t i = 0; i < N; i++)
-	// 	{
-	// 		expression(info, nd);
-	// 	}
-	// }
 	else
 	{
 		expression(info, nd);
@@ -1569,20 +1552,10 @@ static void block(information *const info, node *const nd)
 						{
 							if (info->answer_type == ACONST)
 							{
-								// if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
-								// {
-								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-								// }
-
 								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
 							}
 							else // if (info->answer_type == AREG) динамический массив
 							{
-								// if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
-								// {
-								// 	system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-								// }
-
 								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_reg);
 								hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 							}
@@ -1592,14 +1565,10 @@ static void block(information *const info, node *const nd)
 					{
 						item_t type = elem_type;
 						int stop_flag = 0;
-						while (!type_is_floating(type) && !type_is_integer(type))
+						while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
 						{
 							type = type_get(info->sx, (size_t)type + 1);
 							stop_flag++;
-							if (stop_flag > 10)
-							{
-								break;
-							}
 						}
 						to_code_alloc_array_static(info, index, type);
 					}
@@ -1612,14 +1581,10 @@ static void block(information *const info, node *const nd)
 
 						item_t type = elem_type;
 						int stop_flag = 0;
-						while (!type_is_floating(type) && !type_is_integer(type))
+						while ((!type_is_floating(type) && !type_is_integer(type)) || stop_flag > 10)
 						{
 							type = type_get(info->sx, (size_t)type + 1);
 							stop_flag++;
-							if (stop_flag > 10)
-							{
-								break;
-							}
 						}
 						to_code_alloc_array_dynamic(info, index, type);
 						info->was_dynamic = 1;
@@ -1724,8 +1689,6 @@ static int codegen(information *const info)
 					return 0;
 				}
 			}
-			// 	system_error(node_unexpected, node_get_type(&root));
-			// 	return -1;
 		}
 	}
 
@@ -1766,7 +1729,6 @@ static void structs_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, syntax *const sx)
 {
-	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 	if (optimize_for_llvm(ws, sx))
 	{
 		return -1;
