@@ -46,14 +46,14 @@ static double to_double(const int64_t fst, const int64_t snd)
 
 static int node_recursive(information *const info, node *const nd)
 {
-	// if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
-	// {
-	// 	uni_printf(info->sx->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
-	// 	info->init_num++;
-	// 	// TODO: а для многомерных как?
-	// 	uni_printf(info->sx->io, "[%" PRIitem " x %s] [", node_get_amount(nd)
-	// 		, type_is_integer(info->arr_init_type) ? "i32" : "double");
-	// }
+	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	{
+		uni_printf(info->sx->io, "@arr_init.%" PRIitem " = private unnamed_addr constant ", info->init_num);
+		info->init_num++;
+		// TODO: а для многомерных как?
+		uni_printf(info->sx->io, "[%" PRIitem " x %s] [", node_get_amount(nd)
+			, type_is_integer(info->arr_init_type) ? "i32" : "double");
+	}
 
 	for (size_t i = 0; i < node_get_amount(nd); i++)
 	{
