@@ -117,9 +117,13 @@ static int node_recursive(information *const info, node *const nd)
 					else
 					{
 						// const double num = to_double(node_get_arg(&child, 2), node_get_arg(&child, 3));
-						const double num = 1.1;
-						uni_printf(info->sx->io, "double %f%s", num
-							, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
+						// const double num = 1.1;
+						// uni_printf(info->sx->io, "double %f%s", num
+						// 	, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
+						uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 2)
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
+						uni_printf(info->sx->io, "i32 %" PRIitem "%s", node_get_arg(&child, 3)
+							, i < node_get_amount(nd) - 1 ? ", " : "], align 4\n");
 					}
 				}
 			}
