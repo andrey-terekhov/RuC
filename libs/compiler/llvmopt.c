@@ -116,12 +116,7 @@ static int node_recursive(information *const info, node *const nd)
 					}
 					else
 					{
-						long num = (node_get_arg(&child, 3) << 32) | (node_get_arg(&child, 2) & 0x00000000ffffffff);
-						double numdouble = 1.1;
-						printf("%ld\n", num);
-						// memcpy(&numdouble, &num, sizeof(double));
-
-						uni_printf(info->sx->io, "double %f%s", numdouble
+						uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
 							, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
 					}
 				}
