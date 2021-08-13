@@ -87,6 +87,19 @@ static double to_double(const int64_t fst, const int64_t snd)
 	return numdouble;
 }
 
+static item_t array_get_type(information *const info, const item_t array_type)
+{
+	item_t type = array_type;
+	int stop_flag = 0;
+	while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
+	{
+		type = type_get(info->sx, (size_t)type + 1);
+		stop_flag++;
+	}
+
+	return type;
+}
+
 static void type_to_io(information *const info, const item_t type)
 {
 	if (type_is_integer(type))
@@ -1486,14 +1499,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		const size_t index = hash_get_index(&info->arrays, displ);
 		hash_set_by_index(&info->arrays, index, 1, N);
 
-		item_t type = elem_type;
-		int stop_flag = 0;
-		while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
-		{
-			type = type_get(info->sx, (size_t)type + 1);
-			stop_flag++;
-		}
-
+		const item_t type = array_get_type(info, elem_type);
 		to_code_alloc_array_static(info, index, type);
 		to_code_init_array(info, index, type);
 
@@ -1563,14 +1569,7 @@ static void block(information *const info, node *const nd)
 					}
 					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 					{
-						item_t type = elem_type;
-						int stop_flag = 0;
-						while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
-						{
-							type = type_get(info->sx, (size_t)type + 1);
-							stop_flag++;
-						}
-						to_code_alloc_array_static(info, index, type);
+						to_code_alloc_array_static(info, index, array_get_type(info, elem_type));
 					}
 					else if (!all) // объявление массива, если он динамический
 					{
@@ -1579,14 +1578,7 @@ static void block(information *const info, node *const nd)
 							to_code_stack_save(info);
 						}
 
-						item_t type = elem_type;
-						int stop_flag = 0;
-						while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
-						{
-							type = type_get(info->sx, (size_t)type + 1);
-							stop_flag++;
-						}
-						to_code_alloc_array_dynamic(info, index, type);
+						to_code_alloc_array_dynamic(info, index, array_get_type(info, elem_type));
 						info->was_dynamic = 1;
 					}
 				}

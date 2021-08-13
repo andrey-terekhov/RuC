@@ -44,6 +44,19 @@ static double to_double(const int64_t fst, const int64_t snd)
 	return numdouble;
 }
 
+static item_t array_get_type(information *const info, const item_t array_type)
+{
+	item_t type = array_type;
+	int stop_flag = 0;
+	while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
+	{
+		type = type_get(info->sx, (size_t)type + 1);
+		stop_flag++;
+	}
+
+	return type;
+}
+
 static int node_recursive(information *const info, node *const nd)
 {
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
@@ -90,17 +103,8 @@ static int node_recursive(information *const info, node *const nd)
 				info->was_printf = 1;
 				break;
 			case OP_DECL_VAR:
-			{
-				item_t type = ident_get_type(info->sx, (size_t)node_get_arg(&child, 0));
-				int stop_flag = 0;
-				while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
-				{
-					type = type_get(info->sx, (size_t)type + 1);
-					stop_flag++;
-				}
-				info->arr_init_type = type;
-			}
-			break;
+				info->arr_init_type = array_get_type(info, ident_get_type(info->sx, (size_t)node_get_arg(&child, 0)));
+				break;
 			case OP_CONSTANT:
 			{
 				if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
