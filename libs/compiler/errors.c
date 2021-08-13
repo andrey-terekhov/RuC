@@ -96,6 +96,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_semi_after_decl: // test_exist
 			sprintf(msg, "список описаний должен заканчиваться ;");
 			break;
+		case typedef_requires_a_name:
+			sprintf(msg, "нужен идентификатор после ключевого слова typedef");
+			break;
 		case func_decl_req_params: // need_test
 			sprintf(msg, "вообще-то я думал, что это предописание функции (нет "
 				"идентификаторов-параметров), а тут тело функции");
