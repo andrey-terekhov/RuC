@@ -217,7 +217,6 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
-	transposition_not_possible,
 	array_borders_cannot_be_static_dynamic
 } error_t;
 

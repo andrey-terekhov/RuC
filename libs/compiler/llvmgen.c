@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "errors.h"
 #include "hash.h"
 #include "llvmopt.h"
 #include "operations.h"
@@ -1558,10 +1559,20 @@ static void block(information *const info, node *const nd)
 						{
 							if (info->answer_type == ACONST)
 							{
+								if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+								{
+									system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								}
+
 								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
 							}
 							else // if (info->answer_type == AREG) динамический массив
 							{
+								if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+								{
+									system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								}
+
 								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_reg);
 								hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 							}

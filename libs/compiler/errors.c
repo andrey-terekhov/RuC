@@ -577,9 +577,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
 			break;
-		case transposition_not_possible:
-			sprintf(msg, "перестановка узлов невозможна");
-			break;
 		case array_borders_cannot_be_static_dynamic:
 			sprintf(msg, "массив не может иметь статические и динамические границы");
 			break;
