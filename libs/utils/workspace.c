@@ -250,12 +250,7 @@ size_t ws_add_flag(workspace *const ws, const char *const flag)
 		return SIZE_MAX;
 	}
 
-	if (ws_is_dir_flag(flag))
-	{
-		return ws_add_dir(ws, &flag[2]);
-	}
-
-	return ws_add_string(&ws->flags, flag);
+	return ws_is_dir_flag(flag) ? ws_add_dir(ws, &flag[2]) : ws_add_string(&ws->flags, flag);
 }
 
 int ws_add_flags(workspace *const ws, const char *const *const flags, const size_t num)
