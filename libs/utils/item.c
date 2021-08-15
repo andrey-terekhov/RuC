@@ -17,6 +17,7 @@
 #include "item.h"
 #include <math.h>
 #include <string.h>
+#include "workspace.h"
 
 
 #ifndef abs
