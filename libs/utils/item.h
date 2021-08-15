@@ -23,7 +23,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "dll.h"
-#include "workspace.h"
 
 
 #ifndef ITEM
@@ -79,6 +78,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Structure for parsing start arguments of program */
+typedef struct workspace workspace;
 
 /** Item type for output tables */
 typedef enum ITEM_STATUS
