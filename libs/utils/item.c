@@ -17,6 +17,7 @@
 #include "item.h"
 #include <stddef.h>
 #include <string.h>
+#include "workspace.h"
 
 
 static const item_status DEFAULT_STATUS = item_int32;
