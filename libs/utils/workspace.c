@@ -26,6 +26,9 @@
 #endif
 
 
+static const size_t MAX_FLAGS = 32;
+
+
 static inline void ws_add_error(workspace *const ws)
 {
 	if (ws != NULL)
@@ -34,18 +37,15 @@ static inline void ws_add_error(workspace *const ws)
 	}
 }
 
-static vector ws_unix_path(const char *const path)
+static void ws_unix_path(const char *const path, char *const buffer)
 {
 	size_t i = 0;
 	size_t j = 0;
 	size_t last = 0;
 
-	vector buffer = vector_create(MAX_ARG_SIZE);
-
 	while (path[i] != '\0')
 	{
-		//buffer[j++] = path[i] == '\\' ? '/' : path[i];
-		vector_add(&vec,)
+		buffer[j++] = path[i] == '\\' ? '/' : path[i];
 
 		if (buffer[j - 1] == '/')
 		{
@@ -71,14 +71,13 @@ static vector ws_unix_path(const char *const path)
 	}
 
 	buffer[buffer[j - 1] == '/' ? j - 1 : j] = '\0';
-	return buffer;
 }
 
-static size_t ws_exists(const char *const element, const char array[][MAX_ARG_SIZE], const size_t size)
+static size_t ws_exists(const char *const element, const strings *const vec)
 {
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 0; i < strings_size(vec); i++)
 	{
-		if (strcmp(element, array[i]) == 0)
+		if (strcmp(element, strings_get(vec, i)) == 0)
 		{
 			return i;
 		}
@@ -87,9 +86,45 @@ static size_t ws_exists(const char *const element, const char array[][MAX_ARG_SI
 	return SIZE_MAX;
 }
 
+static inline size_t ws_add(strings *const vec, const char *const buffer)
+{
+	const size_t index = ws_exists(buffer, vec);
+	if (index != SIZE_MAX)
+	{
+		return index;
+	}
+
+	return strings_add(vec, buffer);
+}
+
+static inline size_t ws_add_path(workspace *const ws, strings *const vec, const char *const path)
+{
+	if (!ws_is_correct(ws) || path == NULL)
+	{
+		ws_add_error(ws);
+		return SIZE_MAX;
+	}
+
+	char buffer[MAX_ARG_SIZE];
+	ws_unix_path(path, buffer);
+	if (access(buffer, F_OK) == -1)
+	{
+		ws_add_error(ws);
+		return SIZE_MAX;
+	}
+
+	return ws_add(vec, buffer);
+}
+
 static inline bool ws_is_dir_flag(const char *const flag)
 {
 	return flag[0] == '-' && flag[1] == 'I';
+}
+
+static inline size_t ws_get_num(const strings *const vec)
+{
+	const size_t size = strings_size(vec);
+	return size != SIZE_MAX ? size : 0;
 }
 
 
@@ -166,28 +201,7 @@ workspace ws_create()
 
 size_t ws_add_file(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || path == NULL)
-	{
-		ws_add_error(ws);
-		return SIZE_MAX;
-	}
-
-	char buffer[]
-	ws_unix_path(path, ws->files[ws->files_num]);
-	if (access(ws->files[ws->files_num], F_OK) == -1)
-	{
-		ws_add_error(ws);
-		return SIZE_MAX;
-	}
-
-	const size_t index = ws_exists(ws->files[ws->files_num], ws->files, ws->files_num);
-	if (index != SIZE_MAX)
-	{
-		return index;
-	}
-
-	ws->files_num++;
-	return ws->files_num - 1;
+	return ws_add_path(ws, &ws->files, path);
 }
 
 int ws_add_files(workspace *const ws, const char *const *const paths, const size_t num)
@@ -211,27 +225,7 @@ int ws_add_files(workspace *const ws, const char *const *const paths, const size
 
 size_t ws_add_dir(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || path == NULL)
-	{
-		ws_add_error(ws);
-		return SIZE_MAX;
-	}
-
-	ws_unix_path(path, ws->dirs[ws->dirs_num]);
-	if (access(ws->dirs[ws->dirs_num], F_OK) == -1)
-	{
-		ws_add_error(ws);
-		return SIZE_MAX;
-	}
-
-	const size_t index = ws_exists(ws->dirs[ws->dirs_num], ws->dirs, ws->dirs_num);
-	if (index != SIZE_MAX)
-	{
-		return index;
-	}
-
-	ws->dirs_num++;
-	return ws->dirs_num - 1;
+	return ws_add_path(ws, &ws->dirs, path);
 }
 
 int ws_add_dirs(workspace *const ws, const char *const *const paths, const size_t num)
@@ -266,14 +260,7 @@ size_t ws_add_flag(workspace *const ws, const char *const flag)
 		return ws_add_dir(ws, &flag[2]);
 	}
 
-	const size_t index = ws_exists(flag, ws->flags, ws->flags_num);
-	if (index != SIZE_MAX)
-	{
-		return index;
-	}
-
-	strcpy(ws->flags[ws->flags_num++], flag);
-	return ws->flags_num - 1;
+	return ws_add(&ws->flags, flag);
 }
 
 int ws_add_flags(workspace *const ws, const char *const *const flags, const size_t num)
@@ -316,32 +303,32 @@ bool ws_is_correct(const workspace *const ws)
 
 const char *ws_get_file(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) && index < ws->files_num ? ws->files[index] : NULL;
+	return ws_is_correct(ws) ? strings_get(&ws->files, index) : NULL;
 }
 
 size_t ws_get_files_num(const workspace *const ws)
 {
-	return ws_is_correct(ws) ? ws->files_num : 0;
+	return ws_is_correct(ws) ? ws_get_num(&ws->files) : 0;
 }
 
 const char *ws_get_dir(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) && index < ws->dirs_num ? ws->dirs[index] : NULL;
+	return ws_is_correct(ws) ? strings_get(&ws->dirs, index) : NULL;
 }
 
 size_t ws_get_dirs_num(const workspace *const ws)
 {
-	return ws_is_correct(ws) ? ws->dirs_num : 0;
+	return ws_is_correct(ws) ? ws_get_num(&ws->dirs) : 0;
 }
 
 const char *ws_get_flag(const workspace *const ws, const size_t index)
 {
-	return ws_is_correct(ws) && index < ws->flags_num ? ws->flags[index] : NULL;
+	return ws_is_correct(ws) ? strings_get(&ws->flags, index) : NULL;
 }
 
 size_t ws_get_flags_num(const workspace *const ws)
 {
-	return ws_is_correct(ws) ? ws->flags_num : 0;
+	return ws_is_correct(ws) ? ws_get_num(&ws->flags) : 0;
 }
 
 
