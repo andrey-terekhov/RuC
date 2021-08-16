@@ -345,12 +345,6 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 
 		switch (operation)
 		{
-			case OP_FREAD:
-			{
-				system_error(node_unexpected, operation);
-				vm->was_error = true;
-			}
-			break;
 			case OP_IDENT:
 				break;
 			case OP_IDENT_TO_ADDR:
@@ -1050,27 +1044,6 @@ static void emit_return_statement(virtual *const vm, const node *const nd)
 	}
 }
 
-/**
- *	Emit t_create_direct statement
- *
- *	@param	vm			Code generator
- *	@param	nd			Node in AST
- */
-static void emit_thread(virtual *const vm, const node *const nd)
-{
-	mem_add(vm, IC_CREATE_DIRECT);
-
-	const size_t amount = node_get_amount(nd);
-	for (size_t i = 0; i < amount; i++)
-	{
-		const node nd_thread_item = node_get_child(nd, i);
-		emit_statement(vm, &nd_thread_item);
-	}
-
-	mem_add(vm, IC_EXIT_DIRECT);
-	vm->max_threads++;
-}
-
 static void compress_ident(virtual *const vm, const size_t ref)
 {
 	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
@@ -1198,10 +1171,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			emit_return_statement(vm, nd);
 			break;
 
-		case OP_CREATE_DIRECT:
-			emit_thread(vm, nd);
-			break;
-
 		case OP_PRINTID:
 			emit_printid_statement(vm, nd);
 			break;
@@ -1215,7 +1184,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			break;
 
 		case OP_BLOCK_END:
-		case OP_EXIT_DIRECT:
 			// Пока что это чтобы не менять дерево
 			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
 			break;
