@@ -38,11 +38,9 @@ typedef struct storage
 /**
  *	Create macro storage
  *
- *	@param	ws			Workspace structure
- *
  *	@return	Macro storage
  */
-storage storage_create(const workspace *const ws);
+storage storage_create();
 
 
 /**

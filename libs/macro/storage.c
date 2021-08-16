@@ -18,34 +18,8 @@
 #include "keywords.h"
 
 
-#define MAX_DEFINE_SIZE 1024
-
-
 static const size_t MAX_MACRO = 256;
 
-
-static inline void storage_parse_ws(storage *const stg, const workspace *const ws)
-{
-	if (!ws_is_correct(ws))
-	{
-		return;
-	}
-
-	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-		if (flag[0] == '-' && flag[1] == 'D')
-		{
-			char buffer[MAX_DEFINE_SIZE];
-
-			size_t j = 0;
-			while (flag[j] != '\0')
-			{
-				
-			}
-		}
-	}
-}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -56,7 +30,7 @@ static inline void storage_parse_ws(storage *const stg, const workspace *const w
  */
 
 
-storage storage_create(const workspace *const ws)
+storage storage_create()
 {
 	storage stg;
 
@@ -65,8 +39,6 @@ storage storage_create(const workspace *const ws)
 	stg.vec = strings_create(MAX_MACRO);
 
 	kw_add(&stg.as);
-	storage_parse_ws(&stg, ws);
-
 	return stg;
 }
 
