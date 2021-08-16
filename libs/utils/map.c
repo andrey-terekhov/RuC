@@ -152,6 +152,31 @@ static inline int map_cmp_key(const map *const as, const size_t index)
 	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
+static size_t map_get_index_by_hash(map *const as, const size_t hash)
+{
+	if (hash == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	size_t index = hash;
+	while (as->values[index].next != SIZE_MAX)
+	{
+		if (map_cmp_key(as, index) == 0)
+		{
+			return index;
+		}
+		index = as->values[index].next;
+	}
+
+	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
+	{
+		return SIZE_MAX;
+	}
+
+	return index;
+}
+
 static size_t map_add_by_hash(map *const as, const size_t hash, const item_t value)
 {
 	if (hash == SIZE_MAX)
@@ -415,30 +440,10 @@ size_t map_get_index(map *const as, const char *const key)
 {
 	if (!map_is_correct(as) || key == NULL)
 	{
-		return ITEM_MAX;
-	}
-	
-	size_t index = map_get_hash(as, key);
-	if (index == SIZE_MAX)
-	{
 		return SIZE_MAX;
 	}
 
-	while (as->values[index].next != SIZE_MAX)
-	{
-		if (map_cmp_key(as, index) == 0)
-		{
-			return index;
-		}
-		index = as->values[index].next;
-	}
-
-	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
-	{
-		return SIZE_MAX;
-	}
-
-	return index;
+	return map_get_index_by_hash(as, map_get_hash(as, key));
 }
 
 size_t map_get_index_by_utf8(map *const as, const char32_t *const key);
