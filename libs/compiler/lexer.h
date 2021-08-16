@@ -21,6 +21,7 @@
 #include "syntax.h"
 #include "tokens.h"
 #include "uniio.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus

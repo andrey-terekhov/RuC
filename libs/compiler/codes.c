@@ -232,9 +232,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			argc = 1;
 			sprintf(buffer, "TGetid");
 			break;
-		case OP_THREAD:
-			sprintf(buffer, "TCREATEDIRECT");
-			break;
 		case OP_UPB:
 			argc = 2;
 			was_switch = true;
@@ -480,14 +477,8 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
 			break;
-		case IC_CREATE_DIRECT:
-			sprintf(buffer, "TCREATEDIRECT");
-			break;
 		case IC_EXIT:
 			sprintf(buffer, "TEXIT");
-			break;
-		case IC_EXIT_DIRECT:
-			sprintf(buffer, "TEXITDIRECT");
 			break;
 		case IC_MSG_SEND:
 			sprintf(buffer, "TMSGSEND");

@@ -88,6 +88,7 @@ typedef enum ERROR
 	decl_and_def_have_diff_type,
 	wrong_param_list,
 	expected_semi_after_decl,
+	typedef_requires_a_name,
 	func_decl_req_params,
 	cond_must_be_in_brkts,
 	repeated_decl,

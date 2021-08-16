@@ -37,7 +37,8 @@ extern "C" {
 /** Type qualifiers */
 enum TYPE
 {
-	TYPE_VOID			= -6,
+	TYPE_FILE			= -7,
+	TYPE_VOID,
 	TYPE_FLOATING		= -3,
 	TYPE_INTEGER		= -1,
 	TYPE_UNDEFINED,
@@ -439,6 +440,15 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_undefined(const item_t type);
+
+/**
+ *	Check if type is FILE
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_file(const item_t type);
 
 /**
  *	Get element type

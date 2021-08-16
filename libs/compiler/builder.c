@@ -100,17 +100,10 @@ node build_integer_literal_expression(syntax *const sx, const int value, const l
 
 node build_floating_literal_expression(syntax *const sx, const double value, const location loc)
 {
-	uint64_t num64;
-	memcpy(&num64, &value, sizeof(int64_t));
-
-	const item_t fst = num64 & 0x00000000ffffffff;
-	const item_t snd = (num64 & 0xffffffff00000000) >> 32;
-
 	node nd = node_create(sx, OP_CONSTANT);
 	node_add_arg(&nd, TYPE_FLOATING);				// Тип значения константы
 	node_add_arg(&nd, RVALUE);						// Категория значения константы
-	node_add_arg(&nd, fst);							// Первая часть значения константы
-	node_add_arg(&nd, snd);							// Вторая часть значения константы
+	node_add_arg_double(&nd, value);				// Значение константы
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
 
