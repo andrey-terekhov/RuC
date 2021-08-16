@@ -23,8 +23,14 @@
 static const size_t REPRESENTATIONS_SIZE = 10000;
 static const size_t IDENTIFIERS_SIZE = 10000;
 static const size_t FUNCTIONS_SIZE = 100;
+static const size_t STRINGS_SIZE = 80;
 static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
+
+
+extern item_t expression_get_type(const node *const nd);
+extern bool expression_is_lvalue(const node *const nd);
+extern location expression_get_location(const node *const nd);
 
 
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
@@ -230,6 +236,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fgetc", U"фчитать_символ", type_function(sx, TYPE_CHARACTER, "P"));
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_CHARACTER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
+	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 }
 
 
@@ -242,10 +249,13 @@ static void ident_init(syntax *const sx)
  */
 
 
-syntax sx_create()
+syntax sx_create(universal_io *const io)
 {
 	syntax sx;
+	sx.io = io;
 	sx.procd = 1;
+
+	sx.string_literals = strings_create(STRINGS_SIZE);
 
 	sx.predef = vector_create(FUNCTIONS_SIZE);
 	sx.functions = vector_create(FUNCTIONS_SIZE);
@@ -272,16 +282,17 @@ syntax sx_create()
 	sx.displ = -3;
 	sx.lg = -1;
 
+	sx.was_error = false;
+
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
-	bool is_correct = true;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		is_correct = false;
+		sx->was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -289,11 +300,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			is_correct = false;
+			sx->was_error = true;
 		}
 	}
 
-	return is_correct;
+	return !sx->was_error;
 }
 
 int sx_clear(syntax *const sx)
@@ -302,6 +313,8 @@ int sx_clear(syntax *const sx)
 	{
 		return -1;
 	}
+
+	strings_clear(&sx->string_literals);
 
 	vector_clear(&sx->predef);
 	vector_clear(&sx->functions);
@@ -313,6 +326,17 @@ int sx_clear(syntax *const sx)
 	map_clear(&sx->representations);
 
 	return 0;
+}
+
+
+size_t string_add(syntax *const sx, const vector *const str)
+{
+	return strings_add_by_vector(&sx->string_literals, str);
+}
+
+const char* string_get(const syntax *const sx, const size_t index)
+{
+	return strings_get(&sx->string_literals, index);
 }
 
 
@@ -520,7 +544,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == TYPE_CHARACTER;
+	return type == TYPE_INTEGER;
 }
 
 bool type_is_floating(const item_t type)
@@ -583,6 +607,60 @@ bool type_is_file(const item_t type)
 	return type == TYPE_FILE;
 }
 
+item_t type_array_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_array(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+bool type_structure_has_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return false;		// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_name(const syntax *const sx, const item_t type)
+{
+	(void)sx;
+	(void)type;
+	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
+}
+
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) / 2 : SIZE_MAX;
+}
+
+size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 4 + 2 * index) : SIZE_MAX;
+}
+
+item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_structure(sx, type) ? type_get(sx, (size_t)type + 3 + 2 * index) : ITEM_MAX;
+}
+
+item_t type_function_get_return_type(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type)
+{
+	return type_is_function(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) : SIZE_MAX;
+}
+
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t type, const size_t index)
+{
+	return type_is_function(sx, type) ? type_get(sx, (size_t)type + 3 + index) : ITEM_MAX;
+}
+
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_pointer(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
 item_t type_array(syntax *const sx, const item_t type)
 {
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
@@ -620,10 +698,10 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				local_modetab[3 + i] = TYPE_VOID_POINTER;
 				break;
 			case 's':
-				local_modetab[3 + i] = type_array(sx, TYPE_CHARACTER);
+				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
 				break;
 			case 'S':
-				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_CHARACTER));
+				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
 				break;
 			case 'i':
 				local_modetab[3 + i] = TYPE_INTEGER;
@@ -649,7 +727,6 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 	}
 
 	local_modetab[2] = (item_t)i;
-
 	return type_add(sx, local_modetab, i + 3);
 }
 

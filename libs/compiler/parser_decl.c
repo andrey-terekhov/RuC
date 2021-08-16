@@ -20,7 +20,6 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
-static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -53,9 +52,6 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			return TYPE_VOID;
 
 		case TK_CHAR:
-			token_consume(prs);
-			return TYPE_CHARACTER;
-
 		case TK_INT:
 		case TK_LONG:
 			token_consume(prs);
@@ -72,7 +68,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 
 		case TK_IDENTIFIER:
 		{
-			const item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t id = repr_get_reference(prs->sx, prs->lxr.repr);
 			token_consume(prs);
 
 			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
@@ -163,7 +159,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 		case TK_IDENTIFIER:
 		{
-			const size_t repr = prs->lxr->repr;
+			const size_t repr = prs->lxr.repr;
 			token_consume(prs);
 
 			if (prs->token == TK_L_BRACE)
@@ -233,7 +229,9 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		}
 		else
 		{
-			const item_t size_type = parse_constant_expression(prs, parent);
+			node_copy(&prs->sx->nd, parent);
+			const node size = parse_constant_expression(prs);
+			const item_t size_type = expression_get_type(&size);
 			if (!type_is_integer(size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
@@ -284,8 +282,8 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t fields = 0;
 	size_t displ = 0;
 
-	node nd;
-	bool was_array = false;
+	node nd = node_add_child(parent, OP_DECL_TYPE);
+	node_add_arg(&nd, 0);	// Тут будет индекс для таблицы types
 
 	do
 	{
@@ -302,46 +300,38 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			type = type_pointer(prs->sx, element_type);
 		}
 
-		const size_t repr = prs->lxr->repr;
+		const size_t repr = prs->lxr.repr;
 		if (token_try_consume(prs, TK_IDENTIFIER))
 		{
 			if (prs->token == TK_L_SQUARE)
 			{
-				if (!was_array)
-				{
-					nd = node_add_child(parent, OP_DECL_STRUCT);
-					node_add_arg(&nd, 0); // Тут будет номер инициализирующей процедуры
-					was_array = true;
-				}
+				node nd_decl = node_add_child(&nd, OP_DECL_VAR);
+				node_add_arg(&nd_decl, 0);	// Вместо id подставим тип
+				node_add_arg(&nd_decl, 0);	// Тут будет размерность
+				node_add_arg(&nd_decl, 0);	// Тут будет флаг наличия инициализатора
 
-				node nd_decl_arr = node_add_child(&nd, OP_DECL_ARR);
-				node_add_arg(&nd_decl_arr, 0);
 				// Меняем тип (увеличиваем размерность массива)
-				type = parse_array_definition(prs, &nd_decl_arr, element_type);
-				node_set_arg(&nd_decl_arr, 0, prs->flag_empty_bounds
-							 ? (item_t)prs->array_dimensions
-							 : (item_t)prs->array_dimensions - 1);
-				node nd_decl_id = node_add_child(&nd_decl_arr, OP_DECL_ID);
-				node_add_arg(&nd_decl_id, (item_t)displ);
-				node_add_arg(&nd_decl_id, element_type);
-				node_add_arg(&nd_decl_id, (item_t)prs->array_dimensions);
-				node_add_arg(&nd_decl_id, 0);
-				node_add_arg(&nd_decl_id, prs->flag_array_in_struct);	// proc
-				node_add_arg(&nd_decl_id, prs->flag_empty_bounds);		// usual
-				node_add_arg(&nd_decl_id, 1);							// Признак, что массив в структуре
+				type = parse_array_definition(prs, &nd_decl, element_type);
 
-				if (token_try_consume(prs, TK_EQUAL))
+				node_set_arg(&nd_decl, 0, type);
+				node_set_arg(&nd_decl, 1, (item_t)prs->array_dimensions);
+
+				if (token_try_consume(prs, TK_EQUAL) && type_is_array(prs->sx, type))
 				{
-					if (type_is_array(prs->sx, type))
-					{
-						prs->flag_strings_only = 2;
-						node_set_arg(&nd_decl_id, 3, 1);
+					node_set_arg(&nd_decl, 2, true);
+					node_copy(&prs->sx->nd, &nd_decl);
 
-						parse_initializer(prs, &nd_decl_arr, type);
-						if (prs->flag_strings_only == 1)
-						{
-							node_set_arg(&nd_decl_id, 5, prs->flag_empty_bounds + 2);
-						}
+					const node initializer = parse_initializer(prs, type);
+					if (!node_is_correct(&initializer))
+					{
+						token_skip_until(prs, TK_SEMICOLON);
+						continue;
+					}
+
+					const item_t init_type = expression_get_type(&initializer);
+					if (type != init_type)
+					{
+						 parser_error(prs, wrong_init);
 					}
 				}
 			}
@@ -360,128 +350,13 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		token_expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_struct);
 	} while (!token_try_consume(prs, TK_R_BRACE));
 
-	if (was_array)
-	{
-		node nd_struct_end = node_add_child(&nd, OP_DECL_STRUCT_END);
-		node_add_arg(&nd_struct_end, (item_t)prs->sx->procd);
-		node_set_arg(&nd, 0, (item_t)prs->sx->procd);
-		prs->flag_array_in_struct = (int)prs->sx->procd++;
-	}
-
 	local_modetab[0] = TYPE_STRUCTURE;
 	local_modetab[1] = (item_t)displ;
 	local_modetab[2] = (item_t)fields * 2;
 
-	return type_add(prs->sx, local_modetab, local_md);
-}
-
-/**
- *	Parse struct initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Index of the types table
- */
-static void parse_struct_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (!token_try_consume(prs, TK_L_BRACE))
-	{
-		parser_error(prs, struct_init_must_start_from_BEGIN);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		return;
-	}
-
-	const size_t expected_fields = (size_t)(type_get(prs->sx, (size_t)type + 2) / 2);
-	size_t actual_fields = 0;
-	size_t ref_next_field = (size_t)type + 3;
-
-	node nd_struct_init = node_add_child(parent, OP_STRUCT_INIT);
-	node_add_arg(&nd_struct_init, (item_t)expected_fields);
-
-	do
-	{
-		parse_initializer(prs, &nd_struct_init, type_get(prs->sx, ref_next_field));
-		ref_next_field += 2;
-		actual_fields++;
-
-		if (prs->token == TK_R_BRACE)
-		{
-			break;
-		}
-		else if (!token_try_consume(prs, TK_COMMA))
-		{
-			parser_error(prs, no_comma_in_init_list);
-			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
-		}
-	} while (actual_fields != expected_fields && prs->token != TK_SEMICOLON);
-
-	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-
-	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &nd_struct_init);
-}
-
-/**
- *	Parse array initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Index of the types table
- */
-static void parse_array_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (prs->token == TK_STRING)
-	{
-		if (prs->flag_strings_only == 0)
-		{
-			parser_error(prs, string_and_notstring);
-		}
-		else if (prs->flag_strings_only == 2)
-		{
-			prs->flag_strings_only = 1;
-		}
-		parse_string_literal(prs, parent);
-		to_tree(prs, OP_EXPR_END);
-		node_copy(&prs->nd, parent);
-		return;
-	}
-
-	if (!token_try_consume(prs, TK_L_BRACE))
-	{
-		parser_error(prs, arr_init_must_start_from_BEGIN);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
-
-		// Это для продолжения парсинга
-		node_copy(&prs->nd, parent);
-		return;
-	}
-
-	size_t list_length = 0;
-
-	node nd_arr_init = node_add_child(parent, OP_ARRAY_INIT);
-	node_add_arg(&nd_arr_init, 0);
-
-	do
-	{
-		list_length++;
-		parse_initializer(prs, &nd_arr_init, type_get(prs->sx, (size_t)type + 1));
-
-		if (prs->token == TK_R_BRACE)
-		{
-			break;
-		}
-		else if (!token_try_consume(prs, TK_COMMA))
-		{
-			parser_error(prs, no_comma_in_init_list);
-			token_skip_until(prs, TK_COMMA | TK_R_BRACE | TK_SEMICOLON);
-		}
-	} while (prs->token != TK_SEMICOLON);
-
-	token_expect_and_consume(prs, TK_R_BRACE, wait_end);
-	node_set_arg(&nd_arr_init, 0, (item_t)list_length);
-
-	// Это для продолжения выражений, если инициализатор был вызван не для объявления
-	node_copy(&prs->nd, &nd_arr_init);
+	const item_t result = type_add(prs->sx, local_modetab, local_md);
+	node_set_arg(&nd, 0, result);
+	return result;
 }
 
 /**
@@ -499,61 +374,44 @@ static void parse_array_initializer(parser *const prs, node *const parent, const
  */
 static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
 {
-	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
+	const size_t id = to_identab(prs, prs->lxr.repr, 0, type);
 
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
-	const item_t element_type = type;
 
-	node nd_decl_arr;
-	bool is_array = false;
+	node nd = node_add_child(parent, OP_DECL_VAR);
+	node_add_arg(&nd, (item_t)id);
+	node_add_arg(&nd, 0);	// Тут будет размерность
+	node_add_arg(&nd, 0);	// Тут будет флаг наличия инициализатора
 
 	if (prs->token == TK_L_SQUARE)
 	{
-		nd_decl_arr = node_add_child(parent, OP_DECL_ARR);
-		node_add_arg(&nd_decl_arr, 0); // Здесь будет размерность
-		is_array = true;
-
 		// Меняем тип (увеличиваем размерность массива)
-		type = parse_array_definition(prs, &nd_decl_arr, type);
-		ident_set_type(prs->sx, old_id, type);
-		node_set_arg(&nd_decl_arr, 0, (item_t)prs->array_dimensions);
+		type = parse_array_definition(prs, &nd, type);
+		ident_set_type(prs->sx, id, type);
+		node_set_arg(&nd, 1, (item_t)prs->array_dimensions);
 		if (!prs->flag_empty_bounds && prs->token != TK_EQUAL)
 		{
 			parser_error(prs, empty_bound_without_init);
 		}
 	}
 
-	node nd = node_add_child(is_array ? &nd_decl_arr : parent, OP_DECL_ID);
-	node_add_arg(&nd, ident_get_displ(prs->sx, old_id));
-	node_add_arg(&nd, element_type);
-	node_add_arg(&nd, (item_t)prs->array_dimensions);
-	node_add_arg(&nd, 0);
-	node_add_arg(&nd, type_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
-	node_add_arg(&nd, prs->flag_empty_bounds);
-	node_add_arg(&nd, 0);	// Признак того, что массив не в структуре
-
 	if (token_try_consume(prs, TK_EQUAL))
 	{
-		node_set_arg(&nd, 3, (item_t)type_size(prs->sx, type));
-		if (type_is_array(prs->sx, type))
-		{
-			if (!prs->flag_empty_bounds)
-			{
-				node_set_arg(&nd_decl_arr, 0, node_get_arg(&nd, 2) - 1);
-			}
+		node_set_arg(&nd, 2, true);
+		node_copy(&prs->sx->nd, &nd);
 
-			prs->flag_strings_only = 2;
-			parse_array_initializer(prs, &nd_decl_arr, type);
-			node_add_child(&prs->nd, OP_EXPR_END);
-			if (prs->flag_strings_only == 1)
-			{
-				node_set_arg(&nd, 5, prs->flag_empty_bounds + 2);
-			}
-		}
-		else
+		const node initializer = parse_initializer(prs, type);
+		if (!node_is_correct(&initializer))
 		{
-			parse_initializer(prs, &nd, type);
+			token_skip_until(prs, TK_SEMICOLON);
+			return;
+		}
+
+		const item_t init_type = expression_get_type(&initializer);
+		if (type != init_type && !(type_is_floating(type) && type_is_integer(init_type)))
+		{
+			 parser_error(prs, wrong_init);
 		}
 	}
 }
@@ -612,7 +470,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				if (token_try_consume(prs, TK_IDENTIFIER))
 				{
 					was_ident = true;
-					func_add(prs->sx, (item_t)prs->lxr->repr);
+					func_add(prs->sx, (item_t)prs->lxr.repr);
 				}
 			}
 			else if (prs->token == TK_IDENTIFIER)
@@ -663,7 +521,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 							parser_error(prs, two_idents_for_1_declarer);
 							return TYPE_UNDEFINED;
 						}
-						func_add(prs->sx, -((item_t)prs->lxr->repr));
+						func_add(prs->sx, -((item_t)prs->lxr.repr));
 					}
 					else
 					{
@@ -768,7 +626,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	node_add_arg(&nd, (item_t)function_id);
 	node_add_arg(&nd, 0); // for max_displ
 
-	func_set(prs->sx, function_number, node_save(&nd)); // Ссылка на расположение в дереве
+	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
 	parse_statement_compound(prs, &nd, FUNCBODY);
 
@@ -804,7 +662,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
-	const size_t function_repr = prs->lxr->repr;
+	const size_t function_repr = prs->lxr.repr;
 
 	token_consume(prs);
 	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
@@ -939,52 +797,5 @@ void parse_declaration_external(parser *const prs, node *const root)
 	if (prs->func_def != 1)
 	{
 		token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	}
-}
-
-void parse_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (prs->token != TK_L_BRACE)
-	{
-		const item_t expr_type = parse_assignment_expression(prs, parent);
-		if (!type_is_undefined(expr_type) && !type_is_undefined(type))
-		{
-			if (type_is_integer(type) && type_is_floating(expr_type))
-			{
-				parser_error(prs, init_int_by_float);
-			}
-			else if (type_is_floating(type) && type_is_integer(expr_type))
-			{
-				parse_insert_widen(prs);
-			}
-			else if (type != expr_type)
-			{
-				parser_error(prs, error_in_initialization);
-			}
-		}
-	}
-	else
-	{
-		parse_braced_initializer(prs, parent, type);
-		// Инициализатор вызывается только для деклараций и аргументов, всегда нужен expr_end
-		node_add_child(&prs->nd, OP_EXPR_END);
-	}
-}
-
-void parse_braced_initializer(parser *const prs, node *const parent, const item_t type)
-{
-	if (type_is_structure(prs->sx, type))
-	{
-		parse_struct_initializer(prs, parent, type);
-	}
-	else if (type_is_array(prs->sx, type))
-	{
-		parse_array_initializer(prs, parent, type);
-	}
-	else
-	{
-		node_copy(&prs->nd, parent);
-		parser_error(prs, wrong_init);
-		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}
 }
