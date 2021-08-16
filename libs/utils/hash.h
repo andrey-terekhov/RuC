@@ -258,6 +258,30 @@ inline size_t hash_set_int64_by_index(hash *const hs, const size_t index, const 
 
 
 /**
+ *	Remove record
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int hash_remove(hash *const hs, const item_t key);
+
+/**
+ *	Remove record by index
+ *
+ *	@param	hs				Hash table
+ *	@param	index			Record index
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int hash_remove_by_index(hash *const hs, const size_t index)
+{
+	return vector_set(hs, index + 1, ITEM_MAX);
+}
+
+
+/**
  *	Check that hash is correct
  *
  *	@param	hs				Hash table
