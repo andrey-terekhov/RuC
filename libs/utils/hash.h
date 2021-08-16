@@ -52,6 +52,7 @@ EXPORTED hash hash_create(const size_t alloc);
  */
 EXPORTED size_t hash_add(hash *const hs, const item_t key, const size_t amount);
 
+
 /**
  *	Get index of record by key
  *
@@ -71,6 +72,7 @@ EXPORTED size_t hash_get_index(const hash *const hs, const item_t key);
  *	@return	Values amount, @c 0 on failure
  */
 EXPORTED size_t hash_get_amount(const hash *const hs, const item_t key);
+
 
 /**
  *	Get value by key
@@ -104,6 +106,7 @@ EXPORTED double hash_get_double(const hash *const hs, const item_t key, const si
  *	@return	Value, @c LLONG_MAX on failure
  */
 EXPORTED int64_t hash_get_int64(const hash *const hs, const item_t key, const size_t num);
+
 
 /**
  *	Set new value by existing key
@@ -169,6 +172,7 @@ inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
 	return amount != ITEM_MAX ? (size_t)amount : 0;
 }
 
+
 /**
  *	Get value by index
  *
@@ -210,6 +214,7 @@ inline int64_t hash_get_int64_by_index(const hash *const hs, const size_t index,
 {
 	return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_int64(hs, index + 3 + num) : LLONG_MAX;
 }
+
 
 /**
  *	Set new value by index

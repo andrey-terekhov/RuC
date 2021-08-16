@@ -20,6 +20,7 @@
 
 #include "compiler.h"
 #include "workspace.h"
+#include "hash.h"
 
 
 const char *name = "../tests/executable/structures/SELECT_9459.c";
@@ -28,6 +29,35 @@ const char *name = "../tests/executable/structures/SELECT_9459.c";
 
 int main(int argc, const char *argv[])
 {
+	hash hs = hash_create(0);
+
+	size_t index = hash_add(&hs, 1, 1);
+	printf("адын %zu\n", index);
+	
+
+	size_t index2 = hash_add(&hs, 257, 1);
+	printf("257 %zu\n", index2);
+
+	hash_remove(&hs, 1);
+
+	index = hash_add(&hs, 1, 1);
+	printf("удалил 1 и записал 1 %zu\n", index);
+
+	index = hash_set(&hs, 257, 0, 2);
+	printf("set 257 %zu\n", index);
+
+	index2 = hash_set_by_index(&hs, index2, 0, 2);
+	printf("set_by_index 257 %zu\n", index2);
+
+	index2 = hash_get_index(&hs, 1);
+	printf("getindex %zu\n", index2);
+
+
+
+
+
+
+
 	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
