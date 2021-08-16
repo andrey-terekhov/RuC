@@ -235,23 +235,8 @@ static size_t map_add_by_hash(map *const as, const size_t hash, const item_t val
 
 static size_t map_set_by_hash(map *const as, const size_t hash, const item_t value)
 {
-	if (hash == SIZE_MAX)
-	{
-		return SIZE_MAX;
-	}
-
-	size_t index = hash;
-	while (as->values[index].next != SIZE_MAX)
-	{
-		if (map_cmp_key(as, index) == 0)
-		{
-			as->values[index].value = value;
-			return index;
-		}
-		index = as->values[index].next;
-	}
-
-	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
+	const size_t index = map_get_index_by_hash(as, hash);
+	if (index == SIZE_MAX)
 	{
 		return SIZE_MAX;
 	}
@@ -262,24 +247,10 @@ static size_t map_set_by_hash(map *const as, const size_t hash, const item_t val
 
 static item_t map_get_by_hash(const map *const as, const size_t hash)
 {
-	if (hash == SIZE_MAX)
+	const size_t index = map_get_index_by_hash(as, hash);
+	if (index == SIZE_MAX)
 	{
-		return ITEM_MAX;
-	}
-
-	size_t index = hash;
-	while (as->values[index].next != SIZE_MAX)
-	{
-		if (map_cmp_key(as, index) == 0)
-		{
-			return as->values[index].value;
-		}
-		index = as->values[index].next;
-	}
-
-	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
-	{
-		return ITEM_MAX;
+		return SIZE_MAX;
 	}
 
 	return as->values[index].value;
