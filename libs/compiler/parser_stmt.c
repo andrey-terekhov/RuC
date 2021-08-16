@@ -774,7 +774,7 @@ void parse_statement(parser *const prs, node *const parent)
 
 void parse_statement_compound(parser *const prs, node *const parent, const block_t type)
 {
-	token_consume(prs); // '{' 
+	token_consume(prs); // '{'
 	node nd_block = node_add_child(parent, OP_BLOCK);
 
 	item_t old_displ = 0;
