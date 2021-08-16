@@ -400,33 +400,22 @@ item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last
 
 item_t map_get_by_index(const map *const as, const size_t index)
 {
-	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
-	{
-		return ITEM_MAX;
-	}
-
-	return as->values[index].value;
+	return map_is_correct(as) && index < as->values_size && as->values[index].ref != SIZE_MAX
+		? as->values[index].value
+		: ITEM_MAX;
 }
 
 
 const char *map_to_string(const map *const as, const size_t index)
 {
-	if (!map_is_correct(as) || index >= as->values_size || as->values[index].ref == SIZE_MAX)
-	{
-		return NULL;
-	}
-
-	return &as->keys[as->values[index].ref];
+	return map_is_correct(as) && index < as->values_size && as->values[index].ref != SIZE_MAX
+		? &as->keys[as->values[index].ref]
+		: NULL;
 }
 
 const char *map_last_read(const map *const as)
 {
-	if (!map_is_correct(as))
-	{
-		return NULL;
-	}
-
-	return &as->keys[as->keys_size];
+	return map_is_correct(as) ? &as->keys[as->keys_size] : NULL;
 }
 
 bool map_is_correct(const map *const as)
