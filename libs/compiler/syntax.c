@@ -824,3 +824,9 @@ item_t scope_func_exit(syntax *const sx, const item_t displ)
 
 	return sx->max_displ;
 }
+
+
+size_t strings_amount(const syntax *const sx)
+{
+	return strings_size(&sx->string_literals);
+}

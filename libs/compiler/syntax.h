@@ -670,6 +670,16 @@ item_t scope_func_exit(syntax *const sx, const item_t displ);
 
 
 /**
+ *	Get amount of strings
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
+
+
+/**
  *	Get expression type
  *
  *	@param	nd	Expression
@@ -706,18 +716,6 @@ inline location expression_get_location(const node *const nd)
 	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
 
-
-/**
- *	Get amount of strings
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Amount of strings
- */
-static inline size_t strings_amount(const syntax *const sx)
-{
-	return strings_size(&sx->string_literals);
-}
 
 #ifdef __cplusplus
 } /* extern "C" */
