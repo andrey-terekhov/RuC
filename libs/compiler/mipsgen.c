@@ -54,7 +54,7 @@ typedef enum REGISTERS
 	SP,							/**< Значение равно верхнему адресу стека (stack pointer) */
 	FP,							/**< Указатель на фрейм (frame pointer) */
 	RA,							/**< Возвращаемый адрес (return address) */
-} register_t;
+} registers_t;
 
 typedef struct information
 {
