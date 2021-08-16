@@ -826,7 +826,7 @@ item_t scope_func_exit(syntax *const sx, const item_t displ)
 }
 
 
-size_t strings_amount(const syntax *const sx)
-{
-	return strings_size(&sx->string_literals);
-}
+// size_t strings_amount(const syntax *const sx)
+// {
+// 	return strings_size(&sx->string_literals);
+// }

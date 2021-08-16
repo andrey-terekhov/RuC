@@ -669,14 +669,14 @@ item_t scope_func_enter(syntax *const sx);
 item_t scope_func_exit(syntax *const sx, const item_t displ);
 
 
-/**
- *	Get amount of strings
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Amount of strings
- */
-size_t strings_amount(const syntax *const sx);
+// /**
+//  *	Get amount of strings
+//  *
+//  *	@param	sx	Syntax structure
+//  *
+//  *	@return	Amount of strings
+//  */
+// size_t strings_amount(const syntax *const sx);
 
 
 /**
