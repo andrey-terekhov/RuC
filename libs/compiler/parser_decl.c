@@ -108,7 +108,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			}
 			if (prs->token == TK_IDENTIFIER)
 			{
-				const size_t repr = prs->lxr->repr;
+				const size_t repr = prs->lxr.repr;
 				token_consume(prs);
 				to_identab(prs, repr, 1000, type);
 				prs->was_type_def = true;
