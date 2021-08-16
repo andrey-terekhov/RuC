@@ -411,6 +411,12 @@ int map_set_by_index(map *const as, const size_t index, const item_t value)
 }
 
 
+size_t map_get_index(map *const as, const char *const key);
+
+size_t map_get_index_by_utf8(map *const as, const char32_t *const key);
+
+size_t map_get_index_by_io(map *const as, universal_io *const io, char32_t *const last);
+
 
 item_t map_get(map *const as, const char *const key)
 {
