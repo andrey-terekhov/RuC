@@ -157,7 +157,7 @@ static inline int map_cmp_key(const map *const as, const size_t index)
 	return strcmp(&as->keys[as->values[index].ref], &as->keys[as->keys_size]);
 }
 
-static size_t map_get_index_by_hash(map *const as, const size_t hash)
+static size_t map_get_index_by_hash(const map *const as, const size_t hash)
 {
 	if (hash == SIZE_MAX)
 	{
