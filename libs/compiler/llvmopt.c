@@ -71,8 +71,8 @@ static int node_recursive(information *const info, node *const nd)
 				size_t length = 0;
 				for (length = 0; *(string + length) != 0; length++)
 					;
-				uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
-					, info->string_num++, length + 1);
+				uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%i x i8] c\""
+					, info->string_num++, 1);
 
 				// for (size_t j = 0; j < length; j++)
 				// {
