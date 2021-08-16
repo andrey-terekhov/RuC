@@ -47,7 +47,6 @@ typedef struct information
 {
 	syntax *sx;							/**< Структура syntax с таблицами */
 
-	// item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
 	item_t init_num;					/**< Счётчик для инициализации */
@@ -1463,7 +1462,6 @@ static void statement(information *const info, node *const nd)
 				, index);
 
 			info->register_num++;
-			// info->string_num++;
 
 			for (item_t i = 0; i < N; i++)
 			{
@@ -1759,7 +1757,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
-	// info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
