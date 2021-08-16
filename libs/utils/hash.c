@@ -66,6 +66,40 @@ static size_t get_index(const hash *const hs, const item_t key)
 	return next != ITEM_MAX ? index : SIZE_MAX;
 }
 
+static size_t get_record(const hash *const hs, const item_t key, const size_t amount)
+{
+	if (!hash_is_correct(hs))
+	{
+		return SIZE_MAX;
+	}
+
+	size_t index = get_hash(key);
+	item_t next = vector_get(hs, index);
+	if (next == 0)
+	{
+		return index;
+	}
+
+	size_t record = SIZE_MAX;
+	while (next != ITEM_MAX && next != 0)
+	{
+		const item_t temp = vector_get(hs, (size_t)next + 1);
+		if (record == SIZE_MAX && temp == ITEM_MAX && (size_t)vector_get(hs, (size_t)next + 2) == amount)
+		{
+			record = index;
+		}
+		else if (temp == key)
+		{
+			return SIZE_MAX;
+		}
+
+		index = (size_t)next;
+		next = vector_get(hs, index);
+	}
+
+	return next != ITEM_MAX ? index : SIZE_MAX;
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -86,19 +120,63 @@ hash hash_create(const size_t alloc)
 
 size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 {
-	const size_t index = get_index(hs, key);
-	if (vector_get(hs, index) != 0)
+	if (!hash_is_correct(hs))
 	{
 		return SIZE_MAX;
 	}
 
-	const size_t size = vector_size(hs);
-	vector_set(hs, index, size);
-	vector_increase(hs, 3 + amount);	// New elements set by zero
+	size_t index = get_hash(key);
+	item_t next = vector_get(hs, index);
 
-	vector_set(hs, size + 1, key);
-	vector_set(hs, size + 2, amount);
-	return size;
+	if (next != 0)
+	{
+		item_t record = ITEM_MAX;
+		while (next != ITEM_MAX && next != 0)
+		{
+			const item_t temp = vector_get(hs, (size_t)next + 1);
+			if (record == ITEM_MAX && temp == ITEM_MAX && (size_t)vector_get(hs, (size_t)next + 2) == amount)
+			{
+				record = next;
+			}
+			else if (temp == key)
+			{
+				return SIZE_MAX;
+			}
+
+			index = (size_t)next;
+			next = vector_get(hs, index);
+		}
+
+		if (record != ITEM_MAX)
+		{
+			next = record;
+			for (size_t i = 0; i < amount; i++)
+			{
+				vector_set(hs, next + 3 + i, 0);
+			}
+		}
+		else if (next != ITEM_MAX)
+		{
+			next = vector_size(hs);
+			vector_set(hs, index, next);
+			vector_increase(hs, 3 + amount);	// New elements set by zero
+			vector_set(hs, next + 2, amount);
+		}
+		else
+		{
+			return SIZE_MAX;
+		}
+	}
+	else
+	{
+		next = vector_size(hs);
+		vector_set(hs, index, next);
+		vector_increase(hs, 3 + amount);	// New elements set by zero
+		vector_set(hs, next + 2, amount);
+	}
+
+	vector_set(hs, next + 1, key);
+	return next;
 }
 
 size_t hash_get_index(const hash *const hs, const item_t key)
