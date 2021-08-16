@@ -126,7 +126,6 @@ typedef enum OPERATION
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN,				/**< Return statement node */
-	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
