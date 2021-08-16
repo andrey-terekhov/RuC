@@ -54,7 +54,7 @@ storage storage_create(const workspace *const ws);
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add(storage *const stg, const char *const id, const char *const value);
+size_t storage_add(storage *const stg, const char32_t *const id, const char32_t *const value);
 
 /**
  *	Add new macro with arguments
@@ -66,7 +66,7 @@ size_t storage_add(storage *const stg, const char *const id, const char *const v
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_with_args(storage *const stg, const char *const id, const char *const value, const size_t args);
+size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char32_t *const value, const size_t args);
 
 /**
  *	Add macro argument
@@ -78,7 +78,7 @@ size_t storage_add_with_args(storage *const stg, const char *const id, const cha
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_arg(storage *const stg, const char *const id, const size_t index, const char *const arg);
+size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
 
 /**
  *	Add macro argument by index
@@ -90,7 +90,7 @@ size_t storage_add_arg(storage *const stg, const char *const id, const size_t in
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg);
+int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg);
 
 
 /**
@@ -102,7 +102,7 @@ int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t i
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_set(storage *const stg, const char *const id, const char *value);
+size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
 
 /**
  *	Set new macro replacement by index
@@ -113,7 +113,7 @@ size_t storage_set(storage *const stg, const char *const id, const char *value);
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int storage_set_by_index(storage *const stg, const size_t id, const char *value);
+int storage_set_by_index(storage *const stg, const size_t id, const char32_t *value);
 
 
 /**
@@ -124,7 +124,7 @@ int storage_set_by_index(storage *const stg, const size_t id, const char *value)
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_get_index(const storage *const stg, const char *const id);
+size_t storage_get_index(const storage *const stg, const char32_t *const id);
 
 /**
  *	Get macro replacement
@@ -134,7 +134,7 @@ size_t storage_get_index(const storage *const stg, const char *const id);
  *
  *	@return	Macro replacement, @c NULL on failure
  */
-const char *storage_get(const storage *const stg, const char *const id);
+const char *storage_get(const storage *const stg, const char32_t *const id);
 
 /**
  *	Get macro replacement by index
@@ -154,7 +154,7 @@ const char *storage_get_by_index(const storage *const stg, const size_t id);
  *
  *	@return	Arguments amount, @c 0 on failure
  */
-size_t storage_get_amount(const storage *const stg, const char *const id);
+size_t storage_get_amount(const storage *const stg, const char32_t *const id);
 
 /**
  *	Get arguments amount by index
@@ -175,7 +175,7 @@ size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
  *
  *	@return	Macro argument, @c NULL on failure
  */
-const char *storage_get_arg(const storage *const stg, const char *const id, const size_t index);
+const char *storage_get_arg(const storage *const stg, const char32_t *const id, const size_t index);
 
 /**
  *	Get macro argument by index
@@ -197,7 +197,7 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int storage_remove(storage *const stg, const char *const id);
+int storage_remove(storage *const stg, const char32_t *const id);
 
 /**
  *	Remove macro by index
