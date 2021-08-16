@@ -1712,30 +1712,30 @@ static void structs_declaration(information *const info)
 static void strings_declaration(information *const info)
 {
 	const size_t strings_number = strings_amount(info->sx);
-	// for (size_t index = 0; index < strings_number; index++)
-	// {
-	// 	const char *string = string_get(info->sx, index);
-	// 	size_t length = 0;
-	// 	for (length = 0; *(string + length) != 0; length++)
-	// 		;
-	// 	uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
-	// 		, index, length + 1);
+	for (size_t index = 0; index < strings_number; index++)
+	{
+		const char *string = string_get(info->sx, index);
+		size_t length = 0;
+		for (length = 0; *(string + length) != 0; length++)
+			;
+		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
+			, index, length + 1);
 
-	// 	for (size_t j = 0; j < length; j++)
-	// 	{
-	// 		const char ch = *(string + j);
-	// 		if (ch == '\n')
-	// 		{
-	// 			uni_printf(info->sx->io, "\\0A");
-	// 		}
-	// 		else
-	// 		{
-	// 			uni_printf(info->sx->io, "%c", ch);
-	// 		}
-	// 	}
-	// 	uni_printf(info->sx->io, "\\00\", align 1\n");
-	// }
-	// uni_printf(info->sx->io, " \n");
+		for (size_t j = 0; j < length; j++)
+		{
+			const char ch = *(string + j);
+			if (ch == '\n')
+			{
+				uni_printf(info->sx->io, "\\0A");
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c", ch);
+			}
+		}
+		uni_printf(info->sx->io, "\\00\", align 1\n");
+	}
+	uni_printf(info->sx->io, " \n");
 }
 
 
