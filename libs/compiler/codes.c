@@ -480,14 +480,8 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
 			break;
-		case IC_CREATE_DIRECT:
-			sprintf(buffer, "TCREATEDIRECT");
-			break;
 		case IC_EXIT:
 			sprintf(buffer, "TEXIT");
-			break;
-		case IC_EXIT_DIRECT:
-			sprintf(buffer, "TEXITDIRECT");
 			break;
 		case IC_MSG_SEND:
 			sprintf(buffer, "TMSGSEND");
