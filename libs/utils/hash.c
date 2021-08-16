@@ -118,7 +118,7 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 			next = record;
 			for (size_t i = 0; i < amount; i++)
 			{
-				vector_set(hs, next + 3 + i, 0);
+				vector_set(hs, (size_t)next + 3 + i, 0);
 			}
 		}
 		else if (next == ITEM_MAX)
@@ -129,14 +129,14 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 
 	if (next == 0)
 	{
-		next = vector_size(hs);
+		next = (item_t)vector_size(hs);
 		vector_set(hs, index, next);
 		vector_increase(hs, 3 + amount);	// New elements set by zero
-		vector_set(hs, next + 2, amount);
+		vector_set(hs, (size_t)next + 2, amount);
 	}
 
-	vector_set(hs, next + 1, key);
-	return next;
+	vector_set(hs, (size_t)next + 1, key);
+	return (size_t)next;
 }
 
 size_t hash_get_index(const hash *const hs, const item_t key)
@@ -153,7 +153,7 @@ size_t hash_get_index(const hash *const hs, const item_t key)
 	{
 		if (vector_get(hs, (size_t)next + 1) == key)
 		{
-			return next;
+			return (size_t)next;
 		}
 
 		index = (size_t)next;
@@ -249,5 +249,5 @@ int hash_remove(hash *const hs, const item_t key)
 		return -1;
 	}
 
-	return hash_remove_by_index(hs, index);
+	return hash_remove_by_index(hs, (size_t)index);
 }
