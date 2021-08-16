@@ -716,7 +716,6 @@ inline location expression_get_location(const node *const nd)
 	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
 
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
