@@ -1711,7 +1711,7 @@ static void structs_declaration(information *const info)
 
 static void strings_declaration(information *const info)
 {
-	// const size_t strings_number = strings_amount(info->sx);
+	const size_t strings_number = strings_amount(info->sx);
 	// for (size_t index = 0; index < strings_number; index++)
 	// {
 	// 	const char *string = string_get(info->sx, index);
