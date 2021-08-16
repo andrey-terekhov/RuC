@@ -65,11 +65,6 @@ vector vector_create(const size_t alloc)
 }
 
 
-int vector_increase(vector *const vec, const size_t size)
-{
-	return vector_is_correct(vec) ? change_size(vec, vec->size + size) : -1;
-}
-
 size_t vector_add(vector *const vec, const item_t value)
 {
 	if (!vector_is_correct(vec) || change_size(vec, vec->size + 1))
@@ -80,6 +75,29 @@ size_t vector_add(vector *const vec, const item_t value)
 	vec->array[vec->size - 1] = value;
 	return vec->size - 1;
 }
+
+size_t vector_add_double(vector *const vec, const double value)
+{
+	if (!vector_is_correct(vec) || change_size(vec, vec->size + DOUBLE_SIZE))
+	{
+		return SIZE_MAX;
+	}
+
+	item_store_double(value, &vec->array[vec->size - DOUBLE_SIZE]);
+	return vec->size - DOUBLE_SIZE;
+}
+
+size_t vector_add_int64(vector *const vec, const int64_t value)
+{
+	if (!vector_is_correct(vec) || change_size(vec, vec->size + INT64_SIZE))
+	{
+		return SIZE_MAX;
+	}
+
+	item_store_int64(value, &vec->array[vec->size - DOUBLE_SIZE]);
+	return vec->size - INT64_SIZE;
+}
+
 
 int vector_set(vector *const vec, const size_t index, const item_t value)
 {
@@ -92,6 +110,27 @@ int vector_set(vector *const vec, const size_t index, const item_t value)
 	return 0;
 }
 
+size_t vector_set_double(vector *const vec, const size_t index, const double value)
+{
+	if (!vector_is_correct(vec) || index + DOUBLE_SIZE > vec->size)
+	{
+		return SIZE_MAX;
+	}
+
+	return item_store_double(value, &vec->array[index]);
+}
+
+size_t vector_set_int64(vector *const vec, const size_t index, const int64_t value)
+{
+	if (!vector_is_correct(vec) || index + INT64_SIZE > vec->size)
+	{
+		return SIZE_MAX;
+	}
+
+	return item_store_int64(value, &vec->array[index]);
+}
+
+
 item_t vector_get(const vector *const vec, const size_t index)
 {
 	if (!vector_is_correct(vec) || index >= vec->size)
@@ -101,6 +140,27 @@ item_t vector_get(const vector *const vec, const size_t index)
 
 	return vec->array[index];
 }
+
+double vector_get_double(const vector *const vec, const size_t index)
+{
+	if (!vector_is_correct(vec) || index + DOUBLE_SIZE > vec->size)
+	{
+		return DBL_MAX;
+	}
+
+	return item_restore_double(&vec->array[index]);
+}
+
+int64_t vector_get_int64(const vector *const vec, const size_t index)
+{
+	if (!vector_is_correct(vec) || index + INT64_SIZE > vec->size)
+	{
+		return LLONG_MAX;
+	}
+
+	return item_restore_int64(&vec->array[index]);
+}
+
 
 item_t vector_remove(vector *const vec)
 {
@@ -112,6 +172,33 @@ item_t vector_remove(vector *const vec)
 	return vec->array[--vec->size];
 }
 
+double vector_remove_double(vector *const vec)
+{
+	if (!vector_is_correct(vec) || vec->size < DOUBLE_SIZE)
+	{
+		return DBL_MAX;
+	}
+
+	vec->size -= DOUBLE_SIZE;
+	return item_restore_double(&vec->array[vec->size]);
+}
+
+int64_t vector_remove_int64(vector *const vec)
+{
+	if (!vector_is_correct(vec) || vec->size < INT64_SIZE)
+	{
+		return LLONG_MAX;
+	}
+
+	vec->size -= INT64_SIZE;
+	return item_restore_int64(&vec->array[vec->size]);
+}
+
+
+int vector_increase(vector *const vec, const size_t size)
+{
+	return vector_is_correct(vec) ? change_size(vec, vec->size + size) : -1;
+}
 
 int vector_resize(vector *const vec, const size_t size)
 {

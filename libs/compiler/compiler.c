@@ -177,13 +177,17 @@ int compile_to_mips(workspace *const ws)
 int auto_compile(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return compile(&ws);
+	const int ret = compile(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return compile_to_vm(&ws);
+	const int ret = compile_to_vm(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 int auto_compile_to_mips(const int argc, const char *const *const argv)
@@ -209,6 +213,7 @@ int no_macro_compile_to_vm(const char *const path)
 		make_executable(ws_get_output(&ws));
 	}
 
+	ws_clear(&ws);
 	return ret;
 }
 

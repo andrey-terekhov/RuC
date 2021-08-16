@@ -119,6 +119,10 @@ instruction_t builtin_to_instruction(const builtin_t func)
 		case BI_ROBOT_RECEIVE_INT:		return IC_ROBOT_RECEIVE_INT;
 		case BI_ROBOT_RECEIVE_FLOAT:	return IC_ROBOT_RECEIVE_FLOAT;
 		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
+		case BI_FOPEN:					return IC_FOPEN;
+		case BI_FGETC:					return IC_FGETC;
+		case BI_FPUTC:					return IC_FPUTC;
+		case BI_FCLOSE:					return IC_FCLOSE;
 
 		default:
 			system_error(node_unexpected);

@@ -33,7 +33,6 @@ extern "C" {
 typedef enum BLOCK
 {
 	REGBLOCK,
-	THREAD,
 	FUNCBODY,
 } block_t;
 

@@ -205,9 +205,6 @@ typedef enum INSTURCTION
 	IC_COPY1ST_ASSIGN,			/**< 'COPY1STASS' instruction code */
 	IC_COPYST,					/**< 'COPYST' instruction code */
 
-	IC_CREATE_DIRECT = 9528,	/**< 'CREATEDIRECT' instruction code */
-	IC_EXIT_DIRECT,				/**< 'EXITDIRECT' instruction code */
-
 	IC_ABS	= 9534,				/**< 'ABS' instruction code */
 	IC_SQRT,					/**< 'SQRT' instruction code */
 	IC_EXP,						/**< 'EXP' instruction code */
@@ -250,6 +247,11 @@ typedef enum INSTURCTION
 	IC_ROBOT_RECEIVE_STRING,	/**< 'RECEIVE_STRING' instruction code */
 	IC_ASSERT,					/**< 'ASSERT' instruction code */
 	IC_ABSI	= 9651,				/**< 'ABSI' instruction code */
+
+	IC_FOPEN,					/**< 'FOPEN' instruction code */
+	IC_FCLOSE,					/**< 'FCLOSE' instruction code */
+	IC_FGETC,					/**< 'FGETC' instruction code */
+	IC_FPUTC,					/**< 'FPUTC' instruction code */
 
 	MAX_INSTRUCTION_CODE,
 } instruction_t;
