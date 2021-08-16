@@ -66,11 +66,11 @@ static int node_recursive(information *const info, node *const nd)
 		{
 			case OP_STRING:
 			{
-				const size_t index = (size_t)node_get_arg(&child, 2);
-				const char *string = string_get(info->sx, index);
-				size_t length = 0;
-				for (length = 0; *(string + length) != 0; length++)
-					;
+				// const size_t index = (size_t)node_get_arg(&child, 2);
+				// const char *string = string_get(info->sx, index);
+				// size_t length = 0;
+				// for (length = 0; *(string + length) != 0; length++)
+				// 	;
 				// uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%i x i8] c\""
 				// 	, info->string_num++, 1);
 
