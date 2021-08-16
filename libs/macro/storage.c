@@ -87,7 +87,15 @@ size_t storage_set(storage *const stg, const char32_t *const id, const char32_t 
 int storage_set_by_index(storage *const stg, const size_t id, const char32_t *value);
 
 
-size_t storage_get_index(const storage *const stg, const char32_t *const id);
+size_t storage_get_index(const storage *const stg, const char32_t *const id)
+{
+	if (!storage_is_correct(stg) || id == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+}
+
 const char *storage_get(const storage *const stg, const char32_t *const id);
 const char *storage_get_by_index(const storage *const stg, const size_t id);
 size_t storage_get_amount(const storage *const stg, const char32_t *const id);
