@@ -170,6 +170,38 @@ EXPORTED int map_set_by_index(map *const as, const size_t index, const item_t va
 
 
 /**
+ *	Get index of record by key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique string key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_get_index(map *const as, const char *const key);
+
+/**
+ *	Get index of record by UTF-8 key
+ *
+ *	@param	as				Map structure
+ *	@param	key				Unique UTF-8 string key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_get_index_by_utf8(map *const as, const char32_t *const key);
+
+/**
+ *	Get index of record by reading key from io
+ *
+ *	@param	as				Map structure
+ *	@param	io				Universal io structure
+ *	@param	last			Next character after key
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+EXPORTED size_t map_get_index_by_io(map *const as, universal_io *const io, char32_t *const last);
+
+
+/**
  *	Get value by key
  *
  *	@param	as				Map structure
