@@ -64,52 +64,52 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 		return SIZE_MAX;
 	}
 
-	size_t index = get_hash(key);
-	item_t next = vector_get(hs, index);
+	size_t prev = get_hash(key);
+	item_t index = vector_get(hs, prev);
 
-	if (next != 0)
+	if (index != 0)
 	{
 		item_t record = ITEM_MAX;
-		while (next != ITEM_MAX && next != 0)
+		while (index != ITEM_MAX && index != 0)
 		{
-			const item_t temp = vector_get(hs, (size_t)next + 1);
-			if (record == ITEM_MAX && temp == ITEM_MAX && (size_t)vector_get(hs, (size_t)next + 2) == amount)
+			const item_t temp = vector_get(hs, (size_t)index + 1);
+			if (record == ITEM_MAX && temp == ITEM_MAX && (size_t)vector_get(hs, (size_t)index + 2) == amount)
 			{
-				record = next;
+				record = index;
 			}
 			else if (temp == key)
 			{
 				return SIZE_MAX;
 			}
 
-			index = (size_t)next;
-			next = vector_get(hs, index);
+			prev = (size_t)index;
+			index = vector_get(hs, prev);
 		}
 
 		if (record != ITEM_MAX)
 		{
-			next = record;
+			index = record;
 			for (size_t i = 0; i < amount; i++)
 			{
-				vector_set(hs, (size_t)next + 3 + i, 0);
+				vector_set(hs, (size_t)index + 3 + i, 0);
 			}
 		}
-		else if (next == ITEM_MAX)
+		else if (index == ITEM_MAX)
 		{
 			return SIZE_MAX;
 		}
 	}
 
-	if (next == 0)
+	if (index == 0)
 	{
-		next = (item_t)vector_size(hs);
-		vector_set(hs, index, next);
+		index = (item_t)vector_size(hs);
+		vector_set(hs, prev, index);
 		vector_increase(hs, 3 + amount);	// New elements set by zero
-		vector_set(hs, (size_t)next + 2, amount);
+		vector_set(hs, (size_t)index + 2, amount);
 	}
 
-	vector_set(hs, (size_t)next + 1, key);
-	return (size_t)next;
+	vector_set(hs, (size_t)index + 1, key);
+	return (size_t)index;
 }
 
 
@@ -120,18 +120,18 @@ size_t hash_get_index(const hash *const hs, const item_t key)
 		return SIZE_MAX;
 	}
 
-	size_t index = get_hash(key);
-	item_t next = vector_get(hs, index);
+	size_t prev = get_hash(key);
+	item_t index = vector_get(hs, prev);
 
-	while (next != ITEM_MAX && next != 0)
+	while (index != ITEM_MAX && index != 0)
 	{
-		if (vector_get(hs, (size_t)next + 1) == key)
+		if (vector_get(hs, (size_t)index + 1) == key)
 		{
-			return (size_t)next;
+			return (size_t)index;
 		}
 
-		index = (size_t)next;
-		next = vector_get(hs, index);
+		prev = (size_t)index;
+		index = vector_get(hs, prev);
 	}
 
 	return SIZE_MAX;
