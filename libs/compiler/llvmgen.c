@@ -47,6 +47,7 @@ typedef struct information
 {
 	syntax *sx;							/**< Структура syntax с таблицами */
 
+	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
 	item_t init_num;					/**< Счётчик для инициализации */
@@ -1455,13 +1456,14 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%zi, i32 0, i32 0)"
+				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
-				, index);
+				, info->string_num);
 
 			info->register_num++;
+			info->string_num++;
 
 			for (item_t i = 0; i < N; i++)
 			{
@@ -1712,6 +1714,7 @@ static void structs_declaration(information *const info)
 // static void strings_declaration(information *const info)
 // {
 // 	const size_t strings_number = strings_amount(info->sx);
+// 	item_t string_num = 1;
 // 	for (size_t index = 0; index < strings_number; index++)
 // 	{
 // 		const char *string = string_get(info->sx, index);
@@ -1719,7 +1722,7 @@ static void structs_declaration(information *const info)
 // 		for (length = 0; *(string + length) != 0; length++)
 // 			;
 // 		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
-// 			, index, length + 1);
+// 			, string_num++, length + 1);
 
 // 		for (size_t j = 0; j < length; j++)
 // 		{
@@ -1757,6 +1760,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
+	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
