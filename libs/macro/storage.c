@@ -61,6 +61,21 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
 int storage_remove(storage *const stg, const char32_t *const id);
 int storage_remove_by_index(storage *const stg, const size_t id);
 
-bool storage_is_correct(const storage *const stg);
+bool storage_is_correct(const storage *const stg)
+{
+	return stg != NULL;
+}
 
-int storage_clear(storage *const stg);
+int storage_clear(storage *const stg)
+{
+	if (!storage_is_correct(stg))
+	{
+		return -1;
+	}
+
+	map_clear(&stg->as);
+	hash_clear(&stg->hs);
+	strings_clear(&stg->vec);
+
+	return 0;
+}
