@@ -126,7 +126,6 @@ typedef enum OPERATION
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN,				/**< Return statement node */
-	OP_THREAD,				/**< Create direct thread node */
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
@@ -190,6 +189,11 @@ typedef enum builtin
 
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
+
+	BI_FOPEN				= 146,
+	BI_FGETC				= 150,
+	BI_FPUTC				= 154,
+	BI_FCLOSE				= 158,
 
 	BI_EXIT					= 146,
 

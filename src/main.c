@@ -39,8 +39,11 @@ int main(int argc, const char *argv[])
 	}
 
 #ifdef TESTING_EXIT_CODE
-	return compile(&ws) ? TESTING_EXIT_CODE : 0;
+	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	return compile(&ws);
+	const int ret = compile(&ws);
 #endif
+
+	ws_clear(&ws);
+	return ret;
 }
