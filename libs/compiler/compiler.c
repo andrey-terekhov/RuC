@@ -38,7 +38,7 @@ static const char *const DEFAULT_LLVM = "out.ll";
 static const char *const DEFAULT_MIPS = "out.s";
 
 
-typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
+typedef int (*encoder)(const workspace *const ws, syntax *const sx);
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
@@ -68,12 +68,12 @@ static int compile_from_io(const workspace *const ws, universal_io *const io, co
 		return -1;
 	}
 
-	syntax sx = sx_create();
-	int ret = parse(ws, io, &sx);
+	syntax sx = sx_create(io);
+	int ret = parse(ws, &sx);
 
 	if (!ret)
 	{
-		ret = enc(ws, io, &sx);
+		ret = enc(ws, &sx);
 	}
 
 	sx_clear(&sx);

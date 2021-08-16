@@ -39,6 +39,216 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 
 	switch (elem)
 	{
+		case OP_IDENTIFIER:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "IDENTIFIER");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "id");
+					break;
+			}
+			break;
+		case OP_CONSTANT:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "CONSTANT");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "value");
+					break;
+			}
+			break;
+		case OP_STRING:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRING");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "index");
+					break;
+			}
+			break;
+		case OP_CALL:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "CALL");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+			}
+			break;
+		case OP_SELECT:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SELECT");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+			}
+			break;
+		case OP_SLICE:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SLICE");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+			}
+			break;
+		case OP_UNARY:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "UNARY");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "operator");
+					break;
+			}
+			break;
+		case OP_BINARY:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "BINARY");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+				case 3:
+					sprintf(buffer, "operator");
+					break;
+			}
+			break;
+		case OP_TERNARY:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "TERNARY");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+			}
+			break;
+		case OP_LIST:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "LIST");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+			}
+			break;
+
+		case OP_PRINT:
+			sprintf(buffer, "TPrint");
+			break;
+		case OP_PRINTID:
+			argc = 1;
+			sprintf(buffer, "TPrintid");
+			break;
+		case OP_PRINTF:
+			sprintf(buffer, "TPrintf");
+			break;
+		case OP_GETID:
+			argc = 1;
+			sprintf(buffer, "TGetid");
+			break;
+		case OP_UPB:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "UPB");
+					break;
+				case 1:
+					sprintf(buffer, "type");
+					break;
+				case 2:
+					sprintf(buffer, "designation");
+					break;
+			}
+			break;
+
 		case OP_FUNC_DEF:
 			argc = 2;
 			was_switch = true;
@@ -55,110 +265,40 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_DECL_ARR:
-			argc = 1;
+		case OP_DECL_VAR:
+			argc = 3;
 			was_switch = true;
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "TDeclarr");
+					sprintf(buffer, "DECL_VAR");
 					break;
 				case 1:
-					sprintf(buffer, "N");
-					break;
-			}
-			break;
-		case OP_DECL_ID:
-			argc = 7;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TDeclid");
-					break;
-				case 1:
-					sprintf(buffer, "displ");
+					sprintf(buffer, "id");
 					break;
 				case 2:
-					sprintf(buffer, "eltype");
+					sprintf(buffer, "dim");
 					break;
 				case 3:
-					sprintf(buffer, "N");
-					break;
-				case 4:
-					sprintf(buffer, "all");
-					break;
-				case 5:
-					sprintf(buffer, "iniproc");
-					break;
-				case 6:
-					sprintf(buffer, "usual");
-					break;
-				case 7:
-					sprintf(buffer, "instuct");
+					sprintf(buffer, "init");
 					break;
 			}
 			break;
-		case OP_STRING:
+		case OP_DECL_TYPE:
 			argc = 1;
 			was_switch = true;
 			switch (num)
 			{
 				case 0:
-					sprintf(buffer, "TString");
+					sprintf(buffer, "DECL_TYPE");
 					break;
 				case 1:
-					sprintf(buffer, "n");
+					sprintf(buffer, "type_id");
 					break;
 			}
-			break;
-		case OP_STRING_D:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TStringd");
-					break;
-				case 1:
-					sprintf(buffer, "n");
-					break;
-			}
-			break;
-		case OP_CONDITIONAL:
-			sprintf(buffer, "TCondexpr");
 			break;
 		case OP_BLOCK:
 			sprintf(buffer, "TBegin");
-			break;
-		case OP_BLOCK_END:
-			sprintf(buffer, "TEnd");
-			break;
-		case OP_ARRAY_INIT:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TBeginit");
-					break;
-				case 1:
-					sprintf(buffer, "n");
-					break;
-			}
-			break;
-		case OP_STRUCT_INIT:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TStructinit");
-					break;
-				case 1:
-					sprintf(buffer, "n");
-					break;
-			}
 			break;
 		case OP_IF:
 			argc = 1;
@@ -189,141 +329,17 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_CONTINUE:
 			sprintf(buffer, "TContinue");
 			break;
-		case OP_RETURN_VOID:
+		case OP_RETURN:
 			sprintf(buffer, "TReturn");
-			break;
-		case OP_RETURN_VAL:
-			argc = 1;
-			sprintf(buffer, "TReturnval");
 			break;
 		case OP_GOTO:
 			argc = 1;
 			sprintf(buffer, "TGoto");
 			break;
-		case OP_IDENT:
-			argc = 1;
-			sprintf(buffer, "TIdent");
-			break;
-		case OP_IDENT_TO_VAL:
-			argc = 1;
-			sprintf(buffer, "TIdenttoval");
-			break;
-		case OP_IDENT_TO_VAL_D:
-			argc = 1;
-			sprintf(buffer, "TIdenttovald");
-			break;
-		case OP_IDENT_TO_ADDR:
-			argc = 1;
-			sprintf(buffer, "TIdenttoaddr");
-			break;
-		case OP_ADDR_TO_VAL:
-			sprintf(buffer, "TAddrtoval");
-			break;
-		case OP_ADDR_TO_VAL_D:
-			sprintf(buffer, "TAddrtovald");
-			break;
-		case OP_EXPR_END:
-			sprintf(buffer, "TExprend");
-			break;
-		case OP_CONST:
-			argc = 1;
-			sprintf(buffer, "TConst");
-			break;
-		case OP_CONST_D:
-			argc = 2;
-			sprintf(buffer, "TConstd");
-		break;
-		case OP_SLICE_IDENT:
-			argc = 2;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TSliceident");
-					break;
-				case 1:
-					sprintf(buffer, "displ");
-					break;
-				case 2:
-					sprintf(buffer, "type");
-					break;
-			}
-			break;
-		case OP_SLICE:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TSlice");
-					break;
-				case 1:
-					sprintf(buffer, "elem_type");
-					break;
-			}
-			break;
-		case OP_SELECT:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "TSelect");
-					break;
-				case 1:
-					sprintf(buffer, "displ");
-					break;
-			}
-			break;
 		case OP_NOP:
 			sprintf(buffer, "NOP");
 			break;
-		case OP_AD_LOG_AND:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "ADLOGAND");
-					break;
-				case 1:
-					sprintf(buffer, "addr");
-					break;
-			}
-			break;
-		case OP_AD_LOG_OR:
-			argc = 1;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "ADLOGOR");
-					break;
-				case 1:
-					sprintf(buffer, "addr");
-					break;
-			}
-			break;
-		case OP_COPY00:
-			argc = 3;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "COPY00");
-					break;
-				case 1:
-					sprintf(buffer, "displleft");
-					break;
-				case 2:
-					sprintf(buffer, "displright");
-					break;
-				case 3:
-					sprintf(buffer, "length");
-					break;
-			}
-			break;
-		case OP_COPY01:
+		case IC_COPY01:
 			argc = 2;
 			was_switch = true;
 			switch (num)
@@ -339,7 +355,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY10:
+		case IC_COPY10:
 			argc = 2;
 			was_switch = true;
 			switch (num)
@@ -355,7 +371,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY11:
+		case IC_COPY11:
 			argc = 1;
 			was_switch = true;
 			switch (num)
@@ -368,7 +384,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY0ST:
+		case IC_COPY0ST:
 			argc = 2;
 			was_switch = true;
 			switch (num)
@@ -384,7 +400,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY1ST:
+		case IC_COPY1ST:
 			argc = 1;
 			was_switch = true;
 			switch (num)
@@ -397,7 +413,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY0ST_ASSIGN:
+		case IC_COPY0ST_ASSIGN:
 			argc = 2;
 			was_switch = true;
 			switch (num)
@@ -413,7 +429,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPY1ST_ASSIGN:
+		case IC_COPY1ST_ASSIGN:
 			argc = 1;
 			was_switch = true;
 			switch (num)
@@ -426,7 +442,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_COPYST:
+		case IC_COPYST:
 			argc = 3;
 			was_switch = true;
 			switch (num)
@@ -446,41 +462,17 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			}
 			break;
 
-		case OP_CALL1:
+		case IC_CALL1:
 			argc = 1;
 			sprintf(buffer, "TCall1");
 			break;
-		case OP_CALL2:
+		case IC_CALL2:
 			argc = 1;
 			sprintf(buffer, "TCall2");
 			break;
 		case OP_LABEL:
 			argc = 1;
 			sprintf(buffer, "TLabel");
-			break;
-		case OP_DECL_STRUCT:
-			argc = 1;
-			sprintf(buffer, "TStructbeg");
-			break;
-		case OP_DECL_STRUCT_END:
-			argc = 1;
-			sprintf(buffer, "TStructend");
-			break;
-		case OP_PRINT:
-			argc = 1;
-			sprintf(buffer, "TPrint");
-			break;
-		case OP_PRINTID:
-			argc = 1;
-			sprintf(buffer, "TPrintid");
-			break;
-		case OP_PRINTF:
-			argc = 1;
-			sprintf(buffer, "TPrintf");
-			break;
-		case OP_GETID:
-			argc = 1;
-			sprintf(buffer, "TGetid");
 			break;
 		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
@@ -536,10 +528,10 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			sprintf(buffer, "GETID");
 			break;
 
-		case OP_ABS:
+		case IC_ABS:
 			sprintf(buffer, "ABS");
 			break;
-		case OP_ABSI:
+		case IC_ABSI:
 			sprintf(buffer, "ABSI");
 			break;
 		case IC_SQRT:
@@ -704,334 +696,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			sprintf(buffer, "LA");
 			break;
 
-		case OP_LOG_OR:
-			argc = 1;
-			sprintf(buffer, "||");
-			break;
-		case OP_LOG_AND:
-			argc = 1;
-			sprintf(buffer, "&&");
-			break;
-		case OP_OR_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "|=");
-			break;
-		case OP_OR_ASSIGN_AT:
-			sprintf(buffer, "|=@");
-			break;
-		case OP_OR_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "|=V");
-			break;
-		case OP_OR_ASSIGN_AT_V:
-			sprintf(buffer, "|=@V");
-			break;
-		case OP_OR:
-			sprintf(buffer, "|");
-			break;
-		case OP_XOR_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "^=");
-			break;
-		case OP_XOR_ASSIGN_AT:
-			sprintf(buffer, "^=@");
-			break;
-		case OP_XOR_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "^=V");
-			break;
-		case OP_XOR_ASSIGN_AT_V:
-			sprintf(buffer, "^=@V");
-			break;
-		case OP_XOR:
-			sprintf(buffer, "^");
-			break;
-		case OP_AND_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "&=");
-			break;
-		case OP_AND_ASSIGN_AT:
-			sprintf(buffer, "&=@");
-			break;
-		case OP_AND_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "&=V");
-			break;
-		case OP_AND_ASSIGN_AT_V:
-			sprintf(buffer, "&=@V");
-			break;
-		case OP_AND:
-			sprintf(buffer, "&");
-			break;
-
-		case OP_EQ:
-			sprintf(buffer, "==");
-			break;
-		case OP_NE:
-			sprintf(buffer, "!=");
-			break;
-		case OP_LT:
-			sprintf(buffer, "<");
-			break;
-		case OP_GT:
-			sprintf(buffer, ">");
-			break;
-		case OP_LE:
-			sprintf(buffer, "<=");
-			break;
-		case OP_GE:
-			sprintf(buffer, ">=");
-			break;
-		case OP_EQ_R:
-			sprintf(buffer, "==f");
-			break;
-		case OP_NE_R:
-			sprintf(buffer, "!=f");
-			break;
-		case OP_LT_R:
-			sprintf(buffer, "<f");
-			break;
-		case OP_GT_R:
-			sprintf(buffer, ">f");
-			break;
-		case OP_LE_R:
-			sprintf(buffer, "<=f");
-			break;
-		case OP_GE_R:
-			sprintf(buffer, ">=f");
-			break;
-
-		case OP_SHR_ASSIGN:
-			argc = 1;
-			sprintf(buffer, ">>=");
-			break;
-		case OP_SHR_ASSIGN_AT:
-			sprintf(buffer, ">>=@");
-			break;
-		case OP_SHR_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, ">>=V");
-			break;
-		case OP_SHR_ASSIGN_AT_V:
-			sprintf(buffer, ">>=@V");
-			break;
-		case OP_SHR:
-			sprintf(buffer, ">>");
-			break;
-		case OP_SHL_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "<<=");
-			break;
-		case OP_SHL_ASSIGN_AT:
-			sprintf(buffer, "<<=@");
-			break;
-		case OP_SHL_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "<<=V");
-			break;
-		case OP_SHL_ASSIGN_AT_V:
-			sprintf(buffer, "<<=@V");
-			break;
-		case OP_SHL:
-			sprintf(buffer, "<<");
-			break;
-
-		case OP_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "=");
-			break;
-		case OP_ASSIGN_AT:
-			sprintf(buffer, "=@");
-			break;
-		case OP_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "=V");
-			break;
-		case OP_ASSIGN_AT_V:
-			sprintf(buffer, "=@V");
-			break;
-
-		case OP_ADD_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "+=");
-			break;
-		case OP_ADD_ASSIGN_AT:
-			sprintf(buffer, "+=@");
-			break;
-		case OP_ADD_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "+=V");
-			break;
-		case OP_ADD_ASSIGN_AT_V:
-			sprintf(buffer, "+=@V");
-			break;
-		case OP_ADD:
-			sprintf(buffer, "+");
-			break;
-
-		case OP_SUB_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "-=");
-			break;
-		case OP_SUB_ASSIGN_AT:
-			sprintf(buffer, "-=@");
-			break;
-		case OP_SUB_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "-=V");
-			break;
-		case OP_SUB_ASSIGN_AT_V:
-			sprintf(buffer, "-=@V");
-			break;
-		case OP_SUB:
-			sprintf(buffer, "-");
-			break;
-
-		case OP_MUL_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "*=");
-			break;
-		case OP_MUL_ASSIGN_AT:
-			sprintf(buffer, "*=@");
-			break;
-		case OP_MUL_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "*=V");
-			break;
-		case OP_MUL_ASSIGN_AT_V:
-			sprintf(buffer, "*=@V");
-			break;
-		case OP_MUL:
-			sprintf(buffer, "*");
-			break;
-
-		case OP_DIV_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "/=");
-			break;
-		case OP_DIV_ASSIGN_AT:
-			sprintf(buffer, "/=@");
-			break;
-		case OP_DIV_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "/=V");
-			break;
-		case OP_DIV_ASSIGN_AT_V:
-			sprintf(buffer, "/=@V");
-			break;
-		case OP_DIV:
-			sprintf(buffer, "/");
-			break;
-
-		case OP_ASSIGN_R:
-			argc = 1;
-			sprintf(buffer, "=f");
-			break;
-		case OP_ASSIGN_R_V:
-			argc = 1;
-			sprintf(buffer, "=fV");
-			break;
-		case OP_ASSIGN_AT_R:
-			sprintf(buffer, "=@f");
-			break;
-		case OP_ASSIGN_AT_R_V:
-			sprintf(buffer, "=@fV");
-			break;
-
-		case OP_ADD_ASSIGN_R:
-			argc = 1;
-			sprintf(buffer, "+=f");
-			break;
-		case OP_ADD_ASSIGN_AT_R:
-			sprintf(buffer, "+=@f");
-			break;
-		case OP_ADD_ASSIGN_R_V:
-			argc = 1;
-			sprintf(buffer, "+=fV");
-			break;
-		case OP_ADD_ASSIGN_AT_R_V:
-			sprintf(buffer, "+=@fV");
-			break;
-		case OP_ADD_R:
-			sprintf(buffer, "+f");
-			break;
-		case OP_SUB_ASSIGN_R:
-			argc = 1;
-			sprintf(buffer, "-=f");
-			break;
-		case OP_SUB_ASSIGN_AT_R:
-			sprintf(buffer, "-=@f");
-			break;
-		case OP_SUB_ASSIGN_R_V:
-			argc = 1;
-			sprintf(buffer, "-=fV");
-			break;
-		case OP_SUB_ASSIGN_AT_R_V:
-			sprintf(buffer, "-=@fV");
-			break;
-		case OP_SUB_R:
-			sprintf(buffer, "-f");
-			break;
-		case OP_MUL_ASSIGN_R:
-			argc = 1;
-			sprintf(buffer, "*=f");
-			break;
-		case OP_MUL_ASSIGN_AT_R:
-			sprintf(buffer, "*=@f");
-			break;
-		case OP_MUL_ASSIGN_R_V:
-			argc = 1;
-			sprintf(buffer, "*=fV");
-			break;
-		case OP_MUL_ASSIGN_AT_R_V:
-			sprintf(buffer, "*=@fV");
-			break;
-		case OP_MUL_R:
-			sprintf(buffer, "*f");
-			break;
-		case OP_DIV_ASSIGN_R:
-			argc = 1;
-			sprintf(buffer, "/=f");
-			break;
-		case OP_DIV_ASSIGN_AT_R:
-			sprintf(buffer, "/=@f");
-			break;
-		case OP_DIV_ASSIGN_R_V:
-			argc = 1;
-			sprintf(buffer, "/=fV");
-			break;
-		case OP_DIV_ASSIGN_AT_R_V:
-			sprintf(buffer, "/=@fV");
-			break;
-		case OP_DIV_R:
-			sprintf(buffer, "/f");
-			break;
-
-		case OP_REM_ASSIGN:
-			argc = 1;
-			sprintf(buffer, "%%=");
-			break;
-		case OP_REM_ASSIGN_AT:
-			sprintf(buffer, "%%=@");
-			break;
-		case OP_REM_ASSIGN_V:
-			argc = 1;
-			sprintf(buffer, "%%=V");
-			break;
-		case OP_REM_ASSIGN_AT_V:
-			sprintf(buffer, "%%=@V");
-			break;
-		case OP_REM:
-			sprintf(buffer, "%%");
-			break;
-
-		case IC_CALL1:
-			sprintf(buffer, "CALL1");
-			break;
-		case IC_CALL2:
-			argc = 1;
-			sprintf(buffer, "CALL2");
-			break;
 		case IC_STOP:
 			sprintf(buffer, "STOP");
 			break;
@@ -1080,141 +744,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_WIDEN:
-			sprintf(buffer, "WIDEN");
-			break;
-		case OP_WIDEN1:
-			sprintf(buffer, "WIDEN1");
-			break;
-		case IC_DUPLICATE:
-			sprintf(buffer, "DOUBLE");
-			break;
-		case OP_PRE_INC:
-			argc = 1;
-			sprintf(buffer, "INC");
-			break;
-		case OP_PRE_DEC:
-			argc = 1;
-			sprintf(buffer, "DEC");
-			break;
-		case OP_POST_INC:
-			argc = 1;
-			sprintf(buffer, "POSTINC");
-			break;
-		case OP_POST_DEC:
-			argc = 1;
-			sprintf(buffer, "POSTDEC");
-			break;
-		case OP_PRE_INC_AT:
-			sprintf(buffer, "INC@");
-			break;
-		case OP_PRE_DEC_AT:
-			sprintf(buffer, "DEC@");
-			break;
-		case OP_POST_INC_AT:
-			sprintf(buffer, "POSTINC@");
-			break;
-		case OP_POST_DEC_AT:
-			sprintf(buffer, "POSTDEC@");
-			break;
-		case OP_PRE_INC_R:
-			argc = 1;
-			sprintf(buffer, "INCf");
-			break;
-		case OP_PRE_DEC_R:
-			argc = 1;
-			sprintf(buffer, "DECf");
-			break;
-		case OP_POST_INC_R:
-			argc = 1;
-			sprintf(buffer, "POSTINCf");
-			break;
-		case OP_POST_DEC_R:
-			argc = 1;
-			sprintf(buffer, "POSTDECf");
-			break;
-		case OP_PRE_INC_AT_R:
-			sprintf(buffer, "INC@f");
-			break;
-		case OP_PRE_DEC_AT_R:
-			sprintf(buffer, "DEC@f");
-			break;
-		case OP_POST_INC_AT_R:
-			sprintf(buffer, "POSTINC@f");
-			break;
-		case OP_POST_DEC_AT_R:
-			sprintf(buffer, "POSTDEC@f");
-			break;
-		case OP_PRE_INC_V:
-			argc = 1;
-			sprintf(buffer, "INCV");
-			break;
-		case OP_PRE_DEC_V:
-			argc = 1;
-			sprintf(buffer, "DECV");
-			break;
-		case OP_POST_INC_V:
-			argc = 1;
-			sprintf(buffer, "POSTINCV");
-			break;
-		case OP_POST_DEC_V:
-			argc = 1;
-			sprintf(buffer, "POSTDECV");
-			break;
-		case OP_PRE_INC_AT_V:
-			sprintf(buffer, "INC@V");
-			break;
-		case OP_PRE_DEC_AT_V:
-			sprintf(buffer, "DEC@V");
-			break;
-		case OP_POST_INC_AT_V:
-			sprintf(buffer, "POSTINC@V");
-			break;
-		case OP_POST_DEC_AT_V:
-			sprintf(buffer, "POSTDEC@V");
-			break;
-		case OP_PRE_INC_R_V:
-			argc = 1;
-			sprintf(buffer, "INCfV");
-			break;
-		case OP_PRE_DEC_R_V:
-			argc = 1;
-			sprintf(buffer, "DECfV");
-			break;
-		case OP_POST_INC_R_V:
-			argc = 1;
-			sprintf(buffer, "POSTINCfV");
-			break;
-		case OP_POST_DEC_R_V:
-			argc = 1;
-			sprintf(buffer, "POSTDECfV");
-			break;
-		case OP_PRE_INC_AT_R_V:
-			sprintf(buffer, "INC@fV");
-			break;
-		case OP_PRE_DEC_AT_R_V:
-			sprintf(buffer, "DEC@fV");
-			break;
-		case OP_POST_INC_AT_R_V:
-			sprintf(buffer, "POSTINC@fV");
-			break;
-		case OP_POST_DEC_AT_R_V:
-			sprintf(buffer, "POSTDEC@fV");
-			break;
-
-		case OP_NOT:
-			sprintf(buffer, "BITNOT");
-			break;
-		case OP_LOG_NOT:
-			sprintf(buffer, "NOT");
-			break;
-		case OP_UNMINUS:
-			sprintf(buffer, "UNMINUS");
-			break;
-		case OP_UNMINUS_R:
-			sprintf(buffer, "UNMINUSf");
-			break;
-
 		case IC_FUNC_BEG:
 			argc = 2;
 			was_switch = true;
@@ -1261,7 +790,7 @@ static size_t elem_to_io(universal_io *const io, const vector *const table, size
 	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
-	if (type == OP_CONST || type == IC_LID)
+	if (type == IC_LID)
 	{
 		double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
 		return i + 2;
@@ -1288,15 +817,6 @@ static size_t elem_to_io(universal_io *const io, const vector *const table, size
 			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
 		}
 	}
-	else if (type == OP_STRING_D)
-	{
-		const size_t n = (size_t)vector_get(table, i - 1);
-		for (size_t j = 0; j < n; j++)
-		{
-			double_to_io(io, vector_get(table, i), vector_get(table, i + 1));
-			i += 2;
-		}
-	}
 
 	return i;
 }
@@ -1315,7 +835,7 @@ static size_t tree_print_recursive(universal_io *const io, node *const nd, size_
 	size_t argc = elem_get_name(type, 0, buffer);
 	uni_printf(io, "%s", buffer);
 
-	if (type == OP_CONST_D || type == IC_LID)
+	if (type == IC_LID)
 	{
 		double_to_io(io, node_get_arg(nd, 0), node_get_arg(nd, 1));
 	}
@@ -1335,11 +855,10 @@ static size_t tree_print_recursive(universal_io *const io, node *const nd, size_
 		}
 		uni_printf(io, "\n");
 
-		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != OP_STRING && node_get_type(nd) != OP_STRING_D)
-			|| i != argc)
+		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != OP_STRING) || i != argc)
 		{
 			elem_get_name(type, 0, buffer);
-			warning(NULL, node_argc, index, buffer);
+			//warning(NULL, node_argc, index, buffer);
 		}
 	}
 

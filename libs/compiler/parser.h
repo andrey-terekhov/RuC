@@ -17,13 +17,11 @@
 #pragma once
 
 #include <stdbool.h>
+#include "builder.h"
 #include "errors.h"
 #include "lexer.h"
 #include "stack.h"
 #include "syntax.h"
-#include "tree.h"
-#include "operations.h"
-#include "uniio.h"
 #include "workspace.h"
 
 
@@ -31,50 +29,25 @@
 extern "C" {
 #endif
 
-/** Type of operands on the anonymous stack */
-typedef enum OPERAND
-{
-	VARIABLE,		/**< Variable operand */
-	VALUE,			/**< Value operand */
-	NUMBER,			/**< Number operand */
-	ADDRESS,		/**< Address operand */
-} operand_t;
-
 /**	The kind of block to parse */
 typedef enum BLOCK
 {
 	REGBLOCK,
 	FUNCBODY,
-	FORBLOCK,
 } block_t;
 
-
-/** Operators stack */
-typedef struct operators
-{
-	stack priorities;	/**< Operator priority stack */
-	stack tokens;		/**< Operator token stack */
-	stack nodes;		/**< Operator node stack */
-} operators;
 
 /** Parser structure */
 typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
-	lexer *lxr;							/**< Lexer structure */
 
-	operators stk;						/**< Operators stack */
-	stack anonymous;					/**< Operands stack */
+	lexer lxr;							/**< Lexer */
+
 	vector labels;						/**< Labels table */
 
-	node nd;							/**< Node for expression subtree */
-
 	token_t token;						/**< Current token */
-	operand_t last_type;				/**< Type of last added operand to the operands stack */
-	item_t left_mode;					/**< Mode of the left part of assignment expression */
-	size_t last_id;						/**< Index of the last read identifier */
 	size_t function_mode;				/**< Mode of current parsed function */
-	item_t operand_displ;				/**< Displacement of the operand */
 	size_t array_dimensions;			/**< Array dimensions counter */
 
 	int func_def;						/**< @c 0 for function without arguments,
@@ -90,12 +63,10 @@ typedef struct parser
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
 
 	bool is_in_switch;					/**< Set, if parser is in switch body */
-	bool is_in_assignment;				/**< Set, if parser is in assignment */
 	bool is_in_loop;					/**< Set, if parser is in loop body */
 
 	bool was_return;					/**< Set, if was return in parsed function */
 	bool was_type_def;					/**< Set, if was type definition */
-	bool was_error;						/**< Set, if was error */
 } parser;
 
 
@@ -103,18 +74,17 @@ typedef struct parser
  *	Parse source code to generate syntax structure
  *
  *	@param	ws			Compiler workspace
- *	@param	io			Universal io structure
  *	@param	sx			Syntax structure
  *
  *	@return	@c 0 on success, @c 1 on failure
  */
-int parse(const workspace *const ws, universal_io *const io, syntax *const sx);
+int parse(const workspace *const ws, syntax *const sx);
 
 
 /**
- *	Emit an error from parser
+ *	Emit a syntax error from parser
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	num			Error code
  */
 void parser_error(parser *const prs, error_t num, ...);
@@ -123,14 +93,14 @@ void parser_error(parser *const prs, error_t num, ...);
 /**
  *	Consume the current 'peek token' and lex the next one
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  */
-void token_consume(parser *const prs);
+location token_consume(parser *const prs);
 
 /**
  *	Try to consume the current 'peek token' and lex the next one
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	expected	Expected token to consume
  *
  *	@return	@c 1 on consuming 'peek token', @c 0 on otherwise
@@ -141,7 +111,7 @@ int token_try_consume(parser *const prs, const token_t expected);
  *	Try to consume the current 'peek token' and lex the next one
  *	If 'peek token' is expected, parser will consume it, otherwise an error will be emitted
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	expected	Expected token to consume
  *	@param	err			Error to emit
  */
@@ -150,25 +120,11 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
 /**
  *	Read tokens until one of the specified tokens
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	tokens		Set of specified tokens
  */
 void token_skip_until(parser *const prs, const uint8_t tokens);
 
-
-/**
- *	Parse expression [C99 6.5.17]
- *
- *	expression:
- *		assignment-expression
- *		expression ',' assignment-expression
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *
- *	@return	Type of parsed expression
- */
-item_t parse_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -178,27 +134,26 @@ item_t parse_expression(parser *const prs, node *const parent);
  *		unary-expression assignment-operator assignment-expression
  *
  *	assignment-operator: one of
- *		=  *=  /=  %=  +=  -=  <<=  >>=  &=  ˆ=  |=
+ *		'=', '*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '&=', 'ˆ=', '|='
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Assignment expression node
  */
-item_t parse_assignment_expression(parser *const prs, node *const parent);
+node parse_assignment_expression(parser *const prs);
 
 /**
- *	Parse expression in parentheses
+ *	Parse expression [C99 6.5.17]
  *
- *	parenthesized-expression:
- *		'(' expression ')'
+ *	expression:
+ *		assignment-expression
+ *		expression ',' assignment-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return Expression node
  */
-item_t parse_parenthesized_expression(parser *const prs, node *const parent);
+node parse_expression(parser *const prs);
 
 /**
  *	Parse constant expression [C99 6.6]
@@ -206,41 +161,25 @@ item_t parse_parenthesized_expression(parser *const prs, node *const parent);
  *	constant-expression:
  *		conditional-expression
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
  *
- *	@return	Type of parsed expression
+ *	@return	Constant expression node
  */
-item_t parse_constant_expression(parser *const prs, node *const parent);
+node parse_constant_expression(parser *const prs);
 
 /**
- *	Parse condition
- *	@note	must be evaluated to a simple value
+ *	Parse initializer [C99 6.7.8]
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	initializer:
+ *		assignment-expression
+ *		'{' expression-list[opt] '}'
  *
- *	@return	Type of parsed expression
+ *	@param	prs			Parser
+ *	@param	type		Type of variable in declaration
+ *
+ *	@return Initializer node
  */
-item_t parse_condition(parser *const prs, node *const parent);
-
-/**
- *	Parse string literal [C99 6.5.1]
- *
- *	primary-expression:
- *		string-literal
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- */
-void parse_string_literal(parser *const prs, node *const parent);
-
-/**
- *	Insert @c WIDEN node
- *
- *	@param	prs			Parser structure
- */
-void parse_insert_widen(parser *const prs);
+node parse_initializer(parser *const prs, const item_t type);
 
 
 /**
@@ -248,7 +187,7 @@ void parse_insert_widen(parser *const prs);
  *	@note Parses a full declaration, which consists of declaration-specifiers,
  *	some number of declarators, and a semicolon
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 void parse_declaration_inner(parser *const prs, node *const parent);
@@ -258,35 +197,10 @@ void parse_declaration_inner(parser *const prs, node *const parent);
  *	@note Parses a full declaration, which consists either of declaration-specifiers,
  *	some number of declarators, and a semicolon, or function definition
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	root		Root node in AST
  */
 void parse_declaration_external(parser *const prs, node *const root);
-
-/**
- *	Parse initializer [C99 6.7.8p1]
- *
- *	initializer:
- *		assignment-expression
- *		'{' initializer-list '}'
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type of variable in declaration
- */
-void parse_initializer(parser *const prs, node *const parent, const item_t type);
-
-/**
- *	Parse braced initializer list [C99 6.7.8p2]
- *
- *	initializer-list:
- *		initializer-list ',' initializer
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type of variable in declaration
- */
-void parse_braced_initializer(parser *const prs, node *const parent, const item_t type);
 
 
 /**
@@ -300,7 +214,7 @@ void parse_braced_initializer(parser *const prs, node *const parent, const item_
  *		iteration-statement
  *		jump-statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 void parse_statement(parser *const prs, node *const parent);
@@ -309,7 +223,7 @@ void parse_statement(parser *const prs, node *const parent);
  *	Parse '{}' block [C99 6.8.2]
  *
  *	compound-statement:
- *  	{ block-item-list[opt] }
+ *  	'{' block-item-list[opt] '}'
  *
  *	block-item-list:
  *		block-item
@@ -319,7 +233,7 @@ void parse_statement(parser *const prs, node *const parent);
  *		declaration
  *		statement
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
 void parse_statement_compound(parser *const prs, node *const parent, const block_t type);
@@ -328,7 +242,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 /**
  *	Add new item to identifiers table
  *
- *	@param	prs			Parser structure
+ *	@param	prs			Parser 
  *	@param	repr		New identifier index in representations table
  *	@param	type		@c -1 for function as parameter,
  *						@c  0 for variable,
@@ -340,14 +254,6 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
  *	@return	Index of the last item in identifiers table
  */
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
-
-/**
- *	Add a new node to expression subtree
- *
- *	@param	prs			Parser structure
- *	@param	op			New node type
- */
-void to_tree(parser *const prs, const item_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */
