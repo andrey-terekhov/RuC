@@ -191,6 +191,11 @@ typedef enum builtin
 	BI_MSG_SEND				= 138,
 	BI_MSG_RECEIVE			= 142,
 
+	BI_FOPEN				= 146,
+	BI_FGETC				= 150,
+	BI_FPUTC				= 154,
+	BI_FCLOSE				= 158,
+
 	BI_EXIT					= 146,
 
 	BEGIN_USER_FUNC			= 150,

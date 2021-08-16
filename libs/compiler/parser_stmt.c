@@ -32,6 +32,8 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_FLOAT:
 		case TK_DOUBLE:
 		case TK_STRUCT:
+		case TK_FILE:
+		case TK_TYPEDEF:
 			return true;
 
 		case TK_IDENTIFIER:
