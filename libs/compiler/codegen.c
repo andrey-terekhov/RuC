@@ -1044,27 +1044,6 @@ static void emit_return_statement(virtual *const vm, const node *const nd)
 	}
 }
 
-/**
- *	Emit t_create_direct statement
- *
- *	@param	vm			Code generator
- *	@param	nd			Node in AST
- */
-static void emit_thread(virtual *const vm, const node *const nd)
-{
-	mem_add(vm, IC_CREATE_DIRECT);
-
-	const size_t amount = node_get_amount(nd);
-	for (size_t i = 0; i < amount; i++)
-	{
-		const node nd_thread_item = node_get_child(nd, i);
-		emit_statement(vm, &nd_thread_item);
-	}
-
-	mem_add(vm, IC_EXIT_DIRECT);
-	vm->max_threads++;
-}
-
 static void compress_ident(virtual *const vm, const size_t ref)
 {
 	if (vector_get(&vm->sx->identifiers, ref) == ITEM_MAX)
