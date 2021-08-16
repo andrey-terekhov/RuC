@@ -42,13 +42,50 @@ storage storage_create()
 	return stg;
 }
 
-size_t storage_add(storage *const stg, const char32_t *const id, const char32_t *const value);
-size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char32_t *const value, const size_t args);
+
+size_t storage_add(storage *const stg, const char32_t *const id, const char32_t *const value)
+{
+	if (!storage_is_correct(stg) || id == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t key = map_reserve_by_utf8(&stg->as, id);
+	const size_t index = hash_add(&stg->hs, key, 1);
+	if (index == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	hash_set_by_index(&stg->hs, index, 0, value != NULL ? (item_t)strings_add_by_utf8(&stg->vec, value) : ITEM_MAX);
+	return index;
+}
+
+size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char32_t *const value, const size_t args)
+{
+	if (!storage_is_correct(stg) || id == NULL || value == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t key = map_reserve_by_utf8(&stg->as, id);
+	const size_t index = hash_add(&stg->hs, key, 1 + args);
+	if (index == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
+	return index;
+}
+
 size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
 int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg);
 
+
 size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
 int storage_set_by_index(storage *const stg, const size_t id, const char32_t *value);
+
 
 size_t storage_get_index(const storage *const stg, const char32_t *const id);
 const char *storage_get(const storage *const stg, const char32_t *const id);
@@ -58,13 +95,16 @@ size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
 const char *storage_get_arg(const storage *const stg, const char32_t *const id, const size_t index);
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
 
+
 int storage_remove(storage *const stg, const char32_t *const id);
 int storage_remove_by_index(storage *const stg, const size_t id);
+
 
 bool storage_is_correct(const storage *const stg)
 {
 	return stg != NULL;
 }
+
 
 int storage_clear(storage *const stg)
 {
