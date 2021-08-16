@@ -25,7 +25,7 @@ typedef struct information
 {
 	syntax *sx;										/**< Структура syntax с таблицами */
 
-	item_t string_num;								/**< Номер строки */
+	// item_t string_num;								/**< Номер строки */
 	item_t init_num;								/**< Счётчик для инициализации */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
@@ -71,8 +71,8 @@ static int node_recursive(information *const info, node *const nd)
 				size_t length = 0;
 				for (length = 0; *(string + length) != 0; length++)
 					;
-				uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%i x i8] c\""
-					, info->string_num++, 1);
+				// uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%i x i8] c\""
+				// 	, info->string_num++, 1);
 
 				// for (size_t j = 0; j < length; j++)
 				// {
@@ -184,7 +184,7 @@ int optimize_for_llvm(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
-	info.string_num = 1;
+	// info.string_num = 1;
 	info.init_num = 1;
 	info.was_printf = 0;
 
