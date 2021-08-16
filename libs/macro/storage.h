@@ -19,6 +19,7 @@
 #include "hash.h"
 #include "map.h"
 #include "strings.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus
@@ -131,7 +132,7 @@ size_t storage_get_index(const storage *const stg, const char *const id);
  *	@param	stg			Macro storage
  *	@param	id			Macro name
  *
- *	@return	Macro replacement, @c SIZE_MAX on failure
+ *	@return	Macro replacement, @c NULL on failure
  */
 const char *storage_get(const storage *const stg, const char *const id);
 
@@ -141,7 +142,7 @@ const char *storage_get(const storage *const stg, const char *const id);
  *	@param	stg			Macro storage
  *	@param	id			Index of record
  *
- *	@return	Macro replacement, @c SIZE_MAX on failure
+ *	@return	Macro replacement, @c NULL on failure
  */
 const char *storage_get_by_index(const storage *const stg, const size_t id);
 
