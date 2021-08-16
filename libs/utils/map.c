@@ -51,7 +51,7 @@ static int map_add_key_symbol(map *const as, const char32_t ch)
 static size_t map_get_hash(map *const as, const char *const key)
 {
 	char32_t ch = utf8_convert(key);
-	if (!utf8_is_letter(ch) && ch != '#')
+	if (!map_is_correct(as) || (!utf8_is_letter(ch) && ch != '#'))
 	{
 		return SIZE_MAX;
 	}
@@ -84,7 +84,7 @@ static size_t map_get_hash(map *const as, const char *const key)
 
 static size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
 {
-	if (!utf8_is_letter(key[0]) && key[0] != '#')
+	if (!map_is_correct(as) || key == NULL || (!utf8_is_letter(key[0]) && key[0] != '#'))
 	{
 		return SIZE_MAX;
 	}
@@ -118,6 +118,11 @@ static size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
 
 static size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
+	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
+	{
+		return SIZE_MAX;
+	}
+
 	*last = uni_scan_char(io);
 	if (!utf8_is_letter(*last) && *last != '#')
 	{
@@ -334,93 +339,48 @@ map map_create(const size_t alloc)
 
 size_t map_reserve(map *const as, const char *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash(as, key), ITEM_MAX);
 }
 
 size_t map_reserve_by_utf8(map *const as, const char32_t *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash_by_utf8(as, key), ITEM_MAX);
 }
 
 size_t map_reserve_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
-	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash_by_io(as, io, last), ITEM_MAX);
 }
 
 
 size_t map_add(map *const as, const char *const key, const item_t value)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash(as, key), value);
 }
 
 size_t map_add_by_utf8(map *const as, const char32_t *const key, const item_t value)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash_by_utf8(as, key), value);
 }
 
 size_t map_add_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
 {
-	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_add_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
 
 size_t map_set(map *const as, const char *const key, const item_t value)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_set_by_hash(as, map_get_hash(as, key), value);
 }
 
 size_t map_set_by_utf8(map *const as, const char32_t *const key, const item_t value)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_set_by_hash(as, map_get_hash_by_utf8(as, key), value);
 }
 
 size_t map_set_by_io(map *const as, universal_io *const io, const item_t value, char32_t *const last)
 {
-	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_set_by_hash(as, map_get_hash_by_io(as, io, last), value);
 }
 
@@ -438,62 +398,32 @@ int map_set_by_index(map *const as, const size_t index, const item_t value)
 
 size_t map_get_index(map *const as, const char *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_get_index_by_hash(as, map_get_hash(as, key));
 }
 
 size_t map_get_index_by_utf8(map *const as, const char32_t *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_get_index_by_hash(as, map_get_hash_by_utf8(as, key));
 }
 
 size_t map_get_index_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
-	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
-	{
-		return SIZE_MAX;
-	}
-
 	return map_get_index_by_hash(as, map_get_hash_by_io(as, io, last));
 }
 
 
 item_t map_get(map *const as, const char *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return ITEM_MAX;
-	}
-
 	return map_get_by_hash(as, map_get_hash(as, key));
 }
 
 item_t map_get_by_utf8(map *const as, const char32_t *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
-	{
-		return ITEM_MAX;
-	}
-
 	return map_get_by_hash(as, map_get_hash_by_utf8(as, key));
 }
 
 item_t map_get_by_io(map *const as, universal_io *const io, char32_t *const last)
 {
-	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
-	{
-		return ITEM_MAX;
-	}
-
 	return map_get_by_hash(as, map_get_hash_by_io(as, io, last));
 }
 
