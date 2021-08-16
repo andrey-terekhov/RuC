@@ -79,15 +79,6 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static double to_double(const int64_t fst, const int64_t snd)
-{
-	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
-	double numdouble;
-	memcpy(&numdouble, &num, sizeof(double));
-
-	return numdouble;
-}
-
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -574,7 +565,7 @@ static void operand(information *const info, node *const nd)
 			}
 			else
 			{
-				const double num = to_double(node_get_arg(nd, 2), node_get_arg(nd, 3));
+				const double num = node_get_arg_double(nd, 2);
 
 				if (info->variable_location == LMEM)
 				{

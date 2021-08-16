@@ -34,16 +34,6 @@ typedef struct information
 } information;
 
 
-// TODO: это уже есть в llvmgen, объединить бы
-static double to_double(const int64_t fst, const int64_t snd)
-{
-	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
-	double numdouble;
-	memcpy(&numdouble, &num, sizeof(double));
-
-	return numdouble;
-}
-
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -116,7 +106,7 @@ static int node_recursive(information *const info, node *const nd)
 					}
 					else if (type_is_floating(node_get_arg(&child, 0)))
 					{
-						uni_printf(info->sx->io, "double %f%s", to_double(node_get_arg(&child, 2), node_get_arg(&child, 3))
+						uni_printf(info->sx->io, "double %f%s", node_get_arg_double(&child, 2)
 							, i < node_get_amount(nd) - 1 ? ", " : "], align 8\n");
 					}
 				}
