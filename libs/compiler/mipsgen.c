@@ -19,6 +19,20 @@
 #include "uniprinter.h"
 
 
+typedef enum REGISTERS
+{
+	ZERO,
+	AT,
+	V0,
+	V1,
+} register_t;
+
+typedef struct information
+{
+	syntax *sx;							/**< Структура syntax с таблицами */
+} information;
+
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -60,7 +74,10 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	}
 	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
-	precodegen(sx);
+	information info;
+	info.sx = sx;
+
+	precodegen(info.sx);
 	// const int ret = codegen(&info);
 	return 0;
 }
