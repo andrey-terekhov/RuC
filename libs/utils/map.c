@@ -411,7 +411,35 @@ int map_set_by_index(map *const as, const size_t index, const item_t value)
 }
 
 
-size_t map_get_index(map *const as, const char *const key);
+size_t map_get_index(map *const as, const char *const key)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return ITEM_MAX;
+	}
+	
+	size_t index = map_get_hash(as, key);
+	if (index == SIZE_MAX)
+	{
+		return SIZE_MAX;
+	}
+
+	while (as->values[index].next != SIZE_MAX)
+	{
+		if (map_cmp_key(as, index) == 0)
+		{
+			return index;
+		}
+		index = as->values[index].next;
+	}
+
+	if (as->values[index].ref == SIZE_MAX || map_cmp_key(as, index) != 0)
+	{
+		return SIZE_MAX;
+	}
+
+	return index;
+}
 
 size_t map_get_index_by_utf8(map *const as, const char32_t *const key);
 
