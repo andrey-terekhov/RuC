@@ -25,7 +25,7 @@ typedef struct information
 {
 	syntax *sx;										/**< Структура syntax с таблицами */
 
-	item_t string_num;								/**< Номер строки */
+	// item_t string_num;								/**< Номер строки */
 	item_t init_num;								/**< Счётчик для инициализации */
 	item_t was_printf;								/**< Флаг наличия printf в исходном коде */
 
@@ -159,7 +159,7 @@ int optimize_for_llvm(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
-	info.string_num = 1;
+	// info.string_num = 1;
 	info.init_num = 1;
 	info.was_printf = 0;
 
