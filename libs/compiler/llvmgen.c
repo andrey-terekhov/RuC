@@ -20,7 +20,6 @@
 #include "hash.h"
 #include "llvmopt.h"
 #include "operations.h"
-#include "syntax.h"
 #include "tree.h"
 #include "uniprinter.h"
 
@@ -1456,7 +1455,7 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
+				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%zi, i32 0, i32 0)"
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
