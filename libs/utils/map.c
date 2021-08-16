@@ -446,9 +446,25 @@ size_t map_get_index(map *const as, const char *const key)
 	return map_get_index_by_hash(as, map_get_hash(as, key));
 }
 
-size_t map_get_index_by_utf8(map *const as, const char32_t *const key);
+size_t map_get_index_by_utf8(map *const as, const char32_t *const key)
+{
+	if (!map_is_correct(as) || key == NULL)
+	{
+		return SIZE_MAX;
+	}
 
-size_t map_get_index_by_io(map *const as, universal_io *const io, char32_t *const last);
+	return map_get_index_by_hash(as, map_get_hash_by_utf8(as, key));
+}
+
+size_t map_get_index_by_io(map *const as, universal_io *const io, char32_t *const last)
+{
+	if (!map_is_correct(as) || !in_is_correct(io) || last == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	return map_get_index_by_hash(as, map_get_hash_by_io(as, io, last));
+}
 
 
 item_t map_get(map *const as, const char *const key)
