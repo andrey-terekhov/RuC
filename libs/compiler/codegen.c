@@ -345,12 +345,6 @@ static void expression(virtual *const vm, node *const nd, const bool is_in_condi
 
 		switch (operation)
 		{
-			case OP_FREAD:
-			{
-				system_error(node_unexpected, operation);
-				vm->was_error = true;
-			}
-			break;
 			case OP_IDENT:
 				break;
 			case OP_IDENT_TO_ADDR:
@@ -1198,10 +1192,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			emit_return_statement(vm, nd);
 			break;
 
-		case OP_CREATE_DIRECT:
-			emit_thread(vm, nd);
-			break;
-
 		case OP_PRINTID:
 			emit_printid_statement(vm, nd);
 			break;
@@ -1215,7 +1205,6 @@ static void emit_statement(virtual *const vm, const node *const nd)
 			break;
 
 		case OP_BLOCK_END:
-		case OP_EXIT_DIRECT:
 			// Пока что это чтобы не менять дерево
 			// Но на самом деле такие узлы не нужны, так как реализация дерева знает количество потомков
 			break;
