@@ -1459,7 +1459,7 @@ static void statement(information *const info, node *const nd)
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
-				, index);
+				, 1);
 
 			info->register_num++;
 
