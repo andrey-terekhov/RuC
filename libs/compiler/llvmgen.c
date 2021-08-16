@@ -20,6 +20,7 @@
 #include "hash.h"
 #include "llvmopt.h"
 #include "operations.h"
+#include "syntax.h"
 #include "tree.h"
 #include "uniprinter.h"
 
