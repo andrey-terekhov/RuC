@@ -141,13 +141,26 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 
 size_t hash_get_index(const hash *const hs, const item_t key)
 {
-	const item_t index = vector_get(hs, get_index(hs, key));
-	if (index == 0 || index == ITEM_MAX)
+	if (!hash_is_correct(hs))
 	{
 		return SIZE_MAX;
 	}
 
-	return (size_t)index;
+	size_t index = get_hash(key);
+	item_t next = vector_get(hs, index);
+
+	while (next != ITEM_MAX && next != 0)
+	{
+		if (vector_get(hs, (size_t)next + 1) == key)
+		{
+			return next;
+		}
+
+		index = (size_t)next;
+		next = vector_get(hs, index);
+	}
+
+	return SIZE_MAX;
 }
 
 size_t hash_get_amount(const hash *const hs, const item_t key)
