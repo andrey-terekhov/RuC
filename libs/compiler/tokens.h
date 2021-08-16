@@ -117,9 +117,6 @@ typedef enum TOKEN
 	TK_GETID,						/**< 'getid'	keyword */
 	TK_ABS,							/**< 'abs'		keyword */
 	TK_UPB,							/**< 'upb'		keyword */
-	TK_FREAD,						/**< 'fread'	keyword */
-	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
-	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
 
 	END_TK_FUNC,
 } token_t;
