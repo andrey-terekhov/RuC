@@ -706,6 +706,19 @@ inline location expression_get_location(const node *const nd)
 	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
 
+
+/**
+ *	Get amount of strings
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	Amount of strings
+ */
+size_t strings_amount(const syntax *const sx)
+{
+	return strings_size(&sx->string_literals);
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
