@@ -64,31 +64,6 @@ static int node_recursive(information *const info, node *const nd)
 
 		switch (node_get_type(&child))
 		{
-			case OP_STRING:
-			{
-				const size_t index = (size_t)node_get_arg(&child, 2);
-				const char *string = string_get(info->sx, index);
-				size_t length = 0;
-				for (length = 0; *(string + length) != 0; length++)
-					;
-				uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
-					, info->string_num++, length + 1);
-
-				for (size_t j = 0; j < length; j++)
-				{
-					const char ch = *(string + j);
-					if (ch == '\n')
-					{
-						uni_printf(info->sx->io, "\\0A");
-					}
-					else
-					{
-						uni_printf(info->sx->io, "%c", ch);
-					}
-				}
-				uni_printf(info->sx->io, "\\00\", align 1\n");
-			}
-			break;
 			case OP_PRINTF:
 				info->was_printf = 1;
 				break;

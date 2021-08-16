@@ -47,7 +47,6 @@ typedef struct information
 {
 	syntax *sx;							/**< Структура syntax с таблицами */
 
-	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
 	item_t init_num;					/**< Счётчик для инициализации */
@@ -1460,10 +1459,9 @@ static void statement(information *const info, node *const nd)
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
-				, info->string_num);
+				, index);
 
 			info->register_num++;
-			info->string_num++;
 
 			for (item_t i = 0; i < N; i++)
 			{
@@ -1711,6 +1709,35 @@ static void structs_declaration(information *const info)
 	uni_printf(info->sx->io, " \n");
 }
 
+static void strings_declaration(information *const info)
+{
+	const size_t strings_number = strings_amount(info->sx);
+	for (size_t index = 0; index < strings_number; index++)
+	{
+		const char *string = string_get(info->sx, index);
+		size_t length = 0;
+		for (length = 0; *(string + length) != 0; length++)
+			;
+		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
+			, index, length + 1);
+
+		for (size_t j = 0; j < length; j++)
+		{
+			const char ch = *(string + j);
+			if (ch == '\n')
+			{
+				uni_printf(info->sx->io, "\\0A");
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c", ch);
+			}
+		}
+		uni_printf(info->sx->io, "\\00\", align 1\n");
+	}
+	uni_printf(info->sx->io, " \n");
+}
+
 
 /*
  *	 __	 __   __	 ______   ______	 ______	 ______   ______	 ______	 ______
@@ -1730,7 +1757,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
-	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
@@ -1742,6 +1768,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
 	structs_declaration(&info);
+	strings_declaration(&info);
 
 	const int ret = codegen(&info);
 
