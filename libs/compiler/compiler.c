@@ -193,7 +193,9 @@ int auto_compile_to_vm(const int argc, const char *const *const argv)
 int auto_compile_to_llvm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return compile_to_llvm(&ws);
+	const int ret = compile_to_llvm(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 
@@ -227,5 +229,7 @@ int no_macro_compile_to_llvm(const char *const path)
 	ws_set_output(&ws, DEFAULT_LLVM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	return compile_from_io(&ws, &io, &encode_to_llvm);
+	const int ret = compile_from_io(&ws, &io, &encode_to_llvm);
+	ws_clear(&ws);
+	return ret;
 }
