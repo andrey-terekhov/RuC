@@ -45,14 +45,14 @@ EXPORTED int compile(workspace *const ws);
  */
 EXPORTED int compile_to_vm(workspace *const ws);
 
-/**
- *	Compile LLVM code from workspace
- *
- *	@param	ws		Compiler workspace
- *
- *	@return	Status code
- */
-EXPORTED int compile_to_llvm(workspace *const ws);
+// /**
+//  *	Compile LLVM code from workspace
+//  *
+//  *	@param	ws		Compiler workspace
+//  *
+//  *	@return	Status code
+//  */
+// EXPORTED int compile_to_llvm(workspace *const ws);
 
 
 /**
@@ -75,15 +75,15 @@ EXPORTED int auto_compile(const int argc, const char *const *const argv);
  */
 EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
 
-/**
- *	Compile LLVM code from terminal arguments
- *
- *	@param	argc	Number of command line arguments
- *	@param	argv	Command line arguments
- *
- *	@return	Status code
- */
-EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv);
+// /**
+//  *	Compile LLVM code from terminal arguments
+//  *
+//  *	@param	argc	Number of command line arguments
+//  *	@param	argv	Command line arguments
+//  *
+//  *	@return	Status code
+//  */
+// EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv);
 
 
 /**
@@ -95,14 +95,14 @@ EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv)
  */
 EXPORTED int no_macro_compile_to_vm(const char *const path);
 
-/**
- *	Compile LLVM code with no macro
- *
- *	@param	path	File path
- *
- *	@return	Status code
- */
-EXPORTED int no_macro_compile_to_llvm(const char *const path);
+// /**
+//  *	Compile LLVM code with no macro
+//  *
+//  *	@param	path	File path
+//  *
+//  *	@return	Status code
+//  */
+// EXPORTED int no_macro_compile_to_llvm(const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */
