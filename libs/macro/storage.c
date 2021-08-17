@@ -186,7 +186,7 @@ size_t storage_search(storage *const stg, universal_io *const io, char32_t *cons
 	const size_t index = map_get_index_by_io(&stg->as, io, last);
 	const item_t value = map_get_by_index(&stg->as, index);
 	
-	return kw_is_correct(value) ? value : hash_get_index(&stg->hs, index);
+	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
 }
 
 const char *storage_last_read(const storage *const stg)
