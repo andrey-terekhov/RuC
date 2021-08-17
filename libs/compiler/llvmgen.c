@@ -708,7 +708,7 @@ static void operand(information *const info, node *const nd)
 				}
 			}
 
-			if (func_type != TYPE_VOID)
+			if (!type_is_void(func_type))
 			{
 				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
 				info->answer_type = AREG;
