@@ -79,7 +79,11 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
 	return index;
 }
 
-size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
+size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg)
+{
+	return storage_add_arg_by_index(stg, storage_get_index(stg, id), index, arg);
+}
+
 int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg);
 
 
