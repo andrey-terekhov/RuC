@@ -709,7 +709,7 @@ static void operand(information *const info, node *const nd)
 
 static void assignment_expression(information *const info, node *const nd)
 {
-	const item_t assignment_type = node_get_arg(nd, 2);
+	const binary_t assignment_type = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0, memory_reg = 0;
 	int is_array;
@@ -778,7 +778,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 static void integral_expression(information *const info, node *const nd, const answer_t type)
 {
-	const item_t operation = node_get_arg(nd, 2);
+	const binary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	node_set_next(nd);
 
@@ -881,6 +881,8 @@ static void integral_expression(information *const info, node *const nd, const a
 			case BIN_GE:
 				info->answer_const = left_const >= right_const;
 				break;
+			default:
+				break;
 		}
 		return;
 	}
@@ -921,6 +923,8 @@ static void integral_expression(information *const info, node *const nd, const a
 			case BIN_GE:
 				info->answer_const = left_const_double >= right_const_double;
 				break;
+			default:
+				break;
 		}
 		return;
 	}
@@ -932,7 +936,7 @@ static void integral_expression(information *const info, node *const nd, const a
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
 static void inc_dec_expression(information *const info, node *const nd)
 {
-	const item_t operation = node_get_arg(nd, 2);
+	const unary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0, memory_reg = 0;
 	int is_array;
@@ -977,6 +981,8 @@ static void inc_dec_expression(information *const info, node *const nd)
 			}
 		}
 		break;
+		default:
+			break;
 	}
 
 	to_code_store_reg(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
@@ -996,7 +1002,7 @@ static void unary_operation(information *const info, node *const nd)
 		case UN_MINUS:
 		case UN_NOT:
 		{
-			const item_t operation = node_get_arg(nd, 2);
+			const unary_t operation = node_get_arg(nd, 2);
 			const item_t operation_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
