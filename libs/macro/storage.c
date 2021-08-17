@@ -51,7 +51,7 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char32_t 
 	}
 
 	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	const size_t index = hash_add(&stg->hs, key, 1);
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
 	if (index == SIZE_MAX)
 	{
 		return SIZE_MAX;
@@ -69,7 +69,7 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
 	}
 
 	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	const size_t index = hash_add(&stg->hs, key, 1 + args);
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1 + args);
 	if (index == SIZE_MAX)
 	{
 		return SIZE_MAX;
@@ -94,6 +94,8 @@ size_t storage_get_index(const storage *const stg, const char32_t *const id)
 		return SIZE_MAX;
 	}
 
+	const size_t key = map_get_index_by_utf8(&stg->as, id);
+	return key != SIZE_MAX ? hash_get_index(&stg->hs, (item_t)key) : SIZE_MAX;
 }
 
 const char *storage_get(const storage *const stg, const char32_t *const id);
