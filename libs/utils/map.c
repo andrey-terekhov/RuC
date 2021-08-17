@@ -50,7 +50,7 @@ static int map_add_key_symbol(map *const as, const char32_t ch)
 
 static size_t map_get_hash(map *const as, const char *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
+	if (!map_is_correct(as) || key == NULL || key[0] == '\0')
 	{
 		return SIZE_MAX;
 	}
@@ -80,7 +80,7 @@ static size_t map_get_hash(map *const as, const char *const key)
 
 static size_t map_get_hash_by_utf8(map *const as, const char32_t *const key)
 {
-	if (!map_is_correct(as) || key == NULL)
+	if (!map_is_correct(as) || key == NULL || key[0] == '\0')
 	{
 		return SIZE_MAX;
 	}
@@ -108,13 +108,14 @@ static size_t map_get_hash_by_io(map *const as, universal_io *const io, char32_t
 		return SIZE_MAX;
 	}
 
+	as->keys_next = as->keys_size;
+
 	*last = uni_scan_char(io);
 	if (!utf8_is_letter(*last) && *last != '#')
 	{
 		return SIZE_MAX;
 	}
 
-	as->keys_next = as->keys_size;
 	if (map_add_key_symbol(as, *last))
 	{
 		return SIZE_MAX;
@@ -400,7 +401,7 @@ const char *map_to_string(const map *const as, const size_t index)
 
 const char *map_last_read(const map *const as)
 {
-	return map_is_correct(as) ? &as->keys[as->keys_size] : NULL;
+	return map_is_correct(as) && as->keys_size < as->keys_next ? &as->keys[as->keys_size] : NULL;
 }
 
 bool map_is_correct(const map *const as)
