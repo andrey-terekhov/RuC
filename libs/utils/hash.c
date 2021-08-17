@@ -139,51 +139,46 @@ size_t hash_get_index(const hash *const hs, const item_t key)
 
 size_t hash_get_amount(const hash *const hs, const item_t key)
 {
-	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX ? hash_get_amount_by_index(hs, index) : SIZE_MAX;
+	return hash_get_amount_by_index(hs, hash_get_index(hs, key));
 }
 
 
 item_t hash_get(const hash *const hs, const item_t key, const size_t num)
 {
-	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX ? hash_get_by_index(hs, index, num) : ITEM_MAX;
+	return hash_get_by_index(hs, hash_get_index(hs, key), num);
 }
 
 double hash_get_double(const hash *const hs, const item_t key, const size_t num)
 {
-	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX ? hash_get_double_by_index(hs, index, num) : DBL_MAX;
+	return hash_get_double_by_index(hs, hash_get_index(hs, key), num);
 }
 
 int64_t hash_get_int64(const hash *const hs, const item_t key, const size_t num)
 {
-	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX ? hash_get_int64_by_index(hs, index, num) : LLONG_MAX;
+	return hash_get_int64_by_index(hs, hash_get_index(hs, key), num);
 }
 
 
 size_t hash_set(hash *const hs, const item_t key, const size_t num, const item_t value)
 {
 	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX && hash_set_by_index(hs, index, num, value) == 0 ? index : SIZE_MAX;
+	return hash_set_by_index(hs, hash_get_index(hs, key), num, value) == 0 ? index : SIZE_MAX;
 }
 
 size_t hash_set_double(hash *const hs, const item_t key, const size_t num, const double value)
 {
 	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX && hash_set_double_by_index(hs, index, num, value) != DBL_MAX ? index : SIZE_MAX;
+	return hash_set_double_by_index(hs, hash_get_index(hs, key), num, value) != DBL_MAX ? index : SIZE_MAX;
 }
 
 size_t hash_set_int64(hash *const hs, const item_t key, const size_t num, const int64_t value)
 {
 	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX && hash_set_int64_by_index(hs, index, num, value) != LLONG_MAX ? index : SIZE_MAX;
+	return hash_set_int64_by_index(hs, hash_get_index(hs, key), num, value) != LLONG_MAX ? index : SIZE_MAX;
 }
 
 
 int hash_remove(hash *const hs, const item_t key)
 {
-	const size_t index = hash_get_index(hs, key);
-	return index != SIZE_MAX ? hash_remove_by_index(hs, index) : -1;
+	return hash_remove_by_index(hs, hash_get_index(hs, key));
 }

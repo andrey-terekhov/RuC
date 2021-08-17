@@ -169,7 +169,7 @@ inline item_t hash_get_key(const hash *const hs, const size_t index)
 inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
 {
 	const item_t amount = vector_get(hs, index + 2);
-	return amount != ITEM_MAX ? (size_t)amount : 0;
+	return index != SIZE_MAX && amount != ITEM_MAX ? (size_t)amount : 0;
 }
 
 
@@ -282,7 +282,7 @@ EXPORTED int hash_remove(hash *const hs, const item_t key);
  */
 inline int hash_remove_by_index(hash *const hs, const size_t index)
 {
-	return vector_set(hs, index + 1, ITEM_MAX);
+	return index != SIZE_MAX ? vector_set(hs, index + 1, ITEM_MAX) : -1;
 }
 
 
