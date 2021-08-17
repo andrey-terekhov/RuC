@@ -20,6 +20,8 @@
 
 #include "compiler.h"
 #include "workspace.h"
+#include "map.h"
+#include "uniio.h"
 
 
 const char *name = "../tests/executable/structures/SELECT_9459.c";
@@ -28,6 +30,22 @@ const char *name = "../tests/executable/structures/SELECT_9459.c";
 
 int main(int argc, const char *argv[])
 {
+	universal_io io = io_create();
+	in_set_file(&io, "hui.txt");
+
+	map as = map_create(0);
+
+	char32_t str;
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		map_get_by_io(&as, &io, &str);
+		map_get(&as, "");
+		printf("read: \"%s\"\n", map_last_read(&as));
+		printf("last: \"%c\"\n", str);
+	}
+
+
 	workspace ws = ws_parse_args(argc, argv);
 
 	if (argc < 2)
