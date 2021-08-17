@@ -176,7 +176,18 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 }
 
 
-size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last);
+size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last)
+{
+	if (!storage_is_correct(stg))
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t index = map_get_index_by_io(&stg->as, io, last);
+	const item_t value = map_get_by_index(&stg->as, index);
+	
+	return kw_is_correct(value) ? value : hash_get_index(&stg->hs, index);
+}
 
 const char *storage_last_read(const storage *const stg)
 {
