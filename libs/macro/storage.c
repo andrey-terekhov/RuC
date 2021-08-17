@@ -176,6 +176,10 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 }
 
 
+size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last);
+
+const char *storage_last_read(const storage *const stg);
+
 bool storage_is_correct(const storage *const stg)
 {
 	return stg != NULL;

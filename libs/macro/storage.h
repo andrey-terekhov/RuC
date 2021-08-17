@@ -227,6 +227,26 @@ int storage_remove_by_index(storage *const stg, const size_t id);
 
 
 /**
+ *	Get index of record by reading macro from io
+ *
+ *	@param	as			Macro storage
+ *	@param	io			Universal io structure
+ *	@param	last		Next character after macro
+ *
+ *	@return	Index of record or keyword, @c SIZE_MAX on failure
+ */
+size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last);
+
+/**
+ *	Return the last read macro
+ *
+ *	@param	as			Macro storage
+ *
+ *	@return	Macro, @c NULL on failure
+ */
+const char *storage_last_read(const storage *const stg);
+
+/**
  *	Check that macro storage is correct
  *
  *	@param	stg			Macro storage
