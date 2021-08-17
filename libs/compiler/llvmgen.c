@@ -1399,7 +1399,7 @@ static void statement(information *const info, node *const nd)
 			const size_t index = (size_t)node_get_arg(nd, 2);
 			const char *string = string_get(info->sx, index);
 			item_t string_length = 0;
-			for (string_length = 0; *(string + string_length) != 0; string_length++)
+			for (string_length = 0; string[string_length] != 0; string_length++)
 				;
 			node_set_next(nd); // OP_STRING
 
