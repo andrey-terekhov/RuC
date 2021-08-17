@@ -182,8 +182,8 @@ size_t strings_get_length(const strings *const vec, const size_t index)
 	}
 
 	return index == vec->indexes_size - 1
-		? vec->all_strings_size - vec->indexes[index]
-		: vec->indexes[index + 1] - vec->indexes[index];
+		? vec->all_strings_size - vec->indexes[index] - 1
+		: vec->indexes[index + 1] - vec->indexes[index] - 1;
 }
 
 
@@ -194,7 +194,8 @@ const char *strings_remove(strings *const vec)
 		return NULL;
 	}
 
-	return &vec->all_strings[vec->indexes[--vec->indexes_size]];
+	vec->all_strings_size = vec->indexes[--vec->indexes_size];
+	return &vec->all_strings[vec->all_strings_size];
 }
 
 
