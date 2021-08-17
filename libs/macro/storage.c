@@ -155,7 +155,25 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
 }
 
 
-int storage_remove_by_index(storage *const stg, const size_t id);
+int storage_remove_by_index(storage *const stg, const size_t id)
+{
+	if (!storage_is_correct(stg))
+	{
+		return 0;
+	}
+
+	item_t size = (item_t)strings_size(&stg->vec);
+	for (size_t i = hash_get_amount_by_index(&stg->hs, id); i > 0; i--)
+	{
+		if (hash_get_by_index(&stg->hs, id, i - 1) == size - 1)
+		{
+			strings_remove(&stg->vec);
+			size--;
+		}
+	}
+
+	return hash_remove_by_index(&stg->hs, id);
+}
 
 
 bool storage_is_correct(const storage *const stg)
