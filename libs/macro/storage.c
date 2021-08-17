@@ -21,13 +21,13 @@
 static const size_t MAX_MACRO = 256;
 
 
-extern size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
-
-extern size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
-
 extern const char *storage_get(storage *const stg, const char32_t *const id);
 extern size_t storage_get_amount(storage *const stg, const char32_t *const id);
 extern const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
+
+extern size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
+
+extern size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
 
 extern int storage_remove(storage *const stg, const char32_t *const id);
 
@@ -86,37 +86,6 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
 	return index;
 }
 
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg)
-{
-	return id != SIZE_MAX && storage_is_correct(stg) && arg != NULL
-		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add_by_utf8(&stg->vec, arg))
-		: -1;
-}
-
-
-size_t storage_set_by_index(storage *const stg, const size_t id, const char32_t *value)
-{
-	if (!storage_is_correct(stg))
-	{
-		return SIZE_MAX;
-	}
-
-	const item_t key = hash_get_key(&stg->hs, id);
-	if (storage_remove_by_index(stg, id))
-	{
-		return SIZE_MAX;
-	}
-
-	if (value == NULL)
-	{
-		return hash_add(&stg->hs, (item_t)key, 0);
-	}
-
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
-	return index;
-}
-
 
 size_t storage_get_index(storage *const stg, const char32_t *const id)
 {
@@ -152,6 +121,38 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
 	return storage_is_correct(stg)
 		? strings_get(&stg->vec, (size_t)hash_get_by_index(&stg->hs, id, 1 + index))
 		: NULL;
+}
+
+
+int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg)
+{
+	return id != SIZE_MAX && storage_is_correct(stg) && arg != NULL
+		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add_by_utf8(&stg->vec, arg))
+		: -1;
+}
+
+
+size_t storage_set_by_index(storage *const stg, const size_t id, const char32_t *value)
+{
+	if (!storage_is_correct(stg))
+	{
+		return SIZE_MAX;
+	}
+
+	const item_t key = hash_get_key(&stg->hs, id);
+	if (storage_remove_by_index(stg, id))
+	{
+		return SIZE_MAX;
+	}
+
+	if (value == NULL)
+	{
+		return hash_add(&stg->hs, (item_t)key, 0);
+	}
+
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
+	return index;
 }
 
 
