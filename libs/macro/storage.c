@@ -62,9 +62,13 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char32_t 
 	}
 
 	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	if (value == NULL)
+	{
+		return hash_add(&stg->hs, (item_t)key, 0);
+	}
 
-	hash_set_by_index(&stg->hs, index, 0, value != NULL ? (item_t)strings_add_by_utf8(&stg->vec, value) : ITEM_MAX);
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
 	return index;
 }
 
@@ -103,8 +107,13 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char32_t 
 		return SIZE_MAX;
 	}
 
-	const size_t index = hash_add(&stg->hs, key, 1);
-	hash_set_by_index(&stg->hs, index, 0, value != NULL ? (item_t)strings_add_by_utf8(&stg->vec, value) : ITEM_MAX);
+	if (value == NULL)
+	{
+		return hash_add(&stg->hs, (item_t)key, 0);
+	}
+
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
 	return index;
 }
 
