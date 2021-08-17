@@ -1456,8 +1456,8 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 		const item_t type = array_get_type(info, elem_type);
 		to_code_alloc_array_static(info, index, type);
-		// to_code_init_array(info, index, type);
 
+		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
 		{
