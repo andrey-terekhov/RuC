@@ -15,6 +15,7 @@
  */
 
 #include "storage.h"
+#include <assert.h>
 #include "keywords.h"
 
 
@@ -43,6 +44,8 @@ extern int storage_remove(storage *const stg, const char32_t *const id);
 
 storage storage_create()
 {
+	static_assert(END_KEYWORD < MAX_HASH, "Keyword constants should be less than MAX_HASH");
+
 	storage stg;
 
 	stg.as = map_create(MAX_MACRO);
