@@ -81,11 +81,9 @@ static void block(information *const info, node *const nd);
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
-	int stop_flag = 0;
-	while (!type_is_floating(type) && !type_is_integer(type) && stop_flag < 10)
+	while (type_is_array(info->sx, type))
 	{
 		type = type_get(info->sx, (size_t)type + 1);
-		stop_flag++;
 	}
 
 	return type;
