@@ -95,7 +95,7 @@ EXPORTED const char *strings_get(const strings *const vec, const size_t index);
  *	@param	vec				Strings vector
  *	@param	index			Index
  *
- *	@return	String length, @c SIZE_MAX on failure
+ *	@return	String length, @c 0 on failure
  */
 EXPORTED size_t strings_get_length(const strings *const vec, const size_t index);
 

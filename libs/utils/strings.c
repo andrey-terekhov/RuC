@@ -178,7 +178,7 @@ size_t strings_get_length(const strings *const vec, const size_t index)
 {
 	if (!strings_is_correct(vec) || index >= vec->indexes_size)
 	{
-		return SIZE_MAX;
+		return 0;
 	}
 
 	return index == vec->indexes_size - 1
