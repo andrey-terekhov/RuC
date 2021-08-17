@@ -18,7 +18,6 @@
 #include <string.h>
 #include "errors.h"
 #include "hash.h"
-#include "llvmopt.h"
 #include "operations.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -71,6 +70,7 @@ typedef struct information
 												@с key		 - смещение массива
 												@c value[0]	 - флаг статичности
 												@c value[1..MAX] - границы массива */
+	int was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
 } information;
@@ -419,49 +419,6 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	}
 
 	info->register_num++;
-}
-
-static void to_code_init_array(information *const info, const size_t index, const item_t type)
-{
-	uni_printf(info->sx->io, " %%.%" PRIitem " = bitcast ", info->register_num);
-	info->register_num++;
-
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
-	{
-		return;
-	}
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
-
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "]");
-	}
-	uni_printf(info->sx->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
-
-	uni_printf(info->sx->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
-
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->sx->io, "]");
-	}
-	
-	uni_printf(info->sx->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
-		, info->init_num
-		, (type_is_floating(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
-		, type_is_floating(type) ? 8 : 4);
-
-	info->init_num++;
-	info->was_memcpy = 1;
 }
 
 static void to_code_try_widen(information *const info, const item_t operation_type)
@@ -1471,6 +1428,7 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, ")\n");
+			info->was_printf = 1;
 		}
 		break;
 		default:
@@ -1491,13 +1449,25 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 		const item_t type = array_get_type(info, elem_type);
 		to_code_alloc_array_static(info, index, type);
-		to_code_init_array(info, index, type);
+		// to_code_init_array(info, index, type);
 
 		node_set_next(nd);
 		for (item_t i = 0; i < N; i++)
 		{
 			info->variable_location = LFREE;
 			expression(info, nd);
+			const int value_int = info->answer_const;
+			info->answer_const = i;
+			to_code_slice(info, displ, 0, 0, type);
+
+			if (type_is_integer(type))
+			{
+				to_code_store_const_i32(info, value_int, info->register_num - 1, 1);
+			}
+			else
+			{
+				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, 1);
+			}
 		}
 	}
 	else
@@ -1677,6 +1647,10 @@ static int codegen(information *const info)
 						uni_printf(info->sx->io, "declare void @llvm.memcpy.p0i8.p0i8.i32"
 						"(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 					}
+					if (info->was_printf)
+					{
+						uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
+					}
 
 					return 0;
 				}
@@ -1685,6 +1659,27 @@ static int codegen(information *const info)
 	}
 
 	return 0;
+}
+
+static void architecture(const workspace *const ws, syntax *const sx)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+
+		if (flag == NULL || strcmp(flag, "--x86_64") == 0)
+		{
+			uni_printf(sx->io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
+			uni_printf(sx->io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
+			return;
+		}
+		else if (strcmp(flag, "--mipsel") == 0)
+		{
+			uni_printf(sx->io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
+			uni_printf(sx->io, "target triple = \"mipsel\"\n\n");
+			return;
+		}
+	}
 }
 
 static void structs_declaration(information *const info)
@@ -1750,7 +1745,7 @@ static void strings_declaration(information *const info)
 
 int encode_to_llvm(const workspace *const ws, syntax *const sx)
 {
-	if (optimize_for_llvm(ws, sx))
+	if (!ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}
@@ -1763,10 +1758,13 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
+	info.was_printf = 0;
+	info.was_dynamic = 0;
 	info.was_memcpy = 0;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
+	architecture(ws, sx);
 	structs_declaration(&info);
 	strings_declaration(&info);
 
