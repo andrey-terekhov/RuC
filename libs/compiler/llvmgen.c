@@ -711,7 +711,8 @@ static void assignment_expression(information *const info, node *const nd)
 {
 	const binary_t assignment_type = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
-	item_t displ = 0, memory_reg = 0;
+	item_t displ = 0;
+	item_t memory_reg = 0;
 	int is_array;
 
 	node_set_next(nd);
