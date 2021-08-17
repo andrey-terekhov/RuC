@@ -83,7 +83,7 @@ static item_t array_get_type(information *const info, const item_t array_type)
 	item_t type = array_type;
 	while (type_is_array(info->sx, type))
 	{
-		type = type_get(info->sx, (size_t)type + 1);
+		type = type_array_get_element_type(info->sx, type);
 	}
 
 	return type;
