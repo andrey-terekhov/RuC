@@ -462,6 +462,13 @@ static void parse_constant(parser *const prs)
 	operands_push(prs, NUMBER, type);
 }
 
+static void parse_constant_in_enum(parser *const prs, const token_t num)
+{
+	to_tree(prs, OP_CONST);
+	node_add_arg(&prs->nd, num);
+	operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
+}
+
 /**
  *	Parse primary expression [C99 6.5.1]
  *
@@ -1274,10 +1281,13 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const item_t right_mode = stack_pop(&prs->anonymous);
 		const item_t left_mode = stack_pop(&prs->anonymous);
 		item_t result_mode = right_mode;
-
 		if (is_int_assignment_operator(token) && (type_is_floating(left_mode) || type_is_floating(right_mode)))
 		{
 			parser_error(prs, int_op_for_float);
+		}
+		else if (left_mode == TYPE_CONST_INTEGER)
+		{
+			parser_error(prs, eq_op_for_enum_field);
 		}
 		else if (type_is_array(prs->sx, left_mode))
 		{
@@ -1406,6 +1416,20 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
 	node_copy(&prs->nd, parent);
 	parse_assignment_expression_internal(prs);
+	to_value(prs);
+	to_tree(prs, OP_EXPR_END);
+	return stack_pop(&prs->anonymous);
+}
+
+item_t parse_enum_field_assignment_expression(parser *const prs, node *const parent, const item_t num)
+{
+	node_copy(&prs->nd, parent);
+	parse_constant_in_enum(prs, num);
+
+	const operand_t type = prs->last_type;
+	prs->left_mode = stack_pop(&prs->anonymous);
+	operands_push(prs, type, prs->left_mode);
+
 	to_value(prs);
 	to_tree(prs, OP_EXPR_END);
 	return stack_pop(&prs->anonymous);

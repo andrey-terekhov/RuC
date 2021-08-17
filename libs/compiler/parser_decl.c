@@ -20,7 +20,12 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static void parse_enum_specifier(parser *const prs, node *const parent);
+static item_t parse_enum_declaration_list(parser *const prs, node *const parent);
 static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
+static void parse_init_declarator(parser *const prs, node *const parent, item_t type);
+static void parse_init_enum_field_declarator(parser *const prs, node *const parent, item_t type, item_t number);
+static void parse_enum_field_initializer(parser *const prs, node *const parent, const item_t type, const item_t num);
 
 
 /**
@@ -88,6 +93,13 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_STRUCT:
 			token_consume(prs);
 			return parse_struct_or_union_specifier(prs, parent);
+
+		case TK_ENUM:
+		{
+			token_consume(prs);
+			parse_enum_specifier(prs, parent);
+			return TYPE_INTEGER;
+		}
 
 		case TK_TYPEDEF:
 		{
@@ -194,6 +206,45 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 		default:
 			parser_error(prs, wrong_struct);
 			return TYPE_UNDEFINED;
+	}
+}
+
+static void parse_enum_specifier(parser *const prs, node *const parent)
+{
+	switch (prs->token)
+	{
+		case TK_L_BRACE:
+		{
+			parse_enum_declaration_list(prs, parent);
+			prs->was_type_def = true;
+		}
+		break;
+		case TK_IDENTIFIER:
+		{
+			const size_t repr = prs->lxr->repr;
+			token_consume(prs);
+
+			if (prs->token == TK_L_BRACE)
+			{
+				const item_t type = parse_enum_declaration_list(prs, parent);
+				const size_t id = to_identab(prs, repr, 1000, type);
+				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
+				prs->was_type_def = true;
+			}
+			else // if (parser->next_token != l_brace)
+			{
+				const item_t id = repr_get_reference(prs->sx, repr);
+
+				if (id == ITEM_MAX)
+				{
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+				}
+			}
+		}
+		break;
+
+		default:
+			parser_error(prs, wrong_struct);
 	}
 }
 
@@ -373,6 +424,52 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[2] = (item_t)fields * 2;
 
 	return type_add(prs->sx, local_modetab, local_md);
+}
+
+static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
+{
+	token_consume(prs);
+	if (token_try_consume(prs, TK_R_BRACE))
+	{
+		parser_error(prs, empty_struct);
+		return TYPE_UNDEFINED;
+	}
+
+	item_t local_modetab[100];
+	item_t field_value = 0;
+	item_t type = TYPE_CONST_INTEGER;
+
+	do
+	{
+
+		if (!token_try_consume(prs, TK_IDENTIFIER))
+		{
+			parser_error(prs, wait_ident_after_semicolon_in_struct);
+			token_skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+		}
+
+		if (prs->token == TK_EQUAL)
+		{
+			parse_init_declarator(prs, parent, type);
+			field_value = prs->lxr->num + 1;
+		}
+		else
+		{
+			parse_init_enum_field_declarator(prs, parent, type, field_value++);
+		}
+		if (prs->token == TK_R_BRACE)
+		{
+			continue;
+		}
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
+	} while (!token_try_consume(prs, TK_R_BRACE));
+
+
+	local_modetab[0] = TYPE_ENUM;
+	local_modetab[1] = 0;
+	local_modetab[2] = 0;
+
+	return type_add(prs->sx, local_modetab, 3);
 }
 
 /**
@@ -556,6 +653,26 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			parse_initializer(prs, &nd, type);
 		}
 	}
+}
+
+static void parse_init_enum_field_declarator(parser *const prs, node *const parent, item_t type, item_t number)
+{
+	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
+
+	prs->flag_empty_bounds = 1;
+	prs->array_dimensions = 0;
+	const item_t element_type = type;
+
+	node nd = node_add_child(parent, OP_DECL_ID);
+	node_add_arg(&nd, ident_get_displ(prs->sx, old_id));
+	node_add_arg(&nd, element_type);
+	node_add_arg(&nd,  (item_t)type_size(prs->sx, type));
+	node_add_arg(&nd, 0);
+	node_add_arg(&nd, type_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
+	node_add_arg(&nd, prs->flag_empty_bounds);
+	node_add_arg(&nd, 0);	// Признак того, что массив не в структуре
+
+	parse_enum_field_initializer(prs, &nd, type, number);
 }
 
 /**
@@ -942,6 +1059,12 @@ void parse_declaration_external(parser *const prs, node *const root)
 	}
 }
 
+static bool check_int_initializer(const item_t type, const item_t expr_type)
+{
+	return (type == TYPE_CONST_INTEGER || type == TYPE_INTEGER)  &&
+		   (expr_type == TYPE_CONST_INTEGER || expr_type == TYPE_INTEGER);
+}
+
 void parse_initializer(parser *const prs, node *const parent, const item_t type)
 {
 	if (prs->token != TK_L_BRACE)
@@ -957,7 +1080,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			{
 				parse_insert_widen(prs);
 			}
-			else if (type != expr_type)
+			else if (!check_int_initializer(type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}
@@ -968,6 +1091,26 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 		parse_braced_initializer(prs, parent, type);
 		// Инициализатор вызывается только для деклараций и аргументов, всегда нужен expr_end
 		node_add_child(&prs->nd, OP_EXPR_END);
+	}
+}
+
+static void parse_enum_field_initializer(parser *const prs, node *const parent, const item_t type, const item_t num)
+{
+	const item_t expr_type = parse_enum_field_assignment_expression(prs, parent, num);
+	if (!type_is_undefined(expr_type) && !type_is_undefined(type))
+	{
+		if (type_is_integer(type) && type_is_floating(expr_type))
+		{
+			parser_error(prs, init_int_by_float);
+		}
+		else if (type_is_floating(type) && type_is_integer(expr_type))
+		{
+			parse_insert_widen(prs);
+		}
+		else if (type != expr_type)
+		{
+			parser_error(prs, error_in_initialization);
+		}
 	}
 }
 

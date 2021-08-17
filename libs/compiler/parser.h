@@ -156,7 +156,6 @@ void token_expect_and_consume(parser *const prs, const token_t expected, const e
  */
 void token_skip_until(parser *const prs, const uint8_t tokens);
 
-
 /**
  *	Parse expression [C99 6.5.17]
  *
@@ -187,6 +186,20 @@ item_t parse_expression(parser *const prs, node *const parent);
  *	@return	Type of parsed expression
  */
 item_t parse_assignment_expression(parser *const prs, node *const parent);
+
+/**
+ *	Parse enum field assignment expression
+ *
+ *	assignment-expression-in-enum:
+ *		id without operator =
+ *
+ *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
+ *	@param	num		Field value
+ *
+ *	@return	Type of parsed expression
+ */
+item_t parse_enum_field_assignment_expression(parser *const prs, node *const parent, const item_t num);
 
 /**
  *	Parse expression in parentheses
