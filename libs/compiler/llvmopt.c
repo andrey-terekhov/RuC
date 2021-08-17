@@ -63,16 +63,17 @@ static int node_recursive(information *const info, node *const nd)
 
 		switch (node_get_type(&child))
 		{
-			// без этого фрагмента падают тесты на Windows Server 2016, причём в некоторых даже нет строк!!!
-			// case OP_STRING:
-			// {
-			// 	const size_t index = (size_t)node_get_arg(&child, 2);
-			// 	const char *string = string_get(info->sx, index);
-			// 	size_t length = 0;
-			// 	for (length = 0; *(string + length) != 0; length++)
-			// 		;
-			// }
-			// break;
+			// Без этого фрагмента падают тесты на Windows Server 2016, причём в некоторых даже нет строк!!!
+			// Тесты падают из-за Segmentation fault
+			case OP_STRING:
+			{
+				const size_t index = (size_t)node_get_arg(&child, 2);
+				const char *string = string_get(info->sx, index);
+				size_t length = 0;
+				for (length = 0; *(string + length) != 0; length++)
+					;
+			}
+			break;
 			case OP_PRINTF:
 				info->was_printf = 1;
 				break;
