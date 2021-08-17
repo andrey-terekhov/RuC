@@ -26,6 +26,8 @@
 
 const size_t HASH_TABLE_SIZE = 1024;
 const size_t IS_STATIC = 0;
+const size_t DIMENSION_LOW_BORDER = 1;
+const size_t DIMENSION_HIGH_BORDER = 5;
 
 
 typedef enum ANSWER
@@ -314,7 +316,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < 1 || dim > 5)
+	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
 	{
 		return;
 	}
@@ -337,7 +339,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < 1 || dim > 5)
+	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
 	{
 		return;
 	}
@@ -425,7 +427,7 @@ static void to_code_init_array(information *const info, const size_t index, cons
 	info->register_num++;
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < 1 || dim > 5)
+	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
 	{
 		return;
 	}
@@ -616,7 +618,7 @@ static void operand(information *const info, node *const nd)
 					info->answer_reg = info->register_num++;
 				}
 
-				if (-1 < cur_dimension && cur_dimension < 5)
+				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)DIMENSION_HIGH_BORDER)
 				{
 					to_code_slice(info, displ, cur_dimension, 0, type);
 				}
@@ -628,7 +630,7 @@ static void operand(information *const info, node *const nd)
 
 				// Проверка, что значение cur_dimension корректное и в пределах допустимого
 				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-				if (-1 < cur_dimension && cur_dimension < 5)
+				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension <(item_t)DIMENSION_HIGH_BORDER)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
@@ -656,7 +658,7 @@ static void operand(information *const info, node *const nd)
 
 			// Проверка, что значение cur_dimension корректное и в пределах допустимого
 			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-			if (-1 < cur_dimension && cur_dimension < 5)
+			if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)DIMENSION_HIGH_BORDER)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
