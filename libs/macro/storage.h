@@ -76,7 +76,10 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
+inline size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg)
+{
+	return storage_add_arg_by_index(stg, storage_get_index(stg, id), index, arg);
+}
 
 /**
  *	Add macro argument by index
@@ -100,7 +103,10 @@ int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t i
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
+inline size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value)
+{
+	return storage_set_by_index(stg, storage_get_index(stg, id), value);
+}
 
 /**
  *	Set new macro replacement by index
@@ -132,7 +138,10 @@ size_t storage_get_index(storage *const stg, const char32_t *const id);
  *
  *	@return	Macro replacement, @c NULL on failure
  */
-const char *storage_get(storage *const stg, const char32_t *const id);
+inline const char *storage_get(storage *const stg, const char32_t *const id)
+{
+	return storage_get_by_index(stg, storage_get_index(stg, id));
+}
 
 /**
  *	Get macro replacement by index
@@ -152,7 +161,10 @@ const char *storage_get_by_index(const storage *const stg, const size_t id);
  *
  *	@return	Arguments amount, @c 0 on failure
  */
-size_t storage_get_amount(storage *const stg, const char32_t *const id);
+inline size_t storage_get_amount(storage *const stg, const char32_t *const id)
+{
+	return storage_get_amount_by_index(stg, storage_get_index(stg, id));
+}
 
 /**
  *	Get arguments amount by index
@@ -173,7 +185,10 @@ size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
  *
  *	@return	Macro argument, @c NULL on failure
  */
-const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
+inline const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index)
+{
+	return storage_get_arg_by_index(stg, storage_get_index(stg, id), index);
+}
 
 /**
  *	Get macro argument by index
@@ -195,7 +210,10 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int storage_remove(storage *const stg, const char32_t *const id);
+inline int storage_remove(storage *const stg, const char32_t *const id)
+{
+	return storage_remove_by_index(stg, storage_get_index(stg, id));
+}
 
 /**
  *	Remove macro by index

@@ -21,6 +21,17 @@
 static const size_t MAX_MACRO = 256;
 
 
+extern size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
+
+extern size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
+
+extern const char *storage_get(storage *const stg, const char32_t *const id);
+extern size_t storage_get_amount(storage *const stg, const char32_t *const id);
+extern const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
+
+extern int storage_remove(storage *const stg, const char32_t *const id);
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -71,15 +82,9 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
 	return index;
 }
 
-size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg)
-{
-	return storage_add_arg_by_index(stg, storage_get_index(stg, id), index, arg);
-}
-
 int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg);
 
 
-size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
 int storage_set_by_index(storage *const stg, const size_t id, const char32_t *value);
 
 
@@ -94,15 +99,11 @@ size_t storage_get_index(storage *const stg, const char32_t *const id)
 	return key != SIZE_MAX ? hash_get_index(&stg->hs, (item_t)key) : SIZE_MAX;
 }
 
-const char *storage_get(storage *const stg, const char32_t *const id);
 const char *storage_get_by_index(const storage *const stg, const size_t id);
-size_t storage_get_amount(storage *const stg, const char32_t *const id);
 size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
-const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
 
 
-int storage_remove(storage *const stg, const char32_t *const id);
 int storage_remove_by_index(storage *const stg, const size_t id);
 
 
