@@ -136,7 +136,16 @@ const char *storage_get_by_index(const storage *const stg, const size_t id)
 		: NULL;
 }
 
-size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
+size_t storage_get_amount_by_index(const storage *const stg, const size_t id)
+{
+	if (!storage_is_correct(stg))
+	{
+		return 0;
+	}
+
+	const size_t amount = hash_get_amount_by_index(&stg->hs, id);
+	return amount > 1 ? amount - 1 : 0;
+}
 
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index)
 {
