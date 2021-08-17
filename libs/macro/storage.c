@@ -83,7 +83,7 @@ size_t storage_set(storage *const stg, const char32_t *const id, const char32_t 
 int storage_set_by_index(storage *const stg, const size_t id, const char32_t *value);
 
 
-size_t storage_get_index(const storage *const stg, const char32_t *const id)
+size_t storage_get_index(storage *const stg, const char32_t *const id)
 {
 	if (!storage_is_correct(stg) || id == NULL)
 	{
@@ -94,11 +94,11 @@ size_t storage_get_index(const storage *const stg, const char32_t *const id)
 	return key != SIZE_MAX ? hash_get_index(&stg->hs, (item_t)key) : SIZE_MAX;
 }
 
-const char *storage_get(const storage *const stg, const char32_t *const id);
+const char *storage_get(storage *const stg, const char32_t *const id);
 const char *storage_get_by_index(const storage *const stg, const size_t id);
-size_t storage_get_amount(const storage *const stg, const char32_t *const id);
+size_t storage_get_amount(storage *const stg, const char32_t *const id);
 size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
-const char *storage_get_arg(const storage *const stg, const char32_t *const id, const size_t index);
+const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
 
 
