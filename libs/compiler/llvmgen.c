@@ -58,8 +58,8 @@ typedef struct information
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
-	answer_t answer_type;				/**< Тип ответа */
-	item_t answer_value_type;			/**< Тип значения */
+	answer_t answer_kind;				/**< Тип ответа */
+	item_t answer_type;					/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
@@ -268,13 +268,13 @@ static inline void to_code_store_const_double(information *const info, const dou
 
 static void to_code_try_zext_to(information *const info)
 {
-	if (info->answer_type != ALOGIC)
+	if (info->answer_kind != ALOGIC)
 	{
 		return;
 	}
 
 	uni_printf(info->sx->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
-	info->answer_type = AREG;
+	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 }
 
@@ -409,11 +409,11 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 		uni_printf(info->sx->io, "* %%.%" PRIitem, prev_slice);
 	}
 
-	if (info->answer_type == AREG)
+	if (info->answer_kind == AREG)
 	{
 		uni_printf(info->sx->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
 	}
-	else // if (info->answer_type == ACONST)
+	else // if (info->answer_kind == ACONST)
 	{
 		uni_printf(info->sx->io, ", i32 %" PRIitem "\n", info->answer_const);
 	}
@@ -423,31 +423,31 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 
 static void to_code_try_widen(information *const info, const item_t operation_type)
 {
-	if (operation_type == info->answer_value_type)
+	if (operation_type == info->answer_type)
 	{
 		return;
 	}
 
-	if (info->answer_type == ACONST)
+	if (info->answer_kind == ACONST)
 	{
 		info->answer_const_double = (double)info->answer_const;
 	}
 	else
 	{
 		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, info->answer_value_type);
+		type_to_io(info, info->answer_type);
 		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
 		type_to_io(info, operation_type);
 		uni_printf(info->sx->io, "\n");
 
-		info->answer_value_type = operation_type;
+		info->answer_type = operation_type;
 		info->answer_reg = info->register_num++;
 	}
 }
 
 static void check_type_and_branch(information *const info)
 {
-	switch (info->answer_type)
+	switch (info->answer_kind)
 	{
 		case ACONST:
 			to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
@@ -495,8 +495,8 @@ static void operand(information *const info, node *const nd)
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
 				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
-			info->answer_type = AREG;
-			info->answer_value_type = type;
+			info->answer_kind = AREG;
+			info->answer_type = type;
 		}
 		break;
 		case OP_CONSTANT:
@@ -510,13 +510,13 @@ static void operand(information *const info, node *const nd)
 				if (info->variable_location == LMEM)
 				{
 					to_code_store_const_i32(info, num, info->request_reg, 0);
-					info->answer_type = AREG;
+					info->answer_kind = AREG;
 				}
 				else
 				{
-					info->answer_type = ACONST;
+					info->answer_kind = ACONST;
 					info->answer_const = num;
-					info->answer_value_type = TYPE_INTEGER;
+					info->answer_type = TYPE_INTEGER;
 				}
 			}
 			else
@@ -526,13 +526,13 @@ static void operand(information *const info, node *const nd)
 				if (info->variable_location == LMEM)
 				{
 					to_code_store_const_double(info, num, info->request_reg, 0);
-					info->answer_type = AREG;
+					info->answer_kind = AREG;
 				}
 				else
 				{
-					info->answer_type = ACONST;
+					info->answer_kind = ACONST;
 					info->answer_const_double = num;
-					info->answer_value_type = TYPE_FLOATING;
+					info->answer_type = TYPE_FLOATING;
 				}
 			}
 
@@ -561,17 +561,17 @@ static void operand(information *const info, node *const nd)
 				// TODO: пока только для динамических массивов размерности 2
 				if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
 				{
-					if (info->answer_type == ACONST)
+					if (info->answer_kind == ACONST)
 					{
 						to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
 					}
-					else // if (info->answer_type == AREG)
+					else // if (info->answer_kind == AREG)
 					{
 						to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
 							TYPE_INTEGER);
 					}
 
-					info->answer_type = AREG;
+					info->answer_kind = AREG;
 					info->answer_reg = info->register_num++;
 				}
 
@@ -599,8 +599,8 @@ static void operand(information *const info, node *const nd)
 				}
 
 				info->answer_reg = info->register_num - 1;
-				info->answer_type = AREG;
-				info->answer_value_type = type;
+				info->answer_kind = AREG;
+				info->answer_type = type;
 				break;
 			}
 
@@ -627,8 +627,8 @@ static void operand(information *const info, node *const nd)
 			}
 
 			info->answer_reg = info->register_num - 1;
-			info->answer_type = AREG;
-			info->answer_value_type = type;
+			info->answer_kind = AREG;
+			info->answer_type = type;
 		}
 		break;
 		case OP_CALL:
@@ -649,13 +649,13 @@ static void operand(information *const info, node *const nd)
 				info->variable_location = LFREE;
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
-				arguments_type[i] = info->answer_type;
-				arguments_value_type[i] = info->answer_value_type;
-				if (info->answer_type == AREG)
+				arguments_type[i] = info->answer_kind;
+				arguments_value_type[i] = info->answer_type;
+				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
 				}
-				else if (type_is_integer(info->answer_value_type)) // ACONST
+				else if (type_is_integer(info->answer_type)) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
@@ -668,8 +668,8 @@ static void operand(information *const info, node *const nd)
 			if (!type_is_void(func_type))
 			{
 				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
-				info->answer_type = AREG;
-				info->answer_value_type = func_type;
+				info->answer_kind = AREG;
+				info->answer_type = func_type;
 				info->answer_reg = info->register_num++;
 			}
 			uni_printf(info->sx->io, " call ");
@@ -741,7 +741,7 @@ static void assignment_expression(information *const info, node *const nd)
 		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
 		info->register_num++;
 
-		if (info->answer_type == AREG)
+		if (info->answer_kind == AREG)
 		{
 			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
@@ -757,13 +757,13 @@ static void assignment_expression(information *const info, node *const nd)
 		}
 
 		result = info->register_num++;
-		info->answer_type = AREG;
+		info->answer_kind = AREG;
 	}
 
-	if (info->answer_type == AREG || info->answer_type == AMEM)
+	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
 		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
-			, info->answer_type == AMEM ? 1 : 0);
+			, info->answer_kind == AMEM ? 1 : 0);
 	}
 	// ACONST && =
 	else if (type_is_integer(operation_type))
@@ -776,7 +776,7 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 }
 
-static void integral_expression(information *const info, node *const nd, const answer_t type)
+static void integral_expression(information *const info, node *const nd, const answer_t kind)
 {
 	const binary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
@@ -788,7 +788,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
-	const answer_t left_type = info->answer_type;
+	const answer_t left_kind = info->answer_kind;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
 	const double left_const_double = info->answer_const_double;
@@ -799,36 +799,36 @@ static void integral_expression(information *const info, node *const nd, const a
 	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
-	const answer_t right_type = info->answer_type;
+	const answer_t right_kind = info->answer_kind;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
 
-	info->answer_value_type = type != ALOGIC ? operation_type : TYPE_INTEGER;
+	info->answer_type = kind != ALOGIC ? operation_type : TYPE_INTEGER;
 
-	if (left_type == AREG && right_type == AREG)
+	if (left_kind == AREG && right_kind == AREG)
 	{
 		to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
 	}
-	else if (left_type == AREG && right_type == ACONST && type_is_integer(operation_type))
+	else if (left_kind == AREG && right_kind == ACONST && type_is_integer(operation_type))
 	{
 		to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
 	}
-	else if (left_type == AREG && right_type == ACONST) // double
+	else if (left_kind == AREG && right_kind == ACONST) // double
 	{
 		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
 	}
-	else if (left_type == ACONST && right_type == AREG && operation_type)
+	else if (left_kind == ACONST && right_kind == AREG && operation_type)
 	{
 		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
 	}
-	else if (left_type == ACONST && right_type == AREG) // double
+	else if (left_kind == ACONST && right_kind == AREG) // double
 	{
 		to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
 	}
-	else if (left_type == ACONST && right_type == ACONST && type_is_integer(operation_type))
+	else if (left_kind == ACONST && right_kind == ACONST && type_is_integer(operation_type))
 	{
-		info->answer_type = ACONST;
+		info->answer_kind = ACONST;
 
 		switch (operation)
 		{
@@ -888,7 +888,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	}
 	else // double
 	{
-		info->answer_type = ACONST;
+		info->answer_kind = ACONST;
 
 		switch (operation)
 		{
@@ -930,7 +930,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	}
 
 	info->answer_reg = info->register_num++;
-	info->answer_type = type;
+	info->answer_kind = kind;
 }
 
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
@@ -957,9 +957,9 @@ static void inc_dec_expression(information *const info, node *const nd)
 	}
 
 	to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
-	info->answer_type = AREG;
+	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
-	info->answer_value_type = operation_type;
+	info->answer_type = operation_type;
 
 	switch (operation)
 	{
@@ -1011,7 +1011,7 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			info->answer_value_type = TYPE_INTEGER;
+			info->answer_type = TYPE_INTEGER;
 			if (operation == UN_MINUS && type_is_integer(operation_type))
 			{
 				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
@@ -1023,10 +1023,10 @@ static void unary_operation(information *const info, node *const nd)
 			else if (operation == UN_MINUS && type_is_floating(operation_type))
 			{
 				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
-				info->answer_value_type = TYPE_FLOATING;
+				info->answer_type = TYPE_FLOATING;
 			}
 
-			info->answer_type = AREG;
+			info->answer_kind = AREG;
 			info->answer_reg = info->register_num++;
 		}
 		break;
@@ -1044,7 +1044,7 @@ static void unary_operation(information *const info, node *const nd)
 		{
 			node_set_next(nd);
 			info->answer_reg = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-			info->answer_type = AMEM;
+			info->answer_kind = AMEM;
 			node_set_next(nd); // Ident
 		}
 		break;
@@ -1119,7 +1119,7 @@ static void binary_operation(information *const info, node *const nd)
 
 			// TODO: сделать обработку других ответов
 			// постараться использовать функцию check_type_and_branch
-			if (info->answer_type == ALOGIC)
+			if (info->answer_kind == ALOGIC)
 			{
 				to_code_conditional_branch(info);
 			}
@@ -1371,18 +1371,18 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_type == ACONST && type_is_integer(info->answer_value_type))
+			if (info->answer_kind == ACONST && type_is_integer(info->answer_type))
 			{
 				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
-			else if (info->answer_type == ACONST && type_is_floating(info->answer_value_type))
+			else if (info->answer_kind == ACONST && type_is_floating(info->answer_type))
 			{
 				uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
 			}
-			else if (info->answer_type == AREG)
+			else if (info->answer_kind == AREG)
 			{
 				uni_printf(info->sx->io, " ret ");
-				type_to_io(info, info->answer_value_type);
+				type_to_io(info, info->answer_type);
 				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 		}
@@ -1414,7 +1414,7 @@ static void statement(information *const info, node *const nd)
 				info->variable_location = LREG;
 				expression(info, nd);
 				args[i] = info->answer_reg;
-				args_type[i] = info->answer_value_type;
+				args_type[i] = info->answer_type;
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -1522,7 +1522,7 @@ static void block(information *const info, node *const nd)
 
 						if (!all)
 						{
-							if (info->answer_type == ACONST)
+							if (info->answer_kind == ACONST)
 							{
 								if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
 								{
@@ -1531,7 +1531,7 @@ static void block(information *const info, node *const nd)
 
 								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
 							}
-							else // if (info->answer_type == AREG) динамический массив
+							else // if (info->answer_kind == AREG) динамический массив
 							{
 								if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
 								{
