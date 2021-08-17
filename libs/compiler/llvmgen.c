@@ -1456,7 +1456,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 		{
 			info->variable_location = LFREE;
 			expression(info, nd);
-			const int value_int = info->answer_const;
+			const item_t value_int = info->answer_const;
 			info->answer_const = i;
 			to_code_slice(info, displ, 0, 0, type);
 
