@@ -19,7 +19,7 @@
 #include "uniprinter.h"
 
 
-// Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE
+// Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 // TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
 typedef enum REGISTERS
 {
