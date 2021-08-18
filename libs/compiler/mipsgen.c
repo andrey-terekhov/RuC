@@ -19,18 +19,25 @@
 #include "uniprinter.h"
 
 
+// Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE
 // TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
 typedef enum REGISTERS
 {
-	ZERO,						/**< Всегда хранит ноль */	
-	AT,							/**< Зарезервировано для сборки (assembler temporary) */
-	V0,							/**< Для возвращаемых функциями значений (values) */
+	ZERO,						/**< always has the value 0 */	
+	AT,							/**< temporary generally used by assembler */
+
+	V0,							/**< used for expression evaluations and to hold the integer
+									and pointer type function return values */
 	V1,
-	A0,							/**< Первые четыре параметра для функции (arguments) */
+	
+	A0,							/**< used for passing arguments to functions; values are not
+									preserved across function calls */
 	A1,
 	A2,
 	A3,
-	T0,							/**< Для временных значений (temporaries) */
+
+	T0,							/**< temporary registers used for expression evaluation; 
+									values are not preserved across function calls */
 	T1,
 	T2,
 	T3,
@@ -38,7 +45,9 @@ typedef enum REGISTERS
 	T5,
 	T6,
 	T7,
-	S0,							/**< Для постоянных значений (saved values) */
+
+	S0,							/**< saved registers; values are preserved across function
+									calls */
 	S1,
 	S2,
 	S3,
@@ -46,14 +55,21 @@ typedef enum REGISTERS
 	S5,
 	S6,
 	S7,
-	T8,							/**< Для временных значений (temporaries) */
+
+	T8,							/**< temporary registers used for expression evaluations;
+									values are not preserved across function calls.  When
+									calling position independent functions $25 must contain
+									the address of the called function */
 	T9,
-	K0,							/**< Зарезервированы для обработчика (ядро ОС) */
+
+	K0,							/**< used only by the operating system */
 	K1,
-	GP,							/**< Указывает на глобальную область (global pointer) */
-	SP,							/**< Значение равно верхнему адресу стека (stack pointer) */
-	FP,							/**< Указатель на фрейм (frame pointer) */
-	RA,							/**< Возвращаемый адрес (return address) */
+
+	GP,							/**< global pointer and context pointer */
+	SP,							/**< stack pointer */
+	FP,							/**< saved register (like s0-s7) or frame pointer */
+	RA,							/**< return address.  The return address is the location to
+									which a function should return control */
 } registers_t;
 
 typedef struct information
