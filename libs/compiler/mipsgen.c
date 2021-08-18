@@ -74,8 +74,8 @@ typedef enum REGISTERS
 
 typedef enum ISTRUCTIONS
 {
-	move,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */			
-} instuctions_t;
+	MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */			
+} instructions_t;
 
 typedef struct information
 {
@@ -193,6 +193,29 @@ static void register_to_io(universal_io *const io, const registers_t reg)
 	}
 }
 
+static void instruction_to_io(universal_io *const io, const instructions_t instruction)
+{
+	switch (instruction)
+	{
+		case MOVE:
+			uni_printf(io, "move");
+			break;
+	}
+}
+
+
+// Вид инструкции:	instr	reg1, reg2
+static void to_code_2R(universal_io *const io, const instructions_t instruction, const registers_t reg1, const registers_t reg2)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	register_to_io(io, reg1);
+	uni_printf(io, ", ");
+	register_to_io(io, reg2);
+	uni_printf(io, "\n");
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -215,6 +238,8 @@ static void precodegen(syntax *const sx)
 	// инициализация gp
 	uni_printf(sx->io, "\tlui $28, %%hi(__gnu_local_gp)\n");
 	uni_printf(sx->io, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
+
+	to_code_2R(sx->io, MOVE, FP, SP);
 }
 
 /*
