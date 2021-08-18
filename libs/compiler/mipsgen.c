@@ -19,6 +19,9 @@
 #include "uniprinter.h"
 
 
+const item_t LOW_DYN_BORDER = 268500992;		// это 0x10010000 - нижняя граница дин памяти
+
+
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 // TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
 typedef enum REGISTERS
@@ -75,8 +78,9 @@ typedef enum REGISTERS
 typedef enum ISTRUCTIONS
 {
 	MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
+	LI,							/**< MIPS Pseudo-Instruction. Load a constant into a register */
 	ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	SW,							/**< To store a word to memory */		
+	SW,							/**< To store a word to memory */
 } instructions_t;
 
 typedef struct information
@@ -202,6 +206,9 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 		case MOVE:
 			uni_printf(io, "move");
 			break;
+		case LI:
+			uni_printf(io, "li");
+			break;
 		case ADDI:
 			uni_printf(io, "addi");
 			break;
@@ -250,6 +257,17 @@ static void to_code_R_I_R(universal_io *const io, const instructions_t instructi
 	uni_printf(io, ")\n");
 }
 
+// Вид инструкции:	instr	reg1, num
+static void to_code_R_I(universal_io *const io, const instructions_t instruction, 
+	const registers_t reg1, const item_t num)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	register_to_io(io, reg1);
+	uni_printf(io, ", %" PRIitem "\n", num);
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -276,6 +294,7 @@ static void precodegen(syntax *const sx)
 	to_code_2R(sx->io, MOVE, FP, SP);
 	to_code_2R_I(sx->io, ADDI, FP, FP, -4);
 	to_code_R_I_R(sx->io, SW, RA, 0, FP);
+	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);		// это 0x10010000 - нижняя граница дин памяти
 }
 
 /*
