@@ -75,7 +75,8 @@ typedef enum REGISTERS
 typedef enum ISTRUCTIONS
 {
 	MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
-	ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */		
+	ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	SW,							/**< To store a word to memory */		
 } instructions_t;
 
 typedef struct information
@@ -204,6 +205,9 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 		case ADDI:
 			uni_printf(io, "addi");
 			break;
+		case SW:
+			uni_printf(io, "sw");
+			break;
 	}
 }
 
@@ -233,6 +237,19 @@ static void to_code_2R_I(universal_io *const io, const instructions_t instructio
 	uni_printf(io, ", %" PRIitem "\n", num);
 }
 
+// Вид инструкции:	instr	reg1, num(reg2)
+static void to_code_R_I_R(universal_io *const io, const instructions_t instruction, 
+	const registers_t reg1, const item_t num, const registers_t reg2)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	register_to_io(io, reg1);
+	uni_printf(io, ", %" PRIitem "(", num);
+	register_to_io(io, reg2);
+	uni_printf(io, ")\n");
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -258,6 +275,7 @@ static void precodegen(syntax *const sx)
 
 	to_code_2R(sx->io, MOVE, FP, SP);
 	to_code_2R_I(sx->io, ADDI, FP, FP, -4);
+	to_code_R_I_R(sx->io, SW, RA, 0, FP);
 }
 
 /*
