@@ -25,15 +25,15 @@
 extern "C" {
 #endif
 
-/** Structure for connecting files */
+/** Linker structure */
 typedef struct linker
 {
-	workspace *ws;				/**< Initial arguments */
-	size_t sources; 			/**< Number of sources files */
+	workspace *ws;				/**< Sources files */
+	const size_t sources; 		/**< Number of sources files */
 
-	vector included;			/**< List of already added files */
+	vector included;			/**< List of included files */
 
-	size_t current; 			/**< Index of the current file */
+	size_t current; 			/**< Index of current file */
 } linker;
 
 

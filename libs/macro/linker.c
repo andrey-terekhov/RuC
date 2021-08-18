@@ -61,22 +61,15 @@ static void lk_make_path(char *const output, const char *const source, const cha
 
 linker linker_create(workspace *const ws)
 {
-	linker lk;
-
-	if (!ws_is_correct(ws))
+	linker lk =
 	{
-		lk.ws = NULL;
-		return lk;
-	}
+		.ws = ws,
+		.sources = ws_get_files_num(ws),
+		.included = vector_create(MAX_PATHS),
+		.current = SIZE_MAX,
+	};
 
-	lk.ws = ws;
-	lk.sources = ws_get_files_num(ws);
-
-	lk.included = vector_create(MAX_PATHS);
 	vector_increase(&lk.included, MAX_PATHS);
-
-	lk.current = SIZE_MAX;
-
 	return lk;
 }
 
