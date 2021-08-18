@@ -111,7 +111,7 @@ static void type_to_io(information *const info, const item_t type)
 	}
 	else if (type_is_pointer(info->sx, type))
 	{
-		type_to_io(info, type_pointer_get_element_type(info->sx, (size_t)type));
+		type_to_io(info, type_pointer_get_element_type(info->sx, type));
 		uni_printf(info->sx->io, "*");
 	}
 }
@@ -656,9 +656,9 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 
 			const item_t type_ref = node_get_arg(nd, 0);
-			const item_t args = type_function_get_parameter_amount(info->sx, type_ref);
+			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			node_set_next(nd); // OP_IDENT
-			for (item_t i = 0; i < args; i++)
+			for (size_t i = 0; i < args; i++)
 			{
 				info->variable_location = LFREE;
 				expression(info, nd);
@@ -690,7 +690,7 @@ static void operand(information *const info, node *const nd)
 			type_to_io(info, func_type);
 			uni_printf(info->sx->io, " @func%zi(", type_ref);
 
-			for (item_t i = 0; i < args; i++)
+			for (size_t i = 0; i < args; i++)
 			{
 				if (i != 0)
 				{
@@ -1418,10 +1418,7 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			const size_t index = (size_t)node_get_arg(nd, 2);
-			const char *string = string_get(info->sx, index);
-			item_t string_length = 0;
-			for (string_length = 0; string[string_length] != 0; string_length++)
-				;
+			const size_t string_length = strings_get_length(&info->sx->string_literals, index);
 			node_set_next(nd); // OP_STRING
 
 			for (item_t i = 0; i < N; i++)
@@ -1433,7 +1430,7 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
+				"([%zi x i8], [%zi x i8]* @.str%zi, i32 0, i32 0)"
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
@@ -1603,7 +1600,7 @@ static int codegen(information *const info)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = type_function_get_return_type(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
-				const size_t parameters = (size_t)type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
+				const size_t parameters = type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1712,7 +1709,7 @@ static void structs_declaration(information *const info)
 		{
 			uni_printf(info->sx->io, "%%struct_opt.%zi = type { ", i);
 
-			const size_t fields = (size_t)type_structure_get_member_amount(info->sx, i);
+			const size_t fields = type_structure_get_member_amount(info->sx, i);
 			for (size_t j = 0; j < fields; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
@@ -1731,15 +1728,13 @@ static void strings_declaration(information *const info)
 	for (size_t index = 0; index < strings_number; index++)
 	{
 		const char *string = string_get(info->sx, index);
-		size_t length = 0;
-		for (length = 0; *(string + length) != 0; length++)
-			;
+		const size_t length = strings_get_length(&info->sx->string_literals, index);
 		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
 			, index, length + 1);
 
 		for (size_t j = 0; j < length; j++)
 		{
-			const char ch = *(string + j);
+			const char ch = string[j];
 			if (ch == '\n')
 			{
 				uni_printf(info->sx->io, "\\0A");
