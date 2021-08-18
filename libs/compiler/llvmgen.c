@@ -27,6 +27,7 @@ const size_t HASH_TABLE_SIZE = 1024;
 const size_t IS_STATIC = 0;
 const size_t DIMENSION_LOW_BORDER = 1;
 const size_t DIMENSION_HIGH_BORDER = 5;
+const size_t MAX_FUNCTION_ARGS = 128;
 
 
 typedef enum ANSWER
@@ -499,7 +500,7 @@ static void operand(information *const info, node *const nd)
 				is_addr_to_val = 1;
 				type = type_pointer_get_element_type(info->sx, (size_t)type);
 			}
-			
+
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
 				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
@@ -653,10 +654,10 @@ static void operand(information *const info, node *const nd)
 		break;
 		case OP_CALL:
 		{
-			item_t arguments[128];
-			double arguments_double[128];
-			answer_t arguments_type[128];
-			item_t arguments_value_type[128];
+			item_t arguments[MAX_FUNCTION_ARGS];
+			double arguments_double[MAX_FUNCTION_ARGS];
+			answer_t arguments_type[MAX_FUNCTION_ARGS];
+			item_t arguments_value_type[MAX_FUNCTION_ARGS];
 
 			const item_t func_type = node_get_arg(nd, 0);
 			node_set_next(nd);
