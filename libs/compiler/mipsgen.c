@@ -294,7 +294,7 @@ static void precodegen(syntax *const sx)
 	to_code_2R(sx->io, MOVE, FP, SP);
 	to_code_2R_I(sx->io, ADDI, FP, FP, -4);
 	to_code_R_I_R(sx->io, SW, RA, 0, FP);
-	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);		// это 0x10010000 - нижняя граница дин памяти
+	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);
 }
 
 /*
