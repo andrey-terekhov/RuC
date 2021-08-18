@@ -28,25 +28,25 @@
 #endif
 
 
-static void lk_make_path(char *const output, const char *const source, const char *const header, const int is_slash)
+static void lk_make_path(char *const buffer, const char *const name, const char *const path, const bool is_file)
 {
 	size_t index = 0;
 
-	if (is_slash)
+	if (is_file)
 	{
-		char *slash = strrchr(source, '/');
+		char *slash = strrchr(path, '/');
 		if (slash != NULL)
 		{
-			index = slash - source + 1;
-			strncpy(output, source, index);
+			index = slash - path + 1;
+			strncpy(buffer, path, index);
 		}
 	}
 	else
 	{
-		index = sprintf(output, "%s/", source);
+		index = sprintf(buffer, "%s/", path);
 	}
 
-	strcpy(&output[index], header);
+	strcpy(&buffer[index], name);
 }
 
 
@@ -106,28 +106,28 @@ size_t linker_search_internal(linker *const lk, const char *const file)
 		return SIZE_MAX;
 	}
 
-	char full_path[MAX_ARG_SIZE];
+	char path[MAX_ARG_SIZE];
 
-	lk_make_path(full_path, ws_get_file(lk->ws, lk->current), file, 1);
+	lk_make_path(path, ws_get_file(lk->ws, lk->current), file, 1);
 
-	if (access(full_path, F_OK) == -1)
+	if (access(path, F_OK) == -1)
 	{
 		size_t i = 0;
 		const char *dir;
 		do
 		{
 			dir = ws_get_dir(lk->ws, i++);
-			lk_make_path(full_path, dir, file, 0);
-		} while (dir != NULL && access(full_path, F_OK) == -1);
+			lk_make_path(path, dir, file, 0);
+		} while (dir != NULL && access(path, F_OK) == -1);
 	}
 
-	if (access(full_path, F_OK) == -1)
+	if (access(path, F_OK) == -1)
 	{
-		macro_system_error(full_path, header_file_not_found);
+		macro_system_error(path, header_file_not_found);
 		return SIZE_MAX;
 	}
 
-	return ws_add_file(lk->ws, full_path);
+	return ws_add_file(lk->ws, path);
 }
 
 size_t linker_search_external(linker *const lk, const char *const file)
