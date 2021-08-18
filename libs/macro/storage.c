@@ -121,8 +121,14 @@ size_t storage_get_amount_by_index(const storage *const stg, const size_t id)
 
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index)
 {
-	return storage_is_correct(stg)
-		? strings_get(&stg->vec, (size_t)hash_get_by_index(&stg->hs, id, 1 + index))
+	if (!storage_is_correct(stg))
+	{
+		return NULL;
+	}
+
+	const item_t ref = hash_get_by_index(&stg->hs, id, 1 + index);
+	return ref != 0 && ref != ITEM_MAX
+		? strings_get(&stg->vec, (size_t)ref)
 		: NULL;
 }
 
