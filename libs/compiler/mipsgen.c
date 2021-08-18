@@ -72,11 +72,126 @@ typedef enum REGISTERS
 									which a function should return control */
 } registers_t;
 
+typedef enum ISTRUCTIONS
+{
+	move,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */			
+} instuctions_t;
+
 typedef struct information
 {
 	syntax *sx;							/**< Структура syntax с таблицами */
 } information;
 
+
+static void register_to_io(universal_io *const io, const registers_t reg)
+{
+	switch (reg)
+	{
+		case ZERO:
+			uni_printf(io, "$0");
+			break;
+		case AT:
+			uni_printf(io, "$at");
+			break;
+
+		case V0:
+			uni_printf(io, "$v0");
+			break;
+		case V1:
+			uni_printf(io, "$v1");
+			break;
+
+		case A0:
+			uni_printf(io, "$a0");
+			break;
+		case A1:
+			uni_printf(io, "$a1");
+			break;
+		case A2:
+			uni_printf(io, "$a2");
+			break;
+		case A3:
+			uni_printf(io, "$a3");
+			break;
+
+		case T0:
+			uni_printf(io, "$t0");
+			break;
+		case T1:
+			uni_printf(io, "$t1");
+			break;
+		case T2:
+			uni_printf(io, "$t2");
+			break;
+		case T3:
+			uni_printf(io, "$t3");
+			break;
+		case T4:
+			uni_printf(io, "$t4");
+			break;
+		case T5:
+			uni_printf(io, "$t5");
+			break;
+		case T6:
+			uni_printf(io, "$t6");
+			break;
+		case T7:
+			uni_printf(io, "$t7");
+			break;
+
+		case S0:
+			uni_printf(io, "$s0");
+			break;
+		case S1:
+			uni_printf(io, "$s1");
+			break;
+		case S2:
+			uni_printf(io, "$s2");
+			break;
+		case S3:
+			uni_printf(io, "$s3");
+			break;
+		case S4:
+			uni_printf(io, "$s4");
+			break;
+		case S5:
+			uni_printf(io, "$s5");
+			break;
+		case S6:
+			uni_printf(io, "$s6");
+			break;
+		case S7:
+			uni_printf(io, "$s7");
+			break;
+
+		case T8:
+			uni_printf(io, "$t8");
+			break;
+		case T9:
+			uni_printf(io, "$t9");
+			break;
+
+		case K0:
+			uni_printf(io, "$k0");
+			break;
+		case K1:
+			uni_printf(io, "$k1");
+			break;
+
+		case GP:
+			uni_printf(io, "$gp");
+			break;
+		case SP:
+			uni_printf(io, "$sp");
+			break;
+		case FP:
+			uni_printf(io, "$fp");
+			break;
+		case RA:
+			uni_printf(io, "$ra");
+			break;
+	}
+}
 
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
