@@ -20,6 +20,7 @@
 
 
 const item_t LOW_DYN_BORDER = 268500992;		// это 0x10010000 - нижняя граница дин памяти
+const item_t HEAP_DISPL = -8000;				// Смещение кучи относительно глобальной памяти
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -295,6 +296,7 @@ static void precodegen(syntax *const sx)
 	to_code_2R_I(sx->io, ADDI, FP, FP, -4);
 	to_code_R_I_R(sx->io, SW, RA, 0, FP);
 	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);
+	to_code_R_I_R(sx->io, SW, T0, HEAP_DISPL - 60, GP);
 }
 
 /*
