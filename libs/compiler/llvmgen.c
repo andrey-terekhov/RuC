@@ -111,7 +111,7 @@ static void type_to_io(information *const info, const item_t type)
 	}
 	else if (type_is_pointer(info->sx, type))
 	{
-		type_to_io(info, type_get(info->sx, (size_t)type + 1));
+		type_to_io(info, type_pointer_get_element_type(info->sx, (size_t)type));
 		uni_printf(info->sx->io, "*");
 	}
 }
@@ -490,7 +490,7 @@ static void operand(information *const info, node *const nd)
 				info->register_num++;
 				info->variable_location = LREG;
 				is_addr_to_val = 1;
-				type = type_get(info->sx, (size_t)type + 1);
+				type = type_pointer_get_element_type(info->sx, (size_t)type);
 			}
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
 				, is_addr_to_val);
@@ -642,7 +642,7 @@ static void operand(information *const info, node *const nd)
 			node_set_next(nd);
 
 			const item_t type_ref = node_get_arg(nd, 0);
-			const item_t args = type_get(info->sx, (size_t)type_ref + 2);
+			const item_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			node_set_next(nd); // OP_IDENT
 			for (item_t i = 0; i < args; i++)
 			{
@@ -1588,8 +1588,8 @@ static int codegen(information *const info)
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = type_get(info->sx, (size_t)ident_get_type(info->sx, ref_ident) + 1);
-				const size_t parameters = (size_t)type_get(info->sx, (size_t)ident_get_type(info->sx, ref_ident) + 2);
+				const item_t func_type = type_function_get_return_type(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
+				const size_t parameters = (size_t)type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
 				info->was_dynamic = 0;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1698,11 +1698,11 @@ static void structs_declaration(information *const info)
 		{
 			uni_printf(info->sx->io, "%%struct_opt.%zi = type { ", i);
 
-			const size_t fields = (size_t)type_get(info->sx, i + 2);
-			for (size_t j = 0; j < fields; j += 2)
+			const size_t fields = (size_t)type_structure_get_member_amount(info->sx, i);
+			for (size_t j = 0; j < fields; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-				type_to_io(info, type_get(info->sx, i + 3 + j));
+				type_to_io(info, type_structure_get_member_type(info->sx, i, j));
 			}
 
 			uni_printf(info->sx->io, " }\n");
@@ -1756,6 +1756,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
