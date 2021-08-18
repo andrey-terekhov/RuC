@@ -67,9 +67,9 @@ typedef struct information
 	item_t label_continue;				/**< Метка перехода для continue */
 
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
-												@с key		 - смещение массива
-												@c value[0]	 - флаг статичности
-												@c value[1..MAX] - границы массива */
+											@с key		 - смещение массива
+											@c value[0]	 - флаг статичности
+											@c value[1..MAX] - границы массива */
 	int was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
@@ -318,6 +318,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
 	{
+		system_error(such_array_is_not_supported);
 		return;
 	}
 	for (size_t i = 1; i <= dim; i++)
@@ -341,6 +342,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
 	{
+		system_error(such_array_is_not_supported);
 		return;
 	}
 	for (size_t i = 2; i <= dim; i++)
@@ -579,6 +581,10 @@ static void operand(information *const info, node *const nd)
 				{
 					to_code_slice(info, displ, cur_dimension, 0, type);
 				}
+				else
+				{
+					system_error(such_array_is_not_supported);
+				}
 
 				item_t prev_slice = info->register_num - 1;
 				info->variable_location = LFREE;
@@ -590,6 +596,10 @@ static void operand(information *const info, node *const nd)
 				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension <(item_t)DIMENSION_HIGH_BORDER)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
+				else
+				{
+					system_error(such_array_is_not_supported);
 				}
 
 				if (location != LMEM)
@@ -618,6 +628,10 @@ static void operand(information *const info, node *const nd)
 			if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)DIMENSION_HIGH_BORDER)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
+			else
+			{
+				system_error(such_array_is_not_supported);
 			}
 
 			if (location != LMEM)

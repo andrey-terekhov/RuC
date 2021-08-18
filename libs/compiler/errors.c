@@ -583,6 +583,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case array_borders_cannot_be_static_dynamic:
 			sprintf(msg, "массив не может иметь статические и динамические границы");
 			break;
+		case such_array_is_not_supported:
+			sprintf(msg, "такие массивы пока не поддерживаются в кодогенераторе");
+			break;
 
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);
