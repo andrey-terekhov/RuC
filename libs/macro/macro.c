@@ -57,28 +57,29 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
 	parser prs = parser_create(&lk, output);
-	size_t file_size = linker_size(&lk);
 
-	for (size_t i = 0; i < file_size; i++)
+	int ret = 0;
+	const size_t size = linker_size(&lk);
+	for (size_t i = 0; i < size; i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
 		{
-			linker_clear(&lk);
-			return -1;
+			macro_system_error(TAG_LINKER, source_file_not_found);
 		}
 
-		if (parser_preprocess(&prs, &in))
-		{
-			linker_clear(&lk);
-			return -1;
-		}
-
+		ret = parser_preprocess(&prs, &in);
 		in_clear(&in);
+
+		if (ret)
+		{
+			break;
+		}
 	}
 
+	parser_clear(&prs);
 	linker_clear(&lk);
-	return 0;
+	return ret;
 }
 
 
@@ -93,7 +94,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 
 char *macro(workspace *const ws)
 {
-	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
+	if (ws_get_files_num(ws) == 0)
 	{
 		return NULL;
 	}
@@ -117,7 +118,7 @@ char *macro(workspace *const ws)
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
+	if (ws_get_files_num(ws) == 0)
 	{
 		return -1;
 	}
@@ -138,11 +139,15 @@ int macro_to_file(workspace *const ws, const char *const path)
 char *auto_macro(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return macro(&ws);
+	char *ret = macro(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return macro_to_file(&ws, path);
+	const int ret = macro_to_file(&ws, path);
+	ws_clear(&ws);
+	return ret;
 }
