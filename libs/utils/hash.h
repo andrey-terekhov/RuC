@@ -52,6 +52,7 @@ EXPORTED hash hash_create(const size_t alloc);
  */
 EXPORTED size_t hash_add(hash *const hs, const item_t key, const size_t amount);
 
+
 /**
  *	Get index of record by key
  *
@@ -71,6 +72,7 @@ EXPORTED size_t hash_get_index(const hash *const hs, const item_t key);
  *	@return	Values amount, @c 0 on failure
  */
 EXPORTED size_t hash_get_amount(const hash *const hs, const item_t key);
+
 
 /**
  *	Get value by key
@@ -104,6 +106,7 @@ EXPORTED double hash_get_double(const hash *const hs, const item_t key, const si
  *	@return	Value, @c LLONG_MAX on failure
  */
 EXPORTED int64_t hash_get_int64(const hash *const hs, const item_t key, const size_t num);
+
 
 /**
  *	Set new value by existing key
@@ -166,8 +169,9 @@ inline item_t hash_get_key(const hash *const hs, const size_t index)
 inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
 {
 	const item_t amount = vector_get(hs, index + 2);
-	return amount != ITEM_MAX ? (size_t)amount : 0;
+	return index != SIZE_MAX && amount != ITEM_MAX ? (size_t)amount : 0;
 }
+
 
 /**
  *	Get value by index
@@ -210,6 +214,7 @@ inline int64_t hash_get_int64_by_index(const hash *const hs, const size_t index,
 {
 	return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_int64(hs, index + 3 + num) : LLONG_MAX;
 }
+
 
 /**
  *	Set new value by index
@@ -254,6 +259,30 @@ inline size_t hash_set_double_by_index(hash *const hs, const size_t index, const
 inline size_t hash_set_int64_by_index(hash *const hs, const size_t index, const size_t num, const int64_t value)
 {
 	return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_set_int64(hs, index + 3 + num, value) : SIZE_MAX;
+}
+
+
+/**
+ *	Remove record
+ *
+ *	@param	hs				Hash table
+ *	@param	key				Unique key
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int hash_remove(hash *const hs, const item_t key);
+
+/**
+ *	Remove record by index
+ *
+ *	@param	hs				Hash table
+ *	@param	index			Record index
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int hash_remove_by_index(hash *const hs, const size_t index)
+{
+	return index != SIZE_MAX ? vector_set(hs, index + 1, ITEM_MAX) : -1;
 }
 
 
