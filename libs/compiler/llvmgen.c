@@ -70,6 +70,7 @@ typedef struct information
 											@с key		 - смещение массива
 											@c value[0]	 - флаг статичности
 											@c value[1..MAX] - границы массива */
+
 	int was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
 	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
@@ -122,22 +123,22 @@ static void operation_to_io(universal_io *const io, const item_t operation_type,
 	{
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			uni_printf(io, "%s", type_is_integer(type) ? "add nsw" : "fadd");
+			uni_printf(io, type_is_integer(type) ? "add nsw" : "fadd");
 			break;
 
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-			uni_printf(io, "%s", type_is_integer(type) ? "sub nsw" : "fsub");
+			uni_printf(io, type_is_integer(type) ? "sub nsw" : "fsub");
 			break;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
-			uni_printf(io, "%s", type_is_integer(type) ? "mul nsw" : "fmul");
+			uni_printf(io, type_is_integer(type) ? "mul nsw" : "fmul");
 			break;
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			uni_printf(io, "%s", type_is_integer(type) ? "sdiv" : "fdiv");
+			uni_printf(io, type_is_integer(type) ? "sdiv" : "fdiv");
 			break;
 
 		case BIN_REM_ASSIGN:
@@ -171,22 +172,22 @@ static void operation_to_io(universal_io *const io, const item_t operation_type,
 			break;
 
 		case BIN_EQ:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp eq" : "fcmp oeq");
+			uni_printf(io, type_is_integer(type) ? "icmp eq" : "fcmp oeq");
 			break;
 		case BIN_NE:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp ne" : "fcmp one");
+			uni_printf(io, type_is_integer(type) ? "icmp ne" : "fcmp one");
 			break;
 		case BIN_LT:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp slt" : "fcmp olt");
+			uni_printf(io, type_is_integer(type) ? "icmp slt" : "fcmp olt");
 			break;
 		case BIN_GT:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp sgt" : "fcmp ogt");
+			uni_printf(io, type_is_integer(type) ? "icmp sgt" : "fcmp ogt");
 			break;
 		case BIN_LE:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp sle" : "fcmp ole");
+			uni_printf(io, type_is_integer(type) ? "icmp sle" : "fcmp ole");
 			break;
 		case BIN_GE:
-			uni_printf(io, "%s", type_is_integer(type) ? "icmp sge" : "fcmp oge");
+			uni_printf(io, type_is_integer(type) ? "icmp sge" : "fcmp oge");
 			break;
 	}
 }
@@ -243,7 +244,7 @@ static void to_code_load(information *const info, const item_t result, const ite
 	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
+static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
 	, const int is_array, const int is_pointer)
 {
 	uni_printf(info->sx->io, " store ");
@@ -263,7 +264,8 @@ static inline void to_code_store_const_i32(information *const info, const item_t
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
 	, const int is_array)
 {
-	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n"
+		, arg, is_array ? "" : "var", displ);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -321,6 +323,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 		system_error(such_array_is_not_supported);
 		return;
 	}
+
 	for (size_t i = 1; i <= dim; i++)
 	{
 		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
@@ -345,6 +348,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 		system_error(such_array_is_not_supported);
 		return;
 	}
+
 	for (size_t i = 2; i <= dim; i++)
 	{
 		uni_printf(info->sx->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
@@ -423,6 +427,7 @@ static void to_code_slice(information *const info, const item_t displ, const ite
 	info->register_num++;
 }
 
+
 static void to_code_try_widen(information *const info, const item_t operation_type)
 {
 	if (operation_type == info->answer_type)
@@ -494,6 +499,7 @@ static void operand(information *const info, node *const nd)
 				is_addr_to_val = 1;
 				type = type_pointer_get_element_type(info->sx, (size_t)type);
 			}
+			
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
 				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
