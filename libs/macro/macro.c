@@ -93,7 +93,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 
 char *macro(workspace *const ws)
 {
-	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
+	if (ws_get_files_num(ws) == 0)
 	{
 		return NULL;
 	}
@@ -117,7 +117,7 @@ char *macro(workspace *const ws)
 
 int macro_to_file(workspace *const ws, const char *const path)
 {
-	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
+	if (ws_get_files_num(ws) == 0)
 	{
 		return -1;
 	}
