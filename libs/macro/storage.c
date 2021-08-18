@@ -135,7 +135,7 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
 
 int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg)
 {
-	return id != SIZE_MAX && storage_is_correct(stg) && arg != NULL
+	return storage_is_correct(stg) && arg != NULL && hash_get_by_index(&stg->hs, id, 1 + index) == 0
 		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add_by_utf8(&stg->vec, arg))
 		: -1;
 }
