@@ -61,16 +61,13 @@ static void lk_make_path(char *const output, const char *const source, const cha
 
 linker linker_create(workspace *const ws)
 {
-	linker lk =
-	{
-		.ws = ws,
-		.sources = ws_get_files_num(ws),
-		.included = vector_create(MAX_PATHS),
-		.current = SIZE_MAX,
-	};
-
-	vector_increase(&lk.included, MAX_PATHS);
-	return lk;
+	return (linker)
+		{
+			.ws = ws,
+			.sources = ws_get_files_num(ws),
+			.included = vector_create(MAX_PATHS),
+			.current = SIZE_MAX,
+		};
 }
 
 
@@ -78,17 +75,9 @@ universal_io linker_add_source(linker *const lk, const size_t index)
 {
 	universal_io input = io_create();
 
-	if (linker_is_correct(lk) && index < lk->sources && vector_get(&lk->included, index) == 0)
+	if (linker_is_correct(lk) && in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
 	{
-		if (in_set_file(&input, ws_get_file(lk->ws, index)))
-		{
-			macro_system_error(ws_get_file(lk->ws, index), source_file_not_found);
-		}
-		else
-		{
-			vector_set(&lk->included, index, 1);
-			lk->current = index;
-		}
+		lk->current = index;
 	}
 
 	return input;
@@ -98,17 +87,12 @@ universal_io linker_add_header(linker *const lk, const size_t index)
 {
 	universal_io input = io_create();
 
-	if (linker_is_correct(lk) && index >= lk->sources && index < MAX_PATHS && vector_get(&lk->included, index) == 0)
+	if (linker_is_correct(lk) && index >= lk->sources
+		&& vector_get(&lk->included, index - lk->sources) == 0
+		&& in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
 	{
-		if (in_set_file(&input, ws_get_file(lk->ws, index)))
-		{
-			macro_system_error(ws_get_file(lk->ws, index), header_file_not_found);
-		}
-		else
-		{
-			vector_set(&lk->included, index, 1);
-			lk->current = index;
-		}
+		vector_set(&lk->included, index - lk->sources, 1);
+		lk->current = index;
 	}
 
 	return input;
@@ -197,7 +181,7 @@ bool linker_is_correct(const linker *const lk)
 
 int linker_clear(linker *const lk)
 {
-	if (!linker_is_correct(lk))
+	if (lk != NULL)
 	{
 		return -1;
 	}
