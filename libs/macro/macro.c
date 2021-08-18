@@ -21,7 +21,37 @@
 #include "uniprinter.h"
 
 
-const size_t SIZE_OUT_BUFFER = 1024;
+#define MAX_DEFINE_SIZE 1024
+
+
+static const size_t OUT_BUFFER_SIZE = 1024;
+
+
+/*
+static inline void storage_parse_ws(storage *const stg, const workspace *const ws)
+{
+	if (!ws_is_correct(ws))
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+		if (flag[0] == '-' && flag[1] == 'D')
+		{
+			char buffer[MAX_DEFINE_SIZE];
+
+			size_t j = 0;
+			while (flag[j] != '\0')
+			{
+				
+			}
+		}
+	}
+}
+*/
+
 
 static int macro_form_io(workspace *const ws, universal_io *const output)
 {
@@ -69,7 +99,7 @@ char *macro(workspace *const ws)
 	}
 
 	universal_io io = io_create();
-	if (out_set_buffer(&io, SIZE_OUT_BUFFER))
+	if (out_set_buffer(&io, OUT_BUFFER_SIZE))
 	{
 		return NULL;
 	}
