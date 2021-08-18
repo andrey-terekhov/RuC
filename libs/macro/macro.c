@@ -57,28 +57,29 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
 	parser prs = parser_create(&lk, output);
-	size_t file_size = linker_size(&lk);
 
-	for (size_t i = 0; i < file_size; i++)
+	int ret = 0;
+	const size_t size = linker_size(&lk);
+	for (size_t i = 0; i < size; i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
 		{
-			linker_clear(&lk);
-			return -1;
+			macro_system_error(TAG_LINKER, source_file_not_found);
 		}
 
-		if (parser_preprocess(&prs, &in))
-		{
-			linker_clear(&lk);
-			return -1;
-		}
-
+		ret = parser_preprocess(&prs, &in);
 		in_clear(&in);
+
+		if (ret)
+		{
+			break;
+		}
 	}
 
+	parser_clear(&prs);
 	linker_clear(&lk);
-	return 0;
+	return ret;
 }
 
 

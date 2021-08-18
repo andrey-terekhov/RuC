@@ -21,6 +21,9 @@
 #include "uniio.h"
 
 
+#define TAG_LINKER "linker"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
