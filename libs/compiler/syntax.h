@@ -678,6 +678,15 @@ item_t scope_func_exit(syntax *const sx, const item_t displ);
  */
 size_t strings_amount(const syntax *const sx);
 
+/**
+ *	Get length of a string
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	Length of a string
+ */
+size_t strings_length(const syntax *const sx, const size_t index);
+
 
 /**
  *	Get expression type

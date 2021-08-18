@@ -830,3 +830,8 @@ size_t strings_amount(const syntax *const sx)
 {
 	return strings_size(&sx->string_literals);
 }
+
+size_t strings_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
+}

@@ -58,7 +58,7 @@ typedef struct information
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
-	answer_t answer_kind;				/**< Тип ответа */
+	answer_t answer_kind;				/**< Вид ответа */
 	item_t answer_type;					/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
@@ -1418,7 +1418,7 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			const size_t index = (size_t)node_get_arg(nd, 2);
-			const size_t string_length = strings_get_length(&info->sx->string_literals, index);
+			const size_t string_length = strings_length(info->sx, index);
 			node_set_next(nd); // OP_STRING
 
 			for (item_t i = 0; i < N; i++)
@@ -1728,7 +1728,7 @@ static void strings_declaration(information *const info)
 	for (size_t index = 0; index < strings_number; index++)
 	{
 		const char *string = string_get(info->sx, index);
-		const size_t length = strings_get_length(&info->sx->string_literals, index);
+		const size_t length = strings_length(info->sx, index);
 		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
 			, index, length + 1);
 
