@@ -48,22 +48,22 @@ linker linker_create(workspace *const ws);
 
 
 /**
- *	Open new source file
- *
- *	@param	lk			Linker structure
- *	@param	index		File index in workspace
- *
- *	@return	File
- */
-universal_io linker_add_source(linker *const lk, const size_t index);
-
-/**
- *	Open new header file
+ *	Link source file forcibly
  *
  *	@param	lk			Linker structure
  *	@param	index		Index of file
  *
- *	@return	File
+ *	@return	File input stream
+ */
+universal_io linker_add_source(linker *const lk, const size_t index);
+
+/**
+ *	Link header file safely
+ *
+ *	@param	lk			Linker structure
+ *	@param	index		Index of file
+ *
+ *	@return	File input stream
  */
 universal_io linker_add_header(linker *const lk, const size_t index);
 
