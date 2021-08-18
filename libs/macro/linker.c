@@ -32,18 +32,21 @@ static void lk_make_path(char *const buffer, const char *const name, const char 
 {
 	size_t index = 0;
 
-	if (is_file)
+	if (path != NULL)
 	{
-		char *slash = strrchr(path, '/');
-		if (slash != NULL)
+		if (is_file)
 		{
-			index = slash - path + 1;
-			strncpy(buffer, path, index);
+			char *slash = strrchr(path, '/');
+			if (slash != NULL)
+			{
+				index = slash - path + 1;
+				strncpy(buffer, path, index);
+			}
 		}
-	}
-	else
-	{
-		index = sprintf(buffer, "%s/", path);
+		else
+		{
+			index = sprintf(buffer, "%s/", path);
+		}
 	}
 
 	strcpy(&buffer[index], name);
@@ -107,27 +110,16 @@ size_t linker_search_internal(linker *const lk, const char *const file)
 	}
 
 	char path[MAX_ARG_SIZE];
+	lk_make_path(path, file, ws_get_file(lk->ws, lk->current), true);
 
-	lk_make_path(path, ws_get_file(lk->ws, lk->current), file, 1);
-
-	if (access(path, F_OK) == -1)
+	for (size_t i = 0; access(path, F_OK) == -1 && i < ws_get_dirs_num(lk->ws); i++)
 	{
-		size_t i = 0;
-		const char *dir;
-		do
-		{
-			dir = ws_get_dir(lk->ws, i++);
-			lk_make_path(path, dir, file, 0);
-		} while (dir != NULL && access(path, F_OK) == -1);
+		lk_make_path(path, file, ws_get_dir(lk->ws, i), false);
 	}
 
-	if (access(path, F_OK) == -1)
-	{
-		macro_system_error(path, header_file_not_found);
-		return SIZE_MAX;
-	}
-
-	return ws_add_file(lk->ws, path);
+	return access(path, F_OK) != -1 && vector_add(&lk->included, 0) != SIZE_MAX
+		? ws_add_file(lk->ws, path)
+		: SIZE_MAX;
 }
 
 size_t linker_search_external(linker *const lk, const char *const file)
@@ -137,28 +129,20 @@ size_t linker_search_external(linker *const lk, const char *const file)
 		return SIZE_MAX;
 	}
 
-	char full_path[MAX_ARG_SIZE];
-
-	size_t i = 0;
-	const char *dir;
-	do
+	char path[MAX_ARG_SIZE] = "";
+	for (size_t i = 0; i < ws_get_dirs_num(lk->ws) && access(path, F_OK) == -1; i++)
 	{
-		dir = ws_get_dir(lk->ws, i++);
-		lk_make_path(full_path, dir, file, 0);
-	} while (dir != NULL && access(full_path, F_OK) == -1);
-
-	if (access(full_path, F_OK) == -1)
-	{
-		lk_make_path(full_path, ws_get_file(lk->ws, lk->current), file, 1);
+		lk_make_path(path, file, ws_get_dir(lk->ws, i), false);
 	}
 
-	if (access(full_path, F_OK) == -1)
+	if (access(path, F_OK) == -1)
 	{
-		macro_system_error(full_path, header_file_not_found);
-		return SIZE_MAX;
+		lk_make_path(path, file, ws_get_file(lk->ws, lk->current), true);
 	}
 
-	return ws_add_file(lk->ws, full_path);
+	return access(path, F_OK) != -1 && vector_add(&lk->included, 0) != SIZE_MAX
+		? ws_add_file(lk->ws, path)
+		: SIZE_MAX;
 }
 
 
