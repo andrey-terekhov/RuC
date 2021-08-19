@@ -237,7 +237,7 @@ static void to_code_operation_const_reg_double(information *const info, const it
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array)
+	, const bool is_array)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
@@ -247,7 +247,7 @@ static void to_code_load(information *const info, const item_t result, const ite
 }
 
 static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
-	, const int is_array, const int is_pointer)
+	, const bool is_array, const bool is_pointer)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
@@ -257,14 +257,14 @@ static void to_code_store_reg(information *const info, const item_t reg, const i
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
-	, const int is_array)
+	, const bool is_array)
 {
 	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
-	, const int is_array)
+	, const bool is_array)
 {
 	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
@@ -490,15 +490,15 @@ static void operand(information *const info, node *const nd)
 		{
 			item_t type = node_get_arg(nd, 0);
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-			int is_addr_to_val = 0;
+			bool is_addr_to_val = false;
 
 			node_set_next(nd);
 			if (info->variable_location == LMEM)
 			{
-				to_code_load(info, info->register_num, displ, type, 0);
+				to_code_load(info, info->register_num, displ, type, false);
 				info->register_num++;
 				info->variable_location = LREG;
-				is_addr_to_val = 1;
+				is_addr_to_val = true;
 				type = type_pointer_get_element_type(info->sx, (size_t)type);
 			}
 
@@ -519,7 +519,7 @@ static void operand(information *const info, node *const nd)
 
 				if (info->variable_location == LMEM)
 				{
-					to_code_store_const_i32(info, num, info->request_reg, 0);
+					to_code_store_const_i32(info, num, info->request_reg, false);
 					info->answer_kind = AREG;
 				}
 				else
@@ -535,7 +535,7 @@ static void operand(information *const info, node *const nd)
 
 				if (info->variable_location == LMEM)
 				{
-					to_code_store_const_double(info, num, info->request_reg, 0);
+					to_code_store_const_double(info, num, info->request_reg, false);
 					info->answer_kind = AREG;
 				}
 				else
@@ -612,7 +612,7 @@ static void operand(information *const info, node *const nd)
 
 				if (location != LMEM)
 				{
-					to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+					to_code_load(info, info->register_num, info->register_num - 1, type, true);
 					info->register_num++;
 				}
 
@@ -644,7 +644,7 @@ static void operand(information *const info, node *const nd)
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, 1);
+				to_code_load(info, info->register_num, info->register_num - 1, type, true);
 				info->register_num++;
 			}
 
@@ -741,18 +741,18 @@ static void assignment_expression(information *const info, node *const nd)
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0;
 	item_t memory_reg = 0;
-	int is_array;
+	bool is_array;
 
 	node_set_next(nd);
 	if (node_get_type(nd) == OP_IDENTIFIER)
 	{
-		is_array = 0;
+		is_array = false;
 		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 		node_set_next(nd);
 	}
 	else // OP_SLICE_IDENT
 	{
-		is_array = 1;
+		is_array = true;
 		info->variable_location = LMEM;
 		expression(info, nd); // OP_SLICE_IDENT or UN_ADDRESS
 		memory_reg = info->answer_reg;
@@ -792,7 +792,7 @@ static void assignment_expression(information *const info, node *const nd)
 	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
 		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
-			, info->answer_kind == AMEM ? 1 : 0);
+			, info->answer_kind == AMEM);
 	}
 	// ACONST && =
 	else if (type_is_integer(operation_type))
@@ -968,18 +968,18 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const unary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0, memory_reg = 0;
-	int is_array;
+	bool is_array;
 
 	node_set_next(nd);
 	if (node_get_type(nd) == OP_IDENTIFIER)
 	{
-		is_array = 0;
+		is_array = false;
 		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 		node_set_next(nd);
 	}
 	else // OP_SLICE_IDENT
 	{
-		is_array = 1;
+		is_array = true;
 		info->variable_location = LMEM;
 		operand(info, nd); // OP_SLICE_IDENT
 		memory_reg = info->answer_reg;
@@ -1014,7 +1014,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+	to_code_store_reg(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, false);
 	info->register_num++;
 }
 
@@ -1494,11 +1494,11 @@ static void init(information *const info, node *const nd, const item_t displ, co
 
 			if (type_is_integer(type))
 			{
-				to_code_store_const_i32(info, value_int, info->register_num - 1, 1);
+				to_code_store_const_i32(info, value_int, info->register_num - 1, true);
 			}
 			else
 			{
-				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, 1);
+				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true);
 			}
 		}
 	}
