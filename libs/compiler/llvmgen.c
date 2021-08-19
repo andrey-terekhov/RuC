@@ -30,8 +30,7 @@
 static const size_t HASH_TABLE_SIZE = 1024;
 static const size_t IS_STATIC = 0;
 static const size_t DIMENSION_LOW_BORDER = 1;
-static const size_t OP_SLICE_DIMENSION = 2;
-static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;
+static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;		// Из-за OP_SLICE
 
 
 typedef enum ANSWER
