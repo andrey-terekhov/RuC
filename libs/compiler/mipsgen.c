@@ -82,6 +82,8 @@ typedef enum ISTRUCTIONS
 	LI,							/**< MIPS Pseudo-Instruction. Load a constant into a register */
 	ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
 	SW,							/**< To store a word to memory */
+	LW,							/**< To load a word from memory as a signed value */
+	JR,							/**< To execute a branch to an instruction address in a register */
 } instructions_t;
 
 typedef struct information
@@ -216,6 +218,12 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 		case SW:
 			uni_printf(io, "sw");
 			break;
+		case LW:
+			uni_printf(io, "lw");
+			break;
+		case JR:
+			uni_printf(io, "jr");
+			break;
 	}
 }
 
@@ -269,6 +277,17 @@ static void to_code_R_I(universal_io *const io, const instructions_t instruction
 	uni_printf(io, ", %" PRIitem "\n", num);
 }
 
+// Вид инструкции:	instr	reg1
+static void to_code_R(universal_io *const io, const instructions_t instruction, 
+	const registers_t reg1)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	register_to_io(io, reg1);
+	uni_printf(io, "\n");
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -297,6 +316,19 @@ static void precodegen(syntax *const sx)
 	to_code_R_I_R(sx->io, SW, RA, 0, FP);
 	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);
 	to_code_R_I_R(sx->io, SW, T0, HEAP_DISPL - 60, GP);
+	uni_printf(sx->io, "\n");
+}
+
+// TODO: подписать, что значит каждая директива и команда
+static void postcodegen(syntax *const sx)
+{
+	uni_printf(sx->io, "\n");
+	to_code_R_I_R(sx->io, LW, RA, -4, SP);
+	to_code_R(sx->io, JR, RA);
+
+	uni_printf(sx->io, "\t.end\tmain\n");
+	uni_printf(sx->io, "\t.size\tmain, .-main\n");
+	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия
 }
 
 /*
@@ -321,5 +353,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 
 	precodegen(info.sx);
 	// const int ret = codegen(&info);
+	postcodegen(info.sx);
 	return 0;
 }
