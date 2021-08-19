@@ -499,7 +499,7 @@ static void operand(information *const info, node *const nd)
 				info->register_num++;
 				info->variable_location = LREG;
 				is_addr_to_val = true;
-				type = type_pointer_get_element_type(info->sx, (size_t)type);
+				type = type_pointer_get_element_type(info->sx, type);
 			}
 
 			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
@@ -737,7 +737,7 @@ static void operand(information *const info, node *const nd)
 
 static void assignment_expression(information *const info, node *const nd)
 {
-	const binary_t assignment_type = node_get_arg(nd, 2);
+	const binary_t assignment_type = (binary_t)node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 
 	node_set_next(nd);
@@ -802,7 +802,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 static void integral_expression(information *const info, node *const nd, const answer_t kind)
 {
-	const binary_t operation = node_get_arg(nd, 2);
+	const binary_t operation = (binary_t)node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	node_set_next(nd);
 
@@ -960,7 +960,7 @@ static void integral_expression(information *const info, node *const nd, const a
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
 static void inc_dec_expression(information *const info, node *const nd)
 {
-	const unary_t operation = node_get_arg(nd, 2);
+	const unary_t operation = (unary_t)node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 
 	node_set_next(nd);
@@ -1024,7 +1024,7 @@ static void unary_operation(information *const info, node *const nd)
 		case UN_MINUS:
 		case UN_NOT:
 		{
-			const unary_t operation = node_get_arg(nd, 2);
+			const unary_t operation = (unary_t)node_get_arg(nd, 2);
 			const item_t operation_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
@@ -1088,7 +1088,7 @@ static void unary_operation(information *const info, node *const nd)
 
 static void binary_operation(information *const info, node *const nd)
 {
-	if (operation_is_assignment(node_get_arg(nd, 2)))
+	if (operation_is_assignment((binary_t)node_get_arg(nd, 2)))
 	{
 		assignment_expression(info, nd);
 		return;
@@ -1419,7 +1419,7 @@ static void statement(information *const info, node *const nd)
 			break;
 		case OP_PRINTF:
 		{
-			const item_t N = node_get_amount(nd) - 1;
+			const item_t N = (item_t)node_get_amount(nd) - 1;
 			item_t args[MAX_PRINTF_ARGS];
 			item_t args_type[MAX_PRINTF_ARGS];
 			if (N > MAX_PRINTF_ARGS)
@@ -1472,7 +1472,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 	// TODO: пока реализовано только для одномерных массивов
 	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
-		const item_t N = node_get_amount(nd);
+		const item_t N = (item_t)node_get_amount(nd);
 
 		const size_t index = hash_get_index(&info->arrays, displ);
 		hash_set_by_index(&info->arrays, index, 1, N);
@@ -1612,8 +1612,8 @@ static int codegen(information *const info)
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = type_function_get_return_type(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
-				const size_t parameters = type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
+				const item_t func_type = type_function_get_return_type(info->sx, ident_get_type(info->sx, ref_ident));
+				const size_t parameters = type_function_get_parameter_amount(info->sx, ident_get_type(info->sx, ref_ident));
 				info->was_dynamic = false;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1685,8 +1685,6 @@ static int codegen(information *const info)
 			}
 		}
 	}
-
-	return 0;
 }
 
 static void architecture(const workspace *const ws, syntax *const sx)
@@ -1715,15 +1713,15 @@ static void structs_declaration(information *const info)
 	const size_t types = vector_size(&info->sx->types);
 	for (size_t i = BEGIN_USER_TYPE; i < types; i++)
 	{
-		if (type_is_structure(info->sx, i))
+		if (type_is_structure(info->sx, (item_t)i))
 		{
 			uni_printf(info->sx->io, "%%struct_opt.%zu = type { ", i);
 
-			const size_t fields = type_structure_get_member_amount(info->sx, i);
+			const size_t fields = type_structure_get_member_amount(info->sx, (item_t)i);
 			for (size_t j = 0; j < fields; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-				type_to_io(info, type_structure_get_member_type(info->sx, i, j));
+				type_to_io(info, type_structure_get_member_type(info->sx, (item_t)i, j));
 			}
 
 			uni_printf(info->sx->io, " }\n");
