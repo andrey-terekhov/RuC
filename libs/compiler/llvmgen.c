@@ -321,7 +321,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < DIMENSION_LOW_BORDER || dim > MAX_DIMENSIONS)
+	if (dim == 0 || dim > MAX_DIMENSIONS)
 	{
 		system_error(such_array_is_not_supported);
 		return;
@@ -346,7 +346,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < DIMENSION_LOW_BORDER || dim > MAX_DIMENSIONS)
+	if (dim == 0 || dim > MAX_DIMENSIONS)
 	{
 		system_error(such_array_is_not_supported);
 		return;
