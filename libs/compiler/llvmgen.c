@@ -1609,8 +1609,9 @@ static int codegen(information *const info)
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = type_function_get_return_type(info->sx, ident_get_type(info->sx, ref_ident));
-				const size_t parameters = type_function_get_parameter_amount(info->sx, ident_get_type(info->sx, ref_ident));
+				const item_t func_type = ident_get_type(info->sx, ref_ident);
+				const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 				info->was_dynamic = false;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
@@ -1620,7 +1621,7 @@ static int codegen(information *const info)
 				else
 				{
 					uni_printf(info->sx->io, "define ");
-					type_to_io(info, func_type);
+					type_to_io(info, ret_type);
 					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
 				}
 
@@ -1649,7 +1650,7 @@ static int codegen(information *const info)
 				node_set_next(&root);
 				block(info, &root);
 
-				if (type_is_void(func_type))
+				if (type_is_void(ret_type))
 				{
 					if (info->was_dynamic)
 					{
