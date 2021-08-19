@@ -49,6 +49,8 @@ enum TYPE
 	TYPE_STRUCTURE,
 	TYPE_ARRAY,
 	TYPE_POINTER,
+
+	BEGIN_USER_TYPE = 15,
 };
 
 /** Value category */

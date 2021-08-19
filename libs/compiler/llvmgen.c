@@ -1714,9 +1714,9 @@ static void architecture(const workspace *const ws, syntax *const sx)
 static void structs_declaration(information *const info)
 {
 	const size_t types = vector_size(&info->sx->types);
-	for (size_t i = 0; i < types; i++)
+	for (size_t i = BEGIN_USER_TYPE; i < types; i++)
 	{
-		if (type_is_structure(info->sx, i) && i != 2)
+		if (type_is_structure(info->sx, i))
 		{
 			uni_printf(info->sx->io, "%%struct_opt.%zu = type { ", i);
 
