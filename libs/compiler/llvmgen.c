@@ -702,7 +702,7 @@ static void operand(information *const info, node *const nd)
 			}
 			uni_printf(info->sx->io, " call ");
 			type_to_io(info, func_type);
-			uni_printf(info->sx->io, " @func%zi(", type_ref);
+			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
 
 			for (size_t i = 0; i < args; i++)
 			{
@@ -1439,7 +1439,7 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%zi x i8], [%zi x i8]* @.str%zi, i32 0, i32 0)"
+				"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
@@ -1620,7 +1620,7 @@ static int codegen(information *const info)
 				{
 					uni_printf(info->sx->io, "define ");
 					type_to_io(info, func_type);
-					uni_printf(info->sx->io, " @func%zi(", ident_get_type(info->sx, ref_ident));
+					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
 				}
 				for (size_t i = 0; i < parameters; i++)
 				{
@@ -1711,7 +1711,7 @@ static void structs_declaration(information *const info)
 	{
 		if (type_is_structure(info->sx, i) && i != 2)
 		{
-			uni_printf(info->sx->io, "%%struct_opt.%zi = type { ", i);
+			uni_printf(info->sx->io, "%%struct_opt.%zu = type { ", i);
 
 			const size_t fields = type_structure_get_member_amount(info->sx, i);
 			for (size_t j = 0; j < fields; j++)
@@ -1733,7 +1733,7 @@ static void strings_declaration(information *const info)
 	{
 		const char *string = string_get(info->sx, index);
 		const size_t length = strings_length(info->sx, index);
-		uni_printf(info->sx->io, "@.str%" PRIitem " = private unnamed_addr constant [%zi x i8] c\""
+		uni_printf(info->sx->io, "@.str%zu = private unnamed_addr constant [%zu x i8] c\""
 			, index, length + 1);
 
 		for (size_t j = 0; j < length; j++)
