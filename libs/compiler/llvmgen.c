@@ -476,11 +476,6 @@ static void check_type_and_branch(information *const info)
 
 static void operand(information *const info, node *const nd)
 {
-	if (node_get_type(nd) == OP_NOP)
-	{
-		node_set_next(nd);
-	}
-
 	switch (node_get_type(nd))
 	{
 		case OP_SELECT:
@@ -1184,6 +1179,8 @@ static void statement(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
+		case OP_NOP:
+			break;
 		case OP_BLOCK:
 			block(info, nd);
 			break;
