@@ -474,262 +474,6 @@ static void check_type_and_branch(information *const info)
 	}
 }
 
-static void operand(information *const info, node *const nd)
-{
-	switch (node_get_type(nd))
-	{
-		case OP_SELECT:
-			node_set_next(nd);
-			break;
-		case OP_IDENTIFIER:
-		{
-			item_t type = node_get_arg(nd, 0);
-			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-			bool is_addr_to_val = false;
-
-			node_set_next(nd);
-			if (info->variable_location == LMEM)
-			{
-				to_code_load(info, info->register_num, displ, type, false);
-				info->register_num++;
-				info->variable_location = LREG;
-				is_addr_to_val = true;
-				type = type_pointer_get_element_type(info->sx, type);
-			}
-
-			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
-				, is_addr_to_val);
-			info->answer_reg = info->register_num++;
-			info->answer_kind = AREG;
-			info->answer_type = type;
-		}
-		break;
-		case OP_CONSTANT:
-		{
-			const item_t type = node_get_arg(nd, 0);
-
-			if (type_is_integer(type))
-			{
-				const item_t num = node_get_arg(nd, 2);
-
-				if (info->variable_location == LMEM)
-				{
-					to_code_store_const_i32(info, num, info->request_reg, false);
-					info->answer_kind = AREG;
-				}
-				else
-				{
-					info->answer_kind = ACONST;
-					info->answer_const = num;
-					info->answer_type = TYPE_INTEGER;
-				}
-			}
-			else
-			{
-				const double num = node_get_arg_double(nd, 2);
-
-				if (info->variable_location == LMEM)
-				{
-					to_code_store_const_double(info, num, info->request_reg, false);
-					info->answer_kind = AREG;
-				}
-				else
-				{
-					info->answer_kind = ACONST;
-					info->answer_const_double = num;
-					info->answer_type = TYPE_FLOATING;
-				}
-			}
-
-			node_set_next(nd);
-		}
-		break;
-		case OP_SLICE:
-		{
-			const item_t type = node_get_arg(nd, 0);
-			node_set_next(nd);
-
-			// двумерная вырезка, плохое решение, более общее решение будет, когда будут реализовываться массивы бОльшей размерности
-			if (node_get_type(nd) == OP_SLICE)
-			{
-				node_set_next(nd);
-
-				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-				node_set_next(nd);
-
-				size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
-				const location_t location = info->variable_location;
-
-				info->variable_location = LFREE;
-				expression(info, nd);
-
-				// TODO: пока только для динамических массивов размерности 2
-				if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
-				{
-					if (info->answer_kind == ACONST)
-					{
-						to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
-					}
-					else // if (info->answer_kind == AREG)
-					{
-						to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
-							TYPE_INTEGER);
-					}
-
-					info->answer_kind = AREG;
-					info->answer_reg = info->register_num++;
-				}
-
-				if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
-				{
-					to_code_slice(info, displ, cur_dimension, 0, type);
-				}
-				else
-				{
-					system_error(such_array_is_not_supported);
-				}
-
-				item_t prev_slice = info->register_num - 1;
-				info->variable_location = LFREE;
-				expression(info, nd);
-				cur_dimension--;
-
-				// Проверка, что значение cur_dimension корректное и в пределах допустимого
-				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-				if (cur_dimension < MAX_DIMENSIONS)
-				{
-					to_code_slice(info, displ, cur_dimension, prev_slice, type);
-				}
-				else
-				{
-					system_error(such_array_is_not_supported);
-				}
-
-				if (location != LMEM)
-				{
-					to_code_load(info, info->register_num, info->register_num - 1, type, true);
-					info->register_num++;
-				}
-
-				info->answer_reg = info->register_num - 1;
-				info->answer_kind = AREG;
-				info->answer_type = type;
-				break;
-			}
-
-			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-			node_set_next(nd);
-
-			size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
-			const location_t location = info->variable_location;
-
-			info->variable_location = LFREE;
-			expression(info, nd);
-
-			// Проверка, что значение cur_dimension корректное и в пределах допустимого
-			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-			if (cur_dimension < MAX_DIMENSIONS)
-			{
-				to_code_slice(info, displ, cur_dimension, 0, type);
-			}
-			else
-			{
-				system_error(such_array_is_not_supported);
-			}
-
-			if (location != LMEM)
-			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, true);
-				info->register_num++;
-			}
-
-			info->answer_reg = info->register_num - 1;
-			info->answer_kind = AREG;
-			info->answer_type = type;
-		}
-		break;
-		case OP_CALL:
-		{
-			item_t arguments[MAX_FUNCTION_ARGS];
-			double arguments_double[MAX_FUNCTION_ARGS];
-			answer_t arguments_type[MAX_FUNCTION_ARGS];
-			item_t arguments_value_type[MAX_FUNCTION_ARGS];
-
-			const item_t func_type = node_get_arg(nd, 0);
-			node_set_next(nd);
-
-			const item_t type_ref = node_get_arg(nd, 0);
-			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
-			if (args > MAX_FUNCTION_ARGS)
-			{
-				system_error(too_many_arguments);
-				return;
-			}
-
-			node_set_next(nd); // OP_IDENT
-			for (size_t i = 0; i < args; i++)
-			{
-				info->variable_location = LFREE;
-				expression(info, nd);
-				// TODO: сделать параметры других типов (логическое)
-				arguments_type[i] = info->answer_kind;
-				arguments_value_type[i] = info->answer_type;
-				if (info->answer_kind == AREG)
-				{
-					arguments[i] = info->answer_reg;
-				}
-				else if (type_is_integer(info->answer_type)) // ACONST
-				{
-					arguments[i] = info->answer_const;
-				}
-				else // double
-				{
-					arguments_double[i] = info->answer_const_double;
-				}
-			}
-
-			if (!type_is_void(func_type))
-			{
-				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
-				info->answer_kind = AREG;
-				info->answer_type = func_type;
-				info->answer_reg = info->register_num++;
-			}
-			uni_printf(info->sx->io, " call ");
-			type_to_io(info, func_type);
-			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
-
-			for (size_t i = 0; i < args; i++)
-			{
-				if (i != 0)
-				{
-					uni_printf(info->sx->io, ", ");
-				}
-
-				type_to_io(info, arguments_value_type[i]);
-				uni_printf(info->sx->io, " signext ");
-				if (arguments_type[i] == AREG)
-				{
-					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
-				}
-				else if (type_is_integer(arguments_value_type[i])) // ACONST
-				{
-					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
-				}
-				else // double
-				{
-					uni_printf(info->sx->io, "%f", arguments_double[i]);
-				}
-			}
-			uni_printf(info->sx->io, ")\n");
-		}
-		break;
-		default:
-			node_set_next(nd);
-			break;
-	}
-}
-
 static void assignment_expression(information *const info, node *const nd)
 {
 	const binary_t assignment_type = (binary_t)node_get_arg(nd, 2);
@@ -969,7 +713,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 	else // OP_SLICE_IDENT
 	{
 		info->variable_location = LMEM;
-		operand(info, nd); // OP_SLICE_IDENT
+		expression(info, nd); // OP_SLICE_IDENT
 		displ = info->answer_reg;
 	}
 
@@ -1069,7 +813,7 @@ static void unary_operation(information *const info, node *const nd)
 		{
 			node_set_next(nd);
 			info->variable_location = info->variable_location == LMEM ? LREG : LMEM;
-			operand(info, nd);
+			expression(info, nd);
 		}
 		break;
 		default:
@@ -1163,14 +907,262 @@ static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
+		case OP_IDENTIFIER:
+		{
+			item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			bool is_addr_to_val = false;
+
+			node_set_next(nd);
+			if (info->variable_location == LMEM)
+			{
+				to_code_load(info, info->register_num, displ, type, false);
+				info->register_num++;
+				info->variable_location = LREG;
+				is_addr_to_val = true;
+				type = type_pointer_get_element_type(info->sx, type);
+			}
+
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
+				, is_addr_to_val);
+			info->answer_reg = info->register_num++;
+			info->answer_kind = AREG;
+			info->answer_type = type;
+		}
+		break;
+		case OP_CONSTANT:
+		{
+			const item_t type = node_get_arg(nd, 0);
+
+			if (type_is_integer(type))
+			{
+				const item_t num = node_get_arg(nd, 2);
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_i32(info, num, info->request_reg, false);
+					info->answer_kind = AREG;
+				}
+				else
+				{
+					info->answer_kind = ACONST;
+					info->answer_const = num;
+					info->answer_type = TYPE_INTEGER;
+				}
+			}
+			else
+			{
+				const double num = node_get_arg_double(nd, 2);
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_double(info, num, info->request_reg, false);
+					info->answer_kind = AREG;
+				}
+				else
+				{
+					info->answer_kind = ACONST;
+					info->answer_const_double = num;
+					info->answer_type = TYPE_FLOATING;
+				}
+			}
+
+			node_set_next(nd);
+		}
+		break;
+		case OP_SLICE:
+		{
+			const item_t type = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			// двумерная вырезка, плохое решение, более общее решение будет, когда будут реализовываться массивы бОльшей размерности
+			if (node_get_type(nd) == OP_SLICE)
+			{
+				node_set_next(nd);
+
+				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+				node_set_next(nd);
+
+				size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+				const location_t location = info->variable_location;
+
+				info->variable_location = LFREE;
+				expression(info, nd);
+
+				// TODO: пока только для динамических массивов размерности 2
+				if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
+				{
+					if (info->answer_kind == ACONST)
+					{
+						to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
+					}
+					else // if (info->answer_kind == AREG)
+					{
+						to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
+							TYPE_INTEGER);
+					}
+
+					info->answer_kind = AREG;
+					info->answer_reg = info->register_num++;
+				}
+
+				if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
+				{
+					to_code_slice(info, displ, cur_dimension, 0, type);
+				}
+				else
+				{
+					system_error(such_array_is_not_supported);
+				}
+
+				item_t prev_slice = info->register_num - 1;
+				info->variable_location = LFREE;
+				expression(info, nd);
+				cur_dimension--;
+
+				// Проверка, что значение cur_dimension корректное и в пределах допустимого
+				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+				if (cur_dimension < MAX_DIMENSIONS)
+				{
+					to_code_slice(info, displ, cur_dimension, prev_slice, type);
+				}
+				else
+				{
+					system_error(such_array_is_not_supported);
+				}
+
+				if (location != LMEM)
+				{
+					to_code_load(info, info->register_num, info->register_num - 1, type, true);
+					info->register_num++;
+				}
+
+				info->answer_reg = info->register_num - 1;
+				info->answer_kind = AREG;
+				info->answer_type = type;
+				break;
+			}
+
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			node_set_next(nd);
+
+			size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+			const location_t location = info->variable_location;
+
+			info->variable_location = LFREE;
+			expression(info, nd);
+
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			if (cur_dimension < MAX_DIMENSIONS)
+			{
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
+			else
+			{
+				system_error(such_array_is_not_supported);
+			}
+
+			if (location != LMEM)
+			{
+				to_code_load(info, info->register_num, info->register_num - 1, type, true);
+				info->register_num++;
+			}
+
+			info->answer_reg = info->register_num - 1;
+			info->answer_kind = AREG;
+			info->answer_type = type;
+		}
+		break;
+
+		case OP_CALL:
+		{
+			item_t arguments[MAX_FUNCTION_ARGS];
+			double arguments_double[MAX_FUNCTION_ARGS];
+			answer_t arguments_type[MAX_FUNCTION_ARGS];
+			item_t arguments_value_type[MAX_FUNCTION_ARGS];
+
+			const item_t func_type = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			const item_t type_ref = node_get_arg(nd, 0);
+			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
+			if (args > MAX_FUNCTION_ARGS)
+			{
+				system_error(too_many_arguments);
+				return;
+			}
+
+			node_set_next(nd); // OP_IDENT
+			for (size_t i = 0; i < args; i++)
+			{
+				info->variable_location = LFREE;
+				expression(info, nd);
+				// TODO: сделать параметры других типов (логическое)
+				arguments_type[i] = info->answer_kind;
+				arguments_value_type[i] = info->answer_type;
+				if (info->answer_kind == AREG)
+				{
+					arguments[i] = info->answer_reg;
+				}
+				else if (type_is_integer(info->answer_type)) // ACONST
+				{
+					arguments[i] = info->answer_const;
+				}
+				else // double
+				{
+					arguments_double[i] = info->answer_const_double;
+				}
+			}
+
+			if (!type_is_void(func_type))
+			{
+				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
+				info->answer_kind = AREG;
+				info->answer_type = func_type;
+				info->answer_reg = info->register_num++;
+			}
+			uni_printf(info->sx->io, " call ");
+			type_to_io(info, func_type);
+			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
+
+			for (size_t i = 0; i < args; i++)
+			{
+				if (i != 0)
+				{
+					uni_printf(info->sx->io, ", ");
+				}
+
+				type_to_io(info, arguments_value_type[i]);
+				uni_printf(info->sx->io, " signext ");
+				if (arguments_type[i] == AREG)
+				{
+					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
+				}
+				else if (type_is_integer(arguments_value_type[i])) // ACONST
+				{
+					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
+				}
+				else // double
+				{
+					uni_printf(info->sx->io, "%f", arguments_double[i]);
+				}
+			}
+			uni_printf(info->sx->io, ")\n");
+		}
+		break;
+		case OP_SELECT:
+			node_set_next(nd);
+			break;
+			
 		case OP_UNARY:
 			unary_operation(info, nd);
 			break;
 		case OP_BINARY:
 			binary_operation(info, nd);
 			break;
-		default:
-			operand(info, nd);
+		case OP_TERNARY:
+			node_set_next(nd);
 			break;
 	}
 }
