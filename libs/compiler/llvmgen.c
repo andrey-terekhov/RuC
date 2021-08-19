@@ -1630,25 +1630,25 @@ static int codegen(information *const info)
 				{
 					uni_printf(info->sx->io, i == 0 ? "" : ", ");
 
-					const item_t par_type = type_function_get_parameter_type(info->sx, func_type, i);
-					type_to_io(info, par_type);
+					const item_t param_type = type_function_get_parameter_type(info->sx, func_type, i);
+					type_to_io(info, param_type);
 				}
 				uni_printf(info->sx->io, ") {\n");
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const item_t par_displ = ident_get_displ(info->sx, ref_ident + 4 * (i + 1));
-					const item_t par_type = type_function_get_parameter_type(info->sx, func_type, i);
+					const item_t param_displ = ident_get_displ(info->sx, ref_ident + 4 * (i + 1));
+					const item_t param_type = type_function_get_parameter_type(info->sx, func_type, i);
 
-					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", par_displ);
-					type_to_io(info, par_type);
+					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
+					type_to_io(info, param_type);
 					uni_printf(info->sx->io, ", align 4\n");
 
 					uni_printf(info->sx->io, " store ");
-					type_to_io(info, par_type);
+					type_to_io(info, param_type);
 					uni_printf(info->sx->io, " %%%zu, ", i);
-					type_to_io(info, par_type);
-					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", par_displ);
+					type_to_io(info, param_type);
+					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", param_displ);
 				}
 
 				node_set_next(&root);
