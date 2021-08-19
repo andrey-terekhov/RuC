@@ -74,9 +74,8 @@ typedef struct information
 											@c value[0]	 - флаг статичности
 											@c value[1..MAX] - границы массива */
 
-	int was_printf;						/**< Истина, если вызывался printf в исходном коде */
-	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
-	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
+	bool was_printf;					/**< Истина, если вызывался printf в исходном коде */
+	bool was_dynamic;					/**< Истина, если в функции были динамические массивы */
 } information;
 
 
@@ -1461,7 +1460,7 @@ static void statement(information *const info, node *const nd)
 			}
 
 			uni_printf(info->sx->io, ")\n");
-			info->was_printf = 1;
+			info->was_printf = true;
 		}
 		break;
 		default:
@@ -1582,7 +1581,7 @@ static void block(information *const info, node *const nd)
 						}
 
 						to_code_alloc_array_dynamic(info, index, array_get_type(info, elem_type));
-						info->was_dynamic = 1;
+						info->was_dynamic = true;
 					}
 				}
 
@@ -1604,7 +1603,7 @@ static void block(information *const info, node *const nd)
 
 static int codegen(information *const info)
 {
-	int was_stack_functions = 0;
+	bool was_stack_functions = false;
 	node root = node_get_root(&info->sx->tree);
 
 	while (true)
@@ -1616,7 +1615,7 @@ static int codegen(information *const info)
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_type = type_function_get_return_type(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
 				const size_t parameters = type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
-				info->was_dynamic = 0;
+				info->was_dynamic = false;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 				{
@@ -1674,11 +1673,6 @@ static int codegen(information *const info)
 					{
 						uni_printf(info->sx->io, "declare i8* @llvm.stacksave()\n");
 						uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
-					}
-					if (info->was_memcpy)
-					{
-						uni_printf(info->sx->io, "declare void @llvm.memcpy.p0i8.p0i8.i32"
-						"(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
 					}
 					if (info->was_printf)
 					{
@@ -1789,9 +1783,8 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-	info.was_printf = 0;
-	info.was_dynamic = 0;
-	info.was_memcpy = 0;
+	info.was_printf = false;
+	info.was_dynamic = false;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
