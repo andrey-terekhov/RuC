@@ -24,6 +24,7 @@
 
 
 #define MAX_FUNCTION_ARGS 128
+#define MAX_PRINTF_ARGS 128
 
 
 const size_t HASH_TABLE_SIZE = 1024;
@@ -771,8 +772,7 @@ static void assignment_expression(information *const info, node *const nd)
 		{
 			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
-		// ACONST
-		else if (type_is_integer(operation_type))
+		else if (type_is_integer(operation_type)) // ACONST
 		{
 			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
@@ -791,8 +791,7 @@ static void assignment_expression(information *const info, node *const nd)
 		to_code_store_reg(info, result, displ, operation_type, is_array
 			, info->answer_kind == AMEM);
 	}
-	// ACONST && =
-	else if (type_is_integer(operation_type))
+	else if (type_is_integer(operation_type)) // ACONST и опериция =
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
@@ -1422,8 +1421,13 @@ static void statement(information *const info, node *const nd)
 		case OP_PRINTF:
 		{
 			const item_t N = node_get_amount(nd) - 1;
-			item_t args[128];
-			item_t args_type[128];
+			item_t args[MAX_PRINTF_ARGS];
+			item_t args_type[MAX_PRINTF_ARGS];
+			if (N > MAX_PRINTF_ARGS)
+			{
+				system_error(too_many_arguments);
+				return;
+			}
 
 			node_set_next(nd);
 			const size_t index = (size_t)node_get_arg(nd, 2);
@@ -1564,6 +1568,7 @@ static void block(information *const info, node *const nd)
 							}
 						}
 					}
+
 					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
 					{
 						to_code_alloc_array_static(info, index, array_get_type(info, elem_type));
@@ -1622,6 +1627,7 @@ static int codegen(information *const info)
 					type_to_io(info, func_type);
 					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
 				}
+
 				for (size_t i = 0; i < parameters; i++)
 				{
 					uni_printf(info->sx->io, i == 0 ? "" : ", ");
@@ -1669,6 +1675,7 @@ static int codegen(information *const info)
 						uni_printf(info->sx->io, "declare i8* @llvm.stacksave()\n");
 						uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
 					}
+
 					if (info->was_printf)
 					{
 						uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
@@ -1706,8 +1713,8 @@ static void architecture(const workspace *const ws, syntax *const sx)
 
 static void structs_declaration(information *const info)
 {
-	const size_t types_size = vector_size(&info->sx->types);
-	for (size_t i = 0; i < types_size; i++)
+	const size_t types = vector_size(&info->sx->types);
+	for (size_t i = 0; i < types; i++)
 	{
 		if (type_is_structure(info->sx, i) && i != 2)
 		{
@@ -1728,13 +1735,13 @@ static void structs_declaration(information *const info)
 
 static void strings_declaration(information *const info)
 {
-	const size_t strings_number = strings_amount(info->sx);
-	for (size_t index = 0; index < strings_number; index++)
+	const size_t amount = strings_amount(info->sx);
+	for (size_t i = 0; i < amount; i++)
 	{
-		const char *string = string_get(info->sx, index);
-		const size_t length = strings_length(info->sx, index);
+		const char *string = string_get(info->sx, i);
+		const size_t length = strings_length(info->sx, i);
 		uni_printf(info->sx->io, "@.str%zu = private unnamed_addr constant [%zu x i8] c\""
-			, index, length + 1);
+			, i, length + 1);
 
 		for (size_t j = 0; j < length; j++)
 		{
