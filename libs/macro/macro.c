@@ -17,6 +17,7 @@
 #include "macro.h"
 #include "linker.h"
 #include "parser.h"
+#include "storage.h"
 #include "uniio.h"
 #include "uniprinter.h"
 
@@ -27,14 +28,8 @@
 static const size_t OUT_BUFFER_SIZE = 1024;
 
 
-/*
-static inline void storage_parse_ws(storage *const stg, const workspace *const ws)
+static inline int storage_parse_ws(storage *const stg, const workspace *const ws)
 {
-	if (!ws_is_correct(ws))
-	{
-		return;
-	}
-
 	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
 	{
 		const char *flag = ws_get_flag(ws, i);
@@ -49,18 +44,21 @@ static inline void storage_parse_ws(storage *const stg, const workspace *const w
 			}
 		}
 	}
+
+	return 0;
 }
-*/
 
 
 static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
+	storage stg = storage_create();
 	parser prs = parser_create(&lk, output);
 
-	int ret = 0;
+	int ret = storage_parse_ws(&stg, ws);
+
 	const size_t size = linker_size(&lk);
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 0; i < size && !ret; i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
@@ -70,14 +68,10 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 
 		ret = parser_preprocess(&prs, &in);
 		in_clear(&in);
-
-		if (ret)
-		{
-			break;
-		}
 	}
 
 	parser_clear(&prs);
+	storage_clear(&stg);
 	linker_clear(&lk);
 	return ret;
 }
