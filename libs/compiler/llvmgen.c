@@ -23,11 +23,13 @@
 #include "uniprinter.h"
 
 
+#define MAX_FUNCTION_ARGS 128
+
+
 const size_t HASH_TABLE_SIZE = 1024;
 const size_t IS_STATIC = 0;
 const size_t DIMENSION_LOW_BORDER = 1;
 const size_t DIMENSION_HIGH_BORDER = 5;
-const size_t MAX_FUNCTION_ARGS = 128;
 
 
 typedef enum ANSWER
