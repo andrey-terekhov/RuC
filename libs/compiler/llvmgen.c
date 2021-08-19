@@ -1180,6 +1180,7 @@ static void statement(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case OP_NOP:
+			node_set_next(nd);
 			break;
 		case OP_BLOCK:
 			block(info, nd);
@@ -1642,7 +1643,7 @@ static int codegen(information *const info)
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", par_displ);
 					type_to_io(info, par_type);
 					uni_printf(info->sx->io, ", align 4\n");
-					
+
 					uni_printf(info->sx->io, " store ");
 					type_to_io(info, par_type);
 					uni_printf(info->sx->io, " %%%zu, ", i);
