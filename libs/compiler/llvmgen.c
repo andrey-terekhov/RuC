@@ -741,18 +741,16 @@ static void assignment_expression(information *const info, node *const nd)
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0;
 	item_t memory_reg = 0;
-	bool is_array;
 
 	node_set_next(nd);
-	if (node_get_type(nd) == OP_IDENTIFIER)
+	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
+	if (!is_array)
 	{
-		is_array = false;
 		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 		node_set_next(nd);
 	}
 	else // OP_SLICE_IDENT
 	{
-		is_array = true;
 		info->variable_location = LMEM;
 		expression(info, nd); // OP_SLICE_IDENT or UN_ADDRESS
 		memory_reg = info->answer_reg;
@@ -968,18 +966,16 @@ static void inc_dec_expression(information *const info, node *const nd)
 	const unary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0, memory_reg = 0;
-	bool is_array;
 
 	node_set_next(nd);
-	if (node_get_type(nd) == OP_IDENTIFIER)
+	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
+	if (!is_array)
 	{
-		is_array = false;
 		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 		node_set_next(nd);
 	}
 	else // OP_SLICE_IDENT
 	{
-		is_array = true;
 		info->variable_location = LMEM;
 		operand(info, nd); // OP_SLICE_IDENT
 		memory_reg = info->answer_reg;
