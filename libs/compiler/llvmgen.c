@@ -666,6 +666,12 @@ static void operand(information *const info, node *const nd)
 
 			const item_t type_ref = node_get_arg(nd, 0);
 			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
+			if (args > MAX_FUNCTION_ARGS)
+			{
+				system_error(too_many_arguments);
+				return;
+			}
+
 			node_set_next(nd); // OP_IDENT
 			for (size_t i = 0; i < args; i++)
 			{

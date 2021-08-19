@@ -586,6 +586,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case such_array_is_not_supported:
 			sprintf(msg, "такие массивы пока не поддерживаются в кодогенераторе");
 			break;
+		case too_many_arguments:
+			sprintf(msg, "слишком много аргументов у функции, допустимое количество до 128");
+			break;
 
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);
