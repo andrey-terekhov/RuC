@@ -18,15 +18,18 @@
 #include <string.h>
 #include "errors.h"
 #include "hash.h"
-#include "llvmopt.h"
 #include "operations.h"
-#include "parser.h"
 #include "tree.h"
 #include "uniprinter.h"
 
 
-const size_t HASH_TABLE_SIZE = 1024;
-const size_t IS_STATIC = 0;
+#define MAX_FUNCTION_ARGS 128
+#define MAX_PRINTF_ARGS 128
+
+
+static const size_t HASH_TABLE_SIZE = 1024;
+static const size_t IS_STATIC = 0;
+static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;		// Из-за OP_SLICE
 
 
 typedef enum ANSWER
@@ -46,10 +49,8 @@ typedef enum LOCATION
 
 typedef struct information
 {
-	universal_io *io;					/**< Вывод */
 	syntax *sx;							/**< Структура syntax с таблицами */
 
-	item_t string_num;					/**< Номер строки */
 	item_t register_num;				/**< Номер регистра */
 	item_t label_num;					/**< Номер метки */
 	item_t init_num;					/**< Счётчик для инициализации */
@@ -60,8 +61,8 @@ typedef struct information
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
-	answer_t answer_type;				/**< Тип ответа */
-	item_t answer_value_type;			/**< Тип значения */
+	answer_t answer_kind;				/**< Вид ответа */
+	item_t answer_type;					/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
@@ -69,11 +70,12 @@ typedef struct information
 	item_t label_continue;				/**< Метка перехода для continue */
 
 	hash arrays;						/**< Хеш таблица с информацией о массивах:
-												@с key		 - смещение массива
-												@c value[0]	 - флаг статичности
-												@c value[1..MAX] - границы массива */
-	int was_dynamic;					/**< Истина, если в функции были динамические массивы */
-	int was_memcpy;						/**< Истина, если memcpy использовалась для инициализации */
+											@с key		 - смещение массива
+											@c value[0]	 - флаг статичности
+											@c value[1..MAX] - границы массива */
+
+	bool was_printf;					/**< Истина, если вызывался printf в исходном коде */
+	bool was_dynamic;					/**< Истина, если в функции были динамические массивы */
 } information;
 
 
@@ -81,358 +83,113 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static double to_double(const int64_t fst, const int64_t snd)
+static item_t array_get_type(information *const info, const item_t array_type)
 {
-	int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
-	double numdouble;
-	memcpy(&numdouble, &num, sizeof(double));
-
-	return numdouble;
-}
-
-// TODO: помню, такое планировалось делать вне кодогенератора...
-static bool is_double(const item_t operation)
-{
-	switch (operation)
+	item_t type = array_type;
+	while (type_is_array(info->sx, type))
 	{
-		case OP_ASSIGN_R:
-		case OP_ADD_ASSIGN_R:
-		case OP_SUB_ASSIGN_R:
-		case OP_MUL_ASSIGN_R:
-		case OP_DIV_ASSIGN_R:
-
-		case OP_ASSIGN_AT_R:
-		case OP_ADD_ASSIGN_AT_R:
-		case OP_SUB_ASSIGN_AT_R:
-		case OP_MUL_ASSIGN_AT_R:
-		case OP_DIV_ASSIGN_AT_R:
-
-		case OP_ASSIGN_R_V:
-		case OP_ADD_ASSIGN_R_V:
-		case OP_SUB_ASSIGN_R_V:
-		case OP_MUL_ASSIGN_R_V:
-		case OP_DIV_ASSIGN_R_V:
-
-		case OP_ASSIGN_AT_R_V:
-		case OP_ADD_ASSIGN_AT_R_V:
-		case OP_SUB_ASSIGN_AT_R_V:
-		case OP_MUL_ASSIGN_AT_R_V:
-		case OP_DIV_ASSIGN_AT_R_V:
-
-		case OP_EQ_R:
-		case OP_NE_R:
-		case OP_LT_R:
-		case OP_GT_R:
-		case OP_LE_R:
-		case OP_GE_R:
-		case OP_ADD_R:
-		case OP_SUB_R:
-		case OP_MUL_R:
-		case OP_DIV_R:
-
-		case OP_POST_INC_R:
-		case OP_POST_DEC_R:
-		case OP_PRE_INC_R:
-		case OP_PRE_DEC_R:
-		case OP_POST_INC_AT_R:
-		case OP_POST_DEC_AT_R:
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_DEC_AT_R:
-		case OP_POST_INC_R_V:
-		case OP_POST_DEC_R_V:
-		case OP_PRE_INC_R_V:
-		case OP_PRE_DEC_R_V:
-		case OP_POST_INC_AT_R_V:
-		case OP_POST_DEC_AT_R_V:
-		case OP_PRE_INC_AT_R_V:
-		case OP_PRE_DEC_AT_R_V:
-
-		case OP_UNMINUS_R:
-			return 1;
-
-		default:
-			return 0;
+		type = type_array_get_element_type(info->sx, type);
 	}
-}
 
-static bool is_array_operation(const item_t operation)
-{
-	switch (operation)
-	{
-		case OP_POST_INC_AT:
-		case OP_POST_DEC_AT:
-		case OP_PRE_INC_AT:
-		case OP_PRE_DEC_AT:
-		case OP_POST_INC_AT_V:
-		case OP_POST_DEC_AT_V:
-		case OP_PRE_INC_AT_V:
-		case OP_PRE_DEC_AT_V:
-
-		case OP_POST_INC_AT_R:
-		case OP_POST_DEC_AT_R:
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_DEC_AT_R:
-		case OP_POST_INC_AT_R_V:
-		case OP_POST_DEC_AT_R_V:
-		case OP_PRE_INC_AT_R_V:
-		case OP_PRE_DEC_AT_R_V:
-
-		case OP_REM_ASSIGN_AT:
-		case OP_SHL_ASSIGN_AT:
-		case OP_SHR_ASSIGN_AT:
-		case OP_AND_ASSIGN_AT:
-		case OP_XOR_ASSIGN_AT:
-		case OP_OR_ASSIGN_AT:
-
-		case OP_ASSIGN_AT:
-		case OP_ADD_ASSIGN_AT:
-		case OP_SUB_ASSIGN_AT:
-		case OP_MUL_ASSIGN_AT:
-		case OP_DIV_ASSIGN_AT:
-
-		case OP_REM_ASSIGN_AT_V:
-		case OP_SHL_ASSIGN_AT_V:
-		case OP_SHR_ASSIGN_AT_V:
-		case OP_AND_ASSIGN_AT_V:
-		case OP_XOR_ASSIGN_AT_V:
-		case OP_OR_ASSIGN_AT_V:
-
-		case OP_ASSIGN_AT_V:
-		case OP_ADD_ASSIGN_AT_V:
-		case OP_SUB_ASSIGN_AT_V:
-		case OP_MUL_ASSIGN_AT_V:
-		case OP_DIV_ASSIGN_AT_V:
-
-		case OP_ASSIGN_AT_R:
-		case OP_ADD_ASSIGN_AT_R:
-		case OP_SUB_ASSIGN_AT_R:
-		case OP_MUL_ASSIGN_AT_R:
-		case OP_DIV_ASSIGN_AT_R:
-
-		case OP_ASSIGN_AT_R_V:
-		case OP_ADD_ASSIGN_AT_R_V:
-		case OP_SUB_ASSIGN_AT_R_V:
-		case OP_MUL_ASSIGN_AT_R_V:
-		case OP_DIV_ASSIGN_AT_R_V:
-			return 1;
-
-		default:
-			return 0;
-	}
+	return type;
 }
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (mode_is_int(type))
+	if (type_is_integer(type))
 	{
-		uni_printf(info->io, "i32");
+		uni_printf(info->sx->io, "i32");
 	}
-	else if (mode_is_float(type))
+	else if (type_is_floating(type))
 	{
-		uni_printf(info->io, "double");
+		uni_printf(info->sx->io, "double");
 	}
-	else if (mode_is_void(type))
+	else if (type_is_void(type))
 	{
-		uni_printf(info->io, "void");
+		uni_printf(info->sx->io, "void");
 	}
-	else if (mode_is_struct(info->sx, type))
+	else if (type_is_structure(info->sx, type))
 	{
-		uni_printf(info->io, "%%struct_opt.%" PRIitem, type);
+		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (mode_is_pointer(info->sx, type))
+	else if (type_is_pointer(info->sx, type))
 	{
-		type_to_io(info, mode_get(info->sx, (size_t)type + 1));
-		uni_printf(info->io, "*");
+		type_to_io(info, type_pointer_get_element_type(info->sx, type));
+		uni_printf(info->sx->io, "*");
 	}
 }
 
-static void operation_to_io(universal_io *const io, const item_t type)
+static void operation_to_io(universal_io *const io, const item_t operation_type, const item_t type)
 {
-	switch (type)
+	switch (operation_type)
 	{
-		case OP_PRE_INC:
-		case OP_PRE_INC_V:
-		case OP_POST_INC:
-		case OP_POST_INC_V:
-		case OP_ADD_ASSIGN:
-		case OP_ADD_ASSIGN_V:
-		case OP_ADD:
-		case OP_ADD_ASSIGN_AT:
-		case OP_ADD_ASSIGN_AT_V:
-		case OP_PRE_INC_AT:
-		case OP_PRE_INC_AT_V:
-		case OP_POST_INC_AT:
-		case OP_POST_INC_AT_V:
-			uni_printf(io, "add nsw");
+		case BIN_ADD_ASSIGN:
+		case BIN_ADD:
+			uni_printf(io, type_is_integer(type) ? "add nsw" : "fadd");
 			break;
 
-		case OP_PRE_DEC:
-		case OP_PRE_DEC_V:
-		case OP_POST_DEC:
-		case OP_POST_DEC_V:
-		case OP_SUB_ASSIGN:
-		case OP_SUB_ASSIGN_V:
-		case OP_SUB:
-		case OP_UNMINUS:
-		case OP_SUB_ASSIGN_AT:
-		case OP_SUB_ASSIGN_AT_V:
-		case OP_PRE_DEC_AT:
-		case OP_PRE_DEC_AT_V:
-		case OP_POST_DEC_AT:
-		case OP_POST_DEC_AT_V:
-			uni_printf(io, "sub nsw");
+		case BIN_SUB_ASSIGN:
+		case BIN_SUB:
+			uni_printf(io, type_is_integer(type) ? "sub nsw" : "fsub");
 			break;
 
-		case OP_MUL_ASSIGN:
-		case OP_MUL_ASSIGN_V:
-		case OP_MUL:
-		case OP_MUL_ASSIGN_AT:
-		case OP_MUL_ASSIGN_AT_V:
-			uni_printf(io, "mul nsw");
+		case BIN_MUL_ASSIGN:
+		case BIN_MUL:
+			uni_printf(io, type_is_integer(type) ? "mul nsw" : "fmul");
 			break;
 
-		case OP_DIV_ASSIGN:
-		case OP_DIV_ASSIGN_V:
-		case OP_DIV:
-		case OP_DIV_ASSIGN_AT:
-		case OP_DIV_ASSIGN_AT_V:
-			uni_printf(io, "sdiv");
+		case BIN_DIV_ASSIGN:
+		case BIN_DIV:
+			uni_printf(io, type_is_integer(type) ? "sdiv" : "fdiv");
 			break;
 
-		case OP_REM_ASSIGN:
-		case OP_REM_ASSIGN_V:
-		case OP_REM:
-		case OP_REM_ASSIGN_AT:
-		case OP_REM_ASSIGN_AT_V:
+		case BIN_REM_ASSIGN:
+		case BIN_REM:
 			uni_printf(io, "srem");
 			break;
 
-		case OP_SHL_ASSIGN:
-		case OP_SHL_ASSIGN_V:
-		case OP_SHL:
-		case OP_SHL_ASSIGN_AT:
-		case OP_SHL_ASSIGN_AT_V:
+		case BIN_SHL_ASSIGN:
+		case BIN_SHL:
 			uni_printf(io, "shl");
 			break;
 
-		case OP_SHR_ASSIGN:
-		case OP_SHR_ASSIGN_V:
-		case OP_SHR:
-		case OP_SHR_ASSIGN_AT:
-		case OP_SHR_ASSIGN_AT_V:
+		case BIN_SHR_ASSIGN:
+		case BIN_SHR:
 			uni_printf(io, "ashr");
 			break;
 
-		case OP_AND_ASSIGN:
-		case OP_AND_ASSIGN_V:
-		case OP_AND:
-		case OP_AND_ASSIGN_AT:
-		case OP_AND_ASSIGN_AT_V:
+		case BIN_AND_ASSIGN:
+		case BIN_AND:
 			uni_printf(io, "and");
 			break;
 
-		case OP_XOR_ASSIGN:
-		case OP_XOR_ASSIGN_V:
-		case OP_XOR:
-		case OP_NOT:
-		case OP_XOR_ASSIGN_AT:
-		case OP_XOR_ASSIGN_AT_V:
+		case BIN_XOR_ASSIGN:
+		case BIN_XOR:
 			uni_printf(io, "xor");
 			break;
 
-		case OP_OR_ASSIGN:
-		case OP_OR_ASSIGN_V:
-		case OP_OR:
-		case OP_OR_ASSIGN_AT:
-		case OP_OR_ASSIGN_AT_V:
+		case BIN_OR_ASSIGN:
+		case BIN_OR:
 			uni_printf(io, "or");
 			break;
 
-		case OP_EQ:
-			uni_printf(io, "icmp eq");
+		case BIN_EQ:
+			uni_printf(io, type_is_integer(type) ? "icmp eq" : "fcmp oeq");
 			break;
-		case OP_NE:
-			uni_printf(io, "icmp ne");
+		case BIN_NE:
+			uni_printf(io, type_is_integer(type) ? "icmp ne" : "fcmp one");
 			break;
-		case OP_LT:
-			uni_printf(io, "icmp slt");
+		case BIN_LT:
+			uni_printf(io, type_is_integer(type) ? "icmp slt" : "fcmp olt");
 			break;
-		case OP_GT:
-			uni_printf(io, "icmp sgt");
+		case BIN_GT:
+			uni_printf(io, type_is_integer(type) ? "icmp sgt" : "fcmp ogt");
 			break;
-		case OP_LE:
-			uni_printf(io, "icmp sle");
+		case BIN_LE:
+			uni_printf(io, type_is_integer(type) ? "icmp sle" : "fcmp ole");
 			break;
-		case OP_GE:
-			uni_printf(io, "icmp sge");
-			break;
-
-		case OP_PRE_INC_R:
-		case OP_PRE_INC_R_V:
-		case OP_POST_INC_R:
-		case OP_POST_INC_R_V:
-		case OP_ADD_ASSIGN_R:
-		case OP_ADD_ASSIGN_R_V:
-		case OP_ADD_R:
-		case OP_ADD_ASSIGN_AT_R:
-		case OP_ADD_ASSIGN_AT_R_V:
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_INC_AT_R_V:
-		case OP_POST_INC_AT_R:
-		case OP_POST_INC_AT_R_V:
-			uni_printf(io, "fadd");
-			break;
-
-		case OP_PRE_DEC_R:
-		case OP_PRE_DEC_R_V:
-		case OP_POST_DEC_R:
-		case OP_POST_DEC_R_V:
-		case OP_SUB_ASSIGN_R:
-		case OP_SUB_ASSIGN_R_V:
-		case OP_SUB_R:
-		case OP_UNMINUS_R:
-		case OP_SUB_ASSIGN_AT_R:
-		case OP_SUB_ASSIGN_AT_R_V:
-		case OP_PRE_DEC_AT_R:
-		case OP_PRE_DEC_AT_R_V:
-		case OP_POST_DEC_AT_R:
-		case OP_POST_DEC_AT_R_V:
-			uni_printf(io, "fsub");
-			break;
-
-		case OP_MUL_ASSIGN_R:
-		case OP_MUL_ASSIGN_R_V:
-		case OP_MUL_R:
-		case OP_MUL_ASSIGN_AT_R:
-		case OP_MUL_ASSIGN_AT_R_V:
-			uni_printf(io, "fmul");
-			break;
-
-		case OP_DIV_ASSIGN_R:
-		case OP_DIV_ASSIGN_R_V:
-		case OP_DIV_R:
-		case OP_DIV_ASSIGN_AT_R:
-		case OP_DIV_ASSIGN_AT_R_V:
-			uni_printf(io, "fdiv");
-			break;
-
-		case OP_EQ_R:
-			uni_printf(io, "fcmp oeq");
-			break;
-		case OP_NE_R:
-			uni_printf(io, "fcmp one");
-			break;
-		case OP_LT_R:
-			uni_printf(io, "fcmp olt");
-			break;
-		case OP_GT_R:
-			uni_printf(io, "fcmp ogt");
-			break;
-		case OP_LE_R:
-			uni_printf(io, "fcmp ole");
-			break;
-		case OP_GE_R:
-			uni_printf(io, "fcmp oge");
+		case BIN_GE:
+			uni_printf(io, type_is_integer(type) ? "icmp sge" : "fcmp oge");
 			break;
 	}
 }
@@ -440,122 +197,146 @@ static void operation_to_io(universal_io *const io, const item_t type)
 static void to_code_operation_reg_reg(information *const info, const item_t operation
 	, const item_t fst, const item_t snd, const item_t type)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation);
-	uni_printf(info->io, " ");
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, type);
+	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
-	uni_printf(info->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+	uni_printf(info->sx->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
 static void to_code_operation_reg_const_i32(information *const info, const item_t operation
 	, const item_t fst, const item_t snd)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation);
-	uni_printf(info->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
 static void to_code_operation_reg_const_double(information *const info, const item_t operation
 	, const item_t fst, const double snd)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation);
-	uni_printf(info->io, " double %%.%" PRIitem ", %f\n", fst, snd);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	uni_printf(info->sx->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
 static void to_code_operation_const_reg_i32(information *const info, const item_t operation
 	, const item_t fst, const item_t snd)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation);
-	uni_printf(info->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
 static void to_code_operation_const_reg_double(information *const info, const item_t operation
 	, const double fst, const item_t snd)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->io, operation);
-	uni_printf(info->io, " double %f, %%.%" PRIitem "\n", fst, snd);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	uni_printf(info->sx->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const int is_array, const int is_pointer)
+	, const bool is_array)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = load ", result);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
-	uni_printf(info->io, "%s, ", is_pointer ? "*" : "");
+	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
-static inline void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
-	, const int is_array, const int is_pointer)
+static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
+	, const bool is_array, const bool is_pointer)
 {
-	uni_printf(info->io, " store ");
+	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->io, "%s %%%s.%" PRIitem ", ", is_pointer ? "*" : "", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->io, "*%s %%%s.%" PRIitem ", align 4\n", is_pointer ? "*" : "", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
-	, const int is_array)
+	, const bool is_array)
 {
-	uni_printf(info->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
+	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
 		, arg, is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
-	, const int is_array)
+	, const bool is_array)
 {
-	uni_printf(info->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n", arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n"
+		, arg, is_array ? "" : "var", displ);
 }
 
 static void to_code_try_zext_to(information *const info)
 {
-	if (info->answer_type != ALOGIC)
+	if (info->answer_kind != ALOGIC)
 	{
 		return;
 	}
 
-	uni_printf(info->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
-	info->answer_type = AREG;
+	uni_printf(info->sx->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
+	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 }
 
 static inline void to_code_label(information *const info, const item_t label_num)
 {
-	uni_printf(info->io, " label%" PRIitem ":\n", label_num);
+	uni_printf(info->sx->io, " label%" PRIitem ":\n", label_num);
 }
 
 static inline void to_code_unconditional_branch(information *const info, const item_t label_num)
 {
-	uni_printf(info->io, " br label %%label%" PRIitem "\n", label_num);
+	uni_printf(info->sx->io, " br label %%label%" PRIitem "\n", label_num);
 }
 
 static inline void to_code_conditional_branch(information *const info)
 {
-	uni_printf(info->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n"
+	uni_printf(info->sx->io, " br i1 %%.%" PRIitem ", label %%label%" PRIitem ", label %%label%" PRIitem "\n"
 		, info->answer_reg, info->label_true, info->label_false);
+}
+
+static void to_code_stack_save(information *const info)
+{
+	// команды сохранения состояния стека
+	uni_printf(info->sx->io, " %%dyn = alloca i8*, align 4\n");
+	uni_printf(info->sx->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
+	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
+	info->register_num++;
+}
+
+static void to_code_stack_load(information *const info)
+{
+	// команды восстановления состояния стека
+	uni_printf(info->sx->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
+	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
+	info->register_num++;
 }
 
 static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
 {
-	uni_printf(info->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	if (dim == 0 || dim > MAX_DIMENSIONS)
+	{
+		system_error(such_array_is_not_supported);
+		return;
+	}
+
 	for (size_t i = 1; i <= dim; i++)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
 	}
 	type_to_io(info, type);
 
 	for (size_t i = 1; i <= dim; i++)
 	{
-		uni_printf(info->io, "]");
+		uni_printf(info->sx->io, "]");
 	}
-	uni_printf(info->io, ", align 4\n");
+	uni_printf(info->sx->io, ", align 4\n");
 }
 
 static void to_code_alloc_array_dynamic(information *const info, const size_t index, const item_t type)
@@ -564,151 +345,125 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
+	if (dim == 0 || dim > MAX_DIMENSIONS)
+	{
+		system_error(such_array_is_not_supported);
+		return;
+	}
+
 	for (size_t i = 2; i <= dim; i++)
 	{
-		uni_printf(info->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+		uni_printf(info->sx->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
 			, info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
 		to_alloc = info->register_num++;
 	}
-	uni_printf(info->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	uni_printf(info->sx->io, " %%dynarr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 	type_to_io(info, type);
-	uni_printf(info->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
+	uni_printf(info->sx->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
-static void to_code_stack_save(information *const info)
-{
-	// команды сохранения состояния стека
-	uni_printf(info->io, " %%dyn = alloca i8*, align 4\n");
-	uni_printf(info->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
-	uni_printf(info->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
-	info->register_num++;
-}
-
-static void to_code_stack_load(information *const info)
-{
-	// команды восстановления состояния стека
-	uni_printf(info->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
-	uni_printf(info->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
-	info->register_num++;
-}
-
-static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimension
+static void to_code_slice(information *const info, const item_t displ, const size_t cur_dimension
 	, const item_t prev_slice, const item_t type)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
-	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
+	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
+	const size_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
 		}
 		type_to_io(info, type);
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->io, "]");
+			uni_printf(info->sx->io, "]");
 		}
-		uni_printf(info->io, ", ");
+		uni_printf(info->sx->io, ", ");
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
 		}
 		type_to_io(info, type);
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->io, "]");
+			uni_printf(info->sx->io, "]");
 		}
 
 		if (cur_dimension == dimensions - 1)
 		{
-			uni_printf(info->io, "* %%arr.%" PRIitem ", i32 0", displ);
+			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", displ);
 		}
 		else
 		{
-			uni_printf(info->io, "* %%.%" PRIitem ", i32 0", prev_slice);
+			uni_printf(info->sx->io, "* %%.%" PRIitem ", i32 0", prev_slice);
 		}
 	}
 	else if (cur_dimension == dimensions - 1)
 	{
 		type_to_io(info, type);
-		uni_printf(info->io, ", ");
+		uni_printf(info->sx->io, ", ");
 		type_to_io(info, type);
-		uni_printf(info->io, "* %%dynarr.%" PRIitem, displ);
+		uni_printf(info->sx->io, "* %%dynarr.%" PRIitem, displ);
 	}
 	else
 	{
 		type_to_io(info, type);
-		uni_printf(info->io, ", ");
+		uni_printf(info->sx->io, ", ");
 		type_to_io(info, type);
-		uni_printf(info->io, "* %%.%" PRIitem, prev_slice);
+		uni_printf(info->sx->io, "* %%.%" PRIitem, prev_slice);
 	}
 
-	if (info->answer_type == AREG)
+	if (info->answer_kind == AREG)
 	{
-		uni_printf(info->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
+		uni_printf(info->sx->io, ", i32 %%.%" PRIitem "\n", info->answer_reg);
 	}
-	else // if (info->answer_type == ACONST)
+	else // if (info->answer_kind == ACONST)
 	{
-		uni_printf(info->io, ", i32 %" PRIitem "\n", info->answer_const);
+		uni_printf(info->sx->io, ", i32 %" PRIitem "\n", info->answer_const);
 	}
 
 	info->register_num++;
 }
 
-static void to_code_init_array(information *const info, const size_t index, const item_t type)
+
+static void to_code_try_widen(information *const info, const item_t operation_type)
 {
-	uni_printf(info->io, " %%.%" PRIitem " = bitcast ", info->register_num);
-	info->register_num++;
-
-	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	for (size_t i = 1; i <= dim; i++)
+	if (operation_type == info->answer_type)
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
+		return;
 	}
-	type_to_io(info, type);
 
-	for (size_t i = 1; i <= dim; i++)
+	if (info->answer_kind == ACONST)
 	{
-		uni_printf(info->io, "]");
+		info->answer_const_double = (double)info->answer_const;
 	}
-	uni_printf(info->io, "* %%arr.%" PRIitem " to i8*\n", hash_get_key(&info->arrays, index));
-
-	uni_printf(info->io, " call void @llvm.memcpy.p0i8.p0i8.i32(i8* %%.%" PRIitem ", i8* bitcast (", info->register_num - 1);
-	for (size_t i = 1; i <= dim; i++)
+	else
 	{
-		uni_printf(info->io, "[%" PRIitem " x ", hash_get_by_index(&info->arrays, index, i));
-	}
-	type_to_io(info, type);
+		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+		type_to_io(info, info->answer_type);
+		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
+		type_to_io(info, operation_type);
+		uni_printf(info->sx->io, "\n");
 
-	for (size_t i = 1; i <= dim; i++)
-	{
-		uni_printf(info->io, "]");
+		info->answer_type = operation_type;
+		info->answer_reg = info->register_num++;
 	}
-	
-	uni_printf(info->io, "* @arr_init.%" PRIitem " to i8*), i32 %" PRIitem ", i32 %i, i1 false)\n"
-		, info->init_num
-		, (mode_is_float(type) ? 8 : 4) * hash_get_by_index(&info->arrays, index, 1)
-		, mode_is_float(type) ? 8 : 4);
-
-	info->init_num++;
-	info->was_memcpy = 1;
 }
-
 
 static void check_type_and_branch(information *const info)
 {
-	switch (info->answer_type)
+	switch (info->answer_kind)
 	{
 		case ACONST:
 			to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
 			break;
 		case AREG:
 		{
-			to_code_operation_reg_const_i32(info, OP_NE, info->answer_reg, 0);
+			to_code_operation_reg_const_i32(info, BIN_NE, info->answer_reg, 0);
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -719,195 +474,216 @@ static void check_type_and_branch(information *const info)
 	}
 }
 
-
 static void operand(information *const info, node *const nd)
 {
-	if (node_get_type(nd) == OP_NOP || node_get_type(nd) == OP_AD_LOG_OR || node_get_type(nd) == OP_AD_LOG_AND)
+	if (node_get_type(nd) == OP_NOP)
 	{
 		node_set_next(nd);
 	}
 
 	switch (node_get_type(nd))
 	{
-		case OP_IDENT:
 		case OP_SELECT:
 			node_set_next(nd);
 			break;
-		case OP_IDENT_TO_ADDR:
+		case OP_IDENTIFIER:
 		{
-			info->answer_reg = node_get_arg(nd, 0);
-			info->answer_type = AMEM;
-			node_set_next(nd);
-		}
-		break;
-		case OP_IDENT_TO_VAL:
-		{
-			const item_t displ = node_get_arg(nd, 0);
-			int is_addr_to_val = 0;
+			item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			bool is_addr_to_val = false;
 
 			node_set_next(nd);
-			if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			if (info->variable_location == LMEM)
 			{
-				to_code_load(info, info->register_num, displ, mode_integer, 0, 1);
+				to_code_load(info, info->register_num, displ, type, false);
 				info->register_num++;
 				info->variable_location = LREG;
-				node_set_next(nd);
-				is_addr_to_val = 1;
+				is_addr_to_val = true;
+				type = type_pointer_get_element_type(info->sx, (size_t)type);
 			}
-			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, mode_integer
-				, is_addr_to_val, info->variable_location == LMEM ? 1 : 0);
+
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
+				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
-			info->answer_type = AREG;
-			info->answer_value_type = mode_integer;
+			info->answer_kind = AREG;
+			info->answer_type = type;
 		}
 		break;
-		case OP_IDENT_TO_VAL_D:
+		case OP_CONSTANT:
 		{
-			const item_t displ = node_get_arg(nd, 0);
+			const item_t type = node_get_arg(nd, 0);
 
-			to_code_load(info, info->register_num, displ, mode_float, 0, 0);
-			info->answer_reg = info->register_num++;
-			info->answer_type = AREG;
-			info->answer_value_type = mode_float;
-			node_set_next(nd);
-		}
-		break;
-		case OP_CONST:
-		{
-			const item_t num = node_get_arg(nd, 0);
-
-			if (info->variable_location == LMEM)
+			if (type_is_integer(type))
 			{
-				to_code_store_const_i32(info, num, info->request_reg, 0);
-				info->answer_type = AREG;
+				const item_t num = node_get_arg(nd, 2);
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_i32(info, num, info->request_reg, false);
+					info->answer_kind = AREG;
+				}
+				else
+				{
+					info->answer_kind = ACONST;
+					info->answer_const = num;
+					info->answer_type = TYPE_INTEGER;
+				}
 			}
 			else
 			{
-				info->answer_type = ACONST;
-				info->answer_const = num;
-				info->answer_value_type = mode_integer;
+				const double num = node_get_arg_double(nd, 2);
+
+				if (info->variable_location == LMEM)
+				{
+					to_code_store_const_double(info, num, info->request_reg, false);
+					info->answer_kind = AREG;
+				}
+				else
+				{
+					info->answer_kind = ACONST;
+					info->answer_const_double = num;
+					info->answer_type = TYPE_FLOATING;
+				}
 			}
 
 			node_set_next(nd);
 		}
 		break;
-		case OP_CONST_D:
+		case OP_SLICE:
 		{
-			const double num = to_double(node_get_arg(nd, 0), node_get_arg(nd, 1));
-
-			if (info->variable_location == LMEM)
-			{
-				to_code_store_const_double(info, num, info->request_reg, 0);
-				info->answer_type = AREG;
-			}
-			else
-			{
-				info->answer_type = ACONST;
-				info->answer_const_double = num;
-				info->answer_value_type = mode_float;
-			}
-
-			node_set_next(nd);
-		}
-		break;
-		case OP_STRING:
-			node_set_next(nd);
-			break;
-		case OP_SLICE_IDENT:
-		{
-			const item_t displ = node_get_arg(nd, 0);
-			// TODO: как и в llvmopt, это работает только для двумерных массивов,
-			// 	надо подумать над этим потом (может общую функцию сделать?)
-			const item_t type = node_get_arg(nd, 1) > 0
-									? mode_get(info->sx, (size_t)node_get_arg(nd, 1) + 1)
-									: node_get_arg(nd, 1);
-			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
-			const location_t location = info->variable_location;
+			const item_t type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			info->variable_location = LFREE;
-			expression(info, nd);
-
-			// TODO: пока только для динамических массивов размерности 2
-			if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
-			{
-				if (info->answer_type == ACONST)
-				{
-					to_code_operation_const_reg_i32(info, OP_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
-				}
-				else // if (info->answer_type == AREG)
-				{
-					to_code_operation_reg_reg(info, OP_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
-						mode_integer);
-				}
-
-				info->answer_type = AREG;
-				info->answer_reg = info->register_num++;
-			}
-
-			// Проверка, что значение cur_dimension корректное и в пределах допустимого
-			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-			if (-1 < cur_dimension && cur_dimension < 5)
-			{
-				to_code_slice(info, displ, cur_dimension, 0, type);
-			}
-
-			item_t prev_slice = info->register_num - 1;
-			while (node_get_type(nd) == OP_SLICE)
+			// двумерная вырезка, плохое решение, более общее решение будет, когда будут реализовываться массивы бОльшей размерности
+			if (node_get_type(nd) == OP_SLICE)
 			{
 				node_set_next(nd);
+
+				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+				node_set_next(nd);
+
+				size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+				const location_t location = info->variable_location;
+
+				info->variable_location = LFREE;
+				expression(info, nd);
+
+				// TODO: пока только для динамических массивов размерности 2
+				if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
+				{
+					if (info->answer_kind == ACONST)
+					{
+						to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
+					}
+					else // if (info->answer_kind == AREG)
+					{
+						to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
+							TYPE_INTEGER);
+					}
+
+					info->answer_kind = AREG;
+					info->answer_reg = info->register_num++;
+				}
+
+				if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
+				{
+					to_code_slice(info, displ, cur_dimension, 0, type);
+				}
+				else
+				{
+					system_error(such_array_is_not_supported);
+				}
+
+				item_t prev_slice = info->register_num - 1;
 				info->variable_location = LFREE;
 				expression(info, nd);
 				cur_dimension--;
 
 				// Проверка, что значение cur_dimension корректное и в пределах допустимого
 				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-				if (-1 < cur_dimension && cur_dimension < 5)
+				if (cur_dimension < MAX_DIMENSIONS)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
-				prev_slice = info->register_num - 1;
+				else
+				{
+					system_error(such_array_is_not_supported);
+				}
+
+				if (location != LMEM)
+				{
+					to_code_load(info, info->register_num, info->register_num - 1, type, true);
+					info->register_num++;
+				}
+
+				info->answer_reg = info->register_num - 1;
+				info->answer_kind = AREG;
+				info->answer_type = type;
+				break;
 			}
 
-			// TODO: может это замена LMEM? Подумать, когда будут реализовываться указатели
-			if (node_get_type(nd) == OP_ADDR_TO_VAL)
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			node_set_next(nd);
+
+			size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+			const location_t location = info->variable_location;
+
+			info->variable_location = LFREE;
+			expression(info, nd);
+
+			// Проверка, что значение cur_dimension корректное и в пределах допустимого
+			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
+			if (cur_dimension < MAX_DIMENSIONS)
 			{
-				node_set_next(nd);
+				to_code_slice(info, displ, cur_dimension, 0, type);
+			}
+			else
+			{
+				system_error(such_array_is_not_supported);
 			}
 
 			if (location != LMEM)
 			{
-				to_code_load(info, info->register_num, info->register_num - 1, type, 1, 0);
+				to_code_load(info, info->register_num, info->register_num - 1, type, true);
 				info->register_num++;
 			}
 
 			info->answer_reg = info->register_num - 1;
-			info->answer_type = AREG;
-			info->answer_value_type = type;
+			info->answer_kind = AREG;
+			info->answer_type = type;
 		}
 		break;
-		case OP_CALL1:
+		case OP_CALL:
 		{
-			const item_t args = node_get_arg(nd, 0);
-			item_t arguments[128];
-			double arguments_double[128];
-			answer_t arguments_type[128];
-			item_t arguments_value_type[128];
+			item_t arguments[MAX_FUNCTION_ARGS];
+			double arguments_double[MAX_FUNCTION_ARGS];
+			answer_t arguments_type[MAX_FUNCTION_ARGS];
+			item_t arguments_value_type[MAX_FUNCTION_ARGS];
 
+			const item_t func_type = node_get_arg(nd, 0);
 			node_set_next(nd);
+
+			const item_t type_ref = node_get_arg(nd, 0);
+			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
+			if (args > MAX_FUNCTION_ARGS)
+			{
+				system_error(too_many_arguments);
+				return;
+			}
+
 			node_set_next(nd); // OP_IDENT
-			for (item_t i = 0; i < args; i++)
+			for (size_t i = 0; i < args; i++)
 			{
 				info->variable_location = LFREE;
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
-				arguments_type[i] = info->answer_type;
-				arguments_value_type[i] = info->answer_value_type;
-				if (info->answer_type == AREG)
+				arguments_type[i] = info->answer_kind;
+				arguments_value_type[i] = info->answer_type;
+				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
 				}
-				else if (mode_is_int(info->answer_value_type)) // ACONST
+				else if (type_is_integer(info->answer_type)) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
@@ -917,69 +693,40 @@ static void operand(information *const info, node *const nd)
 				}
 			}
 
-			const size_t ref_ident = (size_t)node_get_arg(nd, 0);
-			const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
-
-			node_set_next(nd); // OP_CALL2
-
-			if (func_type != mode_void)
+			if (!type_is_void(func_type))
 			{
-				uni_printf(info->io, " %%.%" PRIitem " =", info->register_num);
-				info->answer_type = AREG;
-				info->answer_value_type = func_type;
+				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
+				info->answer_kind = AREG;
+				info->answer_type = func_type;
 				info->answer_reg = info->register_num++;
 			}
-			uni_printf(info->io, " call ");
+			uni_printf(info->sx->io, " call ");
 			type_to_io(info, func_type);
-			uni_printf(info->io, " @func%zi(", ref_ident);
+			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
 
-			for (item_t i = 0; i < args; i++)
+			for (size_t i = 0; i < args; i++)
 			{
 				if (i != 0)
 				{
-					uni_printf(info->io, ", ");
+					uni_printf(info->sx->io, ", ");
 				}
 
 				type_to_io(info, arguments_value_type[i]);
-				uni_printf(info->io, " signext ");
+				uni_printf(info->sx->io, " signext ");
 				if (arguments_type[i] == AREG)
 				{
-					uni_printf(info->io, "%%.%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
 				}
-				else if (mode_is_int(arguments_value_type[i])) // ACONST
+				else if (type_is_integer(arguments_value_type[i])) // ACONST
 				{
-					uni_printf(info->io, "%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
 				}
 				else // double
 				{
-					uni_printf(info->io, "%f", arguments_double[i]);
+					uni_printf(info->sx->io, "%f", arguments_double[i]);
 				}
 			}
-			uni_printf(info->io, ")\n");
-		}
-		break;
-		case OP_ARRAY_INIT:
-		{
-			// здесь будет печать llvm с инициализацией массивов
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(info, nd);
-			}
-		}
-		break;
-		case OP_STRUCT_INIT:
-		{
-			// здесь будет печать llvm с инициализацией структур
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(info, nd);
-			}
+			uni_printf(info->sx->io, ")\n");
 		}
 		break;
 		default:
@@ -990,36 +737,41 @@ static void operand(information *const info, node *const nd)
 
 static void assignment_expression(information *const info, node *const nd)
 {
-	const item_t displ = node_get_arg(nd, 0);
-	const item_t assignment_type = node_get_type(nd);
-	const item_t operation_type = is_double(assignment_type) ? mode_float : mode_integer;
-	const int is_array = is_array_operation(assignment_type);
+	const binary_t assignment_type = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
 
 	node_set_next(nd);
-	info->variable_location = LMEM;
-	operand(info, nd); // Tident or OP_SLICE_IDENT
-	const item_t memory_reg = info->answer_reg;
+	item_t displ = 0;
+	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
+	if (!is_array)
+	{
+		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+		node_set_next(nd);
+	}
+	else // OP_SLICE_IDENT
+	{
+		info->variable_location = LMEM;
+		expression(info, nd); // OP_SLICE_IDENT or UN_ADDRESS
+		displ = info->answer_reg;
+	}
 
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
-	if (assignment_type != OP_ASSIGN && assignment_type != OP_ASSIGN_V
-		&& assignment_type != OP_ASSIGN_R && assignment_type != OP_ASSIGN_R_V
-		&& assignment_type != OP_ASSIGN_AT && assignment_type != OP_ASSIGN_AT_V
-		&& assignment_type != OP_ASSIGN_AT_R && assignment_type != OP_ASSIGN_AT_R_V)
+	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, 0);
+		to_code_load(info, info->register_num, displ, operation_type, is_array);
 		info->register_num++;
 
-		if (info->answer_type == AREG)
+		if (info->answer_kind == AREG)
 		{
 			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
-		// ACONST
-		else if (!is_double(assignment_type))
+		else if (type_is_integer(operation_type)) // ACONST
 		{
 			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
@@ -1030,37 +782,37 @@ static void assignment_expression(information *const info, node *const nd)
 		}
 
 		result = info->register_num++;
-		info->answer_type = AREG;
+		info->answer_kind = AREG;
 	}
 
-	if (info->answer_type == AREG || info->answer_type == AMEM)
+	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
-		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
-			, info->answer_type == AMEM ? 1 : 0);
+		to_code_store_reg(info, result, displ, operation_type, is_array
+			, info->answer_kind == AMEM);
 	}
-	// ACONST && =
-	else if (!is_double(assignment_type))
+	else if (type_is_integer(operation_type)) // ACONST и опериция =
 	{
-		to_code_store_const_i32(info, info->answer_const, is_array ? memory_reg : displ, is_array);
+		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
 	else
 	{
-		to_code_store_const_double(info, info->answer_const_double, is_array ? memory_reg : displ, is_array);
+		to_code_store_const_double(info, info->answer_const_double, displ, is_array);
 	}
 }
 
-static void integral_expression(information *const info, node *const nd, const answer_t type)
+static void integral_expression(information *const info, node *const nd, const answer_t kind)
 {
-	const item_t operation = node_get_type(nd);
-	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	const binary_t operation = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
-	const answer_t left_type = info->answer_type;
+	const answer_t left_kind = info->answer_kind;
 	const item_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
 	const double left_const_double = info->answer_const_double;
@@ -1068,246 +820,212 @@ static void integral_expression(information *const info, node *const nd, const a
 	info->variable_location = LFREE;
 	expression(info, nd);
 
+	to_code_try_widen(info, operation_type);
 	to_code_try_zext_to(info);
 
-	const answer_t right_type = info->answer_type;
+	const answer_t right_kind = info->answer_kind;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
 
-	info->answer_value_type = type != ALOGIC ? operation_type : mode_integer;
+	info->answer_type = kind != ALOGIC ? operation_type : TYPE_INTEGER;
 
-	if (left_type == AREG && right_type == AREG)
+	if (left_kind == AREG && right_kind == AREG)
 	{
 		to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
 	}
-	else if (left_type == AREG && right_type == ACONST && !is_double(operation))
+	else if (left_kind == AREG && right_kind == ACONST && type_is_integer(operation_type))
 	{
 		to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
 	}
-	else if (left_type == AREG && right_type == ACONST) // double
+	else if (left_kind == AREG && right_kind == ACONST) // double
 	{
 		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
 	}
-	else if (left_type == ACONST && right_type == AREG && !is_double(operation))
+	else if (left_kind == ACONST && right_kind == AREG && operation_type)
 	{
 		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
 	}
-		else if (left_type == ACONST && right_type == AREG) // double
+	else if (left_kind == ACONST && right_kind == AREG) // double
 	{
 		to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
 	}
-	else // if (left_type == ACONST && right_type == ACONST)
+	else if (left_kind == ACONST && right_kind == ACONST && type_is_integer(operation_type))
 	{
-		info->answer_type = ACONST;
+		info->answer_kind = ACONST;
 
 		switch (operation)
 		{
-			case OP_ADD:
+			case BIN_ADD:
 				info->answer_const = left_const + right_const;
 				break;
-			case OP_SUB:
+			case BIN_SUB:
 				info->answer_const = left_const - right_const;
 				break;
-			case OP_MUL:
+			case BIN_MUL:
 				info->answer_const = left_const * right_const;
 				break;
-			case OP_DIV:
+			case BIN_DIV:
 				info->answer_const = left_const / right_const;
 				break;
-			case OP_REM:
+			case BIN_REM:
 				info->answer_const = left_const % right_const;
 				break;
-			case OP_SHL:
+			case BIN_SHL:
 				info->answer_const = left_const << right_const;
 				break;
-			case OP_SHR:
+			case BIN_SHR:
 				info->answer_const = left_const >> right_const;
 				break;
-			case OP_AND:
+			case BIN_AND:
 				info->answer_const = left_const & right_const;
 				break;
-			case OP_XOR:
+			case BIN_XOR:
 				info->answer_const = left_const ^ right_const;
 				break;
-			case OP_OR:
+			case BIN_OR:
 				info->answer_const = left_const | right_const;
 				break;
 
-			case OP_EQ:
+			case BIN_EQ:
 				info->answer_const = left_const == right_const;
 				break;
-			case OP_NE:
+			case BIN_NE:
 				info->answer_const = left_const != right_const;
 				break;
-			case OP_LT:
+			case BIN_LT:
 				info->answer_const = left_const < right_const;
 				break;
-			case OP_GT:
+			case BIN_GT:
 				info->answer_const = left_const > right_const;
 				break;
-			case OP_LE:
+			case BIN_LE:
 				info->answer_const = left_const <= right_const;
 				break;
-			case OP_GE:
+			case BIN_GE:
 				info->answer_const = left_const >= right_const;
 				break;
+			default:
+				break;
+		}
+		return;
+	}
+	else // double
+	{
+		info->answer_kind = ACONST;
 
-			case OP_ADD_R:
+		switch (operation)
+		{
+			case BIN_ADD:
 				info->answer_const_double = left_const_double + right_const_double;
 				break;
-			case OP_SUB_R:
+			case BIN_SUB:
 				info->answer_const_double = left_const_double - right_const_double;
 				break;
-			case OP_MUL_R:
+			case BIN_MUL:
 				info->answer_const_double = left_const_double * right_const_double;
 				break;
-			case OP_DIV_R:
+			case BIN_DIV:
 				info->answer_const_double = left_const_double / right_const_double;
 				break;
 
-			case OP_EQ_R:
+			case BIN_EQ:
 				info->answer_const = left_const_double == right_const_double;
 				break;
-			case OP_NE_R:
+			case BIN_NE:
 				info->answer_const = left_const_double != right_const_double;
 				break;
-			case OP_LT_R:
+			case BIN_LT:
 				info->answer_const = left_const_double < right_const_double;
 				break;
-			case OP_GT_R:
+			case BIN_GT:
 				info->answer_const = left_const_double > right_const_double;
 				break;
-			case OP_LE_R:
+			case BIN_LE:
 				info->answer_const = left_const_double <= right_const_double;
 				break;
-			case OP_GE_R:
+			case BIN_GE:
 				info->answer_const = left_const_double >= right_const_double;
+				break;
+			default:
 				break;
 		}
 		return;
 	}
 
 	info->answer_reg = info->register_num++;
-	info->answer_type = type;
+	info->answer_kind = kind;
 }
 
 // Обрабатываются операции инкремента/декремента и постинкремента/постдекремента
 static void inc_dec_expression(information *const info, node *const nd)
 {
-	const item_t displ = node_get_arg(nd, 0);
-	const item_t operation = node_get_type(nd);
-	const item_t operation_type = is_double(operation) ? mode_float : mode_integer;
+	const unary_t operation = node_get_arg(nd, 2);
+	const item_t operation_type = node_get_arg(nd, 0);
 
 	node_set_next(nd);
-	info->variable_location = LMEM;
-	operand(info, nd); // Tident or OP_SLICE_IDENT
-	const item_t memory_reg = info->answer_reg;
+	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
+	item_t displ = 0;
+	if (!is_array)
+	{
+		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+		node_set_next(nd);
+	}
+	else // OP_SLICE_IDENT
+	{
+		info->variable_location = LMEM;
+		operand(info, nd); // OP_SLICE_IDENT
+		displ = info->answer_reg;
+	}
 
-	to_code_load(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation), 0);
-	info->answer_type = AREG;
+	to_code_load(info, info->register_num, displ, operation_type, is_array);
+	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
-	info->answer_value_type = operation_type;
+	info->answer_type = operation_type;
 
 	switch (operation)
 	{
-		case OP_PRE_INC:
-		case OP_PRE_INC_V:
-		case OP_PRE_DEC:
-		case OP_PRE_DEC_V:
-
-		case OP_PRE_INC_AT:
-		case OP_PRE_INC_AT_V:
-		case OP_PRE_DEC_AT:
-		case OP_PRE_DEC_AT_V:
+		case UN_PREINC:
+		case UN_PREDEC:
 			info->answer_reg = info->register_num;
-		case OP_POST_INC:
-		case OP_POST_INC_V:
-		case OP_POST_DEC:
-		case OP_POST_DEC_V:
-
-		case OP_POST_INC_AT:
-		case OP_POST_INC_AT_V:
-		case OP_POST_DEC_AT:
-		case OP_POST_DEC_AT_V:
-			to_code_operation_reg_const_i32(info, operation, info->register_num - 1, 1);
-			break;
-
-		case OP_PRE_INC_R:
-		case OP_PRE_INC_R_V:
-		case OP_PRE_DEC_R:
-		case OP_PRE_DEC_R_V:
-
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_INC_AT_R_V:
-		case OP_PRE_DEC_AT_R:
-		case OP_PRE_DEC_AT_R_V:
-			info->answer_reg = info->register_num;
-		case OP_POST_INC_R:
-		case OP_POST_INC_R_V:
-		case OP_POST_DEC_R:
-		case OP_POST_DEC_R_V:
-
-		case OP_POST_INC_AT_R:
-		case OP_POST_INC_AT_R_V:
-		case OP_POST_DEC_AT_R:
-		case OP_POST_DEC_AT_R_V:
-			to_code_operation_reg_const_double(info, operation, info->register_num - 1, 1.0);
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		{
+			if (type_is_integer(operation_type))
+			{
+				to_code_operation_reg_const_i32(info, operation == UN_PREINC || operation == UN_POSTINC ? BIN_ADD : BIN_SUB
+					, info->register_num - 1, 1);
+			}
+			else // double
+			{
+				to_code_operation_reg_const_double(info, operation == UN_PREINC || operation == UN_POSTINC ? BIN_ADD : BIN_SUB
+					, info->register_num - 1, 1.0);
+			}
+		}
+		break;
+		default:
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, is_array_operation(operation) ? memory_reg : displ, operation_type
-		, is_array_operation(operation), 0);
+	to_code_store_reg(info, info->register_num, displ, operation_type, is_array, false);
 	info->register_num++;
 }
 
 static void unary_operation(information *const info, node *const nd)
 {
-	switch (node_get_type(nd))
+	switch (node_get_arg(nd, 2))
 	{
-		case OP_POST_INC:
-		case OP_POST_INC_V:
-		case OP_POST_DEC:
-		case OP_POST_DEC_V:
-		case OP_PRE_INC:
-		case OP_PRE_INC_V:
-		case OP_PRE_DEC:
-		case OP_PRE_DEC_V:
-
-		case OP_POST_INC_AT:
-		case OP_POST_INC_AT_V:
-		case OP_POST_DEC_AT:
-		case OP_POST_DEC_AT_V:
-		case OP_PRE_INC_AT:
-		case OP_PRE_INC_AT_V:
-		case OP_PRE_DEC_AT:
-		case OP_PRE_DEC_AT_V:
-
-		case OP_POST_INC_R:
-		case OP_POST_INC_R_V:
-		case OP_POST_DEC_R:
-		case OP_POST_DEC_R_V:
-		case OP_PRE_INC_R:
-		case OP_PRE_INC_R_V:
-		case OP_PRE_DEC_R:
-		case OP_PRE_DEC_R_V:
-
-		case OP_POST_INC_AT_R:
-		case OP_POST_INC_AT_R_V:
-		case OP_POST_DEC_AT_R:
-		case OP_POST_DEC_AT_R_V:
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_INC_AT_R_V:
-		case OP_PRE_DEC_AT_R:
-		case OP_PRE_DEC_AT_R_V:
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		case UN_PREINC:
+		case UN_PREDEC:
 			inc_dec_expression(info, nd);
 			break;
-		case OP_UNMINUS:
-		case OP_NOT:
-		case OP_UNMINUS_R:
+		case UN_MINUS:
+		case UN_NOT:
 		{
-			const item_t operation_type = node_get_type(nd);
+			const unary_t operation = node_get_arg(nd, 2);
+			const item_t operation_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
 			info->variable_location = LREG;
@@ -1315,26 +1033,26 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			info->answer_value_type = mode_integer;
-			if (operation_type == OP_UNMINUS)
+			info->answer_type = TYPE_INTEGER;
+			if (operation == UN_MINUS && type_is_integer(operation_type))
 			{
-				to_code_operation_const_reg_i32(info, OP_UNMINUS, 0, info->answer_reg);
+				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
 			}
-			else if (operation_type == OP_NOT)
+			else if (operation == UN_NOT)
 			{
-				to_code_operation_reg_const_i32(info, OP_NOT, info->answer_reg, -1);
+				to_code_operation_reg_const_i32(info, BIN_XOR, info->answer_reg, -1);
 			}
-			else // OP_UNMINUS_R
+			else if (operation == UN_MINUS && type_is_floating(operation_type))
 			{
-				to_code_operation_const_reg_double(info, OP_UNMINUS_R, 0, info->answer_reg);
-				info->answer_value_type = mode_float;
+				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
+				info->answer_type = TYPE_FLOATING;
 			}
 
-			info->answer_type = AREG;
+			info->answer_kind = AREG;
 			info->answer_reg = info->register_num++;
 		}
 		break;
-		case OP_LOG_NOT:
+		case UN_LOGNOT:
 		{
 			const item_t temp = info->label_true;
 			info->label_true =  info->label_false;
@@ -1342,6 +1060,21 @@ static void unary_operation(information *const info, node *const nd)
 
 			node_set_next(nd);
 			expression(info, nd);
+		}
+		break;
+		case UN_ADDRESS:
+		{
+			node_set_next(nd);
+			info->answer_reg = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			info->answer_kind = AMEM;
+			node_set_next(nd); // Ident
+		}
+		break;
+		case UN_INDIRECTION:
+		{
+			node_set_next(nd);
+			info->variable_location = info->variable_location == LMEM ? LREG : LMEM;
+			operand(info, nd);
 		}
 		break;
 		default:
@@ -1355,121 +1088,50 @@ static void unary_operation(information *const info, node *const nd)
 
 static void binary_operation(information *const info, node *const nd)
 {
-	switch (node_get_type(nd))
+	if (operation_is_assignment(node_get_arg(nd, 2)))
 	{
-		case OP_ASSIGN:
-		case OP_ASSIGN_V:
+		assignment_expression(info, nd);
+		return;
+	}
 
-		case OP_ADD_ASSIGN:
-		case OP_ADD_ASSIGN_V:
-		case OP_SUB_ASSIGN:
-		case OP_SUB_ASSIGN_V:
-		case OP_MUL_ASSIGN:
-		case OP_MUL_ASSIGN_V:
-		case OP_DIV_ASSIGN:
-		case OP_DIV_ASSIGN_V:
+	switch (node_get_arg(nd, 2))
+	{
+		case BIN_ADD:
+		case BIN_SUB:
+		case BIN_MUL:
+		case BIN_DIV:
 
-		case OP_REM_ASSIGN:
-		case OP_REM_ASSIGN_V:
-		case OP_SHL_ASSIGN:
-		case OP_SHL_ASSIGN_V:
-		case OP_SHR_ASSIGN:
-		case OP_SHR_ASSIGN_V:
-		case OP_AND_ASSIGN:
-		case OP_AND_ASSIGN_V:
-		case OP_XOR_ASSIGN:
-		case OP_XOR_ASSIGN_V:
-		case OP_OR_ASSIGN:
-		case OP_OR_ASSIGN_V:
-
-		case OP_ASSIGN_R:
-		case OP_ASSIGN_R_V:
-
-		case OP_ADD_ASSIGN_R:
-		case OP_ADD_ASSIGN_R_V:
-		case OP_SUB_ASSIGN_R:
-		case OP_SUB_ASSIGN_R_V:
-		case OP_MUL_ASSIGN_R:
-		case OP_MUL_ASSIGN_R_V:
-		case OP_DIV_ASSIGN_R:
-		case OP_DIV_ASSIGN_R_V:
-
-		case OP_ASSIGN_AT:
-		case OP_ADD_ASSIGN_AT:
-		case OP_SUB_ASSIGN_AT:
-		case OP_MUL_ASSIGN_AT:
-		case OP_DIV_ASSIGN_AT:
-
-		case OP_ASSIGN_AT_V:
-		case OP_ADD_ASSIGN_AT_V:
-		case OP_SUB_ASSIGN_AT_V:
-		case OP_MUL_ASSIGN_AT_V:
-		case OP_DIV_ASSIGN_AT_V:
-
-		case OP_ASSIGN_AT_R:
-		case OP_ADD_ASSIGN_AT_R:
-		case OP_SUB_ASSIGN_AT_R:
-		case OP_MUL_ASSIGN_AT_R:
-		case OP_DIV_ASSIGN_AT_R:
-
-		case OP_ASSIGN_AT_R_V:
-		case OP_ADD_ASSIGN_AT_R_V:
-		case OP_SUB_ASSIGN_AT_R_V:
-		case OP_MUL_ASSIGN_AT_R_V:
-		case OP_DIV_ASSIGN_AT_R_V:
-			assignment_expression(info, nd);
-			break;
-
-
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_DIV:
-
-		case OP_REM:
-		case OP_SHL:
-		case OP_SHR:
-		case OP_AND:
-		case OP_XOR:
-		case OP_OR:
-
-		case OP_ADD_R:
-		case OP_SUB_R:
-		case OP_MUL_R:
-		case OP_DIV_R:
+		case BIN_REM:
+		case BIN_SHL:
+		case BIN_SHR:
+		case BIN_AND:
+		case BIN_XOR:
+		case BIN_OR:
 			integral_expression(info, nd, AREG);
 			break;
 
-
-		case OP_EQ:
-		case OP_NE:
-		case OP_LT:
-		case OP_GT:
-		case OP_LE:
-		case OP_GE:
-
-		case OP_EQ_R:
-		case OP_NE_R:
-		case OP_LT_R:
-		case OP_GT_R:
-		case OP_LE_R:
-		case OP_GE_R:
+		case BIN_EQ:
+		case BIN_NE:
+		case BIN_LT:
+		case BIN_GT:
+		case BIN_LE:
+		case BIN_GE:
 			integral_expression(info, nd, ALOGIC);
 			break;
 
 		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
-		case OP_LOG_OR:
-		case OP_LOG_AND:
+		case BIN_LOG_OR:
+		case BIN_LOG_AND:
 		{
 			const item_t label_next = info->label_num++;
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
 
-			if (node_get_type(nd) == OP_LOG_OR)
+			if (node_get_arg(nd, 2) == BIN_LOG_OR)
 			{
 				info->label_false = label_next;
 			}
-			else // (node_get_type(nd) == OP_LOG_AND)
+			else // (node_get_arg(nd, 2) == OP_LOG_AND)
 			{
 				info->label_true = label_next;
 			}
@@ -1479,7 +1141,7 @@ static void binary_operation(information *const info, node *const nd)
 
 			// TODO: сделать обработку других ответов
 			// постараться использовать функцию check_type_and_branch
-			if (info->answer_type == ALOGIC)
+			if (info->answer_kind == ALOGIC)
 			{
 				to_code_conditional_branch(info);
 			}
@@ -1491,7 +1153,6 @@ static void binary_operation(information *const info, node *const nd)
 			expression(info, nd);
 		}
 		break;
-
 
 		default:
 		{
@@ -1507,168 +1168,15 @@ static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_POST_INC:
-		case OP_POST_DEC:
-		case OP_PRE_INC:
-		case OP_PRE_DEC:
-		case OP_POST_INC_AT:
-		case OP_POST_DEC_AT:
-		case OP_PRE_INC_AT:
-		case OP_PRE_DEC_AT:
-		case OP_POST_INC_V:
-		case OP_POST_DEC_V:
-		case OP_PRE_INC_V:
-		case OP_PRE_DEC_V:
-		case OP_POST_INC_AT_V:
-		case OP_POST_DEC_AT_V:
-		case OP_PRE_INC_AT_V:
-		case OP_PRE_DEC_AT_V:
-
-		case OP_UNMINUS:
-
-		case OP_NOT:
-		case OP_LOG_NOT:
-
-		case OP_POST_INC_R:
-		case OP_POST_DEC_R:
-		case OP_PRE_INC_R:
-		case OP_PRE_DEC_R:
-		case OP_POST_INC_AT_R:
-		case OP_POST_DEC_AT_R:
-		case OP_PRE_INC_AT_R:
-		case OP_PRE_DEC_AT_R:
-		case OP_POST_INC_R_V:
-		case OP_POST_DEC_R_V:
-		case OP_PRE_INC_R_V:
-		case OP_PRE_DEC_R_V:
-		case OP_POST_INC_AT_R_V:
-		case OP_POST_DEC_AT_R_V:
-		case OP_PRE_INC_AT_R_V:
-		case OP_PRE_DEC_AT_R_V:
-
-		case OP_UNMINUS_R:
+		case OP_UNARY:
 			unary_operation(info, nd);
 			break;
-
-
-		case OP_REM_ASSIGN:
-		case OP_SHL_ASSIGN:
-		case OP_SHR_ASSIGN:
-		case OP_AND_ASSIGN:
-		case OP_XOR_ASSIGN:
-		case OP_OR_ASSIGN:
-
-		case OP_ASSIGN:
-		case OP_ADD_ASSIGN:
-		case OP_SUB_ASSIGN:
-		case OP_MUL_ASSIGN:
-		case OP_DIV_ASSIGN:
-
-		case OP_REM_ASSIGN_AT:
-		case OP_SHL_ASSIGN_AT:
-		case OP_SHR_ASSIGN_AT:
-		case OP_AND_ASSIGN_AT:
-		case OP_XOR_ASSIGN_AT:
-		case OP_OR_ASSIGN_AT:
-
-		case OP_ASSIGN_AT:
-		case OP_ADD_ASSIGN_AT:
-		case OP_SUB_ASSIGN_AT:
-		case OP_MUL_ASSIGN_AT:
-		case OP_DIV_ASSIGN_AT:
-
-		case OP_REM_ASSIGN_V:
-		case OP_SHL_ASSIGN_V:
-		case OP_SHR_ASSIGN_V:
-		case OP_AND_ASSIGN_V:
-		case OP_XOR_ASSIGN_V:
-		case OP_OR_ASSIGN_V:
-
-		case OP_ASSIGN_V:
-		case OP_ADD_ASSIGN_V:
-		case OP_SUB_ASSIGN_V:
-		case OP_MUL_ASSIGN_V:
-		case OP_DIV_ASSIGN_V:
-
-		case OP_REM_ASSIGN_AT_V:
-		case OP_SHL_ASSIGN_AT_V:
-		case OP_SHR_ASSIGN_AT_V:
-		case OP_AND_ASSIGN_AT_V:
-		case OP_XOR_ASSIGN_AT_V:
-		case OP_OR_ASSIGN_AT_V:
-
-		case OP_ASSIGN_AT_V:
-		case OP_ADD_ASSIGN_AT_V:
-		case OP_SUB_ASSIGN_AT_V:
-		case OP_MUL_ASSIGN_AT_V:
-		case OP_DIV_ASSIGN_AT_V:
-
-		case OP_REM:
-		case OP_SHL:
-		case OP_SHR:
-		case OP_AND:
-		case OP_XOR:
-		case OP_OR:
-		case OP_LOG_AND:
-		case OP_LOG_OR:
-
-		case OP_EQ:
-		case OP_NE:
-		case OP_LT:
-		case OP_GT:
-		case OP_LE:
-		case OP_GE:
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_DIV:
-
-		case OP_ASSIGN_R:
-		case OP_ADD_ASSIGN_R:
-		case OP_SUB_ASSIGN_R:
-		case OP_MUL_ASSIGN_R:
-		case OP_DIV_ASSIGN_R:
-
-		case OP_ASSIGN_AT_R:
-		case OP_ADD_ASSIGN_AT_R:
-		case OP_SUB_ASSIGN_AT_R:
-		case OP_MUL_ASSIGN_AT_R:
-		case OP_DIV_ASSIGN_AT_R:
-
-		case OP_ASSIGN_R_V:
-		case OP_ADD_ASSIGN_R_V:
-		case OP_SUB_ASSIGN_R_V:
-		case OP_MUL_ASSIGN_R_V:
-		case OP_DIV_ASSIGN_R_V:
-
-		case OP_ASSIGN_AT_R_V:
-		case OP_ADD_ASSIGN_AT_R_V:
-		case OP_SUB_ASSIGN_AT_R_V:
-		case OP_MUL_ASSIGN_AT_R_V:
-		case OP_DIV_ASSIGN_AT_R_V:
-
-		case OP_EQ_R:
-		case OP_NE_R:
-		case OP_LT_R:
-		case OP_GT_R:
-		case OP_LE_R:
-		case OP_GE_R:
-		case OP_ADD_R:
-		case OP_SUB_R:
-		case OP_MUL_R:
-		case OP_DIV_R:
+		case OP_BINARY:
 			binary_operation(info, nd);
 			break;
-
-
 		default:
 			operand(info, nd);
 			break;
-	}
-
-	if (node_get_type(nd) == OP_EXPR_END)
-	{
-		node_set_next(nd);
 	}
 }
 
@@ -1677,11 +1185,8 @@ static void statement(information *const info, node *const nd)
 	switch (node_get_type(nd))
 	{
 		case OP_BLOCK:
-		{
 			block(info, nd);
-			node_set_next(nd); // OP_BLOCK_END
-		}
-		break;
+			break;
 		case OP_IF:
 		{
 			const item_t ref_else = node_get_arg(nd, 0);
@@ -1876,18 +1381,7 @@ static void statement(information *const info, node *const nd)
 			to_code_unconditional_branch(info, label);
 		}
 		break;
-		case OP_RETURN_VOID:
-		{
-			if (info->was_dynamic)
-			{
-				to_code_stack_load(info);
-			}
-
-			node_set_next(nd);
-			uni_printf(info->io, " ret void\n");
-		}
-		break;
-		case OP_RETURN_VAL:
+		case OP_RETURN:
 		{
 			if (info->was_dynamic)
 			{
@@ -1899,21 +1393,20 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_type == ACONST && info->answer_value_type == mode_integer)
+			if (info->answer_kind == ACONST && type_is_integer(info->answer_type))
 			{
-				uni_printf(info->io, " ret i32 %" PRIitem "\n", info->answer_const);
+				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
-			else if (info->answer_type == ACONST && info->answer_value_type == mode_float)
+			else if (info->answer_kind == ACONST && type_is_floating(info->answer_type))
 			{
-				uni_printf(info->io, " ret double %f\n", info->answer_const_double);
+				uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
 			}
-			else if (info->answer_type == AREG)
+			else if (info->answer_kind == AREG)
 			{
-				uni_printf(info->io, " ret ");
-				type_to_io(info, info->answer_value_type);
-				uni_printf(info->io, " %%.%" PRIitem "\n", info->answer_reg);
+				uni_printf(info->sx->io, " ret ");
+				type_to_io(info, info->answer_type);
+				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
-			node_set_next(nd); // OP_RETURN_VOID
 		}
 		break;
 		case OP_GETID:
@@ -1926,40 +1419,46 @@ static void statement(information *const info, node *const nd)
 			break;
 		case OP_PRINTF:
 		{
-			const item_t N = node_get_arg(nd, 0);
-			item_t args[128];
-			item_t args_type[128];
+			const item_t N = node_get_amount(nd) - 1;
+			item_t args[MAX_PRINTF_ARGS];
+			item_t args_type[MAX_PRINTF_ARGS];
+			if (N > MAX_PRINTF_ARGS)
+			{
+				system_error(too_many_arguments);
+				return;
+			}
 
 			node_set_next(nd);
-			const item_t string_length = node_get_arg(nd, 0);
+			const size_t index = (size_t)node_get_arg(nd, 2);
+			const size_t string_length = strings_length(info->sx, index);
 			node_set_next(nd); // OP_STRING
-			node_set_next(nd); // OP_EXPR_END
+
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
 				expression(info, nd);
 				args[i] = info->answer_reg;
-				args_type[i] = info->answer_value_type;
+				args_type[i] = info->answer_type;
 			}
 
-			uni_printf(info->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-				"([%" PRIitem " x i8], [%" PRIitem " x i8]* @.str%" PRIitem ", i32 0, i32 0)"
+			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+				"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
 				, info->register_num
 				, string_length + 1
 				, string_length + 1
-				, info->string_num);
+				, index);
 
 			info->register_num++;
-			info->string_num++;
 
 			for (item_t i = 0; i < N; i++)
 			{
-				uni_printf(info->io, ", ");
+				uni_printf(info->sx->io, ", ");
 				type_to_io(info, args_type[i]);
-				uni_printf(info->io, " signext %%.%" PRIitem, args[i]);
+				uni_printf(info->sx->io, " signext %%.%" PRIitem, args[i]);
 			}
 
-			uni_printf(info->io, ")\n");
+			uni_printf(info->sx->io, ")\n");
+			info->was_printf = true;
 		}
 		break;
 		default:
@@ -1970,140 +1469,121 @@ static void statement(information *const info, node *const nd)
 
 static void init(information *const info, node *const nd, const item_t displ, const item_t elem_type)
 {
-	switch (node_get_type(nd))
+	// TODO: пока реализовано только для одномерных массивов
+	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
-		// TODO: пока реализовано только для одномерных массивов
-		case OP_ARRAY_INIT: 
+		const item_t N = node_get_amount(nd);
+
+		const size_t index = hash_get_index(&info->arrays, displ);
+		hash_set_by_index(&info->arrays, index, 1, N);
+
+		const item_t type = array_get_type(info, elem_type);
+		to_code_alloc_array_static(info, index, type);
+
+		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
+		node_set_next(nd);
+		for (item_t i = 0; i < N; i++)
 		{
-			const item_t N = node_get_arg(nd, 0);
-
-			const size_t index = hash_get_index(&info->arrays, displ);
-			hash_set_by_index(&info->arrays, index, 1, N);
-			to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-			to_code_init_array(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				info->variable_location = LFREE;
-				expression(info, nd);
-			}
-
-			node_set_next(nd); // TExprend
-		}
-		break;
-		case OP_STRUCT_INIT:
-		{
-			const item_t N = node_get_arg(nd, 0);
-
-			node_set_next(nd);
-			for (item_t i = 0; i < N; i++)
-			{
-				expression(info, nd);
-			}
-		}
-		break;
-		default:
+			info->variable_location = LFREE;
 			expression(info, nd);
-			break;
+			const item_t value_int = info->answer_const;
+			info->answer_const = i;
+			to_code_slice(info, displ, 0, 0, type);
+
+			if (type_is_integer(type))
+			{
+				to_code_store_const_i32(info, value_int, info->register_num - 1, true);
+			}
+			else
+			{
+				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true);
+			}
+		}
+	}
+	else
+	{
+		expression(info, nd);
 	}
 }
 
 static void block(information *const info, node *const nd)
 {
+	const size_t block_size = node_get_amount(nd);
 	node_set_next(nd); // OP_BLOCK
-	while (node_get_type(nd) != OP_BLOCK_END)
+
+	for (size_t i = 0; i < block_size; i++)
 	{
 		switch (node_get_type(nd))
 		{
-			case OP_DECL_ARR:
+			case OP_DECL_VAR:
 			{
-				node id = node_get_child(nd, node_get_amount(nd) - 1);
-				if (node_get_type(&id) != OP_DECL_ID)
-				{
-					id = node_get_child(nd, node_get_amount(nd) - 2);
-				}
-
-				const item_t displ = node_get_arg(&id, 0);
-				const item_t elem_type = node_get_arg(&id, 1);
-				const size_t N = (size_t)node_get_arg(&id, 2);
-				const bool has_initializer = node_get_arg(&id, 3) != 0; // 0 если нет инициализации
-				const size_t index = hash_add(&info->arrays, displ, 1 + N);
-				hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 0));
+				const item_t N = node_get_arg(nd, 1);
+				const item_t all = node_get_arg(nd, 2);
+				const item_t elem_type = ident_get_type(info->sx, (size_t)node_get_arg(nd, 0));
 
 				node_set_next(nd);
-				// получение и сохранение границ
-				const bool has_bounds = node_get_type(nd) != OP_DECL_ID;
-				for (size_t i = 1; i <= N && has_bounds; i++)
-				{
-					info->variable_location = LFREE;
-					expression(info, nd);
-
-					if (!has_initializer)
-					{
-						if (info->answer_type == ACONST)
-						{
-							if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
-							{
-								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-							}
-
-							hash_set_by_index(&info->arrays, index, i, info->answer_const);
-						}
-						else // if (info->answer_type == AREG) динамический массив
-						{
-							if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
-							{
-								system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
-							}
-
-							hash_set_by_index(&info->arrays, index, i, info->answer_reg);
-							hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
-						}
-					}
-				}
-				node_set_next(nd);	// OP_DECL_ID
-
-				// объявление массива без инициализации, с инициализацией объявление происходит в init
-				// объявление массива, если он статический
-				if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_initializer)
-				{
-					to_code_alloc_array_static(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-				}
-				else if (!has_initializer) // объявление массива, если он динамический
-				{
-					if (!info->was_dynamic)
-					{
-						to_code_stack_save(info);
-					}
-					to_code_alloc_array_dynamic(info, index, elem_type == mode_integer ? mode_integer : mode_float);
-					info->was_dynamic = 1;
-				}
-
-				if (has_initializer)
-				{
-					init(info, nd, displ, elem_type);
-				}
-			}
-			break;
-			case OP_DECL_ID:
-			{
-				const item_t displ = node_get_arg(nd, 0);
-				const item_t elem_type = node_get_arg(nd, 1);
-				const item_t N = node_get_arg(nd, 2);
-				const item_t all = node_get_arg(nd, 3);
-
 				if (N == 0) // обычная переменная int a; или struct point p;
 				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca ", displ);
+					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
 					type_to_io(info, elem_type);
-					uni_printf(info->io, ", align 4\n");
+					uni_printf(info->sx->io, ", align 4\n");
 
 					info->variable_location = LMEM;
 					info->request_reg = displ;
 				}
+				else // массив
+				{
+					const size_t index = hash_add(&info->arrays, displ, 1 + (size_t)N);
+					hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
-				node_set_next(nd);
+					// получение и сохранение границ
+					const bool has_bounds = node_get_type(nd) != OP_LIST;
+					for (item_t j = 1; j <= N && has_bounds; j++)
+					{
+						info->variable_location = LFREE;
+						expression(info, nd);
+
+						if (!all)
+						{
+							if (info->answer_kind == ACONST)
+							{
+								if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
+								{
+									system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								}
+
+								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
+							}
+							else // if (info->answer_kind == AREG) динамический массив
+							{
+								if (hash_get_by_index(&info->arrays, index, IS_STATIC) && j > 1)
+								{
+									system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+								}
+
+								hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_reg);
+								hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
+							}
+						}
+					}
+
+					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !all)
+					{
+						to_code_alloc_array_static(info, index, array_get_type(info, elem_type));
+					}
+					else if (!all) // объявление массива, если он динамический
+					{
+						if (!info->was_dynamic)
+						{
+							to_code_stack_save(info);
+						}
+
+						to_code_alloc_array_dynamic(info, index, array_get_type(info, elem_type));
+						info->was_dynamic = true;
+					}
+				}
+
 				if (all)
 				{
 					init(info, nd, displ, elem_type);
@@ -2111,8 +1591,6 @@ static void block(information *const info, node *const nd)
 			}
 			break;
 			case OP_NOP:
-			case OP_DECL_STRUCT:
-			case OP_DECL_STRUCT_END:
 				node_set_next(nd);
 				break;
 			default:
@@ -2124,100 +1602,161 @@ static void block(information *const info, node *const nd)
 
 static int codegen(information *const info)
 {
-	int was_stack_functions = 0;
+	bool was_stack_functions = false;
 	node root = node_get_root(&info->sx->tree);
 
-	while (node_set_next(&root) == 0)
+	while (true)
 	{
 		switch (node_get_type(&root))
 		{
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_type = mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 1);
-				const size_t parameters = (size_t)mode_get(info->sx, (size_t)ident_get_mode(info->sx, ref_ident) + 2);
-				info->was_dynamic = 0;
+				const item_t func_type = type_function_get_return_type(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
+				const size_t parameters = type_function_get_parameter_amount(info->sx, (size_t)ident_get_type(info->sx, ref_ident));
+				info->was_dynamic = false;
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 				{
-					uni_printf(info->io, "define i32 @main(");
+					uni_printf(info->sx->io, "define i32 @main(");
 				}
 				else
 				{
-					uni_printf(info->io, "define ");
+					uni_printf(info->sx->io, "define ");
 					type_to_io(info, func_type);
-					uni_printf(info->io, " @func%zi(", ref_ident);
+					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
 				}
-				for (size_t i = 0; i < parameters; i++)
-				{
-					uni_printf(info->io, i == 0 ? "" : ", ");
-					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-				}
-				uni_printf(info->io, ") {\n");
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					uni_printf(info->io, " %%var.%" PRIitem " = alloca "
+					uni_printf(info->sx->io, i == 0 ? "" : ", ");
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+				}
+				uni_printf(info->sx->io, ") {\n");
+
+				for (size_t i = 0; i < parameters; i++)
+				{
+					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca "
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
-					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, ", align 4\n");
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, ", align 4\n");
 
-					uni_printf(info->io, " store ");
-					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, " %%%" PRIitem ", ", i);
-					type_to_io(info, ident_get_mode(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->io, "* %%var.%" PRIitem ", align 4\n"
+					uni_printf(info->sx->io, " store ");
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, " %%%zu, ", i);
+					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
+					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n"
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
 				}
 
 				node_set_next(&root);
 				block(info, &root);
-				uni_printf(info->io, "}\n\n");
+
+				if (type_is_void(func_type))
+				{
+					if (info->was_dynamic)
+					{
+						to_code_stack_load(info);
+					}
+					uni_printf(info->sx->io, " ret void\n");
+				}
+				uni_printf(info->sx->io, "}\n\n");
 
 				was_stack_functions |= info->was_dynamic;
 			}
 			break;
-			case OP_BLOCK_END:
-				break;
 			default:
-				system_error(node_unexpected, node_get_type(&root));
-				return -1;
-		}
-	}
+			{
+				if (node_set_next(&root) != 0)
+				{
+					if (was_stack_functions)
+					{
+						uni_printf(info->sx->io, "declare i8* @llvm.stacksave()\n");
+						uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
+					}
 
-	if (was_stack_functions)
-	{
-		uni_printf(info->io, "declare i8* @llvm.stacksave()\n");
-		uni_printf(info->io, "declare void @llvm.stackrestore(i8*)\n");
-	}
-	if (info->was_memcpy)
-	{
-		uni_printf(info->io, "declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i32, i1)\n");
+					if (info->was_printf)
+					{
+						uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
+					}
+
+					return 0;
+				}
+			}
+		}
 	}
 
 	return 0;
 }
 
-static void structs_declaration(information *const info)
+static void architecture(const workspace *const ws, syntax *const sx)
 {
-	const size_t modes_size = vector_size(&info->sx->modes);
-	for (size_t i = 0; i < modes_size; i++)
+	for (size_t i = 0; ; i++)
 	{
-		if (mode_is_struct(info->sx, i) && i != 2)
+		const char *flag = ws_get_flag(ws, i);
+
+		if (flag == NULL || strcmp(flag, "--x86_64") == 0)
 		{
-			uni_printf(info->io, "%%struct_opt.%zi = type { ", i);
-
-			const size_t fields = (size_t)mode_get(info->sx, i + 2);
-			for (size_t j = 0; j < fields; j += 2)
-			{
-				uni_printf(info->io, j == 0 ? "" : ", ");
-				type_to_io(info, mode_get(info->sx, i + 3 + j));
-			}
-
-			uni_printf(info->io, " }\n");
+			uni_printf(sx->io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
+			uni_printf(sx->io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
+			return;
+		}
+		else if (strcmp(flag, "--mipsel") == 0)
+		{
+			uni_printf(sx->io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
+			uni_printf(sx->io, "target triple = \"mipsel\"\n\n");
+			return;
 		}
 	}
-	uni_printf(info->io, " \n");
+}
+
+static void structs_declaration(information *const info)
+{
+	const size_t types = vector_size(&info->sx->types);
+	for (size_t i = BEGIN_USER_TYPE; i < types; i++)
+	{
+		if (type_is_structure(info->sx, i))
+		{
+			uni_printf(info->sx->io, "%%struct_opt.%zu = type { ", i);
+
+			const size_t fields = type_structure_get_member_amount(info->sx, i);
+			for (size_t j = 0; j < fields; j++)
+			{
+				uni_printf(info->sx->io, j == 0 ? "" : ", ");
+				type_to_io(info, type_structure_get_member_type(info->sx, i, j));
+			}
+
+			uni_printf(info->sx->io, " }\n");
+		}
+	}
+	uni_printf(info->sx->io, " \n");
+}
+
+static void strings_declaration(information *const info)
+{
+	const size_t amount = strings_amount(info->sx);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const char *string = string_get(info->sx, i);
+		const size_t length = strings_length(info->sx, i);
+		uni_printf(info->sx->io, "@.str%zu = private unnamed_addr constant [%zu x i8] c\""
+			, i, length + 1);
+
+		for (size_t j = 0; j < length; j++)
+		{
+			const char ch = string[j];
+			if (ch == '\n')
+			{
+				uni_printf(info->sx->io, "\\0A");
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c", ch);
+			}
+		}
+		uni_printf(info->sx->io, "\\00\", align 1\n");
+	}
+	uni_printf(info->sx->io, " \n");
 }
 
 
@@ -2230,28 +1769,29 @@ static void structs_declaration(information *const info)
  */
 
 
-int encode_to_llvm(const workspace *const ws, universal_io *const io, syntax *const sx)
+int encode_to_llvm(const workspace *const ws, syntax *const sx)
 {
-	if (optimize_for_llvm(ws, io, sx))
+	if (!ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}
 
 	information info;
-	info.io = io;
 	info.sx = sx;
-	info.string_num = 1;
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
-	info.was_memcpy = 0;
+	info.was_printf = false;
+	info.was_dynamic = false;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
+	architecture(ws, sx);
 	structs_declaration(&info);
+	strings_declaration(&info);
 
 	const int ret = codegen(&info);
 
