@@ -27,10 +27,10 @@
 #define MAX_PRINTF_ARGS 128
 
 
-const size_t HASH_TABLE_SIZE = 1024;
-const size_t IS_STATIC = 0;
-const size_t DIMENSION_LOW_BORDER = 1;
-const size_t DIMENSION_HIGH_BORDER = 5;
+static const size_t HASH_TABLE_SIZE = 1024;
+static const size_t IS_STATIC = 0;
+static const size_t DIMENSION_LOW_BORDER = 1;
+static const size_t MAX_DIMENSIONS = 5;
 
 
 typedef enum ANSWER
@@ -321,7 +321,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
+	if (dim < DIMENSION_LOW_BORDER || dim > MAX_DIMENSIONS)
 	{
 		system_error(such_array_is_not_supported);
 		return;
@@ -346,7 +346,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	item_t to_alloc = hash_get_by_index(&info->arrays, index, 1);
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
-	if (dim < DIMENSION_LOW_BORDER || dim > DIMENSION_HIGH_BORDER)
+	if (dim < DIMENSION_LOW_BORDER || dim > MAX_DIMENSIONS)
 	{
 		system_error(such_array_is_not_supported);
 		return;
@@ -586,7 +586,7 @@ static void operand(information *const info, node *const nd)
 					info->answer_reg = info->register_num++;
 				}
 
-				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)DIMENSION_HIGH_BORDER)
+				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)MAX_DIMENSIONS)
 				{
 					to_code_slice(info, displ, cur_dimension, 0, type);
 				}
@@ -602,7 +602,7 @@ static void operand(information *const info, node *const nd)
 
 				// Проверка, что значение cur_dimension корректное и в пределах допустимого
 				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension <(item_t)DIMENSION_HIGH_BORDER)
+				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension <(item_t)MAX_DIMENSIONS)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
@@ -634,7 +634,7 @@ static void operand(information *const info, node *const nd)
 
 			// Проверка, что значение cur_dimension корректное и в пределах допустимого
 			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-			if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)DIMENSION_HIGH_BORDER)
+			if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)MAX_DIMENSIONS)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
@@ -740,9 +740,9 @@ static void assignment_expression(information *const info, node *const nd)
 {
 	const binary_t assignment_type = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
-	item_t displ = 0;
 
 	node_set_next(nd);
+	item_t displ = 0;
 	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
 	if (!is_array)
 	{
@@ -963,10 +963,10 @@ static void inc_dec_expression(information *const info, node *const nd)
 {
 	const unary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
-	item_t displ = 0;
 
 	node_set_next(nd);
 	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
+	item_t displ = 0;
 	if (!is_array)
 	{
 		displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
@@ -1644,7 +1644,7 @@ static int codegen(information *const info)
 
 					uni_printf(info->sx->io, " store ");
 					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
-					uni_printf(info->sx->io, " %%%" PRIitem ", ", i);
+					uni_printf(info->sx->io, " %%%zu, ", i);
 					type_to_io(info, ident_get_type(info->sx, ref_ident + 4 * (i + 1)));
 					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n"
 						, ident_get_displ(info->sx, ref_ident + 4 * (i + 1)));
