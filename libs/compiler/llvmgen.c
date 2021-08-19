@@ -740,7 +740,6 @@ static void assignment_expression(information *const info, node *const nd)
 	const binary_t assignment_type = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
 	item_t displ = 0;
-	item_t memory_reg = 0;
 
 	node_set_next(nd);
 	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
@@ -753,7 +752,7 @@ static void assignment_expression(information *const info, node *const nd)
 	{
 		info->variable_location = LMEM;
 		expression(info, nd); // OP_SLICE_IDENT or UN_ADDRESS
-		memory_reg = info->answer_reg;
+		displ = info->answer_reg;
 	}
 
 	info->variable_location = LFREE;
@@ -765,7 +764,7 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
+		to_code_load(info, info->register_num, displ, operation_type, is_array);
 		info->register_num++;
 
 		if (info->answer_kind == AREG)
@@ -789,17 +788,17 @@ static void assignment_expression(information *const info, node *const nd)
 
 	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
-		to_code_store_reg(info, result, is_array ? memory_reg : displ, operation_type, is_array
+		to_code_store_reg(info, result, displ, operation_type, is_array
 			, info->answer_kind == AMEM);
 	}
 	// ACONST && =
 	else if (type_is_integer(operation_type))
 	{
-		to_code_store_const_i32(info, info->answer_const, is_array ? memory_reg : displ, is_array);
+		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
 	else
 	{
-		to_code_store_const_double(info, info->answer_const_double, is_array ? memory_reg : displ, is_array);
+		to_code_store_const_double(info, info->answer_const_double, displ, is_array);
 	}
 }
 
@@ -965,7 +964,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 {
 	const unary_t operation = node_get_arg(nd, 2);
 	const item_t operation_type = node_get_arg(nd, 0);
-	item_t displ = 0, memory_reg = 0;
+	item_t displ = 0;
 
 	node_set_next(nd);
 	bool is_array = node_get_type(nd) != OP_IDENTIFIER;
@@ -978,10 +977,10 @@ static void inc_dec_expression(information *const info, node *const nd)
 	{
 		info->variable_location = LMEM;
 		operand(info, nd); // OP_SLICE_IDENT
-		memory_reg = info->answer_reg;
+		displ = info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array);
+	to_code_load(info, info->register_num, displ, operation_type, is_array);
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 	info->answer_type = operation_type;
@@ -1010,7 +1009,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, is_array ? memory_reg : displ, operation_type, is_array, false);
+	to_code_store_reg(info, info->register_num, displ, operation_type, is_array, false);
 	info->register_num++;
 }
 
