@@ -474,48 +474,6 @@ static void check_type_and_branch(information *const info)
 	}
 }
 
-
-
-typedef struct value
-{
-	item_t reg;					/**< Регистр с ответом */
-	item_t num;				/**< Константа с ответом */
-	double num_double;			/**< Константа с ответом типа double */
-	answer_t kind;				/**< Вид ответа */
-	item_t type;					/**< Тип значения */
-} value;
-
-
-/**
- *	Emit identifier
- *
- *	@param	info	Encoder
- *	@param	nd		Node in AST
- */
-static value emit_identifier(information *const info, node *const nd)
-{
-	item_t type = node_get_arg(nd, 0);
-	const size_t identifier = (size_t)node_get_arg(nd, 1);
-
-	const item_t displ = ident_get_displ(info->sx, identifier);
-	bool is_addr_to_val = false;
-
-	if (info->variable_location == LMEM)
-	{
-		  to_code_load(info, info->register_num, displ, type, false);
-		  info->register_num++;
-		  info->variable_location = LREG;
-		  is_addr_to_val = true;
-		  type = type_pointer_get_element_type(info->sx, type);
-	}
-
-	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
-		, is_addr_to_val);
-
-	return (value){ .reg = info->register_num++, .kind = AREG, .type = type };
-}
-
-
 static void operand(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
@@ -525,11 +483,25 @@ static void operand(information *const info, node *const nd)
 			break;
 		case OP_IDENTIFIER:
 		{
-			const value answer = emit_identifier(info, nd);
-			info->answer_reg = answer.reg;
-			info->answer_kind = answer.kind;
-			info->answer_type = answer.type;
+			item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			bool is_addr_to_val = false;
+
 			node_set_next(nd);
+			if (info->variable_location == LMEM)
+			{
+				to_code_load(info, info->register_num, displ, type, false);
+				info->register_num++;
+				info->variable_location = LREG;
+				is_addr_to_val = true;
+				type = type_pointer_get_element_type(info->sx, type);
+			}
+
+			to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
+				, is_addr_to_val);
+			info->answer_reg = info->register_num++;
+			info->answer_kind = AREG;
+			info->answer_type = type;
 		}
 		break;
 		case OP_CONSTANT:
