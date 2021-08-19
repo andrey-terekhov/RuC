@@ -30,7 +30,8 @@
 static const size_t HASH_TABLE_SIZE = 1024;
 static const size_t IS_STATIC = 0;
 static const size_t DIMENSION_LOW_BORDER = 1;
-static const size_t MAX_DIMENSIONS = 5;
+static const size_t OP_SLICE_DIMENSION = 2;
+static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;
 
 
 typedef enum ANSWER
@@ -363,33 +364,33 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	uni_printf(info->sx->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
-static void to_code_slice(information *const info, const item_t displ, const item_t cur_dimension
+static void to_code_slice(information *const info, const item_t displ, const size_t cur_dimension
 	, const item_t prev_slice, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
-	const item_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
+	const size_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
 
 	if (hash_get(&info->arrays, displ, IS_STATIC))
 	{
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
 		}
 		type_to_io(info, type);
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->sx->io, "]");
 		}
 		uni_printf(info->sx->io, ", ");
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, (size_t)i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
 		}
 		type_to_io(info, type);
 
-		for (item_t i = dimensions - cur_dimension; i <= dimensions; i++)
+		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
 			uni_printf(info->sx->io, "]");
 		}
@@ -563,7 +564,7 @@ static void operand(information *const info, node *const nd)
 				const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 				node_set_next(nd);
 
-				item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+				size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 				const location_t location = info->variable_location;
 
 				info->variable_location = LFREE;
@@ -586,7 +587,7 @@ static void operand(information *const info, node *const nd)
 					info->answer_reg = info->register_num++;
 				}
 
-				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)MAX_DIMENSIONS)
+				if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
 				{
 					to_code_slice(info, displ, cur_dimension, 0, type);
 				}
@@ -602,7 +603,7 @@ static void operand(information *const info, node *const nd)
 
 				// Проверка, что значение cur_dimension корректное и в пределах допустимого
 				// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-				if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension <(item_t)MAX_DIMENSIONS)
+				if (cur_dimension < MAX_DIMENSIONS)
 				{
 					to_code_slice(info, displ, cur_dimension, prev_slice, type);
 				}
@@ -626,7 +627,7 @@ static void operand(information *const info, node *const nd)
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 			node_set_next(nd);
 
-			item_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+			size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 			const location_t location = info->variable_location;
 
 			info->variable_location = LFREE;
@@ -634,7 +635,7 @@ static void operand(information *const info, node *const nd)
 
 			// Проверка, что значение cur_dimension корректное и в пределах допустимого
 			// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-			if ((item_t)DIMENSION_LOW_BORDER - 2 < cur_dimension && cur_dimension < (item_t)MAX_DIMENSIONS)
+			if (cur_dimension < MAX_DIMENSIONS)
 			{
 				to_code_slice(info, displ, cur_dimension, 0, type);
 			}
@@ -1558,7 +1559,7 @@ static void block(information *const info, node *const nd)
 							}
 							else // if (info->answer_kind == AREG) динамический массив
 							{
-								if (hash_get_by_index(&info->arrays, index, IS_STATIC) && i > 1)
+								if (hash_get_by_index(&info->arrays, index, IS_STATIC) && j > 1)
 								{
 									system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 								}
