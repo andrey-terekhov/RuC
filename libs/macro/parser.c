@@ -97,4 +97,8 @@ bool parser_is_correct(const parser *const prs)
 }
 
 
-int parser_clear(parser *const prs);
+int parser_clear(parser *const prs)
+{
+	parser_is_correct(prs);
+	return 0;
+}

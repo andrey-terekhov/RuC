@@ -21,26 +21,29 @@
 #include "uniio.h"
 
 
+#define TAG_LINKER "linker"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Structure for connecting files */
+/** Linker structure */
 typedef struct linker
 {
-	workspace *ws;				/**< Initial arguments */
-	size_t sources; 			/**< Number of sources files */
+	workspace *ws;				/**< Sources files */
+	const size_t sources; 		/**< Number of sources files */
 
-	vector included;			/**< List of already added files */
+	vector included;			/**< List of included files */
 
-	size_t current; 			/**< Index of the current file */
+	size_t current; 			/**< Index of current file */
 } linker;
 
 
 /**
  *	Create linker structure
  *
- *	@param	ws		Workspace structure
+ *	@param	ws			Workspace structure
  *
  *	@return	Linker structure
  */
@@ -48,70 +51,70 @@ linker linker_create(workspace *const ws);
 
 
 /**
- *	Open new source file
+ *	Link source file forcibly
  *
- *	@param	lk		Linker structure
- *	@param	index	File index in workspace
+ *	@param	lk			Linker structure
+ *	@param	index		Index of file
  *
- *	@return	File
+ *	@return	File input stream
  */
 universal_io linker_add_source(linker *const lk, const size_t index);
 
 /**
- *	Open new header file
+ *	Link header file safely
  *
- *	@param	lk		Linker structure
- *	@param	index	File index in workspace
+ *	@param	lk			Linker structure
+ *	@param	index		Index of file
  *
- *	@return	File
+ *	@return	File input stream
  */
 universal_io linker_add_header(linker *const lk, const size_t index);
 
 
 /**
- *	Find a file in the same folder
+ *	Search file into same folder first
  *
- *	@param	lk		Linker structure
- *	@param	file	File name
+ *	@param	lk			Linker structure
+ *	@param	file		File name
  *
- *	@return	File index in workspace, @c SIZE_MAX on failure
+ *	@return	Index of file, @c SIZE_MAX on failure
  */
 size_t linker_search_internal(linker *const lk, const char *const file);
 
 /**
- *	Find file through directories  in workspace
+ *	Search file into specified paths first
  *
- *	@param	lk		Linker structure
- *	@param	file	File name
+ *	@param	lk			Linker structure
+ *	@param	file		File name
  *
- *	@return	File index in workspace, @c SIZE_MAX on failure
+ *	@return	Index of file, @c SIZE_MAX on failure
  */
 size_t linker_search_external(linker *const lk, const char *const file);
 
 
 /**
- *	Get current file name from linker
+ *	Get current file path
  *
- *	@param	lk		Linker structure
+ *	@param	lk			Linker structure
  *
- *	@return	File name, @c NULL on failure
+ *	@return	Path to file, @c NULL on failure
  */
 const char* linker_current_path(const linker *const lk);
 
 
 /**
- *	Get linker size
+ *	Get number of linker files
  *
- *	@param	lk		Linker structure
+ *	@param	lk			Linker structure
  *
- *	@return	Size of linker, @c SIZE_MAX on failure
+ *	@return	Number of linker files, @c SIZE_MAX on failure
  */
 size_t linker_size(const linker *const lk);
 
 /**
- *	Check that linker structure is correct
+ *	Check that linker is correct
  *
- *	@param	lk		Linker structure
+ *	@param	lk			Linker structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -119,9 +122,9 @@ bool linker_is_correct(const linker *const lk);
 
 
 /**
- *	Clear linker structure
+ *	Free allocated memory
  *
- *	@param	lk		Linker structure
+ *	@param	lk			Linker structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
