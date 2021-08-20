@@ -83,7 +83,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 {
 	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
 	{
+#ifdef _MSC_VER
+		char flag[MAX_ARG_SIZE];
+		utf8_from_cp866(ws_get_flag(ws, i), flag);
+#else
 		const char *flag = ws_get_flag(ws, i);
+#endif
+		printf("flag: %s\n", flag);
 		if (flag[0] == '-' && flag[1] == 'D')
 		{
 			char32_t name[MAX_DEFINE_SIZE];
@@ -112,7 +118,6 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 			}
 			char32_t arr[2] = { (char32_t)i, '\0' };
 			printf("buffer: '%s'\t'%s'\n", storage_get_by_index(stg, storage_add(stg, arr, name)), storage_get(stg, name));
-			printf("flag: %s\n", flag);
 		}
 	}
 
