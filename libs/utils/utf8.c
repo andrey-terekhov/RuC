@@ -179,7 +179,7 @@ static char32_t char32_from_cp1251(const unsigned char symbol)
 		return (char32_t)symbol;
 	}
 	
-	if (symbol >= 0xC0 && symbol <= 0xFF)
+	if (symbol >= 0xC0)	// && symbol <= 0xFF
 	{
 		return (char32_t)symbol - 0xC0 + U'А';
 	}
