@@ -85,7 +85,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 	{
 #ifdef _MSC_VER
 		char flag[MAX_ARG_SIZE];
-		utf8_from_cp866(ws_get_flag(ws, i), flag);
+		utf8_from_cp1251(ws_get_flag(ws, i), flag);
+		const char *flag2 = ws_get_flag(ws, i);
+		for (size_t j = 0; flag2[j] != '\0'; j++)
+		{
+			printf("0x%02X ", flag2[j]);
+		}
+		printf("\n");
 #else
 		const char *flag = ws_get_flag(ws, i);
 #endif
