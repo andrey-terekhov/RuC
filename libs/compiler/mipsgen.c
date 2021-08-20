@@ -16,6 +16,7 @@
 
 #include "mipsgen.h"
 #include "codes.h"
+#include "operations.h"
 #include "uniprinter.h"
 
 
@@ -304,6 +305,31 @@ static void to_code_L(universal_io *const io, const instructions_t instruction,
 }
 
 
+static int codegen(information *const info)
+{
+	node root = node_get_root(&info->sx->tree);
+
+	while (true)
+	{
+		switch (node_get_type(&root))
+		{
+			case OP_FUNC_DEF:
+			{
+				node_set_next(&root);
+			}
+			break;
+			default:
+			{
+				if (node_set_next(&root) != 0)
+				{
+					return 0;
+				}
+			}
+		}
+	}
+}
+
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -370,7 +396,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 
 	precodegen(info.sx);
-	// const int ret = codegen(&info);
+	const int ret = codegen(&info);
 	postcodegen(&info);
-	return 0;
+	return ret;
 }
