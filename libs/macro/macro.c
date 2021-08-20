@@ -20,9 +20,6 @@
 #include "storage.h"
 #include "uniio.h"
 #include "uniprinter.h"
-#include <string.h>
-
-#define MAX_DEFINE_SIZE 1024
 
 
 static const size_t OUT_BUFFER_SIZE = 1024;
@@ -33,12 +30,12 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	buffer[0] = utf8_convert(&name[0]);
 	if (buffer[0] == '\0' || buffer[0] == '=')
 	{
-		printf("1) предопределенный макрос должен иметь имя\n");
+		system_error(NULL, MACRO_NAME_NON);
 		return SIZE_MAX;
 	}
 	else if (!utf8_is_letter(buffer[0]))
 	{
-		printf("2) имя макроса должно начинаться с буквы или '_'\n");
+		system_error(NULL, MACRO_NAME_FIRST_CHARACTER);
 		return SIZE_MAX;
 	}
 
@@ -61,7 +58,7 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	}
 	else
 	{
-		printf("3) следует использовать разделитель '=' после имени макроса");
+		system_warning(NULL, MACRO_CONSOLE_SEPARATOR);
 		j -= utf8_size(buffer[i]);
 		buffer[i] = '\0';
 		return j;
@@ -86,19 +83,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 #ifdef _MSC_VER
 		char flag[MAX_ARG_SIZE];
 		utf8_from_cp1251(ws_get_flag(ws, i), flag);
-		const char *flag2 = ws_get_flag(ws, i);
-		for (size_t j = 0; flag2[j] != '\0'; j++)
-		{
-			printf("0x%02X ", flag2[j]);
-		}
-		printf("\n");
 #else
 		const char *flag = ws_get_flag(ws, i);
 #endif
-		printf("flag: %s\n", flag);
+
 		if (flag[0] == '-' && flag[1] == 'D')
 		{
-			char32_t name[MAX_DEFINE_SIZE];
+			char32_t name[MAX_ARG_SIZE];
 
 			const size_t index = ws_parse_name(&flag[2], name);
 			if (index == SIZE_MAX)
@@ -108,26 +99,23 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 
 			if (flag[2 + index] != '\0')
 			{
-				char32_t value[MAX_DEFINE_SIZE];
+				char32_t value[MAX_ARG_SIZE];
 				ws_parse_value(&flag[2 + index], value);
 				if (storage_add(stg, name, value) == SIZE_MAX)
 				{
-					printf("4) макрос '%s' уже существует\n", "name");
+					system_error(NULL, MACRO_NAME_EXISTS, name);
 					return -1;
 				}
-				printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\0\n");
 			}
 			else if (storage_add(stg, name, NULL) == SIZE_MAX)
 			{
-				printf("5) макрос '%s' уже существует\n", "name");
+				system_error(NULL, MACRO_NAME_EXISTS, name);
 				return -1;
 			}
-			char32_t arr[2] = { (char32_t)i, '\0' };
-			printf("buffer: '%s'\t'%s'\n", storage_get_by_index(stg, storage_add(stg, arr, name)), storage_get(stg, name));
 		}
 	}
 
-	return -1;
+	return 0;
 }
 
 
@@ -145,7 +133,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
 		{
-			macro_system_error(TAG_LINKER, source_file_not_found);
+			system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
 		}
 
 		ret = parser_preprocess(&prs, &in);
