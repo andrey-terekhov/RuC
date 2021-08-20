@@ -76,6 +76,7 @@ typedef struct information
 
 	bool was_printf;					/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	bool was_file;						/**< Истина, если была работа с файлами */
 } information;
 
 
@@ -116,6 +117,11 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		type_to_io(info, type_pointer_get_element_type(info->sx, type));
 		uni_printf(info->sx->io, "*");
+	}
+	else if (type_is_file(type))
+	{
+		uni_printf(info->sx->io, "%%struct._IO_FILE");
+		info->was_file = true;
 	}
 }
 
@@ -1674,6 +1680,14 @@ static int codegen(information *const info)
 						uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
 					}
 
+					if (info->was_file)
+					{
+						uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
+							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, i64, "
+							"i32, [20 x i8] }");
+						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }");
+					}
+
 					return 0;
 				}
 			}
@@ -1767,6 +1781,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
@@ -1778,6 +1793,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.answer_reg = 0;
 	info.was_printf = false;
 	info.was_dynamic = false;
+	info.was_file = false;
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
