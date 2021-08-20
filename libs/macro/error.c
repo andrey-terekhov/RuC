@@ -16,18 +16,34 @@
 
 
 #include "error.h"
-#include "logger.h"
 #include <stdio.h>
-#include <stddef.h>
+#include "logger.h"
+#include "utf8.h"
 
 
 #define TAG_MACRO		"macro"
 
-#define ERROR_TAG_SIZE	256
-#define ERROR_MSG_SIZE	256
+#define MAX_TAG_SIZE	1024
+#define MAX_MSG_SIZE	4096
 
 
-static void get_message_error(const error_t num, char *const msg)
+static void get_error(const error_t num, char *const msg, va_list args)
+{
+	switch (num)
+	{
+		case source_file_not_found:
+			sprintf(msg, "исходный файл не найден");
+			break;
+		case header_file_not_found:
+			sprintf(msg, "заголовочный файл не найден");
+			break;
+		default:
+			sprintf(msg, "не реализованная ошибка №%d", num);
+			break;
+	}
+}
+
+static void get_warning(const warning_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -44,6 +60,22 @@ static void get_message_error(const error_t num, char *const msg)
 }
 
 
+static void output(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const char *const msg, void (*func)(const char *const, const char *const, const char *const, const size_t))
+{
+	size_t size = 1;
+	for (size_t i = 0; i < symbol && str[i] != '\0'; i += utf8_symbol_size(str[i]))
+	{
+		size++;
+	}
+
+	char tag[MAX_TAG_SIZE];
+	sprintf("%s:%zu:%zu", file, line, size);
+
+	func(tag, msg, line, size);
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -53,24 +85,66 @@ static void get_message_error(const error_t num, char *const msg)
  */
 
 
-void error(const char *const str, const size_t line, const size_t symbol, const error_t num, ...);
+void error(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
 
-void warning(const char *const str, const size_t line, const size_t symbol, const warning_t num, ...);
+	verror(file, str, line, symbol, num, args);
+
+	va_end(args);
+}
+
+void warning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	vwarning(file, str, line, symbol, num, args);
+
+	va_end(args);
+}
+
+
+void verror(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
+	output(file, str, line, symbol, msg, &log_error);
+}
+
+void vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_warning(num, msg, args);
+	output(file, str, line, symbol, msg, &log_warning);
+}
 
 
 void system_error(const char *const tag, const error_t num, ...)
 {
-	char msg[ERROR_MSG_SIZE];
-	get_message_error(num, msg);
+	va_list args;
+	va_start(args, num);
 
-	if (tag != NULL)
-	{
-		log_system_error(tag, msg);
-	}
-	else
-	{
-		log_system_error(TAG_MACRO, msg);
-	}
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
+
+	va_end(args);
+	log_system_error(tag != NULL ? tag : TAG_MACRO, msg);
 }
 
-void system_warning(const char *const tag, const warning_t num, ...);
+void system_warning(const char *const tag, const warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	char msg[MAX_MSG_SIZE];
+	get_warning(num, msg, args);
+
+	va_end(args);
+	log_system_warning(tag != NULL ? tag : TAG_MACRO, msg);
+}

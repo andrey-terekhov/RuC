@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "uniio.h"
+#include <stddef.h>
 
 
 #ifdef __cplusplus
@@ -41,45 +41,53 @@ typedef enum WARNING
 /**
  *	Emit an error for some problem
  *
+ *	@param	file		File name
  *	@param	str			Code line
  *	@param	line		Line number
  *	@param	symbol		Character number
  *	@param	num			Error code
  */
-void error(const char *const str, const size_t line, const size_t symbol, const error_t num, ...);
+void error(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, ...);
 
 /**
  *	Emit a warning for some problem
  *
+ *	@param	file		File name
  *	@param	str			Code line
  *	@param	line		Line number
  *	@param	symbol		Character number
  *	@param	num			Warning code
  */
-void warning(const char *const str, const size_t line, const size_t symbol, const warning_t num, ...);
+void warning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, ...);
 
 
 /**
  *	Emit an error (embedded version)
  *
+ *	@param	file		File name
  *	@param	str			Code line
  *	@param	line		Line number
  *	@param	symbol		Character number
  *	@param	num			Error code
  *	@param	args		Variable list
  */
-void verror(const char *const str, const size_t line, const size_t symbol, const error_t num, va_list args);
+void verror(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, va_list args);
 
 /**
  *	Emit a warning (embedded version)
  *
+ *	@param	file		File name
  *	@param	str			Code line
  *	@param	line		Line number
  *	@param	symbol		Character number
  *	@param	num			Warning code
  *	@param	args		Variable list
  */
-void vwarning(const char *const str, const size_t line, const size_t symbol, const warning_t num, va_list args);
+void vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, va_list args);
 
 
 /**
