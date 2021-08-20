@@ -795,6 +795,16 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 	return octets;
 }
 
+size_t utf8_from_cp866(const char *const src, char *const dest)
+{
+	return utf8_from_codepage(src, dest, &char32_from_cp866);
+}
+
+size_t utf8_from_cp1251(const char *const src, char *const dest)
+{
+	return utf8_from_codepage(src, dest, &char32_from_cp1251);
+}
+
 size_t utf8_to_cp866(const char *const src, char *const dest)
 {
 	return utf8_to_codepage(src, dest, &char_to_cp866);
