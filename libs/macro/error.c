@@ -31,14 +31,22 @@ static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
-		case source_file_not_found:
-			sprintf(msg, "исходный файл не найден");
+		case LINKER_CANNOT_OPEN:
+			sprintf(msg, "невозможно открыть исходные тексты");
 			break;
-		case header_file_not_found:
-			sprintf(msg, "заголовочный файл не найден");
+
+		case MACRO_NAME_NON:
+			sprintf(msg, "предопределенный макрос должен иметь имя");
 			break;
+		case MACRO_NAME_FIRST_CHARACTER:
+			sprintf(msg, "имя макроса должно начинаться с буквы или '_'");
+			break;
+		case MACRO_NAME_EXISTS:
+			sprintf(msg, "макрос '%s' уже существует", "name");
+			break;
+
 		default:
-			sprintf(msg, "не реализованная ошибка №%d", num);
+			sprintf(msg, "неизвестная ошибка");
 			break;
 	}
 }
@@ -47,14 +55,12 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
-		case source_file_not_found:
-			sprintf(msg, "исходный файл не найден");
+		case MACRO_CONSOLE_SEPARATOR:
+			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
-		case header_file_not_found:
-			sprintf(msg, "заголовочный файл не найден");
-			break;
+
 		default:
-			sprintf(msg, "не реализованная ошибка №%d", num);
+			sprintf(msg, "неизвестное предупреждение");
 			break;
 	}
 }

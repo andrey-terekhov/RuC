@@ -26,15 +26,17 @@ extern "C" {
 /** Errors codes */
 typedef enum ERROR
 {
-	header_file_not_found,
-	source_file_not_found,
+	LINKER_CANNOT_OPEN,
+
+	MACRO_NAME_NON,
+	MACRO_NAME_FIRST_CHARACTER,
+	MACRO_NAME_EXISTS,
 } error_t;
 
 /** Warnings codes */
 typedef enum WARNING
 {
-	header_file_not_found,
-	source_file_not_found,
+	MACRO_CONSOLE_SEPARATOR,
 } warning_t;
 
 
