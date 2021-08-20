@@ -172,6 +172,148 @@ static char32_t char32_from_cp866(const char symbol)
 	}
 }
 
+static char char32_from_cp1251(const char32_t symbol)
+{
+	if (symbol < 0x80)
+	{
+		return (char32_t)symbol;
+	}
+	
+	if (symbol >= 0xC0 && symbol <= 0xFF)
+	{
+		return (char32_t)(symbol - 0xC0 + U'А');
+	}
+
+	switch (symbol)
+	{
+		case 0x80:
+			return U'Ђ';
+		case 0x81:
+			return U'Ѓ';
+		case 0x82:
+			return U'‚';
+		case 0x83:
+			return U'ѓ';
+		case 0x84:
+			return U'„';
+		case 0x85:
+			return U'…';
+		case 0x86:
+			return U'†';
+		case 0x87:
+			return U'‡';
+		case 0x88:
+			return U'€';
+		case 0x89:
+			return U'‰';
+		case 0x8A:
+			return U'Љ';
+		case 0x8B:
+			return U'‹';
+		case 0x8C:
+			return U'Њ';
+		case 0x8D:
+			return U'Ќ';
+		case 0x8E:
+			return U'Ћ';
+		case 0x8F:
+			return U'Џ';
+		case 0x90:
+			return U'ђ';
+		case 0x91:
+			return U'‘';
+		case 0x92:
+			return U'’';
+		case 0x93:
+			return U'“';
+		case 0x94:
+			return U'”';
+		case 0x95:
+			return U'•';
+		case 0x96:
+			return U'–';
+		case 0x97:
+			return U'—';
+
+		case 0x99:
+			return U'™';
+		case 0x9A:
+			return U'љ';
+		case 0x9B:
+			return U'›';
+		case 0x9C:
+			return U'њ';
+		case 0x9D:
+			return U'ќ';
+		case 0x9E:
+			return U'ћ';
+		case 0x9F:
+			return U'џ';
+
+		case 0xA1:
+			return U'Ў';
+		case 0xA2:
+			return U'ў';
+		case 0xA3:
+			return U'Ј';
+
+		case 0xA5:
+			return U'Ґ';
+
+		case 0xA8:
+			return U'Ё';
+
+		case 0xAA:
+			return U'Є';
+
+		case 0xAF:
+			return U'Ї';
+
+		case 0xB2:
+			return U'І';
+		case 0xB3:
+			return U'і';
+		case 0xB4:
+			return U'ґ';
+
+		case 0xB8:
+			return U'ё';
+		case 0xB9:
+			return U'№';
+		case 0xBA:
+			return U'є';
+
+		case 0xBC:
+			return U'ј';
+		case 0xBD:
+			return U'Ѕ';
+		case 0xBE:
+			return U'ѕ';
+		case 0xBF:
+			return U'ї';
+
+		case 0xA0:
+		case U'¤':
+		case U'¦':
+		case U'§':
+		case U'©':
+		case U'«':
+		case U'¬':
+		case 0xAD:
+		case U'®':
+		case U'°':
+		case U'±':
+		case U'µ':
+		case U'¶':
+		case U'·':
+		case U'»':
+			return (char32_t)symbol;
+
+		default:
+			return U'�';
+	}
+}
+
 
 static char char_to_cp866(const char32_t symbol)
 {
