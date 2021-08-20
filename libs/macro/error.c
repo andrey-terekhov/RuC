@@ -16,6 +16,7 @@
 
 
 #include "error.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include "logger.h"
 #include "utf8.h"
@@ -25,6 +26,18 @@
 
 #define MAX_TAG_SIZE	1024
 #define MAX_MSG_SIZE	4096
+
+
+static size_t utf8_to_buffer(const char32_t *const src, char *const dest)
+{
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i++)
+	{
+		size += utf8_to_string(&dest[size], src[i]);
+	}
+
+	return size;
+}
 
 
 static void get_error(const error_t num, char *const msg, va_list args)
@@ -42,8 +55,14 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "имя макроса должно начинаться с буквы или '_'");
 			break;
 		case MACRO_NAME_EXISTS:
-			sprintf(msg, "макрос '%s' уже существует", "name");
-			break;
+		{
+			const char32_t *const name = va_arg(args, char32_t *);
+
+			size_t index = sprintf(msg, "макрос '");
+			index += utf8_to_buffer(name, &msg[index]);
+			sprintf(&msg[index], "' уже существует");
+		}
+		break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");
@@ -53,6 +72,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 
 static void get_warning(const warning_t num, char *const msg, va_list args)
 {
+	(void)args;
+
 	switch (num)
 	{
 		case MACRO_CONSOLE_SEPARATOR:
@@ -78,7 +99,7 @@ static void output(const char *const file, const char *const str, const size_t l
 	char tag[MAX_TAG_SIZE];
 	sprintf("%s:%zu:%zu", file, line, size);
 
-	func(tag, msg, line, size);
+	func(tag, msg, str, size);
 }
 
 
