@@ -21,17 +21,17 @@ static char32_t char32_from_cp866(const char symbol)
 {
 	if (symbol < 0x80)
 	{
-		return (char)symbol;
+		return (char32_t)symbol;
 	}
 
 	if (symbol >= 0x80 && symbol <= 0xAF)
 	{
-		return (char)(symbol - 0x80 + U'А');
+		return (char32_t)(symbol - 0x80 + U'А');
 	}
 
 	if (symbol >= 0xE0 && symbol <= 0xEF)
 	{
-		return (char)(symbol - 0xEF + U'р');
+		return (char32_t)(symbol - 0xE0 + U'р');
 	}
 
 	switch (symbol)
@@ -175,14 +175,14 @@ static char32_t char32_from_cp866(const char symbol)
 
 static char char_to_cp866(const char32_t symbol)
 {
-	if (symbol >= U'А' && symbol <= U'Я')
+	if (symbol < 0x80)
+	{
+		return (char)symbol;
+	}
+	
+	if (symbol >= U'А' && symbol <= U'п')
 	{
 		return (char)(symbol - U'А' + 0x80);
-	}
-
-	if (symbol >= U'а' && symbol <= U'п')
-	{
-		return (char)(symbol - U'а' + 0xA0);
 	}
 
 	if (symbol >= U'р' && symbol <= U'я')
