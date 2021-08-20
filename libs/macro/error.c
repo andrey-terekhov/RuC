@@ -27,7 +27,7 @@
 #define ERROR_MSG_SIZE	256
 
 
-static void get_message_error(const int num, char *const msg)
+static void get_message_error(const error_t num, char *const msg)
 {
 	switch (num)
 	{
@@ -53,17 +53,12 @@ static void get_message_error(const int num, char *const msg)
  */
 
 
-void macro_error(const universal_io *const io, const int num);
+void error(const char *const str, const size_t line, const size_t symbol, const error_t num, ...);
 
-void macro_warning(const universal_io *const io, const int num);
-
-
-void macro_error_msg(const universal_io *const io, const char *const msg);
-
-void macro_warning_msg(const universal_io *const io, const char *const msg);
+void warning(const char *const str, const size_t line, const size_t symbol, const warning_t num, ...);
 
 
-void macro_system_error(const char *const tag, error_t num)
+void system_error(const char *const tag, const error_t num, ...)
 {
 	char msg[ERROR_MSG_SIZE];
 	get_message_error(num, msg);
@@ -78,4 +73,4 @@ void macro_system_error(const char *const tag, error_t num)
 	}
 }
 
-void macro_system_warning(const char *const tag, error_t num);
+void system_warning(const char *const tag, const warning_t num, ...);

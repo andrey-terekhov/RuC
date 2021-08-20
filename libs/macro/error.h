@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <stddef.h>
 #include "uniio.h"
 
 
@@ -31,39 +30,56 @@ typedef enum ERROR
 	source_file_not_found,
 } error_t;
 
+/** Warnings codes */
+typedef enum WARNING
+{
+	header_file_not_found,
+	source_file_not_found,
+} warning_t;
+
 
 /**
  *	Emit an error for some problem
  *
- *	@param	io			Universal io
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
  *	@param	num			Error code
  */
-void macro_error(const universal_io *const io, const int num);
+void error(const char *const str, const size_t line, const size_t symbol, const error_t num, ...);
 
 /**
  *	Emit a warning for some problem
  *
- *	@param	io			Universal io
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
  *	@param	num			Warning code
  */
-void macro_warning(const universal_io *const io, const int num);
+void warning(const char *const str, const size_t line, const size_t symbol, const warning_t num, ...);
 
 
 /**
- *	Emit an error message
+ *	Emit an error (embedded version)
  *
- *	@param	io			Universal io
- *	@param	msg			Error message
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
+ *	@param	num			Error code
+ *	@param	args		Variable list
  */
-void macro_error_msg(const universal_io *const io, const char *const msg);
+void verror(const char *const str, const size_t line, const size_t symbol, const error_t num, va_list args);
 
 /**
- *	Emit a warning message
+ *	Emit a warning (embedded version)
  *
- *	@param	io			Universal io
- *	@param	msg			Warning message
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
+ *	@param	num			Warning code
+ *	@param	args		Variable list
  */
-void macro_warning_msg(const universal_io *const io, const char *const msg);
+void vwarning(const char *const str, const size_t line, const size_t symbol, const warning_t num, va_list args);
 
 
 /**
@@ -72,7 +88,7 @@ void macro_warning_msg(const universal_io *const io, const char *const msg);
  *	@param	tag		Message location
  *	@param	num		Error code
  */
-void macro_system_error(const char *const tag, error_t num);
+void system_error(const char *const tag, const error_t num, ...);
 
 /**
  *	Emit a system warning
@@ -80,7 +96,7 @@ void macro_system_error(const char *const tag, error_t num);
  *	@param	tag		Message location
  *	@param	num		Warning code
  */
-void macro_system_warning(const char *const tag, error_t num);
+void system_warning(const char *const tag, const warning_t num, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
