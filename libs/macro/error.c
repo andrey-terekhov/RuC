@@ -16,7 +16,6 @@
 
 
 #include "error.h"
-#include <stdarg.h>
 #include <stdio.h>
 #include "logger.h"
 #include "utf8.h"
@@ -113,7 +112,7 @@ static void output(const char *const file, const char *const str, const size_t l
 
 
 void error(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const error_t num, ...)
+	, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -124,7 +123,7 @@ void error(const char *const file, const char *const str, const size_t line, con
 }
 
 void warning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const warning_t num, ...)
+	, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -152,7 +151,7 @@ void vwarning(const char *const file, const char *const str, const size_t line, 
 }
 
 
-void system_error(const char *const tag, const error_t num, ...)
+void system_error(const char *const tag, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -164,7 +163,7 @@ void system_error(const char *const tag, const error_t num, ...)
 	log_system_error(tag != NULL ? tag : TAG_MACRO, msg);
 }
 
-void system_warning(const char *const tag, const warning_t num, ...)
+void system_warning(const char *const tag, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

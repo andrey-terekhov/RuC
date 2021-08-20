@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdarg.h>
 #include <stddef.h>
 
 
@@ -50,7 +51,7 @@ typedef enum WARNING
  *	@param	num			Error code
  */
 void error(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const error_t num, ...);
+	, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -62,7 +63,7 @@ void error(const char *const file, const char *const str, const size_t line, con
  *	@param	num			Warning code
  */
 void warning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const warning_t num, ...);
+	, warning_t num, ...);
 
 
 /**
@@ -98,7 +99,7 @@ void vwarning(const char *const file, const char *const str, const size_t line, 
  *	@param	tag		Message location
  *	@param	num		Error code
  */
-void system_error(const char *const tag, const error_t num, ...);
+void system_error(const char *const tag, error_t num, ...);
 
 /**
  *	Emit a system warning
@@ -106,7 +107,7 @@ void system_error(const char *const tag, const error_t num, ...);
  *	@param	tag		Message location
  *	@param	num		Warning code
  */
-void system_warning(const char *const tag, const warning_t num, ...);
+void system_warning(const char *const tag, warning_t num, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
