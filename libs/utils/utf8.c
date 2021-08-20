@@ -17,7 +17,7 @@
 #include "utf8.h"
 
 
-static char32_t char32_from_cp866(const char symbol)
+static char32_t char32_from_cp866(const unsigned char symbol)
 {
 	if (symbol < 0x80)
 	{
@@ -26,12 +26,12 @@ static char32_t char32_from_cp866(const char symbol)
 
 	if (symbol >= 0x80 && symbol <= 0xAF)
 	{
-		return (char32_t)(symbol - 0x80 + U'А');
+		return (char32_t)symbol - 0x80 + U'А';
 	}
 
 	if (symbol >= 0xE0 && symbol <= 0xEF)
 	{
-		return (char32_t)(symbol - 0xE0 + U'р');
+		return (char32_t)symbol - 0xE0 + U'р';
 	}
 
 	switch (symbol)
@@ -172,7 +172,7 @@ static char32_t char32_from_cp866(const char symbol)
 	}
 }
 
-static char32_t char32_from_cp1251(const char symbol)
+static char32_t char32_from_cp1251(const unsigned char symbol)
 {
 	if (symbol < 0x80)
 	{
@@ -181,7 +181,7 @@ static char32_t char32_from_cp1251(const char symbol)
 	
 	if (symbol >= 0xC0 && symbol <= 0xFF)
 	{
-		return (char32_t)(symbol - 0xC0 + U'А');
+		return (char32_t)symbol - 0xC0 + U'А';
 	}
 
 	switch (symbol)
@@ -314,7 +314,7 @@ static char32_t char32_from_cp1251(const char symbol)
 	}
 }
 
-static inline size_t utf8_from_codepage(const char *const src, char *const dest, char32_t (*char_to_codepage)(const char))
+static inline size_t utf8_from_codepage(const char *const src, char *const dest, char32_t (*char_from_codepage)(const unsigned char))
 {
 	if (src == NULL || dest == NULL)
 	{
@@ -324,7 +324,7 @@ static inline size_t utf8_from_codepage(const char *const src, char *const dest,
 	size_t size = 0;
 	for (size_t i = 0; src[i] != '\0'; i++)
 	{
-		size += utf8_to_string(&dest[size], char_to_codepage(src[i]));
+		size += utf8_to_string(&dest[size], char_from_codepage(src[i]));
 	}
 
 	dest[size] = '\0';
