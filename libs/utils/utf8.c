@@ -321,15 +321,14 @@ static inline size_t utf8_from_codepage(const char *const src, char *const dest,
 		return 0;
 	}
 
-	size_t i = 0;
-	size_t j = 0;
-	while (src[i] != '\0')
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i++)
 	{
-		j += utf8_to_string(&dest[j], char_to_codepage(src[i++]));
+		size += utf8_to_string(&dest[size], char_to_codepage(src[i]));
 	}
 
-	dest[j] = '\0';
-	return j;
+	dest[size] = '\0';
+	return size;
 }
 
 
@@ -637,16 +636,14 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
 		return 0;
 	}
 
-	size_t i = 0;
-	size_t j = 0;
-	while (src[i] != '\0')
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i += utf8_symbol_size(src[i]))
 	{
-		dest[j++] = char_to_codepage(utf8_convert(&src[i]));
-		i += utf8_symbol_size(src[i]);
+		dest[size++] = char_to_codepage(utf8_convert(&src[i]));
 	}
 
-	dest[j] = '\0';
-	return j;
+	dest[size] = '\0';
+	return size;
 }
 
 
