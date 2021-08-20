@@ -166,7 +166,7 @@ int compile_to_mips(workspace *const ws)
 {
 	if (ws_get_output(ws) == NULL)
 	{
-		ws_set_output(ws, DEFAULT_LLVM);
+		ws_set_output(ws, DEFAULT_MIPS);
 	}
 
 	return compile_from_ws(ws, &encode_to_mips);

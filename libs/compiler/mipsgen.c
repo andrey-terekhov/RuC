@@ -84,11 +84,14 @@ typedef enum ISTRUCTIONS
 	SW,							/**< To store a word to memory */
 	LW,							/**< To load a word from memory as a signed value */
 	JR,							/**< To execute a branch to an instruction address in a register */
+	JAL,						/**< To execute a procedure call within the current 256MB-aligned region */
 } instructions_t;
 
 typedef struct information
 {
 	syntax *sx;							/**< Структура syntax с таблицами */
+
+	item_t main_label;					/**< Метка функции main */
 } information;
 
 
@@ -224,6 +227,9 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 		case JR:
 			uni_printf(io, "jr");
 			break;
+		case JAL:
+			uni_printf(io, "jal");
+			break;
 	}
 }
 
@@ -288,6 +294,16 @@ static void to_code_R(universal_io *const io, const instructions_t instruction,
 	uni_printf(io, "\n");
 }
 
+// Вид инструкции:	instr	label
+static void to_code_L(universal_io *const io, const instructions_t instruction, 
+	const item_t label_num)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " label%" PRIitem "\n", label_num);
+}
+
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
 static void precodegen(syntax *const sx)
@@ -320,14 +336,15 @@ static void precodegen(syntax *const sx)
 }
 
 // TODO: подписать, что значит каждая директива и команда
-static void postcodegen(syntax *const sx)
+static void postcodegen(information *const info)
 {
-	uni_printf(sx->io, "\n");
-	to_code_R_I_R(sx->io, LW, RA, -4, SP);
-	to_code_R(sx->io, JR, RA);
+	uni_printf(info->sx->io, "\n");
+	to_code_L(info->sx->io, JAL, info->main_label);
+	to_code_R_I_R(info->sx->io, LW, RA, -4, SP);
+	to_code_R(info->sx->io, JR, RA);
 
-	uni_printf(sx->io, "\t.end\tmain\n");
-	uni_printf(sx->io, "\t.size\tmain, .-main\n");
+	uni_printf(info->sx->io, "\t.end\tmain\n");
+	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
 	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия
 }
 
@@ -350,9 +367,10 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 
 	information info;
 	info.sx = sx;
+	info.main_label = 0;
 
 	precodegen(info.sx);
 	// const int ret = codegen(&info);
-	postcodegen(info.sx);
+	postcodegen(&info);
 	return 0;
 }
