@@ -1157,6 +1157,22 @@ static void expression(information *const info, node *const nd)
 			uni_printf(info->sx->io, ")\n");
 		}
 		break;
+		case OP_STRING:
+		{
+			// const size_t index = (size_t)node_get_arg(nd, 2);
+			// const size_t string_length = strings_length(info->sx, index);
+
+			// uni_printf(info->sx->io, "i8* getelementptr inbounds "
+			// 	"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0"
+			// 	, string_length + 1
+			// 	, string_length + 1
+			// 	, index);
+			
+			info->answer_reg = -1;
+			info->answer_kind = AREG;
+			node_set_next(nd);
+		}
+			break;
 		case OP_SELECT:
 			node_set_next(nd);
 			break;
@@ -1781,7 +1797,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	// tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
