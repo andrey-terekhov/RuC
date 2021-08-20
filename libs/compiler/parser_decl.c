@@ -612,19 +612,31 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
 	}
 
+	node nd = node_add_child(parent, OP_FUNC_DEF);
+	node_add_arg(&nd, (item_t)function_id);
+	node_add_arg(&nd, 0); // for max_displ
+
 	const item_t old_displ = scope_func_enter(prs->sx);
 
 	for (size_t i = 0; i < param_number; i++)
 	{
-		const item_t type = type_get(prs->sx, prs->function_mode + i + 3);
+		item_t type = type_get(prs->sx, prs->function_mode + i + 3);
 		const item_t repr = func_get(prs->sx, function_number + i + 1);
 
-		to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
-	}
+		const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
 
-	node nd = node_add_child(parent, OP_FUNC_DEF);
-	node_add_arg(&nd, (item_t)function_id);
-	node_add_arg(&nd, 0); // for max_displ
+		size_t dim = 0;
+		while (type_is_array(prs->sx, type))
+		{
+			dim++;
+			type = type_array_get_element_type(prs->sx, type);
+		}
+
+		node nd_param = node_add_child(&nd, OP_DECL_VAR);
+		node_add_arg(&nd_param, (item_t)id);	// id
+		node_add_arg(&nd_param, (item_t)dim);	// dim
+		node_add_arg(&nd_param, false);			// has init
+	}
 
 	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
