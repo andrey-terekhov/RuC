@@ -33,12 +33,12 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	buffer[0] = utf8_convert(&name[0]);
 	if (buffer[0] == '\0' || buffer[0] == '=')
 	{
-		printf("предопределенный макрос должен иметь имя\n");
+		printf("1) предопределенный макрос должен иметь имя\n");
 		return SIZE_MAX;
 	}
 	else if (!utf8_is_letter(buffer[0]))
 	{
-		printf("имя макроса должно начинаться с буквы или '_'\n");
+		printf("2) имя макроса должно начинаться с буквы или '_'\n");
 		return SIZE_MAX;
 	}
 
@@ -61,7 +61,7 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	}
 	else
 	{
-		printf("следует использовать разделитель '=' после имени макроса");
+		printf("3) следует использовать разделитель '=' после имени макроса");
 		j -= utf8_size(buffer[i]);
 		buffer[i] = '\0';
 		return j;
@@ -100,14 +100,14 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 				ws_parse_value(&flag[2 + index], value);
 				if (storage_add(stg, name, value) == SIZE_MAX)
 				{
-					printf("макрос '%s' уже существует\n", "name");
+					printf("4) макрос '%s' уже существует\n", "name");
 					return -1;
 				}
 				printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\0\n");
 			}
 			else if (storage_add(stg, name, NULL) == SIZE_MAX)
 			{
-				printf("макрос '%s' уже существует\n", "name");
+				printf("5) макрос '%s' уже существует\n", "name");
 				return -1;
 			}
 			char32_t arr[2] = { (char32_t)i, '\0' };
