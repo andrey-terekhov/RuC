@@ -330,19 +330,14 @@ static char char_to_cp866(const char32_t symbol)
 
 static char char_to_cp1251(const char32_t symbol)
 {
-	if (symbol >= U'А' && symbol <= U'Я')
+	if (symbol < 0x80)
+	{
+		return (char)symbol;
+	}
+	
+	if (symbol >= U'А' && symbol <= U'я')
 	{
 		return (char)(symbol - U'А' + 0xC0);
-	}
-
-	if (symbol >= U'а' && symbol <= U'п')
-	{
-		return (char)(symbol - U'а' + 0xE0);
-	}
-
-	if (symbol >= U'р' && symbol <= U'я')
-	{
-		return (char)(symbol - U'р' + 0xF0);
 	}
 
 	switch (symbol)
@@ -486,17 +481,8 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
 	size_t j = 0;
 	while (src[i] != '\0')
 	{
-		const size_t size = utf8_symbol_size(src[i]);
-		if (size == 1)
-		{
-			dest[j++] = src[i];
-		}
-		else
-		{
-			dest[j++] = char_to_codepage(utf8_convert(&src[i]));
-		}
-
-		i += size;
+		dest[j++] = char_to_codepage(utf8_convert(&src[i]));
+		i += utf8_symbol_size(src[i]);
 	}
 
 	dest[j] = '\0';
