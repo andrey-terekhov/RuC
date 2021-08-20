@@ -49,6 +49,8 @@ enum TYPE
 	TYPE_STRUCTURE,
 	TYPE_ARRAY,
 	TYPE_POINTER,
+
+	BEGIN_USER_TYPE = 15,
 };
 
 /** Value category */
@@ -667,6 +669,25 @@ item_t scope_func_enter(syntax *const sx);
  *	@return	Max displacement of the function, @c ITEM_MAX on failure
  */
 item_t scope_func_exit(syntax *const sx, const item_t displ);
+
+
+/**
+ *	Get amount of strings
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
+
+/**
+ *	Get length of a string
+ *
+ *	@param	sx	Syntax structure
+ *
+ *	@return	Length of a string
+ */
+size_t strings_length(const syntax *const sx, const size_t index);
 
 
 /**
