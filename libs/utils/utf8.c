@@ -172,7 +172,7 @@ static char32_t char32_from_cp866(const char symbol)
 	}
 }
 
-static char char32_from_cp1251(const char32_t symbol)
+static char32_t char32_from_cp1251(const char symbol)
 {
 	if (symbol < 0x80)
 	{
@@ -312,6 +312,24 @@ static char char32_from_cp1251(const char32_t symbol)
 		default:
 			return U'�';
 	}
+}
+
+static inline size_t utf8_from_codepage(const char *const src, char *const dest, char32_t (*char_to_codepage)(const char))
+{
+	if (src == NULL || dest == NULL)
+	{
+		return 0;
+	}
+
+	size_t i = 0;
+	size_t j = 0;
+	while (src[i] != '\0')
+	{
+		j += utf8_to_string(&dest[j], char_to_codepage(src[i++]));
+	}
+
+	dest[j] = '\0';
+	return j;
 }
 
 
