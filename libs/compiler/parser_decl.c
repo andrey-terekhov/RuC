@@ -327,8 +327,8 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, &nd_decl_arr, element_type);
 				node_set_arg(&nd_decl_arr, 0, prs->flag_empty_bounds
-											  ? (item_t)prs->array_dimensions
-											  : (item_t)prs->array_dimensions - 1);
+							 ? (item_t)prs->array_dimensions
+							 : (item_t)prs->array_dimensions - 1);
 				node nd_decl_id = node_add_child(&nd_decl_arr, OP_DECL_ID);
 				node_add_arg(&nd_decl_id, (item_t)displ);
 				node_add_arg(&nd_decl_id, element_type);
