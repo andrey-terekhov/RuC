@@ -55,7 +55,7 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 
 static node fold_unary_expression(const unary_t operator, node *const nd_operand)
 {
-	// Уже проверили, что левое выражение - константа
+	// Уже проверили, что выражение-операнд – константа
 	const item_t type = expression_get_type(nd_operand);
 	if (type_is_integer(type))
 	{
@@ -83,7 +83,7 @@ static node fold_unary_expression(const unary_t operator, node *const nd_operand
 				break;
 		}
 	}
-	else // if (type_is_double(type)
+	else // if (type_is_double(type))
 	{
 		const double value = node_get_arg_double(nd_operand, 2);
 
@@ -111,7 +111,7 @@ static node fold_unary_expression(const unary_t operator, node *const nd_operand
 
 static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
 {
-	// Уже проверили, что левое выражение - константа
+	// Уже проверили, что левое выражение – константа
 	const item_t left_type = expression_get_type(nd_left);
 	if (type_is_integer(left_type))
 	{
