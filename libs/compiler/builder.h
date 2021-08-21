@@ -164,8 +164,8 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, const node *const nd_left, const node *const nd_middle
-	, const node *const nd_right, const location op_loc);
+node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
+	, const location op_loc);
 
 /**
  *	Build an initializer list

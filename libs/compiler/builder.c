@@ -53,6 +53,44 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
+static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
+{
+	// Уже проверили, что левое выражение - константа
+	const item_t left_type = expression_get_type(nd_left);
+	if (type_is_integer(left_type))
+	{
+		const item_t value = node_get_arg(nd_left, 2);
+		node_remove(nd_left);
+		if (value != 0)
+		{
+			node_remove(nd_right);
+			return *nd_middle;
+		}
+		else
+		{
+			node_remove(nd_left);
+			node_remove(nd_middle);
+			return *nd_right;
+		}
+	}
+	else // if (type_is_double(left_type)
+	{
+		const double value = node_get_arg_double(nd_left, 2);
+		node_remove(nd_left);
+		if (value != 0)
+		{
+			node_remove(nd_right);
+			return *nd_middle;
+		}
+		else
+		{
+			node_remove(nd_left);
+			node_remove(nd_middle);
+			return *nd_right;
+		}
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -537,8 +575,8 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 	return nd;
 }
 
-node build_ternary_expression(syntax *const sx, const node *const nd_left, const node *const nd_middle
-	, const node *const nd_right, const location op_loc)
+node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
+	, const location op_loc)
 {
 	if (!node_is_correct(nd_left) || !node_is_correct(nd_middle) || !node_is_correct(nd_right))
 	{
@@ -566,6 +604,11 @@ node build_ternary_expression(syntax *const sx, const node *const nd_left, const
 	{
 		semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
 		return build_broken_expression();
+	}
+
+	if (node_get_type(nd_left) == OP_CONSTANT)
+	{
+		return fold_ternary_expression(nd_left, nd_middle, nd_right);
 	}
 
 	node nd = node_create(sx, OP_TERNARY);
