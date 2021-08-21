@@ -188,10 +188,7 @@ item_t parse_expression(parser *const prs, node *const parent);
 item_t parse_assignment_expression(parser *const prs, node *const parent);
 
 /**
- *	Parse enum field assignment expression
- *
- *	assignment-expression-in-enum:
- *		id without operator =
+ *	Parse enum field
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -199,7 +196,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent);
  *
  *	@return	Type of parsed expression
  */
-item_t parse_enum_field_assignment_expression(parser *const prs, node *const parent, const item_t num);
+item_t parse_enum_field(parser *const prs, node *const parent, const item_t num);
 
 /**
  *	Parse expression in parentheses

@@ -1421,7 +1421,7 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 	return stack_pop(&prs->anonymous);
 }
 
-item_t parse_enum_field_assignment_expression(parser *const prs, node *const parent, const item_t num)
+item_t parse_enum_field(parser *const prs, node *const parent, const item_t num)
 {
 	node_copy(&prs->nd, parent);
 	parse_constant_in_enum(prs, num);

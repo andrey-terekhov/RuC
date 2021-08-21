@@ -188,7 +188,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
 			break;
 		case eq_op_for_enum_field:
-			sprintf(msg, "Нельзя присваивать в поле перечисления");
+			sprintf(msg, "нельзя присваивать в поле перечисления");
 			break;
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
@@ -385,7 +385,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "в структуре после типа поля должен идти идентификатор поля");
 			break;
 		case wait_ident_after_comma_in_enum:
-			sprintf(msg, "в перечисление должен идти идентификатор поля");
+			sprintf(msg, "в перечислении должен быть идентификатор поля");
 			break;
 		case empty_init:	// test_exist
 			sprintf(msg, "в РуСи можно определять границы массива по инициализации только по младшему измерению");
