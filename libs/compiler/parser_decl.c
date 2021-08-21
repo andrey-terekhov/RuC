@@ -966,6 +966,12 @@ static void parse_enum_specifier(parser *const prs, node *const parent)
 	}
 }
 
+static bool check_int_initializer(const item_t type, const item_t expr_type)
+{
+	return (type == TYPE_CONST_INTEGER || type == TYPE_INTEGER)  &&
+		   (expr_type == TYPE_CONST_INTEGER || expr_type == TYPE_INTEGER);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -1066,12 +1072,6 @@ void parse_declaration_external(parser *const prs, node *const root)
 	{
 		token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
 	}
-}
-
-static bool check_int_initializer(const item_t type, const item_t expr_type)
-{
-	return (type == TYPE_CONST_INTEGER || type == TYPE_INTEGER)  &&
-		   (expr_type == TYPE_CONST_INTEGER || expr_type == TYPE_INTEGER);
 }
 
 void parse_initializer(parser *const prs, node *const parent, const item_t type)

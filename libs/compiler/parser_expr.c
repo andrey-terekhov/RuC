@@ -1281,6 +1281,7 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const item_t right_mode = stack_pop(&prs->anonymous);
 		const item_t left_mode = stack_pop(&prs->anonymous);
 		item_t result_mode = right_mode;
+
 		if (is_int_assignment_operator(token) && (type_is_floating(left_mode) || type_is_floating(right_mode)))
 		{
 			parser_error(prs, int_op_for_float);
