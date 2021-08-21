@@ -109,6 +109,170 @@ static node fold_unary_expression(const unary_t operator, node *const nd_operand
 	return *nd_operand;
 }
 
+static node fold_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
+	, const item_t result_type)
+{
+	if (op_kind == BIN_COMMA)
+	{
+		node_remove(nd_left);
+		return *nd_right;
+	}
+
+	const location loc = (location){ expression_get_location(nd_left).begin, expression_get_location(nd_right).end };
+	const item_t left_type = expression_get_type(nd_left);
+	const item_t right_type = expression_get_type(nd_right);
+	if (type_is_integer(result_type))
+	{
+		if (type_is_integer(left_type) && type_is_integer(right_type))
+		{
+			const item_t left_value = node_get_arg(nd_left, 2);
+			const item_t right_value = node_get_arg(nd_right, 2);
+			node_remove(nd_left);
+			node_remove(nd_right);
+			item_t result;
+			switch (op_kind)
+			{
+				case BIN_MUL:
+					result = left_value * right_value;
+					break;
+				case BIN_DIV:
+					result = left_value / right_value;
+					break;
+				case BIN_REM:
+					result = left_value % right_value;
+					break;
+				case BIN_ADD:
+					result = left_value + right_value;
+					break;
+				case BIN_SUB:
+					result = left_value - right_value;
+					break;
+				case BIN_SHL:
+					result = left_value << right_value;
+					break;
+				case BIN_SHR:
+					result = left_value >> right_value;
+					break;
+				case BIN_LT:
+					result = left_value < right_value;
+					break;
+				case BIN_GT:
+					result = left_value > right_value;
+					break;
+				case BIN_LE:
+					result = left_value <= right_value;
+					break;
+				case BIN_GE:
+					result = left_value >= right_value;
+					break;
+				case BIN_EQ:
+					result = left_value == right_value;
+					break;
+				case BIN_NE:
+					result = left_value != right_value;
+					break;
+				case BIN_AND:
+					result = left_value & right_value;
+					break;
+				case BIN_XOR:
+					result = left_value ^ right_value;
+					break;
+				case BIN_OR:
+					result = left_value | right_value;
+					break;
+				case BIN_LOG_AND:
+					result = left_value && right_value;
+					break;
+				default: // case BIN_LOG_OR:
+					result = left_value || right_value;
+					break;
+			}
+
+			return build_integer_literal_expression(sx, (int)result, loc);
+		}
+		else
+		{
+			const double left_value = type_is_integer(left_type)
+				? node_get_arg(nd_left, 2)
+				: node_get_arg_double(nd_left, 2);
+
+			const double right_value = type_is_integer(right_type)
+				? node_get_arg(nd_right, 2)
+				: node_get_arg_double(nd_right, 2);
+
+			node_remove(nd_left);
+			node_remove(nd_right);
+
+			int result;
+			switch (op_kind)
+			{
+				case BIN_LT:
+					result = left_value < right_value;
+					break;
+				case BIN_GT:
+					result = left_value > right_value;
+					break;
+				case BIN_LE:
+					result = left_value <= right_value;
+					break;
+				case BIN_GE:
+					result = left_value >= right_value;
+					break;
+				case BIN_EQ:
+					result = left_value == right_value;
+					break;
+				case BIN_NE:
+					result = left_value != right_value;
+					break;
+				case BIN_LOG_AND:
+					result = (left_value != 0) && (right_value != 0);
+					break;
+				default: // case BIN_LOG_OR:
+					result = (left_value != 0) || (right_value != 0);
+					break;
+			}
+
+			return build_integer_literal_expression(sx, result, loc);
+		}
+	}
+	else
+	{
+		const double left_value = type_is_integer(left_type)
+			? node_get_arg(nd_left, 2)
+			: node_get_arg_double(nd_left, 2);
+
+		const double right_value = type_is_integer(right_type)
+			? node_get_arg(nd_right, 2)
+			: node_get_arg_double(nd_right, 2);
+
+		node_remove(nd_left);
+		node_remove(nd_right);
+
+		double result;
+
+		switch (op_kind)
+		{
+			case BIN_MUL:
+				result = left_value * right_value;
+				break;
+			case BIN_DIV:
+				result = left_value / right_value;
+				break;
+			case BIN_ADD:
+				result = left_value + right_value;
+				break;
+			case BIN_SUB:
+				result = left_value - right_value;
+				break;
+			default:
+				result = right_value;
+				break;
+		}
+
+		return build_floating_literal_expression(sx, result, loc);
+	}
+}
+
 static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
 {
 	// Уже проверили, что левое выражение – константа
@@ -531,7 +695,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 	return nd;
 }
 
-node build_binary_expression(syntax *const sx, const node *const nd_left, const node *const nd_right
+node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
 	, const binary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(nd_left) || !node_is_correct(nd_right))
@@ -621,6 +785,11 @@ node build_binary_expression(syntax *const sx, const node *const nd_left, const 
 				result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
 				break;
 		}
+	}
+
+	if (node_get_type(nd_left) == OP_CONSTANT && node_get_type(nd_right) == OP_CONSTANT)
+	{
+		return fold_binary_expression(sx, nd_left, nd_right, op_kind, result_type);
 	}
 
 	node nd = node_create(sx, OP_BINARY);

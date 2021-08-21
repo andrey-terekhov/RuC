@@ -149,7 +149,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(syntax *const sx, const node *const nd_left, const node *const nd_right
+node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
 	, const binary_t op_kind, const location op_loc);
 
 /**
