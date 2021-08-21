@@ -53,6 +53,62 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
+static node fold_unary_expression(const unary_t operator, node *const nd_operand)
+{
+	// Уже проверили, что левое выражение - константа
+	const item_t type = expression_get_type(nd_operand);
+	if (type_is_integer(type))
+	{
+		const item_t value = node_get_arg(nd_operand, 2);
+
+		switch (operator)
+		{
+			case UN_MINUS:
+				node_set_arg(nd_operand, 2, -value);
+				break;
+
+			case UN_NOT:
+				node_set_arg(nd_operand, 2, ~value);
+				break;
+
+			case UN_LOGNOT:
+				node_set_arg(nd_operand, 2, value == 0 ? 1 : 0);
+				break;
+
+			case UN_ABS:
+				node_set_arg(nd_operand, 2, value >= 0 ? value : -value);
+				break;
+
+			default:
+				break;
+		}
+	}
+	else // if (type_is_double(type)
+	{
+		const double value = node_get_arg_double(nd_operand, 2);
+
+		switch (operator)
+		{
+			case UN_MINUS:
+				node_set_arg_double(nd_operand, 2, -value);
+				break;
+
+			case UN_LOGNOT:
+				node_set_arg_double(nd_operand, 2, value == 0 ? 1 : 0);
+				break;
+
+			case UN_ABS:
+				node_set_arg_double(nd_operand, 2, value >= 0 ? value : -value);
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return *nd_operand;
+}
+
 static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
 {
 	// Уже проверили, что левое выражение - константа
@@ -353,8 +409,7 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
 	return nd;
 }
 
-node build_unary_expression(syntax *const sx, const node *const nd_operand
-	, const unary_t op_kind, const location op_loc)
+node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(nd_operand))
 	{
@@ -459,6 +514,11 @@ node build_unary_expression(syntax *const sx, const node *const nd_operand
 	const location loc = is_prefix
 		? (location){ op_loc.begin, expression_get_location(nd_operand).end }
 		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
+
+	if (node_get_type(nd_operand) == OP_CONSTANT)
+	{
+		return fold_unary_expression(op_kind, nd_operand);
+	}
 
 	node nd = node_create(sx, OP_UNARY);
 	node_add_arg(&nd, result_type);					// Тип значения выражения

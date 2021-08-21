@@ -368,7 +368,7 @@ static node parse_unary_expression(parser *const prs)
 		{
 			const unary_t operator = token_to_unary(prs->token);
 			const location op_loc = token_consume(prs);
-			const node nd_operand = parse_unary_expression(prs);
+			node nd_operand = parse_unary_expression(prs);
 
 			return build_unary_expression(prs->sx, &nd_operand, operator, op_loc);
 		}

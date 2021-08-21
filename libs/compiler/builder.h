@@ -136,8 +136,7 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(syntax *const sx, const node *const nd_operand
-	, const unary_t op_kind, const location op_loc);
+node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
