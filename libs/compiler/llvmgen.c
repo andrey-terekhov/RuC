@@ -1627,16 +1627,17 @@ static int codegen(information *const info)
 				const item_t func_type = ident_get_type(info->sx, ref_ident);
 				const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
+				const bool is_main = ident_get_prev(info->sx, ref_ident) == TK_MAIN;
 				info->was_dynamic = false;
 
-				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
+				uni_printf(info->sx->io, "define ");
+				type_to_io(info, ret_type);
+				if (is_main)
 				{
-					uni_printf(info->sx->io, "define i32 @main(");
+					uni_printf(info->sx->io, " @main(");
 				}
 				else
 				{
-					uni_printf(info->sx->io, "define ");
-					type_to_io(info, ret_type);
 					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
 				}
 
