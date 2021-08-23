@@ -1629,6 +1629,7 @@ static int codegen(information *const info)
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 				const bool is_main = ident_get_prev(info->sx, ref_ident) == TK_MAIN;
 				info->was_dynamic = false;
+				node_set_next(&root);
 
 				uni_printf(info->sx->io, "define ");
 				type_to_io(info, ret_type);
@@ -1652,8 +1653,9 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const item_t param_displ = ident_get_displ(info->sx, ref_ident + 4 * (i + 1));
-					const item_t param_type = type_function_get_parameter_type(info->sx, func_type, i);
+					const item_t param_displ = ident_get_displ(info->sx, (size_t)node_get_arg(&root, 0));
+					const item_t param_type = ident_get_type(info->sx, (size_t)node_get_arg(&root, 0));
+					node_set_next(&root);
 
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
 					type_to_io(info, param_type);
@@ -1666,7 +1668,6 @@ static int codegen(information *const info)
 					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", param_displ);
 				}
 
-				node_set_next(&root);
 				block(info, &root);
 
 				if (type_is_void(ret_type))
