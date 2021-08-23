@@ -1653,8 +1653,9 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const item_t param_displ = ident_get_displ(info->sx, (size_t)node_get_arg(&root, 0));
-					const item_t param_type = ident_get_type(info->sx, (size_t)node_get_arg(&root, 0));
+					const size_t type = (size_t)node_get_arg(&root, 0);
+					const item_t param_displ = ident_get_displ(info->sx, type);
+					const item_t param_type = ident_get_type(info->sx, type);
 					node_set_next(&root);
 
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
