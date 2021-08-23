@@ -1711,6 +1711,7 @@ static int codegen(information *const info)
 							"i32, [20 x i8] }\n");
 						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
 						uni_printf(info->sx->io, "declare %%struct._IO_FILE* @fopen(i8*, i8*)\n");
+						uni_printf(info->sx->io, "declare i32 @fclose(%%struct._IO_FILE*)\n");
 					}
 
 					return 0;
