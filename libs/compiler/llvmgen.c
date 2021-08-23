@@ -84,6 +84,11 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
+static const char * get_func_name(const syntax *const sx, const size_t index)
+{
+	return repr_get_name(sx, ident_get_repr(sx, index));
+}
+
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -1092,6 +1097,7 @@ static void expression(information *const info, node *const nd)
 			node_set_next(nd);
 
 			const item_t type_ref = node_get_arg(nd, 0);
+			const size_t func_ref = (size_t)node_get_arg(nd, 2);
 			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			if (args > MAX_FUNCTION_ARGS)
 			{
@@ -1130,7 +1136,7 @@ static void expression(information *const info, node *const nd)
 			}
 			uni_printf(info->sx->io, " call ");
 			type_to_io(info, func_type);
-			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
+			uni_printf(info->sx->io, " @%s(", get_func_name(info->sx, func_ref));
 
 			for (size_t i = 0; i < args; i++)
 			{
@@ -1627,20 +1633,12 @@ static int codegen(information *const info)
 				const item_t func_type = ident_get_type(info->sx, ref_ident);
 				const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
-				const bool is_main = ident_get_prev(info->sx, ref_ident) == TK_MAIN;
 				info->was_dynamic = false;
 				node_set_next(&root);
 
 				uni_printf(info->sx->io, "define ");
 				type_to_io(info, ret_type);
-				if (is_main)
-				{
-					uni_printf(info->sx->io, " @main(");
-				}
-				else
-				{
-					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
-				}
+				uni_printf(info->sx->io, " @%s(", get_func_name(info->sx, ref_ident));
 
 				for (size_t i = 0; i < parameters; i++)
 				{
