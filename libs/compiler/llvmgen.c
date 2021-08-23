@@ -38,6 +38,7 @@ typedef enum ANSWER
 	ACONST,								/**< Ответ является константой */
 	ALOGIC,								/**< Ответ является логическим значением */
 	AMEM,								/**< Ответ находится в памяти */
+	ASTR,								/**< Ответ является строкой */
 } answer_t;
 
 typedef enum LOCATION
@@ -60,6 +61,7 @@ typedef struct information
 
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
+	item_t answer_string;				/**< Индекс строки с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
 	answer_t answer_kind;				/**< Вид ответа */
 	item_t answer_type;					/**< Тип значения */
@@ -86,7 +88,7 @@ static void block(information *const info, node *const nd);
 
 static const char * get_func_name(const syntax *const sx, const size_t index)
 {
-	return repr_get_name(sx, ident_get_repr(sx, index));
+	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
 }
 
 static item_t array_get_type(information *const info, const item_t array_type)
@@ -480,7 +482,7 @@ static void check_type_and_branch(information *const info)
 		case ALOGIC:
 			to_code_conditional_branch(info);
 			break;
-		case AMEM:
+		default:
 			break;
 	}
 }
@@ -1117,6 +1119,10 @@ static void expression(information *const info, node *const nd)
 				{
 					arguments[i] = info->answer_reg;
 				}
+				else if (info->answer_kind == ASTR)
+				{
+					arguments[i] = info->answer_string;
+				}
 				else if (type_is_integer(info->answer_type)) // ACONST
 				{
 					arguments[i] = info->answer_const;
@@ -1146,39 +1152,40 @@ static void expression(information *const info, node *const nd)
 				}
 
 				type_to_io(info, arguments_value_type[i]);
-				uni_printf(info->sx->io, " signext ");
 				if (arguments_type[i] == AREG)
 				{
-					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, " %%.%" PRIitem, arguments[i]);
+				}
+				else if (arguments_type[i] == ASTR)
+				{
+					const size_t index = (size_t)arguments[i];
+					const size_t string_length = strings_length(info->sx, index);
+
+					uni_printf(info->sx->io, "i8* getelementptr inbounds "
+						"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
+						, string_length + 1
+						, string_length + 1
+						, index);
 				}
 				else if (type_is_integer(arguments_value_type[i])) // ACONST
 				{
-					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, " %" PRIitem, arguments[i]);
 				}
 				else // double
 				{
-					uni_printf(info->sx->io, "%f", arguments_double[i]);
+					uni_printf(info->sx->io, " %f", arguments_double[i]);
 				}
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
 		break;
 		case OP_STRING:
-		{
-			// const size_t index = (size_t)node_get_arg(nd, 2);
-			// const size_t string_length = strings_length(info->sx, index);
-
-			// uni_printf(info->sx->io, "i8* getelementptr inbounds "
-			// 	"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0"
-			// 	, string_length + 1
-			// 	, string_length + 1
-			// 	, index);
-			
-			info->answer_reg = -1;
-			info->answer_kind = AREG;
+		{	
+			info->answer_string = node_get_arg(nd, 2);
+			info->answer_kind = ASTR;
 			node_set_next(nd);
 		}
-			break;
+		break;
 		case OP_SELECT:
 			node_set_next(nd);
 			break;
@@ -1701,8 +1708,9 @@ static int codegen(information *const info)
 					{
 						uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
 							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, i64, "
-							"i32, [20 x i8] }");
-						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }");
+							"i32, [20 x i8] }\n");
+						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
+						uni_printf(info->sx->io, "declare %%struct._IO_FILE* @fopen(i8*, i8*)\n");
 					}
 
 					return 0;
