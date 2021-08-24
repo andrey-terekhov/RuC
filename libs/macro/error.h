@@ -51,7 +51,7 @@ typedef enum WARNING
  *	@param	num			Error code
  */
 void macro_error(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const error_t num, ...);
+	, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -63,7 +63,7 @@ void macro_error(const char *const file, const char *const str, const size_t lin
  *	@param	num			Warning code
  */
 void macro_warning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const warning_t num, ...);
+	, warning_t num, ...);
 
 
 /**
@@ -99,7 +99,7 @@ void macro_vwarning(const char *const file, const char *const str, const size_t 
  *	@param	tag		Message location
  *	@param	num		Error code
  */
-void macro_system_error(const char *const tag, const error_t num, ...);
+void macro_system_error(const char *const tag, error_t num, ...);
 
 /**
  *	Emit a system warning
@@ -107,7 +107,7 @@ void macro_system_error(const char *const tag, const error_t num, ...);
  *	@param	tag		Message location
  *	@param	num		Warning code
  */
-void macro_system_warning(const char *const tag, const warning_t num, ...);
+void macro_system_warning(const char *const tag, warning_t num, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
