@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-/** Errors codes */
+/** Error codes */
 typedef enum ERROR
 {
 	LINKER_CANNOT_OPEN,
@@ -34,7 +34,7 @@ typedef enum ERROR
 	MACRO_NAME_EXISTS,
 } error_t;
 
-/** Warnings codes */
+/** Warning codes */
 typedef enum WARNING
 {
 	MACRO_CONSOLE_SEPARATOR,
