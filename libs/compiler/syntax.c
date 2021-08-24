@@ -580,7 +580,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_arithmetic(type) || type_is_pointer(sx, type);
+	return type_is_integer(type) || type_is_pointer(sx, type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)

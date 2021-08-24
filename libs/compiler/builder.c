@@ -748,13 +748,11 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		switch (op_kind)
 		{
 			case BIN_REM:
-			case BIN_LOG_OR:
-			case BIN_LOG_AND:
-			case BIN_OR:
-			case BIN_XOR:
-			case BIN_AND:
 			case BIN_SHL:
 			case BIN_SHR:
+			case BIN_AND:
+			case BIN_XOR:
+			case BIN_OR:
 			case BIN_REM_ASSIGN:
 			case BIN_OR_ASSIGN:
 			case BIN_XOR_ASSIGN:
@@ -763,6 +761,19 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 			case BIN_SHR_ASSIGN:
 			{
 				if (!type_is_integer(left_type) || !type_is_integer(right_type))
+				{
+					semantic_error(sx, op_loc, int_op_for_float);
+					return build_broken_expression();
+				}
+
+				result_type = TYPE_INTEGER;
+			}
+			break;
+
+			case BIN_LOG_AND:
+			case BIN_LOG_OR:
+			{
+				if (!type_is_scalar(sx, left_type) || !type_is_scalar(sx, right_type))
 				{
 					semantic_error(sx, op_loc, int_op_for_float);
 					return build_broken_expression();
