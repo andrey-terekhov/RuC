@@ -30,12 +30,12 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	buffer[0] = utf8_convert(&name[0]);
 	if (buffer[0] == '\0' || buffer[0] == '=')
 	{
-		system_error(NULL, MACRO_NAME_NON);
+		macro_system_error(NULL, MACRO_NAME_NON);
 		return SIZE_MAX;
 	}
 	else if (!utf8_is_letter(buffer[0]))
 	{
-		system_error(NULL, MACRO_NAME_FIRST_CHARACTER);
+		macro_system_error(NULL, MACRO_NAME_FIRST_CHARACTER);
 		return SIZE_MAX;
 	}
 
@@ -58,7 +58,7 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	}
 	else
 	{
-		system_warning(NULL, MACRO_CONSOLE_SEPARATOR);
+		macro_system_warning(NULL, MACRO_CONSOLE_SEPARATOR);
 		j -= utf8_size(buffer[i]);
 		buffer[i] = '\0';
 		return j;
@@ -103,13 +103,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 				ws_parse_value(&flag[2 + index], value);
 				if (storage_add(stg, name, value) == SIZE_MAX)
 				{
-					system_error(NULL, MACRO_NAME_EXISTS, name);
+					macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 					return -1;
 				}
 			}
 			else if (storage_add(stg, name, NULL) == SIZE_MAX)
 			{
-				system_error(NULL, MACRO_NAME_EXISTS, name);
+				macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 				return -1;
 			}
 		}
@@ -133,7 +133,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
 		{
-			system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
+			macro_system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
 		}
 
 		ret = parser_preprocess(&prs, &in);

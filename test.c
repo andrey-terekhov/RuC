@@ -1,10 +1,4 @@
-void test()
+void main()
 {
-#ifdef A
-	printf("A\n");
-#else
-	printf("B\n");
-#endif
+	
 }
-
-#define A
