@@ -20,8 +20,9 @@
 #include "uniprinter.h"
 
 
-const item_t LOW_DYN_BORDER = 268500992;		// это 0x10010000 - нижняя граница дин памяти
+const item_t LOW_DYN_BORDER = 268500992;		// Это 0x10010000 -- нижняя граница динамической памяти
 const item_t HEAP_DISPL = -8000;				// Смещение кучи относительно глобальной памяти
+const item_t DISPL0 = 80;						// ???
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -86,7 +87,14 @@ typedef enum ISTRUCTIONS
 	LW,							/**< To load a word from memory as a signed value */
 	JR,							/**< To execute a branch to an instruction address in a register */
 	JAL,						/**< To execute a procedure call within the current 256MB-aligned region */
+	J,							/**< To branch within the current 256 MB-aligned region */
 } instructions_t;
+
+typedef enum LABELS
+{
+	FUNC,						/**< Тип метки -- вход в функцию */
+	NEXT,						// ???
+} labels_t;
 
 typedef struct information
 {
@@ -231,6 +239,22 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 		case JAL:
 			uni_printf(io, "jal");
 			break;
+		case J:
+			uni_printf(io, "j");
+			break;
+	}
+}
+
+static void label_to_io(universal_io *const io, const labels_t label)
+{
+	switch (label)
+	{
+		case FUNC:
+			uni_printf(io, "FUNC");
+			break;
+		case NEXT:
+			uni_printf(io, "NEXT");
+			break;
 	}
 }
 
@@ -297,11 +321,20 @@ static void to_code_R(universal_io *const io, const instructions_t instruction,
 
 // Вид инструкции:	instr	label
 static void to_code_L(universal_io *const io, const instructions_t instruction, 
-	const item_t label_num)
+	const labels_t label, const item_t label_num)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
-	uni_printf(io, " label%" PRIitem "\n", label_num);
+	uni_printf(io, " ");
+	label_to_io(io, label);
+	uni_printf(io, "%" PRIitem "\n", label_num);
+}
+
+// Вид инструкции:	label:
+static void to_code_label(universal_io *const io, const labels_t label, const item_t label_num)
+{
+	label_to_io(io, label);
+	uni_printf(io, "%" PRIitem ":\n", label_num);
 }
 
 
@@ -315,7 +348,27 @@ static int codegen(information *const info)
 		{
 			case OP_FUNC_DEF:
 			{
+				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
+				const item_t func_displ = ident_get_displ(info->sx, ref_ident);
+				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;				// ???
+				const item_t func_type = ident_get_type(info->sx, ref_ident);
+				// const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
+
 				node_set_next(&root);
+				to_code_L(info->sx->io, J, NEXT, (item_t)ref_ident);
+				to_code_label(info->sx->io, FUNC, func_displ);
+
+				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - DISPL0);				// ???
+				to_code_R_I_R(info->sx->io, SW, SP, 20, FP);								// 20 это что ???
+				to_code_2R(info->sx->io, MOVE, SP, FP);
+				to_code_R_I_R(info->sx->io, SW, RA, 16, SP);								// 16 это что ???
+				uni_printf(info->sx->io, "\n");
+
+				for (size_t i = 0; i < parameters; i++)
+				{
+					
+				}
 			}
 			break;
 			default:
@@ -365,13 +418,13 @@ static void precodegen(syntax *const sx)
 static void postcodegen(information *const info)
 {
 	uni_printf(info->sx->io, "\n");
-	to_code_L(info->sx->io, JAL, info->main_label);
+	to_code_L(info->sx->io, JAL, FUNC, info->main_label);
 	to_code_R_I_R(info->sx->io, LW, RA, -4, SP);
 	to_code_R(info->sx->io, JR, RA);
 
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
-	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия
+	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия ???
 }
 
 /*
