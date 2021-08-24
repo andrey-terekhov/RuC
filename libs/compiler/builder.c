@@ -17,8 +17,10 @@
 #include "builder.h"
 #include <string.h>
 
+
 static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
 	, const item_t result_type);
+
 
 static inline node node_create(syntax *const sx, operation_t type)
 {
@@ -63,19 +65,6 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 	}
 
 	return TYPE_FLOATING;
-}
-
-static bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
-{
-	const item_t actual_type = expression_get_type(nd_init);
-	// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
-	if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
-	{
-		semantic_error(sx, expression_get_location(nd_init), typecheck_convert_incompatible);
-		return false;
-	}
-
-	return true;
 }
 
 static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
@@ -418,6 +407,23 @@ static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const
  */
 
 
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
+{
+	const item_t actual_type = expression_get_type(nd_init);
+
+	if (type_is_floating(expected_type) && type_is_integer(actual_type))
+	{
+		return true;
+	}
+
+	if (type_is_pointer(sx, expected_type) && type_is_nullptr(actual_type))
+	{
+		return true;
+	}
+
+	return expected_type == actual_type;
+}
+
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
 {
 	const item_t identifier = repr_get_reference(sx, name);
@@ -475,6 +481,17 @@ node build_string_literal_expression(syntax *const sx, const size_t index, const
 	node_add_arg(&nd, (item_t)index);				// Индекс в списке строк
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция строки
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки
+
+	return nd;
+}
+
+node build_nullptr_literal_expression(syntax *const sx, const location loc)
+{
+	node nd = node_create(sx, OP_NULLPTR);
+	node_add_arg(&nd, TYPE_NULLPTR);
+	node_add_arg(&nd, RVALUE);
+	node_add_arg(&nd, (item_t)loc.begin);
+	node_add_arg(&nd, (item_t)loc.end);
 
 	return nd;
 }
@@ -867,6 +884,16 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		case BIN_NE:
 		{
 			if (type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
+			{
+				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			}
+
+			if (type_is_pointer(sx, left_type) && type_is_nullptr(right_type))
+			{
+				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			}
+
+			if (type_is_nullptr(left_type) && type_is_pointer(sx, right_type))
 			{
 				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
 			}

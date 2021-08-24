@@ -29,6 +29,19 @@ extern "C" {
 #endif
 
 /**
+ *	Check assignment operands
+ *
+ *	@note	Тут оно временно, пока не починим парсер объявлений
+ *
+ *	@param	sx				Syntax structure
+ *	@param	expected_type	Expected type
+ *	@param	nd_init			Initializer node
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init);
+
+/**
  *	Build an identifier expression
  *
  *	@param	sx				Syntax structure
@@ -71,6 +84,16 @@ node build_floating_literal_expression(syntax *const sx, const double value, con
  *	@return	String literal expression node
  */
 node build_string_literal_expression(syntax *const sx, const size_t index, const location loc);
+
+/**
+ *	Build a null pointer literal expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	loc				Source location
+ *
+ *	@return Null pointer literal expression node
+ */
+node build_nullptr_literal_expression(syntax *const sx, const location loc);
 
 /**
  *	Build a subscript expression

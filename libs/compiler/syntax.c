@@ -559,6 +559,11 @@ bool type_is_void(const item_t type)
 	return type == TYPE_VOID;
 }
 
+bool type_is_nullptr(const item_t type)
+{
+	return type == TYPE_NULLPTR;
+}
+
 bool type_is_array(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_ARRAY;
@@ -581,7 +586,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_pointer(sx, type);
+	return type_is_integer(type) || type_is_pointer(sx, type) || type_is_nullptr(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)

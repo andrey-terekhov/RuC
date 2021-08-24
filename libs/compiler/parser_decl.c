@@ -20,6 +20,7 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+extern bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init);
 
 
 /**
@@ -328,11 +329,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 						continue;
 					}
 
-					const item_t init_type = expression_get_type(&initializer);
-					if (type != init_type)
-					{
-						 parser_error(prs, wrong_init);
-					}
+					check_assignment_operands(prs->sx, type, &initializer);
 				}
 			}
 		}
@@ -408,11 +405,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			return;
 		}
 
-		const item_t init_type = expression_get_type(&initializer);
-		if (type != init_type && !(type_is_floating(type) && type_is_integer(init_type)))
-		{
-			 parser_error(prs, wrong_init);
-		}
+		check_assignment_operands(prs->sx, type, &initializer);
 	}
 }
 
