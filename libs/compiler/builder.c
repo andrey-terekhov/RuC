@@ -53,6 +53,19 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
+static bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
+{
+	const item_t actual_type = expression_get_type(nd_init);
+	// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
+	if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+	{
+		semantic_error(sx, expression_get_location(nd_init), typecheck_convert_incompatible);
+		return false;
+	}
+
+	return true;
+}
+
 static node fold_unary_expression(const unary_t operator, node *const nd_operand)
 {
 	// Уже проверили, что выражение-операнд – константа
@@ -451,12 +464,8 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 		}
 
 		const item_t expected_type = type_function_get_parameter_type(sx, operand_type, i);
-		const item_t actual_type = expression_get_type(&nd_argument);
-
-		// Несовпадение типов может быть только в случае, когда параметр - double, а аргумент - целочисленный
-		if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+		if (!check_assignment_operands(sx, expected_type, &nd_argument))
 		{
-			semantic_error(sx, expression_get_location(&nd_argument), typecheck_convert_incompatible);
 			return build_broken_expression();
 		}
 	}
@@ -892,12 +901,8 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 			}
 
 			const item_t expected_type = type_structure_get_member_type(sx, type, i);
-			const item_t actual_type = expression_get_type(&nd_initializer);
-
-			// Несовпадение типов может быть только в случае, когда параметр - вещественный, а аргумент - целочисленный
-			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+			if (!check_assignment_operands(sx, expected_type, &nd_initializer))
 			{
-				semantic_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
 				return build_broken_expression();
 			}
 		}
@@ -913,12 +918,8 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 				return build_broken_expression();
 			}
 
-			const item_t actual_type = expression_get_type(&nd_initializer);
-
-			// Несовпадение типов может быть только в случае, когда параметр - вещественный, а аргумент - целочисленный
-			if (expected_type != actual_type && !(type_is_floating(expected_type) && type_is_integer(actual_type)))
+			if (!check_assignment_operands(sx, expected_type, &nd_initializer))
 			{
-				semantic_error(sx, expression_get_location(&nd_initializer), typecheck_convert_incompatible);
 				return build_broken_expression();
 			}
 		}
