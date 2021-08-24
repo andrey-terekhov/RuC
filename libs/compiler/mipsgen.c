@@ -93,7 +93,8 @@ typedef enum ISTRUCTIONS
 typedef enum LABELS
 {
 	FUNC,						/**< Тип метки -- вход в функцию */
-	NEXT,						// ???
+	NEXT,						/**< Тип метки -- следующая функция */
+	FUNCEND,					/**< Тип метки -- выход из функции */
 } labels_t;
 
 typedef struct information
@@ -255,6 +256,9 @@ static void label_to_io(universal_io *const io, const labels_t label)
 		case NEXT:
 			uni_printf(io, "NEXT");
 			break;
+		case FUNCEND:
+			uni_printf(io, "FUNCEND");
+			break;
 	}
 }
 
@@ -352,11 +356,15 @@ static int codegen(information *const info)
 				const item_t func_displ = ident_get_displ(info->sx, ref_ident);
 				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;				// ???
 				const item_t func_type = ident_get_type(info->sx, ref_ident);
-				// const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
+				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
+				{
+					info->main_label = func_displ;
+				}
+
 				node_set_next(&root);
-				to_code_L(info->sx->io, J, NEXT, (item_t)ref_ident);
+				to_code_L(info->sx->io, J, NEXT, func_displ);
 				to_code_label(info->sx->io, FUNC, func_displ);
 
 				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - DISPL0);				// ???
@@ -367,8 +375,30 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					
+					const size_t type = (size_t)node_get_arg(&root, 0);
+					const item_t param_type = ident_get_type(info->sx, type);
+					node_set_next(&root);
+
+					// TODO: сделать параметры
+					if (type_is_floating(param_type))
+					{
+
+					}
+					else
+					{
+
+					}
 				}
+
+				// block(info, &root);
+
+				uni_printf(info->sx->io, "\n");
+				to_code_label(info->sx->io, FUNCEND, func_displ);
+				to_code_R_I_R(info->sx->io, LW, RA, 16, SP);								// 16 это что ???
+				to_code_2R_I(info->sx->io, ADDI, FP, SP, max_displ + DISPL0);				// ???
+				to_code_R_I_R(info->sx->io, LW, SP, 20, SP);								// 20 это что ???
+				to_code_R(info->sx->io, JR, RA);
+				to_code_label(info->sx->io, NEXT, func_displ);
 			}
 			break;
 			default:
