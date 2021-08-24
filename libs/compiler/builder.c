@@ -485,11 +485,11 @@ node build_string_literal_expression(syntax *const sx, const size_t index, const
 
 node build_nullptr_literal_expression(syntax *const sx, const location loc)
 {
-	node nd = node_create(sx, OP_NULLPTR);
-	node_add_arg(&nd, TYPE_NULLPTR);
-	node_add_arg(&nd, RVALUE);
-	node_add_arg(&nd, (item_t)loc.begin);
-	node_add_arg(&nd, (item_t)loc.end);
+	node nd = node_create(sx, OP_CONSTANT);
+	node_add_arg(&nd, TYPE_NULLPTR);				// Тип константы
+	node_add_arg(&nd, RVALUE);						// Категория значения константы
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция константы
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция константы
 
 	return nd;
 }
