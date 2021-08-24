@@ -826,6 +826,17 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		case BIN_DIV:
 		case BIN_ADD:
 		case BIN_SUB:
+		{
+			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			const item_t result_type = usual_arithmetic_conversions(left_type, right_type);
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, result_type);
+		}
+
 		case BIN_LT:
 		case BIN_GT:
 		case BIN_LE:
@@ -837,7 +848,6 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				return build_broken_expression();
 			}
 
-			const item_t result_type = usual_arithmetic_conversions(left_type, right_type);
 			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
 		}
 
