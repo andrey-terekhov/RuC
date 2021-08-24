@@ -199,6 +199,7 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 			const item_t right_value = node_get_arg(nd_right, 2);
 			node_remove(nd_left);
 			node_remove(nd_right);
+
 			item_t result;
 			switch (op_kind)
 			{
@@ -315,7 +316,6 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 		node_remove(nd_right);
 
 		double result;
-
 		switch (op_kind)
 		{
 			case BIN_MUL:
@@ -354,7 +354,6 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 		}
 		else
 		{
-			node_remove(nd_left);
 			node_remove(nd_middle);
 			return *nd_right;
 		}
@@ -370,7 +369,6 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 		}
 		else
 		{
-			node_remove(nd_left);
 			node_remove(nd_middle);
 			return *nd_right;
 		}
