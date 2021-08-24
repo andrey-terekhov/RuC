@@ -117,7 +117,7 @@ void macro_error(const char *const file, const char *const str, const size_t lin
 	va_list args;
 	va_start(args, num);
 
-	verror(file, str, line, symbol, num, args);
+	macro_verror(file, str, line, symbol, num, args);
 
 	va_end(args);
 }
@@ -128,7 +128,7 @@ void macro_warning(const char *const file, const char *const str, const size_t l
 	va_list args;
 	va_start(args, num);
 
-	vwarning(file, str, line, symbol, num, args);
+	macro_vwarning(file, str, line, symbol, num, args);
 
 	va_end(args);
 }
