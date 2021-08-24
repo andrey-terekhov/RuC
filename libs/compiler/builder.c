@@ -284,7 +284,7 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 			node_remove(nd_left);
 			node_remove(nd_right);
 
-			int result;
+			int result = 0;
 			switch (op_kind)
 			{
 				case BIN_LT:
@@ -305,11 +305,7 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 				case BIN_NE:
 					result = left_value != right_value;
 					break;
-				case BIN_LOG_AND:
-					result = (left_value != 0) && (right_value != 0);
-					break;
-				default: // case BIN_LOG_OR:
-					result = (left_value != 0) || (right_value != 0);
+				default:
 					break;
 			}
 
