@@ -78,6 +78,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"continue", U"продолжить", TK_CONTINUE);
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
+	repr_add_keyword(reprtab, U"nullptr", U"нулуказ", TK_NULLPTR);
 
 	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
 	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);

@@ -37,7 +37,8 @@ extern "C" {
 /** Type qualifiers */
 enum TYPE
 {
-	TYPE_FILE			= -7,
+	TYPE_NULLPTR		= -8,
+	TYPE_FILE,
 	TYPE_VOID,
 	TYPE_FLOATING		= -3,
 	TYPE_INTEGER		= -1,
