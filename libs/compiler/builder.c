@@ -17,6 +17,8 @@
 #include "builder.h"
 #include <string.h>
 
+static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
+	, const item_t result_type);
 
 static inline node node_create(syntax *const sx, operation_t type)
 {
@@ -53,6 +55,16 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
+static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
+{
+	if (type_is_integer(left_type) && type_is_integer(right_type))
+	{
+		return TYPE_INTEGER;
+	}
+
+	return TYPE_FLOATING;
+}
+
 static bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
 {
 	const item_t actual_type = expression_get_type(nd_init);
@@ -64,6 +76,66 @@ static bool check_assignment_operands(syntax *const sx, const item_t expected_ty
 	}
 
 	return true;
+}
+
+static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
+	, const binary_t op_kind, const location op_loc)
+{
+	const item_t left_type = expression_get_type(nd_left);
+	const item_t right_type = expression_get_type(nd_right);
+
+	if (operation_is_assignment(op_kind))
+	{
+		if (!expression_is_lvalue(nd_left))
+		{
+			semantic_error(sx, op_loc, unassignable);
+			return build_broken_expression();
+		}
+
+		if (!check_assignment_operands(sx, left_type, nd_right))
+		{
+			return build_broken_expression();
+		}
+	}
+
+	switch (op_kind)
+	{
+		case BIN_ASSIGN:
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
+
+		case BIN_REM_ASSIGN:
+		case BIN_SHL_ASSIGN:
+		case BIN_SHR_ASSIGN:
+		case BIN_AND_ASSIGN:
+		case BIN_XOR_ASSIGN:
+		case BIN_OR_ASSIGN:
+		{
+			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
+		}
+
+		case BIN_MUL_ASSIGN:
+		case BIN_DIV_ASSIGN:
+		case BIN_ADD_ASSIGN:
+		case BIN_SUB_ASSIGN:
+		{
+			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
+		}
+
+		default:
+			return build_broken_expression();
+	}
 }
 
 static node fold_unary_expression(const unary_t operator, node *const nd_operand)
@@ -104,10 +176,6 @@ static node fold_unary_expression(const unary_t operator, node *const nd_operand
 		{
 			case UN_MINUS:
 				node_set_arg_double(nd_operand, 2, -value);
-				break;
-
-			case UN_LOGNOT:
-				node_set_arg_double(nd_operand, 2, value == 0 ? 1 : 0);
 				break;
 
 			case UN_ABS:
@@ -322,6 +390,26 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 			return *nd_right;
 		}
 	}
+}
+
+static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
+	, const item_t result_type)
+{
+	if (node_get_type(nd_left) == OP_CONSTANT && node_get_type(nd_right) == OP_CONSTANT)
+	{
+		return fold_binary_expression(sx, nd_left, nd_right, op_kind, result_type);
+	}
+
+	node nd = node_create(sx, OP_BINARY);
+	node_add_arg(&nd, result_type);					// Тип значения
+	node_add_arg(&nd, RVALUE);						// Категория значения
+	node_add_arg(&nd, op_kind);						// Вид оператора
+	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
+	node_add_arg(&nd, (item_t)expression_get_location(nd_right).end);
+	node_set_child(&nd, nd_left);					// Первый операнд
+	node_set_child(&nd, nd_right);					// Второй операнд
+
+	return nd;
 }
 
 
@@ -712,116 +800,86 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		return build_broken_expression();
 	}
 
+	if (operation_is_assignment(op_kind))
+	{
+		return build_assignment_expression(sx, nd_left, nd_right, op_kind, op_loc);
+	}
+
 	const item_t left_type = expression_get_type(nd_left);
 	const item_t right_type = expression_get_type(nd_right);
 
-	if (operation_is_assignment(op_kind)
-		&& (!expression_is_lvalue(nd_left) || (type_is_floating(right_type) && type_is_integer(left_type))))
+	switch (op_kind)
 	{
-		semantic_error(sx, op_loc, unassignable);
-		return build_broken_expression();
-	}
-
-	item_t result_type;
-	if (op_kind == BIN_COMMA)
-	{
-		result_type = right_type;
-	}
-	else if (op_kind == BIN_ASSIGN)
-	{
-		// Особый случай, так как тут могут быть операции с агрегатными типами
-
-		// Несовпадение типов может быть только в случае, когда слева вещественный, а справа целочисленный
-		if (left_type != right_type && !(type_is_floating(left_type) && type_is_integer(right_type)))
+		case BIN_REM:
+		case BIN_SHL:
+		case BIN_SHR:
+		case BIN_AND:
+		case BIN_XOR:
+		case BIN_OR:
 		{
-			semantic_error(sx, op_loc, typecheck_convert_incompatible);
-			return build_broken_expression();
+			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
 		}
 
-		result_type = left_type;
-	}
-	else
-	{
-		if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+		case BIN_MUL:
+		case BIN_DIV:
+		case BIN_ADD:
+		case BIN_SUB:
+		case BIN_LT:
+		case BIN_GT:
+		case BIN_LE:
+		case BIN_GE:
 		{
+			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			const item_t result_type = usual_arithmetic_conversions(left_type, right_type);
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+		}
+
+		case BIN_LOG_AND:
+		case BIN_LOG_OR:
+		{
+			if (!type_is_scalar(sx, left_type) || !type_is_scalar(sx, right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return build_broken_expression();
+			}
+
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+		}
+
+		case BIN_EQ:
+		case BIN_NE:
+		{
+			if (type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
+			{
+				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			}
+
+			if (left_type == right_type)
+			{
+				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			}
+
 			semantic_error(sx, op_loc, typecheck_binary_expr);
 			return build_broken_expression();
 		}
 
-		if (operation_is_assignment(op_kind) && !expression_is_lvalue(nd_left))
-		{
-			semantic_error(sx, op_loc, unassignable);
+		case BIN_COMMA:
+			return build_bin_op_node(sx, nd_left, nd_right, op_kind, right_type);
+
+		default:
 			return build_broken_expression();
-		}
-
-		switch (op_kind)
-		{
-			case BIN_REM:
-			case BIN_SHL:
-			case BIN_SHR:
-			case BIN_AND:
-			case BIN_XOR:
-			case BIN_OR:
-			case BIN_REM_ASSIGN:
-			case BIN_OR_ASSIGN:
-			case BIN_XOR_ASSIGN:
-			case BIN_AND_ASSIGN:
-			case BIN_SHL_ASSIGN:
-			case BIN_SHR_ASSIGN:
-			{
-				if (!type_is_integer(left_type) || !type_is_integer(right_type))
-				{
-					semantic_error(sx, op_loc, int_op_for_float);
-					return build_broken_expression();
-				}
-
-				result_type = TYPE_INTEGER;
-			}
-			break;
-
-			case BIN_LOG_AND:
-			case BIN_LOG_OR:
-			{
-				if (!type_is_scalar(sx, left_type) || !type_is_scalar(sx, right_type))
-				{
-					semantic_error(sx, op_loc, int_op_for_float);
-					return build_broken_expression();
-				}
-
-				result_type = TYPE_INTEGER;
-			}
-			break;
-
-			case BIN_EQ:
-			case BIN_NE:
-			case BIN_LE:
-			case BIN_GE:
-			case BIN_LT:
-			case BIN_GT:
-				result_type = TYPE_INTEGER;
-				break;
-
-			default:
-				result_type = type_is_floating(left_type) ? TYPE_FLOATING : right_type;
-				break;
-		}
 	}
-
-	if (node_get_type(nd_left) == OP_CONSTANT && node_get_type(nd_right) == OP_CONSTANT)
-	{
-		return fold_binary_expression(sx, nd_left, nd_right, op_kind, result_type);
-	}
-
-	node nd = node_create(sx, OP_BINARY);
-	node_add_arg(&nd, result_type);					// Тип значения
-	node_add_arg(&nd, RVALUE);						// Категория значения
-	node_add_arg(&nd, op_kind);						// Вид оператора
-	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
-	node_add_arg(&nd, (item_t)expression_get_location(nd_right).end);
-	node_set_child(&nd, nd_left);					// Первый операнд
-	node_set_child(&nd, nd_right);					// Второй операнд
-
-	return nd;
 }
 
 node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
