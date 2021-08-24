@@ -15,7 +15,6 @@
  */
 
 #include "mipsgen.h"
-#include "codes.h"
 #include "operations.h"
 #include "uniprinter.h"
 
@@ -472,7 +471,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
