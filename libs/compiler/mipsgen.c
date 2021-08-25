@@ -21,7 +21,7 @@
 
 const item_t LOW_DYN_BORDER = 268500992;		// Это 0x10010000 -- нижняя граница динамической памяти
 const item_t HEAP_DISPL = -8000;				// Смещение кучи относительно глобальной памяти
-const item_t DISPL0 = 80;						// ???
+const item_t DISPL0 = 80;						// адрес пред статики, след статики и pc, сохраняемые регистры и вызова 
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -366,7 +366,7 @@ static int codegen(information *const info)
 				to_code_L(info->sx->io, J, NEXT, func_displ);
 				to_code_label(info->sx->io, FUNC, func_displ);
 
-				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - DISPL0);				// ???
+				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - DISPL0);				// тут идёт сохранение
 				to_code_R_I_R(info->sx->io, SW, SP, 20, FP);								// 20 это что ???
 				to_code_2R(info->sx->io, MOVE, SP, FP);
 				to_code_R_I_R(info->sx->io, SW, RA, 16, SP);								// 16 это что ???
@@ -454,6 +454,7 @@ static void postcodegen(information *const info)
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
 	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия ???
+	// выводится для printid
 }
 
 /*
