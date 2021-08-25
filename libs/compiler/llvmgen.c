@@ -85,7 +85,7 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static const char * get_func_name(const syntax *const sx, const size_t index)
+static const char * ident_get_spelling(const syntax *const sx, const size_t index)
 {
 	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
 }
@@ -1089,7 +1089,7 @@ static void expression(information *const info, node *const nd)
 			const item_t func_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			const item_t type_ref = node_get_arg(nd, 0);
+			const item_t type_ref = expression_get_type(nd);
 			const size_t func_ref = (size_t)node_get_arg(nd, 2);
 			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			if (args > MAX_FUNCTION_ARGS)
@@ -1133,7 +1133,7 @@ static void expression(information *const info, node *const nd)
 			}
 			uni_printf(info->sx->io, " call ");
 			type_to_io(info, func_type);
-			uni_printf(info->sx->io, " @%s(", get_func_name(info->sx, func_ref));
+			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
 
 			for (size_t i = 0; i < args; i++)
 			{
@@ -1638,7 +1638,7 @@ static int codegen(information *const info)
 
 				uni_printf(info->sx->io, "define ");
 				type_to_io(info, ret_type);
-				uni_printf(info->sx->io, " @%s(", get_func_name(info->sx, ref_ident));
+				uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
 
 				for (size_t i = 0; i < parameters; i++)
 				{
@@ -1651,9 +1651,9 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const size_t type = (size_t)node_get_arg(&root, 0);
-					const item_t param_displ = ident_get_displ(info->sx, type);
-					const item_t param_type = ident_get_type(info->sx, type);
+					const size_t id = (size_t)node_get_arg(&root, 0);
+					const item_t param_displ = ident_get_displ(info->sx, id);
+					const item_t param_type = ident_get_type(info->sx, id);
 					node_set_next(&root);
 
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
