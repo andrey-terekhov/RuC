@@ -1808,7 +1808,7 @@ static void strings_declaration(information *const info)
 }
 
 
-static void library_functions_declaration(information *const info)
+static void builin_functions_declaration(information *const info)
 {
 	for (size_t i = 2; i < BEGIN_USER_FUNC; i += 4)
 	{
@@ -1874,7 +1874,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	strings_declaration(&info);
 
 	const int ret = codegen(&info);
-	library_functions_declaration(&info);
+	builin_functions_declaration(&info);
 
 	hash_clear(&info.arrays);
 	return ret;
