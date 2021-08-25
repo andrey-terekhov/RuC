@@ -64,7 +64,6 @@ typedef struct information
 	item_t answer_string;				/**< Индекс строки с ответом */
 	double answer_const_double;			/**< Константа с ответом типа double */
 	answer_t answer_kind;				/**< Вид ответа */
-	item_t answer_type;					/**< Тип значения */
 
 	item_t label_true;					/**< Метка перехода при true */
 	item_t label_false;					/**< Метка перехода при false */
@@ -443,9 +442,9 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 }
 
 
-static void to_code_try_widen(information *const info, const item_t operation_type)
+static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == info->answer_type)
+	if (operation_type == answer_type)
 	{
 		return;
 	}
@@ -457,12 +456,11 @@ static void to_code_try_widen(information *const info, const item_t operation_ty
 	else
 	{
 		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, info->answer_type);
+		type_to_io(info, answer_type);
 		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
 		type_to_io(info, operation_type);
 		uni_printf(info->sx->io, "\n");
 
-		info->answer_type = operation_type;
 		info->answer_reg = info->register_num++;
 	}
 }
@@ -508,9 +506,10 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 
 	info->variable_location = LFREE;
+	const item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
@@ -559,9 +558,10 @@ static void integral_expression(information *const info, node *const nd, const a
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
+	item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t left_kind = info->answer_kind;
@@ -570,17 +570,16 @@ static void integral_expression(information *const info, node *const nd, const a
 	const double left_const_double = info->answer_const_double;
 
 	info->variable_location = LFREE;
+	answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t right_kind = info->answer_kind;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
-
-	info->answer_type = kind != ALOGIC ? operation_type : TYPE_INTEGER;
 
 	if (left_kind == AREG && right_kind == AREG)
 	{
@@ -733,7 +732,6 @@ static void inc_dec_expression(information *const info, node *const nd)
 	to_code_load(info, info->register_num, displ, operation_type, is_array);
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
-	info->answer_type = operation_type;
 
 	switch (operation)
 	{
@@ -785,7 +783,6 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			info->answer_type = TYPE_INTEGER;
 			if (operation == UN_MINUS && type_is_integer(operation_type))
 			{
 				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
@@ -797,7 +794,6 @@ static void unary_operation(information *const info, node *const nd)
 			else if (operation == UN_MINUS && type_is_floating(operation_type))
 			{
 				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
-				info->answer_type = TYPE_FLOATING;
 			}
 
 			info->answer_kind = AREG;
@@ -940,7 +936,6 @@ static void expression(information *const info, node *const nd)
 				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
 			info->answer_kind = AREG;
-			info->answer_type = type;
 		}
 		break;
 		case OP_CONSTANT:
@@ -960,7 +955,6 @@ static void expression(information *const info, node *const nd)
 				{
 					info->answer_kind = ACONST;
 					info->answer_const = num;
-					info->answer_type = TYPE_INTEGER;
 				}
 			}
 			else
@@ -976,7 +970,6 @@ static void expression(information *const info, node *const nd)
 				{
 					info->answer_kind = ACONST;
 					info->answer_const_double = num;
-					info->answer_type = TYPE_FLOATING;
 				}
 			}
 
@@ -1052,7 +1045,6 @@ static void expression(information *const info, node *const nd)
 
 				info->answer_reg = info->register_num - 1;
 				info->answer_kind = AREG;
-				info->answer_type = type;
 				break;
 			}
 
@@ -1084,7 +1076,6 @@ static void expression(information *const info, node *const nd)
 
 			info->answer_reg = info->register_num - 1;
 			info->answer_kind = AREG;
-			info->answer_type = type;
 		}
 		break;
 
@@ -1111,10 +1102,11 @@ static void expression(information *const info, node *const nd)
 			for (size_t i = 0; i < args; i++)
 			{
 				info->variable_location = LFREE;
+				item_t answer_type = expression_get_type(nd);
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
-				arguments_value_type[i] = info->answer_type;
+				arguments_value_type[i] = answer_type;
 				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
@@ -1123,7 +1115,7 @@ static void expression(information *const info, node *const nd)
 				{
 					arguments[i] = info->answer_string;
 				}
-				else if (type_is_integer(info->answer_type)) // ACONST
+				else if (type_is_integer(answer_type)) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
@@ -1137,7 +1129,6 @@ static void expression(information *const info, node *const nd)
 			{
 				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
 				info->answer_kind = AREG;
-				info->answer_type = func_type;
 				info->answer_reg = info->register_num++;
 			}
 			uni_printf(info->sx->io, " call ");
@@ -1415,21 +1406,22 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			info->variable_location = LREG;
+			const item_t answer_type = expression_get_type(nd);
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_kind == ACONST && type_is_integer(info->answer_type))
+			if (info->answer_kind == ACONST && type_is_integer(answer_type))
 			{
 				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
-			else if (info->answer_kind == ACONST && type_is_floating(info->answer_type))
+			else if (info->answer_kind == ACONST && type_is_floating(answer_type))
 			{
 				uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
 			}
 			else if (info->answer_kind == AREG)
 			{
 				uni_printf(info->sx->io, " ret ");
-				type_to_io(info, info->answer_type);
+				type_to_io(info, answer_type);
 				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 		}
@@ -1461,9 +1453,10 @@ static void statement(information *const info, node *const nd)
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
+				const item_t answer_type = expression_get_type(nd);
 				expression(info, nd);
 				args[i] = info->answer_reg;
-				args_type[i] = info->answer_type;
+				args_type[i] = answer_type;
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
