@@ -25,6 +25,7 @@
 
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
+#define LIBRARY_FUNC_NUM 41
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
@@ -50,34 +51,35 @@ typedef enum LOCATION
 
 typedef struct information
 {
-	syntax *sx;							/**< Структура syntax с таблицами */
+	syntax *sx;								/**< Структура syntax с таблицами */
 
-	item_t register_num;				/**< Номер регистра */
-	item_t label_num;					/**< Номер метки */
-	item_t init_num;					/**< Счётчик для инициализации */
+	item_t register_num;					/**< Номер регистра */
+	item_t label_num;						/**< Номер метки */
+	item_t init_num;						/**< Счётчик для инициализации */
 
-	item_t request_reg;					/**< Регистр на запрос */
-	location_t variable_location;		/**< Расположение переменной */
+	item_t request_reg;						/**< Регистр на запрос */
+	location_t variable_location;			/**< Расположение переменной */
 
-	item_t answer_reg;					/**< Регистр с ответом */
-	item_t answer_const;				/**< Константа с ответом */
-	item_t answer_string;				/**< Индекс строки с ответом */
-	double answer_const_double;			/**< Константа с ответом типа double */
-	answer_t answer_kind;				/**< Вид ответа */
+	item_t answer_reg;						/**< Регистр с ответом */
+	item_t answer_const;					/**< Константа с ответом */
+	item_t answer_string;					/**< Индекс строки с ответом */
+	double answer_const_double;				/**< Константа с ответом типа double */
+	answer_t answer_kind;					/**< Вид ответа */
 
-	item_t label_true;					/**< Метка перехода при true */
-	item_t label_false;					/**< Метка перехода при false */
-	item_t label_break;					/**< Метка перехода для break */
-	item_t label_continue;				/**< Метка перехода для continue */
+	item_t label_true;						/**< Метка перехода при true */
+	item_t label_false;						/**< Метка перехода при false */
+	item_t label_break;						/**< Метка перехода для break */
+	item_t label_continue;					/**< Метка перехода для continue */
 
-	hash arrays;						/**< Хеш таблица с информацией о массивах:
-											@с key		 - смещение массива
-											@c value[0]	 - флаг статичности
-											@c value[1..MAX] - границы массива */
+	hash arrays;							/**< Хеш таблица с информацией о массивах:
+												@с key		 - смещение массива
+												@c value[0]	 - флаг статичности
+												@c value[1..MAX] - границы массива */
 
-	bool was_printf;					/**< Истина, если вызывался printf в исходном коде */
-	bool was_dynamic;					/**< Истина, если в функции были динамические массивы */
-	bool was_file;						/**< Истина, если была работа с файлами */
+	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
+	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
+	bool was_file;							/**< Истина, если была работа с файлами */
+	bool was_function[LIBRARY_FUNC_NUM];	/**< Массив флагов библиотечных функций из builtin_t */
 } information;
 
 
@@ -119,7 +121,7 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (type_is_pointer(info->sx, type))
+	else if (type_is_pointer(info->sx, type) || type_is_array(info->sx, type))
 	{
 		type_to_io(info, type_pointer_get_element_type(info->sx, type));
 		uni_printf(info->sx->io, "*");
@@ -128,6 +130,10 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
+	}
+	else
+	{
+		uni_printf(info->sx->io, "i8");
 	}
 }
 
@@ -1097,6 +1103,10 @@ static void expression(information *const info, node *const nd)
 				system_error(too_many_arguments);
 				return;
 			}
+			if (func_ref < BEGIN_USER_FUNC)
+			{
+				info->was_function[(func_ref - 2) / 4] = true;
+			}
 
 			node_set_next(nd); // OP_IDENT
 			for (size_t i = 0; i < args; i++)
@@ -1140,6 +1150,20 @@ static void expression(information *const info, node *const nd)
 				if (i != 0)
 				{
 					uni_printf(info->sx->io, ", ");
+				}
+
+				if (arguments_type[i] == ASTR)
+				{
+					const size_t index = (size_t)arguments[i];
+					const size_t string_length = strings_length(info->sx, index);
+
+					uni_printf(info->sx->io, "i8* getelementptr inbounds "
+						"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
+						, string_length + 1
+						, string_length + 1
+						, index);
+
+					continue;
 				}
 
 				type_to_io(info, arguments_value_type[i]);
@@ -1703,9 +1727,6 @@ static int codegen(information *const info)
 							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, i64, "
 							"i32, [20 x i8] }\n");
 						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
-						uni_printf(info->sx->io, "declare %%struct._IO_FILE* @fopen(i8*, i8*)\n");
-						uni_printf(info->sx->io, "declare i32 @fgetc(%%struct._IO_FILE*)\n");
-						uni_printf(info->sx->io, "declare i32 @fclose(%%struct._IO_FILE*)\n");
 					}
 
 					return 0;
@@ -1786,6 +1807,33 @@ static void strings_declaration(information *const info)
 }
 
 
+static void library_functions_declaration(information *const info)
+{
+	for (size_t i = 2; i < BEGIN_USER_FUNC; i += 4)
+	{
+		if (info->was_function[(i - 2) / 4])
+		{
+			const item_t func_type = ident_get_type(info->sx, i);
+			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
+
+			uni_printf(info->sx->io, "declare ");
+			type_to_io(info, ret_type);
+			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+
+			for (size_t j = 0; j < parameters; j++)
+			{
+				uni_printf(info->sx->io, j == 0 ? "" : ", ");
+
+				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
+				type_to_io(info, param_type);
+			}
+			uni_printf(info->sx->io, ")\n");
+		}
+	}
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -1813,6 +1861,10 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_printf = false;
 	info.was_dynamic = false;
 	info.was_file = false;
+	for (size_t i = 0; i < LIBRARY_FUNC_NUM; i++)
+	{
+		info.was_function[i] = false;
+	}
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
@@ -1821,6 +1873,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	strings_declaration(&info);
 
 	const int ret = codegen(&info);
+	library_functions_declaration(&info);
 
 	hash_clear(&info.arrays);
 	return ret;
