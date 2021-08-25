@@ -26,6 +26,7 @@
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
 #define LIBRARY_FUNC_NUM 41
+#define CONVERT_BUILTIN(a) (a - 2) / 4
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
@@ -1105,7 +1106,7 @@ static void expression(information *const info, node *const nd)
 			}
 			if (func_ref < BEGIN_USER_FUNC)
 			{
-				info->was_function[(func_ref - 2) / 4] = true;
+				info->was_function[CONVERT_BUILTIN(func_ref)] = true;
 			}
 
 			node_set_next(nd); // OP_IDENT
@@ -1811,7 +1812,7 @@ static void library_functions_declaration(information *const info)
 {
 	for (size_t i = 2; i < BEGIN_USER_FUNC; i += 4)
 	{
-		if (info->was_function[(i - 2) / 4])
+		if (info->was_function[CONVERT_BUILTIN(i)])
 		{
 			const item_t func_type = ident_get_type(info->sx, i);
 			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
