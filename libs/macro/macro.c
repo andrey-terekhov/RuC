@@ -17,67 +17,131 @@
 #include "macro.h"
 #include "linker.h"
 #include "parser.h"
+#include "storage.h"
 #include "uniio.h"
 #include "uniprinter.h"
-
-
-#define MAX_DEFINE_SIZE 1024
 
 
 static const size_t OUT_BUFFER_SIZE = 1024;
 
 
-/*
-static inline void storage_parse_ws(storage *const stg, const workspace *const ws)
+static inline size_t ws_parse_name(const char *const name, char32_t *const buffer)
 {
-	if (!ws_is_correct(ws))
+	buffer[0] = utf8_convert(&name[0]);
+	if (buffer[0] == '\0' || buffer[0] == '=')
 	{
-		return;
+		macro_system_error(NULL, MACRO_NAME_NON);
+		return SIZE_MAX;
+	}
+	else if (!utf8_is_letter(buffer[0]))
+	{
+		macro_system_error(NULL, MACRO_NAME_FIRST_CHARACTER);
+		return SIZE_MAX;
 	}
 
+	size_t i = 0;
+	size_t j = utf8_size(buffer[0]);
+	do
+	{
+		buffer[++i] = utf8_convert(&name[j]);
+		j += utf8_size(buffer[i]);
+	} while (utf8_is_letter(buffer[i]) || utf8_is_digit(buffer[i]));
+
+	if (buffer[i] == '\0')
+	{
+		return j - 1;
+	}
+	else if (buffer[i] == '=')
+	{
+		buffer[i] = '\0';
+		return j;
+	}
+	else
+	{
+		macro_system_warning(NULL, MACRO_CONSOLE_SEPARATOR);
+		j -= utf8_size(buffer[i]);
+		buffer[i] = '\0';
+		return j;
+	}
+}
+
+static inline void ws_parse_value(const char *const value, char32_t *const buffer)
+{
+	size_t i = 0;
+	size_t j = 0;
+	do
+	{
+		buffer[i] = utf8_convert(&value[j]);
+		j += utf8_size(buffer[i]);
+	} while (buffer[i++] != '\0');
+}
+
+static inline int ws_parse(const workspace *const ws, storage *const stg)
+{
 	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
 	{
+#ifdef _MSC_VER
+		char flag[MAX_ARG_SIZE];
+		utf8_from_cp1251(ws_get_flag(ws, i), flag);
+#else
 		const char *flag = ws_get_flag(ws, i);
+#endif
+
 		if (flag[0] == '-' && flag[1] == 'D')
 		{
-			char buffer[MAX_DEFINE_SIZE];
+			char32_t name[MAX_ARG_SIZE];
 
-			size_t j = 0;
-			while (flag[j] != '\0')
+			const size_t index = ws_parse_name(&flag[2], name);
+			if (index == SIZE_MAX)
 			{
-				
+				return -1;
+			}
+
+			if (flag[2 + index] != '\0')
+			{
+				char32_t value[MAX_ARG_SIZE];
+				ws_parse_value(&flag[2 + index], value);
+				if (storage_add(stg, name, value) == SIZE_MAX)
+				{
+					macro_system_error(NULL, MACRO_NAME_EXISTS, name);
+					return -1;
+				}
+			}
+			else if (storage_add(stg, name, NULL) == SIZE_MAX)
+			{
+				macro_system_error(NULL, MACRO_NAME_EXISTS, name);
+				return -1;
 			}
 		}
 	}
+
+	return 0;
 }
-*/
 
 
 static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
+	storage stg = storage_create();
 	parser prs = parser_create(&lk, output);
 
-	int ret = 0;
+	int ret = ws_parse(ws, &stg);
+
 	const size_t size = linker_size(&lk);
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 0; i < size && !ret; i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
 		{
-			macro_system_error(TAG_LINKER, source_file_not_found);
+			macro_system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
 		}
 
 		ret = parser_preprocess(&prs, &in);
 		in_clear(&in);
-
-		if (ret)
-		{
-			break;
-		}
 	}
 
 	parser_clear(&prs);
+	storage_clear(&stg);
 	linker_clear(&lk);
 	return ret;
 }

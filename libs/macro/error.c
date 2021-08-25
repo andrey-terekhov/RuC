@@ -16,31 +16,89 @@
 
 
 #include "error.h"
-#include "logger.h"
 #include <stdio.h>
-#include <stddef.h>
+#include "logger.h"
+#include "utf8.h"
 
 
 #define TAG_MACRO		"macro"
 
-#define ERROR_TAG_SIZE	256
-#define ERROR_MSG_SIZE	256
+#define MAX_TAG_SIZE	1024
+#define MAX_MSG_SIZE	4096
 
 
-static void get_message_error(const int num, char *const msg)
+static size_t utf8_to_buffer(const char32_t *const src, char *const dest)
+{
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i++)
+	{
+		size += utf8_to_string(&dest[size], src[i]);
+	}
+
+	return size;
+}
+
+
+static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
-		case source_file_not_found:
-			sprintf(msg, "исходный файл не найден");
+		case LINKER_CANNOT_OPEN:
+			sprintf(msg, "невозможно открыть исходные тексты");
 			break;
-		case header_file_not_found:
-			sprintf(msg, "заголовочный файл не найден");
+
+		case MACRO_NAME_NON:
+			sprintf(msg, "предопределенный макрос должен иметь имя");
 			break;
+		case MACRO_NAME_FIRST_CHARACTER:
+			sprintf(msg, "имя макроса должно начинаться с буквы или '_'");
+			break;
+		case MACRO_NAME_EXISTS:
+		{
+			const char32_t *const name = va_arg(args, char32_t *);
+
+			size_t index = sprintf(msg, "макрос '");
+			index += utf8_to_buffer(name, &msg[index]);
+			sprintf(&msg[index], "' уже существует");
+		}
+		break;
+
 		default:
-			sprintf(msg, "не реализованная ошибка №%d", num);
+			sprintf(msg, "неизвестная ошибка");
 			break;
 	}
+}
+
+static void get_warning(const warning_t num, char *const msg, va_list args)
+{
+	(void)args;
+
+	switch (num)
+	{
+		case MACRO_CONSOLE_SEPARATOR:
+			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
+			break;
+
+		default:
+			sprintf(msg, "неизвестное предупреждение");
+			break;
+	}
+}
+
+
+static void output(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const char *const msg, void (*func)(const char *const, const char *const, const char *const, const size_t))
+{
+	size_t size = 1;
+	for (size_t i = 0; i < symbol && str[i] != '\0'; i += utf8_symbol_size(str[i]))
+	{
+		size++;
+	}
+
+	char tag[MAX_TAG_SIZE];
+	sprintf("%s:%zu:%zu", file, line, size);
+
+	func(tag, msg, str, size);
 }
 
 
@@ -53,29 +111,66 @@ static void get_message_error(const int num, char *const msg)
  */
 
 
-void macro_error(const universal_io *const io, const int num);
-
-void macro_warning(const universal_io *const io, const int num);
-
-
-void macro_error_msg(const universal_io *const io, const char *const msg);
-
-void macro_warning_msg(const universal_io *const io, const char *const msg);
-
-
-void macro_system_error(const char *const tag, error_t num)
+void macro_error(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, error_t num, ...)
 {
-	char msg[ERROR_MSG_SIZE];
-	get_message_error(num, msg);
+	va_list args;
+	va_start(args, num);
 
-	if (tag != NULL)
-	{
-		log_system_error(tag, msg);
-	}
-	else
-	{
-		log_system_error(TAG_MACRO, msg);
-	}
+	macro_verror(file, str, line, symbol, num, args);
+
+	va_end(args);
 }
 
-void macro_system_warning(const char *const tag, error_t num);
+void macro_warning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	macro_vwarning(file, str, line, symbol, num, args);
+
+	va_end(args);
+}
+
+
+void macro_verror(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
+	output(file, str, line, symbol, msg, &log_error);
+}
+
+void macro_vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, va_list args)
+{
+	char msg[MAX_MSG_SIZE];
+	get_warning(num, msg, args);
+	output(file, str, line, symbol, msg, &log_warning);
+}
+
+
+void macro_system_error(const char *const tag, error_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	char msg[MAX_MSG_SIZE];
+	get_error(num, msg, args);
+
+	va_end(args);
+	log_system_error(tag != NULL ? tag : TAG_MACRO, msg);
+}
+
+void macro_system_warning(const char *const tag, warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	char msg[MAX_MSG_SIZE];
+	get_warning(num, msg, args);
+
+	va_end(args);
+	log_system_warning(tag != NULL ? tag : TAG_MACRO, msg);
+}
