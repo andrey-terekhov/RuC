@@ -190,6 +190,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case eq_op_for_enum_field:
 			sprintf(msg, "нельзя присваивать в поле перечисления");
 			break;
+		case eq_not_const_int_for_enum_field:
+			sprintf(msg, "нельзя присваивать не константные выражения в поле перечисления");
+			break;
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
 			break;

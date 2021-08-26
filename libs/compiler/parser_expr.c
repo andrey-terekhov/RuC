@@ -389,6 +389,13 @@ static void parse_standard_function_call(parser *const prs)
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }
 
+static void parse_constant_in_enum(parser *const prs, const token_t num)
+{
+	to_tree(prs, OP_CONST);
+	node_add_arg(&prs->nd, num);
+	operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
+}
+
 /**
  *	Parse identifier [C99 6.5.1p1]
  *
@@ -407,11 +414,14 @@ static size_t parse_identifier(parser *const prs)
 	to_tree(prs, OP_IDENT);
 
 	prs->operand_displ = ident_get_displ(prs->sx, (size_t)id);
+	item_t type = ident_get_type(prs->sx, (size_t)id);
 	node_add_arg(&prs->nd, prs->operand_displ);
-
 	prs->last_id = (size_t)id;
 	token_consume(prs);
-	operands_push(prs, VARIABLE, ident_get_type(prs->sx, (size_t)id));
+
+	type != TYPE_CONST_INTEGER ? operands_push(prs, VARIABLE, ident_get_type(prs->sx, (size_t)id))
+							   : parse_constant_in_enum(prs, prs->operand_displ);
+
 	return (size_t)id;
 }
 
@@ -460,13 +470,6 @@ static void parse_constant(parser *const prs)
 
 	token_consume(prs);
 	operands_push(prs, NUMBER, type);
-}
-
-static void parse_constant_in_enum(parser *const prs, const token_t num)
-{
-	to_tree(prs, OP_CONST);
-	node_add_arg(&prs->nd, num);
-	operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
 }
 
 /**

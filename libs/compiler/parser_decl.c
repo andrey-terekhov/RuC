@@ -21,7 +21,7 @@
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
 static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
-static void parse_enum_specifier(parser *const prs, node *const parent);
+static void parse_enum_specifier(parser *const prs);
 
 
 /**
@@ -93,7 +93,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_ENUM:
 		{
 			token_consume(prs);
-			parse_enum_specifier(prs, parent);
+			parse_enum_specifier(prs);
 			return TYPE_INTEGER;
 		}
 
@@ -848,46 +848,37 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	}
 }
 
-static void parse_enum_field_initializer(parser *const prs, node *const parent, const item_t type, const item_t number)
+static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number)
 {
-	const item_t expr_type = parse_enum_field(prs, parent, number);
-	if (!type_is_undefined(expr_type) && !type_is_undefined(type))
+	const size_t old_id = vector_size(&prs->sx->identifiers);
+	const item_t ref = repr_get_reference(prs->sx, prs->lxr->repr);
+	vector_add(&prs->sx->identifiers, ref == ITEM_MAX ? ITEM_MAX - 1 : ref);
+	vector_increase(&prs->sx->identifiers, 3);
+
+	ident_set_repr(prs->sx, old_id, (item_t)prs->lxr->repr);
+	ident_set_type(prs->sx, old_id, type);
+
+
+	repr_set_reference(prs->sx, prs->lxr->repr, (item_t)old_id);;
+
+	ident_set_displ(prs->sx, old_id, number);
+	prs->last_id = 0;
+
+	if (old_id == SIZE_MAX)
 	{
-		if (type_is_integer(type) && type_is_floating(expr_type))
-		{
-			parser_error(prs, init_int_by_float);
-		}
-		else if (type_is_floating(type) && type_is_integer(expr_type))
-		{
-			parse_insert_widen(prs);
-		}
-		else if (type != expr_type)
-		{
-			parser_error(prs, error_in_initialization);
-		}
+		parser_error(prs, redefinition_of_main);
+	}
+	else if (old_id == SIZE_MAX - 1)
+	{
+		parser_error(prs, repeated_decl, repr_get_name(prs->sx, prs->lxr->repr));
+	}
+	else
+	{
+		prs->last_id = old_id;
 	}
 }
 
-static void parse_init_enum_field_declarator(parser *const prs, node *const parent, item_t type, item_t number)
-{
-	const size_t old_id = to_identab(prs, prs->lxr->repr, 0, type);
-
-	prs->flag_empty_bounds = 1;
-	prs->array_dimensions = 0;
-	const item_t element_type = type;
-
-	node nd = node_add_child(parent, OP_DECL_ID);
-	node_add_arg(&nd, ident_get_displ(prs->sx, old_id));
-	node_add_arg(&nd, element_type);
-	node_add_arg(&nd,  (item_t)type_size(prs->sx, type));
-	node_add_arg(&nd, 0);
-	node_add_arg(&nd, type_is_pointer(prs->sx, type) ? 0 : prs->flag_array_in_struct);
-	node_add_arg(&nd, prs->flag_empty_bounds);
-	node_add_arg(&nd, 0);
-	parse_enum_field_initializer(prs, &nd, type, number);
-}
-
-static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
+static item_t parse_enum_declaration_list(parser *const prs)
 {
 	token_consume(prs);
 	if (token_try_consume(prs, TK_R_BRACE))
@@ -910,12 +901,21 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 
 		if (prs->token == TK_EQUAL)
 		{
-			parse_init_declarator(prs, parent, type);
-			field_value = prs->lxr->num + 1;
+			token_consume(prs);
+			if (prs->token == TK_INT_CONST)
+			{
+				token_consume(prs);
+			}
+			else
+			{
+				parser_error(prs, eq_not_const_int_for_enum_field);
+			}
+			field_value = prs->lxr->num;
+			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
 		else
 		{
-			parse_init_enum_field_declarator(prs, parent, type, field_value++);
+			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
 		if (prs->token == TK_R_BRACE)
 		{
@@ -927,13 +927,13 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 	return type_add(prs->sx, (item_t []){ TYPE_ENUM, 0, 0 }, 3);
 }
 
-static void parse_enum_specifier(parser *const prs, node *const parent)
+static void parse_enum_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
 		case TK_L_BRACE:
 		{
-			parse_enum_declaration_list(prs, parent);
+			parse_enum_declaration_list(prs);
 			prs->was_type_def = true;
 		}
 			break;
@@ -944,7 +944,7 @@ static void parse_enum_specifier(parser *const prs, node *const parent)
 
 			if (prs->token == TK_L_BRACE)
 			{
-				const item_t type = parse_enum_declaration_list(prs, parent);
+				const item_t type = parse_enum_declaration_list(prs);
 				const size_t id = to_identab(prs, repr, 1000, type);
 				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
