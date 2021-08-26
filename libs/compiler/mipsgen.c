@@ -356,7 +356,8 @@ static int codegen(information *const info)
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
 				const item_t func_displ = ident_get_displ(info->sx, ref_ident);
-				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;				// ???
+				// Выравнивание смещения на 8
+				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;
 				const item_t func_type = ident_get_type(info->sx, ref_ident);
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
