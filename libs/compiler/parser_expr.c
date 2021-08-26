@@ -416,7 +416,7 @@ static size_t parse_identifier(parser *const prs)
 	prs->operand_displ = ident_get_displ(prs->sx, (size_t)id);
 	item_t type = ident_get_type(prs->sx, (size_t)id);
 	node_add_arg(&prs->nd, prs->operand_displ);
-	
+
 	prs->last_id = (size_t)id;
 	token_consume(prs);
 
@@ -1421,20 +1421,6 @@ item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
 	node_copy(&prs->nd, parent);
 	parse_assignment_expression_internal(prs);
-	to_value(prs);
-	to_tree(prs, OP_EXPR_END);
-	return stack_pop(&prs->anonymous);
-}
-
-item_t parse_enum_field(parser *const prs, node *const parent, const item_t num)
-{
-	node_copy(&prs->nd, parent);
-	parse_constant_in_enum(prs, num);
-
-	const operand_t type = prs->last_type;
-	prs->left_mode = stack_pop(&prs->anonymous);
-	operands_push(prs, type, prs->left_mode);
-
 	to_value(prs);
 	to_tree(prs, OP_EXPR_END);
 	return stack_pop(&prs->anonymous);
