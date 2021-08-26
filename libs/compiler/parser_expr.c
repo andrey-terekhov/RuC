@@ -389,11 +389,11 @@ static void parse_standard_function_call(parser *const prs)
 	token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
 }
 
-static void parse_constant_in_enum(parser *const prs, const token_t num)
+static item_t parse_constant_in_enum(parser *const prs, const token_t num)
 {
 	to_tree(prs, OP_CONST);
 	node_add_arg(&prs->nd, num);
-	operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
+	return operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
 }
 
 /**
