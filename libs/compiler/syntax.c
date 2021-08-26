@@ -561,7 +561,7 @@ bool type_is_void(const item_t type)
 
 bool type_is_null_pointer(const item_t type)
 {
-	return type == TYPE_NULLPTR;
+	return type == TYPE_NULL_POINTER;
 }
 
 bool type_is_array(const syntax *const sx, const item_t type)
