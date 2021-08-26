@@ -416,6 +416,7 @@ static size_t parse_identifier(parser *const prs)
 	prs->operand_displ = ident_get_displ(prs->sx, (size_t)id);
 	item_t type = ident_get_type(prs->sx, (size_t)id);
 	node_add_arg(&prs->nd, prs->operand_displ);
+	
 	prs->last_id = (size_t)id;
 	token_consume(prs);
 
