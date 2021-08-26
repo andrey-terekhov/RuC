@@ -30,8 +30,7 @@ extern "C" {
 
 /**
  *	Check assignment operands
- *
- *	@note	Тут оно временно, пока не починим парсер объявлений
+ *	TODO: Remove
  *
  *	@param	sx				Syntax structure
  *	@param	expected_type	Expected type
