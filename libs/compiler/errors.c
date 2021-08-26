@@ -595,6 +595,10 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
 
+		case variable_deviation:
+			sprintf(msg, "cравнение вещественных без учета погрешности");
+			break;
+
 		case tree_operator_unknown:
 		{
 			const size_t i = va_arg(args, size_t);
