@@ -21,7 +21,10 @@
 
 const item_t LOW_DYN_BORDER = 268500992;		// Это 0x10010000 -- нижняя граница динамической памяти
 const item_t HEAP_DISPL = -8000;				// Смещение кучи относительно глобальной памяти
-const item_t DISPL0 = 80;						// адрес пред статики, след статики и pc, сохраняемые регистры и вызова 
+// TODO: расписать, что за данные сохраняются в стеке при вызове
+const item_t FUNC_DISPL = 80;					// Смещение в стеке для сохранения данных вызова функции
+const item_t SP_DISPL = 20;						// Смещение в стеке для сохранения значения регистра SP
+const item_t RA_DISPL = 16;						// Смещение в стеке для сохранения значения регистра RA
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -366,10 +369,12 @@ static int codegen(information *const info)
 				to_code_L(info->sx->io, J, NEXT, func_displ);
 				to_code_label(info->sx->io, FUNC, func_displ);
 
-				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - DISPL0);				// тут идёт сохранение
-				to_code_R_I_R(info->sx->io, SW, SP, 20, FP);								// 20 это что ???
+				// Выделение на стеке памяти для функции
+				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - FUNC_DISPL);
+				// Сохранение данных перед началом работы функции
+				to_code_R_I_R(info->sx->io, SW, SP, SP_DISPL, FP);
 				to_code_2R(info->sx->io, MOVE, SP, FP);
-				to_code_R_I_R(info->sx->io, SW, RA, 16, SP);								// 16 это что ???
+				to_code_R_I_R(info->sx->io, SW, RA, RA_DISPL, SP);
 				uni_printf(info->sx->io, "\n");
 
 				for (size_t i = 0; i < parameters; i++)
@@ -393,9 +398,10 @@ static int codegen(information *const info)
 
 				uni_printf(info->sx->io, "\n");
 				to_code_label(info->sx->io, FUNCEND, func_displ);
-				to_code_R_I_R(info->sx->io, LW, RA, 16, SP);								// 16 это что ???
-				to_code_2R_I(info->sx->io, ADDI, FP, SP, max_displ + DISPL0);				// ???
-				to_code_R_I_R(info->sx->io, LW, SP, 20, SP);								// 20 это что ???
+				// Восстановление стека после работы функции
+				to_code_R_I_R(info->sx->io, LW, RA, RA_DISPL, SP);
+				to_code_2R_I(info->sx->io, ADDI, FP, SP, max_displ + FUNC_DISPL);
+				to_code_R_I_R(info->sx->io, LW, SP, SP_DISPL, SP);
 				to_code_R(info->sx->io, JR, RA);
 				to_code_label(info->sx->io, NEXT, func_displ);
 			}
@@ -453,8 +459,7 @@ static void postcodegen(information *const info)
 
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
-	// TODO: тут ещё часть вывод таблицы типов должен быть, но что это и зачем, я пока без понятия ???
-	// выводится для printid
+	// TODO: тут ещё часть вывод таблицы типов должен быть (вроде это для написанных самими функции типа printid)
 }
 
 /*
