@@ -492,7 +492,7 @@ node build_string_literal_expression(syntax *const sx, const size_t index, const
 	return nd;
 }
 
-node build_nullptr_literal_expression(syntax *const sx, const location loc)
+node build_null_pointer_literal_expression(syntax *const sx, const location loc)
 {
 	node nd = node_create(sx, OP_CONSTANT);
 	node_add_arg(&nd, TYPE_NULL_POINTER);				// Тип константы

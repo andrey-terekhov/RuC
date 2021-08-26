@@ -159,7 +159,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_NULL:
 		{
 			const location loc = token_consume(prs);
-			return build_nullptr_literal_expression(prs->sx, loc);
+			return build_null_pointer_literal_expression(prs->sx, loc);
 		}
 
 		case TK_L_PAREN:

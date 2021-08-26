@@ -93,7 +93,7 @@ node build_string_literal_expression(syntax *const sx, const size_t index, const
  *
  *	@return Null pointer literal expression node
  */
-node build_nullptr_literal_expression(syntax *const sx, const location loc);
+node build_null_pointer_literal_expression(syntax *const sx, const location loc);
 
 /**
  *	Build a subscript expression
