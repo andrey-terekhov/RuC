@@ -15,7 +15,6 @@
  */
 
 #include "builder.h"
-#include <string.h>
 
 
 static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
@@ -59,12 +58,9 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 
 static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
-	if (type_is_integer(left_type) && type_is_integer(right_type))
-	{
-		return TYPE_INTEGER;
-	}
-
-	return TYPE_FLOATING;
+	return type_is_integer(left_type) && type_is_integer(right_type)
+		? TYPE_INTEGER
+		: TYPE_FLOATING;
 }
 
 static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
@@ -414,7 +410,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true;
 	}
 
-	if (type_is_pointer(sx, expected_type) && type_is_nullptr(actual_type))
+	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
 	{
 		return true;
 	}
@@ -881,22 +877,15 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		case BIN_EQ:
 		case BIN_NE:
 		{
-			if (type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
+			if (type_is_floating(left_type) || type_is_floating(right_type))
 			{
-				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+				warning(sx->io, variable_deviation);
 			}
 
-			if (type_is_pointer(sx, left_type) && type_is_nullptr(right_type))
-			{
-				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
-			}
-
-			if (type_is_nullptr(left_type) && type_is_pointer(sx, right_type))
-			{
-				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
-			}
-
-			if (left_type == right_type)
+			if ((type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
+				|| (type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
+				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
+				|| left_type == right_type)
 			{
 				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
 			}

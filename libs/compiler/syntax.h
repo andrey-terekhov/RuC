@@ -354,13 +354,13 @@ bool type_is_arithmetic(const item_t type);
 bool type_is_void(const item_t type);
 
 /**
- *	Check if type is nullptr
+ *	Check if type is null pointer
  *
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_nullptr(const item_t type);
+bool type_is_null_pointer(const item_t type);
 
 /**
  *	Check if type is array

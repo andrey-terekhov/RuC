@@ -78,7 +78,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"continue", U"продолжить", TK_CONTINUE);
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
-	repr_add_keyword(reprtab, U"nullptr", U"нулуказ", TK_NULLPTR);
+	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
 
 	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
 	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
@@ -559,7 +559,7 @@ bool type_is_void(const item_t type)
 	return type == TYPE_VOID;
 }
 
-bool type_is_nullptr(const item_t type)
+bool type_is_null_pointer(const item_t type)
 {
 	return type == TYPE_NULLPTR;
 }
@@ -586,7 +586,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_pointer(sx, type) || type_is_nullptr(type);
+	return type_is_integer(type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)

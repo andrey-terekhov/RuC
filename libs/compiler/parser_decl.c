@@ -20,7 +20,6 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
-extern bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init);
 
 
 /**

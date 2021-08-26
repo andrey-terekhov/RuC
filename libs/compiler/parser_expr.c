@@ -112,7 +112,7 @@ static precedence_t get_operator_precedence(const token_t token)
  *		identifier
  *		constant
  *		string-literal
- *		'nullptr'
+ *		'null'
  *		'(' expression ')'
  *
  *	@param	prs			Parser
@@ -156,7 +156,7 @@ static node parse_primary_expression(parser *const prs)
 			return build_string_literal_expression(prs->sx, value, loc);
 		}
 
-		case TK_NULLPTR:
+		case TK_NULL:
 		{
 			const location loc = token_consume(prs);
 			return build_nullptr_literal_expression(prs->sx, loc);
