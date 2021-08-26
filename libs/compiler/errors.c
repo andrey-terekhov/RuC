@@ -596,7 +596,7 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			break;
 
 		case variable_deviation:
-			sprintf(msg, "точное сравнение чисел с плавающей точкой");
+			sprintf(msg, "cравнение вещественных без учета погрешности");
 			break;
 
 		case tree_operator_unknown:
