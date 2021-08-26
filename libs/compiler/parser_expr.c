@@ -393,7 +393,7 @@ static item_t parse_constant_in_enum(parser *const prs, const token_t num)
 {
 	to_tree(prs, OP_CONST);
 	node_add_arg(&prs->nd, num);
-	return operands_push(prs, NUMBER, TYPE_CONST_INTEGER);
+	return operands_push(prs, VALUE, TYPE_CONST_INTEGER);
 }
 
 /**
@@ -1289,10 +1289,6 @@ static void parse_assignment_expression_internal(parser *const prs)
 		if (is_int_assignment_operator(token) && (type_is_floating(left_mode) || type_is_floating(right_mode)))
 		{
 			parser_error(prs, int_op_for_float);
-		}
-		else if (left_mode == TYPE_CONST_INTEGER)
-		{
-			parser_error(prs, eq_op_for_enum_field);
 		}
 		else if (type_is_array(prs->sx, left_mode))
 		{

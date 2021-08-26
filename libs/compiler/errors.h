@@ -85,7 +85,6 @@ typedef enum ERROR
 	wrong_addr,
 	no_colon_in_cond_expr,
 	int_op_for_float,
-	eq_op_for_enum_field,
 	eq_not_const_int_for_enum_field,
 	assmnt_float_to_int,
 	redefinition_of_main,
