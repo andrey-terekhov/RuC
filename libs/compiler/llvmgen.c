@@ -25,8 +25,6 @@
 
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
-#define CONVERT_BUILTIN(a) (a - 2) / 4
-#define LIBRARY_FUNC_NUM CONVERT_BUILTIN(BEGIN_USER_FUNC)
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
@@ -80,7 +78,7 @@ typedef struct information
 	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
 	bool was_file;							/**< Истина, если была работа с файлами */
-	bool was_function[LIBRARY_FUNC_NUM];	/**< Массив флагов библиотечных функций из builtin_t */
+	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 } information;
 
 
@@ -88,7 +86,7 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static const char * ident_get_spelling(const syntax *const sx, const size_t index)
+static inline const char *ident_get_spelling(const syntax *const sx, const size_t index)
 {
 	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
 }
@@ -1097,16 +1095,17 @@ static void expression(information *const info, node *const nd)
 			node_set_next(nd);
 
 			const item_t type_ref = expression_get_type(nd);
-			const size_t func_ref = (size_t)node_get_arg(nd, 2);
 			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			if (args > MAX_FUNCTION_ARGS)
 			{
 				system_error(too_many_arguments);
 				return;
 			}
+
+			const size_t func_ref = (size_t)node_get_arg(nd, 2);
 			if (func_ref < BEGIN_USER_FUNC)
 			{
-				info->was_function[CONVERT_BUILTIN(func_ref)] = true;
+				info->was_function[func_ref] = true;
 			}
 
 			node_set_next(nd); // OP_IDENT
@@ -1725,8 +1724,8 @@ static int codegen(information *const info)
 					if (info->was_file)
 					{
 						uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
-							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, i64, "
-							"i32, [20 x i8] }\n");
+							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, "
+							"i64, i32, [20 x i8] }\n");
 						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
 					}
 
@@ -1810,9 +1809,9 @@ static void strings_declaration(information *const info)
 
 static void builin_functions_declaration(information *const info)
 {
-	for (size_t i = 2; i < BEGIN_USER_FUNC; i += 4)
+	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
-		if (info->was_function[CONVERT_BUILTIN(i)])
+		if (info->was_function[i])
 		{
 			const item_t func_type = ident_get_type(info->sx, i);
 			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
@@ -1862,7 +1861,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_printf = false;
 	info.was_dynamic = false;
 	info.was_file = false;
-	for (size_t i = 0; i < LIBRARY_FUNC_NUM; i++)
+	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;
 	}
