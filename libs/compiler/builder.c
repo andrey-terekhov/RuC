@@ -123,11 +123,18 @@ static node build_assignment_expression(syntax *const sx, node *const nd_left, n
 	}
 }
 
-static node fold_unary_expression(const unary_t operator, node *const nd_operand)
+static node fold_unary_expression(syntax *const sx, const unary_t operator, node *const nd_operand)
 {
 	// Уже проверили, что выражение-операнд – константа
 	const item_t type = expression_get_type(nd_operand);
-	if (type_is_integer(type))
+	if (type_is_null_pointer(type))
+	{
+		// Это может быть только UN_LOGNOT
+		const location loc = expression_get_location(nd_operand);
+		node_remove(nd_operand);
+		return build_integer_literal_expression(sx, true, loc);
+	}
+	else if (type_is_integer(type))
 	{
 		const item_t value = node_get_arg(nd_operand, 2);
 
@@ -339,7 +346,13 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 {
 	// Уже проверили, что левое выражение – константа
 	const item_t left_type = expression_get_type(nd_left);
-	if (type_is_integer(left_type))
+	if (type_is_null_pointer(left_type))
+	{
+		node_remove(nd_left);
+		node_remove(nd_middle);
+		return *nd_right;
+	}
+	else if (type_is_integer(left_type))
 	{
 		const item_t value = node_get_arg(nd_left, 2);
 		node_remove(nd_left);
@@ -785,7 +798,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 
 	if (node_get_type(nd_operand) == OP_CONSTANT)
 	{
-		return fold_unary_expression(op_kind, nd_operand);
+		return fold_unary_expression(sx, op_kind, nd_operand);
 	}
 
 	node nd = node_create(sx, OP_UNARY);
