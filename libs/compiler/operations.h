@@ -195,9 +195,9 @@ typedef enum builtin
 	BI_FPUTC				= 154,
 	BI_FCLOSE				= 158,
 
-	BI_EXIT					= 146,
+	BI_EXIT					= 162,
 
-	BEGIN_USER_FUNC			= 150,
+	BEGIN_USER_FUNC			= 166,
 } builtin_t;
 
 

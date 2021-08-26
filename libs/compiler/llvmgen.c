@@ -38,6 +38,7 @@ typedef enum ANSWER
 	ACONST,								/**< Ответ является константой */
 	ALOGIC,								/**< Ответ является логическим значением */
 	AMEM,								/**< Ответ находится в памяти */
+	ASTR,								/**< Ответ является строкой */
 } answer_t;
 
 typedef enum LOCATION
@@ -49,39 +50,46 @@ typedef enum LOCATION
 
 typedef struct information
 {
-	syntax *sx;							/**< Структура syntax с таблицами */
+	syntax *sx;								/**< Структура syntax с таблицами */
 
-	item_t register_num;				/**< Номер регистра */
-	item_t label_num;					/**< Номер метки */
-	item_t init_num;					/**< Счётчик для инициализации */
+	item_t register_num;					/**< Номер регистра */
+	item_t label_num;						/**< Номер метки */
+	item_t init_num;						/**< Счётчик для инициализации */
 
-	item_t request_reg;					/**< Регистр на запрос */
-	location_t variable_location;		/**< Расположение переменной */
+	item_t request_reg;						/**< Регистр на запрос */
+	location_t variable_location;			/**< Расположение переменной */
 
-	item_t answer_reg;					/**< Регистр с ответом */
-	item_t answer_const;				/**< Константа с ответом */
-	double answer_const_double;			/**< Константа с ответом типа double */
-	answer_t answer_kind;				/**< Вид ответа */
-	item_t answer_type;					/**< Тип значения */
+	item_t answer_reg;						/**< Регистр с ответом */
+	item_t answer_const;					/**< Константа с ответом */
+	item_t answer_string;					/**< Индекс строки с ответом */
+	double answer_const_double;				/**< Константа с ответом типа double */
+	answer_t answer_kind;					/**< Вид ответа */
 
-	item_t label_true;					/**< Метка перехода при true */
-	item_t label_false;					/**< Метка перехода при false */
-	item_t label_break;					/**< Метка перехода для break */
-	item_t label_continue;				/**< Метка перехода для continue */
+	item_t label_true;						/**< Метка перехода при true */
+	item_t label_false;						/**< Метка перехода при false */
+	item_t label_break;						/**< Метка перехода для break */
+	item_t label_continue;					/**< Метка перехода для continue */
 
-	hash arrays;						/**< Хеш таблица с информацией о массивах:
-											@с key		 - смещение массива
-											@c value[0]	 - флаг статичности
-											@c value[1..MAX] - границы массива */
+	hash arrays;							/**< Хеш таблица с информацией о массивах:
+												@с key		 - смещение массива
+												@c value[0]	 - флаг статичности
+												@c value[1..MAX] - границы массива */
 
-	bool was_printf;					/**< Истина, если вызывался printf в исходном коде */
-	bool was_dynamic;					/**< Истина, если в функции были динамические массивы */
+	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
+	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
+	bool was_file;							/**< Истина, если была работа с файлами */
+	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 } information;
 
 
 static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
+
+static inline const char *ident_get_spelling(const syntax *const sx, const size_t index)
+{
+	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
+}
 
 static item_t array_get_type(information *const info, const item_t array_type)
 {
@@ -112,10 +120,19 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (type_is_pointer(info->sx, type))
+	else if (type_is_pointer(info->sx, type) || type_is_array(info->sx, type))
 	{
 		type_to_io(info, type_pointer_get_element_type(info->sx, type));
 		uni_printf(info->sx->io, "*");
+	}
+	else if (type_is_file(type))
+	{
+		uni_printf(info->sx->io, "%%struct._IO_FILE");
+		info->was_file = true;
+	}
+	else
+	{
+		uni_printf(info->sx->io, "i8");
 	}
 }
 
@@ -430,9 +447,9 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 }
 
 
-static void to_code_try_widen(information *const info, const item_t operation_type)
+static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == info->answer_type)
+	if (operation_type == answer_type)
 	{
 		return;
 	}
@@ -444,12 +461,11 @@ static void to_code_try_widen(information *const info, const item_t operation_ty
 	else
 	{
 		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, info->answer_type);
+		type_to_io(info, answer_type);
 		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
 		type_to_io(info, operation_type);
 		uni_printf(info->sx->io, "\n");
 
-		info->answer_type = operation_type;
 		info->answer_reg = info->register_num++;
 	}
 }
@@ -469,7 +485,7 @@ static void check_type_and_branch(information *const info)
 		case ALOGIC:
 			to_code_conditional_branch(info);
 			break;
-		case AMEM:
+		default:
 			break;
 	}
 }
@@ -495,9 +511,10 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 
 	info->variable_location = LFREE;
+	const item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
@@ -546,9 +563,10 @@ static void integral_expression(information *const info, node *const nd, const a
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
+	item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t left_kind = info->answer_kind;
@@ -557,17 +575,16 @@ static void integral_expression(information *const info, node *const nd, const a
 	const double left_const_double = info->answer_const_double;
 
 	info->variable_location = LFREE;
+	answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type);
+	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t right_kind = info->answer_kind;
 	const item_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
-
-	info->answer_type = kind != ALOGIC ? operation_type : TYPE_INTEGER;
 
 	if (left_kind == AREG && right_kind == AREG)
 	{
@@ -720,7 +737,6 @@ static void inc_dec_expression(information *const info, node *const nd)
 	to_code_load(info, info->register_num, displ, operation_type, is_array);
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
-	info->answer_type = operation_type;
 
 	switch (operation)
 	{
@@ -772,7 +788,6 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			info->answer_type = TYPE_INTEGER;
 			if (operation == UN_MINUS && type_is_integer(operation_type))
 			{
 				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
@@ -784,7 +799,6 @@ static void unary_operation(information *const info, node *const nd)
 			else if (operation == UN_MINUS && type_is_floating(operation_type))
 			{
 				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
-				info->answer_type = TYPE_FLOATING;
 			}
 
 			info->answer_kind = AREG;
@@ -927,7 +941,6 @@ static void expression(information *const info, node *const nd)
 				, is_addr_to_val);
 			info->answer_reg = info->register_num++;
 			info->answer_kind = AREG;
-			info->answer_type = type;
 		}
 		break;
 		case OP_CONSTANT:
@@ -947,7 +960,6 @@ static void expression(information *const info, node *const nd)
 				{
 					info->answer_kind = ACONST;
 					info->answer_const = num;
-					info->answer_type = TYPE_INTEGER;
 				}
 			}
 			else
@@ -963,7 +975,6 @@ static void expression(information *const info, node *const nd)
 				{
 					info->answer_kind = ACONST;
 					info->answer_const_double = num;
-					info->answer_type = TYPE_FLOATING;
 				}
 			}
 
@@ -1039,7 +1050,6 @@ static void expression(information *const info, node *const nd)
 
 				info->answer_reg = info->register_num - 1;
 				info->answer_kind = AREG;
-				info->answer_type = type;
 				break;
 			}
 
@@ -1071,7 +1081,6 @@ static void expression(information *const info, node *const nd)
 
 			info->answer_reg = info->register_num - 1;
 			info->answer_kind = AREG;
-			info->answer_type = type;
 		}
 		break;
 
@@ -1085,7 +1094,7 @@ static void expression(information *const info, node *const nd)
 			const item_t func_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			const item_t type_ref = node_get_arg(nd, 0);
+			const item_t type_ref = expression_get_type(nd);
 			const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
 			if (args > MAX_FUNCTION_ARGS)
 			{
@@ -1093,19 +1102,30 @@ static void expression(information *const info, node *const nd)
 				return;
 			}
 
+			const size_t func_ref = (size_t)node_get_arg(nd, 2);
+			if (func_ref < BEGIN_USER_FUNC)
+			{
+				info->was_function[func_ref] = true;
+			}
+
 			node_set_next(nd); // OP_IDENT
 			for (size_t i = 0; i < args; i++)
 			{
 				info->variable_location = LFREE;
+				item_t answer_type = expression_get_type(nd);
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
-				arguments_value_type[i] = info->answer_type;
+				arguments_value_type[i] = answer_type;
 				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
 				}
-				else if (type_is_integer(info->answer_type)) // ACONST
+				else if (info->answer_kind == ASTR)
+				{
+					arguments[i] = info->answer_string;
+				}
+				else if (type_is_integer(answer_type)) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
@@ -1119,12 +1139,11 @@ static void expression(information *const info, node *const nd)
 			{
 				uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
 				info->answer_kind = AREG;
-				info->answer_type = func_type;
 				info->answer_reg = info->register_num++;
 			}
 			uni_printf(info->sx->io, " call ");
 			type_to_io(info, func_type);
-			uni_printf(info->sx->io, " @func%" PRIitem "(", type_ref);
+			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
 
 			for (size_t i = 0; i < args; i++)
 			{
@@ -1133,22 +1152,53 @@ static void expression(information *const info, node *const nd)
 					uni_printf(info->sx->io, ", ");
 				}
 
+				if (arguments_type[i] == ASTR)
+				{
+					const size_t index = (size_t)arguments[i];
+					const size_t string_length = strings_length(info->sx, index);
+
+					uni_printf(info->sx->io, "i8* getelementptr inbounds "
+						"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
+						, string_length + 1
+						, string_length + 1
+						, index);
+
+					continue;
+				}
+
 				type_to_io(info, arguments_value_type[i]);
-				uni_printf(info->sx->io, " signext ");
 				if (arguments_type[i] == AREG)
 				{
-					uni_printf(info->sx->io, "%%.%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, " %%.%" PRIitem, arguments[i]);
+				}
+				else if (arguments_type[i] == ASTR)
+				{
+					const size_t index = (size_t)arguments[i];
+					const size_t string_length = strings_length(info->sx, index);
+
+					uni_printf(info->sx->io, "i8* getelementptr inbounds "
+						"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
+						, string_length + 1
+						, string_length + 1
+						, index);
 				}
 				else if (type_is_integer(arguments_value_type[i])) // ACONST
 				{
-					uni_printf(info->sx->io, "%" PRIitem, arguments[i]);
+					uni_printf(info->sx->io, " %" PRIitem, arguments[i]);
 				}
 				else // double
 				{
-					uni_printf(info->sx->io, "%f", arguments_double[i]);
+					uni_printf(info->sx->io, " %f", arguments_double[i]);
 				}
 			}
 			uni_printf(info->sx->io, ")\n");
+		}
+		break;
+		case OP_STRING:
+		{	
+			info->answer_string = node_get_arg(nd, 2);
+			info->answer_kind = ASTR;
+			node_set_next(nd);
 		}
 		break;
 		case OP_SELECT:
@@ -1380,21 +1430,22 @@ static void statement(information *const info, node *const nd)
 
 			node_set_next(nd);
 			info->variable_location = LREG;
+			const item_t answer_type = expression_get_type(nd);
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_kind == ACONST && type_is_integer(info->answer_type))
+			if (info->answer_kind == ACONST && type_is_integer(answer_type))
 			{
 				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
-			else if (info->answer_kind == ACONST && type_is_floating(info->answer_type))
+			else if (info->answer_kind == ACONST && type_is_floating(answer_type))
 			{
 				uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
 			}
 			else if (info->answer_kind == AREG)
 			{
 				uni_printf(info->sx->io, " ret ");
-				type_to_io(info, info->answer_type);
+				type_to_io(info, answer_type);
 				uni_printf(info->sx->io, " %%.%" PRIitem "\n", info->answer_reg);
 			}
 		}
@@ -1426,9 +1477,10 @@ static void statement(information *const info, node *const nd)
 			for (item_t i = 0; i < N; i++)
 			{
 				info->variable_location = LREG;
+				const item_t answer_type = expression_get_type(nd);
 				expression(info, nd);
 				args[i] = info->answer_reg;
-				args_type[i] = info->answer_type;
+				args_type[i] = answer_type;
 			}
 
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
@@ -1606,17 +1658,11 @@ static int codegen(information *const info)
 				const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 				info->was_dynamic = false;
+				node_set_next(&root);
 
-				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
-				{
-					uni_printf(info->sx->io, "define i32 @main(");
-				}
-				else
-				{
-					uni_printf(info->sx->io, "define ");
-					type_to_io(info, ret_type);
-					uni_printf(info->sx->io, " @func%" PRIitem "(", ident_get_type(info->sx, ref_ident));
-				}
+				uni_printf(info->sx->io, "define ");
+				type_to_io(info, ret_type);
+				uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
 
 				for (size_t i = 0; i < parameters; i++)
 				{
@@ -1629,8 +1675,10 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const item_t param_displ = ident_get_displ(info->sx, ref_ident + 4 * (i + 1));
-					const item_t param_type = type_function_get_parameter_type(info->sx, func_type, i);
+					const size_t id = (size_t)node_get_arg(&root, 0);
+					const item_t param_displ = ident_get_displ(info->sx, id);
+					const item_t param_type = ident_get_type(info->sx, id);
+					node_set_next(&root);
 
 					uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
 					type_to_io(info, param_type);
@@ -1643,7 +1691,6 @@ static int codegen(information *const info)
 					uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", param_displ);
 				}
 
-				node_set_next(&root);
 				block(info, &root);
 
 				if (type_is_void(ret_type))
@@ -1672,6 +1719,14 @@ static int codegen(information *const info)
 					if (info->was_printf)
 					{
 						uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
+					}
+
+					if (info->was_file)
+					{
+						uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
+							"%%struct._IO_marker*, %%struct._IO_FILE*, i32, i32, i64, i16, i8, [1 x i8], i8*, i64, i8*, i8*, i8*, i8*, "
+							"i64, i32, [20 x i8] }\n");
+						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
 					}
 
 					return 0;
@@ -1752,6 +1807,33 @@ static void strings_declaration(information *const info)
 }
 
 
+static void builin_functions_declaration(information *const info)
+{
+	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
+	{
+		if (info->was_function[i])
+		{
+			const item_t func_type = ident_get_type(info->sx, i);
+			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
+
+			uni_printf(info->sx->io, "declare ");
+			type_to_io(info, ret_type);
+			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+
+			for (size_t j = 0; j < parameters; j++)
+			{
+				uni_printf(info->sx->io, j == 0 ? "" : ", ");
+
+				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
+				type_to_io(info, param_type);
+			}
+			uni_printf(info->sx->io, ")\n");
+		}
+	}
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -1778,6 +1860,11 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.answer_reg = 0;
 	info.was_printf = false;
 	info.was_dynamic = false;
+	info.was_file = false;
+	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
+	{
+		info.was_function[i] = false;
+	}
 
 	info.arrays = hash_create(HASH_TABLE_SIZE);
 
@@ -1786,6 +1873,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	strings_declaration(&info);
 
 	const int ret = codegen(&info);
+	builin_functions_declaration(&info);
 
 	hash_clear(&info.arrays);
 	return ret;
