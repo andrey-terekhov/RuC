@@ -112,7 +112,7 @@ static precedence_t get_operator_precedence(const token_t token)
  *		identifier
  *		constant
  *		string-literal
- *		'null'
+ *		'NULL'
  *		'(' expression ')'
  *
  *	@param	prs			Parser

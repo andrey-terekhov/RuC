@@ -30,7 +30,7 @@ extern "C" {
 
 /**
  *	Check assignment operands
- *	TODO: Remove
+ *	@note	TODO: Remove
  *
  *	@param	sx				Syntax structure
  *	@param	expected_type	Expected type
