@@ -50,6 +50,7 @@ typedef enum TOKEN
 	TK_CONTINUE,					/**< 'continue'	keyword */
 	TK_GOTO,						/**< 'goto'		keyword */
 	TK_RETURN,						/**< 'return'	keyword */
+	TK_NULL,						/**< 'null'		keyword */
 
 	// Identifiers [C99 6.4.2]
 	TK_IDENTIFIER,					/**< Identifier [C99 6.4.2] */
