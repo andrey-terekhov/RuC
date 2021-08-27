@@ -91,6 +91,14 @@ static inline const char *ident_get_spelling(const syntax *const sx, const size_
 	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
 }
 
+// TODO: такая функция есть в builder, хотелось бы не дублировать
+static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
+{
+	return type_is_integer(left_type) && type_is_integer(right_type)
+		? TYPE_INTEGER
+		: TYPE_FLOATING;
+}
+
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -559,12 +567,17 @@ static void assignment_expression(information *const info, node *const nd)
 static void integral_expression(information *const info, node *const nd, const answer_t kind)
 {
 	const binary_t operation = (binary_t)node_get_arg(nd, 2);
-	const item_t operation_type = node_get_arg(nd, 0);
+	item_t operation_type = node_get_arg(nd, 0);
 	node_set_next(nd);
 
 	info->variable_location = LFREE;
 	item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
+	
+	if (kind == ALOGIC)
+	{
+		operation_type = usual_arithmetic_conversions(answer_type, expression_get_type(nd));
+	}
 
 	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
