@@ -1116,7 +1116,8 @@ static void expression(information *const info, node *const nd)
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
-				arguments_value_type[i] = answer_type;
+				arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
+				to_code_try_widen(info, arguments_value_type[i], answer_type);
 				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
@@ -1125,7 +1126,7 @@ static void expression(information *const info, node *const nd)
 				{
 					arguments[i] = info->answer_string;
 				}
-				else if (type_is_integer(answer_type)) // ACONST
+				else if (type_is_integer(arguments_value_type[i])) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
