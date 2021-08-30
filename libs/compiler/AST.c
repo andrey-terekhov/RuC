@@ -16,7 +16,7 @@
 
 #include "AST.h"
 
-extern node node_broken(const node *const nd);
+extern node node_broken();
 
 extern item_t expression_get_type(const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
