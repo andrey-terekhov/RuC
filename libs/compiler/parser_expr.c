@@ -170,7 +170,7 @@ static node parse_primary_expression(parser *const prs)
 			if (!token_try_consume(prs, TK_R_PAREN))
 			{
 				parser_error(prs, expected_r_paren, l_loc);
-				return build_broken_expression();
+				return node_broken();
 			}
 
 			return nd_result;
@@ -178,7 +178,7 @@ static node parse_primary_expression(parser *const prs)
 
 		default:
 			parser_error(prs, expected_expression);
-			return build_broken_expression();
+			return node_broken();
 	}
 }
 
@@ -265,7 +265,7 @@ static node parse_postfix_expression(parser *const prs)
 					parser_error(prs, expected_r_square, l_loc);
 					token_skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_SQUARE);
-					nd_operand = build_broken_expression();
+					nd_operand = node_broken();
 				}
 
 				continue;
@@ -294,7 +294,7 @@ static node parse_postfix_expression(parser *const prs)
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
-					nd_operand = build_broken_expression();
+					nd_operand = node_broken();
 				}
 
 				node_vector_clear(&args);
@@ -317,7 +317,7 @@ static node parse_postfix_expression(parser *const prs)
 				else
 				{
 					parser_error(prs, expected_identifier);
-					nd_operand = build_broken_expression();
+					nd_operand = node_broken();
 				}
 
 				continue;
@@ -411,7 +411,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		location op_loc = token_consume(prs);
 
 		bool is_binary = true;
-		node middle = build_broken_expression();
+		node middle = node_broken();
 		if (next_token_prec == PREC_CONDITIONAL)
 		{
 			is_binary = false;
@@ -493,7 +493,7 @@ node parse_initializer(parser *const prs, const item_t type)
 		{
 			token_consume(prs);
 			parser_error(prs, empty_init);
-			return build_broken_expression();
+			return node_broken();
 		}
 
 		node_vector inits = parse_expression_list(prs, type);
@@ -508,7 +508,7 @@ node parse_initializer(parser *const prs, const item_t type)
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
-			nd_result = build_broken_expression();
+			nd_result = node_broken();
 		}
 
 		node_vector_clear(&inits);
