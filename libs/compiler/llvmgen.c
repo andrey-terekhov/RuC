@@ -78,6 +78,8 @@ typedef struct information
 	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
 	bool was_file;							/**< Истина, если была работа с файлами */
+	bool was_abs;							/**< Истина, если был вызов abs*/
+	bool was_fabs;							/**< Истина, если был вызов fabs*/
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 } information;
 
@@ -843,6 +845,34 @@ static void unary_operation(information *const info, node *const nd)
 			expression(info, nd);
 		}
 		break;
+		case UN_ABS:
+		{
+			node_set_next(nd);
+			info->variable_location = LFREE;
+			const item_t type = expression_get_type(nd);
+			expression(info, nd);
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = call ", info->register_num);
+			type_to_io(info, type);
+
+			if (type_is_integer(type))
+			{
+				uni_printf(info->sx->io, " @abs(");
+				info->was_abs = true;
+			}
+			else
+			{
+				uni_printf(info->sx->io, " @llvm.fabs.f64(");
+				info->was_fabs = true;
+			}
+
+			type_to_io(info, type);
+			uni_printf(info->sx->io, " %%.%" PRIitem ")\n", info->answer_reg);
+
+			info->answer_kind = AREG;
+			info->answer_reg = info->register_num++;
+		}
+		break;
 		default:
 		{
 			node_set_next(nd);
@@ -1465,11 +1495,7 @@ static void statement(information *const info, node *const nd)
 		}
 		break;
 		case OP_GETID:
-			// здесь будет печать llvm для ввода
-			node_set_next(nd);
-			break;
 		case OP_PRINTID:
-			// здесь будет печать llvm для вывода
 			node_set_next(nd);
 			break;
 		case OP_PRINTF:
@@ -1743,6 +1769,16 @@ static int codegen(information *const info)
 						uni_printf(info->sx->io, "%%struct._IO_marker = type { %%struct._IO_marker*, %%struct._IO_FILE*, i32 }\n");
 					}
 
+					if (info->was_abs)
+					{
+						uni_printf(info->sx->io, "declare i32 @abs(i32)\n");
+					}
+
+					if (info->was_fabs)
+					{
+						uni_printf(info->sx->io, "declare double @llvm.fabs.f64(double)\n");
+					}
+
 					return 0;
 				}
 			}
@@ -1875,6 +1911,8 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_printf = false;
 	info.was_dynamic = false;
 	info.was_file = false;
+	info.was_abs = false;
+	info.was_fabs = false;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;
