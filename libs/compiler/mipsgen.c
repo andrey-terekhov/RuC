@@ -76,7 +76,7 @@ typedef enum REGISTERS
 	R_FP,							/**< saved register (like s0-s7) or frame pointer */
 	R_RA,							/**< return address.  The return address is the location to
 									which a function should return control */
-} registers_t;
+} mips_register_t;
 
 typedef enum INSTRUCTIONS
 {
@@ -88,14 +88,14 @@ typedef enum INSTRUCTIONS
 	INSTR_JR,						/**< To execute a branch to an instruction address in a register */
 	INSTR_JAL,						/**< To execute a procedure call within the current 256MB-aligned region */
 	INSTR_J,						/**< To branch within the current 256 MB-aligned region */
-} instructions_t;
+} mips_instruction_t;
 
 typedef enum LABELS
 {
 	L_FUNC,						/**< Тип метки -- вход в функцию */
 	L_NEXT,						/**< Тип метки -- следующая функция */
 	L_FUNCEND,					/**< Тип метки -- выход из функции */
-} labels_t;
+} mips_label_t;
 
 typedef struct information
 {
@@ -105,7 +105,7 @@ typedef struct information
 } information;
 
 
-static void register_to_io(universal_io *const io, const registers_t reg)
+static void register_to_io(universal_io *const io, const mips_register_t reg)
 {
 	switch (reg)
 	{
@@ -215,7 +215,7 @@ static void register_to_io(universal_io *const io, const registers_t reg)
 	}
 }
 
-static void instruction_to_io(universal_io *const io, const instructions_t instruction)
+static void instruction_to_io(universal_io *const io, const mips_instruction_t instruction)
 {
 	switch (instruction)
 	{
@@ -246,7 +246,7 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 	}
 }
 
-static void label_to_io(universal_io *const io, const labels_t label)
+static void label_to_io(universal_io *const io, const mips_label_t label)
 {
 	switch (label)
 	{
@@ -264,7 +264,7 @@ static void label_to_io(universal_io *const io, const labels_t label)
 
 
 // Вид инструкции:	instr	reg1, reg2
-static void to_code_2R(universal_io *const io, const instructions_t instruction, const registers_t reg1, const registers_t reg2)
+static void to_code_2R(universal_io *const io, const mips_instruction_t instruction, const mips_register_t reg1, const mips_register_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -276,8 +276,8 @@ static void to_code_2R(universal_io *const io, const instructions_t instruction,
 }
 
 // Вид инструкции:	instr	reg1, reg2, imm
-static void to_code_2R_I(universal_io *const io, const instructions_t instruction
-	, const registers_t reg1, const registers_t reg2, const item_t imm)
+static void to_code_2R_I(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t reg1, const mips_register_t reg2, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -289,8 +289,8 @@ static void to_code_2R_I(universal_io *const io, const instructions_t instructio
 }
 
 // Вид инструкции:	instr	reg1, imm(reg2)
-static void to_code_R_I_R(universal_io *const io, const instructions_t instruction
-	, const registers_t reg1, const item_t imm, const registers_t reg2)
+static void to_code_R_I_R(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t reg1, const item_t imm, const mips_register_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -302,8 +302,8 @@ static void to_code_R_I_R(universal_io *const io, const instructions_t instructi
 }
 
 // Вид инструкции:	instr	reg1, imm
-static void to_code_R_I(universal_io *const io, const instructions_t instruction
-	, const registers_t reg1, const item_t imm)
+static void to_code_R_I(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t reg1, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -313,8 +313,8 @@ static void to_code_R_I(universal_io *const io, const instructions_t instruction
 }
 
 // Вид инструкции:	instr	reg1
-static void to_code_R(universal_io *const io, const instructions_t instruction
-	, const registers_t reg1)
+static void to_code_R(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t reg1)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -324,8 +324,8 @@ static void to_code_R(universal_io *const io, const instructions_t instruction
 }
 
 // Вид инструкции:	instr	label
-static void to_code_L(universal_io *const io, const instructions_t instruction
-	, const labels_t label, const item_t label_num)
+static void to_code_L(universal_io *const io, const mips_instruction_t instruction
+	, const mips_label_t label, const item_t label_num)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -335,7 +335,7 @@ static void to_code_L(universal_io *const io, const instructions_t instruction
 }
 
 // Вид инструкции:	label:
-static void to_code_label(universal_io *const io, const labels_t label, const item_t label_num)
+static void to_code_label(universal_io *const io, const mips_label_t label, const item_t label_num)
 {
 	label_to_io(io, label);
 	uni_printf(io, "%" PRIitem ":\n", label_num);
