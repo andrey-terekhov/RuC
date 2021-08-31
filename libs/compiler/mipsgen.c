@@ -76,7 +76,7 @@ typedef enum REGISTERS
 	R_FP,							/**< saved register (like s0-s7) or frame pointer */
 	R_RA,							/**< return address.  The return address is the location to
 									which a function should return control */
-} register_t;
+} registers_t;
 
 typedef enum INSTRUCTIONS
 {
@@ -105,7 +105,7 @@ typedef struct information
 } information;
 
 
-static void register_to_io(universal_io *const io, const register_t reg)
+static void register_to_io(universal_io *const io, const registers_t reg)
 {
 	switch (reg)
 	{
@@ -264,7 +264,7 @@ static void label_to_io(universal_io *const io, const labels_t label)
 
 
 // Вид инструкции:	instr	reg1, reg2
-static void to_code_2R(universal_io *const io, const instructions_t instruction, const register_t reg1, const register_t reg2)
+static void to_code_2R(universal_io *const io, const instructions_t instruction, const registers_t reg1, const registers_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -277,7 +277,7 @@ static void to_code_2R(universal_io *const io, const instructions_t instruction,
 
 // Вид инструкции:	instr	reg1, reg2, imm
 static void to_code_2R_I(universal_io *const io, const instructions_t instruction
-	, const register_t reg1, const register_t reg2, const item_t imm)
+	, const registers_t reg1, const registers_t reg2, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -290,7 +290,7 @@ static void to_code_2R_I(universal_io *const io, const instructions_t instructio
 
 // Вид инструкции:	instr	reg1, imm(reg2)
 static void to_code_R_I_R(universal_io *const io, const instructions_t instruction
-	, const register_t reg1, const item_t imm, const register_t reg2)
+	, const registers_t reg1, const item_t imm, const registers_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -303,7 +303,7 @@ static void to_code_R_I_R(universal_io *const io, const instructions_t instructi
 
 // Вид инструкции:	instr	reg1, imm
 static void to_code_R_I(universal_io *const io, const instructions_t instruction
-	, const register_t reg1, const item_t imm)
+	, const registers_t reg1, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -314,7 +314,7 @@ static void to_code_R_I(universal_io *const io, const instructions_t instruction
 
 // Вид инструкции:	instr	reg1
 static void to_code_R(universal_io *const io, const instructions_t instruction
-	, const register_t reg1)
+	, const registers_t reg1)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
