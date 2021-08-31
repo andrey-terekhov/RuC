@@ -80,21 +80,21 @@ typedef enum REGISTERS
 
 typedef enum INSTRUCTIONS
 {
-	MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
-	LI,							/**< MIPS Pseudo-Instruction. Load a constant into a register */
-	ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	SW,							/**< To store a word to memory */
-	LW,							/**< To load a word from memory as a signed value */
-	JR,							/**< To execute a branch to an instruction address in a register */
-	JAL,						/**< To execute a procedure call within the current 256MB-aligned region */
-	J,							/**< To branch within the current 256 MB-aligned region */
+	INSTR_MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
+	INSTR_LI,						/**< MIPS Pseudo-Instruction. Load a constant into a register */
+	INSTR_ADDI,						/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	INSTR_SW,						/**< To store a word to memory */
+	INSTR_LW,						/**< To load a word from memory as a signed value */
+	INSTR_JR,						/**< To execute a branch to an instruction address in a register */
+	INSTR_JAL,						/**< To execute a procedure call within the current 256MB-aligned region */
+	INSTR_J,						/**< To branch within the current 256 MB-aligned region */
 } instructions_t;
 
 typedef enum LABELS
 {
-	FUNC,						/**< Тип метки -- вход в функцию */
-	NEXT,						/**< Тип метки -- следующая функция */
-	FUNCEND,					/**< Тип метки -- выход из функции */
+	L_FUNC,						/**< Тип метки -- вход в функцию */
+	L_NEXT,						/**< Тип метки -- следующая функция */
+	L_FUNCEND,					/**< Тип метки -- выход из функции */
 } labels_t;
 
 typedef struct information
@@ -219,28 +219,28 @@ static void instruction_to_io(universal_io *const io, const instructions_t instr
 {
 	switch (instruction)
 	{
-		case MOVE:
+		case INSTR_MOVE:
 			uni_printf(io, "move");
 			break;
-		case LI:
+		case INSTR_LI:
 			uni_printf(io, "li");
 			break;
-		case ADDI:
+		case INSTR_ADDI:
 			uni_printf(io, "addi");
 			break;
-		case SW:
+		case INSTR_SW:
 			uni_printf(io, "sw");
 			break;
-		case LW:
+		case INSTR_LW:
 			uni_printf(io, "lw");
 			break;
-		case JR:
+		case INSTR_JR:
 			uni_printf(io, "jr");
 			break;
-		case JAL:
+		case INSTR_JAL:
 			uni_printf(io, "jal");
 			break;
-		case J:
+		case INSTR_J:
 			uni_printf(io, "j");
 			break;
 	}
@@ -250,13 +250,13 @@ static void label_to_io(universal_io *const io, const labels_t label)
 {
 	switch (label)
 	{
-		case FUNC:
+		case L_FUNC:
 			uni_printf(io, "FUNC");
 			break;
-		case NEXT:
+		case L_NEXT:
 			uni_printf(io, "NEXT");
 			break;
-		case FUNCEND:
+		case L_FUNCEND:
 			uni_printf(io, "FUNCEND");
 			break;
 	}
@@ -364,15 +364,15 @@ static int codegen(information *const info)
 				}
 
 				node_set_next(&root);
-				to_code_L(info->sx->io, J, NEXT, ref_ident);
-				to_code_label(info->sx->io, FUNC, ref_ident);
+				to_code_L(info->sx->io, INSTR_J, L_NEXT, ref_ident);
+				to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 				// Выделение на стеке памяти для функции
-				to_code_2R_I(info->sx->io, ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
+				to_code_2R_I(info->sx->io, INSTR_ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
 				// Сохранение данных перед началом работы функции
-				to_code_R_I_R(info->sx->io, SW, R_SP, SP_DISPL, R_FP);
-				to_code_2R(info->sx->io, MOVE, R_SP, R_FP);
-				to_code_R_I_R(info->sx->io, SW, R_RA, RA_DISPL, R_SP);
+				to_code_R_I_R(info->sx->io, INSTR_SW, R_SP, SP_DISPL, R_FP);
+				to_code_2R(info->sx->io, INSTR_MOVE, R_SP, R_FP);
+				to_code_R_I_R(info->sx->io, INSTR_SW, R_RA, RA_DISPL, R_SP);
 				uni_printf(info->sx->io, "\n");
 
 				for (size_t i = 0; i < parameters; i++)
@@ -395,13 +395,13 @@ static int codegen(information *const info)
 				// block(info, &root);
 
 				uni_printf(info->sx->io, "\n");
-				to_code_label(info->sx->io, FUNCEND, ref_ident);
+				to_code_label(info->sx->io, L_FUNCEND, ref_ident);
 				// Восстановление стека после работы функции
-				to_code_R_I_R(info->sx->io, LW, R_RA, RA_DISPL, R_SP);
-				to_code_2R_I(info->sx->io, ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
-				to_code_R_I_R(info->sx->io, LW, R_SP, SP_DISPL, R_SP);
-				to_code_R(info->sx->io, JR, R_RA);
-				to_code_label(info->sx->io, NEXT, ref_ident);
+				to_code_R_I_R(info->sx->io, INSTR_LW, R_RA, RA_DISPL, R_SP);
+				to_code_2R_I(info->sx->io, INSTR_ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
+				to_code_R_I_R(info->sx->io, INSTR_LW, R_SP, SP_DISPL, R_SP);
+				to_code_R(info->sx->io, INSTR_JR, R_RA);
+				to_code_label(info->sx->io, L_NEXT, ref_ident);
 			}
 			break;
 			default:
@@ -439,11 +439,11 @@ static void precodegen(syntax *const sx)
 	uni_printf(sx->io, "\tlui $28, %%hi(__gnu_local_gp)\n");
 	uni_printf(sx->io, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
-	to_code_2R(sx->io, MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, ADDI, R_FP, R_FP, -4);
-	to_code_R_I_R(sx->io, SW, R_RA, 0, R_FP);
-	to_code_R_I(sx->io, LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, SW, R_T0, HEAP_DISPL - 60, R_GP);
+	to_code_2R(sx->io, INSTR_MOVE, R_FP, R_SP);
+	to_code_2R_I(sx->io, INSTR_ADDI, R_FP, R_FP, -4);
+	to_code_R_I_R(sx->io, INSTR_SW, R_RA, 0, R_FP);
+	to_code_R_I(sx->io, INSTR_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(sx->io, INSTR_SW, R_T0, HEAP_DISPL - 60, R_GP);
 	uni_printf(sx->io, "\n");
 }
 
@@ -451,9 +451,9 @@ static void precodegen(syntax *const sx)
 static void postcodegen(information *const info)
 {
 	uni_printf(info->sx->io, "\n");
-	to_code_L(info->sx->io, JAL, FUNC, info->main_label);
-	to_code_R_I_R(info->sx->io, LW, R_RA, -4, R_SP);
-	to_code_R(info->sx->io, JR, R_RA);
+	to_code_L(info->sx->io, INSTR_JAL, L_FUNC, info->main_label);
+	to_code_R_I_R(info->sx->io, INSTR_LW, R_RA, -4, R_SP);
+	to_code_R(info->sx->io, INSTR_JR, R_RA);
 
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
