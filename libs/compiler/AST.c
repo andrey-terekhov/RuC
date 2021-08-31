@@ -22,81 +22,81 @@ extern item_t expression_get_type(const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
 extern location expression_get_location(const node *const nd);
 
-extern size_t identifier_expr_get_id(const node *const nd);
-extern int literal_expr_get_int(const node *const nd);
-extern double literal_expr_get_double(const node *const nd);
-extern size_t literal_expr_get_string(const node *const nd);
+extern size_t expression_identifier_get_id(const node *const nd);
+extern int expression_literal_get_integer(const node *const nd);
+extern double expression_literal_get_double(const node *const nd);
+extern size_t expression_literal_get_string(const node *const nd);
 
-extern node subscript_expr_get_base(const node *const nd);
-extern node subscript_expr_get_index(const node *const nd);
+extern node expression_subscript_get_base(const node *const nd);
+extern node expression_subscript_get_index(const node *const nd);
 
-extern node call_expr_get_callee(const node *const nd);
-extern node call_expr_get_argument(const node *const nd, const size_t index);
+extern node expression_call_get_callee(const node *const nd);
+extern node expression_call_get_argument(const node *const nd, const size_t index);
 
-extern node member_expr_get_base(const node *const nd);
-extern size_t member_expr_get_member_displ(const node *const nd);
+extern node expression_member_get_base(const node *const nd);
+extern size_t expression_member_get_member_displ(const node *const nd);
 
-extern unary_t unary_expr_get_operator(const node *const nd);
-extern node unary_expr_get_operand(const node *const nd);
+extern unary_t expression_unary_get_operator(const node *const nd);
+extern node expression_unary_get_operand(const node *const nd);
 
-extern binary_t binary_expr_get_operator(const node *const nd);
-extern node binary_expr_get_LHS(const node *const nd);
-extern node binary_expr_get_RHS(const node *const nd);
+extern binary_t expression_binary_get_operator(const node *const nd);
+extern node expression_binary_get_LHS(const node *const nd);
+extern node expression_binary_get_RHS(const node *const nd);
 
-extern node ternary_expr_get_condition(const node *const nd);
-extern node ternary_expr_get_LHS(const node *const nd);
-extern node ternary_expr_get_RHS(const node *const nd);
+extern node expression_ternary_get_condition(const node *const nd);
+extern node expression_ternary_get_LHS(const node *const nd);
+extern node expression_ternary_get_RHS(const node *const nd);
 
 extern size_t expression_list_get_size(const node *const nd);
 extern node expression_list_get_subexpr(const node *const nd, const size_t index);
 
 
-extern size_t labeled_stmt_get_label(const node *const nd);
-extern node labeled_stmt_get_substmt(const node *const nd);
+extern size_t statement_labeled_get_label(const node *const nd);
+extern node statement_labeled_get_substmt(const node *const nd);
 
-extern size_t compound_stmt_get_size(const node *const nd);
-extern node compound_stmt_get_substmt(const node *const nd, const size_t index);
+extern size_t statement_compound_get_size(const node *const nd);
+extern node statement_compound_get_substmt(const node *const nd, const size_t index);
 
-extern bool if_stmt_has_else(const node *const nd);
-extern node if_stmt_get_condition(const node *const nd);
-extern node if_stmt_get_then_substmt(const node *const nd);
-extern node if_stmt_get_else_substmt(const node *const nd);
+extern bool statement_if_has_else_substmt(const node *const nd);
+extern node statement_if_get_condition(const node *const nd);
+extern node statement_if_get_then_substmt(const node *const nd);
+extern node statement_if_get_else_substmt(const node *const nd);
 
-extern node while_stmt_get_condition(const node *const nd);
-extern node while_stmt_get_body(const node *const nd);
+extern node statement_while_get_condition(const node *const nd);
+extern node statement_while_get_body(const node *const nd);
 
-extern node do_stmt_get_condition(const node *const nd);
-extern node do_stmt_get_body(const node *const nd);
+extern node statement_do_get_condition(const node *const nd);
+extern node statement_do_get_body(const node *const nd);
 
-extern bool for_stmt_has_inition(const node *const nd);
-extern bool for_stmt_has_condition(const node *const nd);
-extern bool for_stmt_has_increment(const node *const nd);
-extern node for_stmt_get_inition(const node *const nd);
-extern node for_stmt_get_condition(const node *const nd);
-extern node for_stmt_get_increment(const node *const nd);
-extern node for_stmt_get_body(const node *const nd);
+extern bool statement_for_has_inition(const node *const nd);
+extern bool statement_for_has_condition(const node *const nd);
+extern bool statement_for_has_increment(const node *const nd);
+extern node statement_for_get_inition(const node *const nd);
+extern node statement_for_get_condition(const node *const nd);
+extern node statement_for_get_increment(const node *const nd);
+extern node statement_for_get_body(const node *const nd);
 
-extern size_t goto_stmt_get_label(const node *const nd);
+extern size_t statement_goto_get_label(const node *const nd);
 
-extern bool return_stmt_has_expression(const node *const nd);
-extern node return_stmt_get_expression(const node *const nd);
+extern bool statement_return_has_expression(const node *const nd);
+extern node statement_return_get_expression(const node *const nd);
 
-extern size_t printf_stmt_get_argc(const node *const nd);
-extern node printf_stmt_get_format_str(const node *const nd);
-extern node printf_stmt_get_argument(const node *const nd, const size_t index);
+extern size_t statement_printf_get_argc(const node *const nd);
+extern node statement_printf_get_format_str(const node *const nd);
+extern node statement_printf_get_argument(const node *const nd, const size_t index);
 
 
 extern size_t translation_unit_get_size(const node *const nd);
 extern node translation_unit_get_declaration(const node *const nd, const size_t index);
 
-extern size_t variable_decl_get_id(const node *const nd);
-extern bool variable_decl_has_initializer(const node *const nd);
-extern node variable_decl_get_initializer(const node *const nd);
-extern size_t variable_decl_get_dim_amount(const node *const nd);
-extern node variable_decl_get_dim_expr(const node *const nd, const size_t index);
+extern size_t declaration_variable_get_id(const node *const nd);
+extern bool declaration_variable_has_initializer(const node *const nd);
+extern node declaration_variable_get_initializer(const node *const nd);
+extern size_t declaration_variable_get_dim_amount(const node *const nd);
+extern node declaration_variable_get_dim_expr(const node *const nd, const size_t index);
 
-extern size_t function_decl_get_id(const node *const nd);
-extern node function_decl_get_body(const node *const nd);
+extern size_t declaration_function_get_id(const node *const nd);
+extern node declaration_function_get_body(const node *const nd);
 
 
 /*
@@ -108,7 +108,6 @@ extern node function_decl_get_body(const node *const nd);
  */
 
 
-#include <stdio.h>
 expression_t expression_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
@@ -180,7 +179,7 @@ declaration_t declaration_get_class(const node *const nd)
 }
 
 
-size_t function_decl_get_param(const node *const nd, const size_t index)
+size_t declaration_function_get_param(const node *const nd, const size_t index)
 {
 	if (node_get_type(nd) != OP_FUNC_DEF)
 	{

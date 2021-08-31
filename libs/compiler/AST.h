@@ -40,11 +40,42 @@ typedef enum EXPRESSION
 } expression_t;
 
 /** Value category */
-typedef enum VALUE
+typedef enum CATEGORY
 {
 	LVALUE,				/**< An expression that designates an object */
 	RVALUE,				/**< An expression detached from any specific storage */
 } category_t;
+
+/** Statement kinds */
+typedef enum STATEMENT
+{
+	STMT_DECL,			/**< Declaration statement */
+	STMT_LABEL,			/**< Labeled statement */
+	STMT_CASE,			/**< Case statement */
+	STMT_DEFAULT,		/**< Default statement */
+	STMT_COMPOUND,		/**< Compound statement */
+	STMT_EXPR,			/**< Expression statement */
+	STMT_NULL,			/**< Null statement */
+	STMT_IF,			/**< If statement */
+	STMT_SWITCH,		/**< Switch statement */
+	STMT_WHILE,			/**< While statement */
+	STMT_DO,			/**< Do statement */
+	STMT_FOR,			/**< For statement */
+	STMT_GOTO,			/**< Goto statement */
+	STMT_CONTINUE,		/**< Continue statement */
+	STMT_BREAK,			/**< Break statement */
+	STMT_RETURN,		/**< Return statement */
+	STMT_PRINTF,		/**< Printf statement */
+} statement_t;
+
+/** Declaration kinds */
+typedef enum DECLARATION
+{
+	DECL_VAR,			/**< Variable declaration */
+	DECL_FUNC,			/**< Function definition */
+	DECL_TYPE,			/**< Type declaration */
+} declaration_t;
+
 
 /**
  *	Build a broken node
@@ -55,6 +86,7 @@ inline node node_broken()
 {
 	return node_load(NULL, SIZE_MAX);
 }
+
 
 /**
  *	Get expression class
@@ -102,6 +134,7 @@ inline location expression_get_location(const node *const nd)
 	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
 
+
 /**
  *	Get id of identifier expression
  *
@@ -109,10 +142,11 @@ inline location expression_get_location(const node *const nd)
  *
  *	@return	Id
  */
-inline size_t identifier_expr_get_id(const node *const nd)
+inline size_t expression_identifier_get_id(const node *const nd)
 {
 	return node_get_type(nd) == OP_IDENTIFIER ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
 }
+
 
 /**
  *	Get integer value of literal expression
@@ -121,7 +155,7 @@ inline size_t identifier_expr_get_id(const node *const nd)
  *
  *	@return	Integer value
  */
-inline int literal_expr_get_int(const node *const nd)
+inline int expression_literal_get_integer(const node *const nd)
 {
 	return node_get_type(nd) == OP_LITERAL ? (int)node_get_arg(nd, 2) : INT_MAX;
 }
@@ -133,7 +167,7 @@ inline int literal_expr_get_int(const node *const nd)
  *
  *	@return	Double value
  */
-inline double literal_expr_get_double(const node *const nd)
+inline double expression_literal_get_double(const node *const nd)
 {
 	return node_get_type(nd) == OP_LITERAL ? node_get_arg_double(nd, 2) : DBL_MAX;
 }
@@ -145,7 +179,7 @@ inline double literal_expr_get_double(const node *const nd)
  *
  *	@return	String index
  */
-inline size_t literal_expr_get_string(const node *const nd)
+inline size_t expression_literal_get_string(const node *const nd)
 {
 	return node_get_type(nd) == OP_LITERAL ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
 }
@@ -158,7 +192,7 @@ inline size_t literal_expr_get_string(const node *const nd)
  *
  *	@return	Base expression
  */
-inline node subscript_expr_get_base(const node *const nd)
+inline node expression_subscript_get_base(const node *const nd)
 {
 	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 0) : node_broken();
 }
@@ -170,7 +204,7 @@ inline node subscript_expr_get_base(const node *const nd)
  *
  *	@return	Index expression
  */
-inline node subscript_expr_get_index(const node *const nd)
+inline node expression_subscript_get_index(const node *const nd)
 {
 	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 1) : node_broken();
 }
@@ -183,7 +217,7 @@ inline node subscript_expr_get_index(const node *const nd)
  *
  *	@return	Called expression
  */
-inline node call_expr_get_callee(const node *const nd)
+inline node expression_call_get_callee(const node *const nd)
 {
 	return node_get_type(nd) == OP_CALL ? node_get_child(nd, 0) : node_broken();
 }
@@ -196,7 +230,7 @@ inline node call_expr_get_callee(const node *const nd)
  *
  *	@return	Argument
  */
-inline node call_expr_get_argument(const node *const nd, const size_t index)
+inline node expression_call_get_argument(const node *const nd, const size_t index)
 {
 	return node_get_type(nd) == OP_CALL ? node_get_child(nd, 1 + index) : node_broken();
 }
@@ -209,7 +243,7 @@ inline node call_expr_get_argument(const node *const nd, const size_t index)
  *
  *	@return	Base expression
  */
-inline node member_expr_get_base(const node *const nd)
+inline node expression_member_get_base(const node *const nd)
 {
 	return node_get_type(nd) == OP_SELECT ? node_get_child(nd, 0) : node_broken();
 }
@@ -221,7 +255,7 @@ inline node member_expr_get_base(const node *const nd)
  *
  *	@return	Member displacement
  */
-inline size_t member_expr_get_member_displ(const node *const nd)
+inline size_t expression_member_get_member_displ(const node *const nd)
 {
 	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
 }
@@ -234,7 +268,7 @@ inline size_t member_expr_get_member_displ(const node *const nd)
  *
  *	@return	Operator
  */
-inline unary_t unary_expr_get_operator(const node *const nd)
+inline unary_t expression_unary_get_operator(const node *const nd)
 {
 	return node_get_type(nd) == OP_UNARY ? (unary_t)node_get_arg(nd, 2) : INT_MAX;
 }
@@ -246,7 +280,7 @@ inline unary_t unary_expr_get_operator(const node *const nd)
  *
  *	@return	Operand
  */
-inline node unary_expr_get_operand(const node *const nd)
+inline node expression_unary_get_operand(const node *const nd)
 {
 	return node_get_type(nd) == OP_UNARY ? node_get_child(nd, 0) : node_broken();
 }
@@ -259,7 +293,7 @@ inline node unary_expr_get_operand(const node *const nd)
  *
  *	@return	Operator
  */
-inline binary_t binary_expr_get_operator(const node *const nd)
+inline binary_t expression_binary_get_operator(const node *const nd)
 {
 	return node_get_type(nd) == OP_BINARY ? (binary_t)node_get_arg(nd, 2) : INT_MAX;
 }
@@ -271,7 +305,7 @@ inline binary_t binary_expr_get_operator(const node *const nd)
  *
  *	@return	LHS of binary expression
  */
-inline node binary_expr_get_LHS(const node *const nd)
+inline node expression_binary_get_LHS(const node *const nd)
 {
 	return node_get_type(nd) == OP_BINARY ? node_get_child(nd, 0) : node_broken();
 }
@@ -283,7 +317,7 @@ inline node binary_expr_get_LHS(const node *const nd)
  *
  *	@return	RHS of binary expression
  */
-inline node binary_expr_get_RHS(const node *const nd)
+inline node expression_binary_get_RHS(const node *const nd)
 {
 	return node_get_type(nd) == OP_BINARY ? node_get_child(nd, 1) : node_broken();
 }
@@ -296,7 +330,7 @@ inline node binary_expr_get_RHS(const node *const nd)
  *
  *	@return	Condition
  */
-inline node ternary_expr_get_condition(const node *const nd)
+inline node expression_ternary_get_condition(const node *const nd)
 {
 	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 0) : node_broken();
 }
@@ -308,7 +342,7 @@ inline node ternary_expr_get_condition(const node *const nd)
  *
  *	@return	LHS of ternary expression
  */
-inline node ternary_expr_get_LHS(const node *const nd)
+inline node expression_ternary_get_LHS(const node *const nd)
 {
 	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 1) : node_broken();
 }
@@ -320,7 +354,7 @@ inline node ternary_expr_get_LHS(const node *const nd)
  *
  *	@return	RHS of ternary expression
  */
-inline node ternary_expr_get_RHS(const node *const nd)
+inline node expression_ternary_get_RHS(const node *const nd)
 {
 	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 2) : node_broken();
 }
@@ -339,10 +373,10 @@ inline size_t expression_list_get_size(const node *const nd)
 }
 
 /**
- *	Get expression of expression list by index
+ *	Get subexpression of expression list by index
  *
  *	@param	nd		Expression list
- *	@param	index	Expression index
+ *	@param	index	Subexpression index
  *
  *	@return	Expression
  */
@@ -350,29 +384,6 @@ inline node expression_list_get_subexpr(const node *const nd, const size_t index
 {
 	return node_get_type(nd) == OP_LIST ? node_get_child(nd, index) : node_broken();
 }
-
-
-/** Statement kinds */
-typedef enum STATEMENT
-{
-	STMT_DECL,			/**< Declaration statement */
-	STMT_LABEL,			/**< Labeled statement */
-	STMT_CASE,			/**< Case statement */
-	STMT_DEFAULT,		/**< Default statement */
-	STMT_COMPOUND,		/**< Compound statement */
-	STMT_EXPR,			/**< Expression statement */
-	STMT_NULL,			/**< Null statement */
-	STMT_IF,			/**< If statement */
-	STMT_SWITCH,		/**< Switch statement */
-	STMT_WHILE,			/**< While statement */
-	STMT_DO,			/**< Do statement */
-	STMT_FOR,			/**< For statement */
-	STMT_GOTO,			/**< Goto statement */
-	STMT_CONTINUE,		/**< Continue statement */
-	STMT_BREAK,			/**< Break statement */
-	STMT_RETURN,		/**< Return statement */
-	STMT_PRINTF,		/**< Printf statement */
-} statement_t;
 
 
 /**
@@ -392,7 +403,7 @@ statement_t statement_get_class(const node *const nd);
  *
  *	@return	Label id
  */
-inline size_t labeled_stmt_get_label(const node *const nd)
+inline size_t statement_labeled_get_label(const node *const nd)
 {
 	return node_get_type(nd) == OP_LABEL ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
 }
@@ -404,7 +415,7 @@ inline size_t labeled_stmt_get_label(const node *const nd)
  *
  *	@return	Substatement
  */
-inline node labeled_stmt_get_substmt(const node *const nd)
+inline node statement_labeled_get_substmt(const node *const nd)
 {
 	return node_get_type(nd) == OP_LABEL ? node_get_child(nd, 0) : node_broken();
 }
@@ -417,7 +428,7 @@ inline node labeled_stmt_get_substmt(const node *const nd)
  *
  *	@return	Size
  */
-inline size_t compound_stmt_get_size(const node *const nd)
+inline size_t statement_compound_get_size(const node *const nd)
 {
 	return node_get_type(nd) == OP_BLOCK ? node_get_amount(nd) : SIZE_MAX;
 }
@@ -430,7 +441,7 @@ inline size_t compound_stmt_get_size(const node *const nd)
  *
  *	@return	Substatement
  */
-inline node compound_stmt_get_substmt(const node *const nd, const size_t index)
+inline node statement_compound_get_substmt(const node *const nd, const size_t index)
 {
 	return node_get_type(nd) == OP_BLOCK ? node_get_child(nd, index) : node_broken();
 }
@@ -443,7 +454,7 @@ inline node compound_stmt_get_substmt(const node *const nd, const size_t index)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline bool if_stmt_has_else(const node *const nd)
+inline bool statement_if_has_else_substmt(const node *const nd)
 {
 	return node_get_type(nd) == OP_IF ? node_get_arg(nd, 0) != 0 : false;
 }
@@ -455,7 +466,7 @@ inline bool if_stmt_has_else(const node *const nd)
  *
  *	@return	Condition
  */
-inline node if_stmt_get_condition(const node *const nd)
+inline node statement_if_get_condition(const node *const nd)
 {
 	return node_get_type(nd) == OP_IF ? node_get_child(nd, 0) : node_broken();
 }
@@ -467,7 +478,7 @@ inline node if_stmt_get_condition(const node *const nd)
  *
  *	@return	Then-substatement
  */
-inline node if_stmt_get_then_substmt(const node *const nd)
+inline node statement_if_get_then_substmt(const node *const nd)
 {
 	return node_get_type(nd) == OP_IF ? node_get_child(nd, 1) : node_broken();
 }
@@ -479,9 +490,9 @@ inline node if_stmt_get_then_substmt(const node *const nd)
  *
  *	@return	Else-substatement
  */
-inline node if_stmt_get_else_substmt(const node *const nd)
+inline node statement_if_get_else_substmt(const node *const nd)
 {
-	return if_stmt_has_else(nd) ? node_get_child(nd, 2) : node_broken();
+	return statement_if_has_else_substmt(nd) ? node_get_child(nd, 2) : node_broken();
 }
 
 
@@ -492,7 +503,7 @@ inline node if_stmt_get_else_substmt(const node *const nd)
  *
  *	@return	Condition
  */
-inline node while_stmt_get_condition(const node *const nd)
+inline node statement_while_get_condition(const node *const nd)
 {
 	return node_get_type(nd) == OP_WHILE ? node_get_child(nd, 0) : node_broken();
 }
@@ -504,7 +515,7 @@ inline node while_stmt_get_condition(const node *const nd)
  *
  *	@return	Substatement
  */
-inline node while_stmt_get_body(const node *const nd)
+inline node statement_while_get_body(const node *const nd)
 {
 	return node_get_type(nd) == OP_WHILE ? node_get_child(nd, 1) : node_broken();
 }
@@ -517,7 +528,7 @@ inline node while_stmt_get_body(const node *const nd)
  *
  *	@return	Condition
  */
-inline node do_stmt_get_condition(const node *const nd)
+inline node statement_do_get_condition(const node *const nd)
 {
 	return node_get_type(nd) == OP_DO ? node_get_child(nd, 1) : node_broken();
 }
@@ -529,7 +540,7 @@ inline node do_stmt_get_condition(const node *const nd)
  *
  *	@return	Substatement
  */
-inline node do_stmt_get_body(const node *const nd)
+inline node statement_do_get_body(const node *const nd)
 {
 	return node_get_type(nd) == OP_DO ? node_get_child(nd, 0) : node_broken();
 }
@@ -542,7 +553,7 @@ inline node do_stmt_get_body(const node *const nd)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline bool for_stmt_has_inition(const node *const nd)
+inline bool statement_for_has_inition(const node *const nd)
 {
 	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 0) != 0 : false;
 }
@@ -554,7 +565,7 @@ inline bool for_stmt_has_inition(const node *const nd)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline bool for_stmt_has_condition(const node *const nd)
+inline bool statement_for_has_condition(const node *const nd)
 {
 	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 1) != 0 : false;
 }
@@ -566,7 +577,7 @@ inline bool for_stmt_has_condition(const node *const nd)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline bool for_stmt_has_increment(const node *const nd)
+inline bool statement_for_has_increment(const node *const nd)
 {
 	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 2) != 0 : false;
 }
@@ -578,9 +589,9 @@ inline bool for_stmt_has_increment(const node *const nd)
  *
  *	@return	Inition
  */
-inline node for_stmt_get_inition(const node *const nd)
+inline node statement_for_get_inition(const node *const nd)
 {
-	return for_stmt_has_inition(nd) ? node_get_child(nd, 0) : node_broken();
+	return statement_for_has_inition(nd) ? node_get_child(nd, 0) : node_broken();
 }
 
 /**
@@ -590,10 +601,10 @@ inline node for_stmt_get_inition(const node *const nd)
  *
  *	@return	condition
  */
-inline node for_stmt_get_condition(const node *const nd)
+inline node statement_for_get_condition(const node *const nd)
 {
-	return for_stmt_has_condition(nd)
-		? node_get_child(nd, for_stmt_has_inition(nd) ? 1 : 0)
+	return statement_for_has_condition(nd)
+		? node_get_child(nd, statement_for_has_inition(nd) ? 1 : 0)
 		: node_broken();
 }
 
@@ -604,9 +615,9 @@ inline node for_stmt_get_condition(const node *const nd)
  *
  *	@return	Increment
  */
-inline node for_stmt_get_increment(const node *const nd)
+inline node statement_for_get_increment(const node *const nd)
 {
-	return for_stmt_has_increment(nd)
+	return statement_for_has_increment(nd)
 		? node_get_child(nd, node_get_amount(nd) - 2)
 		: node_broken();
 }
@@ -618,7 +629,7 @@ inline node for_stmt_get_increment(const node *const nd)
  *
  *	@return	Substatement
  */
-inline node for_stmt_get_body(const node *const nd)
+inline node statement_for_get_body(const node *const nd)
 {
 	return node_get_type(nd) == OP_FOR
 		? node_get_child(nd, node_get_amount(nd) - 1)
@@ -633,7 +644,7 @@ inline node for_stmt_get_body(const node *const nd)
  *
  *	@return	Label id
  */
-inline size_t goto_stmt_get_label(const node *const nd)
+inline size_t statement_goto_get_label(const node *const nd)
 {
 	return node_get_type(nd) == OP_GOTO ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
 }
@@ -646,7 +657,7 @@ inline size_t goto_stmt_get_label(const node *const nd)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-inline bool return_stmt_has_expression(const node *const nd)
+inline bool statement_return_has_expression(const node *const nd)
 {
 	return node_get_type(nd) == OP_RETURN ? node_get_amount(nd) != 0 : false;
 }
@@ -658,9 +669,9 @@ inline bool return_stmt_has_expression(const node *const nd)
  *
  *	@return	Expression
  */
-inline node return_stmt_get_expression(const node *const nd)
+inline node statement_return_get_expression(const node *const nd)
 {
-	return return_stmt_has_expression(nd) ? node_get_child(nd, 0) : node_broken();
+	return statement_return_has_expression(nd) ? node_get_child(nd, 0) : node_broken();
 }
 
 /**
@@ -670,7 +681,7 @@ inline node return_stmt_get_expression(const node *const nd)
  *
  *	@return	Argument count
  */
-inline size_t printf_stmt_get_argc(const node *const nd)
+inline size_t statement_printf_get_argc(const node *const nd)
 {
 	return node_get_type(nd) == OP_PRINTF ? node_get_amount(nd) - 1 : 0;
 }
@@ -682,7 +693,7 @@ inline size_t printf_stmt_get_argc(const node *const nd)
  *
  *	@return	Format string
  */
-inline node printf_stmt_get_format_str(const node *const nd)
+inline node statement_printf_get_format_str(const node *const nd)
 {
 	return node_get_type(nd) == OP_PRINTF ? node_get_child(nd, 0) : node_broken();
 }
@@ -694,18 +705,10 @@ inline node printf_stmt_get_format_str(const node *const nd)
  *
  *	@return	Argument
  */
-inline node printf_stmt_get_argument(const node *const nd, const size_t index)
+inline node statement_printf_get_argument(const node *const nd, const size_t index)
 {
-	return printf_stmt_get_argc(nd) > index ? node_get_child(nd, 1 + index) : node_broken();
+	return statement_printf_get_argc(nd) > index ? node_get_child(nd, 1 + index) : node_broken();
 }
-
-
-typedef enum DECLARATION
-{
-	DECL_VAR,			/**< Variable declaration */
-	DECL_FUNC,			/**< Function definition */
-	DECL_TYPE,			/**< Type declaration */
-} declaration_t;
 
 
 /**
@@ -716,6 +719,105 @@ typedef enum DECLARATION
  *	@return	Declaration class
  */
 declaration_t declaration_get_class(const node *const nd);
+
+
+/**
+ *	Get variable id in variable declaration
+ *
+ *	@param	nd		Variable declaration
+ *
+ *	@return	Id
+ */
+inline size_t declaration_variable_get_id(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
+
+/**
+ *	Check if variable declaration has initializer
+ *
+ *	@param	nd		Variable declaration
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+inline bool declaration_variable_has_initializer(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR ? node_get_arg(nd, 2) != 0 : false;
+}
+
+/**
+ *	Get initializer of variable declaration
+ *
+ *	@param	nd		Variable declaration
+ *
+ *	@return	Initializer
+ */
+inline node declaration_variable_get_initializer(const node *const nd)
+{
+	return declaration_variable_has_initializer(nd) ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
+}
+
+/**
+ *	Get amount of dimenstions of variable declaration
+ *
+ *	@param	nd		Variable declaration
+ *
+ *	@return	Amount of dimenstions
+ */
+inline size_t declaration_variable_get_dim_amount(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR
+		? node_get_amount(nd) - (declaration_variable_has_initializer(nd) ? 1 : 0)
+		: 0;
+}
+
+/**
+ *	Get size-expression of dimenstions of variable declaration by index
+ *
+ *	@param	nd		Variable declaration
+ *	@param	index	Dimansion index
+ *
+ *	@return	Size-expression
+ */
+inline node declaration_variable_get_dim_expr(const node *const nd, const size_t index)
+{
+	return declaration_variable_get_dim_amount(nd) > index ? node_get_child(nd, index) : node_broken();
+}
+
+
+/**
+ *	Get id of function in function declaration
+ *
+ *	@param	nd		Function declaration
+ *
+ *	@return Function id
+ */
+inline size_t declaration_function_get_id(const node *const nd)
+{
+	return node_get_type(nd) == OP_FUNC_DEF ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
+
+/**
+ *	Get parameter id in function declaration by index
+ *
+ *	@param	nd		Function declaration
+ *	@param	index	Parameter index
+ *
+ *	@return Parameter id
+ */
+size_t declaration_function_get_param(const node *const nd, const size_t index);
+
+/**
+ *	Get body of function declaration
+ *
+ *	@param	nd		Function declaration
+ *
+ *	@return Function body
+ */
+inline node declaration_function_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_FUNC_DEF ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
+}
 
 
 /**
@@ -741,105 +843,6 @@ inline size_t translation_unit_get_size(const node *const nd)
 inline node translation_unit_get_declaration(const node *const nd, const size_t index)
 {
 	return node_is_correct(nd) && node_get_type(nd) == ITEM_MAX ? node_get_child(nd, index) : node_broken();
-}
-
-
-/**
- *	Get variable id in variable declaration
- *
- *	@param	nd		Variable declaration
- *
- *	@return	Id
- */
-inline size_t variable_decl_get_id(const node *const nd)
-{
-	return node_get_type(nd) == OP_DECL_VAR ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
-}
-
-/**
- *	Check if variable declaration has initializer
- *
- *	@param	nd		Variable declaration
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-inline bool variable_decl_has_initializer(const node *const nd)
-{
-	return node_get_type(nd) == OP_DECL_VAR ? node_get_arg(nd, 2) != 0 : false;
-}
-
-/**
- *	Get initializer of variable declaration
- *
- *	@param	nd		Variable declaration
- *
- *	@return	Initializer
- */
-inline node variable_decl_get_initializer(const node *const nd)
-{
-	return variable_decl_has_initializer(nd) ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
-}
-
-/**
- *	Get amount of dimenstions of variable declaration
- *
- *	@param	nd		Variable declaration
- *
- *	@return	Amount of dimenstions
- */
-inline size_t variable_decl_get_dim_amount(const node *const nd)
-{
-	return node_get_type(nd) == OP_DECL_VAR
-		? node_get_amount(nd) - (variable_decl_has_initializer(nd) ? 1 : 0)
-		: 0;
-}
-
-/**
- *	Get size-expression of dimenstions of variable declaration by index
- *
- *	@param	nd		Variable declaration
- *	@param	index	Dimansion index
- *
- *	@return	Size-expression
- */
-inline node variable_decl_get_dim_expr(const node *const nd, const size_t index)
-{
-	return variable_decl_get_dim_amount(nd) > index ? node_get_child(nd, index) : node_broken();
-}
-
-
-/**
- *	Get id of function in function declaration
- *
- *	@param	nd		Function declaration
- *
- *	@return Function id
- */
-inline size_t function_decl_get_id(const node *const nd)
-{
-	return node_get_type(nd) == OP_FUNC_DEF ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
-}
-
-/**
- *	Get parameter id in function declaration by index
- *
- *	@param	nd		Function declaration
- *	@param	index	Parameter index
- *
- *	@return Parameter id
- */
-size_t function_decl_get_param(const node *const nd, const size_t index);
-
-/**
- *	Get body of function declaration
- *
- *	@param	nd		Function declaration
- *
- *	@return Function body
- */
-inline node function_decl_get_body(const node *const nd)
-{
-	return node_get_type(nd) == OP_FUNC_DEF ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
 }
 
 #ifdef __cplusplus
