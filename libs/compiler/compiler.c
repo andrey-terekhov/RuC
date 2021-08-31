@@ -139,7 +139,7 @@ int compile(workspace *const ws)
 		{
 			return compile_to_vm(ws);
 		}
-		else if (strcmp(flag, "-mips") == 0)
+		else if (strcmp(flag, "-MIPS") == 0)
 		{
 			return compile_to_mips(ws);
 		}

@@ -29,7 +29,7 @@ const char *name = "../tests/executable/structures/SELECT_9459.c";
 int main(int argc, const char *argv[])
 {
 	workspace ws = ws_parse_args(argc, argv);
-	ws_add_flag(&ws, "-mips");
+	ws_add_flag(&ws, "-MIPS");
 
 	if (argc < 2)
 	{

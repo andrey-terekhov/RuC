@@ -76,7 +76,7 @@ typedef enum REGISTERS
 	R_FP,							/**< saved register (like s0-s7) or frame pointer */
 	R_RA,							/**< return address.  The return address is the location to
 									which a function should return control */
-} registers_t;
+} register_t;
 
 typedef enum INSTRUCTIONS
 {
@@ -105,7 +105,7 @@ typedef struct information
 } information;
 
 
-static void register_to_io(universal_io *const io, const registers_t reg)
+static void register_to_io(universal_io *const io, const register_t reg)
 {
 	switch (reg)
 	{
@@ -264,7 +264,7 @@ static void label_to_io(universal_io *const io, const labels_t label)
 
 
 // Вид инструкции:	instr	reg1, reg2
-static void to_code_2R(universal_io *const io, const instructions_t instruction, const registers_t reg1, const registers_t reg2)
+static void to_code_2R(universal_io *const io, const instructions_t instruction, const register_t reg1, const register_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -275,9 +275,9 @@ static void to_code_2R(universal_io *const io, const instructions_t instruction,
 	uni_printf(io, "\n");
 }
 
-// Вид инструкции:	instr	reg1, reg2, num
-static void to_code_2R_I(universal_io *const io, const instructions_t instruction, 
-	const registers_t reg1, const registers_t reg2, const item_t num)
+// Вид инструкции:	instr	reg1, reg2, imm
+static void to_code_2R_I(universal_io *const io, const instructions_t instruction
+	, const register_t reg1, const register_t reg2, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -285,36 +285,36 @@ static void to_code_2R_I(universal_io *const io, const instructions_t instructio
 	register_to_io(io, reg1);
 	uni_printf(io, ", ");
 	register_to_io(io, reg2);
-	uni_printf(io, ", %" PRIitem "\n", num);
+	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
-// Вид инструкции:	instr	reg1, num(reg2)
-static void to_code_R_I_R(universal_io *const io, const instructions_t instruction, 
-	const registers_t reg1, const item_t num, const registers_t reg2)
+// Вид инструкции:	instr	reg1, imm(reg2)
+static void to_code_R_I_R(universal_io *const io, const instructions_t instruction
+	, const register_t reg1, const item_t imm, const register_t reg2)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
 	register_to_io(io, reg1);
-	uni_printf(io, ", %" PRIitem "(", num);
+	uni_printf(io, ", %" PRIitem "(", imm);
 	register_to_io(io, reg2);
 	uni_printf(io, ")\n");
 }
 
-// Вид инструкции:	instr	reg1, num
-static void to_code_R_I(universal_io *const io, const instructions_t instruction, 
-	const registers_t reg1, const item_t num)
+// Вид инструкции:	instr	reg1, imm
+static void to_code_R_I(universal_io *const io, const instructions_t instruction
+	, const register_t reg1, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
 	register_to_io(io, reg1);
-	uni_printf(io, ", %" PRIitem "\n", num);
+	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
 // Вид инструкции:	instr	reg1
-static void to_code_R(universal_io *const io, const instructions_t instruction, 
-	const registers_t reg1)
+static void to_code_R(universal_io *const io, const instructions_t instruction
+	, const register_t reg1)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -324,8 +324,8 @@ static void to_code_R(universal_io *const io, const instructions_t instruction,
 }
 
 // Вид инструкции:	instr	label
-static void to_code_L(universal_io *const io, const instructions_t instruction, 
-	const labels_t label, const item_t label_num)
+static void to_code_L(universal_io *const io, const instructions_t instruction
+	, const labels_t label, const item_t label_num)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
@@ -353,7 +353,6 @@ static int codegen(information *const info)
 			case OP_FUNC_DEF:
 			{
 				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				const item_t func_displ = ident_get_displ(info->sx, ref_ident);
 				// Выравнивание смещения на 8
 				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;
 				const item_t func_type = ident_get_type(info->sx, ref_ident);
@@ -361,12 +360,12 @@ static int codegen(information *const info)
 
 				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 				{
-					info->main_label = func_displ;
+					info->main_label = ref_ident;
 				}
 
 				node_set_next(&root);
-				to_code_L(info->sx->io, J, NEXT, func_displ);
-				to_code_label(info->sx->io, FUNC, func_displ);
+				to_code_L(info->sx->io, J, NEXT, ref_ident);
+				to_code_label(info->sx->io, FUNC, ref_ident);
 
 				// Выделение на стеке памяти для функции
 				to_code_2R_I(info->sx->io, ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
@@ -378,8 +377,8 @@ static int codegen(information *const info)
 
 				for (size_t i = 0; i < parameters; i++)
 				{
-					const size_t type = (size_t)node_get_arg(&root, 0);
-					const item_t param_type = ident_get_type(info->sx, type);
+					const size_t id = (size_t)node_get_arg(&root, 0);
+					const item_t param_type = ident_get_type(info->sx, id);
 					node_set_next(&root);
 
 					// TODO: сделать параметры
@@ -396,13 +395,13 @@ static int codegen(information *const info)
 				// block(info, &root);
 
 				uni_printf(info->sx->io, "\n");
-				to_code_label(info->sx->io, FUNCEND, func_displ);
+				to_code_label(info->sx->io, FUNCEND, ref_ident);
 				// Восстановление стека после работы функции
 				to_code_R_I_R(info->sx->io, LW, R_RA, RA_DISPL, R_SP);
 				to_code_2R_I(info->sx->io, ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
 				to_code_R_I_R(info->sx->io, LW, R_SP, SP_DISPL, R_SP);
 				to_code_R(info->sx->io, JR, R_RA);
-				to_code_label(info->sx->io, NEXT, func_displ);
+				to_code_label(info->sx->io, NEXT, ref_ident);
 			}
 			break;
 			default:
