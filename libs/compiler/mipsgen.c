@@ -19,68 +19,66 @@
 #include "uniprinter.h"
 
 
-const item_t LOW_DYN_BORDER = 268500992;		// Это 0x10010000 -- нижняя граница динамической памяти
+const item_t LOW_DYN_BORDER = 0x10010000;		// Нижняя граница динамической памяти
 const item_t HEAP_DISPL = -8000;				// Смещение кучи относительно глобальной памяти
 // TODO: расписать, что за данные сохраняются в стеке при вызове
 const item_t FUNC_DISPL = 80;					// Смещение в стеке для сохранения данных вызова функции
-const item_t SP_DISPL = 20;						// Смещение в стеке для сохранения значения регистра SP
-const item_t RA_DISPL = 16;						// Смещение в стеке для сохранения значения регистра RA
+const item_t SP_DISPL = 20;						// Смещение в стеке для сохранения значения регистра R_SP
+const item_t RA_DISPL = 16;						// Смещение в стеке для сохранения значения регистра R_RA
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 // TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
 typedef enum REGISTERS
 {
-	ZERO,						/**< always has the value 0 */	
-	AT,							/**< temporary generally used by assembler */
-
-	V0,							/**< used for expression evaluations and to hold the integer
-									and pointer type function return values */
-	V1,
-	
-	A0,							/**< used for passing arguments to functions; values are not
-									preserved across function calls */
-	A1,
-	A2,
-	A3,
-
-	T0,							/**< temporary registers used for expression evaluation; 
-									values are not preserved across function calls */
-	T1,
-	T2,
-	T3,
-	T4,
-	T5,
-	T6,
-	T7,
-
-	S0,							/**< saved registers; values are preserved across function
-									calls */
-	S1,
-	S2,
-	S3,
-	S4,
-	S5,
-	S6,
-	S7,
-
-	T8,							/**< temporary registers used for expression evaluations;
-									values are not preserved across function calls.  When
-									calling position independent functions $25 must contain
-									the address of the called function */
-	T9,
-
-	K0,							/**< used only by the operating system */
-	K1,
-
-	GP,							/**< global pointer and context pointer */
-	SP,							/**< stack pointer */
-	FP,							/**< saved register (like s0-s7) or frame pointer */
-	RA,							/**< return address.  The return address is the location to
+	R_ZERO,							/**< always has the value 0 */	
+	R_AT,							/**< temporary generally used by assembler */
+// used for expression evaluations and to hold the integer
+// and pointer type function return values
+	R_V0,
+	R_V1,
+// used for passing arguments to functions; values are not
+// preserved across function calls
+	R_A0,
+	R_A1,
+	R_A2,
+	R_A3,
+// temporary registers used for expression evaluation; 
+// values are not preserved across function calls
+	R_T0,
+	R_T1,
+	R_T2,
+	R_T3,
+	R_T4,
+	R_T5,
+	R_T6,
+	R_T7,
+// saved registers; values are preserved across function calls
+	R_S0,
+	R_S1,
+	R_S2,
+	R_S3,
+	R_S4,
+	R_S5,
+	R_S6,
+	R_S7,
+// temporary registers used for expression evaluations;
+// values are not preserved across function calls.  When
+// calling position independent functions $25 must contain
+// the address of the called function
+	R_T8,
+	R_T9,
+// used only by the operating system 
+	R_K0,
+	R_K1,
+	R_GP,							/**< global pointer and context pointer */
+	R_SP,							/**< stack pointer */
+	R_FP,							/**< saved register (like s0-s7) or frame pointer */
+	R_RA,							/**< return address.  The return address is the location to
 									which a function should return control */
 } registers_t;
 
-typedef enum ISTRUCTIONS
+typedef enum INSTRUCTIONS
 {
 	MOVE,						/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
 	LI,							/**< MIPS Pseudo-Instruction. Load a constant into a register */
@@ -111,107 +109,107 @@ static void register_to_io(universal_io *const io, const registers_t reg)
 {
 	switch (reg)
 	{
-		case ZERO:
+		case R_ZERO:
 			uni_printf(io, "$0");
 			break;
-		case AT:
+		case R_AT:
 			uni_printf(io, "$at");
 			break;
 
-		case V0:
+		case R_V0:
 			uni_printf(io, "$v0");
 			break;
-		case V1:
+		case R_V1:
 			uni_printf(io, "$v1");
 			break;
 
-		case A0:
+		case R_A0:
 			uni_printf(io, "$a0");
 			break;
-		case A1:
+		case R_A1:
 			uni_printf(io, "$a1");
 			break;
-		case A2:
+		case R_A2:
 			uni_printf(io, "$a2");
 			break;
-		case A3:
+		case R_A3:
 			uni_printf(io, "$a3");
 			break;
 
-		case T0:
+		case R_T0:
 			uni_printf(io, "$t0");
 			break;
-		case T1:
+		case R_T1:
 			uni_printf(io, "$t1");
 			break;
-		case T2:
+		case R_T2:
 			uni_printf(io, "$t2");
 			break;
-		case T3:
+		case R_T3:
 			uni_printf(io, "$t3");
 			break;
-		case T4:
+		case R_T4:
 			uni_printf(io, "$t4");
 			break;
-		case T5:
+		case R_T5:
 			uni_printf(io, "$t5");
 			break;
-		case T6:
+		case R_T6:
 			uni_printf(io, "$t6");
 			break;
-		case T7:
+		case R_T7:
 			uni_printf(io, "$t7");
 			break;
 
-		case S0:
+		case R_S0:
 			uni_printf(io, "$s0");
 			break;
-		case S1:
+		case R_S1:
 			uni_printf(io, "$s1");
 			break;
-		case S2:
+		case R_S2:
 			uni_printf(io, "$s2");
 			break;
-		case S3:
+		case R_S3:
 			uni_printf(io, "$s3");
 			break;
-		case S4:
+		case R_S4:
 			uni_printf(io, "$s4");
 			break;
-		case S5:
+		case R_S5:
 			uni_printf(io, "$s5");
 			break;
-		case S6:
+		case R_S6:
 			uni_printf(io, "$s6");
 			break;
-		case S7:
+		case R_S7:
 			uni_printf(io, "$s7");
 			break;
 
-		case T8:
+		case R_T8:
 			uni_printf(io, "$t8");
 			break;
-		case T9:
+		case R_T9:
 			uni_printf(io, "$t9");
 			break;
 
-		case K0:
+		case R_K0:
 			uni_printf(io, "$k0");
 			break;
-		case K1:
+		case R_K1:
 			uni_printf(io, "$k1");
 			break;
 
-		case GP:
+		case R_GP:
 			uni_printf(io, "$gp");
 			break;
-		case SP:
+		case R_SP:
 			uni_printf(io, "$sp");
 			break;
-		case FP:
+		case R_FP:
 			uni_printf(io, "$fp");
 			break;
-		case RA:
+		case R_RA:
 			uni_printf(io, "$ra");
 			break;
 	}
@@ -371,11 +369,11 @@ static int codegen(information *const info)
 				to_code_label(info->sx->io, FUNC, func_displ);
 
 				// Выделение на стеке памяти для функции
-				to_code_2R_I(info->sx->io, ADDI, FP, FP, -max_displ - FUNC_DISPL);
+				to_code_2R_I(info->sx->io, ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
 				// Сохранение данных перед началом работы функции
-				to_code_R_I_R(info->sx->io, SW, SP, SP_DISPL, FP);
-				to_code_2R(info->sx->io, MOVE, SP, FP);
-				to_code_R_I_R(info->sx->io, SW, RA, RA_DISPL, SP);
+				to_code_R_I_R(info->sx->io, SW, R_SP, SP_DISPL, R_FP);
+				to_code_2R(info->sx->io, MOVE, R_SP, R_FP);
+				to_code_R_I_R(info->sx->io, SW, R_RA, RA_DISPL, R_SP);
 				uni_printf(info->sx->io, "\n");
 
 				for (size_t i = 0; i < parameters; i++)
@@ -400,10 +398,10 @@ static int codegen(information *const info)
 				uni_printf(info->sx->io, "\n");
 				to_code_label(info->sx->io, FUNCEND, func_displ);
 				// Восстановление стека после работы функции
-				to_code_R_I_R(info->sx->io, LW, RA, RA_DISPL, SP);
-				to_code_2R_I(info->sx->io, ADDI, FP, SP, max_displ + FUNC_DISPL);
-				to_code_R_I_R(info->sx->io, LW, SP, SP_DISPL, SP);
-				to_code_R(info->sx->io, JR, RA);
+				to_code_R_I_R(info->sx->io, LW, R_RA, RA_DISPL, R_SP);
+				to_code_2R_I(info->sx->io, ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
+				to_code_R_I_R(info->sx->io, LW, R_SP, SP_DISPL, R_SP);
+				to_code_R(info->sx->io, JR, R_RA);
 				to_code_label(info->sx->io, NEXT, func_displ);
 			}
 			break;
@@ -442,11 +440,11 @@ static void precodegen(syntax *const sx)
 	uni_printf(sx->io, "\tlui $28, %%hi(__gnu_local_gp)\n");
 	uni_printf(sx->io, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
-	to_code_2R(sx->io, MOVE, FP, SP);
-	to_code_2R_I(sx->io, ADDI, FP, FP, -4);
-	to_code_R_I_R(sx->io, SW, RA, 0, FP);
-	to_code_R_I(sx->io, LI, T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, SW, T0, HEAP_DISPL - 60, GP);
+	to_code_2R(sx->io, MOVE, R_FP, R_SP);
+	to_code_2R_I(sx->io, ADDI, R_FP, R_FP, -4);
+	to_code_R_I_R(sx->io, SW, R_RA, 0, R_FP);
+	to_code_R_I(sx->io, LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(sx->io, SW, R_T0, HEAP_DISPL - 60, R_GP);
 	uni_printf(sx->io, "\n");
 }
 
@@ -455,13 +453,14 @@ static void postcodegen(information *const info)
 {
 	uni_printf(info->sx->io, "\n");
 	to_code_L(info->sx->io, JAL, FUNC, info->main_label);
-	to_code_R_I_R(info->sx->io, LW, RA, -4, SP);
-	to_code_R(info->sx->io, JR, RA);
+	to_code_R_I_R(info->sx->io, LW, R_RA, -4, R_SP);
+	to_code_R(info->sx->io, JR, R_RA);
 
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
 	// TODO: тут ещё часть вывод таблицы типов должен быть (вроде это для написанных самими функции типа printid)
 }
+
 
 /*
  *	 __	 __   __	 ______   ______	 ______	 ______   ______	 ______	 ______
