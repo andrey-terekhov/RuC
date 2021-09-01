@@ -94,7 +94,7 @@ static inline const char *ident_get_spelling(const syntax *const sx, const size_
 }
 
 // TODO: такая функция есть в builder, хотелось бы не дублировать
-static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
+static inline item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
 	return type_is_integer(left_type) && type_is_integer(right_type)
 		? TYPE_INTEGER

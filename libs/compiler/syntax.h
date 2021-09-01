@@ -112,7 +112,7 @@ typedef struct syntax
 syntax sx_create(universal_io *const io);
 
 /**
- *	Check if syntax structure is correct
+ *	Check that syntax structure is correct
  *
  *	@param	sx			Syntax structure
  *
@@ -320,7 +320,7 @@ item_t type_get(const syntax *const sx, const size_t index);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is integer
+ *	Check that type is integer
  *
  *	@param	type		Type for check
  *
@@ -329,7 +329,7 @@ size_t type_size(const syntax *const sx, const item_t type);
 bool type_is_integer(const item_t type);
 
 /**
- *	Check if type is floating
+ *	Check that type is floating
  *
  *	@param	type		Type for check
  *
@@ -338,7 +338,7 @@ bool type_is_integer(const item_t type);
 bool type_is_floating(const item_t type);
 
 /**
- *	Check if type is arithmetic
+ *	Check that type is arithmetic
  *
  *	@param	type		Type for check
  *
@@ -347,7 +347,7 @@ bool type_is_floating(const item_t type);
 bool type_is_arithmetic(const item_t type);
 
 /**
- *	Check if type is void
+ *	Check that type is void
  *
  *	@param	type		Type for check
  *
@@ -356,7 +356,7 @@ bool type_is_arithmetic(const item_t type);
 bool type_is_void(const item_t type);
 
 /**
- *	Check if type is null pointer
+ *	Check that type is null pointer
  *
  *	@param	type		Type for check
  *
@@ -365,7 +365,7 @@ bool type_is_void(const item_t type);
 bool type_is_null_pointer(const item_t type);
 
 /**
- *	Check if type is array
+ *	Check that type is array
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -375,7 +375,7 @@ bool type_is_null_pointer(const item_t type);
 bool type_is_array(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is structure
+ *	Check that type is structure
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -385,7 +385,7 @@ bool type_is_array(const syntax *const sx, const item_t type);
 bool type_is_structure(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is function
+ *	Check that type is function
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -395,7 +395,7 @@ bool type_is_structure(const syntax *const sx, const item_t type);
 bool type_is_function(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is pointer
+ *	Check that type is pointer
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -405,7 +405,7 @@ bool type_is_function(const syntax *const sx, const item_t type);
 bool type_is_pointer(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is scalar
+ *	Check that type is scalar
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -415,7 +415,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type);
 bool type_is_scalar(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is aggregate
+ *	Check that type is aggregate
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -425,7 +425,7 @@ bool type_is_scalar(const syntax *const sx, const item_t type);
 bool type_is_aggregate(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is string
+ *	Check that type is string
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -435,7 +435,7 @@ bool type_is_aggregate(const syntax *const sx, const item_t type);
 bool type_is_string(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is struct pointer
+ *	Check that type is struct pointer
  *
  *	@param	sx			Syntax structure
  *	@param	type		Type for check
@@ -445,7 +445,7 @@ bool type_is_string(const syntax *const sx, const item_t type);
 bool type_is_struct_pointer(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is undefined
+ *	Check that type is undefined
  *
  *	@param	type		Type for check
  *
@@ -454,7 +454,7 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type);
 bool type_is_undefined(const item_t type);
 
 /**
- *	Check if type is FILE
+ *	Check that type is FILE
  *
  *	@param	type		Type for check
  *
@@ -473,7 +473,7 @@ bool type_is_file(const item_t type);
 item_t type_array_get_element_type(const syntax *const sx, const item_t type);
 
 /**
- *	Check if structure has a name
+ *	Check that structure has a name
  *
  *	@param	sx			Syntax structure
  *	@param	type		Structure type
@@ -713,7 +713,7 @@ inline item_t expression_get_type(const node *const nd)
 }
 
 /**
- *	Check if expression is lvalue
+ *	Check that expression is lvalue
  *
  *	@param	nd	Expression for check
  *
