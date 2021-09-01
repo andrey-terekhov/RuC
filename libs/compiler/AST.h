@@ -25,6 +25,13 @@
 extern "C" {
 #endif
 
+/** Value category */
+typedef enum CATEGORY
+{
+	LVALUE,				/**< An expression that designates an object */
+	RVALUE,				/**< An expression detached from any specific storage */
+} category_t;
+
 /** Expression kinds */
 typedef enum EXPRESSION
 {
@@ -38,13 +45,6 @@ typedef enum EXPRESSION
 	EXPR_TERNARY,		/**< Ternary expression */
 	EXPR_LIST,			/**< Expression list */
 } expression_t;
-
-/** Value category */
-typedef enum CATEGORY
-{
-	LVALUE,				/**< An expression that designates an object */
-	RVALUE,				/**< An expression detached from any specific storage */
-} category_t;
 
 /** Statement kinds */
 typedef enum STATEMENT
