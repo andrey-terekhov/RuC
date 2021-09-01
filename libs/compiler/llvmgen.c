@@ -1370,6 +1370,13 @@ static void statement(information *const info, node *const nd)
 				to_code_stack_load(info);
 			}
 
+			if (node_get_amount(nd) == 0)
+			{
+				uni_printf(info->sx->io, " ret void\n");
+				node_set_next(nd);
+				break;
+			}
+
 			node_set_next(nd);
 			info->variable_location = LREG;
 			const item_t answer_type = expression_get_type(nd);
@@ -1797,6 +1804,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
