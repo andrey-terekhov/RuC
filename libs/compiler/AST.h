@@ -161,13 +161,13 @@ inline int expression_literal_get_integer(const node *const nd)
 }
 
 /**
- *	Get double value of literal expression
+ *	Get floating value of literal expression
  *
  *	@param	nd		Literal expression
  *
- *	@return	Double value
+ *	@return	Floating value
  */
-inline double expression_literal_get_double(const node *const nd)
+inline double expression_literal_get_floating(const node *const nd)
 {
 	return node_get_type(nd) == OP_LITERAL ? node_get_arg_double(nd, 2) : DBL_MAX;
 }

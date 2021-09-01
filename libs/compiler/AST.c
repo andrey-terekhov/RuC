@@ -24,7 +24,7 @@ extern location expression_get_location(const node *const nd);
 
 extern size_t expression_identifier_get_id(const node *const nd);
 extern int expression_literal_get_integer(const node *const nd);
-extern double expression_literal_get_double(const node *const nd);
+extern double expression_literal_get_floating(const node *const nd);
 extern size_t expression_literal_get_string(const node *const nd);
 
 extern node expression_subscript_get_base(const node *const nd);
