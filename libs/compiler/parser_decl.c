@@ -21,7 +21,7 @@
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
 static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
-static void parse_enum_specifier(parser *const prs);
+static item_t parse_enum_specifier(parser *const prs);
 
 
 /**
@@ -93,8 +93,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_ENUM:
 		{
 			token_consume(prs);
-			parse_enum_specifier(prs);
-			return TYPE_INTEGER;
+			return parse_enum_specifier(prs);
 		}
 
 		case TK_TYPEDEF:
@@ -858,11 +857,9 @@ static void parse_init_enum_field_declarator(parser *const prs, item_t type, ite
 	ident_set_repr(prs->sx, old_id, (item_t)prs->lxr->repr);
 	ident_set_type(prs->sx, old_id, type);
 
-
-	repr_set_reference(prs->sx, prs->lxr->repr, (item_t)old_id);;
+	repr_set_reference(prs->sx, prs->lxr->repr, (item_t)old_id);
 
 	ident_set_displ(prs->sx, old_id, number);
-	prs->last_id = 0;
 
 	if (old_id == SIZE_MAX)
 	{
@@ -872,10 +869,143 @@ static void parse_init_enum_field_declarator(parser *const prs, item_t type, ite
 	{
 		parser_error(prs, repeated_decl, repr_get_name(prs->sx, prs->lxr->repr));
 	}
-	else
+}
+
+static int prior_op(token_t token)
+{
+	if (token == TK_PLUS || token == TK_MINUS)
 	{
-		prs->last_id = old_id;
+		return 1;
 	}
+	else if (token == TK_STAR || token == TK_SLASH)
+	{
+		return 2;
+	}
+	return 0;
+}
+
+static void parser_rpn_paren(parser *const prs, stack *const stk_op, stack *const stk_out)
+{
+	if (prs->token == TK_L_PAREN)
+	{
+		stack_push(stk_op, prs->token);
+	}
+	else if (prs->token == TK_R_PAREN)
+	{
+		while (stack_size(stk_op) > 0 && stack_peek(stk_op) != TK_L_PAREN) {
+			stack_push(stk_out, stack_pop(stk_op));
+		}
+		if (stack_size(stk_op) == 0)
+		{
+			parser_error(prs, wait_l_parren);
+		}
+		stack_pop(stk_op);
+	}
+	token_consume(prs);
+}
+
+static void from_expr_to_rpn(parser *const prs, stack *const stk_op, stack *const stk_out)
+{
+	while (true)
+	{
+		while (prs->token == TK_L_PAREN)
+		{
+			parser_rpn_paren(prs, stk_op, stk_out);
+		}
+		if (prs->token == TK_IDENTIFIER)
+		{
+			item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
+			const item_t type = ident_get_type(prs->sx, (const size_t)id);
+			const item_t num = ident_get_displ(prs->sx, (const size_t)id);
+
+			if (type != TYPE_CONST_INTEGER)
+			{
+				break;
+			}
+			token_consume(prs);
+			stack_push(stk_out, num);
+		}
+		else
+		{
+			token_expect_and_consume(prs, TK_INT_CONST, eq_not_const_int_for_enum_field);
+			stack_push(stk_out, prs->lxr->num);
+		}
+		while (prs->token == TK_R_PAREN)
+		{
+			parser_rpn_paren(prs, stk_op, stk_out);
+		}
+		if (prs->token == TK_R_BRACE || prs->token == TK_COMMA)
+		{
+			break;
+		}
+		while (stack_size(stk_op) && prior_op(stack_peek(stk_op)) >= prior_op(prs->token))
+		{
+			stack_push(stk_out, stack_pop(stk_op));
+		}
+		stack_push(stk_op, prs->token);
+		token_consume(prs);
+	}
+	while (stack_size(stk_op))
+	{
+		if (stack_peek(stk_op) == TK_L_PAREN)
+		{
+			parser_error(prs, wait_r_parren);
+		}
+		stack_push(stk_out, stack_pop(stk_op));
+	}
+}
+
+static int from_rpn_to_val(stack *const stk_in, stack *const stk_out)
+{
+	while (stack_size(stk_in))
+	{
+		item_t op_or_val = stack_pop(stk_in);
+		if (op_or_val == TK_PLUS || op_or_val == TK_MINUS ||
+			op_or_val == TK_STAR || op_or_val == TK_SLASH)
+		{
+			item_t val_rhs = stack_pop(stk_out);
+			item_t val_lhs = stack_pop(stk_out);
+			if (op_or_val == TK_PLUS)
+			{
+				stack_push(stk_out, val_lhs + val_rhs);
+			}
+			else if (op_or_val == TK_MINUS)
+			{
+				stack_push(stk_out, val_lhs - val_rhs);
+			}
+			else if (op_or_val == TK_STAR)
+			{
+				stack_push(stk_out, val_lhs * val_rhs);
+			}
+			else if (op_or_val == TK_SLASH)
+			{
+				stack_push(stk_out, val_lhs / val_rhs);
+			}
+		}
+		else
+		{
+			stack_push(stk_out, op_or_val);
+		}
+	}
+	return (int)stack_pop(stk_out);
+}
+
+static int from_expr_to_val(parser *const prs) {
+	stack stk_in = stack_create(1);
+	stack stk_out = stack_create(1);
+
+	from_expr_to_rpn(prs, &stk_in, &stk_out);
+
+	while (stack_size(&stk_out))
+	{
+		stack_push(&stk_in, stack_pop(&stk_out));
+	}
+
+	int val = from_rpn_to_val(&stk_in, &stk_out);
+
+	stack_clear(&stk_in);
+	stack_clear(&stk_out);
+	return val;
 }
 
 static item_t parse_enum_declaration_list(parser *const prs)
@@ -883,10 +1013,13 @@ static item_t parse_enum_declaration_list(parser *const prs)
 	token_consume(prs);
 	if (token_try_consume(prs, TK_R_BRACE))
 	{
-		parser_error(prs, empty_struct);
+		parser_error(prs, empty_enum);
 		return TYPE_UNDEFINED;
 	}
 
+	item_t local_modetab[100];
+	size_t local_md = 3;
+	size_t fields = 0;
 	item_t field_value = 0;
 	item_t type = TYPE_CONST_INTEGER;
 
@@ -895,21 +1028,16 @@ static item_t parse_enum_declaration_list(parser *const prs)
 
 		if (!token_try_consume(prs, TK_IDENTIFIER))
 		{
-			parser_error(prs, wait_ident_after_semicolon_in_struct);
+			parser_error(prs, wait_ident_after_comma_in_enum);
 			token_skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
 		}
 
 		if (prs->token == TK_EQUAL)
 		{
 			token_consume(prs);
-			if (prs->token == TK_INT_CONST)
-			{
-				token_consume(prs);
-			}
-			else
-			{
-				parser_error(prs, eq_not_const_int_for_enum_field);
-			}
+			size_t repr = prs->lxr->repr;
+			prs->lxr->num = from_expr_to_val(prs);
+			prs->lxr->repr = repr;
 			field_value = prs->lxr->num;
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
@@ -922,21 +1050,29 @@ static item_t parse_enum_declaration_list(parser *const prs)
 			continue;
 		}
 		token_expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
+
+		local_modetab[local_md++] = field_value - 1;
+		local_modetab[local_md++] = (item_t)prs->lxr->repr;
+		++fields;
 	} while (!token_try_consume(prs, TK_R_BRACE));
 
-	return type_add(prs->sx, (item_t []){ TYPE_ENUM, 0, 0 }, 3);
+	local_modetab[0] = TYPE_ENUM;
+	local_modetab[1] = (item_t)fields;
+	local_modetab[2] = (item_t)fields * 2;
+
+	return type_add(prs->sx, local_modetab, local_md);
 }
 
-static void parse_enum_specifier(parser *const prs)
+static item_t parse_enum_specifier(parser *const prs)
 {
 	switch (prs->token)
 	{
 		case TK_L_BRACE:
 		{
-			parse_enum_declaration_list(prs);
+			const item_t type = parse_enum_declaration_list(prs);
 			prs->was_type_def = true;
+			return type;
 		}
-			break;
 		case TK_IDENTIFIER:
 		{
 			const size_t repr = prs->lxr->repr;
@@ -948,6 +1084,7 @@ static void parse_enum_specifier(parser *const prs)
 				const size_t id = to_identab(prs, repr, 1000, type);
 				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
+				return ident_get_type(prs->sx, (size_t)id);
 			}
 			else // if (parser->next_token != l_brace)
 			{
@@ -956,20 +1093,22 @@ static void parse_enum_specifier(parser *const prs)
 				if (id == ITEM_MAX)
 				{
 					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+					return TYPE_UNDEFINED;
 				}
+				return ident_get_type(prs->sx, (size_t)id);
 			}
 		}
-			break;
 
 		default:
 			parser_error(prs, wrong_struct);
+			return TYPE_UNDEFINED;
 	}
 }
 
-static bool check_int_initializer(const item_t type, const item_t expr_type)
+static bool check_int_initializer(const syntax *const sx, item_t type, const item_t expr_type)
 {
-	return (type == TYPE_CONST_INTEGER || type == TYPE_INTEGER)  &&
-		   (expr_type == TYPE_CONST_INTEGER || expr_type == TYPE_INTEGER);
+	return (type_is_enum(sx, type) && expr_type == TYPE_INTEGER) ||
+		   (type == TYPE_INTEGER && type_is_enum(sx, expr_type));
 }
 
 
@@ -1089,7 +1228,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			{
 				parse_insert_widen(prs);
 			}
-			else if (!check_int_initializer(type, expr_type) && type != expr_type)
+			else if (!check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}

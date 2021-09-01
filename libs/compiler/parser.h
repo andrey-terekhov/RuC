@@ -188,7 +188,6 @@ item_t parse_expression(parser *const prs, node *const parent);
  */
 item_t parse_assignment_expression(parser *const prs, node *const parent);
 
-
 /**
  *	Parse expression in parentheses
  *

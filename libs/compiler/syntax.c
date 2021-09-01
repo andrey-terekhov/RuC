@@ -521,7 +521,8 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == TYPE_CHARACTER || type == TYPE_CONST_INTEGER;
+	return type == TYPE_INTEGER || type == TYPE_CHARACTER
+		   || type == TYPE_CONST_INTEGER;
 }
 
 bool type_is_floating(const item_t type)
@@ -547,6 +548,11 @@ bool type_is_array(const syntax *const sx, const item_t type)
 bool type_is_structure(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_enum(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
 }
 
 bool type_is_function(const syntax *const sx, const item_t type)
