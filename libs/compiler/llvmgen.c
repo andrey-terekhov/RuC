@@ -1804,7 +1804,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
