@@ -131,9 +131,14 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
 	}
-	else if (type_is_pointer(info->sx, type) || type_is_array(info->sx, type))
+	else if (type_is_pointer(info->sx, type))
 	{
 		type_to_io(info, type_pointer_get_element_type(info->sx, type));
+		uni_printf(info->sx->io, "*");
+	}
+	else if (type_is_array(info->sx, type))
+	{
+		type_to_io(info, type_array_get_element_type(info->sx, type));
 		uni_printf(info->sx->io, "*");
 	}
 	else if (type_is_file(type))
@@ -932,7 +937,7 @@ static void expression(information *const info, node *const nd)
 					info->answer_const_double = num;
 				}
 			}
-			else
+			else // nullptr
 			{
 				info->answer_kind = ANULL;
 			}
