@@ -39,6 +39,7 @@ typedef enum ANSWER
 	ALOGIC,								/**< Ответ является логическим значением */
 	AMEM,								/**< Ответ находится в памяти */
 	ASTR,								/**< Ответ является строкой */
+	ANULL,								/**< Ответ является null */
 } answer_t;
 
 typedef enum LOCATION
@@ -297,6 +298,15 @@ static inline void to_code_store_const_double(information *const info, const dou
 		, arg, is_array ? "" : "var", displ);
 }
 
+static void to_code_store_null(information *const info, const item_t displ, const item_t type)
+{
+	uni_printf(info->sx->io, " store ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, " null, ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", displ);
+}
+
 static void to_code_try_zext_to(information *const info)
 {
 	if (info->answer_kind != ALOGIC)
@@ -459,7 +469,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == answer_type)
+	if (operation_type == answer_type || type_is_null_pointer(answer_type))
 	{
 		return;
 	}
@@ -560,9 +570,13 @@ static void assignment_expression(information *const info, node *const nd)
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
-	else
+	else if (type_is_floating(operation_type))
 	{
 		to_code_store_const_double(info, info->answer_const_double, displ, is_array);
+	}
+	else
+	{
+		to_code_store_null(info, displ, operation_type);
 	}
 }
 
@@ -903,7 +917,7 @@ static void expression(information *const info, node *const nd)
 					info->answer_const = num;
 				}
 			}
-			else
+			else if (type_is_floating(type))
 			{
 				const double num = node_get_arg_double(nd, 2);
 
@@ -917,6 +931,10 @@ static void expression(information *const info, node *const nd)
 					info->answer_kind = ACONST;
 					info->answer_const_double = num;
 				}
+			}
+			else
+			{
+				info->answer_kind = ANULL;
 			}
 
 			node_set_next(nd);
