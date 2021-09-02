@@ -269,6 +269,26 @@ static void to_code_operation_const_reg_double(information *const info, const it
 	uni_printf(info->sx->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
+static void to_code_operation_reg_null(information *const info, const item_t operation
+	, const item_t fst, const item_t type)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "* %%.%" PRIitem ", null\n", fst);
+}
+
+static void to_code_operation_null_reg(information *const info, const item_t operation
+	, const item_t snd, const item_t type)
+{
+	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, "* null, %%.%" PRIitem "\n", snd);
+}
+
 static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
 	, const bool is_array)
 {
@@ -474,7 +494,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == answer_type || type_is_null_pointer(answer_type))
+	if (operation_type == answer_type || type_is_null_pointer(answer_type) ||  type_is_pointer(info->sx, answer_type))
 	{
 		return;
 	}
@@ -571,7 +591,7 @@ static void assignment_expression(information *const info, node *const nd)
 		to_code_store_reg(info, result, displ, operation_type, is_array
 			, info->answer_kind == AMEM);
 	}
-	else if (type_is_integer(operation_type)) // ACONST и опериция =
+	else if (type_is_integer(operation_type)) // ACONST и операция =
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
@@ -639,6 +659,14 @@ static void integral_expression(information *const info, node *const nd, const a
 	else if (left_kind == ACONST && right_kind == AREG) // double
 	{
 		to_code_operation_const_reg_double(info, operation, left_const_double, right_reg);
+	}
+	else if (left_kind == AREG && right_kind == ANULL)
+	{
+		to_code_operation_reg_null(info, operation, left_reg, operation_type);
+	}
+		else if (left_kind == ANULL && right_kind == AREG)
+	{
+		to_code_operation_null_reg(info, operation, right_reg, operation_type);
 	}
 
 	info->answer_reg = info->register_num++;
