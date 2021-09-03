@@ -58,7 +58,7 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 			}
 			break;
-		case OP_CONSTANT:
+		case OP_LITERAL:
 			argc = 3;
 			was_switch = true;
 			switch (num)
@@ -74,25 +74,6 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 					break;
 				case 3:
 					sprintf(buffer, "value");
-					break;
-			}
-			break;
-		case OP_STRING:
-			argc = 3;
-			was_switch = true;
-			switch (num)
-			{
-				case 0:
-					sprintf(buffer, "STRING");
-					break;
-				case 1:
-					sprintf(buffer, "type");
-					break;
-				case 2:
-					sprintf(buffer, "designation");
-					break;
-				case 3:
-					sprintf(buffer, "index");
 					break;
 			}
 			break;
@@ -809,15 +790,6 @@ static size_t elem_to_io(universal_io *const io, const vector *const table, size
 	}
 	uni_printf(io, "\n");
 
-	if (type == OP_STRING)
-	{
-		const size_t n = (size_t)vector_get(table, i - 1);
-		for (size_t j = 0; j < n; j++)
-		{
-			uni_printf(io, "%" PRIitem "\n", vector_get(table, i++));
-		}
-	}
-
 	return i;
 }
 
@@ -855,7 +827,7 @@ static size_t tree_print_recursive(universal_io *const io, node *const nd, size_
 		}
 		uni_printf(io, "\n");
 
-		if ((node_get_arg(nd, i) != ITEM_MAX && node_get_type(nd) != OP_STRING) || i != argc)
+		if ((node_get_arg(nd, i) != ITEM_MAX) || i != argc)
 		{
 			elem_get_name(type, 0, buffer);
 			//warning(NULL, node_argc, index, buffer);

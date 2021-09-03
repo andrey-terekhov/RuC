@@ -102,8 +102,7 @@ typedef enum OPERATION
 	
 	// Expressions
 	OP_IDENTIFIER,			/**< Identifier node */
-	OP_CONSTANT,			/**< Constant node */
-	OP_STRING,				/**< String litaral node */
+	OP_LITERAL,				/**< Literal node */
 	OP_CALL,				/**< Call node */
 	OP_SELECT,				/**< Select operator node */
 	OP_SLICE,				/**< Slice operator node */
@@ -195,9 +194,9 @@ typedef enum builtin
 	BI_FPUTC				= 154,
 	BI_FCLOSE				= 158,
 
-	BI_EXIT					= 146,
+	BI_EXIT					= 162,
 
-	BEGIN_USER_FUNC			= 150,
+	BEGIN_USER_FUNC			= 166,
 } builtin_t;
 
 

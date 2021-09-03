@@ -28,11 +28,6 @@ static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
 
-extern item_t expression_get_type(const node *const nd);
-extern bool expression_is_lvalue(const node *const nd);
-extern location expression_get_location(const node *const nd);
-
-
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
 	char32_t buffer[MAX_STRING_LENGTH];

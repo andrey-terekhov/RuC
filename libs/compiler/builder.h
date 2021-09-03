@@ -202,13 +202,6 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
 node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
 	, const location l_loc, const location r_loc);
 
-/**
- *	Build a broken expression
- *
- *	@return	Broken expression node
- */
-node build_broken_expression();
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
