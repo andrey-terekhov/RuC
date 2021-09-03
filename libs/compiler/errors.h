@@ -226,7 +226,8 @@ typedef enum ERROR
 /** Warnings codes */
 typedef enum WARNING
 {
-	too_long_int = 400,
+	too_long_int,
+	variable_deviation,
 
 	tree_operator_unknown,
 	node_argc,

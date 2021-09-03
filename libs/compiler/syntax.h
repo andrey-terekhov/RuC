@@ -37,7 +37,8 @@ extern "C" {
 /** Type qualifiers */
 enum TYPE
 {
-	TYPE_FILE			= -7,
+	TYPE_NULL_POINTER	= -8,
+	TYPE_FILE,
 	TYPE_VOID,
 	TYPE_FLOATING		= -3,
 	TYPE_INTEGER		= -1,
@@ -353,6 +354,15 @@ bool type_is_arithmetic(const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_void(const item_t type);
+
+/**
+ *	Check if type is null pointer
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_null_pointer(const item_t type);
 
 /**
  *	Check if type is array

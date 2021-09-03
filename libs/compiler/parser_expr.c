@@ -112,6 +112,7 @@ static precedence_t get_operator_precedence(const token_t token)
  *		identifier
  *		constant
  *		string-literal
+ *		'NULL'
  *		'(' expression ')'
  *
  *	@param	prs			Parser
@@ -153,6 +154,12 @@ static node parse_primary_expression(parser *const prs)
 			const location loc = token_consume(prs);
 
 			return build_string_literal_expression(prs->sx, value, loc);
+		}
+
+		case TK_NULL:
+		{
+			const location loc = token_consume(prs);
+			return build_null_pointer_literal_expression(prs->sx, loc);
 		}
 
 		case TK_L_PAREN:
@@ -368,7 +375,7 @@ static node parse_unary_expression(parser *const prs)
 		{
 			const unary_t operator = token_to_unary(prs->token);
 			const location op_loc = token_consume(prs);
-			const node nd_operand = parse_unary_expression(prs);
+			node nd_operand = parse_unary_expression(prs);
 
 			return build_unary_expression(prs->sx, &nd_operand, operator, op_loc);
 		}
