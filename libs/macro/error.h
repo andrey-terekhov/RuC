@@ -16,54 +16,81 @@
 
 #pragma once
 
+#include <stdarg.h>
 #include <stddef.h>
-#include "uniio.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Errors codes */
+/** Error codes */
 typedef enum ERROR
 {
-	header_file_not_found,
-	source_file_not_found,
+	LINKER_CANNOT_OPEN,
+
+	MACRO_NAME_NON,
+	MACRO_NAME_FIRST_CHARACTER,
+	MACRO_NAME_EXISTS,
 } error_t;
+
+/** Warning codes */
+typedef enum WARNING
+{
+	MACRO_CONSOLE_SEPARATOR,
+} warning_t;
 
 
 /**
  *	Emit an error for some problem
  *
- *	@param	io			Universal io
+ *	@param	file		File name
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
  *	@param	num			Error code
  */
-void macro_error(const universal_io *const io, const int num);
+void macro_error(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
  *
- *	@param	io			Universal io
+ *	@param	file		File name
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
  *	@param	num			Warning code
  */
-void macro_warning(const universal_io *const io, const int num);
+void macro_warning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, warning_t num, ...);
 
 
 /**
- *	Emit an error message
+ *	Emit an error (embedded version)
  *
- *	@param	io			Universal io
- *	@param	msg			Error message
+ *	@param	file		File name
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
+ *	@param	num			Error code
+ *	@param	args		Variable list
  */
-void macro_error_msg(const universal_io *const io, const char *const msg);
+void macro_verror(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const error_t num, va_list args);
 
 /**
- *	Emit a warning message
+ *	Emit a warning (embedded version)
  *
- *	@param	io			Universal io
- *	@param	msg			Warning message
+ *	@param	file		File name
+ *	@param	str			Code line
+ *	@param	line		Line number
+ *	@param	symbol		Character number
+ *	@param	num			Warning code
+ *	@param	args		Variable list
  */
-void macro_warning_msg(const universal_io *const io, const char *const msg);
+void macro_vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
+	, const warning_t num, va_list args);
 
 
 /**
@@ -72,7 +99,7 @@ void macro_warning_msg(const universal_io *const io, const char *const msg);
  *	@param	tag		Message location
  *	@param	num		Error code
  */
-void macro_system_error(const char *const tag, error_t num);
+void macro_system_error(const char *const tag, error_t num, ...);
 
 /**
  *	Emit a system warning
@@ -80,7 +107,7 @@ void macro_system_error(const char *const tag, error_t num);
  *	@param	tag		Message location
  *	@param	num		Warning code
  */
-void macro_system_warning(const char *const tag, error_t num);
+void macro_system_warning(const char *const tag, warning_t num, ...);
 
 #ifdef __cplusplus
 } /* extern "C" */
