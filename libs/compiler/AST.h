@@ -32,7 +32,7 @@ typedef enum CATEGORY
 	RVALUE,				/**< An expression detached from any specific storage */
 } category_t;
 
-/** Expression kinds */
+/** Expression class */
 typedef enum EXPRESSION
 {
 	EXPR_IDENTIFIER,	/**< Identifier expression */
@@ -46,7 +46,7 @@ typedef enum EXPRESSION
 	EXPR_LIST,			/**< Expression list */
 } expression_t;
 
-/** Statement kinds */
+/** Statement class */
 typedef enum STATEMENT
 {
 	STMT_DECL,			/**< Declaration statement */
@@ -68,11 +68,11 @@ typedef enum STATEMENT
 	STMT_PRINTF,		/**< Printf statement */
 } statement_t;
 
-/** Declaration kinds */
+/** Declaration class */
 typedef enum DECLARATION
 {
 	DECL_VAR,			/**< Variable declaration */
-	DECL_FUNC,			/**< Function definition */
+	DECL_FUNC,			/**< Function declaration */
 	DECL_TYPE,			/**< Type declaration */
 } declaration_t;
 
@@ -829,7 +829,7 @@ inline node declaration_function_get_body(const node *const nd)
  */
 inline size_t translation_unit_get_size(const node *const nd)
 {
-	return node_is_correct(nd) && node_get_type(nd) == ITEM_MAX ? node_get_amount(nd) : SIZE_MAX;
+	return node_get_type(nd) == ITEM_MAX && node_is_correct(nd) ? node_get_amount(nd) : SIZE_MAX;
 }
 
 /**
@@ -842,7 +842,7 @@ inline size_t translation_unit_get_size(const node *const nd)
  */
 inline node translation_unit_get_declaration(const node *const nd, const size_t index)
 {
-	return node_is_correct(nd) && node_get_type(nd) == ITEM_MAX ? node_get_child(nd, index) : node_broken();
+	return node_get_type(nd) == ITEM_MAX && node_is_correct(nd) ? node_get_child(nd, index) : node_broken();
 }
 
 #ifdef __cplusplus

@@ -112,19 +112,24 @@ expression_t expression_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_IDENTIFIER:	return EXPR_IDENTIFIER;
-		case OP_LITERAL:	return EXPR_LITERAL;
-
-		case OP_SLICE:		return EXPR_SUBSCRIPT;
-		case OP_CALL:		return EXPR_CALL;
-		case OP_SELECT:		return EXPR_MEMBER;
-
-		case OP_UNARY:		return EXPR_UNARY;
-		case OP_BINARY:		return EXPR_BINARY;
-		case OP_TERNARY:	return EXPR_TERNARY;
-
-		case OP_LIST:		return EXPR_LIST;
-
+		case OP_IDENTIFIER:
+			return EXPR_IDENTIFIER;
+		case OP_LITERAL:
+			return EXPR_LITERAL;
+		case OP_SLICE:
+			return EXPR_SUBSCRIPT;
+		case OP_CALL:
+			return EXPR_CALL;
+		case OP_SELECT:
+			return EXPR_MEMBER;
+		case OP_UNARY:
+			return EXPR_UNARY;
+		case OP_BINARY:
+			return EXPR_BINARY;
+		case OP_TERNARY:
+			return EXPR_TERNARY;
+		case OP_LIST:
+			return EXPR_LIST;
 		default:
 			system_error(node_unexpected);
 			return 0;
@@ -137,30 +142,40 @@ statement_t statement_get_class(const node *const nd)
 	{
 		case OP_DECL_VAR:
 		case OP_DECL_TYPE:
-		case OP_FUNC_DEF:	return STMT_DECL;
-
-		case OP_LABEL:		return STMT_LABEL;
-		case OP_CASE:		return STMT_CASE;
-		case OP_DEFAULT:	return STMT_DEFAULT;
-
-		case OP_BLOCK:		return STMT_COMPOUND;
-		case OP_NOP:		return STMT_NULL;
-
-		case OP_IF:			return STMT_IF;
-		case OP_SWITCH:		return STMT_SWITCH;
-
-		case OP_WHILE:		return STMT_WHILE;
-		case OP_DO:			return STMT_DO;
-		case OP_FOR:		return STMT_FOR;
-
-		case OP_GOTO:		return STMT_GOTO;
-		case OP_CONTINUE:	return STMT_CONTINUE;
-		case OP_BREAK:		return STMT_BREAK;
-		case OP_RETURN:		return STMT_RETURN;
-
-		case OP_PRINTF:		return STMT_PRINTF;
-
-		default:			return STMT_EXPR;
+		case OP_FUNC_DEF:
+			return STMT_DECL;
+		case OP_LABEL:
+			return STMT_LABEL;
+		case OP_CASE:
+			return STMT_CASE;
+		case OP_DEFAULT:
+			return STMT_DEFAULT;
+		case OP_BLOCK:
+			return STMT_COMPOUND;
+		case OP_NOP:
+			return STMT_NULL;
+		case OP_IF:
+			return STMT_IF;
+		case OP_SWITCH:
+			return STMT_SWITCH;
+		case OP_WHILE:
+			return STMT_WHILE;
+		case OP_DO:
+			return STMT_DO;
+		case OP_FOR:
+			return STMT_FOR;
+		case OP_GOTO:
+			return STMT_GOTO;
+		case OP_CONTINUE:
+			return STMT_CONTINUE;
+		case OP_BREAK:
+			return STMT_BREAK;
+		case OP_RETURN:
+			return STMT_RETURN;
+		case OP_PRINTF:
+			return STMT_PRINTF;
+		default:
+			return STMT_EXPR;
 	}
 }
 
@@ -168,10 +183,12 @@ declaration_t declaration_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_DECL_VAR:	return DECL_VAR;
-		case OP_DECL_TYPE:	return DECL_TYPE;
-		case OP_FUNC_DEF:	return DECL_FUNC;
-
+		case OP_DECL_VAR:
+			return DECL_VAR;
+		case OP_DECL_TYPE:
+			return DECL_TYPE;
+		case OP_FUNC_DEF:
+			return DECL_FUNC;
 		default:
 			system_error(node_unexpected);
 			return 0;
