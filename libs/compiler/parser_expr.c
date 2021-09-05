@@ -201,7 +201,7 @@ static void binary_operation(parser *const prs, operator operator)
 
 		node_remove(&prs->nd);
 		prs->nd = parent;
-		operands_push(prs, VALUE, TYPE_CONST_INTEGER);
+		operands_push(prs, VALUE, result_type);
 		return;
 	}
 	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
