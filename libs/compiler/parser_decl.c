@@ -1105,10 +1105,15 @@ static item_t parse_enum_specifier(parser *const prs)
 	}
 }
 
-static bool check_int_initializer(const syntax *const sx, item_t type, const item_t expr_type)
+static bool check_int_enum_initializer(const syntax *const sx, item_t type, const item_t expr_type)
 {
 	return (type_is_enum(sx, type) && expr_type == TYPE_INTEGER) ||
 		   (type == TYPE_INTEGER && type_is_enum(sx, expr_type));
+}
+
+static bool check_int_initializer(item_t type, const item_t expr_type)
+{
+	return type_is_integer(type) && expr_type == TYPE_CONST_INTEGER;
 }
 
 
@@ -1228,7 +1233,8 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			{
 				parse_insert_widen(prs);
 			}
-			else if (!check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
+			else if (!check_int_enum_initializer(prs->sx, type, expr_type) &&
+					 !check_int_initializer(type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}

@@ -133,6 +133,33 @@ static inline bool is_integer_operator(const token_t operator)
 	}
 }
 
+static item_t operator_application(parser *const prs,  const token_t token, item_t num_lhs, item_t num_rhs)
+{
+	switch (token)
+	{
+		case TK_PLUS:					return num_lhs + num_rhs;
+		case TK_MINUS:					return num_lhs - num_rhs;
+		case TK_STAR:					return num_lhs * num_rhs;
+		case TK_SLASH:					return num_lhs / num_rhs;
+		case TK_PERCENT:				return num_lhs % num_rhs;
+		case TK_CARET:					return num_lhs ^ num_rhs;
+		case TK_PIPE:					return num_lhs | num_rhs;
+		case TK_AMP:					return num_lhs & num_rhs;
+		case TK_LESS:					return num_lhs < num_rhs;
+		case TK_GREATER:				return num_lhs > num_rhs;
+		case TK_PIPE_PIPE:				return num_lhs || num_rhs;
+		case TK_AMP_AMP:				return num_lhs && num_rhs;
+		case TK_EQUAL_EQUAL:			return num_lhs == num_rhs;
+		case TK_LESS_EQUAL:				return num_lhs <= num_rhs;
+		case TK_LESS_LESS:				return num_lhs << num_rhs;
+		case TK_GREATER_EQUAL:			return num_lhs >= num_rhs;
+		case TK_GREATER_GREATER:		return num_lhs >> num_rhs;
+		default:
+			parser_error(prs, not_const_oper);
+			return 0;
+	}
+}
+
 static void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
@@ -165,6 +192,18 @@ static void binary_operation(parser *const prs, operator operator)
 		result_type = TYPE_FLOATING;
 	}
 
+	node parent = node_get_parent(&prs->nd);
+	if (node_get_type(&parent) == OP_CONST && node_get_type(&prs->nd) == OP_CONST)
+	{
+		node_set_arg(&parent, 0,operator_application(prs, token,
+													  node_get_arg(&parent, 0),
+													  node_get_arg(&prs->nd, 0)));
+
+		node_remove(&prs->nd);
+		prs->nd = parent;
+		operands_push(prs, VALUE, TYPE_CONST_INTEGER);
+		return;
+	}
 	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
 	{
 		to_tree(prs, token_to_binary(token));

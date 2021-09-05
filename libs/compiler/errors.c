@@ -546,6 +546,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case empty_enum:
 			sprintf(msg, "перечисление должно иметь поля");
 			break;
+		case not_const_oper:
+			sprintf(msg, "оператор не подходит для констант");
+			break;
 
 		case tree_expression_not_block:
 		{
