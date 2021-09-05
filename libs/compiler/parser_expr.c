@@ -150,6 +150,7 @@ static item_t operator_application(parser *const prs,  const token_t token, item
 		case TK_PIPE_PIPE:				return num_lhs || num_rhs;
 		case TK_AMP_AMP:				return num_lhs && num_rhs;
 		case TK_EQUAL_EQUAL:			return num_lhs == num_rhs;
+		case TK_EXCLAIM_EQUAL:			return num_lhs != num_rhs;
 		case TK_LESS_EQUAL:				return num_lhs <= num_rhs;
 		case TK_LESS_LESS:				return num_lhs << num_rhs;
 		case TK_GREATER_EQUAL:			return num_lhs >= num_rhs;
