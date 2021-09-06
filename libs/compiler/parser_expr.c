@@ -1453,6 +1453,12 @@ item_t parse_expression(parser *const prs, node *const parent)
 	return stack_pop(&prs->anonymous);
 }
 
+item_t parse_enum_field_expression(parser *const prs)
+{
+	parse_assignment_expression_internal(prs);
+	return stack_pop(&prs->anonymous);
+}
+
 item_t parse_assignment_expression(parser *const prs, node *const parent)
 {
 	node_copy(&prs->nd, parent);

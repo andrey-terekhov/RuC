@@ -871,143 +871,6 @@ static void parse_init_enum_field_declarator(parser *const prs, item_t type, ite
 	}
 }
 
-static int prior_op(token_t token)
-{
-	if (token == TK_PLUS || token == TK_MINUS)
-	{
-		return 1;
-	}
-	else if (token == TK_STAR || token == TK_SLASH)
-	{
-		return 2;
-	}
-	return 0;
-}
-
-static void parser_rpn_paren(parser *const prs, stack *const stk_op, stack *const stk_out)
-{
-	if (prs->token == TK_L_PAREN)
-	{
-		stack_push(stk_op, prs->token);
-	}
-	else if (prs->token == TK_R_PAREN)
-	{
-		while (stack_size(stk_op) > 0 && stack_peek(stk_op) != TK_L_PAREN) {
-			stack_push(stk_out, stack_pop(stk_op));
-		}
-		if (stack_size(stk_op) == 0)
-		{
-			parser_error(prs, wait_l_parren);
-		}
-		stack_pop(stk_op);
-	}
-	token_consume(prs);
-}
-
-static void from_expr_to_rpn(parser *const prs, stack *const stk_op, stack *const stk_out)
-{
-	while (true)
-	{
-		while (prs->token == TK_L_PAREN)
-		{
-			parser_rpn_paren(prs, stk_op, stk_out);
-		}
-		if (prs->token == TK_IDENTIFIER)
-		{
-			item_t id = repr_get_reference(prs->sx, prs->lxr->repr);
-			const item_t type = ident_get_type(prs->sx, (const size_t)id);
-			const item_t num = ident_get_displ(prs->sx, (const size_t)id);
-
-			if (type != TYPE_CONST_INTEGER)
-			{
-				break;
-			}
-			token_consume(prs);
-			stack_push(stk_out, num);
-		}
-		else
-		{
-			token_expect_and_consume(prs, TK_INT_CONST, eq_not_const_int_for_enum_field);
-			stack_push(stk_out, prs->lxr->num);
-		}
-		while (prs->token == TK_R_PAREN)
-		{
-			parser_rpn_paren(prs, stk_op, stk_out);
-		}
-		if (prs->token == TK_R_BRACE || prs->token == TK_COMMA)
-		{
-			break;
-		}
-		while (stack_size(stk_op) && prior_op(stack_peek(stk_op)) >= prior_op(prs->token))
-		{
-			stack_push(stk_out, stack_pop(stk_op));
-		}
-		stack_push(stk_op, prs->token);
-		token_consume(prs);
-	}
-	while (stack_size(stk_op))
-	{
-		if (stack_peek(stk_op) == TK_L_PAREN)
-		{
-			parser_error(prs, wait_r_parren);
-		}
-		stack_push(stk_out, stack_pop(stk_op));
-	}
-}
-
-static int from_rpn_to_val(stack *const stk_in, stack *const stk_out)
-{
-	while (stack_size(stk_in))
-	{
-		item_t op_or_val = stack_pop(stk_in);
-		if (op_or_val == TK_PLUS || op_or_val == TK_MINUS ||
-			op_or_val == TK_STAR || op_or_val == TK_SLASH)
-		{
-			item_t val_rhs = stack_pop(stk_out);
-			item_t val_lhs = stack_pop(stk_out);
-			if (op_or_val == TK_PLUS)
-			{
-				stack_push(stk_out, val_lhs + val_rhs);
-			}
-			else if (op_or_val == TK_MINUS)
-			{
-				stack_push(stk_out, val_lhs - val_rhs);
-			}
-			else if (op_or_val == TK_STAR)
-			{
-				stack_push(stk_out, val_lhs * val_rhs);
-			}
-			else if (op_or_val == TK_SLASH)
-			{
-				stack_push(stk_out, val_lhs / val_rhs);
-			}
-		}
-		else
-		{
-			stack_push(stk_out, op_or_val);
-		}
-	}
-	return (int)stack_pop(stk_out);
-}
-
-static int from_expr_to_val(parser *const prs) {
-	stack stk_in = stack_create(1);
-	stack stk_out = stack_create(1);
-
-	from_expr_to_rpn(prs, &stk_in, &stk_out);
-
-	while (stack_size(&stk_out))
-	{
-		stack_push(&stk_in, stack_pop(&stk_out));
-	}
-
-	int val = from_rpn_to_val(&stk_in, &stk_out);
-
-	stack_clear(&stk_in);
-	stack_clear(&stk_out);
-	return val;
-}
-
 static item_t parse_enum_declaration_list(parser *const prs)
 {
 	token_consume(prs);
@@ -1035,10 +898,13 @@ static item_t parse_enum_declaration_list(parser *const prs)
 		if (prs->token == TK_EQUAL)
 		{
 			token_consume(prs);
-			size_t repr = prs->lxr->repr;
-			prs->lxr->num = from_expr_to_val(prs);
-			prs->lxr->repr = repr;
-			field_value = prs->lxr->num;
+			parse_enum_field_expression(prs);
+			if (node_get_type(&prs->nd) != OP_CONST)
+			{
+				parser_error(prs, eq_not_const_int_for_enum_field);
+				return TYPE_UNDEFINED;
+			}
+			field_value = node_get_arg(&prs->nd, 0);
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
 		else
