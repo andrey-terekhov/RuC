@@ -197,8 +197,8 @@ static void binary_operation(parser *const prs, operator operator)
 	if (node_get_type(&parent) == OP_CONST && node_get_type(&prs->nd) == OP_CONST)
 	{
 		node_set_arg(&parent, 0,operator_application(prs, token,
-													  node_get_arg(&parent, 0),
-													  node_get_arg(&prs->nd, 0)));
+								node_get_arg(&parent, 0),
+								node_get_arg(&prs->nd, 0)));
 
 		node_remove(&prs->nd);
 		prs->nd = parent;
