@@ -884,7 +884,7 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 	size_t local_md = 3;
 	size_t fields = 0;
 	item_t field_value = 0;
-	item_t type = TYPE_CONST_INTEGER;
+	item_t type = TYPE_ENUM;
 
 	do
 	{
@@ -979,7 +979,7 @@ static bool check_int_enum_initializer(const syntax *const sx, item_t type, cons
 
 static bool check_int_initializer(item_t type, const item_t expr_type)
 {
-	return type_is_integer(type) && expr_type == TYPE_CONST_INTEGER;
+	return type_is_integer(type) && expr_type == TYPE_ENUM;
 }
 
 
