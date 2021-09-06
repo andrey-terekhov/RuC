@@ -898,11 +898,13 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		if (prs->token == TK_EQUAL)
 		{
 			token_consume(prs);
+			const size_t repr = prs->lxr->repr;
 			field_value = parse_enum_field_expression(prs, parent);
 			if (prs->was_error)
 			{
 				return TYPE_UNDEFINED;
 			}
+			prs->lxr->repr = repr;
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
 		else

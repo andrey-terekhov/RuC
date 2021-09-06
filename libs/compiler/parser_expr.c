@@ -431,8 +431,8 @@ static void parse_standard_function_call(parser *const prs)
 
 static item_t parse_constant_in_enum(parser *const prs, const token_t num)
 {
-	to_tree(prs, OP_CONST);
-	node_add_arg(&prs->nd, num);
+	node_set_type(&prs->nd, OP_CONST);
+	node_set_arg(&prs->nd, 0, num);
 	return operands_push(prs, VALUE, TYPE_CONST_INTEGER);
 }
 
