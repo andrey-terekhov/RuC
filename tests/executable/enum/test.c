@@ -18,15 +18,15 @@ enum
 
 int main()
 {
-	int hhhh = 1 + 2 * 3 + 4 - 5;
-	int hhhh2 = 10 + 7 + 3;
+	int num = 1 + 2 * 3 + 4 - 5;
+	int num_2 = 10 + 7 + 3;
 	enum name e = 25;
 
 	v = 10;
 	l = 15;
 
-	assert(hhhh == 6, "hhhh == 15");
-	assert(hhhh2 == 20, "hhhh == 15");
+	assert(num == 6, "hhhh == 15");
+	assert(num_2 == 20, "hhhh == 15");
 	assert(t == 0, "t == 0");
 	assert(a == 5, "a == 5");
 	assert(b == 6, "b == 6");

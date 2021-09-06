@@ -1177,7 +1177,6 @@ static void parse_subexpression(parser *const prs)
 	{
 		to_value(prs);
 	}
-
 	while (old_operators_size < operators_size(prs))
 	{
 		binary_operation(prs, operators_pop(prs));
@@ -1453,10 +1452,18 @@ item_t parse_expression(parser *const prs, node *const parent)
 	return stack_pop(&prs->anonymous);
 }
 
-item_t parse_enum_field_expression(parser *const prs)
+item_t parse_enum_field_expression(parser *const prs, node *const parent)
 {
+	node_copy(&prs->nd, parent);
 	parse_assignment_expression_internal(prs);
-	return stack_pop(&prs->anonymous);
+	item_t num = node_get_arg(&prs->nd, 0);
+	if (node_get_type(&prs->nd) != OP_CONST)
+	{
+		parser_error(prs, eq_not_const_int_for_enum_field);
+		return 0;
+	}
+	node_remove(&prs->nd);
+	return num;
 }
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)

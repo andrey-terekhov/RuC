@@ -21,7 +21,7 @@
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
 static void parse_array_initializer(parser *const prs, node *const parent, const item_t type);
-static item_t parse_enum_specifier(parser *const prs);
+static item_t parse_enum_specifier(parser *const prs, node *const parent);
 
 
 /**
@@ -93,7 +93,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_ENUM:
 		{
 			token_consume(prs);
-			return parse_enum_specifier(prs);
+			return parse_enum_specifier(prs, parent);
 		}
 
 		case TK_TYPEDEF:
@@ -871,7 +871,7 @@ static void parse_init_enum_field_declarator(parser *const prs, item_t type, ite
 	}
 }
 
-static item_t parse_enum_declaration_list(parser *const prs)
+static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 {
 	token_consume(prs);
 	if (token_try_consume(prs, TK_R_BRACE))
@@ -898,13 +898,11 @@ static item_t parse_enum_declaration_list(parser *const prs)
 		if (prs->token == TK_EQUAL)
 		{
 			token_consume(prs);
-			parse_enum_field_expression(prs);
-			if (node_get_type(&prs->nd) != OP_CONST)
+			field_value = parse_enum_field_expression(prs, parent);
+			if (prs->was_error)
 			{
-				parser_error(prs, eq_not_const_int_for_enum_field);
 				return TYPE_UNDEFINED;
 			}
-			field_value = node_get_arg(&prs->nd, 0);
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
 		else
@@ -929,13 +927,13 @@ static item_t parse_enum_declaration_list(parser *const prs)
 	return type_add(prs->sx, local_modetab, local_md);
 }
 
-static item_t parse_enum_specifier(parser *const prs)
+static item_t parse_enum_specifier(parser *const prs, node *const parent)
 {
 	switch (prs->token)
 	{
 		case TK_L_BRACE:
 		{
-			const item_t type = parse_enum_declaration_list(prs);
+			const item_t type = parse_enum_declaration_list(prs, parent);
 			prs->was_type_def = true;
 			return type;
 		}
@@ -946,7 +944,7 @@ static item_t parse_enum_specifier(parser *const prs)
 
 			if (prs->token == TK_L_BRACE)
 			{
-				const item_t type = parse_enum_declaration_list(prs);
+				const item_t type = parse_enum_declaration_list(prs, parent);
 				const size_t id = to_identab(prs, repr, 1000, type);
 				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
