@@ -1177,6 +1177,7 @@ static void parse_subexpression(parser *const prs)
 	{
 		to_value(prs);
 	}
+
 	while (old_operators_size < operators_size(prs))
 	{
 		binary_operation(prs, operators_pop(prs));
