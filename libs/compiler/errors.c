@@ -339,6 +339,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case error_in_initialization:	// test_exist
 			sprintf(msg, "несоответствие типов при инициализации переменной");
 			break;
+		case error_in_equal_with_enum:
+			sprintf(msg, "несоответствие типов при присваивании в перечисление");
+			break;
 		case type_missmatch:	// need_test
 			sprintf(msg, "несоответствие типов");
 			break;
@@ -386,6 +389,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case wait_ident_after_comma_in_enum:
 			sprintf(msg, "в перечислении должен быть идентификатор поля");
+			break;
+		case no_equal_with_enum:
+			sprintf(msg, "в перечислении запрещены все операторы присвоения кроме =");
 			break;
 		case wait_l_paren:
 			sprintf(msg, "в выражении не хватает (");

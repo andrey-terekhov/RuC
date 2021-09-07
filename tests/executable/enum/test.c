@@ -20,10 +20,10 @@ int main()
 {
 	int num = 1 + 2 * 3 + 4 - 5;
 	int num_2 = 10 + 7 + 3;
-	enum name e = 25;
+	enum name e = a;
 
-	v = 10;
-	l = 15;
+	v = e;
+	l = g;
 
 	assert(num == 6, "hhhh == 15");
 	assert(num_2 == 20, "hhhh == 15");
@@ -33,8 +33,8 @@ int main()
 	assert(g == 0, "g == 0");
 	assert(u == 11, "u == 11");
 	assert(uu == 3, "uu == 3");
-	assert(v == 10, "v == 10");
-	assert(l == 15, "l == 15");
-	assert(e == 25, "e == 25");
+	assert(v == 5, "v == 10");
+	assert(l == 0, "l == 15");
+	assert(e == 5, "e == 25");
 	return 0;
 }

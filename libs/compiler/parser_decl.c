@@ -913,15 +913,14 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		{
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
+		++fields;
+		local_modetab[local_md++] = field_value - 1;
+		local_modetab[local_md++] = (item_t)prs->lxr->repr;
 		if (prs->token == TK_R_BRACE)
 		{
 			continue;
 		}
 		token_expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
-
-		local_modetab[local_md++] = field_value - 1;
-		local_modetab[local_md++] = (item_t)prs->lxr->repr;
-		++fields;
 	} while (!token_try_consume(prs, TK_R_BRACE));
 
 	local_modetab[0] = TYPE_ENUM;
@@ -973,15 +972,30 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 	}
 }
 
-static bool check_int_enum_initializer(const syntax *const sx, item_t type, const item_t expr_type)
+bool check_int_enum_initializer(const syntax *const sx,
+									   const item_t type,
+									   const item_t expr_type,
+									   const size_t field_repr)
 {
-	return (type_is_enum(sx, type) && expr_type == TYPE_INTEGER) ||
-		   (type == TYPE_INTEGER && type_is_enum(sx, expr_type));
+	if (!(type_is_enum(sx, type) && type_is_enum_field(expr_type)))
+	{
+		return false;
+	}
+
+	const size_t fields = type_get(sx, (size_t)type + 1);
+	for (size_t i = 0; i < fields; ++i)
+	{
+		if (field_repr == (size_t)type_get(sx, (size_t)type + 4 + 2 * i))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
-static bool check_int_initializer(item_t type, const item_t expr_type)
+static bool check_int_initializer(const syntax *const sx, const item_t type, const item_t expr_type)
 {
-	return type_is_integer(type) && type_is_enum_field(expr_type);
+	return type_is_integer(type) && (type_is_enum(sx, expr_type) || type_is_enum_field(expr_type));
 }
 
 
@@ -1101,8 +1115,8 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			{
 				parse_insert_widen(prs);
 			}
-			else if (!check_int_enum_initializer(prs->sx, type, expr_type) &&
-					 !check_int_initializer(type, expr_type) && type != expr_type)
+			else if (!check_int_enum_initializer(prs->sx, type, expr_type, prs->lxr->repr) &&
+					 !check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}

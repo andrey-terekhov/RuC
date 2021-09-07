@@ -33,6 +33,11 @@ static void parse_assignment_expression_internal(parser *const prs);
 static void parse_expression_internal(parser *const prs);
 static void parse_constant(parser *const prs);
 
+extern bool check_int_enum_initializer(const syntax *const sx,
+									   const item_t type,
+									   const item_t expr_type,
+									   const size_t field_repr);
+
 
 static inline int operators_push(parser *const prs, const uint8_t priority, const token_t token, const node *const nd)
 {
@@ -457,7 +462,7 @@ static size_t parse_identifier(parser *const prs)
 	{
 		node_set_type(&prs->nd, OP_CONST);
 		node_set_arg(&prs->nd, 0, prs->operand_displ);
-		type = operands_push(prs, VALUE, TYPE_INTEGER);
+		type = operands_push(prs, VALUE, TYPE_ENUM);
 	}
 	else
 	{
@@ -1324,6 +1329,18 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const operand_t right_type = prs->last_type;
 		const item_t right_mode = stack_pop(&prs->anonymous);
 		const item_t left_mode = stack_pop(&prs->anonymous);
+		if (type_is_enum(prs->sx, left_mode))
+		{
+			if (token != TK_EQUAL)
+			{
+				parser_error(prs, no_equal_with_enum);
+			}
+			if (!check_int_enum_initializer(prs->sx, left_mode, right_mode, prs->lxr->repr)
+				  && left_mode != right_mode)
+			{
+				parser_error(prs, error_in_equal_with_enum);
+			}
+		}
 		item_t result_mode = right_mode;
 
 		if (is_int_assignment_operator(token) && (type_is_floating(left_mode) || type_is_floating(right_mode)))
