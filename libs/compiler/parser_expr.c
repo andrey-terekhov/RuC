@@ -453,7 +453,7 @@ static size_t parse_identifier(parser *const prs)
 	prs->last_id = (size_t)id;
 	token_consume(prs);
 
-	if (type == TYPE_ENUM)
+	if (type_is_enum_field(type))
 	{
 		node_set_type(&prs->nd, OP_CONST);
 		node_set_arg(&prs->nd, 0, prs->operand_displ);

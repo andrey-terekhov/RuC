@@ -981,7 +981,7 @@ static bool check_int_enum_initializer(const syntax *const sx, item_t type, cons
 
 static bool check_int_initializer(item_t type, const item_t expr_type)
 {
-	return type_is_integer(type) && expr_type == TYPE_ENUM;
+	return type_is_integer(type) && type_is_enum_field(expr_type);
 }
 
 

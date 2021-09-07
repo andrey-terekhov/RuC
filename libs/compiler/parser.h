@@ -182,7 +182,7 @@ item_t parse_expression(parser *const prs, node *const parent);
  *
  *	@param	prs			Parser structure
  *
- *	@return	Number of parsed enum field expression
+ *	@return	Pair of parsed enum field type and expression
  */
 pair parse_enum_field_expression(parser *const prs, node *const parent);
 

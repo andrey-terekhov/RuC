@@ -387,10 +387,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case wait_ident_after_comma_in_enum:
 			sprintf(msg, "в перечислении должен быть идентификатор поля");
 			break;
-		case wait_l_parren:
+		case wait_l_paren:
 			sprintf(msg, "в выражении не хватает (");
 			break;
-		case wait_r_parren:
+		case wait_r_paren:
 			sprintf(msg, "в выражении не хватает )");
 			break;
 		case empty_init:	// test_exist

@@ -554,6 +554,11 @@ bool type_is_enum(const syntax *const sx, const item_t type)
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
 }
 
+bool type_is_enum_field(const item_t type)
+{
+	return type == TYPE_ENUM;
+}
+
 bool type_is_function(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
