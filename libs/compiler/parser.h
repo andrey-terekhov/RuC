@@ -31,6 +31,12 @@
 extern "C" {
 #endif
 
+typedef struct
+{
+	item_t first;
+	item_t second;
+} pair;
+
 /** Type of operands on the anonymous stack */
 typedef enum OPERAND
 {
@@ -178,7 +184,7 @@ item_t parse_expression(parser *const prs, node *const parent);
  *
  *	@return	Number of parsed enum field expression
  */
-item_t parse_enum_field_expression(parser *const prs, node *const parent);
+pair parse_enum_field_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse assignment expression [C99 6.5.16]

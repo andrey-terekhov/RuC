@@ -196,7 +196,7 @@ static void binary_operation(parser *const prs, operator operator)
 	node parent = node_get_parent(&prs->nd);
 	if (node_get_type(&parent) == OP_CONST && node_get_type(&prs->nd) == OP_CONST)
 	{
-		node_set_arg(&parent, 0,operator_application(prs, token,
+		node_set_arg(&parent, 0, operator_application(prs, token,
 								node_get_arg(&parent, 0),
 								node_get_arg(&prs->nd, 0)));
 
@@ -1453,18 +1453,13 @@ item_t parse_expression(parser *const prs, node *const parent)
 	return stack_pop(&prs->anonymous);
 }
 
-item_t parse_enum_field_expression(parser *const prs, node *const parent)
+pair parse_enum_field_expression(parser *const prs, node *const parent)
 {
 	node_copy(&prs->nd, parent);
 	parse_assignment_expression_internal(prs);
-	item_t num = node_get_arg(&prs->nd, 0);
-	if (node_get_type(&prs->nd) != OP_CONST)
-	{
-		parser_error(prs, eq_not_const_int_for_enum_field);
-		return 0;
-	}
+	pair type_with_num = {node_get_type(&prs->nd), node_get_arg(&prs->nd, 0)};
 	node_remove(&prs->nd);
-	return num;
+	return type_with_num;
 }
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)

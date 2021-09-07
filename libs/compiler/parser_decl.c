@@ -899,11 +899,13 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		{
 			token_consume(prs);
 			const size_t repr = prs->lxr->repr;
-			field_value = parse_enum_field_expression(prs, parent);
-			if (prs->was_error)
+			pair type_with_num = parse_enum_field_expression(prs, parent);
+			if (type_with_num.first != OP_CONST)
 			{
+				parser_error(prs, eq_not_const_int_for_enum_field);
 				return TYPE_UNDEFINED;
 			}
+			field_value = type_with_num.second;
 			prs->lxr->repr = repr;
 			parse_init_enum_field_declarator(prs, type, field_value++);
 		}
