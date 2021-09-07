@@ -982,10 +982,10 @@ bool check_int_enum_initializer(const syntax *const sx,
 		return false;
 	}
 
-	const size_t fields = type_get(sx, (size_t)type + 1);
-	for (size_t i = 0; i < fields; ++i)
+	const item_t fields = type_get(sx, (size_t)type + 1);
+	for (item_t i = 0; i < fields; ++i)
 	{
-		if (field_repr == (size_t)type_get(sx, (size_t)type + 4 + 2 * i))
+		if (field_repr == (size_t)type_get(sx, (size_t)(type + 4 + 2 * i)))
 		{
 			return true;
 		}
