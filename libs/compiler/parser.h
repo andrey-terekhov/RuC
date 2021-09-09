@@ -366,7 +366,7 @@ void to_tree(parser *const prs, const item_t op);
  *	@param	expr_type	Expression type
  *	@param	field_repr	Representation of field
  *
- *	@return @c 1 on true, @c 0 on false
+ *	@return	@c 1 on true, @c 0 on false
  */
 bool check_enum_initializer(const syntax *const sx
 	, const item_t type, const item_t expr_type, const size_t field_repr);

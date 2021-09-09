@@ -1091,7 +1091,7 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 				parse_insert_widen(prs);
 			}
 			else if (!check_enum_initializer(prs->sx, type, expr_type, prs->lxr->repr)
-					&& !check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
+				&& !check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}
