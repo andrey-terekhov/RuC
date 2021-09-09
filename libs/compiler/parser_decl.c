@@ -1124,7 +1124,7 @@ void parse_braced_initializer(parser *const prs, node *const parent, const item_
 }
 
 bool check_enum_initializer(const syntax *const sx
-			, const item_t type, const item_t expr_type, const size_t field_repr)
+					, const item_t type, const item_t expr_type, const size_t field_repr)
 {
 	if (!type_is_enum(sx, type) || !type_is_enum_field(expr_type))
 	{
