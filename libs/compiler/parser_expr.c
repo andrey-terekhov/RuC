@@ -133,6 +133,35 @@ static inline bool is_integer_operator(const token_t operator)
 	}
 }
 
+static item_t operator_application(parser *const prs,  const token_t token, item_t num_lhs, item_t num_rhs)
+{
+	switch (token)
+	{
+		case TK_PLUS:					return num_lhs + num_rhs;
+		case TK_MINUS:					return num_lhs - num_rhs;
+		case TK_STAR:					return num_lhs * num_rhs;
+		case TK_SLASH:					return num_lhs / num_rhs;
+		case TK_PERCENT:				return num_lhs % num_rhs;
+		case TK_CARET:					return num_lhs ^ num_rhs;
+		case TK_PIPE:					return num_lhs | num_rhs;
+		case TK_AMP:					return num_lhs & num_rhs;
+		case TK_LESS:					return num_lhs < num_rhs;
+		case TK_GREATER:				return num_lhs > num_rhs;
+		case TK_PIPE_PIPE:				return num_lhs || num_rhs;
+		case TK_AMP_AMP:				return num_lhs && num_rhs;
+		case TK_EQUAL_EQUAL:				return num_lhs == num_rhs;
+		case TK_EXCLAIM_EQUAL:				return num_lhs != num_rhs;
+		case TK_LESS_EQUAL:				return num_lhs <= num_rhs;
+		case TK_LESS_LESS:				return num_lhs << num_rhs;
+		case TK_GREATER_EQUAL:				return num_lhs >= num_rhs;
+		case TK_GREATER_GREATER:			return num_lhs >> num_rhs;
+
+		default:
+			parser_error(prs, not_const_oper);
+			return 0;
+	}
+}
+
 static void binary_operation(parser *const prs, operator operator)
 {
 	const token_t token = operator.token;
@@ -163,6 +192,17 @@ static void binary_operation(parser *const prs, operator operator)
 		}
 
 		result_type = TYPE_FLOATING;
+	}
+
+	node parent = node_get_parent(&prs->nd);
+	if (node_get_type(&parent) == OP_CONST && node_get_type(&prs->nd) == OP_CONST)
+	{
+		node_set_arg(&parent, 0, operator_application(prs, token
+			, node_get_arg(&parent, 0), node_get_arg(&prs->nd, 0)));
+		node_remove(&prs->nd);
+		node_copy(&prs->nd, &parent);
+		operands_push(prs, VALUE, result_type);
+		return;
 	}
 
 	if (token == TK_PIPE_PIPE || token == TK_AMP_AMP)
@@ -367,7 +407,19 @@ static size_t parse_identifier(parser *const prs)
 
 	prs->last_id = (size_t)id;
 	token_consume(prs);
-	operands_push(prs, VARIABLE, ident_get_type(prs->sx, (size_t)id));
+
+	const item_t type = ident_get_type(prs->sx, (size_t)id);
+	if (type_is_enum_field(type))
+	{
+		node_set_type(&prs->nd, OP_CONST);
+		node_set_arg(&prs->nd, 0, prs->operand_displ);
+		operands_push(prs, VALUE, TYPE_ENUM);
+	}
+	else
+	{
+		operands_push(prs, VARIABLE, ident_get_type(prs->sx, (size_t)id));
+	}
+
 	return (size_t)id;
 }
 
@@ -1231,6 +1283,20 @@ static void parse_assignment_expression_internal(parser *const prs)
 		const item_t left_mode = stack_pop(&prs->anonymous);
 		item_t result_mode = right_mode;
 
+		if (type_is_enum(prs->sx, left_mode))
+		{
+			if (token != TK_EQUAL)
+			{
+				parser_error(prs, no_equal_with_enum);
+			}
+
+			if (!check_enum_initializer(prs->sx, left_mode, right_mode, prs->lxr->repr)
+				&& left_mode != right_mode)
+			{
+				parser_error(prs, error_in_equal_with_enum);
+			}
+		}
+
 		if (is_int_assignment_operator(token) && (type_is_floating(left_mode) || type_is_floating(right_mode)))
 		{
 			parser_error(prs, int_op_for_float);
@@ -1356,6 +1422,23 @@ item_t parse_expression(parser *const prs, node *const parent)
 	assignment_to_void(prs);
 	to_tree(prs, OP_EXPR_END);
 	return stack_pop(&prs->anonymous);
+}
+
+item_t parse_enum_field_expression(parser *const prs, node *const parent)
+{
+	node_copy(&prs->nd, parent);
+	parse_assignment_expression_internal(prs);
+
+	const item_t type = node_get_type(&prs->nd);
+	const item_t value = node_get_arg(&prs->nd, 0);
+	node_remove(&prs->nd);
+
+	if (type != OP_CONST)
+	{
+		parser_error(prs, eq_not_const_int_for_enum_field);
+		return ITEM_MAX;
+	}
+	return value;
 }
 
 item_t parse_assignment_expression(parser *const prs, node *const parent)

@@ -57,6 +57,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"int", U"цел", TK_INT);
 	repr_add_keyword(reprtab, U"long", U"длин", TK_LONG);
 	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
+	repr_add_keyword(reprtab, U"enum", U"перечисление", TK_ENUM);
 	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
 	repr_add_keyword(reprtab, U"file", U"файл", TK_FILE);
 	repr_add_keyword(reprtab, U"typedef", U"типопр", TK_TYPEDEF);
@@ -542,6 +543,16 @@ bool type_is_array(const syntax *const sx, const item_t type)
 bool type_is_structure(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_enum(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
+}
+
+bool type_is_enum_field(const item_t type)
+{
+	return type == TYPE_ENUM;
 }
 
 bool type_is_function(const syntax *const sx, const item_t type)
