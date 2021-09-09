@@ -334,7 +334,7 @@ bool type_is_structure(const syntax *const sx, const item_t type);
 /**
  *	Check if type is enum
  *
- *	@param	sx			Syntax structure
+ *	@param	sx		Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
@@ -344,7 +344,6 @@ bool type_is_enum(const syntax *const sx, const item_t type);
 /**
  *	Check if type is enum field
  *
- *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false

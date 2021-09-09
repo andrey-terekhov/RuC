@@ -880,11 +880,10 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		return TYPE_UNDEFINED;
 	}
 
-	item_t local_modetab[100];
 	size_t local_md = 3;
-	size_t fields = 0;
 	item_t field_value = 0;
-	item_t type = TYPE_ENUM;
+	item_t local_modetab[100];
+	local_modetab[0] = TYPE_ENUM;
 
 	do
 	{
@@ -899,21 +898,19 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		{
 			token_consume(prs);
 			const size_t repr = prs->lxr->repr;
-			pair type_with_num = parse_enum_field_expression(prs, parent);
-			if (type_with_num.first != OP_CONST)
+			field_value = parse_enum_field_expression(prs, parent);
+			if (field_value == ITEM_MAX)
 			{
-				parser_error(prs, eq_not_const_int_for_enum_field);
 				return TYPE_UNDEFINED;
 			}
-			field_value = type_with_num.second;
 			prs->lxr->repr = repr;
-			parse_init_enum_field_declarator(prs, type, field_value++);
+			parse_init_enum_field_declarator(prs, TYPE_ENUM, field_value++);
 		}
 		else
 		{
-			parse_init_enum_field_declarator(prs, type, field_value++);
+			parse_init_enum_field_declarator(prs, TYPE_ENUM, field_value++);
 		}
-		++fields;
+
 		local_modetab[local_md++] = field_value - 1;
 		local_modetab[local_md++] = (item_t)prs->lxr->repr;
 		if (prs->token == TK_R_BRACE)
@@ -923,9 +920,8 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		token_expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
 	} while (!token_try_consume(prs, TK_R_BRACE));
 
-	local_modetab[0] = TYPE_ENUM;
-	local_modetab[1] = (item_t)fields;
-	local_modetab[2] = (item_t)fields * 2;
+	local_modetab[2] = (item_t)(local_md - 3);
+	local_modetab[1] = local_modetab[2] / 2;
 
 	return type_add(prs->sx, local_modetab, local_md);
 }
@@ -972,24 +968,23 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 	}
 }
 
-bool check_int_enum_initializer(const syntax *const sx,
-									   const item_t type,
-									   const item_t expr_type,
-									   const size_t field_repr)
+bool check_enum_initializer(const syntax *const sx
+	, const item_t type, const item_t expr_type, const size_t field_repr)
 {
-	if (!(type_is_enum(sx, type) && type_is_enum_field(expr_type)))
+	if (!type_is_enum(sx, type) || !type_is_enum_field(expr_type))
 	{
 		return false;
 	}
 
 	const item_t fields = type_get(sx, (size_t)type + 1);
-	for (item_t i = 0; i < fields; ++i)
+	for (item_t i = 0; i < fields; i++)
 	{
 		if (field_repr == (size_t)type_get(sx, (size_t)(type + 4 + 2 * i)))
 		{
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -1115,8 +1110,8 @@ void parse_initializer(parser *const prs, node *const parent, const item_t type)
 			{
 				parse_insert_widen(prs);
 			}
-			else if (!check_int_enum_initializer(prs->sx, type, expr_type, prs->lxr->repr) &&
-					 !check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
+			else if (!check_enum_initializer(prs->sx, type, expr_type, prs->lxr->repr)
+				&& !check_int_initializer(prs->sx, type, expr_type) && type != expr_type)
 			{
 				parser_error(prs, error_in_initialization);
 			}

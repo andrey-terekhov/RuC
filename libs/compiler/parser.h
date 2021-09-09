@@ -31,12 +31,6 @@
 extern "C" {
 #endif
 
-typedef struct
-{
-	item_t first;
-	item_t second;
-} pair;
-
 /** Type of operands on the anonymous stack */
 typedef enum OPERAND
 {
@@ -182,9 +176,9 @@ item_t parse_expression(parser *const prs, node *const parent);
  *
  *	@param	prs			Parser structure
  *
- *	@return	Pair of parsed enum field type and expression
+ *	@return	Value of parsed enum field, @c ITEM_MAX on failure
  */
-pair parse_enum_field_expression(parser *const prs, node *const parent);
+item_t parse_enum_field_expression(parser *const prs, node *const parent);
 
 /**
  *	Parse assignment expression [C99 6.5.16]
@@ -364,6 +358,19 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
  *	@param	op			New node type
  */
 void to_tree(parser *const prs, const item_t op);
+
+/**
+ *	The ability to assign to a enum type
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type		Variable type
+ *	@param	expr_type	Expression type
+ *	@param	field_repr	Representation of field
+ *
+ *	@return			@c 1 on true, @c 0 on false
+ */
+bool check_enum_initializer(const syntax *const sx
+		, const item_t type, const item_t expr_type, const size_t field_repr);
 
 #ifdef __cplusplus
 } /* extern "C" */
