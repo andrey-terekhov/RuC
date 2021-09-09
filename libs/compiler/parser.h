@@ -44,7 +44,6 @@ typedef enum OPERAND
 typedef enum BLOCK
 {
 	REGBLOCK,
-	THREAD,
 	FUNCBODY,
 	FORBLOCK,
 } block_t;
