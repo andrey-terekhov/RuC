@@ -229,8 +229,6 @@ typedef enum OPERATION
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN_VOID,			/**< Void return statement node */
 	OP_RETURN_VAL,			/**< Valued return statement node */
-	OP_CREATE_DIRECT,		/**< Create direct thread node */
-	OP_EXIT_DIRECT,			/**< Exit direct thread node */
 	OP_PRINTID,				/**< Printid statement node */
 	OP_PRINT,				/**< Print statement node */
 	OP_GETID,				/**< Getid statement node */
@@ -267,8 +265,6 @@ typedef enum OPERATION
 	OP_IDENT_TO_VAL_D,		/**< Value of double variable node */
 	OP_ADDR_TO_VAL_D,		/**< Address to double value node */
 	OP_CONST_D,				/**< Double constant node node */
-
-	OP_FREAD,				/**< 'fread' node */
 } operation_t;
 
 

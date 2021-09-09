@@ -81,10 +81,6 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
 	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
-	repr_add_keyword(reprtab, U"fread", U"фчитать", TK_FREAD);
-
-	repr_add_keyword(reprtab, U"t_create_direct", U"н_создать_непоср", TK_CREATE_DIRECT);
-	repr_add_keyword(reprtab, U"t_exit_direct", U"н_конец_непоср", TK_EXIT_DIRECT);
 }
 
 

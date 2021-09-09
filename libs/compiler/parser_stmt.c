@@ -475,14 +475,6 @@ static void parse_return_statement(parser *const prs, node *const parent)
 	}
 }
 
-/**	Parse t_create_direct statement [RuC] */
-static void parse_create_direct_statement(parser *const prs, node *const parent)
-{
-	node nd = node_add_child(parent, OP_CREATE_DIRECT);
-	parse_statement_compound(prs, &nd, THREAD);
-	node_add_child(&nd, OP_EXIT_DIRECT);
-}
-
 /**	Parse printid statement [RuC] */
 static void parse_printid_statement(parser *const prs, node *const parent)
 {
@@ -752,10 +744,6 @@ void parse_statement(parser *const prs, node *const parent)
 			parse_return_statement(prs, parent);
 			break;
 
-		case TK_CREATE_DIRECT:
-			parse_create_direct_statement(prs, parent);
-			break;
-
 		case TK_PRINTID:
 			parse_printid_statement(prs, parent);
 			break;
@@ -784,7 +772,7 @@ void parse_statement(parser *const prs, node *const parent)
 
 void parse_statement_compound(parser *const prs, node *const parent, const block_t type)
 {
-	token_consume(prs); // '{' or kw_create_direct
+	token_consume(prs); // '{' 
 	node nd_block = node_add_child(parent, OP_BLOCK);
 
 	item_t old_displ = 0;
@@ -795,12 +783,10 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
 
-	const token_t end_token = (type == THREAD) ? TK_EXIT_DIRECT : TK_R_BRACE;
-	if (!token_try_consume(prs, end_token))
+	if (!token_try_consume(prs, TK_R_BRACE))
 	{
-		while (prs->token != TK_EOF && prs->token != end_token)
+		while (prs->token != TK_EOF && prs->token != TK_R_BRACE)
 		{
-			// Почему не ловилась ошибка, если в блоке нити встретилась '}'?
 			if (is_declaration_specifier(prs))
 			{
 				parse_declaration_inner(prs, &nd_block);
@@ -811,7 +797,7 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 			}
 		}
 
-		token_expect_and_consume(prs, end_token, expected_end);
+		token_expect_and_consume(prs, TK_R_BRACE, expected_end);
 	}
 
 	if (type == FUNCBODY)
