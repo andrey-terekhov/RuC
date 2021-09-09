@@ -968,26 +968,6 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 	}
 }
 
-bool check_enum_initializer(const syntax *const sx
-	, const item_t type, const item_t expr_type, const size_t field_repr)
-{
-	if (!type_is_enum(sx, type) || !type_is_enum_field(expr_type))
-	{
-		return false;
-	}
-
-	const item_t fields = type_get(sx, (size_t)type + 1);
-	for (item_t i = 0; i < fields; i++)
-	{
-		if (field_repr == (size_t)type_get(sx, (size_t)(type + 4 + 2 * i)))
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 static bool check_int_initializer(const syntax *const sx, const item_t type, const item_t expr_type)
 {
 	return type_is_integer(type) && (type_is_enum(sx, expr_type) || type_is_enum_field(expr_type));
@@ -1141,4 +1121,24 @@ void parse_braced_initializer(parser *const prs, node *const parent, const item_
 		parser_error(prs, wrong_init);
 		token_skip_until(prs, TK_COMMA | TK_SEMICOLON);
 	}
+}
+
+bool check_enum_initializer(const syntax *const sx
+		, const item_t type, const item_t expr_type, const size_t field_repr)
+{
+	if (!type_is_enum(sx, type) || !type_is_enum_field(expr_type))
+	{
+		return false;
+	}
+
+	const item_t fields = type_get(sx, (size_t)type + 1);
+	for (item_t i = 0; i < fields; i++)
+	{
+		if (field_repr == (size_t)type_get(sx, (size_t)(type + 4 + 2 * i)))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

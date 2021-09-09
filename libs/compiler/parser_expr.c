@@ -1335,7 +1335,7 @@ static void parse_assignment_expression_internal(parser *const prs)
 			}
 
 			if (!check_enum_initializer(prs->sx, left_mode, right_mode, prs->lxr->repr)
-			&& left_mode != right_mode)
+				&& left_mode != right_mode)
 			{
 				parser_error(prs, error_in_equal_with_enum);
 			}
