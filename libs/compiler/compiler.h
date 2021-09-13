@@ -52,7 +52,7 @@ EXPORTED int compile_to_vm(workspace *const ws);
  *
  *	@return	Status code
  */
-EXPORTED int compile_to_llvm(workspace *const ws);
+EXPORTED int compile_to_mips(workspace *const ws);
 
 
 /**
@@ -83,7 +83,7 @@ EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
  *
  *	@return	Status code
  */
-EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv);
+EXPORTED int auto_compile_to_mips(const int argc, const char *const *const argv);
 
 
 /**
@@ -102,7 +102,7 @@ EXPORTED int no_macro_compile_to_vm(const char *const path);
  *
  *	@return	Status code
  */
-EXPORTED int no_macro_compile_to_llvm(const char *const path);
+EXPORTED int no_macro_compile_to_mips(const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */

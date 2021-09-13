@@ -19,7 +19,7 @@
 #include <string.h>
 #include "codegen.h"
 #include "errors.h"
-#include "llvmgen.h"
+#include "mipsgen.h"
 #include "parser.h"
 #include "preprocessor.h"
 #include "syntax.h"
@@ -139,9 +139,9 @@ int compile(workspace *const ws)
 		{
 			return compile_to_vm(ws);
 		}
-		else if (strcmp(flag, "-LLVM") == 0)
+		else if (strcmp(flag, "-MIPS") == 0)
 		{
-			return compile_to_llvm(ws);
+			return compile_to_mips(ws);
 		}
 	}
 }
@@ -162,14 +162,14 @@ int compile_to_vm(workspace *const ws)
 	return ret;
 }
 
-int compile_to_llvm(workspace *const ws)
+int compile_to_mips(workspace *const ws)
 {
 	if (ws_get_output(ws) == NULL)
 	{
-		ws_set_output(ws, DEFAULT_LLVM);
+		ws_set_output(ws, DEFAULT_MIPS);
 	}
 
-	return compile_from_ws(ws, &encode_to_llvm);
+	return compile_from_ws(ws, &encode_to_mips);
 }
 
 
@@ -190,10 +190,10 @@ int auto_compile_to_vm(const int argc, const char *const *const argv)
 	return ret;
 }
 
-int auto_compile_to_llvm(const int argc, const char *const *const argv)
+int auto_compile_to_mips(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	const int ret = compile_to_llvm(&ws);
+	const int ret = compile_to_mips(&ws);
 	ws_clear(&ws);
 	return ret;
 }
@@ -219,7 +219,7 @@ int no_macro_compile_to_vm(const char *const path)
 	return ret;
 }
 
-int no_macro_compile_to_llvm(const char *const path)
+int no_macro_compile_to_mips(const char *const path)
 {
 	universal_io io = io_create();
 	in_set_file(&io, path);
@@ -229,7 +229,7 @@ int no_macro_compile_to_llvm(const char *const path)
 	ws_set_output(&ws, DEFAULT_LLVM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	const int ret = compile_from_io(&ws, &io, &encode_to_llvm);
+	const int ret = compile_from_io(&ws, &io, &encode_to_mips);
 	ws_clear(&ws);
 	return ret;
 }
