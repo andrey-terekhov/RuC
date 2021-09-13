@@ -79,8 +79,8 @@ typedef struct information
 	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
 	bool was_file;							/**< Истина, если была работа с файлами */
-	bool was_abs;							/**< Истина, если был вызов abs*/
-	bool was_fabs;							/**< Истина, если был вызов fabs*/
+	bool was_abs;							/**< Истина, если был вызов abs */
+	bool was_fabs;							/**< Истина, если был вызов fabs */
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 } information;
 
@@ -664,7 +664,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	{
 		to_code_operation_reg_null(info, operation, left_reg, operation_type);
 	}
-		else if (left_kind == ANULL && right_kind == AREG)
+	else if (left_kind == ANULL && right_kind == AREG)
 	{
 		to_code_operation_null_reg(info, operation, right_reg, operation_type);
 	}
@@ -1110,6 +1110,7 @@ static void expression(information *const info, node *const nd)
 				arguments_type[i] = info->answer_kind;
 				arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
 				to_code_try_widen(info, arguments_value_type[i], answer_type);
+
 				if (info->answer_kind == AREG)
 				{
 					arguments[i] = info->answer_reg;
