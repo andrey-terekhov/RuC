@@ -27,6 +27,10 @@ typedef struct writer
 
 static void write_expression(writer *const wrt, const node *const nd);
 static void write_statement(writer *const wrt, const node *const nd);
+static void write_type_name(writer *const wrt, const item_t type)
+{
+	(void)wrt; (void)type;
+}
 
 
 //===----------------------------------------------------------------------===//
@@ -41,8 +45,20 @@ static void write_statement(writer *const wrt, const node *const nd);
  */
 static void write_identifier_expression(writer *const wrt, const node *const nd)
 {
-	(void)wrt;
-	(void)nd;
+	uni_printf(wrt->io, "─EXPR_IDENTIFIER: identifier expression ");
+
+	const item_t type = expression_get_type(nd);
+	write_type_name(wrt, type);
+
+	if (expression_is_lvalue(nd))
+	{
+		uni_printf(wrt->io, "lvalue ");
+	}
+
+	const size_t id = expression_identifier_get_id(nd);
+	const char *spelling = ident_get_spelling(wrt->sx, id);
+	uni_printf(wrt->io, "%zu: \"%s\" ", id, spelling);
+	uni_printf(wrt->io, "\n");
 }
 
 /**
@@ -53,8 +69,28 @@ static void write_identifier_expression(writer *const wrt, const node *const nd)
  */
 static void write_literal_expression(writer *const wrt, const node *const nd)
 {
-	(void)wrt;
-	(void)nd;
+	uni_printf(wrt->io, "─EXPR_LITERAL: literal expression ");
+
+	const item_t type = expression_get_type(nd);
+	write_type_name(wrt, type);
+	if (type_is_integer(type))
+	{
+		const int value = expression_literal_get_integer(nd);
+		uni_printf(wrt->io, "%i ", value);
+	}
+	else if (type_is_floating(type))
+	{
+		const double value = expression_literal_get_floating(nd);
+		uni_printf(wrt->io, "%f ", value);
+	}
+	else if (type_is_string(wrt->sx, type))
+	{
+		const size_t string_num = expression_literal_get_string(nd);
+		const char *const string = string_get(wrt->sx, string_num);
+		uni_printf(wrt->io, "%zu: \"%s\" ", string_num, string);
+	}
+	// nothing to write for null pointer constant
+	uni_printf(wrt->io, "\n");
 }
 
 /**
@@ -65,8 +101,21 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
  */
 static void write_subscript_expression(writer *const wrt, const node *const nd)
 {
-	(void)wrt;
-	(void)nd;
+	uni_printf(wrt->io, "─EXPR_SUBSCRIPT: subscripting expression ");
+
+	const item_t type = expression_get_type(nd);
+	write_type_name(wrt, type);
+
+	if (expression_is_lvalue(nd))
+	{
+		uni_printf(wrt->io, "lvalue\n");
+	}
+
+	const node base = expression_subscript_get_base(nd);
+	write_expression(wrt, &base);
+
+	const node index = expression_subscript_get_index(nd);
+	write_expression(wrt, &index);
 }
 
 /**
@@ -77,8 +126,22 @@ static void write_subscript_expression(writer *const wrt, const node *const nd)
  */
 static void write_call_expression(writer *const wrt, const node *const nd)
 {
-	(void)wrt;
-	(void)nd;
+	uni_printf(wrt->io, "─EXPR_CALL: call expression ");
+
+	const item_t type = expression_get_type(nd);
+	write_type_name(wrt, type);
+
+	uni_printf(wrt->io, "\n");
+
+	const node callee = expression_call_get_callee(nd);
+	write_expression(wrt, &callee);
+
+	const size_t arguments_amount = expression_call_get_arguments_amount(nd);
+	for (size_t i = 0; i < arguments_amount; i++)
+	{
+		const node argument = expression_call_get_argument(nd, i);
+		write_expression(wrt, &argument);
+	}
 }
 
 /**
