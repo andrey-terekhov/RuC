@@ -1196,8 +1196,27 @@ static void expression(information *const info, node *const nd)
 		}
 		break;
 		case OP_SELECT:
+		{
+			const item_t place = node_get_arg(nd, 2);
 			node_set_next(nd);
-			break;
+
+			const item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+			node_set_next(nd);
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+				"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type, displ, place);
+
+			if (info->variable_location != LMEM)
+			{
+				info->register_num++;
+				to_code_load(info, info->register_num, info->register_num - 1, TYPE_INTEGER, true);
+				info->answer_kind = AREG;
+			}
+
+			info->answer_reg = info->register_num++;
+		}
+		break;
 			
 		case OP_UNARY:
 			unary_operation(info, nd);
@@ -1629,6 +1648,7 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_DECL_TYPE:
 			case OP_NOP:
 				node_set_next(nd);
 				break;
@@ -1856,6 +1876,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
