@@ -249,15 +249,27 @@ inline node expression_member_get_base(const node *const nd)
 }
 
 /**
- *	Get member displacement of member expression
+ *	Get member index of member expression
  *
  *	@param	nd		Member expression
  *
- *	@return	Member displacement
+ *	@return	Member index
  */
-inline size_t expression_member_get_member_displ(const node *const nd)
+inline size_t expression_member_get_member_index(const node *const nd)
 {
 	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
+}
+
+/**
+ *	Check if operator of member expression is '->'
+ *
+ *	@param	nd		Member expression
+ *
+ *	@return	@c 1 on true, @c on false
+ */
+inline bool expression_member_is_arrow(const node *const nd)
+{
+	return node_get_type(nd) == OP_SELECT ? node_get_arg(nd, 3) != 0: false;
 }
 
 

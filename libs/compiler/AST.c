@@ -34,7 +34,8 @@ extern node expression_call_get_callee(const node *const nd);
 extern node expression_call_get_argument(const node *const nd, const size_t index);
 
 extern node expression_member_get_base(const node *const nd);
-extern size_t expression_member_get_member_displ(const node *const nd);
+extern size_t expression_member_get_member_index(const node *const nd);
+extern bool expression_member_is_arrow(const node *const nd);
 
 extern unary_t expression_unary_get_operator(const node *const nd);
 extern node expression_unary_get_operand(const node *const nd);
