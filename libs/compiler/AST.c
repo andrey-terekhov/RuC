@@ -30,6 +30,7 @@ extern size_t expression_literal_get_string(const node *const nd);
 extern node expression_subscript_get_base(const node *const nd);
 extern node expression_subscript_get_index(const node *const nd);
 
+extern size_t expression_call_get_arguments_amount(const node *const nd)ж
 extern node expression_call_get_callee(const node *const nd);
 extern node expression_call_get_argument(const node *const nd, const size_t index);
 
