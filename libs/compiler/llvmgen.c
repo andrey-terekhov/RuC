@@ -1198,6 +1198,7 @@ static void expression(information *const info, node *const nd)
 		case OP_SELECT:
 		{
 			const item_t place = node_get_arg(nd, 2);
+			const item_t elem_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
 			const item_t type = node_get_arg(nd, 0);
@@ -1210,7 +1211,7 @@ static void expression(information *const info, node *const nd)
 			if (info->variable_location != LMEM)
 			{
 				info->register_num++;
-				to_code_load(info, info->register_num, info->register_num - 1, TYPE_INTEGER, true);
+				to_code_load(info, info->register_num, info->register_num - 1, elem_type, true);
 				info->answer_kind = AREG;
 			}
 
