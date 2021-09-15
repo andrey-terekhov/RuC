@@ -246,6 +246,16 @@ item_t ident_get_type(const syntax *const sx, const size_t index);
 item_t ident_get_displ(const syntax *const sx, const size_t index);
 
 /**
+ *	Get identifier spelling by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Pointer to spelling of identifier
+ */
+const char *ident_get_spelling(const syntax *const sx, const size_t index);
+
+/**
  *	Set identifier representation by index in identifiers table
  *
  *	@param	sx			Syntax structure

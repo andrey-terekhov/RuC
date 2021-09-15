@@ -464,6 +464,11 @@ item_t ident_get_displ(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->identifiers, index + 3) : ITEM_MAX;
 }
 
+const char *ident_get_spelling(const syntax *const sx, const size_t index)
+{
+	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
+}
+
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
 {
 	return sx != NULL ? vector_set(&sx->identifiers, index + 1, repr) : -1;
