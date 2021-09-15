@@ -1201,12 +1201,22 @@ static void expression(information *const info, node *const nd)
 			const item_t elem_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			const item_t type = node_get_arg(nd, 0);
+			item_t type = node_get_arg(nd, 0);
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
 			node_set_next(nd);
 
+			bool is_pointer = false;
+			if (type_is_pointer(info->sx, type))
+			{
+				to_code_load(info, info->register_num, displ, type, false);
+				info->register_num++;
+				type = type_pointer_get_element_type(info->sx, type);
+				is_pointer = true;
+			}
+
 			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-				"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type, displ, place);
+				"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
+				, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : displ, place);
 
 			if (info->variable_location != LMEM)
 			{
