@@ -202,7 +202,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
 	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
 
-	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "A"));
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "T"));
 	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
 	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
 	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
@@ -673,7 +673,7 @@ item_t type_array(syntax *const sx, const item_t type)
  *		F -> float[]
  *		m -> msg_info
  *		P -> FILE*
- *		A -> void*(void*)
+ *		T -> void*(void*)
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
@@ -717,7 +717,7 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 			case 'P':
 				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
 				break;
-			case 'A':
+			case 'T':
 				local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
 				break;
 		}
