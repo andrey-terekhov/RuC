@@ -36,14 +36,9 @@ static void write_statement(writer *const wrt, const node *const nd, const size_
 //                                Writer Utils                                //
 //===----------------------------------------------------------------------===//
 
-static void write(writer *const wrt, const char *const format, ...)
+static void write(writer *const wrt, const char *const string)
 {
-	va_list args;
-	va_start(args, format);
-
-	uni_printf(wrt->io, format, args);
-
-	va_end(args);
+	uni_printf(wrt->io, string);
 }
 
 /**
@@ -68,7 +63,7 @@ static void write_indent(writer *const wrt, const size_t indent)
  */
 static void write_location(writer *const wrt, const location loc)
 {
-	write(wrt, "at <%lu, %lu>", loc.begin, loc.end);
+	uni_printf(wrt->io, " at <%lu, %lu>", loc.begin, loc.end);
 }
 
 /**
@@ -121,7 +116,7 @@ static void write_type(writer *const wrt, const item_t type)
 			const size_t member_repr = type_structure_get_member_name(wrt->sx, type, i);
 
 			write_type(wrt, member_type);
-			write(wrt, " %s; ", repr_get_name(wrt->sx, member_repr));
+			uni_printf(wrt->io, " %s; ", repr_get_name(wrt->sx, member_repr));
 		}
 
 		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
@@ -163,8 +158,9 @@ static void write_type(writer *const wrt, const item_t type)
 static void write_identifier_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_IDENTIFIER: identifier expression\n");
-	(void)nd;
+	write(wrt, "EXPR_IDENTIFIER: identifier expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 }
 
 /**
@@ -176,8 +172,9 @@ static void write_identifier_expression(writer *const wrt, const node *const nd,
 static void write_literal_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_LITERAL: literal expression\n");
-	(void)nd;
+	write(wrt, "EXPR_LITERAL: literal expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 }
 
 /**
@@ -189,7 +186,9 @@ static void write_literal_expression(writer *const wrt, const node *const nd, co
 static void write_subscript_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_SUBSCRIPT: subscripting expression\n");
+	write(wrt, "EXPR_SUBSCRIPT: subscripting expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node base = expression_subscript_get_base(nd);
 	write_expression(wrt, &base, indent + 1);
@@ -207,7 +206,9 @@ static void write_subscript_expression(writer *const wrt, const node *const nd, 
 static void write_call_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_CALL: call expression\n");
+	write(wrt, "EXPR_CALL: call expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node callee = expression_call_get_callee(nd);
 	write_expression(wrt, &callee, indent + 1);
@@ -229,7 +230,9 @@ static void write_call_expression(writer *const wrt, const node *const nd, const
 static void write_member_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_MEMBER: member expression\n");
+	write(wrt, "EXPR_MEMBER: member expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node base = expression_member_get_base(nd);
 	write_expression(wrt, &base, indent + 1);
@@ -247,7 +250,9 @@ static void write_member_expression(writer *const wrt, const node *const nd, con
 static void write_unary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_UNARY: unary expression\n");
+	write(wrt, "EXPR_UNARY: unary expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node operand = expression_unary_get_operand(nd);
 	write_expression(wrt, &operand, indent + 1);
@@ -262,7 +267,9 @@ static void write_unary_expression(writer *const wrt, const node *const nd, cons
 static void write_binary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_BINARY: binary expression\n");
+	write(wrt, "EXPR_BINARY: binary expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node LHS = expression_binary_get_LHS(nd);
 	write_expression(wrt, &LHS, indent + 1);
@@ -280,7 +287,9 @@ static void write_binary_expression(writer *const wrt, const node *const nd, con
 static void write_ternary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_TERNARY: ternary expression\n");
+	write(wrt, "EXPR_TERNARY: ternary expression");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const node condition = expression_ternary_get_condition(nd);
 	write_expression(wrt, &condition, indent + 1);
@@ -301,7 +310,9 @@ static void write_ternary_expression(writer *const wrt, const node *const nd, co
 static void write_expression_list(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_LIST: expression list\n");
+	write(wrt, "EXPR_LIST: expression list");
+	write_location(wrt, expression_get_location(nd));
+	write(wrt, "\n");
 
 	const size_t size = expression_list_get_size(nd);
 	for (size_t i = 0; i < size; i++)
