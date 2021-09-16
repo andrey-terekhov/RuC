@@ -32,6 +32,16 @@ extern "C" {
  */
 void write_AST(const char *const path, syntax *const sx);
 
+/**
+ *	Write type spelling
+ *
+ *	@param	sx				Syntax structure
+ *	@param	type			Type
+ *	@param	buffer			Buffer
+ */
+int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

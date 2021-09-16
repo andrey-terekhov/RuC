@@ -74,71 +74,9 @@ static void write_location(writer *const wrt, const location loc)
  */
 static void write_type(writer *const wrt, const item_t type)
 {
-	if (type_is_null_pointer(type))
-	{
-		write(wrt, "nullptr");
-	}
-	else if (type_is_integer(type))
-	{
-		write(wrt, "int");
-	}
-	else if (type_is_floating(type))
-	{
-		write(wrt, "float");
-	}
-	else if (type_is_file(type))
-	{
-		write(wrt, "FILE");
-	}
-	else if (type_is_void(type))
-	{
-		write(wrt, "void");
-	}
-	else if (type_is_array(wrt->sx, type))
-	{
-		write_type(wrt, type_array_get_element_type(wrt->sx, type));
-		write(wrt, "[]");
-	}
-	else if (type_is_pointer(wrt->sx, type))
-	{
-		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
-		write(wrt, "*");
-	}
-	else if (type_is_structure(wrt->sx, type))
-	{
-		write(wrt, "struct { ");
-
-		const size_t member_amount = type_structure_get_member_amount(wrt->sx, type);
-		for (size_t i = 0; i < member_amount; i++)
-		{
-			const item_t member_type = type_structure_get_member_type(wrt->sx, type, i);
-			const size_t member_repr = type_structure_get_member_name(wrt->sx, type, i);
-
-			write_type(wrt, member_type);
-			uni_printf(wrt->io, " %s; ", repr_get_name(wrt->sx, member_repr));
-		}
-
-		write(wrt, "}");
-	}
-	else if (type_is_function(wrt->sx, type))
-	{
-		write_type(wrt, type_function_get_return_type(wrt->sx, type));
-		write(wrt, " (");
-
-		const size_t parameter_amount = type_function_get_parameter_amount(wrt->sx, type);
-		for (size_t i = 0; i < parameter_amount; i++)
-		{
-			const item_t parameter_type = type_function_get_parameter_type(wrt->sx, type, i);
-
-			write_type(wrt, parameter_type);
-			if (i != parameter_amount - 1)
-			{
-				write(wrt, ", ");
-			}
-		}
-		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
-		write(wrt, ")");
-	}
+	char spelling[MAX_STRING_LENGTH];
+	write_type_spelling(wrt->sx, type, spelling);
+	write(wrt, spelling);
 }
 
 /**
@@ -641,7 +579,7 @@ static void write_type_declaration(writer *const wrt, const node *const nd, cons
 static void write_function_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "DECL_FUNC\n");
+	write(wrt, "DECL_FUNC");
 
 	const size_t ident = declaration_function_get_id(nd);
 	const char *const spelling = ident_get_spelling(wrt->sx, ident);
@@ -1160,4 +1098,75 @@ void write_AST(const char *const path, syntax *const sx)
 	//wrt_clear(&wrt);
 
 	io_erase(&io);
+}
+
+
+int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
+{
+	if (type_is_null_pointer(type))
+	{
+		return sprintf(buffer, "nullptr");
+	}
+	else if (type_is_integer(type))
+	{
+		return sprintf(buffer, "int");
+	}
+	else if (type_is_floating(type))
+	{
+		return sprintf(buffer, "float");
+	}
+	else if (type_is_file(type))
+	{
+		return sprintf(buffer, "FILE");
+	}
+	else if (type_is_void(type))
+	{
+		return sprintf(buffer, "void");
+	}
+	else if (type_is_array(sx, type))
+	{
+		const int index = write_type_spelling(sx, type_array_get_element_type(sx, type), buffer);
+		return sprintf(&buffer[index], "[]");
+	}
+	else if (type_is_pointer(sx, type))
+	{
+		const int index = write_type_spelling(sx, type_pointer_get_element_type(sx, type), buffer);
+		return sprintf(&buffer[index],  "*");
+	}
+	else if (type_is_structure(sx, type))
+	{
+		int index = sprintf(buffer,  "struct { ");
+
+		const size_t member_amount = type_structure_get_member_amount(sx, type);
+		for (size_t i = 0; i < member_amount; i++)
+		{
+			const item_t member_type = type_structure_get_member_type(sx, type, i);
+			const size_t member_repr = type_structure_get_member_name(sx, type, i);
+
+			index += write_type_spelling(sx, member_type, &buffer[index]);
+			index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
+		}
+
+		return sprintf(&buffer[index], "}");
+	}
+	else if (type_is_function(sx, type))
+	{
+		int index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
+		index += sprintf(&buffer[index], " (");
+
+		const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
+		for (size_t i = 0; i < parameter_amount; i++)
+		{
+			const item_t parameter_type = type_function_get_parameter_type(sx, type, i);
+
+			index += write_type_spelling(sx, parameter_type, &buffer[index]);
+			if (i != parameter_amount - 1)
+			{
+				index += sprintf(&buffer[index], ", ");
+			}
+		}
+
+		return sprintf(&buffer[index], ")");
+	}
+	return 0;
 }
