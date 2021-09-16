@@ -74,7 +74,6 @@ static void write_location(writer *const wrt, const location loc)
  */
 static void write_type(writer *const wrt, const item_t type)
 {
-	write(wrt, "'");
 	if (type_is_null_pointer(type))
 	{
 		write(wrt, "nullptr");
@@ -119,8 +118,7 @@ static void write_type(writer *const wrt, const item_t type)
 			uni_printf(wrt->io, " %s; ", repr_get_name(wrt->sx, member_repr));
 		}
 
-		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
-		write(wrt, " }");
+		write(wrt, "}");
 	}
 	else if (type_is_function(wrt->sx, type))
 	{
@@ -141,7 +139,6 @@ static void write_type(writer *const wrt, const item_t type)
 		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
 		write(wrt, ")");
 	}
-	write(wrt, "'");
 }
 
 
