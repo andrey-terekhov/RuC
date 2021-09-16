@@ -102,8 +102,7 @@ typedef enum OPERATION
 	
 	// Expressions
 	OP_IDENTIFIER,			/**< Identifier node */
-	OP_CONSTANT,			/**< Constant node */
-	OP_STRING,				/**< String litaral node */
+	OP_LITERAL,				/**< Literal node */
 	OP_CALL,				/**< Call node */
 	OP_SELECT,				/**< Select operator node */
 	OP_SLICE,				/**< Slice operator node */

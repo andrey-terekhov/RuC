@@ -28,11 +28,6 @@ static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
 
 
-extern item_t expression_get_type(const node *const nd);
-extern bool expression_is_lvalue(const node *const nd);
-extern location expression_get_location(const node *const nd);
-
-
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
 {
 	char32_t buffer[MAX_STRING_LENGTH];
@@ -467,6 +462,11 @@ item_t ident_get_type(const syntax *const sx, const size_t index)
 item_t ident_get_displ(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->identifiers, index + 3) : ITEM_MAX;
+}
+
+const char *ident_get_spelling(const syntax *const sx, const size_t index)
+{
+	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
 }
 
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)

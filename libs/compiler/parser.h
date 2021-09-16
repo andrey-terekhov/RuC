@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "AST.h"
 #include "builder.h"
 #include "errors.h"
 #include "lexer.h"
