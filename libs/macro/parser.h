@@ -17,6 +17,7 @@
 #pragma once
 
 #include "linker.h"
+#include "storage.h"
 #include "uniio.h"
 #include "error.h"
 
@@ -29,7 +30,7 @@ extern "C" {
 typedef struct parser
 {
 	linker *lk;						/**< Linker structure */
-	//storage *stg;					/**< Storage structure */
+	storage *stg;					/**< Storage structure */
 
 	universal_io *in;				/**< Input io structure */ 
 	universal_io *out;				/**< Output io structure */ 
@@ -48,7 +49,7 @@ typedef struct parser
  *
  *	@return	Parser structure
  */
-parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *const out); 
+parser parser_create(linker *const lk, storage *const stg, universal_io *const out); 
 
 
 /**
