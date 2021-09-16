@@ -57,6 +57,11 @@ extern node expression_list_get_subexpr(const node *const nd, const size_t index
 extern size_t statement_labeled_get_label(const node *const nd);
 extern node statement_labeled_get_substmt(const node *const nd);
 
+extern node statement_case_get_expression(const node *const nd);
+extern node statement_case_get_substmt(const node *const nd);
+
+extern node statement_default_get_substmt(const node *const nd);
+
 extern size_t statement_compound_get_size(const node *const nd);
 extern node statement_compound_get_substmt(const node *const nd, const size_t index);
 
@@ -64,6 +69,9 @@ extern bool statement_if_has_else_substmt(const node *const nd);
 extern node statement_if_get_condition(const node *const nd);
 extern node statement_if_get_then_substmt(const node *const nd);
 extern node statement_if_get_else_substmt(const node *const nd);
+
+extern node statement_switch_get_condition(const node *const nd);
+extern node statement_switch_get_body(const node *const nd);
 
 extern node statement_while_get_condition(const node *const nd);
 extern node statement_while_get_body(const node *const nd);

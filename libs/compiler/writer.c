@@ -600,7 +600,15 @@ static void write_expression(writer *const wrt, const node *const nd, const size
 static void write_variable_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "DECL_VAR\n");
+	write(wrt, "DECL_VAR");
+
+	const size_t ident = declaration_variable_get_id(nd);
+	const char *const spelling = ident_get_spelling(wrt->sx, ident);
+	const item_t type = ident_get_type(wrt->sx, ident);
+
+	uni_printf(wrt->io, " declaring variable named \'%s\' with id %zu of type '", spelling, ident);
+	write_type(wrt, type);
+	write(wrt, "'\n");
 
 	if (declaration_variable_has_initializer(nd))
 	{
@@ -634,6 +642,14 @@ static void write_function_declaration(writer *const wrt, const node *const nd, 
 {
 	write_indent(wrt, indent);
 	write(wrt, "DECL_FUNC\n");
+
+	const size_t ident = declaration_function_get_id(nd);
+	const char *const spelling = ident_get_spelling(wrt->sx, ident);
+	const item_t type = ident_get_type(wrt->sx, ident);
+
+	uni_printf(wrt->io, " declaring function named \'%s\' with id %zu of type '", spelling, ident);
+	write_type(wrt, type);
+	write(wrt, "'\n");
 
 	const node body = declaration_function_get_body(nd);
 	write_statement(wrt, &body, indent + 1);
@@ -679,10 +695,11 @@ static void write_declaration(writer *const wrt, const node *const nd, const siz
 static void write_labeled_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "STMT_LABEL\n");
+	write(wrt, "STMT_LABEL");
 
 	const size_t label = statement_labeled_get_label(nd);
-	(void)label;
+	const char *const spelling = ident_get_spelling(wrt->sx, label);
+	uni_printf(wrt->io, " declaring label named \'%s\' with id %zu\n", spelling, label);
 
 	const node substmt = statement_labeled_get_substmt(nd);
 	write_statement(wrt, &substmt, indent + 1);
@@ -699,9 +716,12 @@ static void write_case_statement(writer *const wrt, const node *const nd, const 
 {
 	write_indent(wrt, indent);
 	write(wrt, "STMT_CASE\n");
-	(void)nd;
 
-	// TODO: case writing
+	const node expression = statement_case_get_expression(nd);
+	write_expression(wrt, &expression, indent + 1);
+
+	const node substmt = statement_case_get_substmt(nd);
+	write_statement(wrt, &substmt, indent + 1);
 }
 
 /**
@@ -715,9 +735,9 @@ static void write_default_statement(writer *const wrt, const node *const nd, con
 {
 	write_indent(wrt, indent);
 	write(wrt, "STMT_DEFAULT\n");
-	(void)nd;
 
-	// TODO: default writing
+	const node substmt = statement_default_get_substmt(nd);
+	write_statement(wrt, &substmt, indent + 1);
 }
 
 /**
@@ -790,9 +810,12 @@ static void write_switch_statement(writer *const wrt, const node *const nd, cons
 {
 	write_indent(wrt, indent);
 	write(wrt, "STMT_SWITCH\n");
-	(void)nd;
 
-	// TODO: switch writing
+	const node condition = statement_switch_get_condition(nd);
+	write_expression(wrt, &condition, indent + 1);
+
+	const node body = statement_switch_get_body(nd);
+	write_statement(wrt, &body, indent + 1);
 }
 
 /**
@@ -880,7 +903,8 @@ static void write_goto_statement(writer *const wrt, const node *const nd, const 
 	write(wrt, "STMT_GOTO\n");
 
 	const size_t label = statement_goto_get_label(nd);
-	(void)label;
+	const char *const spelling = ident_get_spelling(wrt->sx, label);
+	uni_printf(wrt->io, " label named \'%s\' with id %zu\n", spelling, label);
 }
 
 /**
