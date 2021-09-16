@@ -91,11 +91,11 @@ void parser_error(parser *const prs, const error_t num);
 
 bool parser_is_correct(const parser *const prs)
 {
-	return prs != NULL && linker_is_correct(prs->lk) && out_is_correct(prs->out) && storage_is_correct(prs->stg);
+	return prs != NULL && linker_is_correct(prs->lk) && storage_is_correct(prs->stg) && out_is_correct(prs->out);
 }
 
 
 int parser_clear(parser *const prs)
 {
-	return prs != NULL && linker_clear(&prs->lk) && storage_clear(&prs->stg);
+	return prs != NULL && linker_clear(&prs->lk) && storage_clear(&prs->stg) && out_clear(&prs->out);
 }
