@@ -36,17 +36,117 @@ static void write_statement(writer *const wrt, const node *const nd, const size_
 //                                Writer Utils                                //
 //===----------------------------------------------------------------------===//
 
-static void write(writer *const wrt, const char *const string)
+static void write(writer *const wrt, const char *const format, ...)
 {
-	uni_printf(wrt->io, string);
+	va_list args;
+	va_start(args, format);
+
+	uni_printf(wrt->io, format, args);
+
+	va_end(args);
 }
 
+/**
+ *	Write indentation
+ *
+ *	@param	wrt			Writer
+ *	@param	indent		Indentation
+ */
 static void write_indent(writer *const wrt, const size_t indent)
 {
 	for (size_t i = 0; i < indent; i++)
 	{
 		write(wrt, INDENT);
 	}
+}
+
+/**
+ *	Write source location
+ *
+ *	@param	wrt			Writer
+ *	@param	loc			Source location
+ */
+static void write_location(writer *const wrt, const location loc)
+{
+	write(wrt, "at <%lu, %lu>", loc.begin, loc.end);
+}
+
+/**
+ *	Write type spelling
+ *
+ *	@param	wrt			Writer
+ *	@param	type		Type
+ */
+static void write_type(writer *const wrt, const item_t type)
+{
+	write(wrt, "'");
+	if (type_is_null_pointer(type))
+	{
+		write(wrt, "nullptr");
+	}
+	else if (type_is_integer(type))
+	{
+		write(wrt, "int");
+	}
+	else if (type_is_floating(type))
+	{
+		write(wrt, "float");
+	}
+	else if (type_is_file(type))
+	{
+		write(wrt, "FILE");
+	}
+	else if (type_is_void(type))
+	{
+		write(wrt, "void");
+	}
+	else if (type_is_array(wrt->sx, type))
+	{
+		write_type(wrt, type_array_get_element_type(wrt->sx, type));
+		write(wrt, "[]");
+	}
+	else if (type_is_pointer(wrt->sx, type))
+	{
+		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
+		write(wrt, "*");
+	}
+	else if (type_is_structure(wrt->sx, type))
+	{
+		write(wrt, "struct { ");
+
+		const size_t member_amount = type_structure_get_member_amount(wrt->sx, type);
+		for (size_t i = 0; i < member_amount; i++)
+		{
+			const item_t member_type = type_structure_get_member_type(wrt->sx, type, i);
+			const size_t member_repr = type_structure_get_member_name(wrt->sx, type, i);
+
+			write_type(wrt, member_type);
+			write(wrt, " %s; ", repr_get_name(wrt->sx, member_repr));
+		}
+
+		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
+		write(wrt, " }");
+	}
+	else if (type_is_function(wrt->sx, type))
+	{
+		write_type(wrt, type_function_get_return_type(wrt->sx, type));
+		write(wrt, " (");
+
+		const size_t parameter_amount = type_function_get_parameter_amount(wrt->sx, type);
+		for (size_t i = 0; i < parameter_amount; i++)
+		{
+			const item_t parameter_type = type_function_get_parameter_type(wrt->sx, type, i);
+
+			write_type(wrt, parameter_type);
+			if (i != parameter_amount - 1)
+			{
+				write(wrt, ", ");
+			}
+		}
+		write_type(wrt, type_pointer_get_element_type(wrt->sx, type));
+		write(wrt, ")");
+	}
+	write(wrt, "'");
 }
 
 
