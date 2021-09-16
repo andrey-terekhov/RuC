@@ -718,8 +718,8 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
 				break;
 			case 'A':
-			   local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
-			   break;
+				local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
+				break;
 		}
 
 		i++;
