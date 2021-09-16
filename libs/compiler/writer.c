@@ -706,4 +706,5 @@ void write_AST(const char *const path, syntax *const sx)
 	write_translation_unit(&wrt, &root);
 	//wrt_clear(&wrt);
 
+	io_erase(&io);
 }
