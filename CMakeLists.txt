@@ -7,24 +7,36 @@ project(ruc)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+# Set RPATH for searching dynamic libraries in the same folder
+set(CMAKE_INSTALL_RPATH $ORIGIN @loader_path)
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/W4 /WX /wd5105 /utf-8)
-
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
-	if(MSVC_VERSION GREATER_EQUAL 1928)
-		add_compile_options(/std:c11)
-	endif()
+	add_compile_options(/W4 /WX /wd4204 /wd4221 /wd5105 /utf-8
+						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
+						"$<$<NOT:$<CONFIG:Debug>>:/O2>"
+						"$<$<CONFIG:Debug>:/Od>")
 
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -g -std=c11)
+	# Add POSIX flag to declare ‘fileno’ function
+	# Enable -s flag for Release build to remove code info from exec
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-const-variable -std=c11
+						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
+						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
+						"$<$<NOT:$<CONFIG:Debug>>:-O2>"
+						"$<$<CONFIG:Debug>:-g>")
 
-	if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
-		add_compile_options(-posix)
-		add_definitions(-D_POSIX_C_SOURCE=200112L)
-	endif()
+	# Set _POSIX_C_SOURCE to declare ‘readlink’ function
+	add_compile_definitions("$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:_POSIX_C_SOURCE=200112L>")
 endif()
+
+# Disable asserts for Release build
+add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 
 
 # Add libraries

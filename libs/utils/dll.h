@@ -19,7 +19,7 @@
 
 #ifdef _MSC_VER
 	#define EXPORTED __declspec(dllexport)
-	
+
 	#define __attribute__(x)
 #else
 	#define EXPORTED

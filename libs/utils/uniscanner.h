@@ -17,8 +17,11 @@
 #pragma once
 
 #include <stdio.h>
-#include "uniio.h"
 #include "dll.h"
+#include "uniio.h"
+
+
+#define MAX_SYMBOL_SIZE 8
 
 
 #ifdef __cplusplus
@@ -45,6 +48,16 @@ EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...)
  *	@return	UTF-8 character
  */
 EXPORTED char32_t uni_scan_char(universal_io *const io);
+
+/**
+ *	Universal function for discarding UTF-8 characters
+ *
+ *	@param	io			Universal io structure
+ *	@param	wchar		UTF-8 character
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int uni_unscan_char(universal_io *const io, const char32_t wchar);
 
 #ifdef __cplusplus
 } /* extern "C" */

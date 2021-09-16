@@ -38,7 +38,7 @@ int uni_scanf(universal_io *const io, const char *const format, ...)
 
 char32_t uni_scan_char(universal_io *const io)
 {
-	char buffer[8];
+	char buffer[MAX_SYMBOL_SIZE];
 	if (!uni_scanf(io, "%c", &buffer[0]))
 	{
 		return (char32_t)EOF;
@@ -52,6 +52,11 @@ char32_t uni_scan_char(universal_io *const io)
 			return (char32_t)EOF;
 		}
 	}
-	
+
 	return utf8_convert(buffer);
+}
+
+int uni_unscan_char(universal_io *const io, const char32_t wchar)
+{
+	return in_set_position(io, in_get_position(io) - utf8_size(wchar));
 }
