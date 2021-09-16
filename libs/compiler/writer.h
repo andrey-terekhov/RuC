@@ -29,9 +29,8 @@ extern "C" {
  *
  *	@param	path			File path
  *	@param	sx				Syntax structure
- *	@param	root			AST root
  */
-void write_AST(const char *const path, const syntax *const sx, const node *root);
+void write_AST(const char *const path, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -588,7 +588,7 @@ static void write_translation_unit(writer *const wrt, const node *const nd)
  */
 
 
-void write_AST(const char *const path, const syntax *const sx, const node *root)
+void write_AST(const char *const path, syntax *const sx)
 {
 	universal_io io = io_create();
 	if (path == NULL || sx == NULL || out_set_file(&io, path))
@@ -597,6 +597,8 @@ void write_AST(const char *const path, const syntax *const sx, const node *root)
 	}
 
 	writer wrt = { .sx = sx, .io = &io };
-	write_translation_unit(&wrt, root);
+
+	const node root = node_get_root(&sx->tree);
+	write_translation_unit(&wrt, &root);
 	//wrt_clear(&wrt);
 }
