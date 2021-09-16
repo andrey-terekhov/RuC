@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "AST.h"
 #include "errors.h"
 #include "hash.h"
 #include "operations.h"
@@ -89,11 +90,6 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static inline const char *ident_get_spelling(const syntax *const sx, const size_t index)
-{
-	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
-}
-
 // TODO: такая функция есть в builder, хотелось бы не дублировать
 static inline item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
@@ -146,9 +142,9 @@ static void type_to_io(information *const info, const item_t type)
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
 	}
-	else
+	else if (type_is_undefined(type))
 	{
-		uni_printf(info->sx->io, "i8");
+		uni_printf(info->sx->io, "i8*");
 	}
 }
 
@@ -494,7 +490,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == answer_type || type_is_null_pointer(answer_type) ||  type_is_pointer(info->sx, answer_type))
+	if (operation_type == answer_type || type_is_null_pointer(answer_type) || type_is_pointer(info->sx, answer_type))
 	{
 		return;
 	}
@@ -931,11 +927,16 @@ static void expression(information *const info, node *const nd)
 			info->answer_kind = AREG;
 		}
 		break;
-		case OP_CONSTANT:
+		case OP_LITERAL:
 		{
 			const item_t type = node_get_arg(nd, 0);
 
-			if (type_is_integer(type))
+			if (type_is_string(info->sx, type))
+			{
+				info->answer_string = node_get_arg(nd, 2);
+				info->answer_kind = ASTR;
+			}
+			else if (type_is_integer(type))
 			{
 				const item_t num = node_get_arg(nd, 2);
 
@@ -1109,7 +1110,10 @@ static void expression(information *const info, node *const nd)
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
 				arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
-				to_code_try_widen(info, arguments_value_type[i], answer_type);
+				if (info->answer_kind != ASTR)
+				{
+					to_code_try_widen(info, arguments_value_type[i], answer_type);
+				}
 
 				if (info->answer_kind == AREG)
 				{
@@ -1186,13 +1190,6 @@ static void expression(information *const info, node *const nd)
 				}
 			}
 			uni_printf(info->sx->io, ")\n");
-		}
-		break;
-		case OP_STRING:
-		{	
-			info->answer_string = node_get_arg(nd, 2);
-			info->answer_kind = ASTR;
-			node_set_next(nd);
 		}
 		break;
 		case OP_SELECT:
@@ -1863,7 +1860,12 @@ static void builin_functions_declaration(information *const info)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
 
-				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
+				item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
+				// TODO: как исправить этот костыль???
+				if (i == BI_FOPEN)
+				{
+					param_type = TYPE_UNDEFINED;
+				}
 				type_to_io(info, param_type);
 			}
 			uni_printf(info->sx->io, ")\n");
