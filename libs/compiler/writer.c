@@ -74,7 +74,11 @@ static void write_location(writer *const wrt, const location loc)
  */
 static void write_type(writer *const wrt, const item_t type)
 {
-	if (type_is_null_pointer(type))
+	if (type == TYPE_VOID_POINTER)
+	{
+		write(wrt, "void*");
+	}
+	else if (type_is_null_pointer(type))
 	{
 		write(wrt, "nullptr");
 	}
