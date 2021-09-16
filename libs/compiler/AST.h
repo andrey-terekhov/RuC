@@ -66,6 +66,9 @@ typedef enum STATEMENT
 	STMT_BREAK,			/**< Break statement */
 	STMT_RETURN,		/**< Return statement */
 	STMT_PRINTF,		/**< Printf statement */
+	STMT_PRINT,			/**< Print statement */
+	STMT_PRINTID,		/**< Printid statement */
+	STMT_GETID,			/**< Getid statement */
 } statement_t;
 
 /** Declaration class */
