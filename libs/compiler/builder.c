@@ -429,7 +429,13 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true;
 	}
 
-	return expected_type == actual_type;
+	if (expected_type == actual_type)
+	{
+		return true;
+	}
+
+	semantic_error(sx, expression_get_location(nd_init), wrong_init);
+	return false;
 }
 
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
@@ -632,7 +638,6 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 		category = LVALUE;
 	}
 
-	item_t member_displ = 0;
 	const size_t member_amount = type_structure_get_member_amount(sx, struct_type);
 	for (size_t i = 0; i < member_amount; i++)
 	{
@@ -644,15 +649,14 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 			node nd = node_create(sx, OP_SELECT);
 			node_add_arg(&nd, member_type);			// Тип значения поля
 			node_add_arg(&nd, category);			// Категория значения выборки
-			node_add_arg(&nd, member_displ);		// Смещение поля структуры
-			node_add_arg(&nd, (item_t)expr_start);	// Начальная позиция выборкм
-			node_add_arg(&nd, (item_t)id_loc.end);	// Конечная позиция выборкм
+			node_add_arg(&nd, (item_t)i);			// Индекс поля выборки
+			node_add_arg(&nd, is_arrow);			// Является ли оператор '->'
+			node_add_arg(&nd, (item_t)expr_start);	// Начальная позиция выборки
+			node_add_arg(&nd, (item_t)id_loc.end);	// Конечная позиция выборки
 			node_set_child(&nd, nd_base);			// Выражение-операнд
 
 			return nd;
 		}
-
-		member_displ += (item_t)type_size(sx, member_type);
 	}
 
 	semantic_error(sx, id_loc, no_member, repr_get_name(sx, name));
