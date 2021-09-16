@@ -29,23 +29,22 @@
  */
 
 
-
-parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *const out)
+parser parser_create(linker *const lk, storage *const stg, universal_io *const out)
 {
 	parser prs; 
-	if (!linker_is_correct(lk) || !out_is_correct(out))// || !storage_is_correct(stg))
+	if (!linker_is_correct(lk) || !out_is_correct(out) || !storage_is_correct(stg))
 	{
 		prs.lk = NULL;
 		return prs;
 	}
 
 	prs.lk = lk;
-	//prs.stg = stg;
+	prs.stg = stg;
 	
 	prs.in = NULL;
 	prs.out = out;
 
-	prs.error_line = 0;
+	prs.line = 0;
 
 	prs.is_recovery_disabled = false;
 
@@ -84,7 +83,6 @@ int parser_disable_recovery(parser *const prs)
 	}
 
 	prs->is_recovery_disabled = true;
-
 	return 0;
 }
 
@@ -93,12 +91,11 @@ void parser_error(parser *const prs, const error_t num);
 
 bool parser_is_correct(const parser *const prs)
 {
-	return prs != NULL && linker_is_correct(prs->lk) && out_is_correct(prs->out);// && storage_is_correct(prs->stg);
+	return prs != NULL && linker_is_correct(prs->lk) && out_is_correct(prs->out) && storage_is_correct(prs->stg);
 }
 
 
 int parser_clear(parser *const prs)
 {
-	parser_is_correct(prs);
-	return 0;
+	return prs != NULL && linker_clear(&prs->lk) && storage_clear(&prs->stg);
 }

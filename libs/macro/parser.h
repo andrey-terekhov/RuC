@@ -35,7 +35,7 @@ typedef struct parser
 	universal_io *in;				/**< Input io structure */ 
 	universal_io *out;				/**< Output io structure */ 
 
-	size_t error_line;				/**< Сurrent line number in input */ 
+	size_t line;					/**< Сurrent line number in input */ 
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 } parser;
