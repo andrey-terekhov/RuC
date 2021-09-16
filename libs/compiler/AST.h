@@ -209,17 +209,6 @@ inline node expression_subscript_get_index(const node *const nd)
 	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 1) : node_broken();
 }
 
-/**
- *	Get arguments amount of call expression
- *
- *	@param	nd		Call expression
- *
- *	@return	Arguments amount
- */
-inline size_t expression_call_get_arguments_amount(const node *const nd)
-{
-	return node_get_type(nd) == OP_CALL ? node_get_amount(nd) - 1 : SIZE_MAX;
-}
 
 /**
  *	Get called expression of call expression
