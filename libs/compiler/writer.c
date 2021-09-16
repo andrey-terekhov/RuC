@@ -38,7 +38,7 @@ static void write_statement(writer *const wrt, const node *const nd, const size_
 
 static void write(writer *const wrt, const char *const string)
 {
-	uni_printf(wrt->io, string);
+	uni_printf(wrt->io, "%s", string);
 }
 
 /**
@@ -152,37 +152,37 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 	switch (operator)
 	{
 		case UN_POSTINC:
-			write(wrt, "postfix ++");
+			write(wrt, "'postfix ++'");
 			break;
 		case UN_POSTDEC:
-			write(wrt, "postfix --");
+			write(wrt, "'postfix --'");
 			break;
 		case UN_PREINC:
-			write(wrt, "++");
+			write(wrt, "'++'");
 			break;
 		case UN_PREDEC:
-			write(wrt, "--");
+			write(wrt, "'--'");
 			break;
 		case UN_ADDRESS:
-			write(wrt, "&");
+			write(wrt, "'&'");
 			break;
 		case UN_INDIRECTION:
-			write(wrt, "*");
+			write(wrt, "'*'");
 			break;
 		case UN_PLUS:
-			write(wrt, "+");
+			write(wrt, "'+'");
 			break;
 		case UN_MINUS:
-			write(wrt, "-");
+			write(wrt, "'-'");
 			break;
 		case UN_NOT:
-			write(wrt, "~");
+			write(wrt, "'~'");
 			break;
 		case UN_LOGNOT:
-			write(wrt, "!");
+			write(wrt, "'!'");
 			break;
 		case UN_ABS:
-			write(wrt, "abs");
+			write(wrt, "'abs'");
 			break;
 	}
 }
@@ -198,94 +198,94 @@ static void write_binary_operator(writer *const wrt, const binary_t operator)
 	switch (operator)
 	{
 		case BIN_MUL:
-			write(wrt, "*");
+			write(wrt, "'*'");
 			break;
 		case BIN_DIV:
-			write(wrt, "/");
+			write(wrt, "'/'");
 			break;
 		case BIN_REM:
-			write(wrt, "%");
+			write(wrt, "'%'");
 			break;
 		case BIN_ADD:
-			write(wrt, "+");
+			write(wrt, "'+'");
 			break;
 		case BIN_SUB:
-			write(wrt, "-");
+			write(wrt, "'-'");
 			break;
 		case BIN_SHL:
-			write(wrt, "<<");
+			write(wrt, "'<<'");
 			break;
 		case BIN_SHR:
-			write(wrt, ">>");
+			write(wrt, "'>>'");
 			break;
 		case BIN_LT:
-			write(wrt, "<");
+			write(wrt, "'<'");
 			break;
 		case BIN_GT:
-			write(wrt, ">");
+			write(wrt, "'>'");
 			break;
 		case BIN_LE:
-			write(wrt, "<=");
+			write(wrt, "'<='");
 			break;
 		case BIN_GE:
-			write(wrt, ">=");
+			write(wrt, "'>='");
 			break;
 		case BIN_EQ:
-			write(wrt, "==");
+			write(wrt, "'=='");
 			break;
 		case BIN_NE:
-			write(wrt, "!=");
+			write(wrt, "'!='");
 			break;
 		case BIN_AND:
-			write(wrt, "&");
+			write(wrt, "'&'");
 			break;
 		case BIN_XOR:
-			write(wrt, "^");
+			write(wrt, "'^'");
 			break;
 		case BIN_OR:
-			write(wrt, "|");
+			write(wrt, "'|'");
 			break;
 		case BIN_LOG_AND:
-			write(wrt, "&&");
+			write(wrt, "'&&'");
 			break;
 		case BIN_LOG_OR:
-			write(wrt, "||");
+			write(wrt, "'||'");
 			break;
 		case BIN_ASSIGN:
-			write(wrt, "=");
+			write(wrt, "'='");
 			break;
 		case BIN_MUL_ASSIGN:
-			write(wrt, "*=");
+			write(wrt, "'*='");
 			break;
 		case BIN_DIV_ASSIGN:
-			write(wrt, "/=");
+			write(wrt, "'/='");
 			break;
 		case BIN_REM_ASSIGN:
-			write(wrt, "%=");
+			write(wrt, "'%='");
 			break;
 		case BIN_ADD_ASSIGN:
-			write(wrt, "+=");
+			write(wrt, "'+='");
 			break;
 		case BIN_SUB_ASSIGN:
-			write(wrt, "-=");
+			write(wrt, "'-='");
 			break;
 		case BIN_SHL_ASSIGN:
-			write(wrt, "<<=");
+			write(wrt, "'<<='");
 			break;
 		case BIN_SHR_ASSIGN:
-			write(wrt, ">>=");
+			write(wrt, "'>>='");
 			break;
 		case BIN_AND_ASSIGN:
-			write(wrt, "&=");
+			write(wrt, "'&='");
 			break;
 		case BIN_XOR_ASSIGN:
-			write(wrt, "^=");
+			write(wrt, "'^='");
 			break;
 		case BIN_OR_ASSIGN:
-			write(wrt, "|=");
+			write(wrt, "'|='");
 			break;
 		case BIN_COMMA:
-			write(wrt, ",");
+			write(wrt, "','");
 			break;
 	}
 }
@@ -294,6 +294,30 @@ static void write_binary_operator(writer *const wrt, const binary_t operator)
 //===----------------------------------------------------------------------===//
 //                            Expression Writing                              //
 //===----------------------------------------------------------------------===//
+
+/**
+ *	Write expression metadata
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_expression_metadata(writer *const wrt, const node *const nd)
+{
+	if (expression_is_lvalue(nd))
+	{
+	   write(wrt, " ─ lvalue");
+	}
+	else
+	{
+		write(wrt, " ─ rvalue");
+	}
+
+	write(wrt, " of type '");
+	write_type(wrt, expression_get_type(nd));
+	write(wrt, "'");
+
+	write_location(wrt, expression_get_location(nd));
+}
 
 /**
  *	Write identifier expression
@@ -307,7 +331,11 @@ static void write_identifier_expression(writer *const wrt, const node *const nd,
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_IDENTIFIER");
 
-	write_location(wrt, expression_get_location(nd));
+	const size_t id = expression_identifier_get_id(nd);
+	const char *spelling = ident_get_spelling(wrt->sx, id);
+	uni_printf(wrt->io, " named \'%s\' with id %zu", spelling, id);
+
+	write_expression_metadata(wrt, nd);
 }
 
 /**
@@ -321,7 +349,27 @@ static void write_literal_expression(writer *const wrt, const node *const nd, co
 {
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_LITERAL");
-	write_location(wrt, expression_get_location(nd));
+
+	const item_t type = expression_get_type(nd);
+	if (type_is_integer(type))
+	{
+		const int value = expression_literal_get_integer(nd);
+		uni_printf(wrt->io, " with value %i", value);
+	}
+	else if (type_is_floating(type))
+	{
+		const double value = expression_literal_get_floating(nd);
+		uni_printf(wrt->io, " with value %f", value);
+	}
+	else if (type_is_string(wrt->sx, type))
+	{
+		const size_t string_num = expression_literal_get_string(nd);
+		const char *const string = string_get(wrt->sx, string_num);
+		uni_printf(wrt->io, " with value \"%s\"", string);
+	}
+	// Nothing to write for null pointer constant
+
+	write_expression_metadata(wrt, nd);
 }
 
 /**
@@ -335,7 +383,7 @@ static void write_subscript_expression(writer *const wrt, const node *const nd, 
 {
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_SUBSCRIPT");
-	write_location(wrt, expression_get_location(nd));
+	write_expression_metadata(wrt, nd);
 
 	const node base = expression_subscript_get_base(nd);
 	write_expression(wrt, &base, indent + 1);
@@ -355,7 +403,7 @@ static void write_call_expression(writer *const wrt, const node *const nd, const
 {
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_CALL");
-	write_location(wrt, expression_get_location(nd));
+	write_expression_metadata(wrt, nd);
 
 	const node callee = expression_call_get_callee(nd);
 	write_expression(wrt, &callee, indent + 1);
@@ -378,14 +426,31 @@ static void write_call_expression(writer *const wrt, const node *const nd, const
 static void write_member_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_MEMBER");
-	write_location(wrt, expression_get_location(nd));
+	write(wrt, "EXPR_MEMBER selecting");
 
 	const node base = expression_member_get_base(nd);
-	write_expression(wrt, &base, indent + 1);
-
+	const item_t base_type = expression_get_type(&base);
 	const size_t index = expression_member_get_member_index(nd);
-	(void)index;
+
+	if (expression_member_is_arrow(nd))
+	{
+		write(wrt, " ->");
+
+		const item_t structure_type = type_pointer_get_element_type(wrt->sx, base_type);
+		const size_t repr = type_structure_get_member_name(wrt->sx, structure_type, index);
+		write(wrt, repr_get_name(wrt->sx, repr));
+	}
+	else
+	{
+		write(wrt, " .");
+
+		const size_t repr = type_structure_get_member_name(wrt->sx, base_type, index);
+		write(wrt, repr_get_name(wrt->sx, repr));
+	}
+
+	uni_printf(wrt->io, " by index #%zu", index);
+	write_expression_metadata(wrt, nd);
+	write_expression(wrt, &base, indent + 1);
 }
 
 /**
@@ -398,8 +463,9 @@ static void write_member_expression(writer *const wrt, const node *const nd, con
 static void write_unary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_UNARY");
-	write_location(wrt, expression_get_location(nd));
+	write(wrt, "EXPR_UNARY with operator ");
+	write_unary_operator(wrt, expression_unary_get_operator(nd));
+	write_expression_metadata(wrt, nd);
 
 	const node operand = expression_unary_get_operand(nd);
 	write_expression(wrt, &operand, indent + 1);
@@ -415,8 +481,9 @@ static void write_unary_expression(writer *const wrt, const node *const nd, cons
 static void write_binary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_BINARY");
-	write_location(wrt, expression_get_location(nd));
+	write(wrt, "EXPR_BINARY with operator ");
+	write_binary_operator(wrt, expression_binary_get_operator(nd));
+	write_expression_metadata(wrt, nd);
 
 	const node LHS = expression_binary_get_LHS(nd);
 	write_expression(wrt, &LHS, indent + 1);
@@ -436,7 +503,7 @@ static void write_ternary_expression(writer *const wrt, const node *const nd, co
 {
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_TERNARY");
-	write_location(wrt, expression_get_location(nd));
+	write_expression_metadata(wrt, nd);
 
 	const node condition = expression_ternary_get_condition(nd);
 	write_expression(wrt, &condition, indent + 1);
@@ -459,7 +526,7 @@ static void write_expression_list(writer *const wrt, const node *const nd, const
 {
 	write_indent(wrt, indent);
 	write(wrt, "EXPR_LIST");
-	write_location(wrt, expression_get_location(nd));
+	write_expression_metadata(wrt, nd);
 
 	const size_t size = expression_list_get_size(nd);
 	for (size_t i = 0; i < size; i++)
