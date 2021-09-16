@@ -673,6 +673,7 @@ item_t type_array(syntax *const sx, const item_t type)
  *		F -> float[]
  *		m -> msg_info
  *		P -> FILE*
+ *		A -> void*(void*)
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
