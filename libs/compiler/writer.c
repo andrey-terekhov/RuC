@@ -141,6 +141,155 @@ static void write_type(writer *const wrt, const item_t type)
 	}
 }
 
+/**
+ *	Write unary operator spelling
+ *
+ *	@param	wrt			Writer
+ *	@param	operator	Operator
+ */
+static void write_unary_operator(writer *const wrt, const unary_t operator)
+{
+	switch (operator)
+	{
+		case UN_POSTINC:
+			write(wrt, "postfix ++");
+			break;
+		case UN_POSTDEC:
+			write(wrt, "postfix --");
+			break;
+		case UN_PREINC:
+			write(wrt, "++");
+			break;
+		case UN_PREDEC:
+			write(wrt, "--");
+			break;
+		case UN_ADDRESS:
+			write(wrt, "&");
+			break;
+		case UN_INDIRECTION:
+			write(wrt, "*");
+			break;
+		case UN_PLUS:
+			write(wrt, "+");
+			break;
+		case UN_MINUS:
+			write(wrt, "-");
+			break;
+		case UN_NOT:
+			write(wrt, "~");
+			break;
+		case UN_LOGNOT:
+			write(wrt, "!");
+			break;
+		case UN_ABS:
+			write(wrt, "abs");
+			break;
+	}
+}
+
+/**
+ *	Write binary operator spelling
+ *
+ *	@param	wrt			Writer
+ *	@param	operator	Operator
+ */
+static void write_binary_operator(writer *const wrt, const binary_t operator)
+{
+	switch (operator)
+	{
+		case BIN_MUL:
+			write(wrt, "*");
+			break;
+		case BIN_DIV:
+			write(wrt, "/");
+			break;
+		case BIN_REM:
+			write(wrt, "%");
+			break;
+		case BIN_ADD:
+			write(wrt, "+");
+			break;
+		case BIN_SUB:
+			write(wrt, "-");
+			break;
+		case BIN_SHL:
+			write(wrt, "<<");
+			break;
+		case BIN_SHR:
+			write(wrt, ">>");
+			break;
+		case BIN_LT:
+			write(wrt, "<");
+			break;
+		case BIN_GT:
+			write(wrt, ">");
+			break;
+		case BIN_LE:
+			write(wrt, "<=");
+			break;
+		case BIN_GE:
+			write(wrt, ">=");
+			break;
+		case BIN_EQ:
+			write(wrt, "==");
+			break;
+		case BIN_NE:
+			write(wrt, "!=");
+			break;
+		case BIN_AND:
+			write(wrt, "&");
+			break;
+		case BIN_XOR:
+			write(wrt, "^");
+			break;
+		case BIN_OR:
+			write(wrt, "|");
+			break;
+		case BIN_LOG_AND:
+			write(wrt, "&&");
+			break;
+		case BIN_LOG_OR:
+			write(wrt, "||");
+			break;
+		case BIN_ASSIGN:
+			write(wrt, "=");
+			break;
+		case BIN_MUL_ASSIGN:
+			write(wrt, "*=");
+			break;
+		case BIN_DIV_ASSIGN:
+			write(wrt, "/=");
+			break;
+		case BIN_REM_ASSIGN:
+			write(wrt, "%=");
+			break;
+		case BIN_ADD_ASSIGN:
+			write(wrt, "+=");
+			break;
+		case BIN_SUB_ASSIGN:
+			write(wrt, "-=");
+			break;
+		case BIN_SHL_ASSIGN:
+			write(wrt, "<<=");
+			break;
+		case BIN_SHR_ASSIGN:
+			write(wrt, ">>=");
+			break;
+		case BIN_AND_ASSIGN:
+			write(wrt, "&=");
+			break;
+		case BIN_XOR_ASSIGN:
+			write(wrt, "^=");
+			break;
+		case BIN_OR_ASSIGN:
+			write(wrt, "|=");
+			break;
+		case BIN_COMMA:
+			write(wrt, ",");
+			break;
+	}
+}
+
 
 //===----------------------------------------------------------------------===//
 //                            Expression Writing                              //
