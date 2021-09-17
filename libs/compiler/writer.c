@@ -38,7 +38,7 @@ static void write_statement(writer *const wrt, const node *const nd, const size_
 //                                Writer Utils                                //
 //===----------------------------------------------------------------------===//
 
-static void write(writer *const wrt, const char *const string)
+static inline void write(writer *const wrt, const char *const string)
 {
 	uni_printf(wrt->io, "%s", string);
 }
@@ -49,7 +49,7 @@ static void write(writer *const wrt, const char *const string)
  *	@param	wrt			Writer
  *	@param	indent		Indentation
  */
-static void write_indent(writer *const wrt, const size_t indent)
+static inline void write_indent(writer *const wrt, const size_t indent)
 {
 	for (size_t i = 0; i < indent; i++)
 	{
@@ -63,7 +63,7 @@ static void write_indent(writer *const wrt, const size_t indent)
  *	@param	wrt			Writer
  *	@param	loc			Source location
  */
-static void write_location(writer *const wrt, const location loc)
+static inline void write_location(writer *const wrt, const location loc)
 {
 	uni_printf(wrt->io, " at <%lu, %lu>\n", loc.begin, loc.end);
 }
