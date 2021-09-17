@@ -307,7 +307,10 @@ static void write_literal_expression(writer *const wrt, const node *const nd, co
 		const char *const string = string_get(wrt->sx, string_num);
 		uni_printf(wrt->io, " with value \"%s\"", string);
 	}
-	// Nothing to write for null pointer constant
+	else // if (type_is_null_pointer(type))
+	{
+		write(wrt, " NULL");
+	}
 
 	write_expression_metadata(wrt, nd);
 }
