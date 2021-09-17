@@ -15,9 +15,11 @@
  */
 
 #include "writer.h"
+#include <string.h>
 #include "uniprinter.h"
 
 
+#define MAX_ELEM_SIZE	32
 #define INDENT			"  "
 
 
@@ -1074,6 +1076,969 @@ static void write_translation_unit(writer *const wrt, const node *const nd)
 }
 
 
+//===----------------------------------------------------------------------===//
+//                               Codes Writing                                //
+//===----------------------------------------------------------------------===//
+
+static size_t elem_get_name(const instruction_t elem, const size_t num, char *const buffer)
+{
+	if (buffer == NULL)
+	{
+		return 0;
+	}
+
+	size_t argc = 0;
+	bool was_switch = false;
+
+	switch (elem)
+	{
+		case IC_COPY01:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY01");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY10:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY10");
+					break;
+				case 1:
+					sprintf(buffer, "displright");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY11:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY11");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY0ST:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0ST");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY1ST:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1ST");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY0ST_ASSIGN:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY0STASS");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPY1ST_ASSIGN:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY1STASS");
+					break;
+				case 1:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_COPYST:
+			argc = 3;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPYST");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "length");
+					break;
+				case 3:
+					sprintf(buffer, "length1");
+					break;
+			}
+			break;
+
+		case IC_CALL1:
+			argc = 1;
+			sprintf(buffer, "TCall1");
+			break;
+		case IC_CALL2:
+			argc = 1;
+			sprintf(buffer, "TCall2");
+			break;
+		case IC_CREATE:
+			sprintf(buffer, "TCREATE");
+			break;
+		case IC_EXIT:
+			sprintf(buffer, "TEXIT");
+			break;
+		case IC_MSG_SEND:
+			sprintf(buffer, "TMSGSEND");
+			break;
+		case IC_MSG_RECEIVE:
+			sprintf(buffer, "TMSGRECEIVE");
+			break;
+		case IC_JOIN:
+			sprintf(buffer, "TJOIN");
+			break;
+		case IC_SLEEP:
+			sprintf(buffer, "TSLEEP");
+			break;
+		case IC_SEM_CREATE:
+			sprintf(buffer, "TSEMCREATE");
+			break;
+		case IC_SEM_WAIT:
+			sprintf(buffer, "TSEMWAIT");
+			break;
+		case IC_SEM_POST:
+			sprintf(buffer, "TSEMPOST");
+			break;
+		case IC_INIT:
+			sprintf(buffer, "INITC");
+			break;
+		case IC_DESTROY:
+			sprintf(buffer, "DESTROYC");
+			break;
+		case IC_GETNUM:
+			sprintf(buffer, "GETNUMC");
+			break;
+
+		case IC_PRINT:
+			argc = 1;
+			sprintf(buffer, "PRINT");
+			break;
+		case IC_PRINTID:
+			argc = 1;
+			sprintf(buffer, "PRINTID");
+			break;
+		case IC_PRINTF:
+			argc = 1;
+			sprintf(buffer, "PRINTF");
+			break;
+		case IC_GETID:
+			argc = 1;
+			sprintf(buffer, "GETID");
+			break;
+
+		case IC_ABS:
+			sprintf(buffer, "ABS");
+			break;
+		case IC_ABSI:
+			sprintf(buffer, "ABSI");
+			break;
+		case IC_SQRT:
+			sprintf(buffer, "SQRT");
+			break;
+		case IC_EXP:
+			sprintf(buffer, "EXP");
+			break;
+		case IC_SIN:
+			sprintf(buffer, "SIN");
+			break;
+		case IC_COS:
+			sprintf(buffer, "COS");
+			break;
+		case IC_LOG:
+			sprintf(buffer, "LOG");
+			break;
+		case IC_LOG10:
+			sprintf(buffer, "LOG10");
+			break;
+		case IC_ASIN:
+			sprintf(buffer, "ASIN");
+			break;
+		case IC_RAND:
+			sprintf(buffer, "RAND");
+			break;
+		case IC_ROUND:
+			sprintf(buffer, "ROUND");
+			break;
+
+		case IC_STRCPY:
+			sprintf(buffer, "STRCPY");
+			break;
+		case IC_STRNCPY:
+			sprintf(buffer, "STRNCPY");
+			break;
+		case IC_STRCAT:
+			sprintf(buffer, "STRCAT");
+			break;
+		case IC_STRNCAT:
+			sprintf(buffer, "STRNCAT");
+			break;
+		case IC_STRCMP:
+			sprintf(buffer, "STRCMP");
+			break;
+		case IC_STRNCMP:
+			sprintf(buffer, "STRNCMP");
+			break;
+		case IC_STRSTR:
+			sprintf(buffer, "STRSTR");
+			break;
+		case IC_STRLEN:
+			sprintf(buffer, "STRLENC");
+			break;
+
+		case IC_BEG_INIT:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "BEGINIT");
+					break;
+				case 1:
+					sprintf(buffer, "n");
+					break;
+			}
+			break;
+		case IC_STRUCT_WITH_ARR:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "STRUCTWITHARR");
+					break;
+				case 1:
+					sprintf(buffer, "displ");
+					break;
+				case 2:
+					sprintf(buffer, "iniproc");
+					break;
+			}
+			break;
+		case IC_DEFARR:
+			argc = 7;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "DEFARR");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "iniproc");
+					break;
+				case 5:
+					sprintf(buffer, "usual");
+					break;
+				case 6:
+					sprintf(buffer, "all");
+					break;
+				case 7:
+					sprintf(buffer, "instruct");
+					break;
+			}
+			break;
+		case IC_ARR_INIT:
+			argc = 4;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "ARRINIT");
+					break;
+				case 1:
+					sprintf(buffer, "N");
+					break;
+				case 2:
+					sprintf(buffer, "elem_len");
+					break;
+				case 3:
+					sprintf(buffer, "displ");
+					break;
+				case 4:
+					sprintf(buffer, "usual");
+					break;
+			}
+			break;
+		case IC_LI:
+			argc = 1;
+			sprintf(buffer, "LI");
+			break;
+		case IC_LID:
+			argc = 2;
+			sprintf(buffer, "LID");
+			break;
+		case IC_LOAD:
+			argc = 1;
+			sprintf(buffer, "LOAD");
+			break;
+		case IC_LOADD:
+			argc = 1;
+			sprintf(buffer, "LOADD");
+			break;
+		case IC_LAT:
+			sprintf(buffer, "L@");
+			break;
+		case IC_LATD:
+			sprintf(buffer, "L@f");
+			break;
+		case IC_LA:
+			argc = 1;
+			sprintf(buffer, "LA");
+			break;
+
+		case IC_STOP:
+			sprintf(buffer, "STOP");
+			break;
+		case IC_RETURN_VAL:
+			argc = 1;
+			sprintf(buffer, "RETURNVAL");
+			break;
+		case IC_RETURN_VOID:
+			sprintf(buffer, "RETURNVOID");
+			break;
+		case IC_B:
+			argc = 1;
+			sprintf(buffer, "B");
+			break;
+		case IC_BE0:
+			argc = 1;
+			sprintf(buffer, "BE0");
+			break;
+		case IC_BNE0:
+			argc = 1;
+			sprintf(buffer, "BNE0");
+			break;
+		case IC_SLICE:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SLICE");
+					break;
+				case 1:
+					sprintf(buffer, "d");
+					break;
+			}
+			break;
+		case IC_SELECT:
+			argc = 1;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "SELECT");
+					break;
+				case 1:
+					sprintf(buffer, "field_displ");
+					break;
+			}
+			break;
+		case IC_FUNC_BEG:
+			argc = 2;
+			was_switch = true;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "FUNCBEG");
+					break;
+				case 1:
+					sprintf(buffer, "maxdispl");
+					break;
+				case 2:
+					sprintf(buffer, "pc");
+					break;
+			}
+			break;
+
+		case IC_LOG_OR:
+			sprintf(buffer, "||");
+			break;
+		case IC_LOG_AND:
+			sprintf(buffer, "&&");
+			break;
+
+		case IC_OR_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "|=");
+			break;
+		case IC_OR_ASSIGN_AT:
+			sprintf(buffer, "|=@");
+			break;
+		case IC_OR_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "|=V");
+			break;
+		case IC_OR_ASSIGN_AT_V:
+			sprintf(buffer, "|=@V");
+			break;
+		case IC_OR:
+			sprintf(buffer, "|");
+			break;
+
+		case IC_XOR_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "^=");
+			break;
+		case IC_XOR_ASSIGN_AT:
+			sprintf(buffer, "^=@");
+			break;
+		case IC_XOR_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "^=V");
+			break;
+		case IC_XOR_ASSIGN_AT_V:
+			sprintf(buffer, "^=@V");
+			break;
+		case IC_XOR:
+			sprintf(buffer, "^");
+			break;
+
+		case IC_AND_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "&=");
+			break;
+		case IC_AND_ASSIGN_AT:
+			sprintf(buffer, "&=@");
+			break;
+		case IC_AND_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "&=V");
+			break;
+		case IC_AND_ASSIGN_AT_V:
+			sprintf(buffer, "&=@V");
+			break;
+		case IC_AND:
+			sprintf(buffer, "&");
+			break;
+
+		case IC_EQ:
+			sprintf(buffer, "==");
+			break;
+		case IC_NE:
+			sprintf(buffer, "!=");
+			break;
+		case IC_LT:
+			sprintf(buffer, "<");
+			break;
+		case IC_GT:
+			sprintf(buffer, ">");
+			break;
+		case IC_LE:
+			sprintf(buffer, "<=");
+			break;
+		case IC_GE:
+			sprintf(buffer, ">=");
+			break;
+		case IC_EQ_R:
+			sprintf(buffer, "==f");
+			break;
+		case IC_NE_R:
+			sprintf(buffer, "!=f");
+			break;
+		case IC_LT_R:
+			sprintf(buffer, "<f");
+			break;
+		case IC_GT_R:
+			sprintf(buffer, ">f");
+			break;
+		case IC_LE_R:
+			sprintf(buffer, "<=f");
+			break;
+		case IC_GE_R:
+			sprintf(buffer, ">=f");
+			break;
+
+		case IC_SHR_ASSIGN:
+			argc = 1;
+			sprintf(buffer, ">>=");
+			break;
+		case IC_SHR_ASSIGN_AT:
+			sprintf(buffer, ">>=@");
+			break;
+		case IC_SHR_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, ">>=V");
+			break;
+		case IC_SHR_ASSIGN_AT_V:
+			sprintf(buffer, ">>=@V");
+			break;
+		case IC_SHR:
+			sprintf(buffer, ">>");
+			break;
+
+		case IC_SHL_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "<<=");
+			break;
+		case IC_SHL_ASSIGN_AT:
+			sprintf(buffer, "<<=@");
+			break;
+		case IC_SHL_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "<<=V");
+			break;
+		case IC_SHL_ASSIGN_AT_V:
+			sprintf(buffer, "<<=@V");
+			break;
+		case IC_SHL:
+			sprintf(buffer, "<<");
+			break;
+
+		case IC_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "=");
+			break;
+		case IC_ASSIGN_AT:
+			sprintf(buffer, "=@");
+			break;
+		case IC_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "=V");
+			break;
+		case IC_ASSIGN_AT_V:
+			sprintf(buffer, "=@V");
+			break;
+
+		case IC_ADD_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "+=");
+			break;
+		case IC_ADD_ASSIGN_AT:
+			sprintf(buffer, "+=@");
+			break;
+		case IC_ADD_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "+=V");
+			break;
+		case IC_ADD_ASSIGN_AT_V:
+			sprintf(buffer, "+=@V");
+			break;
+		case IC_ADD:
+			sprintf(buffer, "+");
+			break;
+
+		case IC_SUB_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "-=");
+			break;
+		case IC_SUB_ASSIGN_AT:
+			sprintf(buffer, "-=@");
+			break;
+		case IC_SUB_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "-=V");
+			break;
+		case IC_SUB_ASSIGN_AT_V:
+			sprintf(buffer, "-=@V");
+			break;
+		case IC_SUB:
+			sprintf(buffer, "-");
+			break;
+
+		case IC_MUL_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "*=");
+			break;
+		case IC_MUL_ASSIGN_AT:
+			sprintf(buffer, "*=@");
+			break;
+		case IC_MUL_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "*=V");
+			break;
+		case IC_MUL_ASSIGN_AT_V:
+			sprintf(buffer, "*=@V");
+			break;
+		case IC_MUL:
+			sprintf(buffer, "*");
+			break;
+
+		case IC_DIV_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "/=");
+			break;
+		case IC_DIV_ASSIGN_AT:
+			sprintf(buffer, "/=@");
+			break;
+		case IC_DIV_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "/=V");
+			break;
+		case IC_DIV_ASSIGN_AT_V:
+			sprintf(buffer, "/=@V");
+			break;
+		case IC_DIV:
+			sprintf(buffer, "/");
+			break;
+
+		case IC_ASSIGN_R:
+			argc = 1;
+			sprintf(buffer, "=f");
+			break;
+		case IC_ASSIGN_R_V:
+			argc = 1;
+			sprintf(buffer, "=fV");
+			break;
+		case IC_ASSIGN_AT_R:
+			sprintf(buffer, "=@f");
+			break;
+		case IC_ASSIGN_AT_R_V:
+			sprintf(buffer, "=@fV");
+			break;
+
+		case IC_ADD_ASSIGN_R:
+			argc = 1;
+			sprintf(buffer, "+=f");
+			break;
+		case IC_ADD_ASSIGN_AT_R:
+			sprintf(buffer, "+=@f");
+			break;
+		case IC_ADD_ASSIGN_R_V:
+			argc = 1;
+			sprintf(buffer, "+=fV");
+			break;
+		case IC_ADD_ASSIGN_AT_R_V:
+			sprintf(buffer, "+=@fV");
+			break;
+		case IC_ADD_R:
+			sprintf(buffer, "+f");
+			break;
+
+		case IC_SUB_ASSIGN_R:
+			argc = 1;
+			sprintf(buffer, "-=f");
+			break;
+		case IC_SUB_ASSIGN_AT_R:
+			sprintf(buffer, "-=@f");
+			break;
+		case IC_SUB_ASSIGN_R_V:
+			argc = 1;
+			sprintf(buffer, "-=fV");
+			break;
+		case IC_SUB_ASSIGN_AT_R_V:
+			sprintf(buffer, "-=@fV");
+			break;
+		case IC_SUB_R:
+			sprintf(buffer, "-f");
+			break;
+
+		case IC_MUL_ASSIGN_R:
+			argc = 1;
+			sprintf(buffer, "*=f");
+			break;
+		case IC_MUL_ASSIGN_AT_R:
+			sprintf(buffer, "*=@f");
+			break;
+		case IC_MUL_ASSIGN_R_V:
+			argc = 1;
+			sprintf(buffer, "*=fV");
+			break;
+		case IC_MUL_ASSIGN_AT_R_V:
+			sprintf(buffer, "*=@fV");
+			break;
+		case IC_MUL_R:
+			sprintf(buffer, "*f");
+			break;
+
+		case IC_DIV_ASSIGN_R:
+			argc = 1;
+			sprintf(buffer, "/=f");
+			break;
+		case IC_DIV_ASSIGN_AT_R:
+			sprintf(buffer, "/=@f");
+			break;
+		case IC_DIV_ASSIGN_R_V:
+			argc = 1;
+			sprintf(buffer, "/=fV");
+			break;
+		case IC_DIV_ASSIGN_AT_R_V:
+			sprintf(buffer, "/=@fV");
+			break;
+		case IC_DIV_R:
+			sprintf(buffer, "/f");
+			break;
+
+		case IC_REM_ASSIGN:
+			argc = 1;
+			sprintf(buffer, "%%=");
+			break;
+		case IC_REM_ASSIGN_AT:
+			sprintf(buffer, "%%=@");
+			break;
+		case IC_REM_ASSIGN_V:
+			argc = 1;
+			sprintf(buffer, "%%=V");
+			break;
+		case IC_REM_ASSIGN_AT_V:
+			sprintf(buffer, "%%=@V");
+			break;
+		case IC_REM:
+			sprintf(buffer, "%%");
+			break;
+		case IC_POST_INC:
+			argc = 1;
+			sprintf(buffer, "POSTINC");
+			break;
+		case IC_POST_DEC:
+			argc = 1;
+			sprintf(buffer, "POSTDEC");
+			break;
+		case IC_PRE_INC_AT:
+			sprintf(buffer, "INC@");
+			break;
+		case IC_PRE_DEC_AT:
+			sprintf(buffer, "DEC@");
+			break;
+		case IC_POST_INC_AT:
+			sprintf(buffer, "POSTINC@");
+			break;
+		case IC_POST_DEC_AT:
+			sprintf(buffer, "POSTDEC@");
+			break;
+		case IC_PRE_INC_R:
+			argc = 1;
+			sprintf(buffer, "INCf");
+			break;
+		case IC_PRE_DEC_R:
+			argc = 1;
+			sprintf(buffer, "DECf");
+			break;
+		case IC_POST_INC_R:
+			argc = 1;
+			sprintf(buffer, "POSTINCf");
+			break;
+		case IC_POST_DEC_R:
+			argc = 1;
+			sprintf(buffer, "POSTDECf");
+			break;
+		case IC_PRE_INC_AT_R:
+			sprintf(buffer, "INC@f");
+			break;
+		case IC_PRE_DEC_AT_R:
+			sprintf(buffer, "DEC@f");
+			break;
+		case IC_POST_INC_AT_R:
+			sprintf(buffer, "POSTINC@f");
+			break;
+		case IC_POST_DEC_AT_R:
+			sprintf(buffer, "POSTDEC@f");
+			break;
+		case IC_PRE_INC_V:
+			argc = 1;
+			sprintf(buffer, "INCV");
+			break;
+		case IC_PRE_DEC_V:
+			argc = 1;
+			sprintf(buffer, "DECV");
+			break;
+		case IC_POST_INC_V:
+			argc = 1;
+			sprintf(buffer, "POSTINCV");
+			break;
+		case IC_POST_DEC_V:
+			argc = 1;
+			sprintf(buffer, "POSTDECV");
+			break;
+		case IC_PRE_INC_AT_V:
+			sprintf(buffer, "INC@V");
+			break;
+		case IC_PRE_DEC_AT_V:
+			sprintf(buffer, "DEC@V");
+			break;
+		case IC_POST_INC_AT_V:
+			sprintf(buffer, "POSTINC@V");
+			break;
+		case IC_POST_DEC_AT_V:
+			sprintf(buffer, "POSTDEC@V");
+			break;
+		case IC_PRE_INC_R_V:
+			argc = 1;
+			sprintf(buffer, "INCfV");
+			break;
+		case IC_PRE_DEC_R_V:
+			argc = 1;
+			sprintf(buffer, "DECfV");
+			break;
+		case IC_POST_INC_R_V:
+			argc = 1;
+			sprintf(buffer, "POSTINCfV");
+			break;
+		case IC_POST_DEC_R_V:
+			argc = 1;
+			sprintf(buffer, "POSTDECfV");
+			break;
+		case IC_PRE_INC_AT_R_V:
+			sprintf(buffer, "INC@fV");
+			break;
+		case IC_PRE_DEC_AT_R_V:
+			sprintf(buffer, "DEC@fV");
+			break;
+		case IC_POST_INC_AT_R_V:
+			sprintf(buffer, "POSTINC@fV");
+			break;
+		case IC_POST_DEC_AT_R_V:
+			sprintf(buffer, "POSTDEC@fV");
+			break;
+		case IC_NOP:
+			sprintf(buffer, "NOP");
+			break;
+		case IC_WIDEN:
+			sprintf(buffer, "WIDEN");
+			break;
+		case IC_WIDEN1:
+			sprintf(buffer, "WIDEN1");
+			break;
+		case IC_DUPLICATE:
+			sprintf(buffer, "DUPLICATE");
+			break;
+		case IC_COPY00:
+			argc = 3;
+			was_switch = 1;
+			switch (num)
+			{
+				case 0:
+					sprintf(buffer, "COPY00");
+					break;
+				case 1:
+					sprintf(buffer, "displleft");
+					break;
+				case 2:
+					sprintf(buffer, "displright");
+					break;
+				case 3:
+					sprintf(buffer, "length");
+					break;
+			}
+			break;
+		case IC_PRE_INC:
+			argc = 1;
+			sprintf(buffer, "INC");
+			break;
+		case IC_PRE_DEC:
+			argc = 1;
+			sprintf(buffer, "DEC");
+			break;
+		case IC_NOT:
+			sprintf(buffer, "BITNOT");
+			break;
+		case IC_LOG_NOT:
+			sprintf(buffer, "NOT");
+			break;
+
+		case IC_UNMINUS:
+			sprintf(buffer, "UNMINUS");
+			break;
+		case IC_UNMINUS_R:
+			sprintf(buffer, "UNMINUSf");
+			break;
+		default:
+			sprintf(buffer, "%i", elem);
+			break;
+	}
+
+	if ((num != 0 && !was_switch) || argc < num)
+	{
+		buffer[0] = '\0';
+	}
+	return argc;
+}
+
+static size_t write_instruction(universal_io *const io, const vector *const table, size_t i)
+{
+	const instruction_t type = (instruction_t)vector_get(table, i++);
+
+	char buffer[MAX_ELEM_SIZE];
+	size_t argc = elem_get_name(type, 0, buffer);
+	uni_printf(io, "%s", buffer);
+
+	if (type == IC_LID)
+	{
+		int64_t fst = vector_get(table, i);
+		int64_t snd = vector_get(table, i + 1);
+		int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
+		double numdouble;
+		memcpy(&numdouble, &num, sizeof(double));
+		uni_printf(io, " %f\n", numdouble);
+		return i + 2;
+	}
+
+	for (size_t j = 1; j <= argc; j++)
+	{
+		elem_get_name(type, j, buffer);
+
+		if (buffer[0] != '\0')
+		{
+			uni_printf(io, " %s=", buffer);
+		}
+
+		uni_printf(io, " %" PRIitem, vector_get(table, i++));
+	}
+
+	uni_printf(io, "\n");
+	return i;
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -1169,4 +2134,23 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 		return sprintf(&buffer[index], ")");
 	}
 	return 0;
+}
+
+void write_codes(const char *const path, const vector *const memory)
+{
+	universal_io io = io_create();
+	if (path == NULL || !vector_is_correct(memory) || out_set_file(&io, path))
+	{
+		return;
+	}
+
+	uni_printf(&io, "mem\n");
+	size_t i = 0;
+	while (i < vector_size(memory))
+	{
+		uni_printf(&io, "pc %zu) ", i);
+		i = write_instruction(&io, memory, i);
+	}
+
+	io_erase(&io);
 }
