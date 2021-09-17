@@ -41,6 +41,13 @@ void write_AST(const char *const path, syntax *const sx);
  */
 int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
 
+/**
+ *	Write virtual machine codes
+ *
+ *	@param	path			File path
+ *	@param	memory			Instructions table
+ */
+void write_codes(const char *const path, const vector *const memory);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -15,8 +15,8 @@
  */
 
 #include "parser.h"
-#include "codes.h"
 #include "tree.h"
+#include "writer.h"
 
 
 static const char *const DEFAULT_TREE = "tree.txt";
@@ -84,7 +84,7 @@ int parse(const workspace *const ws, syntax *const sx)
 	parser_clear(&prs);
 
 #ifndef NDEBUG
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->types, &sx->tree);
+	write_AST(DEFAULT_TREE, sx);
 #endif
 
 	return !sx_is_correct(sx);

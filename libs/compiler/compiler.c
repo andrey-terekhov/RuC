@@ -23,7 +23,6 @@
 #include "preprocessor.h"
 #include "syntax.h"
 #include "uniio.h"
-#include "writer.h"
 
 #ifndef _MSC_VER
 	#include <sys/stat.h>
@@ -70,8 +69,6 @@ static int compile_from_io(const workspace *const ws, universal_io *const io, co
 
 	syntax sx = sx_create(io);
 	int ret = parse(ws, &sx);
-
-	write_AST("tree.txt", &sx);
 
 	if (!ret)
 	{
