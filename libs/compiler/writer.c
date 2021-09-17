@@ -2090,13 +2090,17 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 	}
 	else if (type_is_array(sx, type))
 	{
-		const int index = write_type_spelling(sx, type_array_get_element_type(sx, type), buffer);
-		return sprintf(&buffer[index], "[]");
+		const item_t element_type = type_array_get_element_type(sx, type);
+		int index = write_type_spelling(sx, element_type, buffer);
+		index += sprintf(&buffer[index], "[]");
+		return index;
 	}
 	else if (type_is_pointer(sx, type))
 	{
-		const int index = write_type_spelling(sx, type_pointer_get_element_type(sx, type), buffer);
-		return sprintf(&buffer[index],  "*");
+		const item_t element_type = type_pointer_get_element_type(sx, type);
+		int index = write_type_spelling(sx, element_type, buffer);
+		index += sprintf(&buffer[index],  "*");
+		return index;
 	}
 	else if (type_is_structure(sx, type))
 	{
@@ -2112,7 +2116,8 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
 		}
 
-		return sprintf(&buffer[index], "}");
+		index += sprintf(&buffer[index], "}");
+		return index;
 	}
 	else if (type_is_function(sx, type))
 	{
@@ -2131,7 +2136,8 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			}
 		}
 
-		return sprintf(&buffer[index], ")");
+		index += sprintf(&buffer[index], ")");
+		return index;
 	}
 	return 0;
 }
