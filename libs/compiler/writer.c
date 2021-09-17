@@ -2016,8 +2016,7 @@ static size_t write_instruction(universal_io *const io, const vector *const tabl
 
 	if (type == IC_LID)
 	{
-		double num = vector_get_double(table, i);
-		uni_printf(io, " %f\n", num);
+		uni_printf(io, " %f\n", vector_get_double(table, i));
 		return i + 2;
 	}
 
