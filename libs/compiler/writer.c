@@ -2016,12 +2016,8 @@ static size_t write_instruction(universal_io *const io, const vector *const tabl
 
 	if (type == IC_LID)
 	{
-		int64_t fst = vector_get(table, i);
-		int64_t snd = vector_get(table, i + 1);
-		int64_t num = (snd << 32) | (fst & 0x00000000ffffffff);
-		double numdouble;
-		memcpy(&numdouble, &num, sizeof(double));
-		uni_printf(io, " %f\n", numdouble);
+		double num = vector_get_double(table, i);
+		uni_printf(io, " %f\n", num);
 		return i + 2;
 	}
 
