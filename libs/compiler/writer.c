@@ -309,7 +309,7 @@ static void write_literal_expression(writer *const wrt, const node *const nd, co
 	}
 	else // if (type_is_null_pointer(type))
 	{
-		write(wrt, " NULL");
+		write(wrt, " with value NULL");
 	}
 
 	write_expression_metadata(wrt, nd);
