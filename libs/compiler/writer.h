@@ -30,7 +30,7 @@ extern "C" {
  *	@param	path			File path
  *	@param	sx				Syntax structure
  */
-void write_AST(const char *const path, syntax *const sx);
+void write_tree(const char *const path, syntax *const sx);
 
 /**
  *	Write type spelling

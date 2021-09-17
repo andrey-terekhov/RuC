@@ -2051,7 +2051,7 @@ static size_t write_instruction(universal_io *const io, const vector *const tabl
  */
 
 
-void write_AST(const char *const path, syntax *const sx)
+void write_tree(const char *const path, syntax *const sx)
 {
 	universal_io io = io_create();
 	if (path == NULL || sx == NULL || out_set_file(&io, path))

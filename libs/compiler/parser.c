@@ -84,7 +84,7 @@ int parse(const workspace *const ws, syntax *const sx)
 	parser_clear(&prs);
 
 #ifndef NDEBUG
-	write_AST(DEFAULT_TREE, sx);
+	write_tree(DEFAULT_TREE, sx);
 #endif
 
 	return !sx_is_correct(sx);
