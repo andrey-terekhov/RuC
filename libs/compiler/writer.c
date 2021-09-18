@@ -451,10 +451,10 @@ static void write_ternary_expression(writer *const wrt, const node *const nd, co
 	const node condition = expression_ternary_get_condition(nd);
 	write_expression(wrt, &condition, indent + 1);
 
-	const node LHS = expression_binary_get_LHS(nd);
+	const node LHS = expression_ternary_get_LHS(nd);
 	write_expression(wrt, &LHS, indent + 1);
 
-	const node RHS = expression_binary_get_RHS(nd);
+	const node RHS = expression_ternary_get_RHS(nd);
 	write_expression(wrt, &RHS, indent + 1);
 }
 
@@ -792,10 +792,10 @@ static void write_do_statement(writer *const wrt, const node *const nd, const si
 	write_indent(wrt, indent);
 	write(wrt, "STMT_DO\n");
 
-	const node body = statement_while_get_body(nd);
+	const node body = statement_do_get_body(nd);
 	write_statement(wrt, &body, indent + 1);
 
-	const node condition = statement_while_get_condition(nd);
+	const node condition = statement_do_get_condition(nd);
 	write_expression(wrt, &condition, indent + 1);
 }
 
