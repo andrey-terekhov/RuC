@@ -50,6 +50,7 @@ extern node expression_ternary_get_condition(const node *const nd);
 extern node expression_ternary_get_LHS(const node *const nd);
 extern node expression_ternary_get_RHS(const node *const nd);
 
+extern int expression_list_set_type(const node *const nd, const item_t type);
 extern size_t expression_list_get_size(const node *const nd);
 extern node expression_list_get_subexpr(const node *const nd, const size_t index);
 
@@ -269,10 +270,10 @@ node expression_ternary(syntax *const sx, const item_t type, const node *const c
 	return nd;
 }
 
-node expression_list(syntax *const sx, const item_t type, node_vector *const exprs, const location loc)
+node expression_list(syntax *const sx, node_vector *const exprs, const location loc)
 {
 	node nd = node_create(sx, OP_LIST);
-	node_add_arg(&nd, type);						// Тип значения выражения
+	node_add_arg(&nd, TYPE_UNDEFINED);				// Тип значения выражения
 	node_add_arg(&nd, RVALUE);						// Категория значения выражения
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения

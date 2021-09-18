@@ -333,6 +333,62 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 
 bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
 {
+	if (expression_get_class(nd_init) == OP_LIST)
+	{
+		const size_t actual_inits = expression_list_get_size(nd_init);
+		if (type_is_structure(sx, expected_type))
+		{
+			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
+
+			if (expected_inits != actual_inits)
+			{
+				semantic_error(sx, expression_get_location(nd_init), wrong_init_in_actparam, expected_inits, actual_inits);
+				return false;
+			}
+
+			for (size_t i = 0; i < actual_inits; i++)
+			{
+				const node nd_initializer = expression_list_get_subexpr(nd_init, i);
+				if (!node_is_correct(&nd_initializer))
+				{
+					return false;
+				}
+
+				const item_t type = type_structure_get_member_type(sx, expected_type, i);
+				if (!check_assignment_operands(sx, type, &nd_initializer))
+				{
+					return false;
+				}
+			}
+			expression_list_set_type(nd_init, expected_type);
+			return true;
+		}
+		else if (type_is_array(sx, expected_type))
+		{
+			const item_t type = type_array_get_element_type(sx, expected_type);
+			for (size_t i = 0; i < actual_inits; i++)
+			{
+				const node nd_initializer = expression_list_get_subexpr(nd_init, i);
+				if (!node_is_correct(&nd_initializer))
+				{
+					return false;
+				}
+
+				if (!check_assignment_operands(sx, type, &nd_initializer))
+				{
+					return false;
+				}
+			}
+			expression_list_set_type(nd_init, expected_type);
+			return true;
+		}
+		else
+		{
+			semantic_error(sx, expression_get_location(nd_init), wrong_init);
+			return false;
+		}
+	}
+
 	const item_t actual_type = expression_get_type(nd_init);
 
 	if (type_is_floating(expected_type) && type_is_integer(actual_type))
@@ -884,7 +940,7 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
 	return node_broken();
 }
 
-node build_init_list_expression(syntax *const sx, node_vector *const vec, const item_t type
+node build_init_list_expression(syntax *const sx, node_vector *const vec
 	, const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = node_vector_size(vec);
@@ -894,6 +950,9 @@ node build_init_list_expression(syntax *const sx, node_vector *const vec, const 
 		return node_broken();
 	}
 
+	const location loc = { l_loc.begin, r_loc.end };
+	return expression_list(sx, vec, loc);
+/*
 	if (type_is_structure(sx, type))
 	{
 		const size_t expected_inits = type_structure_get_member_amount(sx, type);
@@ -942,6 +1001,5 @@ node build_init_list_expression(syntax *const sx, node_vector *const vec, const 
 		return node_broken();
 	}
 
-	const location loc = { l_loc.begin, r_loc.end };
-	return expression_list(sx, type, vec, loc);
+	return expression_list(sx, vec, loc);*/
 }

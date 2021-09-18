@@ -193,13 +193,12 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
  *
  *	@param	sx				Syntax structure
  *	@param	vec				Vector of initializer nodes
- *	@param	type			Target type for initializer list
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
  *	@return	Initializer list expression node
  */
-node build_init_list_expression(syntax *const sx, node_vector *const vec, const item_t type
+node build_init_list_expression(syntax *const sx, node_vector *const vec
 	, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus

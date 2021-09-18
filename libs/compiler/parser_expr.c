@@ -190,34 +190,17 @@ static node parse_primary_expression(parser *const prs)
  *		expression-list ',' initializer
  *
  *	@param	prs			Parser
- *	@param	type		Target type
  *
  *	@return	Expression nodes vector
  */
-static node_vector parse_expression_list(parser *const prs, const item_t type)
+static node_vector parse_expression_list(parser *const prs)
 {
-	unsigned i = 0;
 	node_vector result = node_vector_create();
 
 	do
 	{
-		item_t item_type = TYPE_UNDEFINED;
-		if (type_is_structure(prs->sx, type))
-		{
-			item_type = type_get(prs->sx, (size_t)type + + 3 + 2 * i);
-		}
-		else if (type_is_function(prs->sx, type))
-		{
-			item_type = type_get(prs->sx, (size_t)type + 3 + i);
-		}
-		else if (type_is_array(prs->sx, type))
-		{
-			item_type = type_get(prs->sx, (size_t)type + 1);
-		}
-
-		const node initializer = parse_initializer(prs, item_type);
+		const node initializer = parse_initializer(prs);
 		node_vector_add(&result, &initializer);
-		i++;
 	} while (token_try_consume(prs, TK_COMMA));
 
 	return result;
@@ -283,7 +266,7 @@ static node parse_postfix_expression(parser *const prs)
 					continue;
 				}
 
-				node_vector args = parse_expression_list(prs, expression_get_type(&nd_operand));
+				node_vector args = parse_expression_list(prs);
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = token_consume(prs);
@@ -426,7 +409,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		}
 
 		node RHS = (prs->token == TK_L_BRACE)
-			? parse_initializer(prs, expression_get_type(LHS))
+			? parse_initializer(prs)
 			: parse_unary_expression(prs);
 
 		const precedence_t this_prec = next_token_prec;
@@ -483,7 +466,7 @@ node parse_constant_expression(parser *const prs)
 	return parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
 }
 
-node parse_initializer(parser *const prs, const item_t type)
+node parse_initializer(parser *const prs)
 {
 	if (prs->token == TK_L_BRACE)
 	{
@@ -496,12 +479,12 @@ node parse_initializer(parser *const prs, const item_t type)
 			return node_broken();
 		}
 
-		node_vector inits = parse_expression_list(prs, type);
+		node_vector inits = parse_expression_list(prs);
 		node nd_result;
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = token_consume(prs);
-			nd_result = build_init_list_expression(prs->sx, &inits, type, l_loc, r_loc);
+			nd_result = build_init_list_expression(prs->sx, &inits, l_loc, r_loc);
 		}
 		else
 		{

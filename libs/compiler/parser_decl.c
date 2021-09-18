@@ -314,7 +314,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 					node_set_arg(&nd_decl, 2, true);
 					node_copy(&prs->sx->nd, &nd_decl);
 
-					const node initializer = parse_initializer(prs, type);
+					const node initializer = parse_initializer(prs);
 					if (!node_is_correct(&initializer))
 					{
 						token_skip_until(prs, TK_SEMICOLON);
@@ -390,7 +390,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		node_set_arg(&nd, 2, true);
 		node_copy(&prs->sx->nd, &nd);
 
-		const node initializer = parse_initializer(prs, type);
+		const node initializer = parse_initializer(prs);
 		if (!node_is_correct(&initializer))
 		{
 			token_skip_until(prs, TK_SEMICOLON);

@@ -494,13 +494,25 @@ inline node expression_ternary_get_RHS(const node *const nd)
  *	Create new expression list
  *
  *	@param	sx		Syntax structure
- *	@param	type	Value type
  *	@param	exprs	Subexpressions
  *	@param	loc		Expression location
  *
  *	@return	Expression list
  */
-node expression_list(syntax *const sx, const item_t type, node_vector *const exprs, const location loc);
+node expression_list(syntax *const sx, node_vector *const exprs, const location loc);
+
+/**
+ *	Set type of expression list
+ *
+ *	@param	nd		Expression list
+ *	@param	type	Type
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int expression_list_set_type(const node *const nd, const item_t type)
+{
+	return node_get_type(nd) == OP_LIST ? node_set_arg(nd, 0, type) : -1;
+}
 
 /**
  *	Get size of expression list
