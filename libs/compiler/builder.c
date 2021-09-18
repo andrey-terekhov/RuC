@@ -63,7 +63,7 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 static node fold_unary_expression(syntax *const sx, const item_t type, const category_t ctg
 	, node *const expr, const unary_t op, const location loc)
 {
-	if (expression_get_class(expr) != OP_LITERAL)
+	if (expression_get_class(expr) != EXPR_LITERAL)
 	{
 		return expression_unary(sx, type, ctg, expr, op, loc);
 	}
@@ -113,7 +113,7 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 static node fold_binary_expression(syntax *const sx, const item_t type
    , node *const LHS, node *const RHS, const binary_t op, const location loc)
 {
-	if (expression_get_class(LHS) != OP_LITERAL || expression_get_class(RHS) != OP_LITERAL)
+	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
 	{
 		return expression_binary(sx, type, LHS, RHS, op, loc);
 	}
@@ -241,7 +241,7 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 static node fold_ternary_expression(syntax *const sx, const item_t type, node *const cond
 	, node *const LHS, node *const RHS, const location loc)
 {
-	if (expression_get_class(cond) != OP_LITERAL)
+	if (expression_get_class(cond) != EXPR_LITERAL)
 	{
 		return expression_ternary(sx, type, cond, LHS, RHS, loc);
 	}
@@ -692,6 +692,10 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 
 			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, nd_operand, op_kind, loc);
 		}
+
+		default:
+			// Unknown unary operator
+			return node_broken();
 	}
 }
 
@@ -837,8 +841,11 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 
 		case BIN_COMMA:
 			return fold_binary_expression(sx, right_type, LHS, RHS, op_kind, loc);
+
+		default:
+			// Unknown binary operator
+			return node_broken();
 	}
-	return node_broken();
 }
 
 node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
