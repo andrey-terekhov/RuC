@@ -119,7 +119,7 @@ static node fold_unary_expression(syntax *const sx, const unary_t operator, node
 	return *nd_operand;
 }
 
-static node fold_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
+/*static node fold_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
 	, const item_t result_type)
 {
 	if (op_kind == BIN_COMMA)
@@ -277,9 +277,9 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 
 		return build_floating_literal_expression(sx, result, loc);
 	}
-}
+}*/
 
-static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
+/*static node fold_ternary_expression(node *const nd_left, node *const nd_middle, node *const nd_right)
 {
 	// Уже проверили, что левое выражение – константа
 	const item_t left_type = expression_get_type(nd_left);
@@ -319,7 +319,7 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 			return *nd_right;
 		}
 	}
-}
+}*/
 
 
 /*
@@ -333,7 +333,7 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 
 bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
 {
-	if (expression_get_class(nd_init) == OP_LIST)
+	if (expression_get_class(nd_init) == EXPR_LIST)
 	{
 		const size_t actual_inits = expression_list_get_size(nd_init);
 		if (type_is_structure(sx, expected_type))
