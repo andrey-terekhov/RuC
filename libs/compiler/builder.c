@@ -892,6 +892,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_COMMA:
 			return expression_binary(sx, right_type, LHS, RHS, op_kind, loc);
 	}
+	return node_broken();
 }
 
 node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
@@ -947,59 +948,10 @@ node build_init_list_expression(syntax *const sx, node_vector *const vec
 	if (actual_inits == 0)
 	{
 		semantic_error(sx, l_loc, empty_init);
+		node_vector_clear(vec);
 		return node_broken();
 	}
 
 	const location loc = { l_loc.begin, r_loc.end };
 	return expression_list(sx, vec, loc);
-/*
-	if (type_is_structure(sx, type))
-	{
-		const size_t expected_inits = type_structure_get_member_amount(sx, type);
-
-		if (expected_inits != actual_inits)
-		{
-			semantic_error(sx, r_loc, wrong_init_in_actparam, expected_inits, actual_inits);
-			return node_broken();
-		}
-
-		for (size_t i = 0; i < actual_inits; i++)
-		{
-			const node nd_initializer = node_vector_get(vec, i);
-			if (!node_is_correct(&nd_initializer))
-			{
-				return node_broken();
-			}
-
-			const item_t expected_type = type_structure_get_member_type(sx, type, i);
-			if (!check_assignment_operands(sx, expected_type, &nd_initializer))
-			{
-				return node_broken();
-			}
-		}
-	}
-	else if (type_is_array(sx, type))
-	{
-		const item_t expected_type = type_array_get_element_type(sx, type);
-		for (size_t i = 0; i < actual_inits; i++)
-		{
-			const node nd_initializer = node_vector_get(vec, i);
-			if (!node_is_correct(&nd_initializer))
-			{
-				return node_broken();
-			}
-
-			if (!check_assignment_operands(sx, expected_type, &nd_initializer))
-			{
-				return node_broken();
-			}
-		}
-	}
-	else
-	{
-		semantic_error(sx, l_loc, wrong_init);
-		return node_broken();
-	}
-
-	return expression_list(sx, vec, loc);*/
 }
