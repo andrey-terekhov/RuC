@@ -385,26 +385,6 @@ static node fold_ternary_expression(node *const nd_left, node *const nd_middle, 
 	}
 }
 
-static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
-	, const item_t result_type)
-{
-	if (node_get_type(nd_left) == OP_LITERAL && node_get_type(nd_right) == OP_LITERAL)
-	{
-		return fold_binary_expression(sx, nd_left, nd_right, op_kind, result_type);
-	}
-
-	node nd = node_create(sx, OP_BINARY);
-	node_add_arg(&nd, result_type);					// Тип значения
-	node_add_arg(&nd, RVALUE);						// Категория значения
-	node_add_arg(&nd, op_kind);						// Вид оператора
-	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
-	node_add_arg(&nd, (item_t)expression_get_location(nd_right).end);
-	node_set_child(&nd, nd_left);					// Первый операнд
-	node_set_child(&nd, nd_right);					// Второй операнд
-
-	return nd;
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -778,21 +758,33 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 	return expression_unary(sx, result_type, category, nd_operand, op_kind, loc);
 }
 
-node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
+node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	, const binary_t op_kind, const location op_loc)
 {
-	if (!node_is_correct(nd_left) || !node_is_correct(nd_right))
+	if (!node_is_correct(LHS) || !node_is_correct(RHS))
 	{
 		return node_broken();
 	}
 
+	const item_t left_type = expression_get_type(LHS);
+	const item_t right_type = expression_get_type(RHS);
+
 	if (operation_is_assignment(op_kind))
 	{
-		return build_assignment_expression(sx, nd_left, nd_right, op_kind, op_loc);
+		if (!expression_is_lvalue(LHS))
+		{
+			semantic_error(sx, op_loc, unassignable);
+			return node_broken();
+		}
+
+		if (!check_assignment_operands(sx, left_type, RHS))
+		{
+			return node_broken();
+		}
 	}
 
-	const item_t left_type = expression_get_type(nd_left);
-	const item_t right_type = expression_get_type(nd_right);
+	// TODO: try fold_binary_expression(nd_left, nd_right);
+	const location loc = { expression_get_location(LHS).begin, expression_get_location(RHS).end };
 
 	switch (op_kind)
 	{
@@ -809,7 +801,7 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				return node_broken();
 			}
 
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_MUL:
@@ -823,8 +815,8 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				return node_broken();
 			}
 
-			const item_t result_type = usual_arithmetic_conversions(left_type, right_type);
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, result_type);
+			const item_t type = usual_arithmetic_conversions(left_type, right_type);
+			return expression_binary(sx, type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_LT:
@@ -838,7 +830,7 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				return node_broken();
 			}
 
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_LOG_AND:
@@ -850,7 +842,7 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				return node_broken();
 			}
 
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+			return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_EQ:
@@ -866,18 +858,48 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
 				|| left_type == right_type)
 			{
-				return build_bin_op_node(sx, nd_left, nd_right, op_kind, TYPE_INTEGER);
+				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(sx, op_loc, typecheck_binary_expr);
 			return node_broken();
 		}
 
-		case BIN_COMMA:
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, right_type);
+		case BIN_ASSIGN:
+			return expression_binary(sx, left_type, LHS, RHS, op_kind, loc);
 
-		default:
-			return node_broken();
+		case BIN_REM_ASSIGN:
+		case BIN_SHL_ASSIGN:
+		case BIN_SHR_ASSIGN:
+		case BIN_AND_ASSIGN:
+		case BIN_XOR_ASSIGN:
+		case BIN_OR_ASSIGN:
+		{
+			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return node_broken();
+			}
+
+			return expression_binary(sx, left_type, LHS, RHS, op_kind, loc);
+		}
+
+		case BIN_MUL_ASSIGN:
+		case BIN_DIV_ASSIGN:
+		case BIN_ADD_ASSIGN:
+		case BIN_SUB_ASSIGN:
+		{
+			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			{
+				semantic_error(sx, op_loc, typecheck_binary_expr);
+				return node_broken();
+			}
+
+			return expression_binary(sx, left_type, LHS, RHS, op_kind, loc);
+		}
+
+		case BIN_COMMA:
+			return expression_binary(sx, right_type, LHS, RHS, op_kind, loc);
 	}
 }
 
@@ -899,26 +921,32 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
 		return node_broken();
 	}
 
-	item_t result_type = middle_type;
-
-	if ((type_is_floating(middle_type) && type_is_integer(right_type))
-		|| (type_is_integer(middle_type) && type_is_floating(right_type)))
-	{
-		result_type = TYPE_FLOATING;
-	}
-	else if (middle_type != right_type)
-	{
-		semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
-		return node_broken();
-	}
-
-	if (node_get_type(nd_left) == OP_LITERAL)
-	{
-		return fold_ternary_expression(nd_left, nd_middle, nd_right);
-	}
-
+	// TODO: try fold_ternary_expression(nd_left, nd_middle, nd_right);
 	const location loc = { expression_get_location(nd_left).begin, expression_get_location(nd_right).end };
-	return expression_ternary(sx, result_type, nd_left, nd_middle, nd_right, loc);
+
+	if (type_is_arithmetic(middle_type) && type_is_arithmetic(right_type))
+	{
+		const item_t type = usual_arithmetic_conversions(middle_type, right_type);
+		return expression_ternary(sx, type, nd_left, nd_middle, nd_right, loc);
+	}
+
+	if (type_is_pointer(sx, middle_type) && type_is_null_pointer(right_type))
+	{
+		return expression_ternary(sx, middle_type, nd_left, nd_middle, nd_right, loc);
+	}
+
+	if (type_is_null_pointer(middle_type) && type_is_pointer(sx, right_type))
+	{
+		return expression_ternary(sx, right_type, nd_left, nd_middle, nd_right, loc);
+	}
+
+	if (middle_type == right_type)
+	{
+		return expression_ternary(sx, right_type, nd_left, nd_middle, nd_right, loc);
+	}
+
+	semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
+	return node_broken();
 }
 
 node build_init_list_expression(syntax *const sx, node_vector *const vec, const item_t type
