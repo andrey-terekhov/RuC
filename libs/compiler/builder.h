@@ -112,21 +112,21 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_callee		Called expression
+ *	@param	callee			Called expression
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_callee, node_vector *const args
+node build_call_expression(syntax *const sx, const node *const callee, node_vector *const args
 	, const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_base			First operand of member expression
+ *	@param	base			First operand of member expression
  *	@param	name			Second operand of member expression
  *	@param	is_arrow		Set if operator is '->'
  *	@param	op_loc			Operator source location
@@ -134,7 +134,7 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, node_v
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const nd_base, const size_t name, const bool is_arrow
+node build_member_expression(syntax *const sx, const node *const base, const size_t name, const bool is_arrow
 	, const location op_loc, const location id_loc);
 
 /**

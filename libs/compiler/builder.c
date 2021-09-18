@@ -467,24 +467,24 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
 	return expression_subscript(sx, element_type, base, index, loc);
 }
 
-node build_call_expression(syntax *const sx, const node *const nd_callee, node_vector *const args
+node build_call_expression(syntax *const sx, const node *const callee, node_vector *const args
 	, const location l_loc, const location r_loc)
 {
-	if (!node_is_correct(nd_callee))
+	if (!node_is_correct(callee))
 	{
 		node_vector_clear(args);
 		return node_broken();
 	}
 
-	const item_t operand_type = expression_get_type(nd_callee);
-	if (!type_is_function(sx, operand_type))
+	const item_t callee_type = expression_get_type(callee);
+	if (!type_is_function(sx, callee_type))
 	{
 		semantic_error(sx, l_loc, typecheck_call_not_function);
 		node_vector_clear(args);
 		return node_broken();
 	}
 
-	const size_t expected_args = type_function_get_parameter_amount(sx, operand_type);
+	const size_t expected_args = type_function_get_parameter_amount(sx, callee_type);
 	const size_t actual_args = args != NULL ? node_vector_size(args) : 0;
 
 	if (expected_args != actual_args)
@@ -496,70 +496,70 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, node_v
 
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		const node nd_argument = node_vector_get(args, i);
-		if (!node_is_correct(&nd_argument))
+		const node argument = node_vector_get(args, i);
+		if (!node_is_correct(&argument))
 		{
 			node_vector_clear(args);
 			return node_broken();
 		}
 
-		const item_t expected_type = type_function_get_parameter_type(sx, operand_type, i);
-		if (!check_assignment_operands(sx, expected_type, &nd_argument))
+		const item_t expected_type = type_function_get_parameter_type(sx, callee_type, i);
+		if (!check_assignment_operands(sx, expected_type, &argument))
 		{
 			node_vector_clear(args);
 			return node_broken();
 		}
 	}
 
-	const item_t return_type = type_function_get_return_type(sx, operand_type);
-	const size_t expr_start = expression_get_location(nd_callee).begin;
-	const location loc = { expr_start, r_loc.end };
-	return expression_call(sx, return_type, nd_callee, args, loc);
+	const item_t return_type = type_function_get_return_type(sx, callee_type);
+	const location loc = { expression_get_location(callee).begin, r_loc.end };
+	return expression_call(sx, return_type, callee, args, loc);
 }
 
-node build_member_expression(syntax *const sx, const node *const nd_base, const size_t name, const bool is_arrow
+node build_member_expression(syntax *const sx, const node *const base, const size_t name, const bool is_arrow
 	, const location op_loc, const location id_loc)
 {
-	if (!node_is_correct(nd_base))
+	if (!node_is_correct(base))
 	{
 		return node_broken();
 	}
 
-	const item_t operand_type = expression_get_type(nd_base);
+	const item_t base_type = expression_get_type(base);
 	item_t struct_type;
 	category_t category;
 
 	if (!is_arrow)
 	{
-		if (!type_is_structure(sx, operand_type))
+		if (!type_is_structure(sx, base_type))
 		{
 			semantic_error(sx, op_loc, typecheck_member_reference_struct);
 			return node_broken();
 		}
 
-		struct_type = operand_type;
-		category = expression_is_lvalue(nd_base) ? LVALUE : RVALUE;
+		struct_type = base_type;
+		category = expression_is_lvalue(base) ? LVALUE : RVALUE;
 	}
 	else
 	{
-		if (!type_is_struct_pointer(sx, operand_type))
+		if (!type_is_struct_pointer(sx, base_type))
 		{
 			semantic_error(sx, op_loc, typecheck_member_reference_arrow);
 			return node_broken();
 		}
 
-		struct_type = type_pointer_get_element_type(sx, operand_type);
+		struct_type = type_pointer_get_element_type(sx, base_type);
 		category = LVALUE;
 	}
 
 	const size_t member_amount = type_structure_get_member_amount(sx, struct_type);
 	for (size_t i = 0; i < member_amount; i++)
 	{
-		const item_t member_type = type_structure_get_member_type(sx, struct_type, i);
 		if (name == type_structure_get_member_name(sx, struct_type, i))
 		{
-			const location loc = { expression_get_location(nd_base).begin, id_loc.end };
-			return expression_member(sx, member_type, category, i, is_arrow, nd_base, loc);
+			const item_t type = type_structure_get_member_type(sx, struct_type, i);
+			const location loc = { expression_get_location(base).begin, id_loc.end };
+			
+			return expression_member(sx, type, category, i, is_arrow, base, loc);
 		}
 	}
 
