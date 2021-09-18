@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "node_vector.h"
 #include "operations.h"
 #include "tree.h"
 #include "syntax.h"
@@ -139,11 +140,25 @@ inline location expression_get_location(const node *const nd)
 
 
 /**
- *	Get id of identifier expression
+ *	Create new identifier expression
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type	Value type
+ *	@param	ctg		Value category
+ *	@param	id		Index in identifiers table
+ *	@param	loc		Expression location
+ *
+ *	@return	Identifier expression
+ */
+node expression_identifier(syntax *const sx, const item_t type
+	, const category_t ctg, const size_t id, const location loc);
+
+/**
+ *	Get index in indentifiers table of identifier expression
  *
  *	@param	nd		Identifier expression
  *
- *	@return	Id
+ *	@return	Index in identifiers table
  */
 inline size_t expression_identifier_get_id(const node *const nd)
 {
@@ -189,6 +204,20 @@ inline size_t expression_literal_get_string(const node *const nd)
 
 
 /**
+ *	Create new subscript expression
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type	Value type
+ *	@param	base	Base expression
+ *	@param	index	Index expression
+ *	@param	loc		Expression location
+ *
+ *	@return	Subscript expression
+ */
+node expression_subscript(syntax *const sx, const item_t type
+	, const node *const base, const node *const index, const location loc);
+
+/**
  *	Get base expression of subscript expression
  *
  *	@param	nd		Subscript expression
@@ -212,6 +241,20 @@ inline node expression_subscript_get_index(const node *const nd)
 	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 1) : node_broken();
 }
 
+
+/**
+ *	Create new call expression
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type	Value type
+ *	@param	callee	Called expression
+ *	@param	args	Arguments of call
+ *	@param	loc		Expression location
+ *
+ *	@return	Call expression
+ */
+node expression_call(syntax *const sx, const item_t type
+	, const node *const callee, node_vector *const args, const location loc);
 
 /**
  *	Get called expression of call expression
@@ -252,6 +295,21 @@ inline node expression_call_get_argument(const node *const nd, const size_t inde
 
 
 /**
+ *	Create new member expression
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Value type
+ *	@param	ctg			Value category
+ *	@param	i			Member index
+ *	@param	is_arrow	Set if operator is '->'
+ *	@param	loc			Expression location
+ *
+ *	@return	Member expression
+ */
+node expression_member(syntax *const sx, const item_t type, const category_t ctg
+	, const size_t i, const bool is_arrow, const node *const base, const location loc);
+
+/**
  *	Get base expression of member expression
  *
  *	@param	nd		Member expression
@@ -289,6 +347,21 @@ inline bool expression_member_is_arrow(const node *const nd)
 
 
 /**
+ *	Create new unary expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	type			Value type
+ *	@param	ctg				Value category
+ *	@param	expr			Operand
+ *	@param	op				Operator kind
+ *	@param	loc				Expression location
+ *
+ *	@return	Unary expression
+ */
+node expression_unary(syntax *const sx, const item_t type, const category_t ctg
+	, const node *const expr, const unary_t op, const location loc);
+
+/**
  *	Get operator of unary expression
  *
  *	@param	nd		Unary expression
@@ -312,6 +385,21 @@ inline node expression_unary_get_operand(const node *const nd)
 	return node_get_type(nd) == OP_UNARY ? node_get_child(nd, 0) : node_broken();
 }
 
+
+/**
+ *	Create new binary expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	type			Value type
+ *	@param	LHS				Left operand
+ *	@param	RHS				Right operand
+ *	@param	op				Operator kind
+ *	@param	loc				Expression location
+ *
+ *	@return	Binary expression
+ */
+node expression_binary(syntax *const sx, const item_t type
+	, const node *const LHS, const node *const RHS, const binary_t op, const location loc);
 
 /**
  *	Get operator of binary expression
@@ -351,6 +439,21 @@ inline node expression_binary_get_RHS(const node *const nd)
 
 
 /**
+ *	Create new ternary expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	type			Value type
+ *	@param	cond			First operand
+ *	@param	LHS				Second operand
+ *	@param	RHS				Third operand
+ *	@param	loc				Expression location
+ *
+ *	@return	Ternary expression
+ */
+node expression_ternary(syntax *const sx, const item_t type, const node *const cond
+	, const node *const LHS, const node *const RHS, const location loc);
+
+/**
  *	Get condition of ternary expression
  *
  *	@param	nd		Ternary expression
@@ -386,6 +489,18 @@ inline node expression_ternary_get_RHS(const node *const nd)
 	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 2) : node_broken();
 }
 
+
+/**
+ *	Create new expression list
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type	Value type
+ *	@param	exprs	Subexpressions
+ *	@param	loc		Expression location
+ *
+ *	@return	Expression list
+ */
+node expression_list(syntax *const sx, const item_t type, node_vector *const exprs, const location loc);
 
 /**
  *	Get size of expression list

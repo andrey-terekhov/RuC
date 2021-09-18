@@ -112,14 +112,14 @@ node build_subscript_expression(syntax *const sx, const node *const nd_fst, cons
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_func			Called function
+ *	@param	nd_callee		Called expression
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_func, const node_vector *args
+node build_call_expression(syntax *const sx, const node *const nd_callee, node_vector *const args
 	, const location l_loc, const location r_loc);
 
 /**
@@ -199,7 +199,7 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
  *
  *	@return	Initializer list expression node
  */
-node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
+node build_init_list_expression(syntax *const sx, node_vector *const vec, const item_t type
 	, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus

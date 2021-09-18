@@ -440,25 +440,18 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
 {
-	const item_t identifier = repr_get_reference(sx, name);
+	const size_t identifier = (size_t)repr_get_reference(sx, name);
 
-	if (identifier == ITEM_MAX)
+	if ((item_t)identifier == ITEM_MAX)
 	{
 		semantic_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
 		return node_broken();
 	}
 
-	const item_t type = ident_get_type(sx, (size_t)identifier);
+	const item_t type = ident_get_type(sx, identifier);
 	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
 
-	node nd = node_create(sx, OP_IDENTIFIER);
-	node_add_arg(&nd, type);						// Тип значения идентификатора
-	node_add_arg(&nd, category);					// Категория значения идентификатора
-	node_add_arg(&nd, identifier);					// Индекс в таблице идентификаторов
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция идентификатора
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция идентификатора
-
-	return nd;
+	return expression_identifier(sx, type, category, identifier, loc);
 }
 
 node build_integer_literal_expression(syntax *const sx, const int value, const location loc)
@@ -533,31 +526,25 @@ node build_subscript_expression(syntax *const sx, const node *const nd_fst, cons
 	}
 
 	const item_t element_type = type_array_get_element_type(sx, base_type);
-	const size_t expr_start = expression_get_location(nd_fst).begin;
 
-	node nd = node_create(sx, OP_SLICE);
-	node_add_arg(&nd, element_type);				// Тип элемента массива
-	node_add_arg(&nd, LVALUE);						// Категория значения вырезки
-	node_add_arg(&nd, (item_t)expr_start);			// Начальная позиция вырезки
-	node_add_arg(&nd, (item_t)r_loc.end);			// Конечная позиция вырезки
-	node_set_child(&nd, nd_fst);					// Выражение-операнд
-	node_set_child(&nd, nd_snd);					// Выражение-индекс
-
-	return nd;
+	const location loc = { expression_get_location(nd_fst).begin, r_loc.end };
+	return expression_subscript(sx, element_type, nd_fst, nd_snd, loc);
 }
 
-node build_call_expression(syntax *const sx, const node *const nd_func, const node_vector *args
+node build_call_expression(syntax *const sx, const node *const nd_callee, node_vector *const args
 	, const location l_loc, const location r_loc)
 {
-	if (!node_is_correct(nd_func))
+	if (!node_is_correct(nd_callee))
 	{
+		node_vector_clear(args);
 		return node_broken();
 	}
 
-	const item_t operand_type = expression_get_type(nd_func);
+	const item_t operand_type = expression_get_type(nd_callee);
 	if (!type_is_function(sx, operand_type))
 	{
 		semantic_error(sx, l_loc, typecheck_call_not_function);
+		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -567,6 +554,7 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 	if (expected_args != actual_args)
 	{
 		semantic_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
+		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -575,32 +563,23 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
 		const node nd_argument = node_vector_get(args, i);
 		if (!node_is_correct(&nd_argument))
 		{
+			node_vector_clear(args);
 			return node_broken();
 		}
 
 		const item_t expected_type = type_function_get_parameter_type(sx, operand_type, i);
 		if (!check_assignment_operands(sx, expected_type, &nd_argument))
 		{
+			node_vector_clear(args);
 			return node_broken();
 		}
 	}
 
 	const item_t return_type = type_function_get_return_type(sx, operand_type);
-	const size_t expr_start = expression_get_location(nd_func).begin;
+	const size_t expr_start = expression_get_location(nd_callee).begin;
 
-	node nd = node_create(sx, OP_CALL);
-	node_add_arg(&nd, return_type);					// Тип возвращамого значения
-	node_add_arg(&nd, RVALUE);						// Категория значения вызова
-	node_add_arg(&nd, (item_t)expr_start);			// Начальная позиция вызова
-	node_add_arg(&nd, (item_t)r_loc.end);			// Конечная позиция вызова
-	node_set_child(&nd, nd_func);					// Операнд вызова
-	for (size_t i = 0; i < actual_args; i++)
-	{
-		const node nd_argument = node_vector_get(args, i);
-		node_set_child(&nd, &nd_argument);			// i-ый аргумент вызова
-	}
-
-	return nd;
+	const location loc = { expr_start, r_loc.end };
+	return expression_call(sx, return_type, nd_callee, args, loc);
 }
 
 node build_member_expression(syntax *const sx, const node *const nd_base, const size_t name, const bool is_arrow
@@ -644,18 +623,8 @@ node build_member_expression(syntax *const sx, const node *const nd_base, const 
 		const item_t member_type = type_structure_get_member_type(sx, struct_type, i);
 		if (name == type_structure_get_member_name(sx, struct_type, i))
 		{
-			const size_t expr_start = expression_get_location(nd_base).begin;
-
-			node nd = node_create(sx, OP_SELECT);
-			node_add_arg(&nd, member_type);			// Тип значения поля
-			node_add_arg(&nd, category);			// Категория значения выборки
-			node_add_arg(&nd, (item_t)i);			// Индекс поля выборки
-			node_add_arg(&nd, is_arrow);			// Является ли оператор '->'
-			node_add_arg(&nd, (item_t)expr_start);	// Начальная позиция выборки
-			node_add_arg(&nd, (item_t)id_loc.end);	// Конечная позиция выборки
-			node_set_child(&nd, nd_base);			// Выражение-операнд
-
-			return nd;
+			const location loc = { expression_get_location(nd_base).begin, id_loc.end };
+			return expression_member(sx, member_type, category, i, is_arrow, nd_base, loc);
 		}
 	}
 
@@ -806,15 +775,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 		return fold_unary_expression(sx, op_kind, nd_operand);
 	}
 
-	node nd = node_create(sx, OP_UNARY);
-	node_add_arg(&nd, result_type);					// Тип значения выражения
-	node_add_arg(&nd, category);					// Категория значения выражения
-	node_add_arg(&nd, op_kind);						// Тип унарного оператора
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, nd_operand);				// Выражение-операнд
-
-	return nd;
+	return expression_unary(sx, result_type, category, nd_operand, op_kind, loc);
 }
 
 node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
@@ -956,19 +917,11 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
 		return fold_ternary_expression(nd_left, nd_middle, nd_right);
 	}
 
-	node nd = node_create(sx, OP_TERNARY);
-	node_add_arg(&nd, result_type);					// Тип значения
-	node_add_arg(&nd, RVALUE);						// Категория значения
-	node_add_arg(&nd, (item_t)expression_get_location(nd_left).begin);
-	node_add_arg(&nd, (item_t)expression_get_location(nd_right).begin);
-	node_set_child(&nd, nd_left);					// Первый операнд
-	node_set_child(&nd, nd_middle);					// Второй операнд
-	node_set_child(&nd, nd_right);					// Третий операнд
-
-	return nd;
+	const location loc = { expression_get_location(nd_left).begin, expression_get_location(nd_right).end };
+	return expression_ternary(sx, result_type, nd_left, nd_middle, nd_right, loc);
 }
 
-node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
+node build_init_list_expression(syntax *const sx, node_vector *const vec, const item_t type
 	, const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = node_vector_size(vec);
@@ -1026,16 +979,6 @@ node build_init_list_expression(syntax *const sx, const node_vector *vec, const 
 		return node_broken();
 	}
 
-	node nd = node_create(sx, OP_LIST);
-	node_add_arg(&nd, type);							// Тип возвращамого значения
-	node_add_arg(&nd, RVALUE);							// Категория значения вызова
-	node_add_arg(&nd, (item_t)l_loc.begin);
-	node_add_arg(&nd, (item_t)r_loc.end);
-	for (size_t i = 0; i < actual_inits; i++)
-	{
-		const node nd_initializer = node_vector_get(vec, i);
-		node_set_child(&nd, &nd_initializer);			// i-ый инициализатор в списке
-	}
-
-	return nd;
+	const location loc = { l_loc.begin, r_loc.end };
+	return expression_list(sx, type, vec, loc);
 }
