@@ -60,7 +60,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
  *
  *	@return	Integer literal expression node
  */
-node build_integer_literal_expression(syntax *const sx, const int value, const location loc);
+node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc);
 
 /**
  *	Build a floating literal expression

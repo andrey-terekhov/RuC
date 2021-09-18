@@ -134,7 +134,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_CHAR_CONST:
 		case TK_INT_CONST:
 		{
-			const int value = prs->lxr.num;
+			const item_t value = prs->lxr.num;
 			const location loc = token_consume(prs);
 
 			return build_integer_literal_expression(prs->sx, value, loc);
@@ -422,14 +422,13 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 
 		if (is_binary)
 		{
+			// Отказ от node_copy, так как node_broken все равно нужно скопировать
 			const binary_t op_kind = token_to_binary(op_token);
-			const node temp = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
-			node_copy(LHS, &temp);
+			*LHS = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
 		}
 		else
 		{
-			const node temp = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
-			node_copy(LHS, &temp);
+			*LHS = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
 		}
 	}
 
