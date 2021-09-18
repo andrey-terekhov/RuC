@@ -195,14 +195,18 @@ node expression_call(syntax *const sx, const item_t type
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 	node_set_child(&nd, callee);					// Вызываемое выражение
 
-	size_t amount = node_vector_size(args);
-	for (size_t i = 0; i < amount; i++)
+	if (args)
 	{
-		node arg = node_vector_get(args, i);
-		node_set_child(&nd, &arg);					// i-ый аргумент вызова
-	}
+		size_t amount = node_vector_size(args);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node arg = node_vector_get(args, i);
+			node_set_child(&nd, &arg);					// i-ый аргумент вызова
+		}
 
-	node_vector_clear(args);
+		node_vector_clear(args);
+	}
+	
 	return nd;
 }
 

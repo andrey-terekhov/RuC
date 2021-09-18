@@ -294,10 +294,10 @@ static node parse_postfix_expression(parser *const prs)
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
+					node_vector_clear(&args);
 					nd_operand = node_broken();
 				}
 
-				node_vector_clear(&args);
 				continue;
 			}
 
@@ -509,9 +509,9 @@ node parse_initializer(parser *const prs, const item_t type)
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
 			nd_result = node_broken();
+			node_vector_clear(&inits);
 		}
 
-		node_vector_clear(&inits);
 		return nd_result;
 	}
 

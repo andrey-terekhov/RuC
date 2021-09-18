@@ -98,14 +98,14 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
  *	Build a subscript expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_fst			First operand of subscripting expression
- *	@param	nd_snd			Second operand of subscripting expression
+ *	@param	base			First operand of subscripting expression
+ *	@param	index			Second operand of subscripting expression
  *	@param	l_loc			Left square bracket location
  *	@param	r_loc			Right square bracket location
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd
+node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
 	, const location l_loc, const location r_loc);
 
 /**

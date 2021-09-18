@@ -18,10 +18,6 @@
 #include "AST.h"
 
 
-static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
-	, const item_t result_type);
-
-
 static inline node node_create(syntax *const sx, operation_t type)
 {
 	return node_add_child(&sx->nd, type);
@@ -62,66 +58,6 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 	return type_is_integer(left_type) && type_is_integer(right_type)
 		? TYPE_INTEGER
 		: TYPE_FLOATING;
-}
-
-static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
-	, const binary_t op_kind, const location op_loc)
-{
-	const item_t left_type = expression_get_type(nd_left);
-	const item_t right_type = expression_get_type(nd_right);
-
-	if (operation_is_assignment(op_kind))
-	{
-		if (!expression_is_lvalue(nd_left))
-		{
-			semantic_error(sx, op_loc, unassignable);
-			return node_broken();
-		}
-
-		if (!check_assignment_operands(sx, left_type, nd_right))
-		{
-			return node_broken();
-		}
-	}
-
-	switch (op_kind)
-	{
-		case BIN_ASSIGN:
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
-
-		case BIN_REM_ASSIGN:
-		case BIN_SHL_ASSIGN:
-		case BIN_SHR_ASSIGN:
-		case BIN_AND_ASSIGN:
-		case BIN_XOR_ASSIGN:
-		case BIN_OR_ASSIGN:
-		{
-			if (!type_is_integer(left_type) || !type_is_integer(right_type))
-			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
-				return node_broken();
-			}
-
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
-		}
-
-		case BIN_MUL_ASSIGN:
-		case BIN_DIV_ASSIGN:
-		case BIN_ADD_ASSIGN:
-		case BIN_SUB_ASSIGN:
-		{
-			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
-			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
-				return node_broken();
-			}
-
-			return build_bin_op_node(sx, nd_left, nd_right, op_kind, left_type);
-		}
-
-		default:
-			return node_broken();
-	}
 }
 
 static node fold_unary_expression(syntax *const sx, const unary_t operator, node *const nd_operand)
@@ -483,32 +419,32 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
 	return nd;
 }
 
-node build_subscript_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd
+node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
 	, const location l_loc, const location r_loc)
 {
-	if (!node_is_correct(nd_fst) || !node_is_correct(nd_snd))
+	if (!node_is_correct(base) || !node_is_correct(index))
 	{
 		return node_broken();
 	}
 
-	const item_t base_type = expression_get_type(nd_fst);
+	const item_t base_type = expression_get_type(base);
 	if (!type_is_array(sx, base_type))
 	{
 		semantic_error(sx, l_loc, typecheck_subscript_value);
 		return node_broken();
 	}
 
-	const item_t index_type = expression_get_type(nd_snd);
+	const item_t index_type = expression_get_type(index);
 	if (!type_is_integer(index_type))
 	{
-		semantic_error(sx, expression_get_location(nd_snd), typecheck_subscript_not_integer);
+		semantic_error(sx, expression_get_location(index), typecheck_subscript_not_integer);
 		return node_broken();
 	}
 
 	const item_t element_type = type_array_get_element_type(sx, base_type);
 
-	const location loc = { expression_get_location(nd_fst).begin, r_loc.end };
-	return expression_subscript(sx, element_type, nd_fst, nd_snd, loc);
+	const location loc = { expression_get_location(base).begin, r_loc.end };
+	return expression_subscript(sx, element_type, base, index, loc);
 }
 
 node build_call_expression(syntax *const sx, const node *const nd_callee, node_vector *const args
@@ -557,7 +493,6 @@ node build_call_expression(syntax *const sx, const node *const nd_callee, node_v
 
 	const item_t return_type = type_function_get_return_type(sx, operand_type);
 	const size_t expr_start = expression_get_location(nd_callee).begin;
-
 	const location loc = { expr_start, r_loc.end };
 	return expression_call(sx, return_type, nd_callee, args, loc);
 }
