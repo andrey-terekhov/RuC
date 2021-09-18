@@ -59,7 +59,7 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 		? TYPE_INTEGER
 		: TYPE_FLOATING;
 }
-
+/*
 static node fold_unary_expression(syntax *const sx, const unary_t operator, node *const nd_operand)
 {
 	// Уже проверили, что выражение-операнд – константа
@@ -117,7 +117,7 @@ static node fold_unary_expression(syntax *const sx, const unary_t operator, node
 	}
 
 	return *nd_operand;
-}
+}*/
 
 /*static node fold_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right, const binary_t op_kind
 	, const item_t result_type)
@@ -644,16 +644,14 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 
 	const item_t operand_type = expression_get_type(nd_operand);
 
-	item_t result_type = 0;
-	category_t category = RVALUE;
-	bool is_prefix = true;
+	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
+		? (location){ op_loc.begin, expression_get_location(nd_operand).end }
+		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
 
 	switch (op_kind)
 	{
 		case UN_POSTINC:
 		case UN_POSTDEC:
-			is_prefix = false;
-			// fallthrough
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
@@ -669,9 +667,8 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = operand_type;
+			return expression_unary(sx, operand_type, RVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 
 		case UN_ADDRESS:
 		{
@@ -681,9 +678,9 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = type_pointer(sx, operand_type);
+			const item_t result_type = type_pointer(sx, operand_type);
+			return expression_unary(sx, result_type, RVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 
 		case UN_INDIRECTION:
 		{
@@ -693,10 +690,9 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = type_pointer_get_element_type(sx, operand_type);
-			category = LVALUE;
+			const item_t type = type_pointer_get_element_type(sx, operand_type);
+			return expression_unary(sx, type, LVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 
 		case UN_ABS:
 		case UN_PLUS:
@@ -708,9 +704,8 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = operand_type;
+			return expression_unary(sx, operand_type, RVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 
 		case UN_NOT:
 		{
@@ -720,9 +715,8 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = TYPE_INTEGER;
+			return expression_unary(sx, TYPE_INTEGER, RVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 
 		case UN_LOGNOT:
 		{
@@ -732,21 +726,9 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			result_type = TYPE_INTEGER;
+			return expression_unary(sx, TYPE_INTEGER, RVALUE, nd_operand, op_kind, loc);
 		}
-		break;
 	}
-
-	const location loc = is_prefix
-		? (location){ op_loc.begin, expression_get_location(nd_operand).end }
-		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
-
-	if (node_get_type(nd_operand) == OP_LITERAL)
-	{
-		return fold_unary_expression(sx, op_kind, nd_operand);
-	}
-
-	return expression_unary(sx, result_type, category, nd_operand, op_kind, loc);
 }
 
 node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS

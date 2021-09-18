@@ -164,14 +164,14 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
  *	Build a binary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_left			Left operand
- *	@param	nd_right		Right operand
+ *	@param	LHS				Left operand
+ *	@param	RHS				Right operand
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
+node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	, const binary_t op_kind, const location op_loc);
 
 /**
@@ -192,13 +192,13 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
  *	Build an initializer list
  *
  *	@param	sx				Syntax structure
- *	@param	vec				Vector of initializer nodes
+ *	@param	exprs			Vector of expressions
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer list expression node
+ *	@return	Initializer list expression
  */
-node build_init_list_expression(syntax *const sx, node_vector *const vec
+node build_init_list_expression(syntax *const sx, node_vector *const exprs
 	, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus
