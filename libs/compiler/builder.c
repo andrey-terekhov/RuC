@@ -53,11 +53,26 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
-static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
+static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, node *const RHS)
 {
-	return type_is_integer(left_type) && type_is_integer(right_type)
-		? TYPE_INTEGER
-		: TYPE_FLOATING;
+	const item_t LHS_type = expression_get_type(LHS);
+	const item_t RHS_type = expression_get_type(RHS);
+
+	if (type_is_floating(LHS_type) || type_is_floating(RHS_type))
+	{
+		if (type_is_integer(LHS_type))
+		{
+			*LHS = build_cast_expression(sx, TYPE_FLOATING, LHS);
+		}
+		else if (type_is_integer(RHS_type))
+		{
+			*RHS = build_cast_expression(sx, TYPE_FLOATING, RHS);
+		}
+
+		return TYPE_FLOATING;
+	}
+
+	return TYPE_INTEGER;
 }
 
 static node fold_unary_expression(syntax *const sx, const item_t type, const category_t ctg
@@ -295,8 +310,13 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
  */
 
 
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const init)
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, node *const init)
 {
+	if (!node_is_correct(init))
+	{
+		return true;
+	}
+
 	const location loc = expression_get_location(init);
 	if (expression_get_class(init) == EXPR_LIST)
 	{
@@ -359,11 +379,13 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 
 	if (type_is_floating(expected_type) && type_is_integer(actual_type))
 	{
+		*init = build_cast_expression(sx, expected_type, init);
 		return true;
 	}
 
 	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
 	{
+		*init = build_cast_expression(sx, expected_type, init);
 		return true;
 	}
 
@@ -498,7 +520,7 @@ node build_call_expression(syntax *const sx, const node *const callee
 
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		const node argument = node_vector_get(args, i);
+		node argument = node_vector_get(args, i);
 		if (!node_is_correct(&argument))
 		{
 			node_vector_clear(args);
@@ -601,7 +623,7 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
 	return nd;
 }
 
-node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr, const location loc)
+node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr)
 {
 	if (!node_is_correct(expr))
 	{
@@ -609,6 +631,7 @@ node build_cast_expression(syntax *const sx, const item_t target_type, const nod
 	}
 
 	const item_t source_type = expression_get_type(expr);
+	const location loc = expression_get_location(expr);
 
 	if (target_type != source_type)
 	{
@@ -618,18 +641,18 @@ node build_cast_expression(syntax *const sx, const item_t target_type, const nod
 	return *expr;
 }
 
-node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc)
+node build_unary_expression(syntax *const sx, node *const operand, const unary_t op_kind, const location op_loc)
 {
-	if (!node_is_correct(nd_operand))
+	if (!node_is_correct(operand))
 	{
 		return node_broken();
 	}
 
-	const item_t operand_type = expression_get_type(nd_operand);
+	const item_t operand_type = expression_get_type(operand);
 
 	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
-		? (location){ op_loc.begin, expression_get_location(nd_operand).end }
-		: (location){ expression_get_location(nd_operand).begin, op_loc.end };
+		? (location){ op_loc.begin, expression_get_location(operand).end }
+		: (location){ expression_get_location(operand).begin, op_loc.end };
 
 	switch (op_kind)
 	{
@@ -644,25 +667,25 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			if (!expression_is_lvalue(nd_operand))
+			if (!expression_is_lvalue(operand))
 			{
 				semantic_error(sx, op_loc, typecheck_expression_not_lvalue);
 				return node_broken();
 			}
 
-			return expression_unary(sx, operand_type, RVALUE, nd_operand, op_kind, loc);
+			return expression_unary(sx, operand_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ADDRESS:
 		{
-			if (!expression_is_lvalue(nd_operand))
+			if (!expression_is_lvalue(operand))
 			{
 				semantic_error(sx, op_loc, typecheck_invalid_lvalue_addrof);
 				return node_broken();
 			}
 
-			const item_t result_type = type_pointer(sx, operand_type);
-			return fold_unary_expression(sx, result_type, RVALUE, nd_operand, op_kind, loc);
+			const item_t type = type_pointer(sx, operand_type);
+			return fold_unary_expression(sx, type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_INDIRECTION:
@@ -674,7 +697,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 			}
 
 			const item_t type = type_pointer_get_element_type(sx, operand_type);
-			return fold_unary_expression(sx, type, LVALUE, nd_operand, op_kind, loc);
+			return fold_unary_expression(sx, type, LVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ABS:
@@ -687,7 +710,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, operand_type, RVALUE, nd_operand, op_kind, loc);
+			return fold_unary_expression(sx, operand_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_NOT:
@@ -698,7 +721,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, nd_operand, op_kind, loc);
+			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_LOGNOT:
@@ -709,7 +732,7 @@ node build_unary_expression(syntax *const sx, node *const nd_operand, const unar
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, nd_operand, op_kind, loc);
+			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
 		}
 
 		default:
@@ -774,7 +797,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
-			const item_t type = usual_arithmetic_conversions(left_type, right_type);
+			const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
 			return fold_binary_expression(sx, type, LHS, RHS, op_kind, loc);
 		}
 
@@ -789,7 +812,33 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
+			usual_arithmetic_conversions(sx, LHS, RHS);
 			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+		}
+
+		case BIN_EQ:
+		case BIN_NE:
+		{
+			if (type_is_floating(left_type) || type_is_floating(right_type))
+			{
+				warning(sx->io, variable_deviation);
+			}
+
+			if ((type_is_arithmetic(left_type) && type_is_arithmetic(right_type)))
+			{
+				usual_arithmetic_conversions(sx, LHS, RHS);
+				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			}
+
+			if ((type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
+				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
+				|| left_type == right_type)
+			{
+				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			}
+
+			semantic_error(sx, op_loc, typecheck_binary_expr);
+			return node_broken();
 		}
 
 		case BIN_LOG_AND:
@@ -802,26 +851,6 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 			}
 
 			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
-		}
-
-		case BIN_EQ:
-		case BIN_NE:
-		{
-			if (type_is_floating(left_type) || type_is_floating(right_type))
-			{
-				warning(sx->io, variable_deviation);
-			}
-
-			if ((type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
-				|| (type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
-				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
-				|| left_type == right_type)
-			{
-				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
-			}
-
-			semantic_error(sx, op_loc, typecheck_binary_expr);
-			return node_broken();
 		}
 
 		case BIN_ASSIGN:
@@ -866,62 +895,60 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	}
 }
 
-node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
-	, const location op_loc)
+node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, const location op_loc)
 {
-	if (!node_is_correct(nd_left) || !node_is_correct(nd_middle) || !node_is_correct(nd_right))
+	if (!node_is_correct(cond) || !node_is_correct(LHS) || !node_is_correct(RHS))
 	{
 		return node_broken();
 	}
 
-	const item_t left_type = expression_get_type(nd_left);
-	const item_t middle_type = expression_get_type(nd_middle);
-	const item_t right_type = expression_get_type(nd_right);
+	const item_t cond_type = expression_get_type(cond);
+	const item_t LHS_type = expression_get_type(LHS);
+	const item_t RHS_type = expression_get_type(RHS);
 
-	if (!type_is_scalar(sx, left_type))
+	if (!type_is_scalar(sx, cond_type))
 	{
-		semantic_error(sx, expression_get_location(nd_left), typecheck_statement_requires_scalar);
+		semantic_error(sx, expression_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
-	const location loc = { expression_get_location(nd_left).begin, expression_get_location(nd_right).end };
+	const location loc = { expression_get_location(cond).begin, expression_get_location(RHS).end };
 
-	if (type_is_arithmetic(middle_type) && type_is_arithmetic(right_type))
+	if (type_is_arithmetic(LHS_type) && type_is_arithmetic(RHS_type))
 	{
-		const item_t type = usual_arithmetic_conversions(middle_type, right_type);
-		return fold_ternary_expression(sx, type, nd_left, nd_middle, nd_right, loc);
+		const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
+		return fold_ternary_expression(sx, type, cond, LHS, RHS, loc);
 	}
 
-	if (type_is_pointer(sx, middle_type) && type_is_null_pointer(right_type))
+	if (type_is_pointer(sx, LHS_type) && type_is_null_pointer(RHS_type))
 	{
-		return fold_ternary_expression(sx, middle_type, nd_left, nd_middle, nd_right, loc);
+		return fold_ternary_expression(sx, LHS_type, cond, LHS, RHS, loc);
 	}
 
-	if (type_is_null_pointer(middle_type) && type_is_pointer(sx, right_type))
+	if (type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
 	{
-		return fold_ternary_expression(sx, right_type, nd_left, nd_middle, nd_right, loc);
+		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
 	}
 
-	if (middle_type == right_type)
+	if (LHS_type == RHS_type)
 	{
-		return fold_ternary_expression(sx, right_type, nd_left, nd_middle, nd_right, loc);
+		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
 	}
 
 	semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
 	return node_broken();
 }
 
-node build_init_list_expression(syntax *const sx, node_vector *const vec
-	, const location l_loc, const location r_loc)
+node build_init_list_expression(syntax *const sx, node_vector *const exprs, const location l_loc, const location r_loc)
 {
-	const size_t actual_inits = node_vector_size(vec);
+	const size_t actual_inits = node_vector_size(exprs);
 	if (actual_inits == 0)
 	{
 		semantic_error(sx, l_loc, empty_init);
-		node_vector_clear(vec);
+		node_vector_clear(exprs);
 		return node_broken();
 	}
 
 	const location loc = { l_loc.begin, r_loc.end };
-	return expression_list(sx, vec, loc);
+	return expression_list(sx, exprs, loc);
 }

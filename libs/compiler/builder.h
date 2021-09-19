@@ -38,7 +38,7 @@ extern "C" {
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const init);
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, node *const init);
 
 /**
  *	Build an identifier expression
@@ -154,23 +154,22 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
  *	@param	sx				Syntax structure
  *	@param	target_type		Value type
  *	@param	expr			Operand
- *	@param	loc				Expression location
  *
  *	@return	Cast expression node
  */
-node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr, const location loc);
+node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr);
 
 /**
  *	Build an unary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_operand		Operand of unary operator
+ *	@param	operand			Operand of unary operator
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc);
+node build_unary_expression(syntax *const sx, node *const operand, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
@@ -190,15 +189,14 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
  *	Build a ternary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_left			First operand
- *	@param	nd_middle		Second operand
- *	@param	nd_right		Third operand
+ *	@param	cond			First operand
+ *	@param	LHS				Second operand
+ *	@param	RHS				Third operand
  *	@param	op_loc			Operator location
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
-	, const location op_loc);
+node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, const location op_loc);
 
 /**
  *	Build an initializer list
@@ -210,8 +208,7 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
  *
  *	@return	Initializer list expression
  */
-node build_init_list_expression(syntax *const sx, node_vector *const exprs
-	, const location l_loc, const location r_loc);
+node build_init_list_expression(syntax *const sx, node_vector *const exprs, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus
 } /* extern "C" */
