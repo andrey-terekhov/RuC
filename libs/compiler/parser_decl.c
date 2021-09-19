@@ -20,6 +20,7 @@
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
 static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static item_t parse_enum_specifier(parser *const prs, node *const parent);
 
 
 /**
@@ -84,6 +85,12 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_STRUCT:
 			token_consume(prs);
 			return parse_struct_or_union_specifier(prs, parent);
+
+		case TK_ENUM:
+		{
+			token_consume(prs);
+			return parse_enum_specifier(prs, parent);
+		}
 
 		case TK_TYPEDEF:
 		{
@@ -702,6 +709,129 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	}
 }
 
+static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number)
+{
+	const size_t old_id = vector_size(&prs->sx->identifiers);
+	const item_t ref = repr_get_reference(prs->sx, prs->lxr.repr);
+	vector_add(&prs->sx->identifiers, ref == ITEM_MAX ? ITEM_MAX - 1 : ref);
+	vector_increase(&prs->sx->identifiers, 3);
+
+	ident_set_repr(prs->sx, old_id, (item_t)prs->lxr.repr);
+	ident_set_type(prs->sx, old_id, type);
+
+	repr_set_reference(prs->sx, prs->lxr.repr, (item_t)old_id);
+
+	ident_set_displ(prs->sx, old_id, number);
+
+	if (old_id == SIZE_MAX)
+	{
+		parser_error(prs, redefinition_of_main);
+	}
+	else if (old_id == SIZE_MAX - 1)
+	{
+		parser_error(prs, repeated_decl, repr_get_name(prs->sx, prs->lxr.repr));
+	}
+}
+
+static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
+{
+	token_consume(prs);
+	if (token_try_consume(prs, TK_R_BRACE))
+	{
+		parser_error(prs, empty_enum);
+		return TYPE_UNDEFINED;
+	}
+
+	size_t local_md = 2;
+	item_t field_value = 0;
+	item_t local_modetab[100];
+	// local_modetab[0] = TYPE_ENUM;
+
+	const item_t type = type_add(prs->sx, (item_t[]){ TYPE_ENUM }, 1);
+
+	do
+	{
+
+		if (!token_try_consume(prs, TK_IDENTIFIER))
+		{
+			parser_error(prs, wait_ident_after_comma_in_enum);
+			token_skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+		}
+
+		if (prs->token == TK_EQUAL)
+		{
+			const size_t repr = prs->lxr.repr;
+            token_consume(prs);
+			field_value = parse_enum_field_expression(prs, parent, type);
+			if (field_value == ITEM_MAX)
+			{
+				return TYPE_UNDEFINED;
+			}
+			prs->lxr.repr = repr;
+			parse_init_enum_field_declarator(prs, -type, field_value++);
+		}
+		else
+		{
+			parse_init_enum_field_declarator(prs, -type, field_value++);
+		}
+
+		local_modetab[local_md++] = field_value - 1;
+		local_modetab[local_md++] = (item_t)prs->lxr.repr;
+		if (prs->token == TK_R_BRACE)
+		{
+			continue;
+		}
+		token_expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
+	} while (!token_try_consume(prs, TK_R_BRACE));
+
+	local_modetab[1] = (item_t)(local_md - 2);
+	local_modetab[0] = local_modetab[2] / 2;
+
+	type_enum_add_fields(prs->sx, local_modetab, local_md);
+	return type;
+}
+
+static item_t parse_enum_specifier(parser *const prs, node *const parent)
+{
+	switch (prs->token)
+	{
+		case TK_L_BRACE:
+		{
+			const item_t type = parse_enum_declaration_list(prs, parent);
+			prs->was_type_def = true;
+			return type;
+		}
+		case TK_IDENTIFIER:
+		{
+			const size_t repr = prs->lxr.repr;
+			token_consume(prs);
+
+			if (prs->token == TK_L_BRACE)
+			{
+				const item_t type = parse_enum_declaration_list(prs, parent);
+				const size_t id = to_identab(prs, repr, 1000, type);
+				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
+				prs->was_type_def = true;
+				return ident_get_type(prs->sx, (size_t)id);
+			}
+			else // if (parser->next_token != l_brace)
+			{
+				const item_t id = repr_get_reference(prs->sx, repr);
+
+				if (id == ITEM_MAX)
+				{
+					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+					return TYPE_UNDEFINED;
+				}
+				return ident_get_type(prs->sx, (size_t)id);
+			}
+		}
+
+		default:
+			parser_error(prs, wrong_struct);
+			return TYPE_UNDEFINED;
+	}
+}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______

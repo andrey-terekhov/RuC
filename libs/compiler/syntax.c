@@ -58,6 +58,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"int", U"цел", TK_INT);
 	repr_add_keyword(reprtab, U"long", U"длин", TK_LONG);
 	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
+	repr_add_keyword(reprtab, U"enum", U"перечисление", TK_ENUM);
 	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
 	repr_add_keyword(reprtab, U"file", U"файл", TK_FILE);
 	repr_add_keyword(reprtab, U"typedef", U"типопр", TK_TYPEDEF);
@@ -518,6 +519,21 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 	return (item_t)sx->start_type + 1;
 }
 
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size)
+{
+	if (sx == NULL || record == NULL)
+	{
+		return ITEM_MAX;
+	}
+
+	for (size_t i = 0; i < size; i++)
+	{
+		vector_add(&sx->types, record[i]);
+	}
+
+	return (item_t)sx->start_type + 1;
+}
+
 item_t type_get(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
@@ -551,7 +567,7 @@ bool type_is_floating(const item_t type)
 
 bool type_is_arithmetic(const item_t type)
 {
-	return type_is_integer(type) || type_is_floating(type);
+	return type_is_integer(type) || type_is_floating(type) || type_is_enum_field(type);
 }
 
 bool type_is_void(const item_t type)
@@ -572,6 +588,16 @@ bool type_is_array(const syntax *const sx, const item_t type)
 bool type_is_structure(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
+}
+
+bool type_is_enum(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
+}
+
+bool type_is_enum_field(const item_t type)
+{
+	return type == TYPE_ENUM;
 }
 
 bool type_is_function(const syntax *const sx, const item_t type)
