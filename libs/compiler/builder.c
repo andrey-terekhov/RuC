@@ -295,36 +295,37 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
  */
 
 
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init)
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const init)
 {
-	if (expression_get_class(nd_init) == EXPR_LIST)
+	const location loc = expression_get_location(init);
+	if (expression_get_class(init) == EXPR_LIST)
 	{
-		const size_t actual_inits = expression_list_get_size(nd_init);
+		const size_t actual_inits = expression_list_get_size(init);
 		if (type_is_structure(sx, expected_type))
 		{
 			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
 
 			if (expected_inits != actual_inits)
 			{
-				semantic_error(sx, expression_get_location(nd_init), wrong_init_in_actparam, expected_inits, actual_inits);
+				semantic_error(sx, loc, wrong_init_in_actparam, expected_inits, actual_inits);
 				return false;
 			}
 
 			for (size_t i = 0; i < actual_inits; i++)
 			{
-				const node nd_initializer = expression_list_get_subexpr(nd_init, i);
-				if (!node_is_correct(&nd_initializer))
+				node subexpr = expression_list_get_subexpr(init, i);
+				if (!node_is_correct(&subexpr))
 				{
 					return false;
 				}
 
 				const item_t type = type_structure_get_member_type(sx, expected_type, i);
-				if (!check_assignment_operands(sx, type, &nd_initializer))
+				if (!check_assignment_operands(sx, type, &subexpr))
 				{
 					return false;
 				}
 			}
-			expression_list_set_type(nd_init, expected_type);
+			expression_list_set_type(init, expected_type);
 			return true;
 		}
 		else if (type_is_array(sx, expected_type))
@@ -332,28 +333,29 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 			const item_t type = type_array_get_element_type(sx, expected_type);
 			for (size_t i = 0; i < actual_inits; i++)
 			{
-				const node nd_initializer = expression_list_get_subexpr(nd_init, i);
-				if (!node_is_correct(&nd_initializer))
+				node subexpr = expression_list_get_subexpr(init, i);
+				if (!node_is_correct(&subexpr))
 				{
 					return false;
 				}
 
-				if (!check_assignment_operands(sx, type, &nd_initializer))
+				if (!check_assignment_operands(sx, type, &subexpr))
 				{
 					return false;
 				}
 			}
-			expression_list_set_type(nd_init, expected_type);
+
+			expression_list_set_type(init, expected_type);
 			return true;
 		}
 		else
 		{
-			semantic_error(sx, expression_get_location(nd_init), wrong_init);
+			semantic_error(sx, loc, wrong_init);
 			return false;
 		}
 	}
 
-	const item_t actual_type = expression_get_type(nd_init);
+	const item_t actual_type = expression_get_type(init);
 
 	if (type_is_floating(expected_type) && type_is_integer(actual_type))
 	{
@@ -370,7 +372,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true;
 	}
 
-	semantic_error(sx, expression_get_location(nd_init), wrong_init);
+	semantic_error(sx, loc, wrong_init);
 	return false;
 }
 
@@ -601,6 +603,11 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
 
 node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr, const location loc)
 {
+	if (!node_is_correct(expr))
+	{
+		return node_broken();
+	}
+
 	const item_t source_type = expression_get_type(expr);
 
 	if (target_type != source_type)

@@ -34,11 +34,11 @@ extern "C" {
  *
  *	@param	sx				Syntax structure
  *	@param	expected_type	Expected type
- *	@param	nd_init			Initializer node
+ *	@param	init			Initializer
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init);
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const init);
 
 /**
  *	Build an identifier expression
@@ -153,7 +153,6 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
  *
  *	@param	sx				Syntax structure
  *	@param	target_type		Value type
- *	@param	source_type		Source type
  *	@param	expr			Operand
  *	@param	loc				Expression location
  *
