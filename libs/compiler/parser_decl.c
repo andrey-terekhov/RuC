@@ -298,21 +298,21 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		{
 			if (prs->token == TK_L_SQUARE)
 			{
-				node nd_decl = node_add_child(&nd, OP_DECL_VAR);
-				node_add_arg(&nd_decl, 0);	// Вместо id подставим тип
-				node_add_arg(&nd_decl, 0);	// Тут будет размерность
-				node_add_arg(&nd_decl, 0);	// Тут будет флаг наличия инициализатора
+				node decl = node_add_child(&nd, OP_DECL_VAR);
+				node_add_arg(&decl, 0);	// Вместо id подставим тип
+				node_add_arg(&decl, 0);	// Тут будет размерность
+				node_add_arg(&decl, 0);	// Тут будет флаг наличия инициализатора
 
 				// Меняем тип (увеличиваем размерность массива)
-				type = parse_array_definition(prs, &nd_decl, element_type);
+				type = parse_array_definition(prs, &decl, element_type);
 
-				node_set_arg(&nd_decl, 0, type);
-				node_set_arg(&nd_decl, 1, (item_t)prs->array_dimensions);
+				node_set_arg(&decl, 0, type);
+				node_set_arg(&decl, 1, (item_t)prs->array_dimensions);
 
 				if (token_try_consume(prs, TK_EQUAL) && type_is_array(prs->sx, type))
 				{
-					node_set_arg(&nd_decl, 2, true);
-					node_copy(&prs->sx->nd, &nd_decl);
+					node_set_arg(&decl, 2, true);
+					node_copy(&prs->sx->nd, &decl);
 
 					node initializer = parse_initializer(prs);
 					if (!node_is_correct(&initializer))
@@ -610,10 +610,10 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 			type = type_array_get_element_type(prs->sx, type);
 		}
 
-		node nd_param = node_add_child(&nd, OP_DECL_VAR);
-		node_add_arg(&nd_param, (item_t)id);	// id
-		node_add_arg(&nd_param, (item_t)dim);	// dim
-		node_add_arg(&nd_param, false);			// has init
+		node param = node_add_child(&nd, OP_DECL_VAR);
+		node_add_arg(&param, (item_t)id);	// id
+		node_add_arg(&param, (item_t)dim);	// dim
+		node_add_arg(&param, false);		// has init
 	}
 
 	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
