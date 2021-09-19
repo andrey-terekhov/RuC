@@ -397,6 +397,30 @@ static void write_member_expression(writer *const wrt, const node *const nd, con
 }
 
 /**
+ *	Write cast expression
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ *	@param	indent		Indentation
+ */
+static void write_cast_expression(writer *const wrt, const node *const nd, const size_t indent)
+{
+	write_indent(wrt, indent);
+	write(wrt, "EXPR_CAST from ");
+
+	const item_t target_type = expression_get_type(nd);
+	const item_t source_type = expression_cast_get_source_type(nd);
+
+	write_type(wrt, source_type);
+	write(wrt, " to ");
+	write_type(wrt, target_type);
+	write_expression_metadata(wrt, nd);
+
+	const node operand = expression_cast_get_operand(nd);
+	write_expression(wrt, &operand, indent + 1);
+}
+
+/**
  *	Write unary expression
  *
  *	@param	wrt			Writer
@@ -508,6 +532,10 @@ static void write_expression(writer *const wrt, const node *const nd, const size
 
 		case EXPR_MEMBER:
 			write_member_expression(wrt, nd, indent);
+			return;
+
+		case EXPR_CAST:
+			write_cast_expression(wrt, nd, indent);
 			return;
 
 		case EXPR_UNARY:
