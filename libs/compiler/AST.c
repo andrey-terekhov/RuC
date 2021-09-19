@@ -39,6 +39,9 @@ extern node expression_member_get_base(const node *const nd);
 extern size_t expression_member_get_member_index(const node *const nd);
 extern bool expression_member_is_arrow(const node *const nd);
 
+extern item_t expression_cast_get_source_type(const node *const nd);
+extern node expression_cast_get_operand(const node *const nd);
+
 extern unary_t expression_unary_get_operator(const node *const nd);
 extern node expression_unary_get_operand(const node *const nd);
 
@@ -145,6 +148,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_CALL;
 		case OP_SELECT:
 			return EXPR_MEMBER;
+		case OP_CAST:
+		   return EXPR_CAST;
 		case OP_UNARY:
 			return EXPR_UNARY;
 		case OP_BINARY:
@@ -222,6 +227,20 @@ node expression_member(syntax *const sx, const item_t type, const category_t ctg
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 	node_set_child(&nd, base);						// Операнд выражения
+
+	return nd;
+}
+
+node expression_cast(syntax *const sx, const item_t target_type, const item_t source_type
+	, const node *const expr, const location loc)
+{
+	node nd = node_create(sx, OP_CAST);
+	node_add_arg(&nd, target_type);					// Тип значения выражения
+	node_add_arg(&nd, RVALUE);						// Категория значения выражения
+	node_add_arg(&nd, source_type);					// Тип до преобразования
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+	node_set_child(&nd, expr);						// Операнд выражения
 
 	return nd;
 }

@@ -41,6 +41,7 @@ typedef enum EXPRESSION
 	EXPR_SUBSCRIPT,		/**< Subscript expression */
 	EXPR_CALL,			/**< Call expression */
 	EXPR_MEMBER,		/**< Member expression */
+	EXPR_CAST,			/**< Cast expression */
 	EXPR_UNARY,			/**< Unary expression */
 	EXPR_BINARY,		/**< Binary expression */
 	EXPR_TERNARY,		/**< Ternary expression */
@@ -343,6 +344,45 @@ inline size_t expression_member_get_member_index(const node *const nd)
 inline bool expression_member_is_arrow(const node *const nd)
 {
 	return node_get_type(nd) == OP_SELECT ? node_get_arg(nd, 3) != 0: false;
+}
+
+
+/**
+ *	Create new cast expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	target_type		Value type
+ *	@param	source_type		Source type
+ *	@param	expr			Operand
+ *	@param	loc				Expression location
+ *
+ *	@return	Cast expression
+ */
+node expression_cast(syntax *const sx, const item_t target_type, const item_t source_type
+	, const node *const expr, const location loc);
+
+/**
+ *	Get source type of cast expression
+ *
+ *	@param	nd		Cast expression
+ *
+ *	@return	Source type
+ */
+inline item_t expression_cast_get_source_type(const node *const nd)
+{
+	return node_get_type(nd) == OP_CAST ? node_get_arg(nd, 2) : ITEM_MAX;
+}
+
+/**
+ *	Get operand of cast expression
+ *
+ *	@param	nd		Cast expression
+ *
+ *	@return	Operand
+ */
+inline node expression_cast_get_operand(const node *const nd)
+{
+	return node_get_type(nd) == OP_CAST ? node_get_child(nd, 0) : node_broken();
 }
 
 

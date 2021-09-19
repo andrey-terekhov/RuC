@@ -119,8 +119,8 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const callee, node_vector *const args
-	, const location l_loc, const location r_loc);
+node build_call_expression(syntax *const sx, const node *const callee
+	, node_vector *const args, const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
@@ -134,8 +134,8 @@ node build_call_expression(syntax *const sx, const node *const callee, node_vect
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const base, const size_t name, const bool is_arrow
-	, const location op_loc, const location id_loc);
+node build_member_expression(syntax *const sx, const node *const base, const size_t name
+	, const bool is_arrow, const location op_loc, const location id_loc);
 
 /**
  *	Build a upb expression

@@ -467,8 +467,8 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
 	return expression_subscript(sx, element_type, base, index, loc);
 }
 
-node build_call_expression(syntax *const sx, const node *const callee, node_vector *const args
-	, const location l_loc, const location r_loc)
+node build_call_expression(syntax *const sx, const node *const callee
+	, node_vector *const args, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(callee))
 	{
@@ -516,8 +516,8 @@ node build_call_expression(syntax *const sx, const node *const callee, node_vect
 	return expression_call(sx, return_type, callee, args, loc);
 }
 
-node build_member_expression(syntax *const sx, const node *const base, const size_t name, const bool is_arrow
-	, const location op_loc, const location id_loc)
+node build_member_expression(syntax *const sx, const node *const base, const size_t name
+	, const bool is_arrow, const location op_loc, const location id_loc)
 {
 	if (!node_is_correct(base))
 	{
@@ -724,7 +724,6 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		}
 	}
 
-	// TODO: try fold_binary_expression(nd_left, nd_right);
 	const location loc = { expression_get_location(LHS).begin, expression_get_location(RHS).end };
 
 	switch (op_kind)
@@ -866,7 +865,6 @@ node build_ternary_expression(syntax *const sx, node *const nd_left, node *const
 		return node_broken();
 	}
 
-	// TODO: try fold_ternary_expression(nd_left, nd_middle, nd_right);
 	const location loc = { expression_get_location(nd_left).begin, expression_get_location(nd_right).end };
 
 	if (type_is_arithmetic(middle_type) && type_is_arithmetic(right_type))

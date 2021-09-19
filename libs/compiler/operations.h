@@ -106,6 +106,7 @@ typedef enum OPERATION
 	OP_CALL,				/**< Call node */
 	OP_SELECT,				/**< Select operator node */
 	OP_SLICE,				/**< Slice operator node */
+	OP_CAST,				/**< Cast operator node */
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
