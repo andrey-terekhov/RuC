@@ -480,7 +480,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
         nd = node_create(sx, OP_LITERAL);
         node_add_arg(&nd, -type);                               	// Тип значения литерала
         node_add_arg(&nd, RVALUE);									// Категория значения литерала
-        node_add_arg(&nd, ident_get_displ(sx, identifier));   		// Значение литерала
+        node_add_arg(&nd, ident_get_displ(sx, (size_t)identifier));	// Значение литерала
         node_add_arg(&nd, (item_t)loc.begin);                       // Начальная позиция литерала
         node_add_arg(&nd, (item_t)loc.end);                         // Конечная позиция литерала
     }
