@@ -447,13 +447,14 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true;
 	}
 
-    if (expected_type == actual_type)
+	if (check_enum_initializer(sx, expected_type, actual_type)
+		|| check_int_initializer(sx, expected_type, actual_type))
+	{
+		return true;
+	}
+
+	if (expected_type == actual_type)
     {
-        return true;
-    }
-	
-    if (check_enum_initializer(sx, expected_type, actual_type)
-       || check_int_initializer(sx, expected_type, actual_type)) {
         return true;
     }
 
