@@ -471,6 +471,23 @@ node parse_assignment_expression(parser *const prs)
 	return parse_RHS_of_binary_expression(prs, &LHS, PREC_ASSIGNMENT);
 }
 
+item_t parse_enum_field_expression(parser *const prs, node *const parent, const item_t type)
+{
+	node_copy(&prs->sx->nd, parent);
+    const node nd_expr = parse_assignment_expression(prs);
+    const item_t type_expr = expression_get_type(&nd_expr);
+    const item_t value_expr = expression_literal_get_integer(&nd_expr);
+
+	node_remove(&prs->sx->nd);
+
+	if (value_expr == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
+	{
+		parser_error(prs, eq_not_const_int_for_enum_field);
+		return ITEM_MAX;
+	}
+	return value_expr;
+}
+
 node parse_expression(parser *const prs)
 {
 	node LHS = parse_assignment_expression(prs);

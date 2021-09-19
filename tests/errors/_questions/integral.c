@@ -89,7 +89,7 @@ void test()
         p = new_polynomial_function(3, array2);
 
         print("\nTest 2\nEpsilon value: 0.01\nFrom 2 to 3\nPolynom: ");
-       printf("Test value (calculated with wolframalpha): 331.083\nCalculated value: ");
+        printf("Test value (calculated with wolframalpha): 331.083\nCalculated value: ");
         print(integrate_function(&p, 0.01, 2.0, 3.0));
         free_polynomial_function(&p);
 

@@ -48,6 +48,7 @@ enum TYPE
 	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
+	TYPE_ENUM,
 	TYPE_ARRAY,
 	TYPE_POINTER,
 };
@@ -301,6 +302,17 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
+ *	Add a new enum fields to types table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
+ *
+ *	@return	New type, @c ITEM_MAX on failure
+ */
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size);
+
+/**
  *	Get an item from types table by index
  *
  *	@param	sx			Syntax structure
@@ -384,6 +396,25 @@ bool type_is_array(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_structure(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum field
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum_field(const item_t type);
 
 /**
  *	Check if type is function

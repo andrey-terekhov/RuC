@@ -171,6 +171,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case int_op_for_float:	// test_exist
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
 			break;
+		case eq_not_const_int_for_enum_field:
+			sprintf(msg, "нельзя присваивать не константные выражения в поле перечисления");
+			break;
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");
 			break;
@@ -314,6 +317,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case error_in_initialization:	// test_exist
 			sprintf(msg, "несоответствие типов при инициализации переменной");
 			break;
+		case error_in_equal_with_enum:
+			sprintf(msg, "несоответствие типов при присваивании в перечисление");
+			break;
 		case type_missmatch:	// need_test
 			sprintf(msg, "несоответствие типов");
 			break;
@@ -353,8 +359,23 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_semicolon_in_struct:	// need_test
 			sprintf(msg, "описание поля структуры должно заканчиваться ;");
 			break;
+		case no_comma_in_enum:
+			sprintf(msg, "описание поля перечисления должно заканчиваться ,");
+			break;
 		case wait_ident_after_semicolon_in_struct: // test_exist
 			sprintf(msg, "в структуре после типа поля должен идти идентификатор поля");
+			break;
+		case wait_ident_after_comma_in_enum:
+			sprintf(msg, "в перечислении должен быть идентификатор поля");
+			break;
+		case no_equal_with_enum:
+			sprintf(msg, "в перечислении запрещены все операторы присвоения кроме =");
+			break;
+		case wait_l_paren:
+			sprintf(msg, "в выражении не хватает (");
+			break;
+		case wait_r_paren:
+			sprintf(msg, "в выражении не хватает )");
 			break;
 		case empty_init:	// test_exist
 			sprintf(msg, "в РуСи можно определять границы массива по инициализации только по младшему измерению");
@@ -505,6 +526,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case empty_struct:
 			sprintf(msg, "структура должна иметь поля");
+			break;
+		case empty_enum:
+			sprintf(msg, "перечисление должно иметь поля");
+			break;
+		case not_const_oper:
+			sprintf(msg, "оператор не подходит для констант");
 			break;
 
 		case tree_expression_not_block:
