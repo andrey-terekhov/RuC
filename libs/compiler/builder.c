@@ -599,6 +599,18 @@ node build_upb_expression(syntax *const sx, const node *const nd_fst, const node
 	return nd;
 }
 
+node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr, const location loc)
+{
+	const item_t source_type = expression_get_type(expr);
+
+	if (target_type != source_type)
+	{
+		return expression_cast(sx, target_type, source_type, expr, loc);
+	}
+
+	return *expr;
+}
+
 node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(nd_operand))

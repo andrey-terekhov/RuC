@@ -149,6 +149,19 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd);
 
 /**
+ *	Build a cast expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	target_type		Value type
+ *	@param	source_type		Source type
+ *	@param	expr			Operand
+ *	@param	loc				Expression location
+ *
+ *	@return	Cast expression node
+ */
+node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr, const location loc);
+
+/**
  *	Build an unary expression
  *
  *	@param	sx				Syntax structure
