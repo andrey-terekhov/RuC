@@ -265,63 +265,64 @@ static void label_to_io(universal_io *const io, const label_t label)
 }
 
 
-// Вид инструкции:	instr	reg1, reg2
-static void to_code_2R(universal_io *const io, const mips_instruction_t instruction, const mips_register_t reg1, const mips_register_t reg2)
+// Вид инструкции:	instr	fst_reg, snd_reg
+static void to_code_2R(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t fst_reg, const mips_register_t snd_reg)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg1);
+	mips_register_to_io(io, fst_reg);
 	uni_printf(io, ", ");
-	mips_register_to_io(io, reg2);
+	mips_register_to_io(io, snd_reg);
 	uni_printf(io, "\n");
 }
 
-// Вид инструкции:	instr	reg1, reg2, imm
+// Вид инструкции:	instr	fst_reg, snd_reg, imm
 static void to_code_2R_I(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t reg1, const mips_register_t reg2, const item_t imm)
+	, const mips_register_t fst_reg, const mips_register_t snd_reg, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg1);
+	mips_register_to_io(io, fst_reg);
 	uni_printf(io, ", ");
-	mips_register_to_io(io, reg2);
+	mips_register_to_io(io, snd_reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
-// Вид инструкции:	instr	reg1, imm(reg2)
+// Вид инструкции:	instr	fst_reg, imm(snd_reg)
 static void to_code_R_I_R(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t reg1, const item_t imm, const mips_register_t reg2)
+	, const mips_register_t fst_reg, const item_t imm, const mips_register_t snd_reg)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg1);
+	mips_register_to_io(io, fst_reg);
 	uni_printf(io, ", %" PRIitem "(", imm);
-	mips_register_to_io(io, reg2);
+	mips_register_to_io(io, snd_reg);
 	uni_printf(io, ")\n");
 }
 
-// Вид инструкции:	instr	reg1, imm
+// Вид инструкции:	instr	reg, imm
 static void to_code_R_I(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t reg1, const item_t imm)
+	, const mips_register_t reg, const item_t imm)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg1);
+	mips_register_to_io(io, reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
-// Вид инструкции:	instr	reg1
+// Вид инструкции:	instr	reg
 static void to_code_R(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t reg1)
+	, const mips_register_t reg)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg1);
+	mips_register_to_io(io, reg);
 	uni_printf(io, "\n");
 }
 
@@ -395,9 +396,9 @@ static int codegen(information *const info)
 				}
 
 				// block(info, &root);
-
 				uni_printf(info->sx->io, "\n");
 				to_code_label(info->sx->io, L_FUNCEND, ref_ident);
+
 				// Восстановление стека после работы функции
 				to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
 				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
@@ -420,7 +421,7 @@ static int codegen(information *const info)
 
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
-static void precodegen(syntax *const sx)
+static void pregen(syntax *const sx)
 {
 	uni_printf(sx->io, "\t.section .mdebug.abi32\n");
 	uni_printf(sx->io, "\t.previous\n");
@@ -450,7 +451,7 @@ static void precodegen(syntax *const sx)
 }
 
 // TODO: подписать, что значит каждая директива и команда
-static void postcodegen(information *const info)
+static void postgen(information *const info)
 {
 	uni_printf(info->sx->io, "\n");
 	to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, info->main_label);
@@ -483,8 +484,9 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.sx = sx;
 	info.main_label = 0;
 
-	precodegen(info.sx);
+	pregen(sx);
 	const int ret = codegen(&info);
-	postcodegen(&info);
+	postgen(&info);
+	
 	return ret;
 }
