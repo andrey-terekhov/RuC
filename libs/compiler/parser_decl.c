@@ -731,7 +731,6 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 	size_t local_md = 2;
 	item_t field_value = 0;
 	item_t local_modetab[100];
-	// local_modetab[0] = TYPE_ENUM;
 
 	const item_t type = type_add(prs->sx, (item_t[]){ TYPE_ENUM }, 1);
 

@@ -458,8 +458,8 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true;
 	}
 
-    semantic_error(sx, expression_get_location(nd_init), wrong_init);
-    return false;
+	semantic_error(sx, expression_get_location(nd_init), wrong_init);
+	return false;
 }
 
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
