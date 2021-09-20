@@ -264,7 +264,7 @@ int no_macro_compile_to_mips(const char *const path)
 
 	workspace ws = ws_create();
 	ws_add_file(&ws, path);
-	ws_set_output(&ws, DEFAULT_LLVM);
+	ws_set_output(&ws, DEFAULT_MIPS);
 	out_set_file(&io, ws_get_output(&ws));
 
 	const int ret = compile_from_io(&ws, &io, &encode_to_mips);
