@@ -736,7 +736,6 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 
 	do
 	{
-
 		if (!token_try_consume(prs, TK_IDENTIFIER))
 		{
 			parser_error(prs, wait_ident_after_comma_in_enum);
@@ -746,7 +745,7 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		if (prs->token == TK_EQUAL)
 		{
 			const size_t repr = prs->lxr.repr;
-            token_consume(prs);
+			token_consume(prs);
 			field_value = parse_enum_field_expression(prs, parent, type);
 			if (field_value == ITEM_MAX)
 			{
