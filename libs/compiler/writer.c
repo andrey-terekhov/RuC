@@ -2097,20 +2097,20 @@ size_t write_type_spelling(const syntax *const sx, const item_t type, char *cons
 	else if (type_is_array(sx, type))
 	{
 		const item_t element_type = type_array_get_element_type(sx, type);
-		int index = write_type_spelling(sx, element_type, buffer);
+		size_t index = write_type_spelling(sx, element_type, buffer);
 		index += sprintf(&buffer[index], "[]");
 		return index;
 	}
 	else if (type_is_pointer(sx, type))
 	{
 		const item_t element_type = type_pointer_get_element_type(sx, type);
-		int index = write_type_spelling(sx, element_type, buffer);
+		size_t index = write_type_spelling(sx, element_type, buffer);
 		index += sprintf(&buffer[index], "*");
 		return index;
 	}
 	else if (type_is_structure(sx, type))
 	{
-		int index = sprintf(buffer, "struct { ");
+		size_t index = sprintf(buffer, "struct { ");
 
 		const size_t member_amount = type_structure_get_member_amount(sx, type);
 		for (size_t i = 0; i < member_amount; i++)
@@ -2127,7 +2127,7 @@ size_t write_type_spelling(const syntax *const sx, const item_t type, char *cons
 	}
 	else if (type_is_function(sx, type))
 	{
-		int index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
+		size_t index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
 		index += sprintf(&buffer[index], " (");
 
 		const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
