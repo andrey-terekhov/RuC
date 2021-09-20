@@ -142,10 +142,6 @@ static void type_to_io(information *const info, const item_t type)
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
 	}
-	else if (type_is_undefined(type))
-	{
-		uni_printf(info->sx->io, "i8*");
-	}
 }
 
 static void operation_to_io(universal_io *const io, const item_t operation_type, const item_t type)
@@ -1861,12 +1857,16 @@ static void builin_functions_declaration(information *const info)
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
 
 				item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
-				// TODO: как исправить этот костыль???
+				
+				// TODO: будет исправлено, когда будет введён тип char
 				if (i == BI_FOPEN)
 				{
-					param_type = TYPE_UNDEFINED;
+					uni_printf(info->sx->io, "i8*");
 				}
-				type_to_io(info, param_type);
+				else
+				{				
+					type_to_io(info, param_type);
+				}
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
