@@ -284,6 +284,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
  */
 static void write_identifier_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_IDENTIFIER");
 
 	const size_t id = expression_identifier_get_id(nd);
@@ -301,6 +302,7 @@ static void write_identifier_expression(writer *const wrt, const node *const nd)
  */
 static void write_literal_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
@@ -336,6 +338,7 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
  */
 static void write_subscript_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_SUBSCRIPT");
 	write_expression_metadata(wrt, nd);
 
@@ -354,6 +357,7 @@ static void write_subscript_expression(writer *const wrt, const node *const nd)
  */
 static void write_call_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_CALL");
 	write_expression_metadata(wrt, nd);
 
@@ -376,6 +380,7 @@ static void write_call_expression(writer *const wrt, const node *const nd)
  */
 static void write_member_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_MEMBER selecting");
 
 	const node base = expression_member_get_base(nd);
@@ -411,6 +416,7 @@ static void write_member_expression(writer *const wrt, const node *const nd)
  */
 static void write_unary_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_UNARY with operator ");
 	write_unary_operator(wrt, expression_unary_get_operator(nd));
 	write_expression_metadata(wrt, nd);
@@ -427,6 +433,7 @@ static void write_unary_expression(writer *const wrt, const node *const nd)
  */
 static void write_binary_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_BINARY with operator ");
 	write_binary_operator(wrt, expression_binary_get_operator(nd));
 	write_expression_metadata(wrt, nd);
@@ -446,6 +453,7 @@ static void write_binary_expression(writer *const wrt, const node *const nd)
  */
 static void write_ternary_expression(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_TERNARY");
 	write_expression_metadata(wrt, nd);
 
@@ -467,6 +475,7 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
  */
 static void write_expression_list(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "EXPR_LIST");
 	write_expression_metadata(wrt, nd);
 
@@ -487,7 +496,6 @@ static void write_expression_list(writer *const wrt, const node *const nd)
 static void write_expression(writer *const wrt, const node *const nd)
 {
 	wrt->indent++;
-	write_indent(wrt);
 	switch (expression_get_class(nd))
 	{
 		case EXPR_IDENTIFIER:
@@ -547,6 +555,7 @@ static void write_expression(writer *const wrt, const node *const nd)
  */
 static void write_variable_declaration(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "DECL_VAR");
 
 	const size_t ident = declaration_variable_get_id(nd);
@@ -572,6 +581,7 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
  */
 static void write_type_declaration(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "DECL_TYPE\n");
 	(void)nd;
 }
@@ -584,6 +594,7 @@ static void write_type_declaration(writer *const wrt, const node *const nd)
  */
 static void write_function_declaration(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "DECL_FUNC");
 
 	const size_t ident = declaration_function_get_id(nd);
@@ -606,7 +617,6 @@ static void write_function_declaration(writer *const wrt, const node *const nd)
  */
 static void write_declaration(writer *const wrt, const node *const nd)
 {
-	write_indent(wrt);
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
@@ -641,6 +651,7 @@ static void write_declaration(writer *const wrt, const node *const nd)
  */
 static void write_labeled_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_LABEL");
 
 	const size_t label = statement_labeled_get_label(nd);
@@ -659,6 +670,7 @@ static void write_labeled_statement(writer *const wrt, const node *const nd)
  */
 static void write_case_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_CASE\n");
 
 	const node expression = statement_case_get_expression(nd);
@@ -676,6 +688,7 @@ static void write_case_statement(writer *const wrt, const node *const nd)
  */
 static void write_default_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_DEFAULT\n");
 
 	const node substmt = statement_default_get_substmt(nd);
@@ -690,6 +703,7 @@ static void write_default_statement(writer *const wrt, const node *const nd)
  */
 static void write_compound_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_COMPOUND\n");
 
 	const size_t size = statement_compound_get_size(nd);
@@ -708,6 +722,7 @@ static void write_compound_statement(writer *const wrt, const node *const nd)
  */
 static void write_null_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_NULL\n");
 	(void)nd;
 }
@@ -720,6 +735,7 @@ static void write_null_statement(writer *const wrt, const node *const nd)
  */
 static void write_if_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_IF\n");
 
 	const node condition = statement_if_get_condition(nd);
@@ -743,6 +759,7 @@ static void write_if_statement(writer *const wrt, const node *const nd)
  */
 static void write_switch_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_SWITCH\n");
 
 	const node condition = statement_switch_get_condition(nd);
@@ -760,6 +777,7 @@ static void write_switch_statement(writer *const wrt, const node *const nd)
  */
 static void write_while_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_WHILE\n");
 
 	const node condition = statement_while_get_condition(nd);
@@ -777,6 +795,7 @@ static void write_while_statement(writer *const wrt, const node *const nd)
  */
 static void write_do_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_DO\n");
 
 	const node body = statement_do_get_body(nd);
@@ -794,6 +813,7 @@ static void write_do_statement(writer *const wrt, const node *const nd)
  */
 static void write_for_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_FOR\n");
 
 	if (statement_for_has_inition(nd))
@@ -826,6 +846,7 @@ static void write_for_statement(writer *const wrt, const node *const nd)
  */
 static void write_goto_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_GOTO\n");
 
 	const size_t label = statement_goto_get_label(nd);
@@ -841,6 +862,7 @@ static void write_goto_statement(writer *const wrt, const node *const nd)
  */
 static void write_continue_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_CONTINUE\n");
 	(void)nd;
 }
@@ -853,6 +875,7 @@ static void write_continue_statement(writer *const wrt, const node *const nd)
  */
 static void write_break_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_BREAK\n");
 	(void)nd;
 }
@@ -865,6 +888,7 @@ static void write_break_statement(writer *const wrt, const node *const nd)
  */
 static void write_return_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_RETURN\n");
 
 	if (statement_return_has_expression(nd))
@@ -882,6 +906,7 @@ static void write_return_statement(writer *const wrt, const node *const nd)
  */
 static void write_printf_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_PRINTF\n");
 
 	const node format_str = statement_printf_get_format_str(nd);
@@ -903,6 +928,7 @@ static void write_printf_statement(writer *const wrt, const node *const nd)
  */
 static void write_print_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_PRINT\n");
 
 	const node argument = node_get_child(nd, 0);
@@ -917,6 +943,7 @@ static void write_print_statement(writer *const wrt, const node *const nd)
  */
 static void write_printid_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_PRINTID");
 
 	const size_t id = (size_t)node_get_arg(nd, 0);
@@ -931,6 +958,7 @@ static void write_printid_statement(writer *const wrt, const node *const nd)
  */
 static void write_getid_statement(writer *const wrt, const node *const nd)
 {
+	write_indent(wrt);
 	write(wrt, "STMT_GETID");
 
 	const size_t id = (size_t)node_get_arg(nd, 0);
@@ -946,15 +974,13 @@ static void write_getid_statement(writer *const wrt, const node *const nd)
 static void write_statement(writer *const wrt, const node *const nd)
 {
 	const statement_t class = statement_get_class(nd);
-	if (class != STMT_EXPR)
+	if (class == STMT_EXPR)
 	{
-		wrt->indent++;
-	}
-	if (class != STMT_EXPR && class != STMT_DECL)
-	{
-		write_indent(wrt);
+		write_expression(wrt, nd);
+		return;
 	}
 
+	wrt->indent++;
 	switch (class)
 	{
 		case STMT_DECL:
@@ -976,10 +1002,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 		case STMT_COMPOUND:
 			write_compound_statement(wrt, nd);
 			break;
-
-		case STMT_EXPR:
-			write_expression(wrt, nd);
-			return;
 
 		case STMT_NULL:
 			write_null_statement(wrt, nd);
@@ -1032,6 +1054,9 @@ static void write_statement(writer *const wrt, const node *const nd)
 			break;
 		case STMT_GETID:
 			write_getid_statement(wrt, nd);
+			break;
+
+		default:
 			break;
 	}
 
