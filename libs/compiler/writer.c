@@ -2072,7 +2072,7 @@ void write_tree(const char *const path, syntax *const sx)
 }
 
 
-int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
+size_t write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
 {
 	if (type_is_null_pointer(type))
 	{
