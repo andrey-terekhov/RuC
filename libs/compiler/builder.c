@@ -61,7 +61,8 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 {
 	return (type_is_integer(left_type) || type_is_enum_const(left_type))
 		&& (type_is_integer(right_type) || type_is_enum_const(right_type)) 
-		? TYPE_INTEGER : TYPE_FLOATING;
+			? TYPE_INTEGER
+			: TYPE_FLOATING;
 }
 
 static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
@@ -406,16 +407,14 @@ static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const
 	return nd;
 }
 
-static bool check_enum_initializer(const syntax *const sx
-	, const item_t expected_type, const item_t actual_type)
+static bool check_enum_initializer(const syntax *const sx, const item_t expected_type, const item_t actual_type)
 {
 	return type_is_enum(sx, expected_type) && type_is_enum_field(sx, actual_type);
 }
 
-static bool check_int_initializer(const syntax *const sx, const item_t expected_type
-	, const item_t actual_type)
+static bool check_int_initializer(const syntax *const sx, const item_t expected_type, const item_t actual_type)
 {
-    return type_is_integer(expected_type) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type));
+	return type_is_integer(expected_type) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type));
 }
 
 /*
