@@ -30,6 +30,7 @@ typedef struct writer
 	universal_io *io;					/**< Output file */
 } writer;
 
+
 static void write_expression(writer *const wrt, const node *const nd, const size_t indent);
 static void write_statement(writer *const wrt, const node *const nd, const size_t indent);
 
@@ -47,7 +48,7 @@ static inline void write(writer *const wrt, const char *const string)
  *	Write indentation
  *
  *	@param	wrt			Writer
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static inline void write_indent(writer *const wrt, const size_t indent)
 {
@@ -65,7 +66,7 @@ static inline void write_indent(writer *const wrt, const size_t indent)
  */
 static inline void write_location(writer *const wrt, const location loc)
 {
-	uni_printf(wrt->io, " at <%lu, %lu>\n", loc.begin, loc.end);
+	uni_printf(wrt->io, " at <%zu, %zu>\n", loc.begin, loc.end);
 }
 
 /**
@@ -245,7 +246,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
 {
 	if (expression_is_lvalue(nd))
 	{
-	   write(wrt, " ─ lvalue");
+		write(wrt, " ─ lvalue");
 	}
 	else
 	{
@@ -264,7 +265,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_identifier_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -272,7 +273,7 @@ static void write_identifier_expression(writer *const wrt, const node *const nd,
 	write(wrt, "EXPR_IDENTIFIER");
 
 	const size_t id = expression_identifier_get_id(nd);
-	const char *spelling = ident_get_spelling(wrt->sx, id);
+	const char *const spelling = ident_get_spelling(wrt->sx, id);
 	uni_printf(wrt->io, " named \'%s\' with id %zu", spelling, id);
 
 	write_expression_metadata(wrt, nd);
@@ -283,33 +284,33 @@ static void write_identifier_expression(writer *const wrt, const node *const nd,
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_literal_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
-	write(wrt, "EXPR_LITERAL");
+	write(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
 	if (type_is_integer(type))
 	{
 		const int value = expression_literal_get_integer(nd);
-		uni_printf(wrt->io, " with value %i", value);
+		uni_printf(wrt->io, "%i", value);
 	}
 	else if (type_is_floating(type))
 	{
 		const double value = expression_literal_get_floating(nd);
-		uni_printf(wrt->io, " with value %f", value);
+		uni_printf(wrt->io, "%f", value);
 	}
 	else if (type_is_string(wrt->sx, type))
 	{
 		const size_t string_num = expression_literal_get_string(nd);
 		const char *const string = string_get(wrt->sx, string_num);
-		uni_printf(wrt->io, " with value \"%s\"", string);
+		uni_printf(wrt->io, "\"%s\"", string);
 	}
 	else // if (type_is_null_pointer(type))
 	{
-		write(wrt, " with value NULL");
+		write(wrt, "NULL");
 	}
 
 	write_expression_metadata(wrt, nd);
@@ -320,7 +321,7 @@ static void write_literal_expression(writer *const wrt, const node *const nd, co
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_subscript_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -340,7 +341,7 @@ static void write_subscript_expression(writer *const wrt, const node *const nd, 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_call_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -364,7 +365,7 @@ static void write_call_expression(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_member_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -401,7 +402,7 @@ static void write_member_expression(writer *const wrt, const node *const nd, con
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_unary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -419,7 +420,7 @@ static void write_unary_expression(writer *const wrt, const node *const nd, cons
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_binary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -440,7 +441,7 @@ static void write_binary_expression(writer *const wrt, const node *const nd, con
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_ternary_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -463,7 +464,7 @@ static void write_ternary_expression(writer *const wrt, const node *const nd, co
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_expression_list(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -484,7 +485,7 @@ static void write_expression_list(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_expression(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -538,7 +539,7 @@ static void write_expression(writer *const wrt, const node *const nd, const size
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_variable_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -565,7 +566,7 @@ static void write_variable_declaration(writer *const wrt, const node *const nd, 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_type_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -579,7 +580,7 @@ static void write_type_declaration(writer *const wrt, const node *const nd, cons
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_function_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -603,7 +604,7 @@ static void write_function_declaration(writer *const wrt, const node *const nd, 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_declaration(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -633,7 +634,7 @@ static void write_declaration(writer *const wrt, const node *const nd, const siz
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_labeled_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -653,7 +654,7 @@ static void write_labeled_statement(writer *const wrt, const node *const nd, con
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_case_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -672,7 +673,7 @@ static void write_case_statement(writer *const wrt, const node *const nd, const 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_default_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -688,7 +689,7 @@ static void write_default_statement(writer *const wrt, const node *const nd, con
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_compound_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -708,7 +709,7 @@ static void write_compound_statement(writer *const wrt, const node *const nd, co
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_null_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -722,7 +723,7 @@ static void write_null_statement(writer *const wrt, const node *const nd, const 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_if_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -747,7 +748,7 @@ static void write_if_statement(writer *const wrt, const node *const nd, const si
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_switch_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -766,7 +767,7 @@ static void write_switch_statement(writer *const wrt, const node *const nd, cons
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_while_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -785,7 +786,7 @@ static void write_while_statement(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_do_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -804,7 +805,7 @@ static void write_do_statement(writer *const wrt, const node *const nd, const si
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_for_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -838,7 +839,7 @@ static void write_for_statement(writer *const wrt, const node *const nd, const s
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_goto_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -855,13 +856,12 @@ static void write_goto_statement(writer *const wrt, const node *const nd, const 
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_continue_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
 	write(wrt, "STMT_CONTINUE\n");
-
 	(void)nd;
 }
 
@@ -870,13 +870,12 @@ static void write_continue_statement(writer *const wrt, const node *const nd, co
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_break_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
 	write_indent(wrt, indent);
 	write(wrt, "STMT_BREAK\n");
-
 	(void)nd;
 }
 
@@ -885,7 +884,7 @@ static void write_break_statement(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_return_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -904,7 +903,7 @@ static void write_return_statement(writer *const wrt, const node *const nd, cons
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_printf_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -927,7 +926,7 @@ static void write_printf_statement(writer *const wrt, const node *const nd, cons
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_print_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -943,7 +942,7 @@ static void write_print_statement(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_printid_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -951,7 +950,7 @@ static void write_printid_statement(writer *const wrt, const node *const nd, con
 	write(wrt, "STMT_PRINTID");
 
 	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id=%zu\n", id);
+	uni_printf(wrt->io, " id = %zu\n", id);
 }
 
 /**
@@ -959,7 +958,7 @@ static void write_printid_statement(writer *const wrt, const node *const nd, con
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_getid_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -967,7 +966,7 @@ static void write_getid_statement(writer *const wrt, const node *const nd, const
 	write(wrt, "STMT_GETID");
 
 	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id=%zu\n", id);
+	uni_printf(wrt->io, " id = %zu\n", id);
 }
 
 /**
@@ -975,7 +974,7 @@ static void write_getid_statement(writer *const wrt, const node *const nd, const
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
- *	@param	indent		Indentation
+ *	@param	indent		Indentation count
  */
 static void write_statement(writer *const wrt, const node *const nd, const size_t indent)
 {
@@ -2058,7 +2057,6 @@ void write_tree(const char *const path, syntax *const sx)
 
 	const node root = node_get_root(&sx->tree);
 	write_translation_unit(&wrt, &root);
-	//wrt_clear(&wrt);
 
 	io_erase(&io);
 }
@@ -2097,12 +2095,12 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 	{
 		const item_t element_type = type_pointer_get_element_type(sx, type);
 		int index = write_type_spelling(sx, element_type, buffer);
-		index += sprintf(&buffer[index],  "*");
+		index += sprintf(&buffer[index], "*");
 		return index;
 	}
 	else if (type_is_structure(sx, type))
 	{
-		int index = sprintf(buffer,  "struct { ");
+		int index = sprintf(buffer, "struct { ");
 
 		const size_t member_amount = type_structure_get_member_amount(sx, type);
 		for (size_t i = 0; i < member_amount; i++)
@@ -2137,6 +2135,7 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 		index += sprintf(&buffer[index], ")");
 		return index;
 	}
+	
 	return 0;
 }
 
