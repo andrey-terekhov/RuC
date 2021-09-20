@@ -621,7 +621,6 @@ static void write_declaration(writer *const wrt, const node *const nd)
 			write_function_declaration(wrt, nd);
 			break;
 	}
-	wrt->indent--;
 }
 
 
@@ -960,7 +959,7 @@ static void write_statement(writer *const wrt, const node *const nd)
 	{
 		case STMT_DECL:
 			write_declaration(wrt, nd);
-			return;
+			break;
 
 		case STMT_LABEL:
 			write_labeled_statement(wrt, nd);
