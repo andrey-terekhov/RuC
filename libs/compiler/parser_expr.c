@@ -474,9 +474,9 @@ node parse_assignment_expression(parser *const prs)
 item_t parse_enum_field_expression(parser *const prs, node *const parent, const item_t type)
 {
 	node_copy(&prs->sx->nd, parent);
-    const node nd_expr = parse_assignment_expression(prs);
-    const item_t type_expr = expression_get_type(&nd_expr);
-    const item_t value_expr = expression_literal_get_integer(&nd_expr);
+	const node nd_expr = parse_assignment_expression(prs);
+	const item_t type_expr = expression_get_type(&nd_expr);
+	const item_t value_expr = expression_literal_get_integer(&nd_expr);
 
 	node_remove(&prs->sx->nd);
 

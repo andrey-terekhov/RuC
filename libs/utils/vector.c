@@ -14,7 +14,6 @@
  *	limitations under the License.
  */
 
-#include <stdio.h>
 #include "vector.h"
 #include <stdlib.h>
 #include <string.h>
@@ -72,6 +71,7 @@ size_t vector_add(vector *const vec, const item_t value)
 	{
 		return SIZE_MAX;
 	}
+
 	vec->array[vec->size - 1] = value;
 	return vec->size - 1;
 }

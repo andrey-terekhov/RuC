@@ -267,7 +267,6 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
  */
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode);
 
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

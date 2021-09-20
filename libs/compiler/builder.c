@@ -63,7 +63,7 @@ static item_t usual_arithmetic_conversions(const item_t left_type, const item_t 
 		|| type_is_enum_field(left_type) || type_is_enum_field(right_type))
 	{
         return TYPE_INTEGER;
-    }
+	}
 
 	return type_is_integer(left_type) && type_is_integer(right_type)
 		? TYPE_INTEGER
@@ -204,7 +204,7 @@ static node fold_binary_expression(syntax *const sx, node *const nd_left, node *
 	if (type_is_integer(result_type))
 	{
 		if ((type_is_integer(left_type) || type_is_enum_field(left_type))
-            && (type_is_integer(right_type) || type_is_enum_field(right_type)))
+			&& (type_is_integer(right_type) || type_is_enum_field(right_type)))
 		{
 			const item_t left_value = node_get_arg(nd_left, 2);
 			const item_t right_value = node_get_arg(nd_right, 2);
@@ -413,13 +413,13 @@ static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const
 }
 
 static bool check_enum_initializer(const syntax *const sx
-    , const item_t expected_type, const item_t actual_type)
+	, const item_t expected_type, const item_t actual_type)
 {
 	return type_is_enum(sx, expected_type) && type_is_enum(sx, -actual_type);
 }
 
 static bool check_int_initializer(const syntax *const sx, const item_t expected_type
-    , const item_t actual_type)
+	, const item_t actual_type)
 {
     return type_is_integer(expected_type) && (type_is_enum(sx, actual_type) || type_is_enum(sx, -actual_type));
 }
@@ -454,9 +454,9 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 	}
 
 	if (expected_type == actual_type)
-    {
-        return true;
-    }
+	{
+		return true;
+	}
 
     semantic_error(sx, expression_get_location(nd_init), wrong_init);
     return false;
@@ -870,10 +870,10 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 	item_t left_type = expression_get_type(nd_left);
 	item_t right_type = expression_get_type(nd_right);
 
-    if (type_is_enum(sx, left_type) || type_is_enum(sx, -left_type))
+	if (type_is_enum(sx, left_type) || type_is_enum(sx, -left_type))
 	{
-        left_type = TYPE_ENUM;
-    }
+		left_type = TYPE_ENUM;
+	}
 
 	if (type_is_enum(sx, right_type) || type_is_enum(sx, -right_type))
 	{
@@ -890,7 +890,7 @@ node build_binary_expression(syntax *const sx, node *const nd_left, node *const 
 		case BIN_OR:
 		{
 			if ((!type_is_integer(left_type) && !type_is_enum_field(left_type))
-                || (!type_is_integer(right_type) && !type_is_enum_field(right_type)))
+				|| (!type_is_integer(right_type) && !type_is_enum_field(right_type)))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
