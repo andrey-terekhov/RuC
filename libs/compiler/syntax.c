@@ -560,7 +560,7 @@ bool type_is_floating(const item_t type)
 
 bool type_is_arithmetic(const item_t type)
 {
-	return type_is_integer(type) || type_is_floating(type) || type_is_enum_field(type);
+	return type_is_integer(type) || type_is_floating(type) || type_is_enum_const(type);
 }
 
 bool type_is_void(const item_t type)
@@ -588,7 +588,12 @@ bool type_is_enum(const syntax *const sx, const item_t type)
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
 }
 
-bool type_is_enum_field(const item_t type)
+bool type_is_enum_field(const syntax *const sx, const item_t type)
+{
+	return type < 0 && type_get(sx, (size_t)(-type)) == TYPE_ENUM;
+}
+
+bool type_is_enum_const(const item_t type)
 {
 	return type == TYPE_ENUM;
 }
