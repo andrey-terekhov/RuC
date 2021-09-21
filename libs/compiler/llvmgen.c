@@ -1126,7 +1126,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	bool is_array = node_get_type(&LHS) != OP_IDENTIFIER;
 	if (!is_array)
 	{
-		displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
+		displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
 	}
 	else // OP_SLICE_IDENT
 	{
