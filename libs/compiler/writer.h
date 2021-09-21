@@ -38,8 +38,10 @@ void write_tree(const char *const path, syntax *const sx);
  *	@param	sx				Syntax structure
  *	@param	type			Type
  *	@param	buffer			Buffer
+ *
+ *	@return	Return printf-like value
  */
-int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
+size_t write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
 
 /**
  *	Write virtual machine codes
