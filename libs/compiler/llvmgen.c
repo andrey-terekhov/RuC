@@ -513,7 +513,7 @@ static void check_type_and_branch(information *const info)
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
 	item_t type = expression_get_type(nd);
-	const item_t displ = ident_get_displ(info->sx, identifier_expr_get_id(nd));
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
 	bool is_addr_to_val = false;
 
 	if (info->variable_location == LMEM)
@@ -544,12 +544,12 @@ static void emit_literal_expression(information *const info, const node *const n
 	// TODO: null pointer emission
 	if (type_is_string(info->sx, type))
 	{
-		info->answer_string = (item_t)literal_expr_get_string(nd);
+		info->answer_string = (item_t)expression_literal_get_string(nd);
 		info->answer_kind = ASTR;
 	}
 	else if (type_is_integer(type))
 	{
-		const int num = literal_expr_get_int(nd);
+		const int num = expression_literal_get_integer(nd);
 		if (info->variable_location == LMEM)
 		{
 			to_code_store_const_i32(info, num, info->request_reg, false);
@@ -563,7 +563,7 @@ static void emit_literal_expression(information *const info, const node *const n
 	}
 	else // if (type_is_double(type))
 	{
-		const double num = literal_expr_get_double(nd);
+		const double num = expression_literal_get_floating(nd);
 		if (info->variable_location == LMEM)
 		{
 			to_code_store_const_double(info, num, info->request_reg, false);
@@ -593,7 +593,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		const node identifier = expression_subscript_get_base(&base);
-		const item_t displ = ident_get_displ(info->sx, identifier_expr_get_id(&identifier));
+		const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&identifier));
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 		const location_t location = info->variable_location;
@@ -657,7 +657,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	}
 
 	const node identifier = expression_subscript_get_base(&base);
-	const item_t displ = ident_get_displ(info->sx, identifier_expr_get_id(&identifier));
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&identifier));
 
 	size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 	const location_t location = info->variable_location;
@@ -712,7 +712,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 	}
 
 	// FIXME: а если это не функция, а указатель на функцию?
-	const size_t func_ref = identifier_expr_get_id(&callee);
+	const size_t func_ref = expression_identifier_get_id(&callee);
 	if (func_ref < BEGIN_USER_FUNC)
 	{
 		info->was_function[func_ref] = true;
@@ -812,7 +812,7 @@ static void emit_call_expression(information *const info, const node *const nd)
  */
 static void emit_inc_dec_expression(information *const info, const node *const nd)
 {
-	const unary_t operation = unary_expr_get_operator(nd);
+	const unary_t operation = expression_unary_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
 	// TODO: вообще тут может быть и поле структуры
@@ -821,7 +821,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	item_t displ = 0;
 	if (!is_array)
 	{
-		displ = ident_get_displ(info->sx, identifier_expr_get_id(&operand));
+		displ = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
 	}
 	else // OP_SLICE_IDENT
 	{
@@ -870,7 +870,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
  */
 static void emit_unary_expression(information *const info, const node *const nd)
 {
-	const unary_t operator = unary_expr_get_operator(nd);
+	const unary_t operator = expression_unary_get_operator(nd);
 	const node operand = expression_unary_get_operand(nd);
 
 	switch (operator)
@@ -923,7 +923,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		case UN_ADDRESS:
 		{
 			// TODO: тут тоже не только идентификатор может быть
-			info->answer_reg = ident_get_displ(info->sx, identifier_expr_get_id(&operand));
+			info->answer_reg = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
 			info->answer_kind = AMEM;
 			return;
 		}
@@ -950,7 +950,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
  */
 static void emit_integral_expression(information *const info, const node *const nd, const answer_t kind)
 {
-	const binary_t operation = binary_expr_get_operator(nd);
+	const binary_t operation = expression_binary_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
 	info->variable_location = LFREE;
@@ -1117,7 +1117,7 @@ static void emit_integral_expression(information *const info, const node *const 
  */
 static void emit_assignment_expression(information *const info, const node *const nd)
 {
-	const binary_t assignment_type = binary_expr_get_operator(nd);
+	const binary_t assignment_type = expression_binary_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
 	// TODO: вообще тут может быть и вырезка из структуры
@@ -1126,7 +1126,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	bool is_array = node_get_type(&LHS) != OP_IDENTIFIER;
 	if (!is_array)
 	{
-		displ = ident_get_displ(info->sx, identifier_expr_get_id(nd));
+		displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
 	}
 	else // OP_SLICE_IDENT
 	{
@@ -1190,7 +1190,7 @@ static void emit_assignment_expression(information *const info, const node *cons
  */
 static void emit_binary_expression(information *const info, const node *const nd)
 {
-	const binary_t operator = binary_expr_get_operator(nd);
+	const binary_t operator = expression_binary_get_operator(nd);
 	if (operation_is_assignment(operator))
 	{
 		emit_assignment_expression(info, nd);
@@ -1372,7 +1372,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	// TODO: объявления глобальных переменных
 	const size_t id = declaration_variable_get_id(nd);
 	const item_t displ = ident_get_displ(info->sx, id);
-	const bool has_init = variable_decl_has_initializer(nd);
+	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
@@ -1392,7 +1392,7 @@ static void emit_variable_declaration(information *const info, const node *const
 		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 		// получение и сохранение границ
-		const size_t bounds = variable_decl_get_dim_amount(nd);
+		const size_t bounds = declaration_variable_get_dim_amount(nd);
 		for (size_t j = 0; j < bounds; j++)
 		{
 			info->variable_location = LFREE;
@@ -1454,7 +1454,7 @@ static void emit_variable_declaration(information *const info, const node *const
  */
 static void emit_function_definition(information *const info, const node *const nd)
 {
-	const size_t ref_ident = function_decl_get_id(nd);
+	const size_t ref_ident = declaration_function_get_id(nd);
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
 	const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
@@ -1537,7 +1537,7 @@ static void emit_declaration(information *const info, const node *const nd)
  */
 static void emit_labeled_statement(information *const info, const node *const nd)
 {
-	const item_t label = -(item_t)labeled_stmt_get_label(nd);
+	const item_t label = -(item_t)statement_labeled_get_label(nd);
 	to_code_unconditional_branch(info, label);
 	to_code_label(info, label);
 
@@ -1553,7 +1553,7 @@ static void emit_labeled_statement(information *const info, const node *const nd
  */
 static void emit_compound_statement(information *const info, const node *const nd)
 {
-	const size_t size = compound_stmt_get_size(nd);
+	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
@@ -1592,7 +1592,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 	to_code_unconditional_branch(info, label_end);
 	to_code_label(info, label_else);
 
-	if (if_stmt_has_else(nd))
+	if (statement_if_has_else_substmt(nd))
 	{
 		const node else_substmt = statement_if_get_else_substmt(nd);
 		emit_statement(info, &else_substmt);
@@ -1712,7 +1712,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 	info->label_break = label_end;
 	info->label_continue = label_body;
 
-	if (for_stmt_has_inition(nd))
+	if (statement_for_has_inition(nd))
 	{
 		// TODO: рассмотреть случаи, если тут объявление
 		const node inition = statement_for_get_inition(nd);
@@ -1722,7 +1722,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 	to_code_unconditional_branch(info, label_condition);
 	to_code_label(info, label_condition);
 
-	if (for_stmt_has_condition(nd))
+	if (statement_for_has_condition(nd))
 	{
 		const node condition = statement_for_get_condition(nd);
 		emit_expression(info, &condition);
@@ -1731,7 +1731,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 	check_type_and_branch(info);
 
 	to_code_label(info, label_incr);
-	if (for_stmt_has_increment(nd))
+	if (statement_for_has_increment(nd))
 	{
 		const node increment = statement_for_get_increment(nd);
 		emit_expression(info, &increment);
@@ -1766,7 +1766,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 	}
 
 	// TODO: return для void-функций
-	if (return_stmt_has_expression(nd))
+	if (statement_return_has_expression(nd))
 	{
 		info->variable_location = LREG;
 		const node expression = statement_return_get_expression(nd);
@@ -1799,7 +1799,7 @@ static void emit_return_statement(information *const info, const node *const nd)
  */
 static void emit_printf_statement(information *const info, const node *const nd)
 {
-	const size_t argc = printf_stmt_get_argc(nd);
+	const size_t argc = statement_printf_get_argc(nd);
 	item_t args[MAX_PRINTF_ARGS];
 	item_t args_type[MAX_PRINTF_ARGS];
 	if (argc > MAX_PRINTF_ARGS)
@@ -1809,7 +1809,7 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	}
 
 	const node string = statement_printf_get_format_str(nd);
-	const size_t index = literal_expr_get_string(&string);
+	const size_t index = expression_literal_get_string(&string);
 	const size_t string_length = strings_length(info->sx, index);
 
 	for (size_t i = 0; i < argc; i++)
@@ -1903,7 +1903,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_GOTO:
-			to_code_unconditional_branch(info, (item_t)goto_stmt_get_label(nd));
+			to_code_unconditional_branch(info, (item_t)statement_goto_get_label(nd));
 			return;
 
 		case STMT_CONTINUE:
