@@ -1393,10 +1393,10 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		// получение и сохранение границ
 		const size_t bounds = declaration_variable_get_dim_amount(nd);
-		for (size_t j = 0; j < bounds; j++)
+		for (size_t j = 1; j <= bounds; j++)
 		{
 			info->variable_location = LFREE;
-			const node dim_size = declaration_variable_get_dim_expr(nd, j);
+			const node dim_size = declaration_variable_get_dim_expr(nd, j - 1);
 			emit_expression(info, &dim_size);
 
 			if (!has_init)
@@ -1408,7 +1408,7 @@ static void emit_variable_declaration(information *const info, const node *const
 						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 					}
 
-					hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_const);
+					hash_set_by_index(&info->arrays, index, j, info->answer_const);
 				}
 				else // if (info->answer_kind == AREG) динамический массив
 				{
@@ -1417,7 +1417,7 @@ static void emit_variable_declaration(information *const info, const node *const
 						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
 					}
 
-					hash_set_by_index(&info->arrays, index, (size_t)j, info->answer_reg);
+					hash_set_by_index(&info->arrays, index, j, info->answer_reg);
 					hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 				}
 			}
