@@ -408,6 +408,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 			op_loc = token_consume(prs);
 		}
 
+		// FIXME: случай 'a > 0 ? p : { 5, 0 };
 		node RHS = (prs->token == TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
 
 		const precedence_t this_prec = next_token_prec;
