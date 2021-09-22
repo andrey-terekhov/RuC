@@ -656,8 +656,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-	const node identifier = expression_subscript_get_base(&base);
-	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&identifier));
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
 
 	size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 	const location_t location = info->variable_location;
@@ -2076,6 +2075,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	tables_and_tree("tree.txt", &(sx->identifiers), &(sx->types), &(sx->tree));
 
 	information info;
 	info.sx = sx;
