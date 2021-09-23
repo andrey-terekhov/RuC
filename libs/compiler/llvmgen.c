@@ -586,7 +586,6 @@ static void emit_literal_expression(information *const info, const node *const n
 {
 	const item_t type = expression_get_type(nd);
 
-	// TODO: null pointer emission
 	if (type_is_string(info->sx, type))
 	{
 		info->answer_string = (item_t)expression_literal_get_string(nd);
@@ -1149,10 +1148,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
 				, info->answer_const_double);
 		}
-		else
-		{
-			to_code_store_null(info, displ, operation_type);
-		}
 
 		result = info->register_num++;
 		info->answer_kind = AREG;
@@ -1167,9 +1162,13 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
-	else
+	else if (type_is_floating(operation_type))
 	{
 		to_code_store_const_double(info, info->answer_const_double, displ, is_array);
+	}
+	else
+	{
+		to_code_store_null(info, displ, operation_type);
 	}
 }
 
