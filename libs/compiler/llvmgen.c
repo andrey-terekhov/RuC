@@ -2056,7 +2056,16 @@ static void builin_functions_declaration(information *const info)
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
 
 				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
-				type_to_io(info, param_type);
+
+				// TODO: будет исправлено, когда будет введён тип char
+				if (i == BI_FOPEN)
+				{
+					uni_printf(info->sx->io, "i8*");
+				}
+				else
+				{				
+					type_to_io(info, param_type);
+				}
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
