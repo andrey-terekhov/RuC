@@ -987,30 +987,29 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		}
 		case UN_ABS:
 		{
-			// node_set_next(nd);
-			// info->variable_location = LFREE;
-			// const item_t type = expression_get_type(nd);
-			// expression(info, nd);
+			const item_t type = expression_get_type(nd);
+			info->variable_location = LFREE;
+			emit_expression(info, &operand);
 
-			// uni_printf(info->sx->io, " %%.%" PRIitem " = call ", info->register_num);
-			// type_to_io(info, type);
+			uni_printf(info->sx->io, " %%.%" PRIitem " = call ", info->register_num);
+			type_to_io(info, type);
 
-			// if (type_is_integer(type))
-			// {
-			// 	uni_printf(info->sx->io, " @abs(");
-			// 	info->was_abs = true;
-			// }
-			// else
-			// {
-			// 	uni_printf(info->sx->io, " @llvm.fabs.f64(");
-			// 	info->was_fabs = true;
-			// }
+			if (type_is_integer(type))
+			{
+				uni_printf(info->sx->io, " @abs(");
+				info->was_abs = true;
+			}
+			else
+			{
+				uni_printf(info->sx->io, " @llvm.fabs.f64(");
+				info->was_fabs = true;
+			}
 
-			// type_to_io(info, type);
-			// uni_printf(info->sx->io, " %%.%" PRIitem ")\n", info->answer_reg);
+			type_to_io(info, type);
+			uni_printf(info->sx->io, " %%.%" PRIitem ")\n", info->answer_reg);
 
-			// info->answer_kind = AREG;
-			// info->answer_reg = info->register_num++;
+			info->answer_kind = AREG;
+			info->answer_reg = info->register_num++;
 		}
 		break;
 
