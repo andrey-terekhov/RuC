@@ -1122,8 +1122,8 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	info->variable_location = LFREE;
-	const item_t answer_type = expression_get_type(nd);
 	const node RHS = expression_binary_get_RHS(nd);
+	const item_t answer_type = expression_get_type(&RHS);
 	emit_expression(info, &RHS);
 
 	to_code_try_widen(info, operation_type, answer_type);
