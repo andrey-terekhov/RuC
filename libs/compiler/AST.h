@@ -260,17 +260,17 @@ inline node expression_member_get_base(const node *const nd)
 	return node_get_type(nd) == OP_SELECT ? node_get_child(nd, 0) : node_broken();
 }
 
-// /**
-//  *	Get member type of member expression
-//  *
-//  *	@param	nd		Member expression
-//  *
-//  *	@return	Type
-//  */
-// inline size_t expression_member_get_member_type(const node *const nd)
-// {
-// 	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
-// }
+/**
+ *	Get member type of member expression
+ *
+ *	@param	nd		Member expression
+ *
+ *	@return	Type
+ */
+inline size_t expression_member_get_member_type(const node *const nd)
+{
+	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
 
 /**
  *	Get member index of member expression
