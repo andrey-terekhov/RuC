@@ -155,10 +155,6 @@ static void type_to_io(information *const info, const item_t type)
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
 	}
-	else
-	{
-		uni_printf(info->sx->io, "i8");
-	}
 }
 
 static void operation_to_io(universal_io *const io, const item_t operation_type, const item_t type)
