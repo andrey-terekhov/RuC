@@ -850,6 +850,45 @@ static void emit_call_expression(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit member expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_member_expression(information *const info, const node *const nd)
+{
+	const item_t place = expression_member_get_member_index(nd);
+	const item_t elem_type = expression_member_get_member_type(nd);
+
+	const node base = expression_member_get_base(nd);
+
+	item_t type = expression_get_type(&base);
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
+
+	bool is_pointer = false;
+	if (type_is_pointer(info->sx, type))
+	{
+		to_code_load(info, info->register_num, displ, type, false);
+		info->register_num++;
+		type = type_pointer_get_element_type(info->sx, type);
+		is_pointer = true;
+	}
+
+	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+		"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
+		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : displ, place);
+
+	if (info->variable_location != LMEM)
+	{
+		info->register_num++;
+		to_code_load(info, info->register_num, info->register_num - 1, elem_type, true);
+		info->answer_kind = AREG;
+	}
+
+	info->answer_reg = info->register_num++;
+}
+
+/**
  *	Emit increment/decrement expression
  *
  *	@param	info	Encoder
@@ -1276,8 +1315,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_MEMBER:
-			// TODO: member expression emission
-			// emit_member_expression(info, nd);
+			emit_member_expression(info, nd);
 			return;
 
 		case EXPR_UNARY:
