@@ -385,7 +385,6 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 
 	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
 	{
-		*init = build_cast_expression(sx, expected_type, init);
 		return true;
 	}
 
