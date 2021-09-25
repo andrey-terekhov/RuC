@@ -138,17 +138,6 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 	, const bool is_arrow, const location op_loc, const location id_loc);
 
 /**
- *	Build a upb expression
- *
- *	@param	sx				Syntax structure
- *	@param	nd_fst			First operand of upb expression
- *	@param	nd_snd			Second operand of upb expression
- *
- *	@return	Upb expression node
- */
-node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd);
-
-/**
  *	Build a cast expression
  *
  *	@param	sx				Syntax structure

@@ -362,17 +362,6 @@ static node parse_unary_expression(parser *const prs)
 
 			return build_unary_expression(prs->sx, &operand, operator, op_loc);
 		}
-
-		case TK_UPB:
-		{
-			token_consume(prs);
-			token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_stand_func);
-			const node nd_dimension = parse_assignment_expression(prs);
-			token_expect_and_consume(prs, TK_COMMA, no_comma_in_act_params_stanfunc);
-			const node nd_array = parse_assignment_expression(prs);
-			token_expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_stand_func);
-			return build_upb_expression(prs->sx, &nd_dimension, &nd_array);
-		}
 	}
 }
 

@@ -137,7 +137,6 @@ typedef enum OPERATION
 	OP_PRINT,
 	OP_GETID,
 	OP_PRINTF,
-	OP_UPB,
 } operation_t;
 
 typedef enum builtin
@@ -196,8 +195,9 @@ typedef enum builtin
 	BI_FCLOSE				= 158,
 
 	BI_EXIT					= 162,
+	BI_UPB					= 166,
 
-	BEGIN_USER_FUNC			= 166,
+	BEGIN_USER_FUNC			= 170,
 } builtin_t;
 
 

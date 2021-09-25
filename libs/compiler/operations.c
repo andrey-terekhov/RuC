@@ -123,6 +123,7 @@ instruction_t builtin_to_instruction(const builtin_t func)
 		case BI_FGETC:					return IC_FGETC;
 		case BI_FPUTC:					return IC_FPUTC;
 		case BI_FCLOSE:					return IC_FCLOSE;
+		case BI_UPB:					return IC_UPB;
 
 		default:
 			system_error(node_unexpected);

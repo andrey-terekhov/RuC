@@ -300,6 +300,39 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
 	}
 }
 
+static node build_upb_expression(syntax *const sx, const node *const callee
+	, node_vector *const args, const location r_loc)
+{
+	const size_t argc = node_vector_size(args);
+	if (argc != 2)
+	{
+		semantic_error(sx, r_loc, wrong_number_of_params);
+		node_vector_clear(args);
+		return node_broken();
+	}
+
+	const node fst = node_vector_get(args, 0);
+	const item_t fst_type = expression_get_type(&fst);
+	if (!type_is_integer(fst_type))
+	{
+		semantic_error(sx, expression_get_location(&fst), not_int_in_stanfunc);
+		node_vector_clear(args);
+		return node_broken();
+	}
+
+	const node snd = node_vector_get(args, 1);
+	const item_t snd_type = expression_get_type(&snd);
+	if (!type_is_array(sx, snd_type))
+	{
+		semantic_error(sx, expression_get_location(&snd), not_array_in_stanfunc);
+		node_vector_clear(args);
+		return node_broken();
+	}
+
+	const location loc = { expression_get_location(callee).begin, r_loc.end };
+	return expression_call(sx, TYPE_INTEGER, callee, args, loc);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -507,6 +540,11 @@ node build_call_expression(syntax *const sx, const node *const callee
 		return node_broken();
 	}
 
+	if (expression_get_class(callee) == EXPR_IDENTIFIER && expression_identifier_get_id(callee) == BI_UPB)
+	{
+		return build_upb_expression(sx, callee, args, r_loc);
+	}
+
 	const size_t expected_args = type_function_get_parameter_amount(sx, callee_type);
 	const size_t actual_args = args != NULL ? node_vector_size(args) : 0;
 
@@ -588,38 +626,6 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 
 	semantic_error(sx, id_loc, no_member, repr_get_name(sx, name));
 	return node_broken();
-}
-
-node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd)
-{
-	if (!node_is_correct(nd_fst) || !node_is_correct(nd_snd))
-	{
-		return node_broken();
-	}
-
-	const item_t fst_type = expression_get_type(nd_fst);
-	if (!type_is_integer(fst_type))
-	{
-		semantic_error(sx, expression_get_location(nd_fst), not_int_in_stanfunc);
-		return node_broken();
-	}
-
-	const item_t snd_type = expression_get_type(nd_snd);
-	if (!type_is_array(sx, snd_type))
-	{
-		semantic_error(sx, expression_get_location(nd_snd), not_array_in_stanfunc);
-		return node_broken();
-	}
-
-	node nd = node_create(sx, OP_UPB);
-	node_add_arg(&nd, TYPE_INTEGER);				// Тип значения поля
-	node_add_arg(&nd, RVALUE);						// Категория значения поля
-	node_add_arg(&nd, (item_t)expression_get_location(nd_fst).begin);
-	node_add_arg(&nd, (item_t)expression_get_location(nd_snd).begin);
-	node_set_child(&nd, nd_fst);					// Выражение-операнд
-	node_set_child(&nd, nd_snd);					// Выражение-операнд
-
-	return nd;
 }
 
 node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr)
