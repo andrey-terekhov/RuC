@@ -18,7 +18,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "instructions.h"
 #include "tokens.h"
 
 
@@ -218,15 +217,6 @@ unary_t token_to_unary(const token_t token);
  *	@return	Binary operator
  */
 binary_t token_to_binary(const token_t token);
-
-/**
- *	Convert standard function id to corresponding function instruction
- *
- *	@param	func		Function id
- *
- *	@return	Function instruction
- */
-instruction_t builtin_to_instruction(const builtin_t func);
 
 /**
  *	Check if operator is assignment

@@ -324,6 +324,11 @@ const char* string_get(const syntax *const sx, const size_t index)
 	return strings_get(&sx->string_literals, index);
 }
 
+size_t string_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
+}
+
 
 int func_add(syntax *const sx, const item_t ref)
 {

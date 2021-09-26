@@ -79,58 +79,6 @@ binary_t token_to_binary(const token_t token)
 	}
 }
 
-instruction_t builtin_to_instruction(const builtin_t func)
-{
-	switch (func)
-	{
-		case BI_SQRT:					return IC_SQRT;
-		case BI_EXP:					return IC_EXP;
-		case BI_SIN:					return IC_SIN;
-		case BI_COS:					return IC_COS;
-		case BI_LOG:					return IC_LOG;
-		case BI_LOG10:					return IC_LOG10;
-		case BI_ASIN:					return IC_ASIN;
-		case BI_RAND:					return IC_RAND;
-		case BI_ROUND:					return IC_ROUND;
-		case BI_STRCPY:					return IC_STRCPY;
-		case BI_STRNCPY:				return IC_STRNCPY;
-		case BI_STRCAT:					return IC_STRCAT;
-		case BI_STRNCAT:				return IC_STRNCAT;
-		case BI_STRCMP:					return IC_STRCMP;
-		case BI_STRNCMP:				return IC_STRNCMP;
-		case BI_STRSTR:					return IC_STRSTR;
-		case BI_STRLEN:					return IC_STRLEN;
-		case BI_ASSERT:					return IC_ASSERT;
-		case BI_MSG_SEND:				return IC_MSG_SEND;
-		case BI_MSG_RECEIVE:			return IC_MSG_RECEIVE;
-		case BI_T_JOIN:					return IC_JOIN;
-		case BI_T_SLEEP:				return IC_SLEEP;
-		case BI_SEM_CREATE:				return IC_SEM_CREATE;
-		case BI_SEM_WAIT:				return IC_SEM_WAIT;
-		case BI_SEM_POST:				return IC_SEM_POST;
-		case BI_T_CREATE:				return IC_CREATE;
-		case BI_T_INIT:					return IC_INIT;
-		case BI_T_DESTROY:				return IC_DESTROY;
-		case BI_T_EXIT:					return IC_EXIT;
-		case BI_T_GETNUM:				return IC_GETNUM;
-		case BI_ROBOT_SEND_INT:			return IC_ROBOT_SEND_INT;
-		case BI_ROBOT_SEND_FLOAT:		return IC_ROBOT_SEND_FLOAT;
-		case BI_ROBOT_SEND_STRING:		return IC_ROBOT_SEND_STRING;
-		case BI_ROBOT_RECEIVE_INT:		return IC_ROBOT_RECEIVE_INT;
-		case BI_ROBOT_RECEIVE_FLOAT:	return IC_ROBOT_RECEIVE_FLOAT;
-		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
-		case BI_FOPEN:					return IC_FOPEN;
-		case BI_FGETC:					return IC_FGETC;
-		case BI_FPUTC:					return IC_FPUTC;
-		case BI_FCLOSE:					return IC_FCLOSE;
-		case BI_UPB:					return IC_UPB;
-
-		default:
-			system_error(node_unexpected);
-			return 0;
-	}
-}
-
 bool operation_is_assignment(const binary_t operator)
 {
 	switch (operator)

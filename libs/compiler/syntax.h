@@ -140,6 +140,16 @@ size_t string_add(syntax *const sx, const vector *const str);
  */
 const char* string_get(const syntax *const sx, const size_t index);
 
+/**
+ *	Get string length
+ *
+ *	@param	sx				Syntax structure
+ *	@param	index			Index
+ *
+ *	@return	String length, @c 0 on failure
+ */
+size_t string_length(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add a new record to functions table

@@ -1255,12 +1255,11 @@ static size_t elem_get_name(const instruction_t elem, const size_t num, char *co
 			break;
 
 		case IC_CALL1:
-			argc = 1;
-			sprintf(buffer, "TCall1");
+			sprintf(buffer, "CALL1");
 			break;
 		case IC_CALL2:
 			argc = 1;
-			sprintf(buffer, "TCall2");
+			sprintf(buffer, "CALL2");
 			break;
 		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
@@ -2052,7 +2051,15 @@ static size_t write_instruction(universal_io *const io, const vector *const tabl
 
 	if (type == IC_LID)
 	{
-		uni_printf(io, " %f\n", vector_get_double(table, i));
+		//uni_printf(io, " %f\n", vector_get_double(table, i));
+
+		const int64_t fst = (int64_t)vector_get(table, i) & 0x00000000ffffffff;
+		const int64_t snd = (int64_t)vector_get(table, i + 1) & 0x00000000ffffffff;
+		const int64_t num64 = (snd << 32) | fst;
+
+		double num;
+		memcpy(&num, &num64, sizeof(double));
+		uni_printf(io, " %f\n", num);
 		return i + 2;
 	}
 

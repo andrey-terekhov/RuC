@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AST.h"
+#include "instructions.h"
 #include "syntax.h"
 
 

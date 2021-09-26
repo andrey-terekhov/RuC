@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "operations.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -255,6 +257,62 @@ typedef enum INSTURCTION
 
 	MAX_INSTRUCTION_CODE,
 } instruction_t;
+
+
+/**
+ *	Convert standard function id to corresponding function instruction
+ *
+ *	@param	func			Function id
+ *
+ *	@return	Function instruction
+ */
+instruction_t builtin_to_instruction(const builtin_t func);
+
+/**
+ *	Convert unary operator to corresponding instruction
+ *
+ *	@param	operator		Unary operator
+ *
+ *	@return	Instruction
+ */
+instruction_t unary_to_instruction(const unary_t operator);
+
+/**
+ *	Convert binary operator to corresponding instruction
+ *
+ *	@param	operator		Binary operator
+ *
+ *	@return	Instruction
+ */
+instruction_t binary_to_instruction(const binary_t operator);
+
+
+/**
+ *	Convert instruction to corresponding address version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Address version of instruction
+ */
+instruction_t instruction_to_address_ver(const instruction_t instruction);
+
+/**
+ *	Convert instruction to corresponding floating version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Floating version of instruction
+ */
+instruction_t instruction_to_floating_ver(const instruction_t instruction);
+
+/**
+ *	Convert instruction to corresponding void version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Void version of instruction
+ */
+instruction_t instruction_to_void_ver(const instruction_t instruction);
 
 #ifdef __cplusplus
 } /* extern "C" */
