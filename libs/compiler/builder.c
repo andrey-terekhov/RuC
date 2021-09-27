@@ -23,13 +23,6 @@ static inline node node_create(syntax *const sx, operation_t type)
 	return node_add_child(&sx->nd, type);
 }
 
-static inline void node_set_child(const node *const parent, const node *const child)
-{
-	node temp = node_add_child(parent, OP_NOP);
-	node_swap(child, &temp);
-	node_remove(&temp);
-}
-
 /**
  *	Emit a semantic error
  *
@@ -353,6 +346,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 	const location loc = expression_get_location(init);
 	if (expression_get_class(init) == EXPR_LIST)
 	{
+		node_copy(&sx->nd, init);
 		const size_t actual_inits = expression_list_get_size(init);
 		if (type_is_structure(sx, expected_type))
 		{
