@@ -46,7 +46,7 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
-static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, node *const RHS)
+static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
@@ -55,11 +55,11 @@ static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, no
 	{
 		if (type_is_integer(LHS_type))
 		{
-			*LHS = build_cast_expression(sx, TYPE_FLOATING, LHS);
+			*LHS = build_cast_expression(TYPE_FLOATING, LHS);
 		}
 		else if (type_is_integer(RHS_type))
 		{
-			*RHS = build_cast_expression(sx, TYPE_FLOATING, RHS);
+			*RHS = build_cast_expression(TYPE_FLOATING, RHS);
 		}
 
 		return TYPE_FLOATING;
@@ -346,7 +346,6 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 	const location loc = expression_get_location(init);
 	if (expression_get_class(init) == EXPR_LIST)
 	{
-		node_copy(&sx->nd, init);
 		const size_t actual_inits = expression_list_get_size(init);
 		if (type_is_structure(sx, expected_type))
 		{
@@ -406,7 +405,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 
 	if (type_is_floating(expected_type) && type_is_integer(actual_type))
 	{
-		*init = build_cast_expression(sx, expected_type, init);
+		*init = build_cast_expression(expected_type, init);
 		return true;
 	}
 
@@ -623,7 +622,7 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 	return node_broken();
 }
 
-node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr)
+node build_cast_expression(const item_t target_type, const node *const expr)
 {
 	if (!node_is_correct(expr))
 	{
@@ -635,7 +634,7 @@ node build_cast_expression(syntax *const sx, const item_t target_type, const nod
 
 	if (target_type != source_type)
 	{
-		return expression_cast(sx, target_type, source_type, expr, loc);
+		return expression_cast(target_type, source_type, expr, loc);
 	}
 
 	return *expr;
@@ -797,7 +796,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
-			const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
+			const item_t type = usual_arithmetic_conversions(LHS, RHS);
 			return fold_binary_expression(sx, type, LHS, RHS, op_kind, loc);
 		}
 
@@ -812,7 +811,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
-			usual_arithmetic_conversions(sx, LHS, RHS);
+			usual_arithmetic_conversions(LHS, RHS);
 			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
@@ -826,7 +825,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 
 			if ((type_is_arithmetic(left_type) && type_is_arithmetic(right_type)))
 			{
-				usual_arithmetic_conversions(sx, LHS, RHS);
+				usual_arithmetic_conversions(LHS, RHS);
 				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
@@ -916,7 +915,7 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 
 	if (type_is_arithmetic(LHS_type) && type_is_arithmetic(RHS_type))
 	{
-		const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
+		const item_t type = usual_arithmetic_conversions(LHS, RHS);
 		return fold_ternary_expression(sx, type, cond, LHS, RHS, loc);
 	}
 

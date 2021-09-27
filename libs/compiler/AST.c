@@ -231,16 +231,15 @@ node expression_member(syntax *const sx, const item_t type, const category_t ctg
 	return nd;
 }
 
-node expression_cast(syntax *const sx, const item_t target_type, const item_t source_type
+node expression_cast(const item_t target_type, const item_t source_type
 	, const node *const expr, const location loc)
 {
-	node nd = node_create(sx, OP_CAST);
-	node_add_arg(&nd, target_type);					// Тип значения выражения
-	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, source_type);					// Тип до преобразования
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, expr);						// Операнд выражения
+	node nd = node_insert(expr, OP_CAST, 5);			// Операнд выражения
+	node_set_arg(&nd, 0, target_type);					// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);						// Категория значения выражения
+	node_set_arg(&nd, 2, source_type);					// Тип до преобразования
+	node_set_arg(&nd, 3, (item_t)loc.begin);			// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);				// Конечная позиция выражения
 
 	return nd;
 }

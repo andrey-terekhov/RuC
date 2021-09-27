@@ -350,7 +350,6 @@ inline bool expression_member_is_arrow(const node *const nd)
 /**
  *	Create new cast expression
  *
- *	@param	sx				Syntax structure
  *	@param	target_type		Value type
  *	@param	source_type		Source type
  *	@param	expr			Operand
@@ -358,7 +357,7 @@ inline bool expression_member_is_arrow(const node *const nd)
  *
  *	@return	Cast expression
  */
-node expression_cast(syntax *const sx, const item_t target_type, const item_t source_type
+node expression_cast(const item_t target_type, const item_t source_type
 	, const node *const expr, const location loc);
 
 /**
