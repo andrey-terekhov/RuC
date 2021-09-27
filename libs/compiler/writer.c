@@ -543,7 +543,7 @@ static void write_expression(writer *const wrt, const node *const nd)
 
 		case EXPR_CAST:
 			write_cast_expression(wrt, nd);
-			return;
+			break;
 
 		case EXPR_UNARY:
 			write_unary_expression(wrt, nd);

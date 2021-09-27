@@ -570,6 +570,7 @@ node build_call_expression(syntax *const sx, const node *const callee
 			node_vector_clear(args);
 			return node_broken();
 		}
+		node_vector_set(args, i, &argument);
 	}
 
 	const item_t return_type = type_function_get_return_type(sx, callee_type);
