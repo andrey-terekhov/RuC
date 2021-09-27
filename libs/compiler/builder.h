@@ -140,13 +140,12 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 /**
  *	Build a cast expression
  *
- *	@param	sx				Syntax structure
  *	@param	target_type		Value type
  *	@param	expr			Operand
  *
  *	@return	Cast expression node
  */
-node build_cast_expression(syntax *const sx, const item_t target_type, const node *const expr);
+node build_cast_expression(const item_t target_type, const node *const expr);
 
 /**
  *	Build an unary expression
