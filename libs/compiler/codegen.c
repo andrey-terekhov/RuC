@@ -424,9 +424,10 @@ static void emit_subscript_expression(encoder *const enc, const node *const nd)
  */
 static void emit_call_expression(encoder *const enc, const node *const nd)
 {
+	const item_t type = expression_get_type(nd);
 	const node callee = expression_call_get_callee(nd);
-	const item_t type = expression_get_type(&callee);
-	const size_t args = type_function_get_parameter_amount(enc->sx, type);
+	const item_t func_type = expression_get_type(&callee);
+	const size_t args = type_function_get_parameter_amount(enc->sx, func_type);
 	emit_expression(enc, &callee);
 
 	const size_t func = enc->last_id;
@@ -438,10 +439,20 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 
 	for (size_t i = 0; i < args; i++)
 	{
-		// TODO: функции-параметры
 		const node argument = expression_call_get_argument(nd, i);
-		emit_expression(enc, &argument);
-		emit_load(enc);
+		const item_t arg_type = expression_get_type(&argument);
+		if (type_is_function(enc->sx, arg_type))
+		{
+			const item_t displ = ident_get_displ(enc->sx, expression_identifier_get_id(&argument));
+			mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
+			mem_add(enc, llabs(displ));
+		}
+		else
+		{
+			emit_expression(enc, &argument);
+			emit_load(enc);
+		}
+		// TODO: actstring
 	}
 
 	if (func >= BEGIN_USER_FUNC)
@@ -613,7 +624,7 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 
 		case UN_ADDRESS:
 		{
-			//emit_expression(enc, &operand);
+			emit_expression(enc, &operand);
 			if (enc->last_kind == VARIABLE)
 			{
 				mem_add(enc, IC_LA);
@@ -1048,8 +1059,6 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 {
 	const size_t ident = declaration_variable_get_id(nd);
 	const item_t displ = ident_get_displ(enc->sx, ident);
-	item_t type = ident_get_type(enc->sx, ident);
-	const item_t length = (item_t)type_size(enc->sx, type);
 
 	const size_t bounds = declaration_variable_get_dim_amount(nd);
 	for (size_t i = 0; i < bounds; i++)
@@ -1059,18 +1068,20 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		emit_load(enc);
 	}
 
-	mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-	mem_add(enc, (item_t)bounds);	// <- Надо перепроверить размерности
-	mem_add(enc, length);
-	mem_add(enc, displ);
-	mem_add(enc, 0);				// process
-
+	item_t type = ident_get_type(enc->sx, ident);
 	size_t dimensions = 0;
 	while (type_is_array(enc->sx, type))
 	{
 		type = type_array_get_element_type(enc->sx, type);
 		dimensions++;
 	}
+
+	const item_t length = (item_t)type_size(enc->sx, type);
+	mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+	mem_add(enc, (item_t)bounds);	// <- Надо перепроверить размерности
+	mem_add(enc, length);
+	mem_add(enc, displ);
+	mem_add(enc, 0);				// process
 
 	mem_add(enc, dimensions == bounds ? 0 : 1);
 
