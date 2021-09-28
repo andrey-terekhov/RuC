@@ -236,7 +236,7 @@ static node parse_postfix_expression(parser *const prs)
 			case TK_L_SQUARE:
 			{
 				const location l_loc = token_consume(prs);
-				const node index = parse_expression(prs);
+				node index = parse_expression(prs);
 
 				if (prs->token == TK_R_SQUARE)
 				{

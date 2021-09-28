@@ -207,7 +207,6 @@ inline size_t expression_literal_get_string(const node *const nd)
 /**
  *	Create new subscript expression
  *
- *	@param	sx		Syntax structure
  *	@param	type	Value type
  *	@param	base	Base expression
  *	@param	index	Index expression
@@ -215,8 +214,7 @@ inline size_t expression_literal_get_string(const node *const nd)
  *
  *	@return	Subscript expression
  */
-node expression_subscript(syntax *const sx, const item_t type
-	, const node *const base, const node *const index, const location loc);
+node expression_subscript(const item_t type, node *const base, node *const index, const location loc);
 
 /**
  *	Get base expression of subscript expression
@@ -246,7 +244,6 @@ inline node expression_subscript_get_index(const node *const nd)
 /**
  *	Create new call expression
  *
- *	@param	sx		Syntax structure
  *	@param	type	Value type
  *	@param	callee	Called expression
  *	@param	args	Arguments of call
@@ -254,8 +251,7 @@ inline node expression_subscript_get_index(const node *const nd)
  *
  *	@return	Call expression
  */
-node expression_call(syntax *const sx, const item_t type
-	, const node *const callee, node_vector *const args, const location loc);
+node expression_call(const item_t type, node *const callee, node_vector *const args, const location loc);
 
 /**
  *	Get called expression of call expression
@@ -298,7 +294,6 @@ inline node expression_call_get_argument(const node *const nd, const size_t inde
 /**
  *	Create new member expression
  *
- *	@param	sx			Syntax structure
  *	@param	type		Value type
  *	@param	ctg			Value category
  *	@param	i			Member index
@@ -307,8 +302,8 @@ inline node expression_call_get_argument(const node *const nd, const size_t inde
  *
  *	@return	Member expression
  */
-node expression_member(syntax *const sx, const item_t type, const category_t ctg
-	, const size_t i, const bool is_arrow, const node *const base, const location loc);
+node expression_member(const item_t type, const category_t ctg
+	, const size_t i, bool is_arrow, node *const base, const location loc);
 
 /**
  *	Get base expression of member expression
@@ -357,8 +352,7 @@ inline bool expression_member_is_arrow(const node *const nd)
  *
  *	@return	Cast expression
  */
-node expression_cast(const item_t target_type, const item_t source_type
-	, const node *const expr, const location loc);
+node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
 
 /**
  *	Get source type of cast expression
@@ -388,7 +382,6 @@ inline node expression_cast_get_operand(const node *const nd)
 /**
  *	Create new unary expression
  *
- *	@param	sx				Syntax structure
  *	@param	type			Value type
  *	@param	ctg				Value category
  *	@param	expr			Operand
@@ -397,8 +390,7 @@ inline node expression_cast_get_operand(const node *const nd)
  *
  *	@return	Unary expression
  */
-node expression_unary(syntax *const sx, const item_t type, const category_t ctg
-	, const node *const expr, const unary_t op, const location loc);
+node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const location loc);
 
 /**
  *	Get operator of unary expression
@@ -428,7 +420,6 @@ inline node expression_unary_get_operand(const node *const nd)
 /**
  *	Create new binary expression
  *
- *	@param	sx				Syntax structure
  *	@param	type			Value type
  *	@param	LHS				Left operand
  *	@param	RHS				Right operand
@@ -437,8 +428,7 @@ inline node expression_unary_get_operand(const node *const nd)
  *
  *	@return	Binary expression
  */
-node expression_binary(syntax *const sx, const item_t type
-	, const node *const LHS, const node *const RHS, const binary_t op, const location loc);
+node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc);
 
 /**
  *	Get operator of binary expression
@@ -480,7 +470,6 @@ inline node expression_binary_get_RHS(const node *const nd)
 /**
  *	Create new ternary expression
  *
- *	@param	sx				Syntax structure
  *	@param	type			Value type
  *	@param	cond			First operand
  *	@param	LHS				Second operand
@@ -489,8 +478,7 @@ inline node expression_binary_get_RHS(const node *const nd)
  *
  *	@return	Ternary expression
  */
-node expression_ternary(syntax *const sx, const item_t type, const node *const cond
-	, const node *const LHS, const node *const RHS, const location loc);
+node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const location loc);
 
 /**
  *	Get condition of ternary expression

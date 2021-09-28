@@ -73,7 +73,7 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 {
 	if (expression_get_class(expr) != EXPR_LITERAL)
 	{
-		return expression_unary(sx, type, ctg, expr, op, loc);
+		return expression_unary(type, ctg, expr, op, loc);
 	}
 
 	if (type_is_null_pointer(type))
@@ -123,7 +123,7 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 {
 	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
 	{
-		return expression_binary(sx, type, LHS, RHS, op, loc);
+		return expression_binary(type, LHS, RHS, op, loc);
 	}
 
 	if (op == BIN_COMMA)
@@ -246,12 +246,11 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 	}
 }
 
-static node fold_ternary_expression(syntax *const sx, const item_t type, node *const cond
-	, node *const LHS, node *const RHS, const location loc)
+static node fold_ternary_expression(const item_t type, node *const cond, node *const LHS, node *const RHS, location loc)
 {
 	if (expression_get_class(cond) != EXPR_LITERAL)
 	{
-		return expression_ternary(sx, type, cond, LHS, RHS, loc);
+		return expression_ternary(type, cond, LHS, RHS, loc);
 	}
 
 	const item_t cond_type = expression_get_type(cond);
@@ -293,8 +292,7 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
 	}
 }
 
-static node build_upb_expression(syntax *const sx, const node *const callee
-	, node_vector *const args, const location r_loc)
+static node build_upb_expression(syntax *const sx, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (argc != 2)
@@ -323,7 +321,7 @@ static node build_upb_expression(syntax *const sx, const node *const callee
 	}
 
 	const location loc = { expression_get_location(callee).begin, r_loc.end };
-	return expression_call(sx, TYPE_INTEGER, callee, args, loc);
+	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
 
@@ -488,7 +486,7 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
 	return nd;
 }
 
-node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
+node build_subscript_expression(syntax *const sx, node *const base, node *const index
 	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(base) || !node_is_correct(index))
@@ -513,10 +511,10 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
 	const item_t element_type = type_array_get_element_type(sx, base_type);
 
 	const location loc = { expression_get_location(base).begin, r_loc.end };
-	return expression_subscript(sx, element_type, base, index, loc);
+	return expression_subscript(element_type, base, index, loc);
 }
 
-node build_call_expression(syntax *const sx, const node *const callee
+node build_call_expression(syntax *const sx, node *const callee
 	, node_vector *const args, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(callee))
@@ -568,10 +566,10 @@ node build_call_expression(syntax *const sx, const node *const callee
 
 	const item_t return_type = type_function_get_return_type(sx, callee_type);
 	const location loc = { expression_get_location(callee).begin, r_loc.end };
-	return expression_call(sx, return_type, callee, args, loc);
+	return expression_call(return_type, callee, args, loc);
 }
 
-node build_member_expression(syntax *const sx, const node *const base, const size_t name
+node build_member_expression(syntax *const sx, node *const base, const size_t name
 	, const bool is_arrow, const location op_loc, const location id_loc)
 {
 	if (!node_is_correct(base))
@@ -614,7 +612,7 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 			const item_t type = type_structure_get_member_type(sx, struct_type, i);
 			const location loc = { expression_get_location(base).begin, id_loc.end };
 			
-			return expression_member(sx, type, category, i, is_arrow, base, loc);
+			return expression_member(type, category, i, is_arrow, base, loc);
 		}
 	}
 
@@ -622,7 +620,7 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
 	return node_broken();
 }
 
-node build_cast_expression(const item_t target_type, const node *const expr)
+node build_cast_expression(const item_t target_type, node *const expr)
 {
 	if (!node_is_correct(expr))
 	{
@@ -672,7 +670,7 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 				return node_broken();
 			}
 
-			return expression_unary(sx, operand_type, RVALUE, operand, op_kind, loc);
+			return expression_unary(operand_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ADDRESS:
@@ -826,14 +824,14 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 			if ((type_is_arithmetic(left_type) && type_is_arithmetic(right_type)))
 			{
 				usual_arithmetic_conversions(LHS, RHS);
-				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			if ((type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
 				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
 				|| left_type == right_type)
 			{
-				return expression_binary(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(sx, op_loc, typecheck_binary_expr);
@@ -894,7 +892,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	}
 }
 
-node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, const location op_loc)
+node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, location op_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(LHS) || !node_is_correct(RHS))
 	{
@@ -916,22 +914,22 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 	if (type_is_arithmetic(LHS_type) && type_is_arithmetic(RHS_type))
 	{
 		const item_t type = usual_arithmetic_conversions(LHS, RHS);
-		return fold_ternary_expression(sx, type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(type, cond, LHS, RHS, loc);
 	}
 
 	if (type_is_pointer(sx, LHS_type) && type_is_null_pointer(RHS_type))
 	{
-		return fold_ternary_expression(sx, LHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(LHS_type, cond, LHS, RHS, loc);
 	}
 
 	if (type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
 	{
-		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(RHS_type, cond, LHS, RHS, loc);
 	}
 
 	if (LHS_type == RHS_type)
 	{
-		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(RHS_type, cond, LHS, RHS, loc);
 	}
 
 	semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);

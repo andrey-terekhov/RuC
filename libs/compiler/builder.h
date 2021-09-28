@@ -105,7 +105,7 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, const node *const base, const node *const index
+node build_subscript_expression(syntax *const sx, node *const base, node *const index
 	, const location l_loc, const location r_loc);
 
 /**
@@ -119,7 +119,7 @@ node build_subscript_expression(syntax *const sx, const node *const base, const 
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const callee
+node build_call_expression(syntax *const sx, node *const callee
 	, node_vector *const args, const location l_loc, const location r_loc);
 
 /**
@@ -134,7 +134,7 @@ node build_call_expression(syntax *const sx, const node *const callee
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const base, const size_t name
+node build_member_expression(syntax *const sx, node *const base, const size_t name
 	, const bool is_arrow, const location op_loc, const location id_loc);
 
 /**
@@ -145,7 +145,7 @@ node build_member_expression(syntax *const sx, const node *const base, const siz
  *
  *	@return	Cast expression node
  */
-node build_cast_expression(const item_t target_type, const node *const expr);
+node build_cast_expression(const item_t target_type, node *const expr);
 
 /**
  *	Build an unary expression
@@ -184,7 +184,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, const location op_loc);
+node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, location op_loc);
 
 /**
  *	Build an initializer list
