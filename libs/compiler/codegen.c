@@ -1048,6 +1048,40 @@ static void emit_void_expression(encoder *const enc, const node *const nd)
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+/**
+ *	Check that there are only strings in array initializer
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Initializer
+ *
+ *	@return @c 1 on true, @c 0 on false
+ */
+static bool only_strings(const encoder *const enc, const node *const nd)
+{
+	switch (expression_get_class(nd))
+	{
+		case EXPR_LITERAL:
+			return type_is_string(enc->sx, expression_get_type(nd));
+
+		case EXPR_LIST:
+		{
+			const size_t size = expression_list_get_size(nd);
+			for (size_t i = 0; i < size; i++)
+			{
+				const node subexpr = expression_list_get_subexpr(nd, i);
+				if (!only_strings(enc, &subexpr))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		default:
+			return false;
+	}
+}
 
 /**
  *	Emit array declaration
@@ -1077,29 +1111,38 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	}
 
 	const item_t length = (item_t)type_size(enc->sx, type);
+	const bool has_initializer = declaration_variable_has_initializer(nd);
+
 	mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-	mem_add(enc, (item_t)bounds);	// <- Надо перепроверить размерности
+	mem_add(enc, (item_t)dimensions - (has_initializer ? 1 : 0));
 	mem_add(enc, length);
 	mem_add(enc, displ);
-	mem_add(enc, 0);				// process
+	mem_add(enc, 0);				// iniproc
 
-	mem_add(enc, dimensions == bounds ? 0 : 1);
+	const size_t usual_addr = mem_size(enc);
+	int usual = (dimensions == bounds ? 1 : 0);
+	mem_add(enc, usual);
 
-	const bool has_initializer = declaration_variable_has_initializer(nd);
 	mem_add(enc, has_initializer);
 	mem_add(enc, 0);				// is in structure
 
-	if (declaration_variable_has_initializer(nd))
+	if (has_initializer)
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
 		emit_expression(enc, &initializer);
 		emit_load(enc);
 
+		if (only_strings(enc, &initializer))
+		{
+			usual += 2;
+			mem_set(enc, usual_addr, usual);
+		}
+
 		mem_add(enc, IC_ARR_INIT);
 		mem_add(enc, (item_t)dimensions);
 		mem_add(enc, length);
 		mem_add(enc, displ);
-		mem_add(enc, dimensions == bounds ? 0 : 1);
+		mem_add(enc, usual);
 	}
 }
 
