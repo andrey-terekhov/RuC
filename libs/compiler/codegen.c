@@ -165,6 +165,7 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	vector_increase(&enc.processes, sx->procd);
 
 	enc.target = item_get_status(ws);
+	enc.is_in_assignment = false;
 
 	return enc;
 }
@@ -784,8 +785,10 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 	const item_t target_displ = enc->operand_displ;
 	const operand_t left_kind = enc->last_kind;
 
+	enc->is_in_assignment = true;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(enc, &RHS);
+	enc->is_in_assignment = false;
 
 	const item_t type = expression_get_type(nd);
 

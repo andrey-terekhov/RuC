@@ -99,6 +99,8 @@ instruction_t unary_to_instruction(const unary_t operator)
 			return IC_LOG_NOT;
 		case UN_ABS:
 			return IC_ABSI;
+		default:
+			return IC_NOP;
 	}
 }
 
@@ -164,7 +166,7 @@ instruction_t binary_to_instruction(const binary_t operator)
 			return IC_XOR_ASSIGN;
 		case BIN_OR_ASSIGN:
 			return IC_OR_ASSIGN;
-		case BIN_COMMA:
+		default:
 			return IC_NOP;
 	}
 }
