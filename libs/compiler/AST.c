@@ -177,29 +177,22 @@ node expression_identifier(syntax *const sx, const item_t type
 	return nd;
 }
 
-node expression_subscript(syntax *const sx, const item_t type
-	, const node *const base, const node *const index, const location loc)
+node expression_subscript(const item_t type, node *const base, node *const index, const location loc)
 {
-	node nd = node_create(sx, OP_SLICE);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, LVALUE);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, base);						// Выражение-операнд
+	node nd = node_insert(base, OP_SLICE, 4);		// Выражение-операнд
 	node_set_child(&nd, index);						// Выражение-индекс
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, LVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
 
-node expression_call(syntax *const sx, const item_t type
-	, const node *const callee, node_vector *const args, const location loc)
+node expression_call(const item_t type, node *const callee, node_vector *const args, const location loc)
 {
-	node nd = node_create(sx, OP_CALL);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, callee);					// Вызываемое выражение
+	node nd = node_insert(callee, OP_CALL, 4);		// Операнд выражения
 
 	if (args)
 	{
@@ -207,83 +200,85 @@ node expression_call(syntax *const sx, const item_t type
 		for (size_t i = 0; i < amount; i++)
 		{
 			node arg = node_vector_get(args, i);
-			node_set_child(&nd, &arg);					// i-ый аргумент вызова
+			node_set_child(&nd, &arg);				// i-ый аргумент вызова
 		}
 
 		node_vector_clear(args);
 	}
-	
-	return nd;
-}
 
-node expression_member(syntax *const sx, const item_t type, const category_t ctg
-	, const size_t i, const bool is_arrow, const node *const base, const location loc)
-{
-	node nd = node_create(sx, OP_SELECT);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, ctg);							// Категория значения выражения
-	node_add_arg(&nd, (item_t)i);					// Индекс поля выборки
-	node_add_arg(&nd, is_arrow);					// Является ли оператор '->'
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, base);						// Операнд выражения
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
 
-node expression_cast(const item_t target_type, const item_t source_type
-	, const node *const expr, const location loc)
+node expression_member(const item_t type, const category_t ctg
+	, const size_t i, bool is_arrow, node *const base, const location loc)
 {
-	node nd = node_insert(expr, OP_CAST, 5);			// Операнд выражения
-	node_set_arg(&nd, 0, target_type);					// Тип значения выражения
-	node_set_arg(&nd, 1, RVALUE);						// Категория значения выражения
-	node_set_arg(&nd, 2, source_type);					// Тип до преобразования
-	node_set_arg(&nd, 3, (item_t)loc.begin);			// Начальная позиция выражения
-	node_set_arg(&nd, 4, (item_t)loc.end);				// Конечная позиция выражения
+	node nd = node_insert(base, OP_SELECT, 6);		// Операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, ctg);						// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)i);				// Индекс поля выборки
+	node_set_arg(&nd, 3, is_arrow);					// Является ли оператор '->'
+	node_set_arg(&nd, 4, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 5, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
 
-node expression_unary(syntax *const sx, const item_t type, const category_t ctg
-	, const node *const expr, const unary_t op, const location loc)
+node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc)
 {
-	node nd = node_create(sx, OP_UNARY);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, ctg);							// Категория значения выражения
-	node_add_arg(&nd, op);							// Вид унарного оператора
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, expr);						// Операнд выражения
+	node nd = node_insert(expr, OP_CAST, 5);		// Операнд выражения
+
+	node_set_arg(&nd, 0, target_type);				// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, source_type);				// Тип до преобразования
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
 
-node expression_binary(syntax *const sx, const item_t type
-	, const node *const LHS, const node *const RHS, const binary_t op, const location loc)
+node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const location loc)
 {
-	node nd = node_create(sx, OP_BINARY);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, op);							// Вид бинарного оператора
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
-	node_set_child(&nd, LHS);						// Первый операнд выражения
+	node nd = node_insert(expr, OP_UNARY, 5);		// Операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, ctg);						// Категория значения выражения
+	node_set_arg(&nd, 2, op);						// Вид унарного оператора
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc)
+{
+	node nd = node_insert(LHS, OP_BINARY, 5);		// Первый операнд выражения
 	node_set_child(&nd, RHS);						// Второй операнд выражения
 
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, op);						// Вид бинарного оператора
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
 	return nd;
 }
 
-node expression_ternary(syntax *const sx, const item_t type, const node *const cond
-	, const node *const LHS, const node *const RHS, const location loc)
+node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const location loc)
 {
-	node nd = node_create(sx, OP_TERNARY);
-	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.begin);			// Конечная позиция выражения
-	node_set_child(&nd, cond);						// Первый операнд выражения
+	node nd = node_insert(cond, OP_TERNARY, 4);		// Первый операнд выражения
 	node_set_child(&nd, LHS);						// Второй операнд выражения
 	node_set_child(&nd, RHS);						// Третий операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Конечная позиция выражения
 
 	return nd;
 }
