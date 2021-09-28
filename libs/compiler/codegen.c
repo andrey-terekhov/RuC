@@ -688,90 +688,51 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit arithmetic expression
+ *	Emit integral expression
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  */
-static void emit_arithmetic_expression(encoder *const enc, const node *const nd)
+static void emit_integral_expression(encoder *const enc, const node *const nd)
 {
-	const node LHS = expression_binary_get_LHS(nd);
-	const node RHS = expression_binary_get_RHS(nd);
-
-	emit_expression(enc, &LHS);
-	emit_load(enc);
-	emit_expression(enc, &RHS);
-	emit_load(enc);
-
-	const item_t left = expression_get_type(&LHS);
-	const item_t right = expression_get_type(&RHS);
-	item_t result = TYPE_INTEGER;
-
-	if (type_is_floating(left) || type_is_floating(right))
-	{
-		result = TYPE_FLOATING;
-	}
-
-	instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
-	if (type_is_floating(result))
-	{
-		operator = instruction_to_floating_ver(operator);
-	}
-
-	mem_add(enc, operator);
-	enc->last_kind = VALUE;
-	enc->last_type = result;
-}
-
-/**
- *	Emit bitwise expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_bitwise_expression(encoder *const enc, const node *const nd)
-{
-	const node LHS = expression_binary_get_LHS(nd);
-	const node RHS = expression_binary_get_RHS(nd);
-
-	emit_expression(enc, &LHS);
-	emit_load(enc);
-	emit_expression(enc, &RHS);
-	emit_load(enc);
-
-	instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
-	mem_add(enc, operator);
-	enc->last_kind = VALUE;
-	enc->last_type = TYPE_INTEGER;
-}
-
-/**
- *	Emit logical expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_logical_expression(encoder *const enc, const node *const nd)
-{
-	const node LHS = expression_binary_get_LHS(nd);
-	const node RHS = expression_binary_get_RHS(nd);
-
-	emit_expression(enc, &LHS);
-	emit_load(enc);
-
-	mem_add(enc, IC_DUPLICATE);
 	const binary_t operator = expression_binary_get_operator(nd);
-	mem_add(enc, operator == BIN_LOG_AND ? IC_BE0 : IC_BNE0);
-	const size_t addr = mem_reserve(enc);
+	const node LHS = expression_binary_get_LHS(nd);
+	const node RHS = expression_binary_get_RHS(nd);
+
+	emit_expression(enc, &LHS);
+	emit_load(enc);
+
+	size_t addr = SIZE_MAX;
+	const bool is_logical = operator == BIN_LOG_AND || operator == BIN_LOG_OR;
+	if (is_logical)
+	{
+		mem_add(enc, IC_DUPLICATE);
+		mem_add(enc, operator == BIN_LOG_AND ? IC_BE0 : IC_BNE0);
+		addr = mem_reserve(enc);
+	}
 
 	emit_expression(enc, &RHS);
 	emit_load(enc);
 
-	mem_add(enc, binary_to_instruction(operator));
+	if (is_logical)
+	{
+		mem_set(enc, addr, (item_t)mem_size(enc) + 1);
+	}
 
-	mem_set(enc, addr, (item_t)mem_size(enc));
+	const item_t left_type = expression_get_type(&LHS);
+	const item_t right_type = expression_get_type(&RHS);
+	const instruction_t instruction = binary_to_instruction(operator);
+	if (type_is_floating(left_type) || type_is_floating(right_type))
+	{
+		mem_add(enc, instruction_to_floating_ver(instruction));
+	}
+	else
+	{
+		mem_add(enc, instruction);
+	}
+
 	enc->last_kind = VALUE;
-	enc->last_type = TYPE_INTEGER;
+	enc->last_type = expression_get_type(nd);
 }
 
 /**
@@ -872,20 +833,14 @@ static void emit_binary_expression(encoder *const enc, const node *const nd)
 		case BIN_GE:
 		case BIN_EQ:
 		case BIN_NE:
-			emit_arithmetic_expression(enc, nd);
-			return;
-
 		case BIN_SHL:
 		case BIN_SHR:
 		case BIN_AND:
 		case BIN_XOR:
 		case BIN_OR:
-			emit_bitwise_expression(enc, nd);
-			return;
-
 		case BIN_LOG_AND:
 		case BIN_LOG_OR:
-			emit_logical_expression(enc, nd);
+			emit_integral_expression(enc, nd);
 			return;
 
 		case BIN_ASSIGN:
