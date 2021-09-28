@@ -759,12 +759,15 @@ static void emit_logical_expression(encoder *const enc, const node *const nd)
 	emit_expression(enc, &LHS);
 	emit_load(enc);
 
+	mem_add(enc, IC_DUPLICATE);
 	const binary_t operator = expression_binary_get_operator(nd);
 	mem_add(enc, operator == BIN_LOG_AND ? IC_BE0 : IC_BNE0);
 	const size_t addr = mem_reserve(enc);
 
 	emit_expression(enc, &RHS);
 	emit_load(enc);
+
+	mem_add(enc, binary_to_instruction(operator));
 
 	mem_set(enc, addr, (item_t)mem_size(enc));
 	enc->last_kind = VALUE;
