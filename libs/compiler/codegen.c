@@ -1648,9 +1648,6 @@ static void emit_getid_statement(encoder *const enc, const node *const nd)
  */
 static void emit_printf_statement(encoder *const enc, const node *const nd)
 {
-	const node format_string = statement_printf_get_format_str(nd);
-	emit_expression(enc, &format_string);
-
 	size_t sum_size = 0;
 	const size_t argc = statement_printf_get_argc(nd);
 	for (size_t i = 0; i < argc; i++)
@@ -1661,6 +1658,9 @@ static void emit_printf_statement(encoder *const enc, const node *const nd)
 
 		sum_size += type_size(enc->sx, expression_get_type(&arg));
 	}
+
+	const node format_string = statement_printf_get_format_str(nd);
+	emit_expression(enc, &format_string);
 
 	mem_add(enc, IC_PRINTF);
 	mem_add(enc, (item_t)sum_size);
