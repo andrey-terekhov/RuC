@@ -632,6 +632,27 @@ node build_cast_expression(const item_t target_type, node *const expr)
 
 	if (target_type != source_type)
 	{
+		if (expression_get_class(expr) == EXPR_LITERAL)
+		{
+			// Пока тут только int -> float
+			const item_t value = expression_literal_get_integer(expr);
+
+			// Тут пошли какие-то костыли, чтобы присоединить новый узел к готовому списку
+			item_t buffer[8];
+			const size_t argc = item_store_double(value, buffer) + 4;
+
+			const node result = node_insert(expr, OP_LITERAL, argc);
+			node_set_arg(&result, 0, TYPE_FLOATING);
+			node_set_arg(&result, 1, RVALUE);
+			node_set_arg_double(&result, 2, (double)value);
+			node_set_arg(&result, argc - 2, (item_t)loc.begin);
+			node_set_arg(&result, argc - 1, (item_t)loc.end);
+
+			node_remove(expr);
+
+			return result;
+		}
+
 		return expression_cast(target_type, source_type, expr, loc);
 	}
 
