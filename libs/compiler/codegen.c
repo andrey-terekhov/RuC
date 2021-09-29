@@ -44,6 +44,7 @@ typedef struct encoder
 	syntax *sx;						/**< Syntax structure */
 
 	vector memory;					/**< Memory table */
+	vector iniprocs;				/**< Init procedures */
 
 	vector identifiers;				/**< Local identifiers table */
 	vector representations;			/**< Local representations table */
@@ -120,6 +121,17 @@ static inline size_t mem_reserve(encoder *const enc)
 }
 
 
+static inline int proc_set(encoder *const enc, const size_t index, const item_t value)
+{
+	return vector_set(&enc->iniprocs, index, value);
+}
+
+static inline item_t proc_get(const encoder *const enc, const size_t index)
+{
+	return vector_get(&enc->iniprocs, index);
+}
+
+
 static void addr_begin_condition(encoder *const enc, const size_t addr)
 {
 	while (enc->addr_cond != addr)
@@ -165,6 +177,8 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	enc.sx = sx;
 
 	enc.memory = vector_create(MAX_MEM_SIZE);
+	enc.iniprocs = vector_create(0);
+	vector_resize(&enc.iniprocs, vector_size(&enc.sx->types));
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
 	enc.identifiers = vector_create(records * 3);
@@ -240,6 +254,7 @@ static int enc_export(const encoder *const enc)
 static int enc_clear(encoder *const enc)
 {
 	return vector_clear(&enc->memory)
+		|| vector_clear(&enc->iniprocs)
 		|| vector_clear(&enc->identifiers)
 		|| vector_clear(&enc->representations);
 }
@@ -1126,6 +1141,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = declaration_variable_get_id(nd);
 	const item_t type = ident_get_type(enc->sx, identifier);
+	const item_t displ = ident_get_displ(enc->sx, identifier);
 
 	if (type_is_array(enc->sx, type))
 	{
@@ -1133,12 +1149,19 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 		return;
 	}
 
+	const item_t iniproc = proc_get(enc, (size_t)type);
+	if (iniproc != ITEM_MAX && iniproc != 0)
+	{
+		mem_add(enc, IC_STRUCT_WITH_ARR);
+		mem_add(enc, displ);
+		mem_add(enc, iniproc);
+	}
+
 	if (declaration_variable_has_initializer(nd))
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
 		emit_expression(enc, &initializer);
 
-		const item_t displ = ident_get_displ(enc->sx, identifier);
 		if (type_is_structure(enc->sx, type))
 		{
 			mem_add(enc, IC_COPY0ST_ASSIGN);
@@ -1163,18 +1186,23 @@ static void emit_type_declaration(encoder *const enc, const node *const nd)
 {
 	mem_add(enc, IC_B);
 	const size_t addr = mem_reserve(enc);
-	// TODO: iniproc
-	const item_t base_type = node_get_arg(nd, 0);
+
+	const item_t type = node_get_arg(nd, 0);
 	const size_t size = node_get_amount(nd);
+	if (size > 0)
+	{
+		proc_set(enc, (size_t)type, (item_t)addr + 1);
+	}
+
 	for (size_t i = 0; i < size; i++)
 	{
 		const node member = node_get_child(nd, i);
 
-		item_t type = node_get_arg(nd, 0);
+		item_t member_type = node_get_arg(&member, 0);
 		size_t dimensions = 0;
-		while (type_is_array(enc->sx, type))
+		while (type_is_array(enc->sx, member_type))
 		{
-			type = type_array_get_element_type(enc->sx, type);
+			member_type = type_array_get_element_type(enc->sx, member_type);
 			dimensions++;
 		}
 
@@ -1184,17 +1212,17 @@ static void emit_type_declaration(encoder *const enc, const node *const nd)
 			emit_expression(enc, &bound);
 		}
 
-		const item_t length = (item_t)type_size(enc->sx, type);
-		item_t displ = 0;
-		for (size_t j = 0; j < i; j++)
+		const item_t length = (item_t)type_size(enc->sx, member_type);
+		size_t displ = 0;
+		for (size_t j = 0; j <= i; j++)
 		{
-			displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, base_type, j));
+			displ += type_size(enc->sx, type_structure_get_member_type(enc->sx, type, j));
 		}
 
 		mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(enc, (item_t)dimensions);
 		mem_add(enc, length);
-		mem_add(enc, displ);
+		mem_add(enc, (item_t)displ);
 		mem_add(enc, 0);				// iniproc
 		mem_add(enc, 1);				// usual
 		mem_add(enc, 0);				// has initializer
