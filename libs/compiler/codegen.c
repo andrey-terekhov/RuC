@@ -45,7 +45,6 @@ typedef struct encoder
 	syntax *sx;						/**< Syntax structure */
 
 	vector memory;					/**< Memory table */
-	vector processes;				/**< Init processes table */
 
 	vector identifiers;				/**< Local identifiers table */
 	vector representations;			/**< Local representations table */
@@ -155,14 +154,12 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	enc.sx = sx;
 
 	enc.memory = vector_create(MAX_MEM_SIZE);
-	enc.processes = vector_create(sx->procd);
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
 	enc.identifiers = vector_create(records * 3);
 	enc.representations = vector_create(records * 8);
 
 	vector_increase(&enc.memory, 4);
-	vector_increase(&enc.processes, sx->procd);
 
 	enc.target = item_get_status(ws);
 
@@ -232,7 +229,6 @@ static int enc_export(const encoder *const enc)
 static int enc_clear(encoder *const enc)
 {
 	return vector_clear(&enc->memory)
-		|| vector_clear(&enc->processes)
 		|| vector_clear(&enc->identifiers)
 		|| vector_clear(&enc->representations);
 }
@@ -1123,9 +1119,48 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
  */
 static void emit_type_declaration(encoder *const enc, const node *const nd)
 {
-	// FIXME: структуры с массивами
-	(void)enc;
-	(void)nd;
+	mem_add(enc, IC_B);
+	const size_t addr = mem_reserve(enc);
+	// TODO: iniproc
+	const item_t base_type = node_get_arg(nd, 0);
+	const size_t size = node_get_amount(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node member = node_get_child(nd, i);
+
+		item_t type = node_get_arg(nd, 0);
+		size_t dimensions = 0;
+		while (type_is_array(enc->sx, type))
+		{
+			type = type_array_get_element_type(enc->sx, type);
+			dimensions++;
+		}
+
+		for (size_t j = 0; j < dimensions; j++)
+		{
+			const node bound = node_get_child(&member, j);
+			emit_expression(enc, &bound);
+		}
+
+		const item_t length = (item_t)type_size(enc->sx, type);
+		item_t displ = 0;
+		for (size_t j = 0; j < i; j++)
+		{
+			displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, base_type, j));
+		}
+
+		mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
+		mem_add(enc, (item_t)dimensions);
+		mem_add(enc, length);
+		mem_add(enc, displ);
+		mem_add(enc, 0);				// iniproc
+		mem_add(enc, 1);				// usual
+		mem_add(enc, 0);				// has initializer
+		mem_add(enc, 1);				// is in structure
+	}
+
+	mem_add(enc, IC_STOP);
+	mem_set(enc, addr, (item_t)mem_size(enc));
 }
 
 static void emit_function_definition(encoder *const enc, const node *const nd)
