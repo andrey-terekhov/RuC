@@ -85,7 +85,6 @@ typedef struct syntax
 	item_t displ;				/**< Stack displacement in current scope */
 	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
-	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
 	
 	bool was_error;				/**< Set, if was error */

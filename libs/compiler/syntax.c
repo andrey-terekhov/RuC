@@ -238,7 +238,6 @@ syntax sx_create(universal_io *const io)
 {
 	syntax sx;
 	sx.io = io;
-	sx.procd = 1;
 
 	sx.string_literals = strings_create(STRINGS_SIZE);
 
