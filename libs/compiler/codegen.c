@@ -177,12 +177,8 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	enc.sx = sx;
 
 	enc.memory = vector_create(MAX_MEM_SIZE);
-	enc.iniprocs = vector_create(vector_size(&enc.sx->types));
+	enc.iniprocs = vector_create(0);
 	vector_resize(&enc.iniprocs, vector_size(&enc.sx->types));
-	for (size_t i = 0; i < vector_size(&enc.iniprocs); i++)
-	{
-		vector_set(&enc.iniprocs, i, ITEM_MAX);
-	}
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
 	enc.identifiers = vector_create(records * 3);
@@ -1154,7 +1150,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	}
 
 	const item_t iniproc = proc_get(enc, (size_t)type);
-	if (iniproc != ITEM_MAX)
+	if (iniproc != ITEM_MAX && iniproc != 0)
 	{
 		mem_add(enc, IC_STRUCT_WITH_ARR);
 		mem_add(enc, displ);
