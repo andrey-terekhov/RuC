@@ -528,32 +528,49 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_add(enc, llabs(displ));
 		return;
 	}
-	else if (expression_get_type(nd) == EXPR_LIST)
+	else if (expression_get_class(nd) == EXPR_LIST)
 	{
 		const node fst = expression_list_get_subexpr(nd, 0);
 		const item_t type = expression_get_type(&fst);
+		const bool is_int = type_is_integer(type);
 
-		if (type_is_integer(type))
-		{
-			mem_add(enc, IC_ROWING);
-		}
-		else // if (type_is_floating(type))
-		{
-			mem_add(enc, IC_ROWING_D);
-		}
+		mem_add(enc, IC_LI);
+		const size_t reserved = mem_size(enc) + 4;
+		mem_add(enc, (item_t)reserved);
+		mem_add(enc, IC_B);
+		mem_increase(enc, 2);
 
 		const size_t size = expression_list_get_size(nd);
 		for (size_t i = 0; i < size; i++)
 		{
 			const node subexpr = expression_list_get_subexpr(nd, i);
-			if (expression_get_type(&subexpr) != EXPR_LITERAL)
+			if (expression_get_class(&subexpr) != EXPR_LITERAL)
 			{
 				system_error(wrong_init_in_actparam);
 				enc->sx->was_error = true;
 			}
 
-			emit_expression(enc, &subexpr);
+			if (is_int)
+			{
+				mem_add(enc, expression_literal_get_integer(&subexpr));
+			}
+			else
+			{
+				const double value = expression_literal_get_floating(&subexpr);
+
+				int64_t num64;
+				memcpy(&num64, &value, sizeof(int64_t));
+
+				const int32_t fst = num64 & 0x00000000ffffffff;
+				const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+
+				mem_add(enc, fst);
+				mem_add(enc, snd);
+			}
 		}
+
+		mem_set(enc, reserved - 1, (item_t)size);
+		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
 	}
 	else
 	{
