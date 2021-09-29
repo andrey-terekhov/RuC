@@ -55,8 +55,6 @@ typedef struct encoder
 	size_t addr_break;				/**< Break operator address */
 
 	item_status target;				/**< Target tables item type */
-
-	bool is_in_assignment;
 } encoder;
 
 typedef struct lvalue
@@ -167,7 +165,6 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	vector_increase(&enc.processes, sx->procd);
 
 	enc.target = item_get_status(ws);
-	enc.is_in_assignment = false;
 
 	return enc;
 }
@@ -262,7 +259,7 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 		case VARIABLE:
 		{
 			const item_t type = value.type;
-			if (type_is_structure(enc->sx, type) && !enc->is_in_assignment)
+			if (type_is_structure(enc->sx, type))
 			{
 				mem_add(enc, IC_COPY0ST);
 				mem_add(enc, value.displ);
@@ -280,7 +277,7 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 		case ADDRESS:
 		{
 			const item_t type = value.type;
-			if (type_is_structure(enc->sx, type) && !enc->is_in_assignment)
+			if (type_is_structure(enc->sx, type))
 			{
 				mem_add(enc, IC_COPY1ST);
 				mem_add(enc, (item_t)type_size(enc->sx, type));
@@ -758,36 +755,49 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 	const item_t type = expression_get_type(nd);
 
-	instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
 	if (type_is_structure(enc->sx, type))
 	{
-		enc->is_in_assignment = true;
-		const lvalue right_value = emit_lvalue(enc, &RHS);
-		enc->is_in_assignment = false;
+		if (expression_is_lvalue(&RHS))
+		{
+			const lvalue right_value = emit_lvalue(enc, &RHS);
 
-		operator = left_value.kind == VARIABLE
-			? right_value.kind == VARIABLE
-			? IC_COPY00 : IC_COPY01
+			instruction_t operator = left_value.kind == VARIABLE
+				? right_value.kind == VARIABLE
+					? IC_COPY00 : IC_COPY01
 				: right_value.kind == VARIABLE
-				? IC_COPY10 : IC_COPY11;
+					? IC_COPY10 : IC_COPY11;
 
-		mem_add(enc, operator);
-		if (left_value.kind == VARIABLE)
-		{
-			mem_add(enc, left_value.displ);
+			mem_add(enc, operator);
+			if (left_value.kind == VARIABLE)
+			{
+				mem_add(enc, left_value.displ);
+			}
+
+			if (right_value.kind == VARIABLE)
+			{
+				mem_add(enc, right_value.displ);
+			}
+
+			mem_add(enc, (item_t)type_size(enc->sx, type));
 		}
-
-		if (right_value.kind == VARIABLE)
+		else
 		{
-			mem_add(enc, right_value.displ);
-		}
+			emit_expression(enc, &RHS);
+			instruction_t operator = left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN;
+			mem_add(enc, operator);
+			if (left_value.kind == VARIABLE)
+			{
+				mem_add(enc, left_value.displ);
+			}
 
-		mem_add(enc, (item_t)type_size(enc->sx, type));
+			mem_add(enc, (item_t)type_size(enc->sx, type));
+		}
 	}
 	else // оба операнда базового типа или указатели
 	{
 		emit_expression(enc, &RHS);
 
+		instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
 		if (left_value.kind == ADDRESS)
 		{
 			operator = instruction_to_address_ver(operator);
