@@ -467,7 +467,7 @@ node build_string_literal_expression(syntax *const sx, const size_t index, const
 
 	node nd = node_create(sx, OP_LITERAL);
 	node_add_arg(&nd, type);						// Тип значения литерала
-	node_add_arg(&nd, LVALUE);						// Категория значения литерала
+	node_add_arg(&nd, RVALUE);						// Категория значения литерала
 	node_add_arg(&nd, (item_t)index);				// Индекс в списке строк
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки

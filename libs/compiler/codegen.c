@@ -31,11 +31,10 @@ static const char *const DEFAULT_CODES = "codes.txt";
 
 static const size_t MAX_MEM_SIZE = 100000;
 
-/** Kinds of operands */
+/** Kinds of lvalue */
 typedef enum OPERAND
 {
 	VARIABLE,		/**< Variable operand */
-	VALUE,			/**< Value operand */
 	ADDRESS,		/**< Address operand */
 } operand_t;
 
@@ -60,15 +59,16 @@ typedef struct encoder
 	bool is_in_assignment;
 } encoder;
 
-typedef struct value
+typedef struct lvalue
 {
 	item_t type;					/**< Value type */
 	operand_t kind;					/**< Value kind */
 	item_t displ;					/**< Value displacement */
-} value;
+} lvalue;
 
 static void emit_void_expression(encoder *const enc, const node *const nd);
-static value emit_lvalue(encoder *const enc, const node *const nd);
+static lvalue emit_lvalue(encoder *const enc, const node *const nd);
+static void emit_expression(encoder *const enc, const node *const nd);
 static void emit_statement(encoder *const enc, const node *const nd);
 
 
@@ -251,47 +251,35 @@ static int enc_clear(encoder *const enc)
 
 
 /**
- *	Return rvalue
- *
- *	@return	Expression value
- */
-static inline value rvalue()
-{
-	return (value){ .kind = VALUE };
-}
-
-/**
- * 	Emit load of value
+ * 	Emit load of lvalue
  *
  * 	@param	enc		Encoder
- *
- * 	@return	Expression value
  */
-static value emit_load(encoder *const enc, value val)
+static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 {
-	switch (val.kind)
+	switch (value.kind)
 	{
 		case VARIABLE:
 		{
-			const item_t type = val.type;
+			const item_t type = value.type;
 			if (type_is_structure(enc->sx, type) && !enc->is_in_assignment)
 			{
 				mem_add(enc, IC_COPY0ST);
-				mem_add(enc, val.displ);
+				mem_add(enc, value.displ);
 				mem_add(enc, (item_t)type_size(enc->sx, type));
 			}
 			else
 			{
 				mem_add(enc, type_is_floating(type) ? IC_LOADD : IC_LOAD);
-				mem_add(enc, val.displ);
+				mem_add(enc, value.displ);
 			}
 
-			return rvalue();
+			return;
 		}
 
 		case ADDRESS:
 		{
-			const item_t type = val.type;
+			const item_t type = value.type;
 			if (type_is_structure(enc->sx, type) && !enc->is_in_assignment)
 			{
 				mem_add(enc, IC_COPY1ST);
@@ -302,11 +290,126 @@ static value emit_load(encoder *const enc, value val)
 				mem_add(enc, type_is_integer(type) ? IC_LAT : IC_LATD);
 			}
 
-			return rvalue();
+			return;
 		}
 
 		default:
-			return val;
+			return;
+	}
+}
+
+/**
+ *	Emit identifier expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ *
+ *	@return	Expression value
+ */
+static lvalue emit_identifier_expression(encoder *const enc, const node *const nd)
+{
+	const size_t identifier = expression_identifier_get_id(nd);
+	const item_t type = ident_get_type(enc->sx, identifier);
+	const item_t displ = ident_get_displ(enc->sx, identifier);
+
+	return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
+}
+
+/**
+ *	Emit subscript expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ *
+ *	@return Expression value
+ */
+static lvalue emit_subscript_expression(encoder *const enc, const node *const nd)
+{
+	const node base = expression_subscript_get_base(nd);
+	const lvalue value = emit_lvalue(enc, &base);
+
+	if (value.kind == VARIABLE)
+	{
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, value.displ);
+	}
+
+	const node index = expression_subscript_get_index(nd);
+	emit_expression(enc, &index);
+
+	mem_add(enc, IC_SLICE);
+
+	const item_t type = expression_get_type(nd);
+	mem_add(enc, (item_t)type_size(enc->sx, type));
+	if (type_is_array(enc->sx, type))
+	{
+		mem_add(enc, IC_LAT);
+	}
+
+	return (lvalue){ .kind = ADDRESS, .type = type };
+}
+
+/**
+ *	Emit member expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ *
+ *	@return	Expression value
+ */
+static lvalue emit_member_expression(encoder *const enc, const node *const nd)
+{
+	const item_t type = expression_get_type(nd);
+	const node base = expression_member_get_base(nd);
+	const item_t base_type = expression_get_type(&base);
+	const bool is_arrow = expression_member_is_arrow(nd);
+	const size_t member_index = expression_member_get_member_index(nd);
+	const item_t struct_type = is_arrow ? type_pointer_get_element_type(enc->sx, base_type) : base_type;
+
+	item_t member_displ = 0;
+	for (size_t i = 0; i < member_index; i++)
+	{
+		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, struct_type, i));
+	}
+
+	if (is_arrow)
+	{
+		emit_expression(enc, &base);
+		mem_add(enc, IC_SELECT);
+		mem_add(enc, member_displ);
+		if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
+		{
+			mem_add(enc, IC_LAT);
+		}
+
+		return (lvalue){ .kind = ADDRESS, .type = type };
+	}
+	else
+	{
+		const lvalue value = emit_lvalue(enc, &base);
+		if (value.kind == VARIABLE)
+		{
+			if (value.displ > 0)
+			{
+				return (lvalue){ .kind = VARIABLE, .type = type, .displ = value.displ + member_displ };
+			}
+			else
+			{
+				return (lvalue){ .kind = VARIABLE, .type = type, .displ = value.displ - member_displ };
+			}
+		}
+		else // if (enc->last_kind == ADDRESS)
+		{
+			mem_add(enc, IC_SELECT);
+			mem_add(enc, member_displ);
+
+			if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
+			{
+				mem_add(enc, IC_LAT);
+			}
+
+			return (lvalue){ .kind = ADDRESS, .type = type };
+		}
 	}
 }
 
@@ -318,27 +421,39 @@ static value emit_load(encoder *const enc, value val)
  *
  *	@return	Expression value
  */
-static value emit_expression(encoder *const enc, const node *const nd)
+static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 {
-	const value lvalue = emit_lvalue(enc, nd);
-	return emit_load(enc, lvalue);
-}
+	switch (expression_get_class(nd))
+	{
+		case EXPR_IDENTIFIER:
+			return emit_identifier_expression(enc, nd);
 
-/**
- *	Emit identifier expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- *
- *	@return	Expression value
- */
-static value emit_identifier_expression(encoder *const enc, const node *const nd)
-{
-	const size_t identifier = expression_identifier_get_id(nd);
-	const item_t type = ident_get_type(enc->sx, identifier);
-	const item_t displ = ident_get_displ(enc->sx, identifier);
+		case EXPR_SUBSCRIPT:
+			return emit_subscript_expression(enc, nd);
 
-	return (value){ .kind = VARIABLE, .type = type, .displ = displ };
+		case EXPR_MEMBER:
+			return emit_member_expression(enc, nd);
+
+		case EXPR_UNARY:
+		{
+			// Тут может быть только UN_INDIRECTION
+			const item_t type = expression_get_type(nd);
+			const node operand = expression_unary_get_operand(nd);
+			const lvalue value = emit_lvalue(enc, &operand);
+			if (value.kind == VARIABLE)
+			{
+				mem_add(enc, IC_LOAD);
+				mem_add(enc, value.displ);
+			}
+
+			return (lvalue){ .kind = ADDRESS, .type = type };
+		}
+
+		default:
+			// Cannot be an lvalue
+			system_error(node_unexpected, nd);
+			return (lvalue){ .displ = ITEM_MAX };
+	}
 }
 
 /**
@@ -346,10 +461,8 @@ static value emit_identifier_expression(encoder *const enc, const node *const nd
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_literal_expression(encoder *const enc, const node *const nd)
+static void emit_literal_expression(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
 
@@ -409,42 +522,6 @@ static value emit_literal_expression(encoder *const enc, const node *const nd)
 		mem_set(enc, reserved - 1, (item_t)length);
 		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
 	}
-
-	return rvalue();
-}
-
-/**
- *	Emit subscript expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- *
- *	@return Expression value
- */
-static value emit_subscript_expression(encoder *const enc, const node *const nd)
-{
-	const node base = expression_subscript_get_base(nd);
-	const value lvalue = emit_lvalue(enc, &base);
-
-	if (lvalue.kind == VARIABLE)
-	{
-		mem_add(enc, IC_LOAD);
-		mem_add(enc, lvalue.displ);
-	}
-
-	const node index = expression_subscript_get_index(nd);
-	emit_expression(enc, &index);
-
-	mem_add(enc, IC_SLICE);
-
-	const item_t type = expression_get_type(nd);
-	mem_add(enc, (item_t)type_size(enc->sx, type));
-	if (type_is_array(enc->sx, type))
-	{
-		mem_add(enc, IC_LAT);
-	}
-
-	return (value){ .kind = ADDRESS, .type = type };
 }
 
 /**
@@ -452,10 +529,8 @@ static value emit_subscript_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_call_expression(encoder *const enc, const node *const nd)
+static void emit_call_expression(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	const item_t func_type = expression_get_type(&callee);
@@ -494,81 +569,33 @@ static value emit_call_expression(encoder *const enc, const node *const nd)
 	{
 		mem_add(enc, builtin_to_instruction((builtin_t)func));
 	}
-
-	return rvalue();
 }
 
 /**
- *	Emit member expression
+ *	Emit rvalue of member expression
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_member_expression(encoder *const enc, const node *const nd)
+static void emit_member_rvalue(encoder *const enc, const node *const nd)
 {
+	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
 	const item_t type = expression_get_type(nd);
 	const node base = expression_member_get_base(nd);
 	const item_t base_type = expression_get_type(&base);
-	const bool is_arrow = expression_member_is_arrow(nd);
 	const size_t member_index = expression_member_get_member_index(nd);
-	const item_t struct_type = is_arrow ? type_pointer_get_element_type(enc->sx, base_type) : base_type;
 
 	item_t member_displ = 0;
 	for (size_t i = 0; i < member_index; i++)
 	{
-		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, struct_type, i));
+		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, base_type, i));
 	}
 
-	if (is_arrow)
-	{
-		emit_expression(enc, &base);
-		mem_add(enc, IC_SELECT);
-		mem_add(enc, member_displ);
-		if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
-		{
-			mem_add(enc, IC_LAT);
-		}
-
-		return (value){ .kind = ADDRESS, .type = type };
-	}
-	else
-	{
-		const value lvalue = emit_lvalue(enc, &base);
-		if (lvalue.kind == VALUE)
-		{
-			mem_add(enc, IC_COPYST);
-			mem_add(enc, member_displ);
-			mem_add(enc, type);
-			mem_add(enc, (item_t)type_size(enc->sx, base_type));
-
-			return rvalue();
-		}
-		else if (lvalue.kind == VARIABLE)
-		{
-			if (lvalue.displ > 0)
-			{
-				return (value){ .kind = VARIABLE, .type = type, .displ = lvalue.displ + member_displ };
-			}
-			else
-			{
-				return (value){ .kind = VARIABLE, .type = type, .displ = lvalue.displ - member_displ };
-			}
-		}
-		else // if (enc->last_kind == ADDRESS)
-		{
-			mem_add(enc, IC_SELECT);
-			mem_add(enc, member_displ);
-
-			if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
-			{
-				mem_add(enc, IC_LAT);
-			}
-
-			return (value){ .kind = ADDRESS, .type = type };
-		}
-	}
+	emit_expression(enc, &base);
+	mem_add(enc, IC_COPYST);
+	mem_add(enc, member_displ);
+	mem_add(enc, type);
+	mem_add(enc, (item_t)type_size(enc->sx, base_type));
 }
 
 /**
@@ -576,26 +603,19 @@ static value emit_member_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_increment_expression(encoder *const enc, const node *const nd)
+static void emit_increment_expression(encoder *const enc, const node *const nd)
 {
 	const node operand = expression_unary_get_operand(nd);
 
-	const value lvalue = emit_lvalue(enc, &operand);
+	const lvalue value = emit_lvalue(enc, &operand);
 
 	const unary_t operator = expression_unary_get_operator(nd);
 	instruction_t instruction = unary_to_instruction(operator);
 
-	bool is_variable = false;
-	if (lvalue.kind == ADDRESS)
+	if (value.kind == ADDRESS)
 	{
 		instruction = instruction_to_address_ver(instruction);
-	}
-	else if (lvalue.kind == VARIABLE)
-	{
-		is_variable = true;
 	}
 
 	if (type_is_floating(expression_get_type(nd)))
@@ -607,12 +627,10 @@ static value emit_increment_expression(encoder *const enc, const node *const nd)
 		mem_add(enc, instruction);
 	}
 
-	if (is_variable)
+	if (value.kind == VARIABLE)
 	{
-		mem_add(enc, lvalue.displ);
+		mem_add(enc, value.displ);
 	}
-
-	return rvalue();
 }
 
 /**
@@ -620,17 +638,13 @@ static value emit_increment_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_cast_expression(encoder *const enc, const node *const nd)
+static void emit_cast_expression(encoder *const enc, const node *const nd)
 {
 	const node subexpr = expression_cast_get_operand(nd);
 	emit_expression(enc, &subexpr);
 
 	mem_add(enc, IC_WIDEN);
-
-	return rvalue();
 }
 
 /**
@@ -638,10 +652,8 @@ static value emit_cast_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return Expression value
  */
-static value emit_unary_expression(encoder *const enc, const node *const nd)
+static void emit_unary_expression(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
 	const unary_t operator = expression_unary_get_operator(nd);
@@ -652,54 +664,47 @@ static value emit_unary_expression(encoder *const enc, const node *const nd)
 		case UN_POSTDEC:
 		case UN_PREINC:
 		case UN_PREDEC:
-			return emit_increment_expression(enc, nd);
+			emit_increment_expression(enc, nd);
+			return;
 
 		case UN_ADDRESS:
 		{
-			const value lvalue = emit_lvalue(enc, &operand);
-			if (lvalue.kind == VARIABLE)
+			const lvalue value = emit_lvalue(enc, &operand);
+			if (value.kind == VARIABLE)
 			{
 				mem_add(enc, IC_LA);
-				mem_add(enc, lvalue.displ);
+				mem_add(enc, value.displ);
 			}
 
-			return rvalue();
+			return;
 		}
 
 		case UN_INDIRECTION:
-		{
-			const value lvalue = emit_lvalue(enc, &operand);
-			if (lvalue.kind == VARIABLE)
-			{
-				mem_add(enc, IC_LOAD);
-				mem_add(enc, lvalue.displ);
-			}
-
-			return (value){ .kind = ADDRESS, .type = type };
-		}
+			return;
 
 		case UN_PLUS:
-			return emit_expression(enc, &operand);
+			emit_expression(enc, &operand);
+			return;
 
 		case UN_MINUS:
 			emit_expression(enc, &operand);
 			mem_add(enc, type_is_integer(type) ? IC_UNMINUS : IC_UNMINUS_R);
-			return rvalue();
+			return;
 
 		case UN_NOT:
 			emit_expression(enc, &operand);
 			mem_add(enc, IC_NOT);
-			return rvalue();
+			return;
 
 		case UN_LOGNOT:
 			emit_expression(enc, &operand);
 			mem_add(enc, IC_LOG_NOT);
-			return rvalue();
+			return;
 
 		case UN_ABS:
 			emit_expression(enc, &operand);
 			mem_add(enc, type_is_integer(type) ? IC_ABSI : IC_ABS);
-			return rvalue();
+			return;
 	}
 }
 
@@ -708,10 +713,8 @@ static value emit_unary_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return Expression value
  */
-static value emit_integral_expression(encoder *const enc, const node *const nd)
+static void emit_integral_expression(encoder *const enc, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
 
@@ -744,8 +747,6 @@ static value emit_integral_expression(encoder *const enc, const node *const nd)
 	{
 		mem_add(enc, instruction);
 	}
-
-	return rvalue();
 }
 
 /**
@@ -753,36 +754,28 @@ static value emit_integral_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_assignment_expression(encoder *const enc, const node *const nd)
+static void emit_assignment_expression(encoder *const enc, const node *const nd)
 {
 	const node LHS = expression_binary_get_LHS(nd);
-	const value left_value = emit_lvalue(enc, &LHS);
+	const lvalue left_value = emit_lvalue(enc, &LHS);
 
-	enc->is_in_assignment = true;
 	const node RHS = expression_binary_get_RHS(nd);
-	value right_value = emit_lvalue(enc, &RHS);
-	enc->is_in_assignment = false;
 
 	const item_t type = expression_get_type(nd);
 
 	instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
 	if (type_is_structure(enc->sx, type))
 	{
-		if (right_value.kind == VALUE)
-		{
-			operator = left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN;
-		}
-		else
-		{
-			operator = left_value.kind == VARIABLE
-				? right_value.kind == VARIABLE
-					? IC_COPY00 : IC_COPY01
+		enc->is_in_assignment = true;
+		const lvalue right_value = emit_lvalue(enc, &RHS);
+		enc->is_in_assignment = false;
+
+		operator = left_value.kind == VARIABLE
+			? right_value.kind == VARIABLE
+			? IC_COPY00 : IC_COPY01
 				: right_value.kind == VARIABLE
-					? IC_COPY10 : IC_COPY11;
-		}
+				? IC_COPY10 : IC_COPY11;
 
 		mem_add(enc, operator);
 		if (left_value.kind == VARIABLE)
@@ -799,7 +792,7 @@ static value emit_assignment_expression(encoder *const enc, const node *const nd
 	}
 	else // оба операнда базового типа или указатели
 	{
-		right_value = emit_load(enc, right_value);
+		emit_expression(enc, &RHS);
 
 		if (left_value.kind == ADDRESS)
 		{
@@ -818,8 +811,6 @@ static value emit_assignment_expression(encoder *const enc, const node *const nd
 			mem_add(enc, left_value.displ);
 		}
 	}
-
-	return rvalue();
 }
 
 /**
@@ -827,28 +818,27 @@ static value emit_assignment_expression(encoder *const enc, const node *const nd
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_binary_expression(encoder *const enc, const node *const nd)
+static void emit_binary_expression(encoder *const enc, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
 
-	if (operator == BIN_COMMA)
+	if (operation_is_assignment(operator))
+	{
+		emit_assignment_expression(enc, nd);
+	}
+	else if (operator == BIN_COMMA)
 	{
 		const node LHS = expression_binary_get_LHS(nd);
 		emit_void_expression(enc, &LHS);
 
 		const node RHS = expression_binary_get_RHS(nd);
-		return emit_expression(enc, &RHS);
+		emit_expression(enc, &RHS);
 	}
-
-	if (operation_is_assignment(operator))
+	else
 	{
-		return emit_assignment_expression(enc, nd);
+		emit_integral_expression(enc, nd);
 	}
-
-	return emit_integral_expression(enc, nd);
 }
 
 /**
@@ -856,10 +846,8 @@ static value emit_binary_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_ternary_expression(encoder *const enc, const node *const nd)
+static void emit_ternary_expression(encoder *const enc, const node *const nd)
 {
 	const node condition = expression_ternary_get_condition(nd);
 	emit_expression(enc, &condition);
@@ -878,8 +866,6 @@ static value emit_ternary_expression(encoder *const enc, const node *const nd)
 	emit_expression(enc, &RHS);
 
 	mem_set(enc, addr, (item_t)mem_size(enc));
-
-	return rvalue();
 }
 
 /**
@@ -887,10 +873,8 @@ static value emit_ternary_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_expression_list(encoder *const enc, const node *const nd)
+static void emit_expression_list(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
 	const size_t size = expression_list_get_size(nd);
@@ -906,8 +890,6 @@ static value emit_expression_list(encoder *const enc, const node *const nd)
 		const node subexpr = expression_list_get_subexpr(nd, i);
 		emit_expression(enc, &subexpr);
 	}
-
-	return rvalue();
 }
 
 /**
@@ -915,42 +897,53 @@ static value emit_expression_list(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
- *
- *	@return	Expression value
  */
-static value emit_lvalue(encoder *const enc, const node *const nd)
+static void emit_expression(encoder *const enc, const node *const nd)
 {
+	if (expression_is_lvalue(nd))
+	{
+		const lvalue value = emit_lvalue(enc, nd);
+		emit_load_of_lvalue(enc, value);
+		return;
+	}
+
 	switch (expression_get_class(nd))
 	{
-		case EXPR_IDENTIFIER:
-			return emit_identifier_expression(enc, nd);
-
 		case EXPR_LITERAL:
-			return emit_literal_expression(enc, nd);
-
-		case EXPR_SUBSCRIPT:
-			return emit_subscript_expression(enc, nd);
+			emit_literal_expression(enc, nd);
+			return;
 
 		case EXPR_CALL:
-			return emit_call_expression(enc, nd);
+			emit_call_expression(enc, nd);
+			return;
 
 		case EXPR_MEMBER:
-			return emit_member_expression(enc, nd);
+			emit_member_rvalue(enc, nd);
+			return;
 
 		case EXPR_CAST:
-			return emit_cast_expression(enc, nd);
+			emit_cast_expression(enc, nd);
+			return;
 
 		case EXPR_UNARY:
-			return emit_unary_expression(enc, nd);
+			emit_unary_expression(enc, nd);
+			return;
 
 		case EXPR_BINARY:
-			return emit_binary_expression(enc, nd);
+			emit_binary_expression(enc, nd);
+			return;
 
 		case EXPR_TERNARY:
-			return emit_ternary_expression(enc, nd);
+			emit_ternary_expression(enc, nd);
+			return;
 
 		case EXPR_LIST:
-			return emit_expression_list(enc, nd);
+			emit_expression_list(enc, nd);
+			return;
+
+		default:
+			// cannot be rvalue
+			return;
 	}
 }
 
@@ -962,12 +955,18 @@ static value emit_lvalue(encoder *const enc, const node *const nd)
  */
 static void emit_void_expression(encoder *const enc, const node *const nd)
 {
-	emit_lvalue(enc, nd);
+	if (expression_is_lvalue(nd))
+	{
+		emit_lvalue(enc, nd);
+	}
+	else
+	{
+		emit_expression(enc, nd);
 
-	const size_t index = mem_get(enc, mem_size(enc) - 1) < 9000 ? mem_size(enc) - 2 : mem_size(enc) - 1;
-	instruction_t operation = (instruction_t)mem_get(enc, index);
-	operation = instruction_to_void_ver(operation);
-	mem_set(enc, index, operation);
+		const size_t index = mem_get(enc, mem_size(enc) - 1) < 9000 ? mem_size(enc) - 2 : mem_size(enc) - 1;
+		const instruction_t operation = (instruction_t)mem_get(enc, index);
+		mem_set(enc, index, instruction_to_void_ver(operation));
+	}
 }
 
 
