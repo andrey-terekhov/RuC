@@ -15,7 +15,6 @@
  */
 
 #include "codegen.h"
-#include <stdlib.h>
 #include "AST.h"
 #include "errors.h"
 #include "instructions.h"
@@ -1530,8 +1529,7 @@ static void emit_goto_statement(encoder *const enc, const node *const nd)
 {
 	mem_add(enc, IC_B);
 
-	const item_t label_id = node_get_arg(nd, 0);
-	const size_t id = (size_t)llabs(label_id);
+	const size_t id = statement_goto_get_label(nd);
 	const item_t addr = ident_get_displ(enc->sx, id);
 
 	if (addr > 0)
@@ -1544,8 +1542,8 @@ static void emit_goto_statement(encoder *const enc, const node *const nd)
 		// Метка еще не описана
 		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
 
-		// Если эта метка уже встречалась, ставим адрес предыдущего перехода
-		mem_add(enc, label_id < 0 ? 0 : addr);
+		// Ставим адрес предыдущего перехода
+		mem_add(enc, addr);
 	}
 }
 

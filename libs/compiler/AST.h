@@ -16,10 +16,11 @@
 
 #pragma once
 
+#include <stdlib.h>
 #include "node_vector.h"
 #include "operations.h"
-#include "tree.h"
 #include "syntax.h"
+#include "tree.h"
 
 
 #ifdef __cplusplus
@@ -890,7 +891,7 @@ inline node statement_for_get_body(const node *const nd)
  */
 inline size_t statement_goto_get_label(const node *const nd)
 {
-	return node_get_type(nd) == OP_GOTO ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+	return node_get_type(nd) == OP_GOTO ? (size_t)llabs(node_get_arg(nd, 0)) : SIZE_MAX;
 }
 
 
