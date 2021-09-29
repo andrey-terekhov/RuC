@@ -326,13 +326,7 @@ static lvalue emit_identifier_expression(encoder *const enc, const node *const n
 static lvalue emit_subscript_expression(encoder *const enc, const node *const nd)
 {
 	const node base = expression_subscript_get_base(nd);
-	const lvalue value = emit_lvalue(enc, &base);
-
-	if (value.kind == VARIABLE)
-	{
-		mem_add(enc, IC_LOAD);
-		mem_add(enc, value.displ);
-	}
+	emit_expression(enc, &base);
 
 	const node index = expression_subscript_get_index(nd);
 	emit_expression(enc, &index);
