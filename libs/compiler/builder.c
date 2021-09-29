@@ -639,7 +639,7 @@ node build_cast_expression(const item_t target_type, node *const expr)
 
 			// Тут пошли какие-то костыли, чтобы присоединить новый узел к готовому списку
 			item_t buffer[8];
-			const size_t argc = item_store_double(value, buffer) + 4;
+			const size_t argc = item_store_double((double)value, buffer) + 4;
 
 			const node result = node_insert(expr, OP_LITERAL, argc);
 			node_set_arg(&result, 0, TYPE_FLOATING);
