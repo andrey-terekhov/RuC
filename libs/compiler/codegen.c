@@ -512,6 +512,56 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit argument
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_argument(encoder *const enc, const node *const nd)
+{
+	const item_t arg_type = expression_get_type(nd);
+
+	if (type_is_function(enc->sx, arg_type))
+	{
+		const item_t displ = ident_get_displ(enc->sx, expression_identifier_get_id(nd));
+		mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
+		mem_add(enc, llabs(displ));
+		return;
+	}
+	else if (expression_get_type(nd) == EXPR_LIST)
+	{
+		const node fst = expression_list_get_subexpr(nd, 0);
+		const item_t type = expression_get_type(&fst);
+
+		if (type_is_integer(type))
+		{
+			mem_add(enc, IC_ROWING);
+		}
+		else // if (type_is_floating(type))
+		{
+			mem_add(enc, IC_ROWING_D);
+		}
+
+		const size_t size = expression_list_get_size(nd);
+		for (size_t i = 0; i < size; i++)
+		{
+			const node subexpr = expression_list_get_subexpr(nd, i);
+			if (expression_get_type(&subexpr) != EXPR_LITERAL)
+			{
+				system_error(wrong_init_in_actparam);
+				enc->sx->was_error = true;
+			}
+
+			emit_expression(enc, &subexpr);
+		}
+	}
+	else
+	{
+		emit_expression(enc, nd);
+	}
+}
+
+/**
  *	Emit call expression
  *
  *	@param	enc			Encoder
@@ -533,18 +583,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	for (size_t i = 0; i < args; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
-		const item_t arg_type = expression_get_type(&argument);
-		if (type_is_function(enc->sx, arg_type))
-		{
-			const item_t displ = ident_get_displ(enc->sx, expression_identifier_get_id(&argument));
-			mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
-			mem_add(enc, llabs(displ));
-		}
-		else
-		{
-			emit_expression(enc, &argument);
-		}
-		// TODO: actstring
+		emit_argument(enc, &argument);
 	}
 
 	if (func >= BEGIN_USER_FUNC)
