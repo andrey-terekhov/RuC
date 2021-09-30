@@ -697,26 +697,8 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number)
 {
-	const size_t old_id = vector_size(&prs->sx->identifiers);
-	const item_t ref = repr_get_reference(prs->sx, prs->lxr.repr);
-	vector_add(&prs->sx->identifiers, ref == ITEM_MAX ? ITEM_MAX - 1 : ref);
-	vector_increase(&prs->sx->identifiers, 3);
-
-	ident_set_repr(prs->sx, old_id, (item_t)prs->lxr.repr);
-	ident_set_type(prs->sx, old_id, type);
-
-	repr_set_reference(prs->sx, prs->lxr.repr, (item_t)old_id);
-
+	const size_t old_id = to_identab(prs, prs->lxr.repr, 0, type);
 	ident_set_displ(prs->sx, old_id, number);
-
-	if (old_id == SIZE_MAX)
-	{
-		parser_error(prs, redefinition_of_main);
-	}
-	else if (old_id == SIZE_MAX - 1)
-	{
-		parser_error(prs, repeated_decl, repr_get_name(prs->sx, prs->lxr.repr));
-	}
 }
 
 static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
