@@ -353,19 +353,14 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 
 			for (size_t i = 0; i < actual_inits; i++)
 			{
-				node subexpr = expression_list_get_subexpr(init, i);
-				if (!node_is_correct(&subexpr))
-				{
-					return false;
-				}
-
 				const item_t type = type_structure_get_member_type(sx, expected_type, i);
+				node subexpr = expression_list_get_subexpr(init, i);
 				if (!check_assignment_operands(sx, type, &subexpr))
 				{
 					return false;
 				}
 			}
-			
+
 			expression_list_set_type(init, expected_type);
 			return true;
 		}
