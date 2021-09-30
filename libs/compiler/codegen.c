@@ -785,25 +785,24 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 static void emit_assignment_expression(encoder *const enc, const node *const nd)
 {
 	const node LHS = expression_binary_get_LHS(nd);
+	const node RHS = expression_binary_get_RHS(nd);
 	const lvalue left_value = emit_lvalue(enc, &LHS);
 
-	const node RHS = expression_binary_get_RHS(nd);
-
 	const item_t type = expression_get_type(nd);
-
 	if (type_is_structure(enc->sx, type))
 	{
 		if (expression_is_lvalue(&RHS))
 		{
 			const lvalue right_value = emit_lvalue(enc, &RHS);
 
-			instruction_t operator = left_value.kind == VARIABLE
+			mem_add(enc, left_value.kind == VARIABLE
 				? right_value.kind == VARIABLE
-					? IC_COPY00 : IC_COPY01
+					? IC_COPY00
+					: IC_COPY01
 				: right_value.kind == VARIABLE
-					? IC_COPY10 : IC_COPY11;
+					? IC_COPY10
+					: IC_COPY11);
 
-			mem_add(enc, operator);
 			if (left_value.kind == VARIABLE)
 			{
 				mem_add(enc, left_value.displ);
@@ -819,8 +818,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 		else
 		{
 			emit_expression(enc, &RHS);
-			instruction_t operator = left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN;
-			mem_add(enc, operator);
+			mem_add(enc, left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN);
 			if (left_value.kind == VARIABLE)
 			{
 				mem_add(enc, left_value.displ);
