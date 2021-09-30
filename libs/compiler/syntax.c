@@ -560,7 +560,7 @@ bool type_is_floating(const item_t type)
 
 bool type_is_arithmetic(const item_t type)
 {
-	return type_is_integer(type) || type_is_floating(type) || type_is_enum_const(type);
+	return type_is_integer(type) || type_is_floating(type);
 }
 
 bool type_is_void(const item_t type)

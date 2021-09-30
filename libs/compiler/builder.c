@@ -59,10 +59,9 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 
 static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
-	return (type_is_integer(left_type) || type_is_enum_const(left_type))
-		&& (type_is_integer(right_type) || type_is_enum_const(right_type)) 
-			? TYPE_INTEGER
-			: TYPE_FLOATING;
+	return (type_is_integer(left_type) && type_is_integer(right_type)) 
+		? TYPE_INTEGER
+		: TYPE_FLOATING;
 }
 
 static node build_assignment_expression(syntax *const sx, node *const nd_left, node *const nd_right
@@ -435,8 +434,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 		return true; // check enum initializer
 	}
 
-	if (type_is_integer(expected_type)
-		&& (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type)))
+	if (type_is_integer(expected_type) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type)))
 	{
 		return true; // check int initializer
 	}
