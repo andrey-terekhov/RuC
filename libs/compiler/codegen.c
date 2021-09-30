@@ -228,13 +228,13 @@ static int enc_export(const encoder *const enc)
 {
 	uni_printf(enc->sx->io, "#!/usr/bin/ruc-vm\n");
 
-	uni_printf(enc->sx->io, "%zi %zi %zi %zi %zi %" PRIitem " %i\n"
+	uni_printf(enc->sx->io, "%zi %zi %zi %zi %zi %" PRIitem " 0\n"
 		, vector_size(&enc->memory)
 		, vector_size(&enc->sx->functions)
 		, vector_size(&enc->identifiers)
 		, vector_size(&enc->representations)
 		, vector_size(&enc->sx->types)
-		, enc->sx->max_displg, /*enc->max_threads*/0);
+		, enc->sx->max_displg);
 
 	return print_table(enc, &enc->memory)
 		|| print_table(enc, &enc->sx->functions)
