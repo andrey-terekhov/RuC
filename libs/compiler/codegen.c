@@ -22,6 +22,7 @@
 #include "string.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include "utf8.h"
 #include "writer.h"
 
 
