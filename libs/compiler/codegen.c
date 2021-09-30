@@ -637,7 +637,6 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 static void emit_increment_expression(encoder *const enc, const node *const nd)
 {
 	const node operand = expression_unary_get_operand(nd);
-
 	const lvalue value = emit_lvalue(enc, &operand);
 
 	const unary_t operator = expression_unary_get_operator(nd);
@@ -673,7 +672,6 @@ static void emit_cast_expression(encoder *const enc, const node *const nd)
 {
 	const node subexpr = expression_cast_get_operand(nd);
 	emit_expression(enc, &subexpr);
-
 	mem_add(enc, IC_WIDEN);
 }
 

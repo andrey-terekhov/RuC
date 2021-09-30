@@ -810,7 +810,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				warning(sx->io, variable_deviation);
 			}
 
-			if (type_is_arithmetic(left_type && type_is_arithmetic(right_type)))
+			if (type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
 			{
 				usual_arithmetic_conversions(LHS, RHS);
 				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
