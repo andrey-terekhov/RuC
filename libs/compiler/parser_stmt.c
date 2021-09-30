@@ -465,7 +465,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 			parser_error(prs, no_ret_in_func);
 		}
 	}
-	else if (return_type != TYPE_VOID_POINTER)
+	else if (return_type != type_pointer(prs->sx, TYPE_VOID))
 	{
 		if (type_is_void(return_type))
 		{
