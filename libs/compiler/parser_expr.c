@@ -480,6 +480,7 @@ node parse_initializer(parser *const prs)
 			parser_error(prs, expected_r_brace, l_loc);
 			token_skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
 			token_try_consume(prs, TK_R_BRACE);
+			
 			node_vector_clear(&inits);
 			return node_broken();
 		}
