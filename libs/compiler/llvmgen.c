@@ -865,13 +865,11 @@ static void emit_member_expression(information *const info, const node *const nd
 	item_t type = expression_get_type(&base);
 	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
 
-	bool is_pointer = false;
+	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
 	{
-		to_code_load(info, info->register_num, displ, type, false);
-		info->register_num++;
+		to_code_load(info, info->register_num++, displ, type, false);
 		type = type_pointer_get_element_type(info->sx, type);
-		is_pointer = true;
 	}
 
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
@@ -2089,8 +2087,6 @@ static void builin_functions_declaration(information *const info)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
 
-				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
-
 				// TODO: будет исправлено, когда будет введён тип char
 				if (i == BI_FOPEN)
 				{
@@ -2098,7 +2094,7 @@ static void builin_functions_declaration(information *const info)
 				}
 				else
 				{				
-					type_to_io(info, param_type);
+					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
 				}
 			}
 			uni_printf(info->sx->io, ")\n");
