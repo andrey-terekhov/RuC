@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "AST.h"
 #include "errors.h"
 #include "hash.h"
 #include "operations.h"
@@ -89,11 +90,6 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static inline const char *ident_get_spelling(const syntax *const sx, const size_t index)
-{
-	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
-}
-
 // TODO: такая функция есть в builder, хотелось бы не дублировать
 static inline item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
@@ -145,10 +141,6 @@ static void type_to_io(information *const info, const item_t type)
 	{
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
-	}
-	else
-	{
-		uni_printf(info->sx->io, "i8");
 	}
 }
 
@@ -494,7 +486,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
 {
-	if (operation_type == answer_type || type_is_null_pointer(answer_type) ||  type_is_pointer(info->sx, answer_type))
+	if (operation_type == answer_type || type_is_null_pointer(answer_type) || type_is_pointer(info->sx, answer_type))
 	{
 		return;
 	}
@@ -931,11 +923,16 @@ static void expression(information *const info, node *const nd)
 			info->answer_kind = AREG;
 		}
 		break;
-		case OP_CONSTANT:
+		case OP_LITERAL:
 		{
 			const item_t type = node_get_arg(nd, 0);
 
-			if (type_is_integer(type))
+			if (type_is_string(info->sx, type))
+			{
+				info->answer_string = node_get_arg(nd, 2);
+				info->answer_kind = ASTR;
+			}
+			else if (type_is_integer(type))
 			{
 				const item_t num = node_get_arg(nd, 2);
 
@@ -1109,7 +1106,10 @@ static void expression(information *const info, node *const nd)
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
 				arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
-				to_code_try_widen(info, arguments_value_type[i], answer_type);
+				if (info->answer_kind != ASTR)
+				{
+					to_code_try_widen(info, arguments_value_type[i], answer_type);
+				}
 
 				if (info->answer_kind == AREG)
 				{
@@ -1188,16 +1188,38 @@ static void expression(information *const info, node *const nd)
 			uni_printf(info->sx->io, ")\n");
 		}
 		break;
-		case OP_STRING:
-		{	
-			info->answer_string = node_get_arg(nd, 2);
-			info->answer_kind = ASTR;
+		case OP_SELECT:
+		{
+			const item_t place = node_get_arg(nd, 2);
+			const item_t elem_type = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+
+			const bool is_pointer = type_is_pointer(info->sx, type);
+			if (is_pointer)
+			{
+				to_code_load(info, info->register_num++, displ, type, false);
+				type = type_pointer_get_element_type(info->sx, type);
+			}
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem 
+				", %%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n"
+				, info->register_num, type, type, is_pointer ? "" : "var"
+				, is_pointer ? info->register_num - 1 : displ, place);
+
+			if (info->variable_location != LMEM)
+			{
+				info->register_num++;
+				to_code_load(info, info->register_num, info->register_num - 1, elem_type, true);
+				info->answer_kind = AREG;
+			}
+
+			info->answer_reg = info->register_num++;
 			node_set_next(nd);
 		}
 		break;
-		case OP_SELECT:
-			node_set_next(nd);
-			break;
 			
 		case OP_UNARY:
 			unary_operation(info, nd);
@@ -1629,6 +1651,7 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_DECL_TYPE:
 			case OP_NOP:
 				node_set_next(nd);
 				break;
@@ -1831,9 +1854,16 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-
-				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
-				type_to_io(info, param_type);
+				
+				// TODO: будет исправлено, когда будет введён тип char
+				if (i == BI_FOPEN)
+				{
+					uni_printf(info->sx->io, "i8*");
+				}
+				else
+				{				
+					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
+				}
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
