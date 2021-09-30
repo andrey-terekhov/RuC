@@ -532,8 +532,6 @@ static void emit_argument(encoder *const enc, const node *const nd)
 	else if (expression_get_class(nd) == EXPR_LIST)
 	{
 		const node fst = expression_list_get_subexpr(nd, 0);
-		const item_t type = expression_get_type(&fst);
-		const bool is_int = type_is_integer(type);
 
 		mem_add(enc, IC_LI);
 		const size_t reserved = mem_size(enc) + 4;
@@ -551,14 +549,13 @@ static void emit_argument(encoder *const enc, const node *const nd)
 				enc->sx->was_error = true;
 			}
 
-			if (is_int)
+			if (type_is_integer(expression_get_type(&fst)))
 			{
 				mem_add(enc, expression_literal_get_integer(&subexpr));
 			}
 			else
 			{
-				const double value = expression_literal_get_floating(&subexpr);
-				mem_add_double(enc, value);
+				mem_add_double(enc, expression_literal_get_floating(&subexpr));
 			}
 		}
 
