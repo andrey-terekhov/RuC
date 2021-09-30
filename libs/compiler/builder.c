@@ -527,13 +527,8 @@ node build_call_expression(syntax *const sx, node *const callee
 
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		node argument = node_vector_get(args, i);
-		if (!node_is_correct(&argument))
-		{
-			return node_broken();
-		}
-
 		const item_t expected_type = type_function_get_parameter_type(sx, callee_type, i);
+		node argument = node_vector_get(args, i);
 		if (!check_assignment_operands(sx, expected_type, &argument))
 		{
 			return node_broken();
