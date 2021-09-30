@@ -77,28 +77,18 @@ instruction_t unary_to_instruction(const unary_t operator)
 {
 	switch (operator)
 	{
-		case UN_POSTINC:
-			return IC_POST_INC;
-		case UN_POSTDEC:
-			return IC_POST_DEC;
-		case UN_PREINC:
-			return IC_PRE_INC;
-		case UN_PREDEC:
-			return IC_PRE_DEC;
-		case UN_ADDRESS:
-			return IC_LA;
-		case UN_INDIRECTION:
-			return IC_LOAD;
-		case UN_PLUS:
-			return IC_NOP;
-		case UN_MINUS:
-			return IC_UNMINUS;
-		case UN_NOT:
-			return IC_NOT;
-		case UN_LOGNOT:
-			return IC_LOG_NOT;
-		case UN_ABS:
-			return IC_ABSI;
+		case UN_POSTINC:				return IC_POST_INC;
+		case UN_POSTDEC:				return IC_POST_DEC;
+		case UN_PREINC:					return IC_PRE_INC;
+		case UN_PREDEC:					return IC_PRE_DEC;
+		case UN_ADDRESS:				return IC_LA;
+		case UN_INDIRECTION:			return IC_LOAD;
+		case UN_PLUS:					return IC_NOP;
+		case UN_MINUS:					return IC_UNMINUS;
+		case UN_NOT:					return IC_NOT;
+		case UN_LOGNOT:					return IC_LOG_NOT;
+		case UN_ABS:					return IC_ABSI;
+
 		default:
 			return IC_NOP;
 	}
@@ -108,64 +98,36 @@ instruction_t binary_to_instruction(const binary_t operator)
 {
 	switch (operator)
 	{
-		case BIN_MUL:
-			return IC_MUL;
-		case BIN_DIV:
-			return IC_DIV;
-		case BIN_REM:
-			return IC_REM;
-		case BIN_ADD:
-			return IC_ADD;
-		case BIN_SUB:
-			return IC_SUB;
-		case BIN_SHL:
-			return IC_SHL;
-		case BIN_SHR:
-			return IC_SHR;
-		case BIN_LT:
-			return IC_LT;
-		case BIN_GT:
-			return IC_GT;
-		case BIN_LE:
-			return IC_LE;
-		case BIN_GE:
-			return IC_GE;
-		case BIN_EQ:
-			return IC_EQ;
-		case BIN_NE:
-			return IC_NE;
-		case BIN_AND:
-			return IC_AND;
-		case BIN_XOR:
-			return IC_XOR;
-		case BIN_OR:
-			return IC_OR;
-		case BIN_LOG_AND:
-			return IC_LOG_AND;
-		case BIN_LOG_OR:
-			return IC_LOG_OR;
-		case BIN_ASSIGN:
-			return IC_ASSIGN;
-		case BIN_MUL_ASSIGN:
-			return IC_MUL_ASSIGN;
-		case BIN_DIV_ASSIGN:
-			return IC_DIV_ASSIGN;
-		case BIN_REM_ASSIGN:
-			return IC_REM_ASSIGN;
-		case BIN_ADD_ASSIGN:
-			return IC_ADD_ASSIGN;
-		case BIN_SUB_ASSIGN:
-			return IC_SUB_ASSIGN;
-		case BIN_SHL_ASSIGN:
-			return IC_SHL_ASSIGN;
-		case BIN_SHR_ASSIGN:
-			return IC_SHR_ASSIGN;
-		case BIN_AND_ASSIGN:
-			return IC_AND_ASSIGN;
-		case BIN_XOR_ASSIGN:
-			return IC_XOR_ASSIGN;
-		case BIN_OR_ASSIGN:
-			return IC_OR_ASSIGN;
+		case BIN_MUL:					return IC_MUL;
+		case BIN_DIV:					return IC_DIV;
+		case BIN_REM:					return IC_REM;
+		case BIN_ADD:					return IC_ADD;
+		case BIN_SUB:					return IC_SUB;
+		case BIN_SHL:					return IC_SHL;
+		case BIN_SHR:					return IC_SHR;
+		case BIN_LT:					return IC_LT;
+		case BIN_GT:					return IC_GT;
+		case BIN_LE:					return IC_LE;
+		case BIN_GE:					return IC_GE;
+		case BIN_EQ:					return IC_EQ;
+		case BIN_NE:					return IC_NE;
+		case BIN_AND:					return IC_AND;
+		case BIN_XOR:					return IC_XOR;
+		case BIN_OR:					return IC_OR;
+		case BIN_LOG_AND:				return IC_LOG_AND;
+		case BIN_LOG_OR:				return IC_LOG_OR;
+		case BIN_ASSIGN:				return IC_ASSIGN;
+		case BIN_MUL_ASSIGN:			return IC_MUL_ASSIGN;
+		case BIN_DIV_ASSIGN:			return IC_DIV_ASSIGN;
+		case BIN_REM_ASSIGN:			return IC_REM_ASSIGN;
+		case BIN_ADD_ASSIGN:			return IC_ADD_ASSIGN;
+		case BIN_SUB_ASSIGN:			return IC_SUB_ASSIGN;
+		case BIN_SHL_ASSIGN:			return IC_SHL_ASSIGN;
+		case BIN_SHR_ASSIGN:			return IC_SHR_ASSIGN;
+		case BIN_AND_ASSIGN:			return IC_AND_ASSIGN;
+		case BIN_XOR_ASSIGN:			return IC_XOR_ASSIGN;
+		case BIN_OR_ASSIGN:				return IC_OR_ASSIGN;
+
 		default:
 			return IC_NOP;
 	}
@@ -176,21 +138,21 @@ instruction_t instruction_to_address_ver(const instruction_t instruction)
 {
 	switch (instruction)
 	{
-		case IC_PRE_INC:	return IC_PRE_INC_AT;
-		case IC_PRE_DEC:	return IC_PRE_DEC_AT;
-		case IC_POST_INC:	return IC_POST_INC_AT;
-		case IC_POST_DEC:	return IC_POST_DEC_AT;
-		case IC_REM_ASSIGN:	return IC_REM_ASSIGN_AT;
-		case IC_SHL_ASSIGN:	return IC_SHL_ASSIGN_AT;
-		case IC_SHR_ASSIGN:	return IC_SHR_ASSIGN_AT;
-		case IC_AND_ASSIGN:	return IC_AND_ASSIGN_AT;
-		case IC_XOR_ASSIGN:	return IC_XOR_ASSIGN_AT;
-		case IC_OR_ASSIGN:	return IC_OR_ASSIGN_AT;
-		case IC_ASSIGN:		return IC_ASSIGN_AT;
-		case IC_ADD_ASSIGN:	return IC_ADD_ASSIGN_AT;
-		case IC_SUB_ASSIGN:	return IC_SUB_ASSIGN_AT;
-		case IC_MUL_ASSIGN:	return IC_MUL_ASSIGN_AT;
-		case IC_DIV_ASSIGN:	return IC_DIV_ASSIGN_AT;
+		case IC_PRE_INC:				return IC_PRE_INC_AT;
+		case IC_PRE_DEC:				return IC_PRE_DEC_AT;
+		case IC_POST_INC:				return IC_POST_INC_AT;
+		case IC_POST_DEC:				return IC_POST_DEC_AT;
+		case IC_REM_ASSIGN:				return IC_REM_ASSIGN_AT;
+		case IC_SHL_ASSIGN:				return IC_SHL_ASSIGN_AT;
+		case IC_SHR_ASSIGN:				return IC_SHR_ASSIGN_AT;
+		case IC_AND_ASSIGN:				return IC_AND_ASSIGN_AT;
+		case IC_XOR_ASSIGN:				return IC_XOR_ASSIGN_AT;
+		case IC_OR_ASSIGN:				return IC_OR_ASSIGN_AT;
+		case IC_ASSIGN:					return IC_ASSIGN_AT;
+		case IC_ADD_ASSIGN:				return IC_ADD_ASSIGN_AT;
+		case IC_SUB_ASSIGN:				return IC_SUB_ASSIGN_AT;
+		case IC_MUL_ASSIGN:				return IC_MUL_ASSIGN_AT;
+		case IC_DIV_ASSIGN:				return IC_DIV_ASSIGN_AT;
 
 		default:
 			return instruction;

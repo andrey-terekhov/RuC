@@ -93,13 +93,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case typecheck_member_reference_struct:
 			sprintf(msg, "оператор '.' применяется не к структуре");
 			break;
-		case typecheck_member_reference_arrow:		/**< Member reference type is not a pointer */
+		case typecheck_member_reference_arrow:		
 			sprintf(msg, "оператор '->' применяется не к указателю на структуру");
 			break;
-		case typecheck_member_reference_ivar:		/**< Struct does not have a member named that */
-			sprintf(msg, "нет такого поля в структуре");
-			break;
-		case no_member:
+		case typecheck_member_reference_ivar:
 			sprintf(msg, "нет такого поля в структуре");
 			break;
 		case typecheck_illegal_increment:
