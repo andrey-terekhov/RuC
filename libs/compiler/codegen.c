@@ -576,16 +576,14 @@ static void emit_argument(encoder *const enc, const node *const nd)
 static void emit_call_expression(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
-	const item_t func_type = expression_get_type(&callee);
-	const size_t args = type_function_get_parameter_amount(enc->sx, func_type);
-
 	const size_t func = expression_identifier_get_id(&callee);
-
 	if (func >= BEGIN_USER_FUNC)
 	{
 		mem_add(enc, IC_CALL1);
 	}
 
+	const item_t func_type = expression_get_type(&callee);
+	const size_t args = type_function_get_parameter_amount(enc->sx, func_type);
 	for (size_t i = 0; i < args; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
