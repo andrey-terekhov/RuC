@@ -222,7 +222,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_INTEGER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
-	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, "null"));
+	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 }
 
 
@@ -688,7 +688,7 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 	local_modetab[0] = TYPE_FUNCTION;
 	local_modetab[1] = return_type;
 
-	if (!strcmp(args, "null"))
+	if (args != NULL)
 	{
 		while (args[i] != '\0')
 		{

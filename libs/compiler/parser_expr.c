@@ -271,18 +271,16 @@ static node parse_postfix_expression(parser *const prs)
 				{
 					const location r_loc = token_consume(prs);
 					operand = build_call_expression(prs->sx, &operand, &args, l_loc, r_loc);
-
-					node_vector_clear(&args);
 				}
 				else
 				{
 					parser_error(prs, expected_r_paren, l_loc);
 					token_skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 					token_try_consume(prs, TK_R_PAREN);
-					node_vector_clear(&args);
 					operand = node_broken();
 				}
 
+				node_vector_clear(&args);
 				continue;
 			}
 

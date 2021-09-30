@@ -110,7 +110,7 @@ inline size_t node_vector_size(const node_vector *const vec)
  */
 inline int node_vector_clear(node_vector *const vec)
 {
-	return vec ? vector_clear(&vec->nodes) : 0;
+	return vector_clear(&vec->nodes);
 }
 
 #ifdef __cplusplus
