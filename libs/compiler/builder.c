@@ -609,20 +609,15 @@ node build_cast_expression(const item_t target_type, node *const expr)
 		{
 			// Пока тут только int -> float
 			const item_t value = expression_literal_get_integer(expr);
+			const node result = node_insert(expr, OP_LITERAL, DOUBLE_SIZE + 4);
 
-			// Тут пошли какие-то костыли, чтобы присоединить новый узел к готовому списку
-			item_t buffer[8];
-			const size_t argc = item_store_double((double)value, buffer) + 4;
-
-			const node result = node_insert(expr, OP_LITERAL, argc);
 			node_set_arg(&result, 0, TYPE_FLOATING);
 			node_set_arg(&result, 1, RVALUE);
 			node_set_arg_double(&result, 2, (double)value);
-			node_set_arg(&result, argc - 2, (item_t)loc.begin);
-			node_set_arg(&result, argc - 1, (item_t)loc.end);
+			node_set_arg(&result, DOUBLE_SIZE + 2, (item_t)loc.begin);
+			node_set_arg(&result, DOUBLE_SIZE + 3, (item_t)loc.end);
 
 			node_remove(expr);
-
 			return result;
 		}
 
