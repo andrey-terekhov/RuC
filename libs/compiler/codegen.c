@@ -501,13 +501,15 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_B);
 		mem_increase(enc, 2);
 
-		const size_t length = string_length(enc->sx, string_num);
-		for (size_t i = 0; i < length; i++)
+
+		item_t length = 0;
+		for (size_t i = 0; string[i] != '\0'; i += utf8_symbol_size(string[i]))
 		{
-			mem_add(enc, string[i]);
+			mem_add(enc, utf8_convert(&string[i]));
+			length++;
 		}
 
-		mem_set(enc, reserved - 1, (item_t)length);
+		mem_set(enc, reserved - 1, length);
 		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
 	}
 }
@@ -521,13 +523,11 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 static void emit_argument(encoder *const enc, const node *const nd)
 {
 	const item_t arg_type = expression_get_type(nd);
-
 	if (type_is_function(enc->sx, arg_type))
 	{
 		const item_t displ = ident_get_displ(enc->sx, expression_identifier_get_id(nd));
 		mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
 		mem_add(enc, llabs(displ));
-		return;
 	}
 	else if (expression_get_class(nd) == EXPR_LIST)
 	{
