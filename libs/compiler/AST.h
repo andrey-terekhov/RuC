@@ -928,7 +928,7 @@ inline node statement_return_get_expression(const node *const nd)
  */
 inline size_t statement_printf_get_argc(const node *const nd)
 {
-	return (node_get_type(nd) == OP_PRINTF && node_get_amount(nd) > 0) ? node_get_amount(nd) - 1 : 0;
+	return node_get_type(nd) == OP_PRINTF && node_get_amount(nd) > 0 ? node_get_amount(nd) - 1 : 0;
 }
 
 /**
