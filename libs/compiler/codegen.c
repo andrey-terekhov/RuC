@@ -397,14 +397,11 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 		const lvalue value = emit_lvalue(enc, &base);
 		if (value.kind == VARIABLE)
 		{
-			if (value.displ > 0)
-			{
-				return (lvalue){ .kind = VARIABLE, .type = type, .displ = value.displ + member_displ };
-			}
-			else
-			{
-				return (lvalue){ .kind = VARIABLE, .type = type, .displ = value.displ - member_displ };
-			}
+			return (lvalue){
+					.kind = VARIABLE,
+					.type = type,
+					.displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ
+				};
 		}
 		else // if (enc->last_kind == ADDRESS)
 		{
