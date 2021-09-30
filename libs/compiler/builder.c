@@ -889,9 +889,6 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 	}
 
 	const item_t cond_type = expression_get_type(cond);
-	const item_t LHS_type = expression_get_type(LHS);
-	const item_t RHS_type = expression_get_type(RHS);
-
 	if (!type_is_scalar(sx, cond_type))
 	{
 		semantic_error(sx, expression_get_location(cond), typecheck_statement_requires_scalar);
@@ -900,6 +897,8 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 
 	const location loc = { expression_get_location(cond).begin, expression_get_location(RHS).end };
 
+	const item_t LHS_type = expression_get_type(LHS);
+	const item_t RHS_type = expression_get_type(RHS);
 	if (type_is_arithmetic(LHS_type) && type_is_arithmetic(RHS_type))
 	{
 		const item_t type = usual_arithmetic_conversions(LHS, RHS);
@@ -911,12 +910,8 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 		return fold_ternary_expression(LHS_type, cond, LHS, RHS, loc);
 	}
 
-	if (type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
-	{
-		return fold_ternary_expression(RHS_type, cond, LHS, RHS, loc);
-	}
-
-	if (LHS_type == RHS_type)
+	if ((type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
+		|| (LHS_type == RHS_type))
 	{
 		return fold_ternary_expression(RHS_type, cond, LHS, RHS, loc);
 	}
