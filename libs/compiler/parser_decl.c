@@ -334,7 +334,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[2] = (item_t)fields * 2;
 
 	const item_t result = type_add(prs->sx, local_modetab, local_md);
-	node_set_arg(&nd, 0, result);
+	if (was_array)
+	{
+		node_set_arg(&nd, 0, result);
+	}
+	
 	return result;
 }
 
