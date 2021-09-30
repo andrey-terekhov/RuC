@@ -414,8 +414,7 @@ static void write_member_expression(writer *const wrt, const node *const nd)
  */
 static void write_cast_expression(writer *const wrt, const node *const nd)
 {
-	write_indent(wrt);
-	write(wrt, "EXPR_CAST from ");
+	write_line(wrt, "EXPR_CAST from ");
 
 	const item_t target_type = expression_get_type(nd);
 	const item_t source_type = expression_cast_get_source_type(nd);
