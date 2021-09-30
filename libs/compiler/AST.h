@@ -346,7 +346,7 @@ inline bool expression_member_is_arrow(const node *const nd)
 /**
  *	Create new cast expression
  *
- *	@param	target_type	Value type
+ *	@param	target_type	Value target type
  *	@param	source_type	Source type
  *	@param	expr		Operand
  *	@param	loc			Expression location
