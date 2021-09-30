@@ -387,19 +387,14 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 	}
 
 	const item_t actual_type = expression_get_type(init);
-
 	if (type_is_floating(expected_type) && type_is_integer(actual_type))
 	{
 		*init = build_cast_expression(expected_type, init);
 		return true;
 	}
 
-	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
-	{
-		return true;
-	}
-
-	if (expected_type == actual_type)
+	if ((type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
+		|| (expected_type == actual_type))
 	{
 		return true;
 	}
@@ -410,18 +405,18 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
 {
-	const size_t identifier = (size_t)repr_get_reference(sx, name);
+	const item_t identifier = repr_get_reference(sx, name);
 
-	if ((item_t)identifier == ITEM_MAX)
+	if (identifier == ITEM_MAX)
 	{
 		semantic_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
 		return node_broken();
 	}
 
-	const item_t type = ident_get_type(sx, identifier);
+	const item_t type = ident_get_type(sx, (size_t)identifier);
 	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
 
-	return expression_identifier(sx, type, category, identifier, loc);
+	return expression_identifier(sx, type, category, (size_t)identifier, loc);
 }
 
 node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc)
