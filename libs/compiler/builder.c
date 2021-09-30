@@ -119,7 +119,7 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 }
 
 static node fold_binary_expression(syntax *const sx, const item_t type
-   , node *const LHS, node *const RHS, const binary_t op, const location loc)
+	, node *const LHS, node *const RHS, const binary_t op, const location loc)
 {
 	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
 	{
