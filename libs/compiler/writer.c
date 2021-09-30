@@ -16,6 +16,8 @@
 
 #include "writer.h"
 #include <string.h>
+#include "AST.h"
+#include "instructions.h"
 #include "uniprinter.h"
 
 
