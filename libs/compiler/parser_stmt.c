@@ -32,6 +32,7 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_FLOAT:
 		case TK_DOUBLE:
 		case TK_STRUCT:
+		case TK_ENUM:
 		case TK_FILE:
 		case TK_TYPEDEF:
 			return true;
@@ -122,7 +123,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	node_copy(&prs->sx->nd, &nd);
 	const node condition = parse_constant_expression(prs);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -222,7 +223,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	const node condition = parse_expression(prs);
 	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}

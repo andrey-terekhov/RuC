@@ -46,18 +46,18 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 	va_end(args);
 }
 
-static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
+static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
 	if (type_is_floating(LHS_type) || type_is_floating(RHS_type))
 	{
-		if (type_is_integer(LHS_type))
+		if (type_is_integer(sx, LHS_type))
 		{
 			*LHS = build_cast_expression(TYPE_FLOATING, LHS);
 		}
-		else if (type_is_integer(RHS_type))
+		else if (type_is_integer(sx, RHS_type))
 		{
 			*RHS = build_cast_expression(TYPE_FLOATING, RHS);
 		}
@@ -82,7 +82,7 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 		node_remove(expr);
 		return build_integer_literal_expression(sx, true, loc);
 	}
-	else if (type_is_integer(type))
+	else if (type_is_integer(sx, type))
 	{
 		const item_t value = expression_literal_get_integer(expr);
 		node_remove(expr);
@@ -134,9 +134,9 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 
 	const item_t left_type = expression_get_type(LHS);
 	const item_t right_type = expression_get_type(RHS);
-	if (type_is_integer(type))
+	if (type_is_integer(sx, type))
 	{
-		if (type_is_integer(left_type) && type_is_integer(right_type))
+		if (type_is_integer(sx, left_type) && type_is_integer(sx, right_type))
 		{
 			const item_t left_value = expression_literal_get_integer(LHS);
 			const item_t right_value = expression_literal_get_integer(RHS);
@@ -186,12 +186,12 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 			}
 		}
 		else
-		{
-			const double left_value = type_is_integer(left_type)
+    {
+			const double left_value = type_is_integer(sx, left_type)
 				? expression_literal_get_integer(LHS)
 				: expression_literal_get_floating(LHS);
 
-			const double right_value = type_is_integer(right_type)
+			const double right_value = type_is_integer(sx, right_type)
 				? expression_literal_get_integer(RHS)
 				: expression_literal_get_floating(RHS);
 
@@ -219,11 +219,11 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 	}
 	else // if (type_is_floating(type))
 	{
-		const double left_value = type_is_integer(left_type)
+		const double left_value = type_is_integer(sx, left_type)
 			? expression_literal_get_integer(LHS)
 			: expression_literal_get_floating(LHS);
 
-		const double right_value = type_is_integer(right_type)
+		const double right_value = type_is_integer(sx, right_type)
 			? expression_literal_get_integer(RHS)
 			: expression_literal_get_floating(RHS);
 
@@ -246,7 +246,7 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 	}
 }
 
-static node fold_ternary_expression(const item_t type, node *const cond, node *const LHS, node *const RHS, location loc)
+static node fold_ternary_expression(syntax *const sx, const item_t type, node *const cond, node *const LHS, node *const RHS, location loc)
 {
 	if (expression_get_class(cond) != EXPR_LITERAL)
 	{
@@ -260,7 +260,7 @@ static node fold_ternary_expression(const item_t type, node *const cond, node *c
 		node_remove(LHS);
 		return *RHS;
 	}
-	else if (type_is_integer(cond_type))
+	else if (type_is_integer(sx, cond_type))
 	{
 		const item_t value = expression_literal_get_integer(cond);
 		node_remove(cond);
@@ -387,14 +387,28 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 	}
 
 	const item_t actual_type = expression_get_type(init);
-	if (type_is_floating(expected_type) && type_is_integer(actual_type))
+	if (type_is_floating(expected_type) && type_is_integer(sx, actual_type))
 	{
 		*init = build_cast_expression(expected_type, init);
 		return true;
 	}
 
-	if ((type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
-		|| (expected_type == actual_type))
+	if (type_is_enum(sx, expected_type) && type_is_enum_field(sx, actual_type))
+	{
+		return true; // check enum initializer
+	}
+
+	if (type_is_integer(sx, expected_type) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type)))
+	{
+		return true; // check int initializer
+	}
+
+	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
+  {
+    return true;
+  }
+	
+  if (expected_type == actual_type)
 	{
 		return true;
 	}
@@ -414,9 +428,26 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 	}
 
 	const item_t type = ident_get_type(sx, (size_t)identifier);
+	if (type_is_enum_field(sx, type))
+	{
+		return build_enum_literal_expression(sx, ident_get_displ(sx, (size_t)identifier), type, loc);
+	}
+
 	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
 
 	return expression_identifier(sx, type, category, (size_t)identifier, loc);
+}
+
+node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc)
+{
+	node nd = node_create(sx, OP_LITERAL);
+	node_add_arg(&nd, get_enum_field_type(sx,type));						// Тип значения литерала
+	node_add_arg(&nd, RVALUE);						// Категория значения литерала
+	node_add_arg(&nd, value);						// Значение литерала
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция литерала
+
+	return nd;
 }
 
 node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc)
@@ -484,7 +515,7 @@ node build_subscript_expression(syntax *const sx, node *const base, node *const 
 	}
 
 	const item_t index_type = expression_get_type(index);
-	if (!type_is_integer(index_type))
+	if (!type_is_integer(sx, index_type))
 	{
 		semantic_error(sx, expression_get_location(index), typecheck_subscript_not_integer);
 		return node_broken();
@@ -647,7 +678,7 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
-			if (!type_is_arithmetic(operand_type))
+			if (!type_is_arithmetic(sx, operand_type))
 			{
 				semantic_error(sx, op_loc, typecheck_illegal_increment, op_kind);
 				return node_broken();
@@ -690,7 +721,7 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 		case UN_PLUS:
 		case UN_MINUS:
 		{
-			if (!type_is_arithmetic(operand_type))
+			if (!type_is_arithmetic(sx, operand_type))
 			{
 				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
 				return node_broken();
@@ -701,7 +732,7 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 
 		case UN_NOT:
 		{
-			if (!type_is_integer(operand_type))
+			if (!type_is_integer(sx, operand_type))
 			{
 				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
 				return node_broken();
@@ -763,7 +794,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_XOR:
 		case BIN_OR:
 		{
-			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			if (!type_is_integer(sx, left_type) || !type_is_integer(sx, right_type))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -777,7 +808,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_ADD:
 		case BIN_SUB:
 		{
-			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -792,7 +823,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_LE:
 		case BIN_GE:
 		{
-			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -863,7 +894,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_ADD_ASSIGN:
 		case BIN_SUB_ASSIGN:
 		{
-			if (!type_is_arithmetic(left_type) || !type_is_arithmetic(right_type))
+			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -899,7 +930,7 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
-	if (type_is_arithmetic(LHS_type) && type_is_arithmetic(RHS_type))
+	if (type_is_arithmetic(sx, LHS_type) && type_is_arithmetic(sx, RHS_type))
 	{
 		const item_t type = usual_arithmetic_conversions(LHS, RHS);
 		return fold_ternary_expression(type, cond, LHS, RHS, loc);
@@ -913,7 +944,7 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 	if ((type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
 		|| (LHS_type == RHS_type))
 	{
-		return fold_ternary_expression(RHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
 	}
 
 	semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);

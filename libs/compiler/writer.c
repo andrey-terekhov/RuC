@@ -309,7 +309,7 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 	write_line(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
-	if (type_is_integer(type))
+	if (type_is_integer(wrt->sx, type))
 	{
 		const int value = expression_literal_get_integer(nd);
 		uni_printf(wrt->io, "%i", value);
@@ -2102,7 +2102,7 @@ size_t write_type_spelling(const syntax *const sx, const item_t type, char *cons
 	{
 		return sprintf(buffer, "nullptr");
 	}
-	else if (type_is_integer(type))
+	else if (type_is_integer(sx, type))
 	{
 		return sprintf(buffer, "int");
 	}
