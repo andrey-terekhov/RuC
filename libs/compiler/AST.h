@@ -109,6 +109,12 @@ inline item_t expression_get_type(const node *const nd)
 	return node_get_arg(nd, 0);
 }
 
+inline item_t expression_get_type_enum_const(syntax *const sx, const node *const nd)
+{
+	const item_t type = node_get_arg(nd, 0);
+	return type_is_enum(sx, type) || type_is_enum_field(sx, type) ? TYPE_ENUM : type;
+}
+
 /**
  *	Check if expression is lvalue
  *

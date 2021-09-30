@@ -371,12 +371,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_equal_with_enum:
 			sprintf(msg, "в перечислении запрещены все операторы присвоения кроме =");
 			break;
-		case wait_l_paren:
-			sprintf(msg, "в выражении не хватает (");
-			break;
-		case wait_r_paren:
-			sprintf(msg, "в выражении не хватает )");
-			break;
 		case empty_init:	// test_exist
 			sprintf(msg, "в РуСи можно определять границы массива по инициализации только по младшему измерению");
 			break;

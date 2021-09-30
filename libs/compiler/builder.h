@@ -52,6 +52,19 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc);
 
 /**
+ *	Build an enum literal expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *	@param	type			Enum type
+ *
+ *	@return	Enum literal expression node
+ */
+node build_enum_literal_expression(syntax *const sx, const int value
+	, const item_t type, const location loc);
+
+/**
  *	Build an integer literal expression
  *
  *	@param	sx				Syntax structure

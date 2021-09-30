@@ -19,6 +19,7 @@
 extern node node_broken();
 
 extern item_t expression_get_type(const node *const nd);
+extern inline item_t expression_get_type_enum_const(syntax *const sx, const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
 extern location expression_get_location(const node *const nd);
 

@@ -167,8 +167,6 @@ typedef enum ERROR
 	wait_ident_after_semicolon_in_struct,
 	wait_ident_after_comma_in_enum,
 	no_equal_with_enum,
-	wait_l_paren,
-	wait_r_paren,
 	empty_init,
 	ident_not_type,
 	not_decl,
