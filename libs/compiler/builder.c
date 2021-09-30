@@ -345,7 +345,6 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 		if (type_is_structure(sx, expected_type))
 		{
 			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
-
 			if (expected_inits != actual_inits)
 			{
 				semantic_error(sx, loc, wrong_init_in_actparam, expected_inits, actual_inits);
@@ -366,6 +365,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 					return false;
 				}
 			}
+			
 			expression_list_set_type(init, expected_type);
 			return true;
 		}
@@ -375,11 +375,6 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 			for (size_t i = 0; i < actual_inits; i++)
 			{
 				node subexpr = expression_list_get_subexpr(init, i);
-				if (!node_is_correct(&subexpr))
-				{
-					return false;
-				}
-
 				if (!check_assignment_operands(sx, type, &subexpr))
 				{
 					return false;
