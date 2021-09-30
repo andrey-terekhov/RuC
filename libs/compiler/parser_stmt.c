@@ -32,6 +32,7 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_FLOAT:
 		case TK_DOUBLE:
 		case TK_STRUCT:
+		case TK_ENUM:
 		case TK_FILE:
 		case TK_TYPEDEF:
 			return true;
@@ -122,7 +123,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	node_copy(&prs->sx->nd, &nd);
 	const node condition = parse_constant_expression(prs);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -165,8 +166,8 @@ static void parse_default_statement(parser *const prs, node *const parent)
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
 	node_copy(&prs->sx->nd, parent);
-	const node nd_expr = parse_expression(prs);
-	if (!node_is_correct(&nd_expr))
+	const node expr = parse_expression(prs);
+	if (!node_is_correct(&expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		return;
@@ -222,7 +223,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	const node condition = parse_expression(prs);
 	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -453,7 +454,7 @@ static void parse_break_statement(parser *const prs, node *const parent)
 static void parse_return_statement(parser *const prs, node *const parent)
 {
 	token_consume(prs); // kw_return
-	const item_t return_type = type_get(prs->sx, prs->function_mode + 1);
+	const item_t return_type = type_function_get_return_type(prs->sx, (item_t)prs->function_mode);
 	prs->was_return = true;
 
 	node nd = node_add_child(parent, OP_RETURN);
@@ -473,15 +474,9 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		}
 
 		node_copy(&prs->sx->nd, &nd);
-		const node nd_expr = parse_assignment_expression(prs);
-		const item_t expr_type = expression_get_type(&nd_expr);
-		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
-		{
-			if (return_type != expr_type && (!type_is_floating(return_type) || !type_is_integer(expr_type)))
-			{
-				parser_error(prs, bad_type_in_ret);
-			}
-		}
+		node expr = parse_assignment_expression(prs);
+		check_assignment_operands(prs->sx, return_type, &expr);
+		// FIXME: надо кинуть ошибку с другой формулировкой
 
 		token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 	}
@@ -524,18 +519,18 @@ static void parse_print_statement(parser *const prs, node *const parent)
 	token_consume(prs); // kw_print
 	token_expect_and_consume(prs, TK_L_PAREN, print_without_br);
 
-	node nd_print = node_add_child(parent, OP_PRINT);
+	node nd = node_add_child(parent, OP_PRINT);
 
-	node_copy(&prs->sx->nd, &nd_print);
-	const node nd_expr = parse_assignment_expression(prs);
-	if (!node_is_correct(&nd_expr))
+	node_copy(&prs->sx->nd, &nd);
+	const node expr = parse_assignment_expression(prs);
+	if (!node_is_correct(&expr))
 	{
 		token_skip_until(prs, TK_SEMICOLON);
 		token_try_consume(prs, TK_SEMICOLON);
 		return;
 	}
 	
-	const item_t type = expression_get_type(&nd_expr);
+	const item_t type = expression_get_type(&expr);
 	if (type_is_pointer(prs->sx, type))
 	{
 		parser_error(prs, pointer_in_print);
@@ -649,7 +644,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 	item_t format_types[MAX_PRINTF_ARGS];
 
 	token_expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printf);
-	node nd_printf = node_add_child(parent, OP_PRINTF);
+	node nd = node_add_child(parent, OP_PRINTF);
 
 	if (prs->token != TK_STRING)
 	{
@@ -660,20 +655,16 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 
 	const size_t expected_args = evaluate_args(prs, &prs->lxr.lexstr, format_types, placeholders);
 
-	node_copy(&prs->sx->nd, &nd_printf);
+	node_copy(&prs->sx->nd, &nd);
 	parse_assignment_expression(prs);
 
 	size_t actual_args = 0;
 	while (token_try_consume(prs, TK_COMMA) && actual_args != expected_args)
 	{
-		node_copy(&prs->sx->nd, &nd_printf);
-		const node nd_expr = parse_assignment_expression(prs);
-		const item_t type = expression_get_type(&nd_expr);
-		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
-		{
-			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
-		}
-
+		node_copy(&prs->sx->nd, &nd);
+		node expr = parse_assignment_expression(prs);
+		check_assignment_operands(prs->sx, format_types[actual_args], &expr);
+		// FIXME: кинуть другую ошибку
 		actual_args++;
 	}
 
@@ -775,7 +766,7 @@ void parse_statement(parser *const prs, node *const parent)
 void parse_statement_compound(parser *const prs, node *const parent, const block_t type)
 {
 	token_consume(prs); // '{'
-	node nd_block = node_add_child(parent, OP_BLOCK);
+	node nd = node_add_child(parent, OP_BLOCK);
 
 	item_t old_displ = 0;
 	item_t old_lg = 0;
@@ -791,11 +782,11 @@ void parse_statement_compound(parser *const prs, node *const parent, const block
 		{
 			if (is_declaration_specifier(prs))
 			{
-				parse_declaration_inner(prs, &nd_block);
+				parse_declaration_inner(prs, &nd);
 			}
 			else
 			{
-				parse_statement(prs, &nd_block);
+				parse_statement(prs, &nd);
 			}
 		}
 
