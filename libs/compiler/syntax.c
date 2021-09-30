@@ -222,6 +222,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_INTEGER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
+	
 	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 }
 
