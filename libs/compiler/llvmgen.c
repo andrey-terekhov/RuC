@@ -1196,20 +1196,18 @@ static void expression(information *const info, node *const nd)
 
 			item_t type = node_get_arg(nd, 0);
 			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
-			node_set_next(nd);
 
-			bool is_pointer = false;
-			if (type_is_pointer(info->sx, type))
+			const bool is_pointer = type_is_pointer(info->sx, type);
+			if (is_pointer)
 			{
-				to_code_load(info, info->register_num, displ, type, false);
-				info->register_num++;
+				to_code_load(info, info->register_num++, displ, type, false);
 				type = type_pointer_get_element_type(info->sx, type);
-				is_pointer = true;
 			}
 
-			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-				"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-				, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : displ, place);
+			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem 
+				", %%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n"
+				, info->register_num, type, type, is_pointer ? "" : "var"
+				, is_pointer ? info->register_num - 1 : displ, place);
 
 			if (info->variable_location != LMEM)
 			{
@@ -1219,6 +1217,7 @@ static void expression(information *const info, node *const nd)
 			}
 
 			info->answer_reg = info->register_num++;
+			node_set_next(nd);
 		}
 		break;
 			
@@ -1855,8 +1854,6 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-
-				item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
 				
 				// TODO: будет исправлено, когда будет введён тип char
 				if (i == BI_FOPEN)
@@ -1865,7 +1862,7 @@ static void builin_functions_declaration(information *const info)
 				}
 				else
 				{				
-					type_to_io(info, param_type);
+					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
 				}
 			}
 			uni_printf(info->sx->io, ")\n");
