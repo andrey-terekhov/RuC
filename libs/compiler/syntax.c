@@ -550,7 +550,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const item_t type)
 {
-	return type == TYPE_INTEGER || type == type_is_enum_const(type);
+	return type == TYPE_INTEGER || type_is_enum_const(type);
 }
 
 bool type_is_floating(const item_t type)
