@@ -247,15 +247,13 @@ static int enc_export(const encoder *const enc)
  *	Free allocated memory
  *
  *	@param	enc			Encoder
- *
- *	@return	@c 0 on success, @c -1 on failure
  */
-static int enc_clear(encoder *const enc)
+static void enc_clear(encoder *const enc)
 {
-	return vector_clear(&enc->memory)
-		|| vector_clear(&enc->iniprocs)
-		|| vector_clear(&enc->identifiers)
-		|| vector_clear(&enc->representations);
+	vector_clear(&enc->memory);
+	vector_clear(&enc->iniprocs);
+	vector_clear(&enc->identifiers);
+	vector_clear(&enc->representations);
 }
 
 
