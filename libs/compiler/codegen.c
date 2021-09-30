@@ -744,12 +744,11 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
  */
 static void emit_integral_expression(encoder *const enc, const node *const nd)
 {
-	const binary_t operator = expression_binary_get_operator(nd);
-
 	const node LHS = expression_binary_get_LHS(nd);
 	emit_expression(enc, &LHS);
 
 	size_t addr = SIZE_MAX;
+	const binary_t operator = expression_binary_get_operator(nd);
 	const bool is_logical = operator == BIN_LOG_AND || operator == BIN_LOG_OR;
 	if (is_logical)
 	{
