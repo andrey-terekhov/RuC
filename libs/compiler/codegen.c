@@ -1061,9 +1061,6 @@ static bool only_strings(const encoder *const enc, const node *const nd)
  */
 static void emit_array_declaration(encoder *const enc, const node *const nd)
 {
-	const size_t ident = declaration_variable_get_id(nd);
-	const item_t displ = ident_get_displ(enc->sx, ident);
-
 	const size_t bounds = declaration_variable_get_dim_amount(nd);
 	for (size_t i = 0; i < bounds; i++)
 	{
@@ -1071,26 +1068,28 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		emit_expression(enc, &bound);
 	}
 
+	const size_t ident = declaration_variable_get_id(nd);
 	item_t type = ident_get_type(enc->sx, ident);
-	size_t dimensions = 0;
+	item_t dimensions = 0;
 	while (type_is_array(enc->sx, type))
 	{
 		type = type_array_get_element_type(enc->sx, type);
 		dimensions++;
 	}
 
-	const item_t length = (item_t)type_size(enc->sx, type);
 	const bool has_initializer = declaration_variable_has_initializer(nd);
+	const item_t length = (item_t)type_size(enc->sx, type);
+	const item_t displ = ident_get_displ(enc->sx, ident);
 	const item_t iniproc = proc_get(enc, (size_t)type);
 
 	mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
-	mem_add(enc, (item_t)dimensions - (has_initializer ? 1 : 0));
+	mem_add(enc, has_initializer ? dimensions - 1 : dimensions);
 	mem_add(enc, length);
 	mem_add(enc, displ);
 	mem_add(enc, iniproc && iniproc != ITEM_MAX ? iniproc : 0);
 
 	const size_t usual_addr = mem_size(enc);
-	int usual = (dimensions == bounds ? 1 : 0);
+	item_t usual = dimensions == (item_t)bounds ? 1 : 0;
 	mem_add(enc, usual);
 
 	mem_add(enc, has_initializer);
@@ -1108,7 +1107,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		}
 
 		mem_add(enc, IC_ARR_INIT);
-		mem_add(enc, (item_t)dimensions);
+		mem_add(enc, dimensions);
 		mem_add(enc, length);
 		mem_add(enc, displ);
 		mem_add(enc, usual);
@@ -1125,14 +1124,13 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = declaration_variable_get_id(nd);
 	const item_t type = ident_get_type(enc->sx, identifier);
-	const item_t displ = ident_get_displ(enc->sx, identifier);
-
 	if (type_is_array(enc->sx, type))
 	{
 		emit_array_declaration(enc, nd);
 		return;
 	}
 
+	const item_t displ = ident_get_displ(enc->sx, identifier);
 	const item_t iniproc = proc_get(enc, (size_t)type);
 	if (iniproc != ITEM_MAX && iniproc != 0)
 	{
@@ -1198,18 +1196,18 @@ static void emit_type_declaration(encoder *const enc, const node *const nd)
 			emit_expression(enc, &bound);
 		}
 
-		const item_t length = (item_t)type_size(enc->sx, member_type);
 		size_t displ = 0;
 		for (size_t j = 0; j < (size_t)node_get_arg(&member, 1); j++)
 		{
 			displ += type_size(enc->sx, type_structure_get_member_type(enc->sx, type, j));
 		}
 
+		const size_t length = type_size(enc->sx, member_type);
 		const item_t iniproc = proc_get(enc, (size_t)member_type);
 
 		mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(enc, (item_t)dimensions);
-		mem_add(enc, length);
+		mem_add(enc, (item_t)length);
 		mem_add(enc, (item_t)displ);
 		mem_add(enc, iniproc && iniproc != ITEM_MAX ? iniproc : 0);
 		mem_add(enc, 1);				// usual
@@ -1221,20 +1219,23 @@ static void emit_type_declaration(encoder *const enc, const node *const nd)
 	mem_set(enc, addr, (item_t)mem_size(enc));
 }
 
+/**
+ *	Emit function definition
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
 static void emit_function_definition(encoder *const enc, const node *const nd)
 {
-	const size_t function_id = (size_t)node_get_arg(nd, 0);
-	const size_t max_displacement = (size_t)node_get_arg(nd, 1);
-	const node function_body = declaration_function_get_body(nd);
-
-	const size_t ref_func = (size_t)ident_get_displ(enc->sx, function_id);
+	const size_t ref_func = (size_t)ident_get_displ(enc->sx, (size_t)node_get_arg(nd, 0));
 	func_set(enc->sx, ref_func, (item_t)mem_size(enc));
 
 	mem_add(enc, IC_FUNC_BEG);
-	mem_add(enc, (item_t)max_displacement);
+	mem_add(enc, node_get_arg(nd, 1));
 
 	const size_t old_pc = mem_reserve(enc);
 
+	const node function_body = declaration_function_get_body(nd);
 	emit_statement(enc, &function_body);
 	mem_add(enc, IC_RETURN_VOID);
 
@@ -1300,8 +1301,8 @@ static void emit_labeled_statement(encoder *const enc, const node *const nd)
 
 	ident_set_displ(enc->sx, label_id, (item_t)mem_size(enc));
 
-	const node substatement = statement_labeled_get_substmt(nd);
-	emit_statement(enc, &substatement);
+	const node substmt = statement_labeled_get_substmt(nd);
+	emit_statement(enc, &substmt);
 }
 
 /**
@@ -1319,8 +1320,8 @@ static void emit_case_statement(encoder *const enc, const node *const nd)
 
 	mem_add(enc, IC_DUPLICATE);
 
-	const node expression = statement_case_get_expression(nd);
-	emit_expression(enc, &expression);
+	const node expr = statement_case_get_expression(nd);
+	emit_expression(enc, &expr);
 
 	mem_add(enc, IC_EQ);
 	mem_add(enc, IC_BE0);
@@ -1342,7 +1343,6 @@ static void emit_default_statement(encoder *const enc, const node *const nd)
 	{
 		mem_set(enc, enc->addr_case, (item_t)mem_size(enc));
 	}
-
 	enc->addr_case = 0;
 
 	const node substmt = statement_default_get_substmt(nd);
@@ -1553,7 +1553,7 @@ static void emit_goto_statement(encoder *const enc, const node *const nd)
 		// Метка уже описана
 		mem_add(enc, addr);
 	}
-	else
+	else // if (addr == 0)
 	{
 		// Метка еще не описана
 		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
@@ -1715,11 +1715,9 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_LABEL:
 			emit_labeled_statement(enc, nd);
 			return;
-
 		case STMT_CASE:
 			emit_case_statement(enc, nd);
 			return;
-
 		case STMT_DEFAULT:
 			emit_default_statement(enc, nd);
 			return;
@@ -1731,14 +1729,12 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_EXPR:
 			emit_void_expression(enc, nd);
 			return;
-
 		case STMT_NULL:
 			return;
 
 		case STMT_IF:
 			emit_if_statement(enc, nd);
 			return;
-
 		case STMT_SWITCH:
 			emit_switch_statement(enc, nd);
 			return;
@@ -1746,11 +1742,9 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_WHILE:
 			emit_while_statement(enc, nd);
 			return;
-
 		case STMT_DO:
 			emit_do_statement(enc, nd);
 			return;
-
 		case STMT_FOR:
 			emit_for_statement(enc, nd);
 			return;
@@ -1758,15 +1752,12 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_GOTO:
 			emit_goto_statement(enc, nd);
 			return;
-
 		case STMT_CONTINUE:
 			emit_continue_statement(enc);
 			return;
-
 		case STMT_BREAK:
 			emit_break_statement(enc);
 			return;
-
 		case STMT_RETURN:
 			emit_return_statement(enc, nd);
 			return;
