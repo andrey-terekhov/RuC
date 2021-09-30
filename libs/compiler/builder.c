@@ -59,7 +59,7 @@ static void semantic_error(syntax *const sx, const location loc, error_t num, ..
 
 static item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
 {
-	return (type_is_integer(left_type) && type_is_integer(right_type)) 
+	return type_is_integer(left_type) && type_is_integer(right_type)
 		? TYPE_INTEGER
 		: TYPE_FLOATING;
 }
