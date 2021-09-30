@@ -144,17 +144,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 node parse_assignment_expression(parser *const prs);
 
 /**
- *	Parse enum field expression [C99 6.5.17]
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type enum in types
- *
- *	@return	Value of parsed enum field, @c ITEM_MAX on failure
- */
-item_t parse_enum_field_expression(parser *const prs, node *const parent, const item_t type);
-
-/**
  *	Parse expression [C99 6.5.17]
  *
  *	expression:

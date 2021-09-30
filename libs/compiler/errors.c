@@ -171,8 +171,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case int_op_for_float:	// test_exist
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
 			break;
-		case eq_not_const_int_for_enum_field:
-			sprintf(msg, "нельзя присваивать не константные выражения в поле перечисления");
+		case not_const_expr:
+			sprintf(msg, "Должно быть константное выражение");
 			break;
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");

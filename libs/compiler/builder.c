@@ -406,6 +406,7 @@ static node build_bin_op_node(syntax *const sx, node *const nd_left, node *const
 	return nd;
 }
 
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -460,7 +461,6 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 	}
 
 	const item_t type = ident_get_type(sx, (size_t)identifier);
-
 	if (type_is_enum_field(sx, type))
 	{
 		return build_enum_literal_expression(sx, ident_get_displ(sx, (size_t)identifier), type, loc);
@@ -478,8 +478,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 	return nd;
 }
 
-node build_enum_literal_expression(syntax *const sx, const int value
-	, const item_t type, const location loc)
+node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc)
 {
 	node nd = node_create(sx, OP_LITERAL);
 	node_add_arg(&nd, -type);						// Тип значения литерала

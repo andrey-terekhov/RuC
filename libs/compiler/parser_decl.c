@@ -746,7 +746,19 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		{
 			const size_t repr = prs->lxr.repr;
 			token_consume(prs);
-			field_value = parse_enum_field_expression(prs, parent, type);
+			node_copy(&prs->sx->nd, parent);
+			const node nd_expr = parse_constant_expression(prs);
+			const item_t type_expr = expression_get_type(&nd_expr);
+			field_value = expression_literal_get_integer(&nd_expr);
+
+			node_remove(&prs->sx->nd);
+
+			if (field_value == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
+			{
+				parser_error(prs, not_const_expr);
+				return ITEM_MAX;
+			}
+			
 			if (field_value == ITEM_MAX)
 			{
 				return TYPE_UNDEFINED;

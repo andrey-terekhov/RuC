@@ -61,8 +61,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
  *
  *	@return	Enum literal expression node
  */
-node build_enum_literal_expression(syntax *const sx, const int value
-	, const item_t type, const location loc);
+node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc);
 
 /**
  *	Build an integer literal expression
