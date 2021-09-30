@@ -300,14 +300,14 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			{
 				node decl = node_add_child(&nd, OP_DECL_VAR);
 				node_add_arg(&decl, 0);	// Вместо id подставим тип
-				node_add_arg(&decl, 0);	// Тут будет размерность
+				node_add_arg(&decl, 0);	// Тут будет номер поля
 				node_add_arg(&decl, 0);	// Тут будет флаг наличия инициализатора
 
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, &decl, element_type);
 
 				node_set_arg(&decl, 0, type);
-				node_set_arg(&decl, 1, (item_t)prs->array_dimensions);
+				node_set_arg(&decl, 1, (item_t)fields);
 
 				if (token_try_consume(prs, TK_EQUAL) && type_is_array(prs->sx, type))
 				{

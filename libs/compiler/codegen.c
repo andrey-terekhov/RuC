@@ -1098,12 +1098,13 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	const item_t length = (item_t)type_size(enc->sx, type);
 	const bool has_initializer = declaration_variable_has_initializer(nd);
+	const item_t iniproc = proc_get(enc, (size_t)type);
 
 	mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 	mem_add(enc, (item_t)dimensions - (has_initializer ? 1 : 0));
 	mem_add(enc, length);
 	mem_add(enc, displ);
-	mem_add(enc, 0);				// iniproc
+	mem_add(enc, iniproc && iniproc != ITEM_MAX ? iniproc : 0);
 
 	const size_t usual_addr = mem_size(enc);
 	int usual = (dimensions == bounds ? 1 : 0);
@@ -1184,15 +1185,17 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
  */
 static void emit_type_declaration(encoder *const enc, const node *const nd)
 {
+	const size_t size = node_get_amount(nd);
+	if (size == 0)
+	{
+		return;
+	}
+
 	mem_add(enc, IC_B);
 	const size_t addr = mem_reserve(enc);
 
 	const item_t type = node_get_arg(nd, 0);
-	const size_t size = node_get_amount(nd);
-	if (size > 0)
-	{
-		proc_set(enc, (size_t)type, (item_t)addr + 1);
-	}
+	proc_set(enc, (size_t)type, (item_t)addr + 1);
 
 	for (size_t i = 0; i < size; i++)
 	{
@@ -1214,16 +1217,18 @@ static void emit_type_declaration(encoder *const enc, const node *const nd)
 
 		const item_t length = (item_t)type_size(enc->sx, member_type);
 		size_t displ = 0;
-		for (size_t j = 0; j <= i; j++)
+		for (size_t j = 0; j < (size_t)node_get_arg(&member, 1); j++)
 		{
 			displ += type_size(enc->sx, type_structure_get_member_type(enc->sx, type, j));
 		}
+
+		const item_t iniproc = proc_get(enc, (size_t)member_type);
 
 		mem_add(enc, IC_DEFARR); 		// DEFARR N, d, displ, iniproc, usual N1...NN, уже лежат на стеке
 		mem_add(enc, (item_t)dimensions);
 		mem_add(enc, length);
 		mem_add(enc, (item_t)displ);
-		mem_add(enc, 0);				// iniproc
+		mem_add(enc, iniproc && iniproc != ITEM_MAX ? iniproc : 0);
 		mem_add(enc, 1);				// usual
 		mem_add(enc, 0);				// has initializer
 		mem_add(enc, 1);				// is in structure
