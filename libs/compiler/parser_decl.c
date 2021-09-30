@@ -275,8 +275,8 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t fields = 0;
 	size_t displ = 0;
 
-	node nd = node_add_child(parent, OP_DECL_TYPE);
-	node_add_arg(&nd, 0);	// Тут будет индекс для таблицы types
+	node nd;
+	bool was_array = false;
 
 	do
 	{
@@ -298,31 +298,21 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		{
 			if (prs->token == TK_L_SQUARE)
 			{
-				node decl = node_add_child(&nd, OP_DECL_VAR);
-				node_add_arg(&decl, 0);	// Вместо id подставим тип
-				node_add_arg(&decl, 0);	// Тут будет номер поля
-				node_add_arg(&decl, 0);	// Тут будет флаг наличия инициализатора
+				if (!was_array)
+				{
+					nd = node_add_child(parent, OP_DECL_TYPE);
+					node_add_arg(&nd, 0); 
+					was_array = true;
+				}
 
+				node decl = node_add_child(&nd, OP_DECL_VAR);
+				node_add_arg(&decl, 0);
+				node_add_arg(&decl, 0);
+				node_add_arg(&decl, 0);
 				// Меняем тип (увеличиваем размерность массива)
 				type = parse_array_definition(prs, &decl, element_type);
-
 				node_set_arg(&decl, 0, type);
 				node_set_arg(&decl, 1, (item_t)fields);
-
-				if (token_try_consume(prs, TK_EQUAL) && type_is_array(prs->sx, type))
-				{
-					node_set_arg(&decl, 2, true);
-					node_copy(&prs->sx->nd, &decl);
-
-					node initializer = parse_initializer(prs);
-					if (!node_is_correct(&initializer))
-					{
-						token_skip_until(prs, TK_SEMICOLON);
-						continue;
-					}
-
-					check_assignment_operands(prs->sx, type, &initializer);
-				}
 			}
 		}
 		else
