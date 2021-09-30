@@ -45,7 +45,6 @@ enum TYPE
 	TYPE_UNDEFINED,
 
 	TYPE_MSG_INFO 		= 2,
-	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
 	TYPE_ARRAY,
@@ -142,6 +141,24 @@ size_t string_add(syntax *const sx, const vector *const str);
  *	@return	String, @c NULL on failure
  */
 const char* string_get(const syntax *const sx, const size_t index);
+
+/**
+ *    Get length of a string
+ *
+ *    @param  sx      Syntax structure
+ *
+ *    @return Length of a string
+ */
+size_t strings_length(const syntax *const sx, const size_t index);
+
+/**
+ *    Get amount of strings
+ *
+ *    @param  sx      Syntax structure
+ *
+ *    @return Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
 
 
 /**
@@ -682,24 +699,6 @@ item_t scope_func_enter(syntax *const sx);
  *	@return	Max displacement of the function, @c ITEM_MAX on failure
  */
 item_t scope_func_exit(syntax *const sx, const item_t displ);
-
-/**
- *	Get amount of strings
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Amount of strings
- */
-size_t strings_amount(const syntax *const sx);
-
-/**
- *	Get length of a string
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Length of a string
- */
-size_t strings_length(const syntax *const sx, const size_t index);
 
 #ifdef __cplusplus
 } /* extern "C" */
