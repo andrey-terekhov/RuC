@@ -19,7 +19,6 @@
 #include "errors.h"
 #include "instructions.h"
 #include "item.h"
-#include "stack.h"
 #include "string.h"
 #include "tree.h"
 #include "uniprinter.h"
@@ -179,16 +178,15 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 
 	enc.memory = vector_create(MAX_MEM_SIZE);
 	enc.iniprocs = vector_create(0);
-	vector_resize(&enc.iniprocs, vector_size(&enc.sx->types));
 
 	const size_t records = vector_size(&sx->identifiers) / 4;
 	enc.identifiers = vector_create(records * 3);
 	enc.representations = vector_create(records * 8);
 
 	vector_increase(&enc.memory, 4);
+	vector_increase(&enc.iniprocs, vector_size(&enc.sx->types));
 
 	enc.target = item_get_status(ws);
-
 	return enc;
 }
 
