@@ -31,7 +31,9 @@ typedef enum INSTURCTION
 	IC_PRINT,					/**< 'PRINT' instruction code */
 	IC_PRINTID,					/**< 'PRINTID' instruction code */
 
-	IC_REM_ASSIGN = 9001,		/**< '%=' instruction code */
+	MIN_INSTRUCTION_CODE = 9000,
+
+	IC_REM_ASSIGN,				/**< '%=' instruction code */
 	IC_SHL_ASSIGN,				/**< '<<=' instruction code */
 	IC_SHR_ASSIGN,				/**< '>>=' instruction code */
 	IC_AND_ASSIGN,				/**< '&=' instruction code */

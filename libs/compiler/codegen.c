@@ -860,7 +860,6 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 static void emit_binary_expression(encoder *const enc, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
-
 	if (operation_is_assignment(operator))
 	{
 		emit_assignment_expression(enc, nd);
@@ -1001,7 +1000,10 @@ static void emit_void_expression(encoder *const enc, const node *const nd)
 	{
 		emit_expression(enc, nd);
 
-		const size_t index = mem_get(enc, mem_size(enc) - 1) < 9000 ? mem_size(enc) - 2 : mem_size(enc) - 1;
+		const size_t index = mem_get(enc, mem_size(enc) - 1) < MIN_INSTRUCTION_CODE
+			? mem_size(enc) - 2
+			: mem_size(enc) - 1;
+		
 		const instruction_t operation = (instruction_t)mem_get(enc, index);
 		mem_set(enc, index, instruction_to_void_ver(operation));
 	}
