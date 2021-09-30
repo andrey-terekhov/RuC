@@ -34,43 +34,43 @@ typedef enum REGISTER
 	R_ZERO,							/**< Always has the value 0 */	
 	R_AT,							/**< Temporary, generally used by assembler */
 
-	R_V0,							/**< Used for expression evaluations and to hold the integer
+	R_V0,
+	R_V1,							/**< Used for expression evaluations and to hold the integer
 										and pointer type function return values */
-	R_V1,
 
-	R_A0,							/**< Used for passing arguments to functions; values are not
-										preserved across function calls */
+	R_A0,
 	R_A1,
 	R_A2,
-	R_A3,
+	R_A3,							/**< Used for passing arguments to functions; values are not
+										preserved across function calls */
 
-	R_T0,							/**< Temporary registers used for expression evaluation; 
-										values are not preserved across function calls */
+	R_T0,
 	R_T1,
 	R_T2,
 	R_T3,
 	R_T4,
 	R_T5,
 	R_T6,
-	R_T7,
+	R_T7,							/**< Temporary registers used for expression evaluation; 
+										values are not preserved across function calls */
 
-	R_S0,							/**< Saved registers; values are preserved across function calls */
+	R_S0,
 	R_S1,
 	R_S2,
 	R_S3,
 	R_S4,
 	R_S5,
 	R_S6,
-	R_S7,
+	R_S7,							/**< Saved registers; values are preserved across function calls */
 
-	R_T8,							/**< Temporary registers used for expression evaluations;
+	R_T8,
+	R_T9,							/**< Temporary registers used for expression evaluations;
 										values are not preserved across function calls.  When
 										calling position independent functions $25 must contain
 										the address of the called function */
-	R_T9,
  
-	R_K0,							/**< Used only by the operating system */
-	R_K1,
+	R_K0,
+	R_K1,							/**< Used only by the operating system */
 
 	R_GP,							/**< Global pointer and context pointer */
 	R_SP,							/**< Stack pointer */
@@ -96,7 +96,7 @@ typedef enum LABEL
 	L_FUNC,							/**< Тип метки -- вход в функцию */
 	L_NEXT,							/**< Тип метки -- следующая функция */
 	L_FUNCEND,						/**< Тип метки -- выход из функции */
-} label_t;
+} mips_label_t;
 
 
 typedef struct information
@@ -248,7 +248,7 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 	}
 }
 
-static void label_to_io(universal_io *const io, const label_t label)
+static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 {
 	switch (label)
 	{
@@ -328,19 +328,19 @@ static void to_code_R(universal_io *const io, const mips_instruction_t instructi
 
 // Вид инструкции:	instr	label
 static void to_code_L(universal_io *const io, const mips_instruction_t instruction
-	, const label_t label, const item_t label_num)
+	, const mips_label_t label, const item_t label_num)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	label_to_io(io, label);
+	mips_label_to_io(io, label);
 	uni_printf(io, "%" PRIitem "\n", label_num);
 }
 
 // Вид инструкции:	label:
-static void to_code_label(universal_io *const io, const label_t label, const item_t label_num)
+static void to_code_label(universal_io *const io, const mips_label_t label, const item_t label_num)
 {
-	label_to_io(io, label);
+	mips_label_to_io(io, label);
 	uni_printf(io, "%" PRIitem ":\n", label_num);
 }
 
