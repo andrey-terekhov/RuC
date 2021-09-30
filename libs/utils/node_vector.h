@@ -71,7 +71,6 @@ inline size_t node_vector_add(node_vector *const vec, const node *const nd)
  */
 inline int node_vector_set(node_vector *const vec, const size_t index, const node *const nd)
 {
-	vec->tree = vec->tree != NULL ? vec->tree : nd->tree;
 	return vec->tree == nd->tree
 		? vector_set(&vec->nodes, index, (item_t)node_save(nd))
 		: -1;
