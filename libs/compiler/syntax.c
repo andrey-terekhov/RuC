@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include <string.h>
 #include "tokens.h"
 #include "tree.h"
 
@@ -82,7 +83,6 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 }
 
 
@@ -223,6 +223,8 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_INTEGER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
+	
+	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 }
 
 
@@ -239,7 +241,6 @@ syntax sx_create(universal_io *const io)
 {
 	syntax sx;
 	sx.io = io;
-	sx.procd = 1;
 
 	sx.string_literals = strings_create(STRINGS_SIZE);
 
@@ -323,6 +324,11 @@ size_t string_add(syntax *const sx, const vector *const str)
 const char* string_get(const syntax *const sx, const size_t index)
 {
 	return strings_get(&sx->string_literals, index);
+}
+
+size_t string_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
 }
 
 
@@ -714,46 +720,49 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 	local_modetab[0] = TYPE_FUNCTION;
 	local_modetab[1] = return_type;
 
-	while (args[i] != '\0')
+	if (args != NULL)
 	{
-		switch (args[i])
+		while (args[i] != '\0')
 		{
-			case 'v':
-				local_modetab[3 + i] = TYPE_VOID;
-				break;
-			case 'V':
-				local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
-				break;
-			case 's':
-				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
-				break;
-			case 'S':
-				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
-				break;
-			case 'i':
-				local_modetab[3 + i] = TYPE_INTEGER;
-				break;
-			case 'I':
-				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
-				break;
-			case 'f':
-				local_modetab[3 + i] = TYPE_FLOATING;
-				break;
-			case 'F':
-				local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
-				break;
-			case 'm':
-				local_modetab[3 + i] = TYPE_MSG_INFO;
-				break;
-			case 'P':
-				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
-				break;
-			case 'T':
-				local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
-				break;
-		}
+			switch (args[i])
+			{
+				case 'v':
+					local_modetab[3 + i] = TYPE_VOID;
+					break;
+				case 'V':
+					local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
+					break;
+				case 's':
+					local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+					break;
+				case 'S':
+					local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
+					break;
+				case 'i':
+					local_modetab[3 + i] = TYPE_INTEGER;
+					break;
+				case 'I':
+					local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+					break;
+				case 'f':
+					local_modetab[3 + i] = TYPE_FLOATING;
+					break;
+				case 'F':
+					local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
+					break;
+				case 'm':
+					local_modetab[3 + i] = TYPE_MSG_INFO;
+					break;
+				case 'P':
+					local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
+					break;
+				case 'T':
+					local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
+					break;
+			}
 
-		i++;
+			i++;
+		}
 	}
 
 	local_modetab[2] = (item_t)i;

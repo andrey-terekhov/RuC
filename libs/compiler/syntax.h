@@ -86,7 +86,6 @@ typedef struct syntax
 	item_t displ;				/**< Stack displacement in current scope */
 	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
-	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
 	
 	bool was_error;				/**< Set, if was error */
@@ -140,6 +139,16 @@ size_t string_add(syntax *const sx, const vector *const str);
  *	@return	String, @c NULL on failure
  */
 const char* string_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get string length
+ *
+ *	@param	sx				Syntax structure
+ *	@param	index			Index
+ *
+ *	@return	String length, @c 0 on failure
+ */
+size_t string_length(const syntax *const sx, const size_t index);
 
 
 /**

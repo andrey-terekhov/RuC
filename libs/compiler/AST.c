@@ -39,6 +39,9 @@ extern node expression_member_get_base(const node *const nd);
 extern size_t expression_member_get_member_index(const node *const nd);
 extern bool expression_member_is_arrow(const node *const nd);
 
+extern item_t expression_cast_get_source_type(const node *const nd);
+extern node expression_cast_get_operand(const node *const nd);
+
 extern unary_t expression_unary_get_operator(const node *const nd);
 extern node expression_unary_get_operand(const node *const nd);
 
@@ -50,6 +53,7 @@ extern node expression_ternary_get_condition(const node *const nd);
 extern node expression_ternary_get_LHS(const node *const nd);
 extern node expression_ternary_get_RHS(const node *const nd);
 
+extern int expression_list_set_type(const node *const nd, const item_t type);
 extern size_t expression_list_get_size(const node *const nd);
 extern node expression_list_get_subexpr(const node *const nd, const size_t index);
 
@@ -110,6 +114,19 @@ extern size_t declaration_function_get_id(const node *const nd);
 extern node declaration_function_get_body(const node *const nd);
 
 
+static inline node node_create(syntax *const sx, operation_t type)
+{
+	return node_add_child(&sx->nd, type);
+}
+
+static inline void node_set_child(const node *const parent, const node *const child)
+{
+	node temp = node_add_child(parent, OP_NOP);
+	node_swap(child, &temp);
+	node_remove(&temp);
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -133,6 +150,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_CALL;
 		case OP_SELECT:
 			return EXPR_MEMBER;
+		case OP_CAST:
+		   return EXPR_CAST;
 		case OP_UNARY:
 			return EXPR_UNARY;
 		case OP_BINARY:
@@ -145,6 +164,141 @@ expression_t expression_get_class(const node *const nd)
 			system_error(node_unexpected);
 			return 0;
 	}
+}
+
+node expression_identifier(syntax *const sx, const item_t type
+	, const category_t ctg, const size_t id, const location loc)
+{
+	node nd = node_create(sx, OP_IDENTIFIER);
+	node_add_arg(&nd, type);						// Тип значения выражения
+	node_add_arg(&nd, ctg);							// Категория значения выражения
+	node_add_arg(&nd, (item_t)id);					// Индекс в таблице идентификаторов
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_subscript(const item_t type, node *const base, node *const index, const location loc)
+{
+	node nd = node_insert(base, OP_SLICE, 4);		// Выражение-операнд
+	node_set_child(&nd, index);						// Выражение-индекс
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, LVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_call(const item_t type, node *const callee, node_vector *const args, const location loc)
+{
+	node nd = node_insert(callee, OP_CALL, 4);		// Операнд выражения
+
+	if (args)
+	{
+		const size_t amount = node_vector_size(args);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node arg = node_vector_get(args, i);
+			node_set_child(&nd, &arg);				// i-ый аргумент вызова
+		}
+	}
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_member(const item_t type, const category_t ctg
+	, const size_t index, bool is_arrow, node *const base, const location loc)
+{
+	node nd = node_insert(base, OP_SELECT, 6);		// Операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, ctg);						// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)index);			// Индекс поля выборки
+	node_set_arg(&nd, 3, is_arrow);					// Является ли оператор '->'
+	node_set_arg(&nd, 4, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 5, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc)
+{
+	node nd = node_insert(expr, OP_CAST, 5);		// Операнд выражения
+
+	node_set_arg(&nd, 0, target_type);				// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, source_type);				// Тип до преобразования
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const location loc)
+{
+	node nd = node_insert(expr, OP_UNARY, 5);		// Операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, ctg);						// Категория значения выражения
+	node_set_arg(&nd, 2, op);						// Вид унарного оператора
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc)
+{
+	node nd = node_insert(LHS, OP_BINARY, 5);		// Первый операнд выражения
+	node_set_child(&nd, RHS);						// Второй операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, op);						// Вид бинарного оператора
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const location loc)
+{
+	node nd = node_insert(cond, OP_TERNARY, 4);		// Первый операнд выражения
+	node_set_child(&nd, LHS);						// Второй операнд выражения
+	node_set_child(&nd, RHS);						// Третий операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_list(syntax *const sx, node_vector *const exprs, const location loc)
+{
+	node nd = node_create(sx, OP_LIST);
+	node_add_arg(&nd, TYPE_UNDEFINED);				// Тип значения выражения
+	node_add_arg(&nd, RVALUE);						// Категория значения выражения
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+
+	const size_t amount = node_vector_size(exprs);
+	for (size_t i = 0; i < amount; i++)
+	{
+		node subexpr = node_vector_get(exprs, i);
+		node_set_child(&nd, &subexpr);				// i-ое подвыражение списка
+	}
+
+	return nd;
 }
 
 statement_t statement_get_class(const node *const nd)

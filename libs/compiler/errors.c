@@ -63,6 +63,70 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 
+		case undeclared_var_use:
+			sprintf(msg, "использование не объявленной переменной");
+			break;
+		case expected_r_paren:
+			sprintf(msg, "ожидалась ')'");
+			break;
+		case typecheck_subscript_value:
+			sprintf(msg, "попытка вырезки элемента не из массива");
+			break;
+		case typecheck_subscript_not_integer:
+			sprintf(msg, "индекс элемента массива должен иметь тип ЦЕЛ");
+			break;
+		case expected_r_square:
+			sprintf(msg, "ожидалась ']'");
+			break;
+		case expected_r_brace:
+			sprintf(msg, "ожидалась '}'");
+			break;
+		case expected_identifier:
+			sprintf(msg, "ожидался идентификатор");
+			break;
+		case typecheck_call_not_function:
+			sprintf(msg, "попытка вызова не функции");
+			break;
+		case typecheck_convert_incompatible:
+			sprintf(msg, "неправильный тип аргумента");
+			break;
+		case typecheck_member_reference_struct:
+			sprintf(msg, "оператор '.' применяется не к структуре");
+			break;
+		case typecheck_member_reference_arrow:		
+			sprintf(msg, "оператор '->' применяется не к указателю на структуру");
+			break;
+		case typecheck_member_reference_ivar:
+			sprintf(msg, "нет такого поля в структуре");
+			break;
+		case typecheck_illegal_increment:
+			sprintf(msg, "++ и -- применимы только к переменным и элементам массива");
+			break;
+		case typecheck_expression_not_lvalue:		
+			sprintf(msg, "в это выражение нельзя присваивать");
+			break;
+		case typecheck_invalid_lvalue_addrof:
+			sprintf(msg, "операция получения адреса & применима только к переменным");
+			break;
+		case typecheck_indirection_requires_pointer:
+			sprintf(msg, "операция * применяется не к указателю");
+			break;
+		case typecheck_unary_expr:
+			sprintf(msg, "неверный тип аргумента в унарном выражении");
+			break;
+		case typecheck_binary_expr:
+			sprintf(msg, "неверные типы аргументов в бинарном выражении");
+			break;
+		case expected_colon_in_conditional:
+			sprintf(msg, "ожидалось ':' в условном операторе");
+			break;
+		case typecheck_cond_incompatible_operands:
+			sprintf(msg, "несовместимые типы условного оператора");
+			break;
+		case typecheck_statement_requires_scalar:
+			sprintf(msg, "условие должно иметь скалярный тип");
+			break;
+
 		case no_main_in_program: // test_exist
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
@@ -135,15 +199,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_rightsqbr_in_slice: // test_exist
 			sprintf(msg, "не хватает ] в вырезке элемента массива");
 			break;
-		case index_must_be_int:	// test_exist
-			sprintf(msg, "индекс элемента массива должен иметь тип ЦЕЛ");
-			break;
-		case slice_not_from_array:	// test_exist
-			sprintf(msg, "попытка вырезки элемента не из массива");
-			break;
-		case call_not_from_function:	//test_exist
-			sprintf(msg, "попытка вызова не функции");
-			break;
 		case no_comma_in_act_params: // test_exist
 			sprintf(msg, "после фактического параметра должна быть ,");
 			break;
@@ -155,9 +210,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case wait_rightbr_in_primary: // test_exist
 			sprintf(msg, "не хватает ) в первичном выражении");
-			break;
-		case unassignable_inc:	// test_exist
-			sprintf(msg, "++ и -- применимы только к переменным и элементам массива");
 			break;
 		case wrong_addr:	// test_exist
 			sprintf(msg, "операция получения адреса & применима только к переменным");
@@ -231,9 +283,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
 			break;
-		case aster_not_for_pointer:	// test_exist
-			sprintf(msg, "операция * применяется не к указателю");
-			break;
 		case aster_with_row:	// need_test
 			sprintf(msg, "операцию * нельзя применять к массивам");
 			break;
@@ -280,11 +329,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
 		case expected_expression:	// need_test
-		{
-			const int cur = va_arg(args, int);
-			sprintf(msg, "первичное не может начинаться с лексемы %i", cur);
-		}
-		break;
+			sprintf(msg, "ожидалось выражение");
+			break;
 		case wrong_operand:	// need_test
 			sprintf(msg, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
 			break;

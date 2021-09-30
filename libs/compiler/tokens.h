@@ -115,7 +115,6 @@ typedef enum TOKEN
 	TK_SCANF,						/**< 'scanf'	keyword */
 	TK_GETID,						/**< 'getid'	keyword */
 	TK_ABS,							/**< 'abs'		keyword */
-	TK_UPB,							/**< 'upb'		keyword */
 } token_t;
 
 #ifdef __cplusplus
