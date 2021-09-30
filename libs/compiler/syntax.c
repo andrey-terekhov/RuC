@@ -687,6 +687,11 @@ item_t type_array(syntax *const sx, const item_t type)
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
 }
 
+item_t get_enum_field_type(const syntax *const sx, const item_t type)
+{
+	return type_is_enum_field(sx, type) ? -type : 0;
+}
+
 /*
  *	args = list of characters each for one argument
  *		v -> void

@@ -610,6 +610,16 @@ item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
 item_t type_array(syntax *const sx, const item_t type);
 
 /**
+ *	Get enum field type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Enum type
+ *
+ *	@return	Enum field type
+ */
+item_t get_enum_field_type(const syntax *const sx, const item_t type);
+
+/**
  *	Create function type
  *
  *	@param	sx			Syntax structure

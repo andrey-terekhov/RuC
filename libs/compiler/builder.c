@@ -479,7 +479,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
 node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc)
 {
 	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, -type);						// Тип значения литерала
+	node_add_arg(&nd, get_enum_field_type(sx,type));						// Тип значения литерала
 	node_add_arg(&nd, RVALUE);						// Категория значения литерала
 	node_add_arg(&nd, value);						// Значение литерала
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
