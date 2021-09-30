@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,27 +14,12 @@
  *	limitations under the License.
  */
 
-#pragma once
-
-#include "syntax.h"
-#include "uniio.h"
-#include "workspace.h"
+#include "node_vector.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- *	Encode to virtual machine codes
- *
- *	@param	ws		Compiler workspace
- *	@param	sx		Syntax structure
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int encode_to_vm(const workspace *const ws, syntax *const sx);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+extern node_vector node_vector_create();
+extern size_t node_vector_add(node_vector *const vec, const node *const nd);
+extern int node_vector_set(node_vector *const vec, const size_t index, const node *const nd);
+extern node node_vector_get(const node_vector *const vec, const size_t index);
+extern size_t node_vector_size(const node_vector *const vec);
+extern int node_vector_clear(node_vector *const vec);
