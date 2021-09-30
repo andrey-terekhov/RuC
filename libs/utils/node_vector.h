@@ -61,7 +61,23 @@ inline size_t node_vector_add(node_vector *const vec, const node *const nd)
 }
 
 /**
- *	Get node
+ *	Set new node
+ *
+ *	@param	vec				Node vector
+ *	@param	index			Index	
+ *	@param	nd				New node
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int node_vector_set(node_vector *const vec, const size_t index, const node *const nd)
+{
+	return vec->tree == nd->tree
+		? vector_set(&vec->nodes, index, (item_t)node_save(nd))
+		: -1;
+}
+
+/**
+ *	Get node by index
  *
  *	@param	vec				Node vector
  *	@param	index			Index
