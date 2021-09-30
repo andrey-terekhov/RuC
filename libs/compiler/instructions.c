@@ -165,7 +165,7 @@ instruction_t instruction_to_floating_ver(const instruction_t instruction)
 	return (instruction >= IC_ASSIGN && instruction <= IC_DIV_ASSIGN)
 		|| (instruction >= IC_ASSIGN_AT && instruction <= IC_DIV_ASSIGN_AT)
 		|| (instruction >= IC_EQ && instruction <= IC_UNMINUS)
-			? instruction + DISPL_TO_FLOAT
+			? (instruction_t)((size_t)instruction + DISPL_TO_FLOAT)
 			: instruction;
 }
 
@@ -175,6 +175,6 @@ instruction_t instruction_to_void_ver(const instruction_t instruction)
 		|| (instruction >= IC_POST_INC && instruction <= IC_PRE_DEC_AT)
 		|| (instruction >= IC_ASSIGN_R && instruction <= IC_DIV_ASSIGN_AT_R)
 		|| (instruction >= IC_POST_INC_R && instruction <= IC_PRE_DEC_AT_R)
-			? instruction + DISPL_TO_VOID
+			? (instruction_t)((size_t)instruction + DISPL_TO_VOID)
 			: instruction;
 }
