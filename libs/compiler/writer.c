@@ -539,6 +539,7 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_expression_list(wrt, nd);
 			break;
 	}
+	
 	wrt->indent--;
 }
 
