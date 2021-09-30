@@ -481,10 +481,10 @@ node parse_constant_expression(parser *const prs)
 {
 	node LHS = parse_unary_expression(prs);
 	LHS = parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
-	// if (expression_get_class(&LHS) != EXPR_LITERAL)
-	// {
-	// 	parser_error(prs, not_const_expr);
-	// }
+	if (expression_get_class(&LHS) != EXPR_LITERAL)
+	{
+		parser_error(prs, not_const_expr);
+	}
 	return LHS;
 }
 
