@@ -172,10 +172,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
 			break;
 		case not_const_expr:
-			sprintf(msg, "Должно быть константное выражение");
+			sprintf(msg, "должно быть константное выражение");
 			break;
 		case not_const_int_expr:
-			sprintf(msg, "Должно быть константное выражение типа int");
+			sprintf(msg, "должно быть константное выражение типа int");
 			break;
 		case assmnt_float_to_int:	// test_exist
 			sprintf(msg, "нельзя присваивать целому вещественное значение");

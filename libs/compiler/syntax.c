@@ -514,7 +514,7 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 
 item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size)
 {
-	if (sx == NULL || record == NULL)
+	if (sx == NULL || record == NULL || !type_is_enum(sx, sx->types.size - 1))
 	{
 		return ITEM_MAX;
 	}
