@@ -20,7 +20,7 @@
 /** Binary/ternary operator precedence levels */
 typedef enum PRECEDENCE
 {
-	PREC_UNKWOWN,			/**< Not binary operator */
+	PREC_UNKNOWN,			/**< Not binary operator */
 	PREC_COMMA,				/**< Comma operator precedence */
 	PREC_ASSIGNMENT,		/**< Assignment operator precedence */
 	PREC_CONDITIONAL,		/**< Conditional operator precedence */
@@ -100,7 +100,7 @@ static precedence_t get_operator_precedence(const token_t token)
 			return PREC_MULTIPLICATIVE;
 
 		default:
-			return PREC_UNKWOWN;
+			return PREC_UNKNOWN;
 	}
 }
 

@@ -30,6 +30,7 @@ extern size_t expression_literal_get_string(const node *const nd);
 extern node expression_subscript_get_base(const node *const nd);
 extern node expression_subscript_get_index(const node *const nd);
 
+extern size_t expression_call_get_arguments_amount(const node *const nd);
 extern node expression_call_get_callee(const node *const nd);
 extern size_t expression_call_get_arguments_amount(const node *const nd);
 extern node expression_call_get_argument(const node *const nd, const size_t index);
@@ -56,6 +57,11 @@ extern node expression_list_get_subexpr(const node *const nd, const size_t index
 extern size_t statement_labeled_get_label(const node *const nd);
 extern node statement_labeled_get_substmt(const node *const nd);
 
+extern node statement_case_get_expression(const node *const nd);
+extern node statement_case_get_substmt(const node *const nd);
+
+extern node statement_default_get_substmt(const node *const nd);
+
 extern size_t statement_compound_get_size(const node *const nd);
 extern node statement_compound_get_substmt(const node *const nd, const size_t index);
 
@@ -63,6 +69,9 @@ extern bool statement_if_has_else_substmt(const node *const nd);
 extern node statement_if_get_condition(const node *const nd);
 extern node statement_if_get_then_substmt(const node *const nd);
 extern node statement_if_get_else_substmt(const node *const nd);
+
+extern node statement_switch_get_condition(const node *const nd);
+extern node statement_switch_get_body(const node *const nd);
 
 extern node statement_while_get_condition(const node *const nd);
 extern node statement_while_get_body(const node *const nd);
@@ -176,6 +185,12 @@ statement_t statement_get_class(const node *const nd)
 			return STMT_RETURN;
 		case OP_PRINTF:
 			return STMT_PRINTF;
+		case OP_PRINT:
+			return STMT_PRINT;
+		case OP_PRINTID:
+			return STMT_PRINTID;
+		case OP_GETID:
+			return STMT_GETID;
 		default:
 			return STMT_EXPR;
 	}

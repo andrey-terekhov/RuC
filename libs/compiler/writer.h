@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include "AST.h"
 #include "syntax.h"
-#include "vector.h"
 
 
 #ifdef __cplusplus
@@ -25,30 +25,31 @@ extern "C" {
 #endif
 
 /**
- *	Output tables and tree
+ *	Write abstract syntax tree
  *
  *	@param	path			File path
- *	@param	identifiers		Identifiers table
- *	@param	modes			Modes table
- *	@param	tree			Tree table
+ *	@param	sx				Syntax structure
  */
-void tables_and_tree(const char *const path
-	, const vector *const identifiers
-	, const vector *const modes
-	, vector *const tree);
+void write_tree(const char *const path, syntax *const sx);
 
 /**
- *	Output tables and codes
+ *	Write type spelling
+ *
+ *	@param	sx				Syntax structure
+ *	@param	type			Type
+ *	@param	buffer			Buffer
+ *
+ *	@return	Return printf-like value
+ */
+size_t write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
+
+/**
+ *	Write virtual machine codes
  *
  *	@param	path			File path
- *	@param	functions		Functions table
- *	@param	processes		Init processes table
- *	@param	memory			Memory table
+ *	@param	memory			Instructions table
  */
-void tables_and_codes(const char *const path
-	, const vector *const functions
-	, const vector *const processes
-	, const vector *const memory);
+void write_codes(const char *const path, const vector *const memory);
 
 #ifdef __cplusplus
 } /* extern "C" */
