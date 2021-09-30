@@ -531,14 +531,13 @@ static void emit_argument(encoder *const enc, const node *const nd)
 	}
 	else if (expression_get_class(nd) == EXPR_LIST)
 	{
-		const node fst = expression_list_get_subexpr(nd, 0);
-
 		mem_add(enc, IC_LI);
 		const size_t reserved = mem_size(enc) + 4;
 		mem_add(enc, (item_t)reserved);
 		mem_add(enc, IC_B);
 		mem_increase(enc, 2);
 
+		const node fst = expression_list_get_subexpr(nd, 0);
 		const size_t size = expression_list_get_size(nd);
 		for (size_t i = 0; i < size; i++)
 		{
