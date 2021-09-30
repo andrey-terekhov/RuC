@@ -27,8 +27,8 @@
 
 
 static const char *const DEFAULT_CODES = "codes.txt";
-
 static const size_t MAX_MEM_SIZE = 100000;
+
 
 /** Kinds of lvalue */
 typedef enum OPERAND
@@ -38,7 +38,7 @@ typedef enum OPERAND
 } operand_t;
 
 
-/** RuC-VM IR encoder */
+/** RuC-VM Intermediate Representation encoder */
 typedef struct encoder
 {
 	syntax *sx;						/**< Syntax structure */
@@ -62,6 +62,7 @@ typedef struct lvalue
 	operand_t kind;					/**< Value kind */
 	item_t displ;					/**< Value displacement */
 } lvalue;
+
 
 static void emit_void_expression(encoder *const enc, const node *const nd);
 static lvalue emit_lvalue(encoder *const enc, const node *const nd);
