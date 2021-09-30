@@ -114,16 +114,16 @@ extern size_t declaration_function_get_id(const node *const nd);
 extern node declaration_function_get_body(const node *const nd);
 
 static inline node node_create(syntax *const sx, operation_t type)
- {
+{
 	return node_add_child(&sx->nd, type);
- }
+}
 
- static inline void node_set_child(const node *const parent, const node *const child)
- {
+static inline void node_set_child(const node *const parent, const node *const child)
+{
 	node temp = node_add_child(parent, OP_NOP);
 	node_swap(child, &temp);
 	node_remove(&temp);
- }
+}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
