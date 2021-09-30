@@ -232,7 +232,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 			node_copy(&prs->sx->nd, parent);
 			const node size = parse_assignment_expression(prs);
 			const item_t size_type = expression_get_type(&size);
-			if (!type_is_integer(size_type))
+			if (!type_is_integer(prs->sx, size_type))
 			{
 				parser_error(prs, array_size_must_be_int);
 			}

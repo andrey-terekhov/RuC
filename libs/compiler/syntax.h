@@ -334,11 +334,12 @@ size_t type_size(const syntax *const sx, const item_t type);
 /**
  *	Check if type is integer
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_integer(const item_t type);
+bool type_is_integer(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is floating
@@ -352,11 +353,12 @@ bool type_is_floating(const item_t type);
 /**
  *	Check if type is arithmetic
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_arithmetic(const item_t type);
+bool type_is_arithmetic(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is void
@@ -415,15 +417,6 @@ bool type_is_enum(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_enum_field(const syntax *const sx, const item_t type);
-
-/**
- *	Check if type is enum const
- *
- *	@param	type		Type for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool type_is_enum_const(const item_t type);
 
 /**
  *	Check if type is function

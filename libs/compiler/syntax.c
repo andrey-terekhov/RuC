@@ -548,9 +548,9 @@ size_t type_size(const syntax *const sx, const item_t type)
 	}
 }
 
-bool type_is_integer(const item_t type)
+bool type_is_integer(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_INTEGER || type_is_enum_const(type);
+	return type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
 }
 
 bool type_is_floating(const item_t type)
@@ -558,9 +558,9 @@ bool type_is_floating(const item_t type)
 	return type == TYPE_FLOATING;
 }
 
-bool type_is_arithmetic(const item_t type)
+bool type_is_arithmetic(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_floating(type);
+	return type_is_integer(sx, type) || type_is_floating(type);
 }
 
 bool type_is_void(const item_t type)
@@ -593,11 +593,6 @@ bool type_is_enum_field(const syntax *const sx, const item_t type)
 	return type < 0 && type_get(sx, (size_t)(-type)) == TYPE_ENUM;
 }
 
-bool type_is_enum_const(const item_t type)
-{
-	return type == TYPE_ENUM;
-}
-
 bool type_is_function(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
@@ -610,7 +605,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
+	return type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)
@@ -620,7 +615,7 @@ bool type_is_aggregate(const syntax *const sx, const item_t type)
 
 bool type_is_string(const syntax *const sx, const item_t type)
 {
-	return type_is_array(sx, type) && type_is_integer(type_get(sx, (size_t)type + 1));
+	return type_is_array(sx, type) && type_is_integer(sx, type_get(sx, (size_t)type + 1));
 }
 
 bool type_is_struct_pointer(const syntax *const sx, const item_t type)
