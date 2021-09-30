@@ -113,6 +113,7 @@ extern node declaration_variable_get_dim_expr(const node *const nd, const size_t
 extern size_t declaration_function_get_id(const node *const nd);
 extern node declaration_function_get_body(const node *const nd);
 
+
 static inline node node_create(syntax *const sx, operation_t type)
 {
 	return node_add_child(&sx->nd, type);
