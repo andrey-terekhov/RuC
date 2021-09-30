@@ -495,6 +495,11 @@ static void write_expression_list(writer *const wrt, const node *const nd)
  */
 static void write_expression(writer *const wrt, const node *const nd)
 {
+	if (!node_is_correct(nd))
+	{
+		return;
+	}
+
 	wrt->indent++;
 	switch (expression_get_class(nd))
 	{
@@ -617,6 +622,11 @@ static void write_function_declaration(writer *const wrt, const node *const nd)
  */
 static void write_declaration(writer *const wrt, const node *const nd)
 {
+	if (!node_is_correct(nd))
+	{
+		return;
+	}
+
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
@@ -973,6 +983,11 @@ static void write_getid_statement(writer *const wrt, const node *const nd)
  */
 static void write_statement(writer *const wrt, const node *const nd)
 {
+	if (!node_is_correct(nd))
+	{
+		return;
+	}
+
 	const statement_t class = statement_get_class(nd);
 	if (class == STMT_EXPR)
 	{
