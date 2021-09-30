@@ -298,7 +298,6 @@ static node build_upb_expression(syntax *const sx, node *const callee, node_vect
 	if (argc != 2)
 	{
 		semantic_error(sx, r_loc, wrong_number_of_params);
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -307,7 +306,6 @@ static node build_upb_expression(syntax *const sx, node *const callee, node_vect
 	if (!type_is_integer(fst_type))
 	{
 		semantic_error(sx, expression_get_location(&fst), not_int_in_stanfunc);
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -316,7 +314,6 @@ static node build_upb_expression(syntax *const sx, node *const callee, node_vect
 	if (!type_is_array(sx, snd_type))
 	{
 		semantic_error(sx, expression_get_location(&snd), not_array_in_stanfunc);
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -519,7 +516,6 @@ node build_call_expression(syntax *const sx, node *const callee
 {
 	if (!node_is_correct(callee))
 	{
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -527,7 +523,6 @@ node build_call_expression(syntax *const sx, node *const callee
 	if (!type_is_function(sx, callee_type))
 	{
 		semantic_error(sx, l_loc, typecheck_call_not_function);
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -542,7 +537,6 @@ node build_call_expression(syntax *const sx, node *const callee
 	if (expected_args != actual_args)
 	{
 		semantic_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
-		node_vector_clear(args);
 		return node_broken();
 	}
 
@@ -551,16 +545,15 @@ node build_call_expression(syntax *const sx, node *const callee
 		node argument = node_vector_get(args, i);
 		if (!node_is_correct(&argument))
 		{
-			node_vector_clear(args);
 			return node_broken();
 		}
 
 		const item_t expected_type = type_function_get_parameter_type(sx, callee_type, i);
 		if (!check_assignment_operands(sx, expected_type, &argument))
 		{
-			node_vector_clear(args);
 			return node_broken();
 		}
+
 		node_vector_set(args, i, &argument);
 	}
 
@@ -963,7 +956,6 @@ node build_init_list_expression(syntax *const sx, node_vector *const exprs, cons
 	if (actual_inits == 0)
 	{
 		semantic_error(sx, l_loc, empty_init);
-		node_vector_clear(exprs);
 		return node_broken();
 	}
 

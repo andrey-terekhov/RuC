@@ -198,14 +198,12 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
 
 	if (args)
 	{
-		size_t amount = node_vector_size(args);
+		const size_t amount = node_vector_size(args);
 		for (size_t i = 0; i < amount; i++)
 		{
 			node arg = node_vector_get(args, i);
 			node_set_child(&nd, &arg);				// i-ый аргумент вызова
 		}
-
-		node_vector_clear(args);
 	}
 
 	node_set_arg(&nd, 0, type);						// Тип значения выражения
@@ -293,14 +291,13 @@ node expression_list(syntax *const sx, node_vector *const exprs, const location 
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 
-	size_t amount = node_vector_size(exprs);
+	const size_t amount = node_vector_size(exprs);
 	for (size_t i = 0; i < amount; i++)
 	{
 		node subexpr = node_vector_get(exprs, i);
 		node_set_child(&nd, &subexpr);				// i-ое подвыражение списка
 	}
 
-	node_vector_clear(exprs);
 	return nd;
 }
 

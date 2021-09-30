@@ -271,6 +271,8 @@ static node parse_postfix_expression(parser *const prs)
 				{
 					const location r_loc = token_consume(prs);
 					operand = build_call_expression(prs->sx, &operand, &args, l_loc, r_loc);
+
+					node_vector_clear(&args);
 				}
 				else
 				{
@@ -470,7 +472,10 @@ node parse_initializer(parser *const prs)
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = token_consume(prs);
-			return build_init_list_expression(prs->sx, &inits, l_loc, r_loc);
+			const node result = build_init_list_expression(prs->sx, &inits, l_loc, r_loc);
+
+			node_vector_clear(&inits);
+			return result;
 		}
 		else
 		{
