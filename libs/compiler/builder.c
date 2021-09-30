@@ -303,7 +303,7 @@ static node build_upb_expression(syntax *const sx, node *const callee, node_vect
 
 	const node fst = node_vector_get(args, 0);
 	const item_t fst_type = expression_get_type(&fst);
-	if (!type_is_integer(fst_type))
+	if (!type_is_integer(sx, fst_type))
 	{
 		semantic_error(sx, expression_get_location(&fst), not_int_in_stanfunc);
 		return node_broken();
@@ -814,7 +814,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
-			const item_t type = usual_arithmetic_conversions(LHS, RHS);
+			const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
 			return fold_binary_expression(sx, type, LHS, RHS, op_kind, loc);
 		}
 
@@ -829,7 +829,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				return node_broken();
 			}
 
-			usual_arithmetic_conversions(LHS, RHS);
+			usual_arithmetic_conversions(sx, LHS, RHS);
 			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
@@ -841,9 +841,9 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 				warning(sx->io, variable_deviation);
 			}
 
-			if (type_is_arithmetic(left_type) && type_is_arithmetic(right_type))
+			if (type_is_arithmetic(sx, left_type) && type_is_arithmetic(sx, right_type))
 			{
-				usual_arithmetic_conversions(LHS, RHS);
+				usual_arithmetic_conversions(sx, LHS, RHS);
 				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
@@ -880,7 +880,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_XOR_ASSIGN:
 		case BIN_OR_ASSIGN:
 		{
-			if (!type_is_integer(left_type) || !type_is_integer(right_type))
+			if (!type_is_integer(sx, left_type) || !type_is_integer(sx, right_type))
 			{
 				semantic_error(sx, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -932,13 +932,13 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 	const item_t RHS_type = expression_get_type(RHS);
 	if (type_is_arithmetic(sx, LHS_type) && type_is_arithmetic(sx, RHS_type))
 	{
-		const item_t type = usual_arithmetic_conversions(LHS, RHS);
-		return fold_ternary_expression(type, cond, LHS, RHS, loc);
+		const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
+		return fold_ternary_expression(sx, type, cond, LHS, RHS, loc);
 	}
 
 	if (type_is_pointer(sx, LHS_type) && type_is_null_pointer(RHS_type))
 	{
-		return fold_ternary_expression(LHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(sx, LHS_type, cond, LHS, RHS, loc);
 	}
 
 	if ((type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))

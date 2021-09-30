@@ -723,11 +723,11 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 			const size_t repr = prs->lxr.repr;
 			token_consume(prs);
 			node_copy(&prs->sx->nd, parent);
-			const node nd_expr = parse_constant_expression(prs);
-			const item_t type_expr = expression_get_type(&nd_expr);
-			field_value = expression_literal_get_integer(&nd_expr);
-			node_set_type(&nd_expr, OP_DECL_VAR);
-			node_remove(&prs->sx->nd);
+
+			node expr = parse_constant_expression(prs);
+			const item_t type_expr = expression_get_type(&expr);
+			field_value = expression_literal_get_integer(&expr);
+			node_remove(&expr);
 
 			if (field_value == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
 			{

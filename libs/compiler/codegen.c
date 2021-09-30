@@ -302,7 +302,7 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 			}
 			else if (!type_is_array(enc->sx, value.type) && !type_is_pointer(enc->sx, value.type))
 			{
-				mem_add(enc, type_is_integer(value.type) ? IC_LAT : IC_LATD);
+				mem_add(enc, type_is_integer(enc->sx, value.type) ? IC_LAT : IC_LATD);
 			}
 
 			return;
@@ -477,7 +477,7 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_LI);
 		mem_add(enc, 0);
 	}
-	else if (type_is_integer(type))
+	else if (type_is_integer(enc->sx, type))
 	{
 		const int value = expression_literal_get_integer(nd);
 
@@ -549,7 +549,7 @@ static void emit_argument(encoder *const enc, const node *const nd)
 				enc->sx->was_error = true;
 			}
 
-			if (type_is_integer(expression_get_type(&fst)))
+			if (type_is_integer(enc->sx, expression_get_type(&fst)))
 			{
 				mem_add(enc, expression_literal_get_integer(&subexpr));
 			}
@@ -717,7 +717,7 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 
 		case UN_MINUS:
 			emit_expression(enc, &operand);
-			mem_add(enc, type_is_integer(type) ? IC_UNMINUS : IC_UNMINUS_R);
+			mem_add(enc, type_is_integer(enc->sx, type) ? IC_UNMINUS : IC_UNMINUS_R);
 			return;
 
 		case UN_NOT:
@@ -732,7 +732,7 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 
 		case UN_ABS:
 			emit_expression(enc, &operand);
-			mem_add(enc, type_is_integer(type) ? IC_ABSI : IC_ABS);
+			mem_add(enc, type_is_integer(enc->sx, type) ? IC_ABSI : IC_ABS);
 			return;
 	}
 }
