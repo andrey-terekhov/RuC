@@ -126,6 +126,7 @@ static inline void node_set_child(const node *const parent, const node *const ch
 	node_remove(&temp);
 }
 
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
