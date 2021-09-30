@@ -755,12 +755,7 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 
 			if (field_value == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
 			{
-				parser_error(prs, not_const_expr);
-				return ITEM_MAX;
-			}
-			
-			if (field_value == ITEM_MAX)
-			{
+				parser_error(prs, not_const_int_expr);
 				return TYPE_UNDEFINED;
 			}
 			prs->lxr.repr = repr;

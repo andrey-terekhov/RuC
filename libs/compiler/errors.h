@@ -110,6 +110,7 @@ typedef enum ERROR
 	no_colon_in_cond_expr,
 	int_op_for_float,
 	not_const_expr,
+	not_const_int_expr,
 	assmnt_float_to_int,
 	redefinition_of_main,
 	no_leftbr_in_printid,
