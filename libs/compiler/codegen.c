@@ -277,16 +277,15 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 	{
 		case VARIABLE:
 		{
-			const item_t type = value.type;
-			if (type_is_structure(enc->sx, type))
+			if (type_is_structure(enc->sx, value.type))
 			{
 				mem_add(enc, IC_COPY0ST);
 				mem_add(enc, value.displ);
-				mem_add(enc, (item_t)type_size(enc->sx, type));
+				mem_add(enc, (item_t)type_size(enc->sx, value.type));
 			}
 			else
 			{
-				mem_add(enc, type_is_floating(type) ? IC_LOADD : IC_LOAD);
+				mem_add(enc, type_is_floating(value.type) ? IC_LOADD : IC_LOAD);
 				mem_add(enc, value.displ);
 			}
 
@@ -295,15 +294,14 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 
 		case ADDRESS:
 		{
-			const item_t type = value.type;
-			if (type_is_structure(enc->sx, type))
+			if (type_is_structure(enc->sx, value.type))
 			{
 				mem_add(enc, IC_COPY1ST);
-				mem_add(enc, (item_t)type_size(enc->sx, type));
+				mem_add(enc, (item_t)type_size(enc->sx, value.type));
 			}
-			else if (!type_is_array(enc->sx, type) && !type_is_pointer(enc->sx, type))
+			else if (!type_is_array(enc->sx, value.type) && !type_is_pointer(enc->sx, value.type))
 			{
-				mem_add(enc, type_is_integer(type) ? IC_LAT : IC_LATD);
+				mem_add(enc, type_is_integer(value.type) ? IC_LAT : IC_LATD);
 			}
 
 			return;
