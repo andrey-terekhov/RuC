@@ -32,6 +32,7 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_FLOAT:
 		case TK_DOUBLE:
 		case TK_STRUCT:
+		case TK_ENUM:
 		case TK_FILE:
 		case TK_TYPEDEF:
 			return true;
@@ -122,7 +123,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 	node_copy(&prs->sx->nd, &nd);
 	const node condition = parse_constant_expression(prs);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -222,7 +223,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	const node condition = parse_expression(prs);
 	token_expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
 	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(condition_type))
+	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
 	{
 		parser_error(prs, float_in_switch);
 	}
@@ -477,7 +478,7 @@ static void parse_return_statement(parser *const prs, node *const parent)
 		const item_t expr_type = expression_get_type(&nd_expr);
 		if (!type_is_undefined(expr_type) && !type_is_undefined(return_type))
 		{
-			if (return_type != expr_type && (!type_is_floating(return_type) || !type_is_integer(expr_type)))
+			if (return_type != expr_type && (!type_is_floating(return_type) || !type_is_integer(prs->sx, expr_type)))
 			{
 				parser_error(prs, bad_type_in_ret);
 			}
@@ -669,7 +670,7 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 		node_copy(&prs->sx->nd, &nd_printf);
 		const node nd_expr = parse_assignment_expression(prs);
 		const item_t type = expression_get_type(&nd_expr);
-		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(type)))
+		if (format_types[actual_args] != type && !(type_is_floating(format_types[actual_args]) && type_is_integer(prs->sx, type)))
 		{
 			parser_error(prs, wrong_printf_param_type, placeholders[actual_args]);
 		}

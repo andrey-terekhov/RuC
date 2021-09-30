@@ -47,6 +47,7 @@ enum TYPE
 	TYPE_MSG_INFO 		= 2,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
+	TYPE_ENUM,
 	TYPE_ARRAY,
 	TYPE_POINTER,
 };
@@ -300,6 +301,17 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
+ *	Add a new enum fields to types table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
+ *
+ *	@return	New type, @c ITEM_MAX on failure
+ */
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size);
+
+/**
  *	Get an item from types table by index
  *
  *	@param	sx			Syntax structure
@@ -322,11 +334,12 @@ size_t type_size(const syntax *const sx, const item_t type);
 /**
  *	Check if type is integer
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_integer(const item_t type);
+bool type_is_integer(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is floating
@@ -340,11 +353,12 @@ bool type_is_floating(const item_t type);
 /**
  *	Check if type is arithmetic
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_arithmetic(const item_t type);
+bool type_is_arithmetic(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is void
@@ -383,6 +397,26 @@ bool type_is_array(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_structure(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum field
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum_field(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is function
@@ -574,6 +608,16 @@ item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
  *	@return	Array type
  */
 item_t type_array(syntax *const sx, const item_t type);
+
+/**
+ *	Get enum field type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Enum type
+ *
+ *	@return	Enum field type
+ */
+item_t get_enum_field_type(const syntax *const sx, const item_t type);
 
 /**
  *	Create function type
