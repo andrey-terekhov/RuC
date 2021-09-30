@@ -215,13 +215,13 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
 }
 
 node expression_member(const item_t type, const category_t ctg
-	, const size_t i, bool is_arrow, node *const base, const location loc)
+	, const size_t index, bool is_arrow, node *const base, const location loc)
 {
 	node nd = node_insert(base, OP_SELECT, 6);		// Операнд выражения
 
 	node_set_arg(&nd, 0, type);						// Тип значения выражения
 	node_set_arg(&nd, 1, ctg);						// Категория значения выражения
-	node_set_arg(&nd, 2, (item_t)i);				// Индекс поля выборки
+	node_set_arg(&nd, 2, (item_t)index);			// Индекс поля выборки
 	node_set_arg(&nd, 3, is_arrow);					// Является ли оператор '->'
 	node_set_arg(&nd, 4, (item_t)loc.begin);		// Начальная позиция выражения
 	node_set_arg(&nd, 5, (item_t)loc.end);			// Конечная позиция выражения

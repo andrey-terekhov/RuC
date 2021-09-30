@@ -297,14 +297,14 @@ inline node expression_call_get_argument(const node *const nd, const size_t inde
  *
  *	@param	type		Value type
  *	@param	ctg			Value category
- *	@param	i			Member index
+ *	@param	index		Member index
  *	@param	is_arrow	Set if operator is '->'
  *	@param	loc			Expression location
  *
  *	@return	Member expression
  */
 node expression_member(const item_t type, const category_t ctg
-	, const size_t i, bool is_arrow, node *const base, const location loc);
+	, const size_t index, bool is_arrow, node *const base, const location loc);
 
 /**
  *	Get base expression of member expression
