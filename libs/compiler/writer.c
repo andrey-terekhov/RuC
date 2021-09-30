@@ -57,19 +57,6 @@ static inline void write(writer *const wrt, const char *const string)
 }
 
 /**
- *	Write indentation
- *
- *	@param	wrt			Writer
- */
-static inline void write_indent(writer *const wrt)
-{
-	for (size_t i = 0; i < wrt->indent; i++)
-	{
-		write(wrt, INDENT);
-	}
-}
-
-/**
  *	Write line
  *
  *	@param	wrt			Writer
@@ -77,7 +64,11 @@ static inline void write_indent(writer *const wrt)
  */
 static inline void write_line(writer *const wrt, const char *const string)
 {
-	write_indent(wrt);
+	for (size_t i = 0; i < wrt->indent; i++)
+	{
+		write(wrt, INDENT);
+	}
+
 	uni_printf(wrt->io, "%s", string);
 }
 
