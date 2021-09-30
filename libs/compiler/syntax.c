@@ -97,13 +97,6 @@ static inline void type_init(syntax *const sx)
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
 	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
-
-	// занесение в types описателя функции void* interpreter(void* n)
-	sx->start_type = vector_add(&sx->types, sx->start_type);
-	vector_add(&sx->types, TYPE_FUNCTION);
-	vector_add(&sx->types, TYPE_VOID_POINTER);
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, TYPE_VOID_POINTER);
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
@@ -209,7 +202,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
 	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
 
-	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "V"));
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "T"));
 	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
 	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
 	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
@@ -680,6 +673,7 @@ item_t type_array(syntax *const sx, const item_t type)
  *		F -> float[]
  *		m -> msg_info
  *		P -> FILE*
+ *		T -> void*(void*)
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
@@ -697,7 +691,7 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				local_modetab[3 + i] = TYPE_VOID;
 				break;
 			case 'V':
-				local_modetab[3 + i] = TYPE_VOID_POINTER;
+				local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
 				break;
 			case 's':
 				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
@@ -722,6 +716,9 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				break;
 			case 'P':
 				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
+				break;
+			case 'T':
+				local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
 				break;
 		}
 

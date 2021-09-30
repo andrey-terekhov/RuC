@@ -97,14 +97,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			if (prs->token == TK_STAR)
 			{
 				token_consume(prs);
-				if (type_is_void(type))
-				{
-					type = TYPE_VOID_POINTER;
-				}
-				else
-				{
-					type = type_pointer(prs->sx, type);
-				}
+				type = type_pointer(prs->sx, type);
 			}
 			if (prs->token == TK_IDENTIFIER)
 			{
@@ -444,14 +437,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			if (token_try_consume(prs, TK_STAR))
 			{
 				arg_func = 1;
-				if (type_is_void(type))
-				{
-					type = TYPE_VOID_POINTER;
-				}
-				else
-				{
-					type = type_pointer(prs->sx, type);
-				}
+				type = type_pointer(prs->sx, type);
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
@@ -766,14 +752,7 @@ void parse_declaration_external(parser *const prs, node *const root)
 		if (prs->token == TK_STAR)
 		{
 			token_consume(prs);
-			if (type_is_void(group_type))
-			{
-				type = TYPE_VOID_POINTER;
-			}
-			else
-			{
-				type = type_pointer(prs->sx, group_type);
-			}
+			type = type_pointer(prs->sx, group_type);
 		}
 
 		if (token_try_consume(prs, TK_IDENTIFIER))
