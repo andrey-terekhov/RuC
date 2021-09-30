@@ -66,6 +66,9 @@ typedef enum STATEMENT
 	STMT_BREAK,			/**< Break statement */
 	STMT_RETURN,		/**< Return statement */
 	STMT_PRINTF,		/**< Printf statement */
+	STMT_PRINT,			/**< Print statement */
+	STMT_PRINTID,		/**< Printid statement */
+	STMT_GETID,			/**< Getid statement */
 } statement_t;
 
 /** Declaration class */
@@ -446,6 +449,44 @@ inline node statement_labeled_get_substmt(const node *const nd)
 
 
 /**
+ *	Get expression of case statement
+ *
+ *	@param	nd		Case statement
+ *
+ *	@return	Expression
+ */
+inline node statement_case_get_expression(const node *const nd)
+{
+	return node_get_type(nd) == OP_CASE ? node_get_child(nd, 0) : node_broken();
+}
+
+/**
+ *	Get substatement of case statement
+ *
+ *	@param	nd		Case statement
+ *
+ *	@return	Substatement
+ */
+inline node statement_case_get_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_CASE ? node_get_child(nd, 1) : node_broken();
+}
+
+
+/**
+ *	Get substatement of default statement
+ *
+ *	@param	nd		Default statement
+ *
+ *	@return	Substatement
+ */
+inline node statement_default_get_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_DEFAULT ? node_get_child(nd, 0) : node_broken();
+}
+
+
+/**
  *	Get size of compound statement
  *
  *	@param	nd		Compound statement
@@ -517,6 +558,31 @@ inline node statement_if_get_then_substmt(const node *const nd)
 inline node statement_if_get_else_substmt(const node *const nd)
 {
 	return statement_if_has_else_substmt(nd) ? node_get_child(nd, 2) : node_broken();
+}
+
+
+/**
+ *	Get condition of switch statement
+ *
+ *	@param	nd		Switch statement
+ *
+ *	@return	Condition
+ */
+inline node statement_switch_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_SWITCH ? node_get_child(nd, 0) : node_broken();
+}
+
+/**
+ *	Get substatement of switch statement
+ *
+ *	@param	nd		Switch statement
+ *
+ *	@return	Substatement
+ */
+inline node statement_switch_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_SWITCH ? node_get_child(nd, 1) : node_broken();
 }
 
 
