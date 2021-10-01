@@ -35,6 +35,7 @@ typedef enum TOKEN
 	TK_INT,							/**< 'int'		keyword	*/
 	TK_LONG,						/**< 'long'		keyword */
 	TK_STRUCT,						/**< 'struct'	keyword */
+	TK_ENUM,						/**< 'enum'		keyword */
 	TK_VOID,						/**< 'void'		keyword */
 	TK_FILE,						/**< 'file'		keyword */
 	TK_TYPEDEF,						/**< 'typedef'	keyword */
@@ -114,7 +115,6 @@ typedef enum TOKEN
 	TK_SCANF,						/**< 'scanf'	keyword */
 	TK_GETID,						/**< 'getid'	keyword */
 	TK_ABS,							/**< 'abs'		keyword */
-	TK_UPB,							/**< 'upb'		keyword */
 } token_t;
 
 #ifdef __cplusplus

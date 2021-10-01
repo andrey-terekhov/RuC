@@ -34,11 +34,11 @@ extern "C" {
  *
  *	@param	sx				Syntax structure
  *	@param	expected_type	Expected type
- *	@param	nd_init			Initializer node
+ *	@param	init			Initializer
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, const node *const nd_init);
+bool check_assignment_operands(syntax *const sx, const item_t expected_type, node *const init);
 
 /**
  *	Build an identifier expression
@@ -52,6 +52,18 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, con
 node build_identifier_expression(syntax *const sx, const size_t name, const location loc);
 
 /**
+ *	Build an enum literal expression
+ *
+ *	@param	sx				Syntax structure
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *	@param	type			Enum type
+ *
+ *	@return	Enum literal expression node
+ */
+node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc);
+
+/**
  *	Build an integer literal expression
  *
  *	@param	sx				Syntax structure
@@ -60,7 +72,7 @@ node build_identifier_expression(syntax *const sx, const size_t name, const loca
  *
  *	@return	Integer literal expression node
  */
-node build_integer_literal_expression(syntax *const sx, const int value, const location loc);
+node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc);
 
 /**
  *	Build a floating literal expression
@@ -98,35 +110,35 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
  *	Build a subscript expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_fst			First operand of subscripting expression
- *	@param	nd_snd			Second operand of subscripting expression
+ *	@param	base			First operand of subscripting expression
+ *	@param	index			Second operand of subscripting expression
  *	@param	l_loc			Left square bracket location
  *	@param	r_loc			Right square bracket location
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd
+node build_subscript_expression(syntax *const sx, node *const base, node *const index
 	, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_func			Called function
+ *	@param	callee			Called expression
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
  *	@param	r_loc			Right paren location
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, const node *const nd_func, const node_vector *args
-	, const location l_loc, const location r_loc);
+node build_call_expression(syntax *const sx, node *const callee
+	, node_vector *const args, const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_base			First operand of member expression
+ *	@param	base			First operand of member expression
  *	@param	name			Second operand of member expression
  *	@param	is_arrow		Set if operator is '->'
  *	@param	op_loc			Operator source location
@@ -134,73 +146,69 @@ node build_call_expression(syntax *const sx, const node *const nd_func, const no
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, const node *const nd_base, const size_t name, const bool is_arrow
-	, const location op_loc, const location id_loc);
+node build_member_expression(syntax *const sx, node *const base, const size_t name
+	, const bool is_arrow, const location op_loc, const location id_loc);
 
 /**
- *	Build a upb expression
+ *	Build a cast expression
  *
- *	@param	sx				Syntax structure
- *	@param	nd_fst			First operand of upb expression
- *	@param	nd_snd			Second operand of upb expression
+ *	@param	target_type		Value type
+ *	@param	expr			Operand
  *
- *	@return	Upb expression node
+ *	@return	Cast expression node
  */
-node build_upb_expression(syntax *const sx, const node *const nd_fst, const node *const nd_snd);
+node build_cast_expression(const item_t target_type, node *const expr);
 
 /**
  *	Build an unary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_operand		Operand of unary operator
+ *	@param	operand			Operand of unary operator
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(syntax *const sx, node *const nd_operand, const unary_t op_kind, const location op_loc);
+node build_unary_expression(syntax *const sx, node *const operand, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_left			Left operand
- *	@param	nd_right		Right operand
+ *	@param	LHS				Left operand
+ *	@param	RHS				Right operand
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(syntax *const sx, node *const nd_left, node *const nd_right
+node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	, const binary_t op_kind, const location op_loc);
 
 /**
  *	Build a ternary expression
  *
  *	@param	sx				Syntax structure
- *	@param	nd_left			First operand
- *	@param	nd_middle		Second operand
- *	@param	nd_right		Third operand
+ *	@param	cond			First operand
+ *	@param	LHS				Second operand
+ *	@param	RHS				Third operand
  *	@param	op_loc			Operator location
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, node *const nd_left, node *const nd_middle, node *const nd_right
-	, const location op_loc);
+node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, location op_loc);
 
 /**
  *	Build an initializer list
  *
  *	@param	sx				Syntax structure
- *	@param	vec				Vector of initializer nodes
- *	@param	type			Target type for initializer list
+ *	@param	exprs			Vector of expressions
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer list expression node
+ *	@return	Initializer list expression
  */
-node build_init_list_expression(syntax *const sx, const node_vector *vec, const item_t type
-	, const location l_loc, const location r_loc);
+node build_init_list_expression(syntax *const sx, node_vector *const exprs, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus
 } /* extern "C" */
