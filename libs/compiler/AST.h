@@ -368,6 +368,18 @@ inline bool expression_member_is_arrow(const node *const nd)
 node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
 
 /**
+ *	Get target type of cast expression
+ *
+ *	@param	nd			Cast expression
+ *
+ *	@return	Target type
+ */
+inline item_t expression_cast_get_target_type(const node *const nd)
+{
+	return node_get_type(nd) == OP_CAST ? node_get_arg(nd, 0) : ITEM_MAX;
+}
+
+/**
  *	Get source type of cast expression
  *
  *	@param	nd			Cast expression

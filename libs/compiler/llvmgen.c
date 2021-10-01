@@ -498,29 +498,6 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 }
 
 
-static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
-{
-	if (operation_type == answer_type || type_is_null_pointer(answer_type) || type_is_pointer(info->sx, answer_type))
-	{
-		return;
-	}
-
-	if (info->answer_kind == ACONST)
-	{
-		info->answer_const_double = (double)info->answer_const;
-	}
-	else
-	{
-		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, answer_type);
-		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
-		type_to_io(info, operation_type);
-		uni_printf(info->sx->io, "\n");
-
-		info->answer_reg = info->register_num++;
-	}
-}
-
 static void check_type_and_branch(information *const info)
 {
 	switch (info->answer_kind)
@@ -545,6 +522,29 @@ static void check_type_and_branch(information *const info)
 //===----------------------------------------------------------------------===//
 //                            Expression Emission                             //
 //===----------------------------------------------------------------------===//
+
+/**
+ *	Emit cast expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_cast_expression(information *const info, const node *const nd)
+{
+	const item_t target_type = expression_cast_get_target_type(nd);
+	const item_t source_type = expression_cast_get_source_type(nd);
+
+	const node expression_to_cast = expression_cast_get_operand(nd);
+	emit_expression(info, &expression_to_cast);
+
+	uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+	type_to_io(info, source_type);
+	uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
+	type_to_io(info, target_type);
+	uni_printf(info->sx->io, "\n");
+
+	info->answer_reg = info->register_num++;
+}
 
 /**
  *	Emit identifier expression
@@ -766,12 +766,10 @@ static void emit_call_expression(information *const info, const node *const nd)
 	{
 		info->variable_location = LFREE;
 		const node argument = expression_call_get_argument(nd, i);
-		item_t answer_type = expression_get_type(&argument);
 		emit_expression(info, &argument);
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
 		arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
-		to_code_try_widen(info, arguments_value_type[i], answer_type);
 
 		if (info->answer_kind == AREG)
 		{
@@ -1065,7 +1063,7 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	info->variable_location = LFREE;
 	const node LHS = expression_binary_get_LHS(nd);
-	item_t answer_type = expression_get_type(&LHS);
+	const item_t answer_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
 
 	if (kind == ALOGIC)
@@ -1073,8 +1071,6 @@ static void emit_integral_expression(information *const info, const node *const 
 		operation_type = usual_arithmetic_conversions(info, answer_type, expression_get_type(nd));
 	}
 
-	// TODO: сделать одну большую функцию для нужных конвертаций
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	// TODO: спрятать эти переменные в одну структуру и возвращать ее из emit_expr
@@ -1085,10 +1081,8 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	info->variable_location = LFREE;
 	const node RHS = expression_binary_get_RHS(nd);
-	answer_type = expression_get_type(&RHS);
 	emit_expression(info, &RHS);
 
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t right_kind = info->answer_kind;
@@ -1157,10 +1151,8 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	info->variable_location = LFREE;
 	const node RHS = expression_binary_get_RHS(nd);
-	const item_t answer_type = expression_get_type(&RHS);
 	emit_expression(info, &RHS);
 
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
@@ -1297,6 +1289,10 @@ static void emit_expression(information *const info, const node *const nd)
 {
 	switch (expression_get_class(nd))
 	{
+		case EXPR_CAST:
+			emit_cast_expression(info, nd);
+			return;
+
 		case EXPR_IDENTIFIER:
 			emit_identifier_expression(info, nd);
 			return;

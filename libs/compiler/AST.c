@@ -40,6 +40,7 @@ extern size_t expression_member_get_member_type(const node *const nd);
 extern size_t expression_member_get_member_index(const node *const nd);
 extern bool expression_member_is_arrow(const node *const nd);
 
+extern item_t expression_cast_get_target_type(const node *const nd);
 extern item_t expression_cast_get_source_type(const node *const nd);
 extern node expression_cast_get_operand(const node *const nd);
 
