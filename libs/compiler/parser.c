@@ -15,14 +15,13 @@
  */
 
 #include "parser.h"
-#include "codes.h"
 #include "tree.h"
+#include "writer.h"
 
 
 static const char *const DEFAULT_TREE = "tree.txt";
 
 static const size_t MAX_LABELS = 10000;
-static const size_t MAX_STACK = 100;
 
 
 /** Check if the set of tokens has token in it */
@@ -34,28 +33,18 @@ static inline int token_check(const uint8_t tokens, const token_t token)
 /**
  *	Create parser structure
  *
+ *	@param	ws		Workspace structure
  *	@param	sx		Syntax structure
- *	@param	lxr		Lexer structure
  *
  *	@return	Parser structure
  */
-static inline parser parser_create(syntax *const sx, lexer *const lxr)
+static inline parser parser_create(const workspace *const ws, syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
-	prs.lxr = lxr;
-
-	prs.left_mode = -1;
-	prs.operand_displ = 0;
-
-	prs.is_in_assignment = false;
-	prs.was_error = false;
+	prs.lxr = lexer_create(ws, sx);
 
 	prs.labels = vector_create(MAX_LABELS);
-	prs.stk.priorities = stack_create(MAX_STACK);
-	prs.stk.tokens = stack_create(MAX_STACK);
-	prs.stk.nodes = stack_create(MAX_STACK);
-	prs.anonymous = stack_create(MAX_STACK);
 	token_consume(&prs);
 
 	return prs;
@@ -64,11 +53,7 @@ static inline parser parser_create(syntax *const sx, lexer *const lxr)
 static inline void parser_clear(parser *const prs)
 {
 	vector_clear(&prs->labels);
-	stack_clear(&prs->anonymous);
-
-	stack_clear(&prs->stk.priorities);
-	stack_clear(&prs->stk.tokens);
-	stack_clear(&prs->stk.nodes);
+	lexer_clear(&prs->lxr);
 }
 
 
@@ -81,15 +66,14 @@ static inline void parser_clear(parser *const prs)
  */
 
 
-int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
+int parse(const workspace *const ws, syntax *const sx)
 {
-	if (!ws_is_correct(ws) || !in_is_correct(io) || sx == NULL)
+	if (!ws_is_correct(ws) || sx == NULL)
 	{
 		return -1;
 	}
 
-	lexer lxr = create_lexer(ws, io, sx);
-	parser prs = parser_create(sx, &lxr);
+	parser prs = parser_create(ws, sx);
 	node root = node_get_root(&sx->tree);
 
 	do
@@ -97,20 +81,19 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 		parse_declaration_external(&prs, &root);
 	} while (prs.token != TK_EOF);
 
-	node_add_child(&root, OP_BLOCK_END);
 	parser_clear(&prs);
 
 #ifndef NDEBUG
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+	write_tree(DEFAULT_TREE, sx);
 #endif
 
-	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
+	return !sx_is_correct(sx);
 }
 
 
 void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr->is_recovery_disabled && (prs->lxr->was_error || prs->was_error))
+	if (prs->lxr.is_recovery_disabled && prs->sx->was_error)
 	{
 		return;
 	}
@@ -118,15 +101,18 @@ void parser_error(parser *const prs, error_t num, ...)
 	va_list args;
 	va_start(args, num);
 
-	verror(prs->lxr->io, num, args);
-	prs->was_error = true;
+	verror(prs->sx->io, num, args);
+	prs->sx->was_error = true;
 
 	va_end(args);
 }
 
-void token_consume(parser *const prs)
+
+location token_consume(parser *const prs)
 {
-	prs->token = lex(prs->lxr);
+	const size_t token_start = prs->lxr.location;
+	prs->token = lex(&prs->lxr);
+	return (location){ token_start, in_get_position(prs->sx->io) };
 }
 
 int token_try_consume(parser *const prs, const token_t expected)
@@ -197,56 +183,9 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 }
 
 
-bool mode_is_function(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
-}
-
-bool mode_is_array(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
-}
-
-bool mode_is_string(syntax *const sx, const item_t mode)
-{
-	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
-}
-
-bool mode_is_pointer(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
-}
-
-bool mode_is_struct(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
-}
-
-bool mode_is_float(const item_t mode)
-{
-	return mode == mode_float;
-}
-
-bool mode_is_int(const item_t mode)
-{
-	return mode == mode_integer || mode == mode_character;
-}
-
-bool mode_is_void(const item_t mode)
-{
-	return mode == mode_void;
-}
-
-bool mode_is_undefined(const item_t mode)
-{
-	return mode == mode_undefined;
-}
-
-
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
-	prs->last_id = 0;
 
 	if (ret == SIZE_MAX)
 	{
@@ -256,23 +195,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	{
 		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
 	}
-	else
-	{
-		prs->last_id = ret;
-	}
 
 	return ret;
-}
-
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
-{
-	item_t temp[2];
-	temp[0] = mode;
-	temp[1] = element;
-	return (item_t)mode_add(prs->sx, temp, 2);
-}
-
-void to_tree(parser *const prs, const item_t operation)
-{
-	prs->nd = node_add_child(&prs->nd, operation);
 }

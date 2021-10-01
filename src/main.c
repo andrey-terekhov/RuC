@@ -29,6 +29,7 @@ const char *name = "../tests/executable/structures/SELECT_9459.c";
 int main(int argc, const char *argv[])
 {
 	workspace ws = ws_parse_args(argc, argv);
+	ws_add_flag(&ws, "-LLVM");
 
 	if (argc < 2)
 	{
@@ -38,8 +39,11 @@ int main(int argc, const char *argv[])
 	}
 
 #ifdef TESTING_EXIT_CODE
-	return compile(&ws) ? TESTING_EXIT_CODE : 0;
+	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	return compile(&ws);
+	const int ret = compile(&ws);
 #endif
+
+	ws_clear(&ws);
+	return ret;
 }

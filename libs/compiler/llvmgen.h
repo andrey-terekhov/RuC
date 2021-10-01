@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #pragma once
 
 #include "syntax.h"
-#include "vector.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus
@@ -25,30 +25,14 @@ extern "C" {
 #endif
 
 /**
- *	Output tables and tree
+ *	Encode to low level virtual machine codes
  *
- *	@param	path			File path
- *	@param	identifiers		Identifiers table
- *	@param	modes			Modes table
- *	@param	tree			Tree table
- */
-void tables_and_tree(const char *const path
-	, const vector *const identifiers
-	, const vector *const modes
-	, vector *const tree);
-
-/**
- *	Output tables and codes
+ *	@param	ws				Compiler workspace
+ *	@param	sx				Syntax structure
  *
- *	@param	path			File path
- *	@param	functions		Functions table
- *	@param	processes		Init processes table
- *	@param	memory			Memory table
+ *	@return	@c 0 on success, @c -1 on failure
  */
-void tables_and_codes(const char *const path
-	, const vector *const functions
-	, const vector *const processes
-	, const vector *const memory);
+int encode_to_llvm(const workspace *const ws, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */

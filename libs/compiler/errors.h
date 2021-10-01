@@ -27,13 +27,36 @@ extern "C" {
 typedef enum ERROR
 {
 	// Lexer errors
-	bad_character,						/**< Bad character in source */
-	empty_character,					/**< Empty character constant */
-	unknown_escape_sequence,			/**< Unknown escape sequence */
-	expected_apost_after_char_const,	/**< Missing terminating ' character */
-	missing_terminating_quote_char,		/**< Missing terminating '"' character */
-	string_too_long,					/**< String literal exceeds maximum length */
-	unterminated_block_comment,			/**< Unterminated block comment */
+	bad_character,							/**< Bad character in source */
+	empty_character,						/**< Empty character constant */
+	unknown_escape_sequence,				/**< Unknown escape sequence */
+	expected_apost_after_char_const,		/**< Missing terminating ' character */
+	missing_terminating_quote_char,			/**< Missing terminating '"' character */
+	unterminated_block_comment,				/**< Unterminated block comment */
+
+	// Expression errors
+	undeclared_var_use,						/**< Use of undeclared identifier */
+	expected_r_paren,						/**< Expected ')' */
+	typecheck_subscript_value,				/**< Subscripted value is not an array */
+	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
+	expected_r_square,						/**< Expected ']' */
+	expected_r_brace,						/**< Expected '}' */
+	expected_identifier,					/**< Expected identifier */
+	typecheck_call_not_function,			/**< Called object type is not a function */
+	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
+	typecheck_member_reference_struct,		/**< Member reference base type is not a structure */
+	typecheck_member_reference_arrow,		/**< Member reference type is not a pointer */
+	typecheck_member_reference_ivar,		/**< Struct does not have a member named that */
+	no_member,								/**< No member named that */
+	typecheck_illegal_increment,			/**< Cannot increment/decrement value of that type */
+	typecheck_expression_not_lvalue,		/**< Expression is not assignable */
+	typecheck_invalid_lvalue_addrof,		/**< Cannot take the address of an rvalue */
+	typecheck_indirection_requires_pointer,	/**< Indirection requires pointer operand */
+	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
+	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
+	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
+	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
+	typecheck_statement_requires_scalar,	/**< Condition must be of scalar type */
 
 	// Statement errors
 	expected_semi_after_stmt,			/**< Expected ';' after statement */
@@ -54,17 +77,19 @@ typedef enum ERROR
 	notvoidret_in_void_func,
 
 	// Environment errors
-	no_main_in_program,					/**< Undefined main */
-	predef_but_notdef,					/**< Undefined function */
+	no_main_in_program,						/**< Undefined main */
+	predef_but_notdef,						/**< Undefined function */
 
 	// Other errors
 	after_type_must_be_ident = 201,
 	empty_struct,
+	empty_enum,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
 	wrong_param_list,
 	expected_semi_after_decl,
+	typedef_requires_a_name,
 	func_decl_req_params,
 	cond_must_be_in_brkts,
 	repeated_decl,
@@ -83,6 +108,8 @@ typedef enum ERROR
 	wrong_addr,
 	no_colon_in_cond_expr,
 	int_op_for_float,
+	not_const_expr,
+	not_const_int_expr,
 	assmnt_float_to_int,
 	redefinition_of_main,
 	no_leftbr_in_printid,
@@ -123,6 +150,7 @@ typedef enum ERROR
 	after_dot_must_be_ident,
 	get_field_not_from_struct_pointer,
 	error_in_initialization,
+	error_in_equal_with_enum,
 	type_missmatch,
 	array_assigment,
 	wrong_struct_ass,
@@ -135,7 +163,10 @@ typedef enum ERROR
 	pnt_before_array,
 	array_size_must_be_int,
 	no_semicolon_in_struct,
+	no_comma_in_enum,
 	wait_ident_after_semicolon_in_struct,
+	wait_ident_after_comma_in_enum,
+	no_equal_with_enum,
 	empty_init,
 	ident_not_type,
 	not_decl,
@@ -194,12 +225,16 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
+	array_borders_cannot_be_static_dynamic,
+	such_array_is_not_supported,
+	too_many_arguments
 } error_t;
 
 /** Warnings codes */
 typedef enum WARNING
 {
-	too_long_int = 400,
+	too_long_int,
+	variable_deviation,
 
 	tree_operator_unknown,
 	node_argc,
