@@ -904,12 +904,12 @@ static void expression(information *const info, node *const nd)
 	{
 		case OP_CAST:
 		{
-			const item_t type_to_widen = node_get_arg(nd, 0);
+			const item_t target_type = node_get_arg(nd, 0);
 			node_set_next(nd);
 
-			const item_t type_from_widen = expression_get_type(nd);
+			const item_t source_type = expression_get_type(nd);
 			expression(info, nd);
-			to_code_try_widen(info, type_to_widen, type_from_widen);
+			to_code_try_widen(info, target_type, source_type);
 		}
 		break;
 		case OP_IDENTIFIER:
