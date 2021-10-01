@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v1
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -i
   Windows-Server-2019:
     name: Windows Server 2019
     runs-on: windows-2019
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v1
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -i
   macOS-Catalina-10-15:
     name: macOS Catalina 10.15
     runs-on: macos-10.15
@@ -28,7 +28,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v1
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -i
   Ubuntu-20-04:
     name: Ubuntu 20.04
     runs-on: ubuntu-20.04
@@ -36,4 +36,4 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v1
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -i
