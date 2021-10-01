@@ -902,6 +902,16 @@ static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
+		case OP_CAST:
+		{
+			const item_t type_to_widen = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			const item_t type_from_widen = expression_get_type(nd);
+			expression(info, nd);
+			to_code_try_widen(info, type_to_widen, type_from_widen);
+		}
+		break;
 		case OP_IDENTIFIER:
 		{
 			item_t type = node_get_arg(nd, 0);
