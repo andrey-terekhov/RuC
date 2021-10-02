@@ -583,8 +583,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_CALL1);
 	}
 
-	const item_t func_type = expression_get_type(&callee);
-	const size_t args = type_function_get_parameter_amount(enc->sx, func_type);
+	const size_t args = expression_call_get_arguments_amount(nd);
 	for (size_t i = 0; i < args; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
