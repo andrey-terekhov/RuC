@@ -624,7 +624,7 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 	emit_expression(enc, &base);
 	mem_add(enc, IC_COPYST);
 	mem_add(enc, member_displ);
-	mem_add(enc, type);
+	mem_add(enc, (item_t)type_size(enc->sx, type));
 	mem_add(enc, (item_t)type_size(enc->sx, base_type));
 }
 
