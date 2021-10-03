@@ -319,18 +319,6 @@ inline node expression_member_get_base(const node *const nd)
 }
 
 /**
- *	Get member type of member expression
- *
- *	@param	nd		Member expression
- *
- *	@return	Type
- */
-inline size_t expression_member_get_member_type(const node *const nd)
-{
-	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
-}
-
-/**
  *	Get member index of member expression
  *
  *	@param	nd			Member expression
@@ -366,18 +354,6 @@ inline bool expression_member_is_arrow(const node *const nd)
  *	@return	Cast expression
  */
 node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
-
-/**
- *	Get target type of cast expression
- *
- *	@param	nd			Cast expression
- *
- *	@return	Target type
- */
-inline item_t expression_cast_get_target_type(const node *const nd)
-{
-	return node_get_type(nd) == OP_CAST ? node_get_arg(nd, 0) : ITEM_MAX;
-}
 
 /**
  *	Get source type of cast expression

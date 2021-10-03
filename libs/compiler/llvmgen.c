@@ -61,7 +61,7 @@ typedef struct information
 
 	item_t answer_reg;						/**< Регистр с ответом */
 	item_t answer_const;					/**< Константа с ответом */
-	item_t answer_string;					/**< Индекс строки с ответом */
+	size_t answer_string;					/**< Индекс строки с ответом */
 	double answer_const_double;				/**< Константа с ответом типа double */
 	answer_t answer_kind;					/**< Вид ответа */
 
@@ -519,9 +519,13 @@ static void check_type_and_branch(information *const info)
 }
 
 
-//===----------------------------------------------------------------------===//
-//                            Expression Emission                             //
-//===----------------------------------------------------------------------===//
+/*
+ *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
+ *	/\  ___\   /\_\_\_\   /\  == \ /\  == \   /\  ___\   /\  ___\   /\  ___\   /\ \   /\  __ \   /\ "-.\ \   /\  ___\
+ *	\ \  __\   \/_/\_\/_  \ \  _-/ \ \  __<   \ \  __\   \ \___  \  \ \___  \  \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
+ *	 \ \_____\   /\_\/\_\  \ \_\    \ \_\ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/_____/   \/_/\/_/   \/_/     \/_/ /_/   \/_____/   \/_____/   \/_____/   \/_/   \/_____/   \/_/ \/_/   \/_____/
+ */
 
 /**
  *	Emit cast expression
@@ -531,7 +535,7 @@ static void check_type_and_branch(information *const info)
  */
 static void emit_cast_expression(information *const info, const node *const nd)
 {
-	const item_t target_type = expression_cast_get_target_type(nd);
+	const item_t target_type = expression_get_type(nd);
 	const item_t source_type = expression_cast_get_source_type(nd);
 
 	const node expression_to_cast = expression_cast_get_operand(nd);
@@ -585,7 +589,7 @@ static void emit_literal_expression(information *const info, const node *const n
 
 	if (type_is_string(info->sx, type))
 	{
-		info->answer_string = (item_t)expression_literal_get_string(nd);
+		info->answer_string = expression_literal_get_string(nd);
 		info->answer_kind = ASTR;
 	}
 	else if (type_is_integer(info->sx, type))
@@ -777,7 +781,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 		else if (info->answer_kind == ASTR)
 		{
-			arguments[i] = info->answer_string;
+			arguments[i] = (item_t)info->answer_string;
 		}
 		else if (type_is_integer(info->sx, arguments_value_type[i])) // ACONST
 		{
@@ -857,7 +861,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 static void emit_member_expression(information *const info, const node *const nd)
 {
 	const item_t place = expression_member_get_member_index(nd);
-	const item_t elem_type = expression_member_get_member_type(nd);
+	const item_t elem_type = expression_get_type(nd);
 
 	const node base = expression_member_get_base(nd);
 
@@ -898,7 +902,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = node_get_type(&operand) != OP_IDENTIFIER;
+	bool is_array = node_get_type(&operand) == OP_SLICE;
 	item_t displ = 0;
 	if (!is_array)
 	{
@@ -1137,7 +1141,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_binary_get_LHS(nd);
 	item_t displ = 0;
-	bool is_array = node_get_type(&LHS) != OP_IDENTIFIER;
+	bool is_array = node_get_type(&LHS) == OP_SLICE;
 	if (!is_array)
 	{
 		displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
@@ -1338,7 +1342,7 @@ static void emit_expression(information *const info, const node *const nd)
 static void emit_initialization(information *const info, const node *const nd, const item_t displ, const item_t elem_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
-	if (node_get_type(nd) == OP_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	if (node_get_type(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t N = expression_list_get_size(nd);
 
@@ -1376,9 +1380,13 @@ static void emit_initialization(information *const info, const node *const nd, c
 }
 
 
-//===----------------------------------------------------------------------===//
-//                            Declaration Emission                            //
-//===----------------------------------------------------------------------===//
+/*
+ *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
+ *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
+ *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
+ *	 \ \____-  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
+ */
 
 /**
  *	Emit variable declaration
@@ -1544,9 +1552,13 @@ static void emit_declaration(information *const info, const node *const nd)
 }
 
 
-//===----------------------------------------------------------------------===//
-//                             Statement Emission                             //
-//===----------------------------------------------------------------------===//
+/*
+ *	 ______     ______   ______     ______   ______     __    __     ______     __   __     ______   ______
+ *	/\  ___\   /\__  _\ /\  __ \   /\__  _\ /\  ___\   /\ "-./  \   /\  ___\   /\ "-.\ \   /\__  _\ /\  ___\
+ *	\ \___  \  \/_/\ \/ \ \  __ \  \/_/\ \/ \ \  __\   \ \ \-./\ \  \ \  __\   \ \ \-.  \  \/_/\ \/ \ \___  \
+ *	 \/\_____\    \ \_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\  \ \_\\"\_\    \ \_\  \/\_____\
+ *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
+ */
 
 /**
  *	Emit labeled statement
