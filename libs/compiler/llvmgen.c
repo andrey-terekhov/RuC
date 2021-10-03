@@ -751,8 +751,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 	const item_t func_type = expression_get_type(nd);
 
 	const node callee = expression_call_get_callee(nd);
-	const item_t type_ref = expression_get_type(&callee);
-	const size_t args = type_function_get_parameter_amount(info->sx, type_ref);
+	const size_t args = expression_call_get_arguments_amount(nd);
 	if (args > MAX_FUNCTION_ARGS)
 	{
 		system_error(too_many_arguments);
@@ -773,7 +772,8 @@ static void emit_call_expression(information *const info, const node *const nd)
 		emit_expression(info, &argument);
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
-		arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
+		const node arg = expression_call_get_argument(nd, i);
+		arguments_value_type[i] = expression_get_type(&arg);
 
 		if (info->answer_kind == AREG)
 		{
