@@ -902,7 +902,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = node_get_type(&operand) == OP_SLICE;
+	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT;
 	item_t displ = 0;
 	if (!is_array)
 	{
@@ -1141,7 +1141,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_binary_get_LHS(nd);
 	item_t displ = 0;
-	bool is_array = node_get_type(&LHS) == OP_SLICE;
+	bool is_array = expression_get_class(&LHS) == EXPR_SUBSCRIPT;
 	if (!is_array)
 	{
 		displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
@@ -1342,7 +1342,7 @@ static void emit_expression(information *const info, const node *const nd)
 static void emit_initialization(information *const info, const node *const nd, const item_t displ, const item_t elem_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
-	if (node_get_type(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t N = expression_list_get_size(nd);
 
