@@ -1248,11 +1248,11 @@ static void emit_binary_expression(information *const info, const node *const nd
 			const item_t old_label_true = info->label_true;
 			const item_t old_label_false = info->label_false;
 
-			if (node_get_arg(nd, 2) == BIN_LOG_OR)
+			if (operator == BIN_LOG_OR)
 			{
 				info->label_false = label_next;
 			}
-			else // (node_get_arg(nd, 2) == OP_LOG_AND)
+			else // (operator == OP_LOG_AND)
 			{
 				info->label_true = label_next;
 			}
