@@ -16,6 +16,7 @@
 
 #include "syntax.h"
 #include <stdlib.h>
+#include <string.h>
 #include "tokens.h"
 #include "tree.h"
 
@@ -26,11 +27,6 @@ static const size_t FUNCTIONS_SIZE = 100;
 static const size_t STRINGS_SIZE = 80;
 static const size_t TYPES_SIZE = 1000;
 static const size_t TREE_SIZE = 10000;
-
-
-extern item_t expression_get_type(const node *const nd);
-extern bool expression_is_lvalue(const node *const nd);
-extern location expression_get_location(const node *const nd);
 
 
 static void repr_add_keyword(map *const reprtab, const char32_t *const eng, const char32_t *const rus, const token_t token)
@@ -63,6 +59,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"int", U"цел", TK_INT);
 	repr_add_keyword(reprtab, U"long", U"длин", TK_LONG);
 	repr_add_keyword(reprtab, U"struct", U"структура", TK_STRUCT);
+	repr_add_keyword(reprtab, U"enum", U"перечисление", TK_ENUM);
 	repr_add_keyword(reprtab, U"void", U"пусто", TK_VOID);
 	repr_add_keyword(reprtab, U"file", U"файл", TK_FILE);
 	repr_add_keyword(reprtab, U"typedef", U"типопр", TK_TYPEDEF);
@@ -86,7 +83,6 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
 	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
-	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 }
 
 
@@ -102,13 +98,6 @@ static inline void type_init(syntax *const sx)
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "numTh"));
 	vector_add(&sx->types, TYPE_INTEGER);
 	vector_add(&sx->types, (item_t)map_reserve(&sx->representations, "data"));
-
-	// занесение в types описателя функции void* interpreter(void* n)
-	sx->start_type = vector_add(&sx->types, sx->start_type);
-	vector_add(&sx->types, TYPE_FUNCTION);
-	vector_add(&sx->types, TYPE_VOID_POINTER);
-	vector_add(&sx->types, 1);
-	vector_add(&sx->types, TYPE_VOID_POINTER);
 }
 
 static inline item_t get_static(syntax *const sx, const item_t type)
@@ -214,7 +203,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"receive_float_from_robot", U"получить_вещ_от_робота", type_function(sx, TYPE_FLOATING, "i"));
 	builtin_add(sx, U"receive_string_from_robot", U"получить_строку_от_робота", type_function(sx, TYPE_VOID, "i"));
 
-	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "V"));
+	builtin_add(sx, U"t_create", U"н_создать", type_function(sx, TYPE_INTEGER, "T"));
 	builtin_add(sx, U"t_getnum", U"н_номер_нити", type_function(sx, TYPE_INTEGER, ""));
 	builtin_add(sx, U"t_sleep", U"н_спать", type_function(sx, TYPE_VOID, "i"));
 	builtin_add(sx, U"t_join", U"н_присоед", type_function(sx, TYPE_VOID, "i"));
@@ -234,6 +223,8 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_INTEGER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
+	
+	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 }
 
 
@@ -250,7 +241,6 @@ syntax sx_create(universal_io *const io)
 {
 	syntax sx;
 	sx.io = io;
-	sx.procd = 1;
 
 	sx.string_literals = strings_create(STRINGS_SIZE);
 
@@ -334,6 +324,11 @@ size_t string_add(syntax *const sx, const vector *const str)
 const char* string_get(const syntax *const sx, const size_t index)
 {
 	return strings_get(&sx->string_literals, index);
+}
+
+size_t string_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
 }
 
 
@@ -469,6 +464,11 @@ item_t ident_get_displ(const syntax *const sx, const size_t index)
 	return sx != NULL ? vector_get(&sx->identifiers, index + 3) : ITEM_MAX;
 }
 
+const char *ident_get_spelling(const syntax *const sx, const size_t index)
+{
+	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
+}
+
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
 {
 	return sx != NULL ? vector_set(&sx->identifiers, index + 1, repr) : -1;
@@ -518,6 +518,21 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 	return (item_t)sx->start_type + 1;
 }
 
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size)
+{
+	if (sx == NULL || record == NULL || !type_is_enum(sx, sx->types.size - 1))
+	{
+		return ITEM_MAX;
+	}
+
+	for (size_t i = 0; i < size; i++)
+	{
+		vector_add(&sx->types, record[i]);
+	}
+
+	return (item_t)sx->start_type + 1;
+}
+
 item_t type_get(const syntax *const sx, const size_t index)
 {
 	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
@@ -539,9 +554,9 @@ size_t type_size(const syntax *const sx, const item_t type)
 	}
 }
 
-bool type_is_integer(const item_t type)
+bool type_is_integer(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_INTEGER;
+	return type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
 }
 
 bool type_is_floating(const item_t type)
@@ -549,9 +564,9 @@ bool type_is_floating(const item_t type)
 	return type == TYPE_FLOATING;
 }
 
-bool type_is_arithmetic(const item_t type)
+bool type_is_arithmetic(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_floating(type);
+	return type_is_integer(sx, type) || type_is_floating(type);
 }
 
 bool type_is_void(const item_t type)
@@ -574,6 +589,16 @@ bool type_is_structure(const syntax *const sx, const item_t type)
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
 }
 
+bool type_is_enum(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
+}
+
+bool type_is_enum_field(const syntax *const sx, const item_t type)
+{
+	return type < 0 && type_get(sx, (size_t)(-type)) == TYPE_ENUM;
+}
+
 bool type_is_function(const syntax *const sx, const item_t type)
 {
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_FUNCTION;
@@ -586,7 +611,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
+	return type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)
@@ -596,7 +621,7 @@ bool type_is_aggregate(const syntax *const sx, const item_t type)
 
 bool type_is_string(const syntax *const sx, const item_t type)
 {
-	return type_is_array(sx, type) && type_is_integer(type_get(sx, (size_t)type + 1));
+	return type_is_array(sx, type) && type_is_integer(sx, type_get(sx, (size_t)type + 1));
 }
 
 bool type_is_struct_pointer(const syntax *const sx, const item_t type)
@@ -668,6 +693,11 @@ item_t type_array(syntax *const sx, const item_t type)
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
 }
 
+item_t get_enum_field_type(const syntax *const sx, const item_t type)
+{
+	return type_is_enum_field(sx, type) ? -type : 0;
+}
+
 /*
  *	args = list of characters each for one argument
  *		v -> void
@@ -680,6 +710,7 @@ item_t type_array(syntax *const sx, const item_t type)
  *		F -> float[]
  *		m -> msg_info
  *		P -> FILE*
+ *		T -> void*(void*)
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
@@ -689,43 +720,49 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 	local_modetab[0] = TYPE_FUNCTION;
 	local_modetab[1] = return_type;
 
-	while (args[i] != '\0')
+	if (args != NULL)
 	{
-		switch (args[i])
+		while (args[i] != '\0')
 		{
-			case 'v':
-				local_modetab[3 + i] = TYPE_VOID;
-				break;
-			case 'V':
-				local_modetab[3 + i] = TYPE_VOID_POINTER;
-				break;
-			case 's':
-				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
-				break;
-			case 'S':
-				local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
-				break;
-			case 'i':
-				local_modetab[3 + i] = TYPE_INTEGER;
-				break;
-			case 'I':
-				local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
-				break;
-			case 'f':
-				local_modetab[3 + i] = TYPE_FLOATING;
-				break;
-			case 'F':
-				local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
-				break;
-			case 'm':
-				local_modetab[3 + i] = TYPE_MSG_INFO;
-				break;
-			case 'P':
-				local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
-				break;
-		}
+			switch (args[i])
+			{
+				case 'v':
+					local_modetab[3 + i] = TYPE_VOID;
+					break;
+				case 'V':
+					local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
+					break;
+				case 's':
+					local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+					break;
+				case 'S':
+					local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
+					break;
+				case 'i':
+					local_modetab[3 + i] = TYPE_INTEGER;
+					break;
+				case 'I':
+					local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+					break;
+				case 'f':
+					local_modetab[3 + i] = TYPE_FLOATING;
+					break;
+				case 'F':
+					local_modetab[3 + i] = type_array(sx, TYPE_FLOATING);
+					break;
+				case 'm':
+					local_modetab[3 + i] = TYPE_MSG_INFO;
+					break;
+				case 'P':
+					local_modetab[3 + i] = type_pointer(sx, TYPE_FILE);
+					break;
+				case 'T':
+					local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
+					break;
+			}
 
-		i++;
+			i++;
+		}
 	}
 
 	local_modetab[2] = (item_t)i;

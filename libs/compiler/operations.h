@@ -18,7 +18,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "instructions.h"
 #include "tokens.h"
 
 
@@ -102,11 +101,11 @@ typedef enum OPERATION
 	
 	// Expressions
 	OP_IDENTIFIER,			/**< Identifier node */
-	OP_CONSTANT,			/**< Constant node */
-	OP_STRING,				/**< String litaral node */
+	OP_LITERAL,				/**< Literal node */
 	OP_CALL,				/**< Call node */
 	OP_SELECT,				/**< Select operator node */
 	OP_SLICE,				/**< Slice operator node */
+	OP_CAST,				/**< Cast operator node */
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
@@ -137,7 +136,6 @@ typedef enum OPERATION
 	OP_PRINT,
 	OP_GETID,
 	OP_PRINTF,
-	OP_UPB,
 } operation_t;
 
 typedef enum builtin
@@ -196,8 +194,9 @@ typedef enum builtin
 	BI_FCLOSE				= 158,
 
 	BI_EXIT					= 162,
+	BI_UPB					= 166,
 
-	BEGIN_USER_FUNC			= 166,
+	BEGIN_USER_FUNC			= 170,
 } builtin_t;
 
 
@@ -218,15 +217,6 @@ unary_t token_to_unary(const token_t token);
  *	@return	Binary operator
  */
 binary_t token_to_binary(const token_t token);
-
-/**
- *	Convert standard function id to corresponding function instruction
- *
- *	@param	func		Function id
- *
- *	@return	Function instruction
- */
-instruction_t builtin_to_instruction(const builtin_t func);
 
 /**
  *	Check if operator is assignment
