@@ -363,8 +363,6 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 static void emit_function_definition(information *const info, const node *const nd)
 {
 	const size_t ref_ident = declaration_function_get_id(nd);
-	// Выравнивание смещения на 8
-	// const item_t max_displ = (declaration_function_get_displ(nd) + 7) * 8 / 8;
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
@@ -377,7 +375,7 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 	// Выделение на стеке памяти для функции
-	// to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL);
 	// Сохранение данных перед началом работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
@@ -406,9 +404,16 @@ static void emit_function_definition(information *const info, const node *const 
 	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
 
+	// TODO: тут будет высчитываться добавочное смещение функции для локальных переменных
+	//		сейчас реализован случай, когда нет локальных переменных
+	//		потом max_displ будет вычитаться при выделении памяти на стеке и прибавляться при восстанвлении стека
+	
+	// Выравнивание смещения на 8
+	// const item_t max_displ = (info->max_displ + 7) * 8 / 8;
+
 	// Восстановление стека после работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
-	// to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, FUNC_DISPL);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
 	to_code_label(info->sx->io, L_NEXT, ref_ident);
