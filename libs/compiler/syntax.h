@@ -45,21 +45,14 @@ enum TYPE
 	TYPE_UNDEFINED,
 
 	TYPE_MSG_INFO 		= 2,
-	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
+	TYPE_ENUM,
 	TYPE_ARRAY,
 	TYPE_POINTER,
 
 	BEGIN_USER_TYPE = 15,
 };
-
-/** Value category */
-typedef enum VALUE
-{
-	LVALUE,		/**< An expression that designates an object */
-	RVALUE,		/**< An expression detached from any specific storage */
-} category_t;
 
 
 typedef struct location
@@ -95,7 +88,6 @@ typedef struct syntax
 	item_t displ;				/**< Stack displacement in current scope */
 	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
-	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
 	
 	bool was_error;				/**< Set, if was error */
@@ -149,6 +141,24 @@ size_t string_add(syntax *const sx, const vector *const str);
  *	@return	String, @c NULL on failure
  */
 const char* string_get(const syntax *const sx, const size_t index);
+
+/**
+ *    Get length of a string
+ *
+ *    @param  sx      Syntax structure
+ *
+ *    @return Length of a string
+ */
+size_t strings_length(const syntax *const sx, const size_t index);
+
+/**
+ *    Get amount of strings
+ *
+ *    @param  sx      Syntax structure
+ *
+ *    @return Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
 
 
 /**
@@ -255,6 +265,16 @@ item_t ident_get_type(const syntax *const sx, const size_t index);
 item_t ident_get_displ(const syntax *const sx, const size_t index);
 
 /**
+ *	Get identifier spelling by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Pointer to spelling of identifier
+ */
+const char *ident_get_spelling(const syntax *const sx, const size_t index);
+
+/**
  *	Set identifier representation by index in identifiers table
  *
  *	@param	sx			Syntax structure
@@ -300,6 +320,17 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
+ *	Add a new enum fields to types table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
+ *
+ *	@return	New type, @c ITEM_MAX on failure
+ */
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size);
+
+/**
  *	Get an item from types table by index
  *
  *	@param	sx			Syntax structure
@@ -322,11 +353,12 @@ size_t type_size(const syntax *const sx, const item_t type);
 /**
  *	Check if type is integer
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_integer(const item_t type);
+bool type_is_integer(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is floating
@@ -340,11 +372,12 @@ bool type_is_floating(const item_t type);
 /**
  *	Check if type is arithmetic
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_arithmetic(const item_t type);
+bool type_is_arithmetic(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is void
@@ -383,6 +416,26 @@ bool type_is_array(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_structure(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum field
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum_field(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is function
@@ -576,6 +629,16 @@ item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
 item_t type_array(syntax *const sx, const item_t type);
 
 /**
+ *	Get enum field type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Enum type
+ *
+ *	@return	Enum field type
+ */
+item_t get_enum_field_type(const syntax *const sx, const item_t type);
+
+/**
  *	Create function type
  *
  *	@param	sx			Syntax structure
@@ -679,63 +742,6 @@ item_t scope_func_enter(syntax *const sx);
  *	@return	Max displacement of the function, @c ITEM_MAX on failure
  */
 item_t scope_func_exit(syntax *const sx, const item_t displ);
-
-
-/**
- *	Get amount of strings
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Amount of strings
- */
-size_t strings_amount(const syntax *const sx);
-
-/**
- *	Get length of a string
- *
- *	@param	sx	Syntax structure
- *
- *	@return	Length of a string
- */
-size_t strings_length(const syntax *const sx, const size_t index);
-
-
-/**
- *	Get expression type
- *
- *	@param	nd	Expression
- *
- *	@return	Expression type
- */
-inline item_t expression_get_type(const node *const nd)
-{
-	return node_get_arg(nd, 0);
-}
-
-/**
- *	Check if expression is lvalue
- *
- *	@param	nd	Expression for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-inline bool expression_is_lvalue(const node *const nd)
-{
-	return node_get_arg(nd, 1) == LVALUE;
-}
-
-/**
- *	Get expression location
- *
- *	@param	nd	Expression
- *
- *	@return	Expression location
- */
-inline location expression_get_location(const node *const nd)
-{
-	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
-}
 
 #ifdef __cplusplus
 } /* extern "C" */

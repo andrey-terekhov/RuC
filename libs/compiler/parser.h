@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "AST.h"
 #include "builder.h"
 #include "errors.h"
 #include "lexer.h"
@@ -175,11 +176,10 @@ node parse_constant_expression(parser *const prs);
  *		'{' expression-list[opt] '}'
  *
  *	@param	prs			Parser
- *	@param	type		Type of variable in declaration
  *
  *	@return Initializer node
  */
-node parse_initializer(parser *const prs, const item_t type);
+node parse_initializer(parser *const prs);
 
 
 /**

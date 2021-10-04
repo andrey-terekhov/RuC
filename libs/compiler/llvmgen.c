@@ -16,6 +16,7 @@
 
 #include "llvmgen.h"
 #include <string.h>
+#include "AST.h"
 #include "errors.h"
 #include "hash.h"
 #include "operations.h"
@@ -89,15 +90,11 @@ static void expression(information *const info, node *const nd);
 static void block(information *const info, node *const nd);
 
 
-static inline const char *ident_get_spelling(const syntax *const sx, const size_t index)
-{
-	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
-}
-
 // TODO: такая функция есть в builder, хотелось бы не дублировать
-static inline item_t usual_arithmetic_conversions(const item_t left_type, const item_t right_type)
+static inline item_t usual_arithmetic_conversions(information *const info
+	, const item_t left_type, const item_t right_type)
 {
-	return type_is_integer(left_type) && type_is_integer(right_type)
+	return type_is_integer(info->sx, left_type) && type_is_integer(info->sx, right_type)
 		? TYPE_INTEGER
 		: TYPE_FLOATING;
 }
@@ -115,7 +112,7 @@ static item_t array_get_type(information *const info, const item_t array_type)
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (type_is_integer(type))
+	if (type_is_integer(info->sx, type))
 	{
 		uni_printf(info->sx->io, "i32");
 	}
@@ -146,83 +143,79 @@ static void type_to_io(information *const info, const item_t type)
 		uni_printf(info->sx->io, "%%struct._IO_FILE");
 		info->was_file = true;
 	}
-	else
-	{
-		uni_printf(info->sx->io, "i8");
-	}
 }
 
-static void operation_to_io(universal_io *const io, const item_t operation_type, const item_t type)
+static void operation_to_io(information *const info, const item_t operation_type, const item_t type)
 {
 	switch (operation_type)
 	{
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			uni_printf(io, type_is_integer(type) ? "add nsw" : "fadd");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "add nsw" : "fadd");
 			break;
 
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-			uni_printf(io, type_is_integer(type) ? "sub nsw" : "fsub");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "sub nsw" : "fsub");
 			break;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
-			uni_printf(io, type_is_integer(type) ? "mul nsw" : "fmul");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "mul nsw" : "fmul");
 			break;
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			uni_printf(io, type_is_integer(type) ? "sdiv" : "fdiv");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "sdiv" : "fdiv");
 			break;
 
 		case BIN_REM_ASSIGN:
 		case BIN_REM:
-			uni_printf(io, "srem");
+			uni_printf(info->sx->io, "srem");
 			break;
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
-			uni_printf(io, "shl");
+			uni_printf(info->sx->io, "shl");
 			break;
 
 		case BIN_SHR_ASSIGN:
 		case BIN_SHR:
-			uni_printf(io, "ashr");
+			uni_printf(info->sx->io, "ashr");
 			break;
 
 		case BIN_AND_ASSIGN:
 		case BIN_AND:
-			uni_printf(io, "and");
+			uni_printf(info->sx->io, "and");
 			break;
 
 		case BIN_XOR_ASSIGN:
 		case BIN_XOR:
-			uni_printf(io, "xor");
+			uni_printf(info->sx->io, "xor");
 			break;
 
 		case BIN_OR_ASSIGN:
 		case BIN_OR:
-			uni_printf(io, "or");
+			uni_printf(info->sx->io, "or");
 			break;
 
 		case BIN_EQ:
-			uni_printf(io, type_is_integer(type) ? "icmp eq" : "fcmp oeq");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp eq" : "fcmp oeq");
 			break;
 		case BIN_NE:
-			uni_printf(io, type_is_integer(type) ? "icmp ne" : "fcmp one");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp ne" : "fcmp one");
 			break;
 		case BIN_LT:
-			uni_printf(io, type_is_integer(type) ? "icmp slt" : "fcmp olt");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp slt" : "fcmp olt");
 			break;
 		case BIN_GT:
-			uni_printf(io, type_is_integer(type) ? "icmp sgt" : "fcmp ogt");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp sgt" : "fcmp ogt");
 			break;
 		case BIN_LE:
-			uni_printf(io, type_is_integer(type) ? "icmp sle" : "fcmp ole");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp sle" : "fcmp ole");
 			break;
 		case BIN_GE:
-			uni_printf(io, type_is_integer(type) ? "icmp sge" : "fcmp oge");
+			uni_printf(info->sx->io, type_is_integer(info->sx, type) ? "icmp sge" : "fcmp oge");
 			break;
 	}
 }
@@ -231,7 +224,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, type);
+	operation_to_io(info, operation, type);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%.%" PRIitem ", %%.%" PRIitem "\n", fst, snd);
@@ -241,7 +234,7 @@ static void to_code_operation_reg_const_i32(information *const info, const item_
 	, const item_t fst, const item_t snd)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
 
@@ -249,7 +242,7 @@ static void to_code_operation_reg_const_double(information *const info, const it
 	, const item_t fst, const double snd)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	operation_to_io(info, operation, TYPE_FLOATING);
 	uni_printf(info->sx->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
 
@@ -257,7 +250,7 @@ static void to_code_operation_const_reg_i32(information *const info, const item_
 	, const item_t fst, const item_t snd)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
 
@@ -265,7 +258,7 @@ static void to_code_operation_const_reg_double(information *const info, const it
 	, const double fst, const item_t snd)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_FLOATING);
+	operation_to_io(info, operation, TYPE_FLOATING);
 	uni_printf(info->sx->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
 
@@ -273,7 +266,7 @@ static void to_code_operation_reg_null(information *const info, const item_t ope
 	, const item_t fst, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %%.%" PRIitem ", null\n", fst);
@@ -283,7 +276,7 @@ static void to_code_operation_null_reg(information *const info, const item_t ope
 	, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
-	operation_to_io(info->sx->io, operation, TYPE_INTEGER);
+	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* null, %%.%" PRIitem "\n", snd);
@@ -492,29 +485,6 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 }
 
 
-static void to_code_try_widen(information *const info, const item_t operation_type, const item_t answer_type)
-{
-	if (operation_type == answer_type || type_is_null_pointer(answer_type) ||  type_is_pointer(info->sx, answer_type))
-	{
-		return;
-	}
-
-	if (info->answer_kind == ACONST)
-	{
-		info->answer_const_double = (double)info->answer_const;
-	}
-	else
-	{
-		uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
-		type_to_io(info, answer_type);
-		uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
-		type_to_io(info, operation_type);
-		uni_printf(info->sx->io, "\n");
-
-		info->answer_reg = info->register_num++;
-	}
-}
-
 static void check_type_and_branch(information *const info)
 {
 	switch (info->answer_kind)
@@ -556,10 +526,8 @@ static void assignment_expression(information *const info, node *const nd)
 	}
 
 	info->variable_location = LFREE;
-	const item_t answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 	item_t result = info->answer_reg;
 
@@ -572,7 +540,7 @@ static void assignment_expression(information *const info, node *const nd)
 		{
 			to_code_operation_reg_reg(info, assignment_type, info->register_num - 1, info->answer_reg, operation_type);
 		}
-		else if (type_is_integer(operation_type)) // ACONST
+		else if (type_is_integer(info->sx, operation_type)) // ACONST
 		{
 			to_code_operation_reg_const_i32(info, assignment_type, info->register_num - 1, info->answer_const);
 		}
@@ -591,7 +559,7 @@ static void assignment_expression(information *const info, node *const nd)
 		to_code_store_reg(info, result, displ, operation_type, is_array
 			, info->answer_kind == AMEM);
 	}
-	else if (type_is_integer(operation_type)) // ACONST и операция =
+	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
 		to_code_store_const_i32(info, info->answer_const, displ, is_array);
 	}
@@ -617,10 +585,9 @@ static void integral_expression(information *const info, node *const nd, const a
 	
 	if (kind == ALOGIC)
 	{
-		operation_type = usual_arithmetic_conversions(answer_type, expression_get_type(nd));
+		operation_type = usual_arithmetic_conversions(info, answer_type, expression_get_type(nd));
 	}
 
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t left_kind = info->answer_kind;
@@ -629,10 +596,8 @@ static void integral_expression(information *const info, node *const nd, const a
 	const double left_const_double = info->answer_const_double;
 
 	info->variable_location = LFREE;
-	answer_type = expression_get_type(nd);
 	expression(info, nd);
 
-	to_code_try_widen(info, operation_type, answer_type);
 	to_code_try_zext_to(info);
 
 	const answer_t right_kind = info->answer_kind;
@@ -644,7 +609,7 @@ static void integral_expression(information *const info, node *const nd, const a
 	{
 		to_code_operation_reg_reg(info, operation, left_reg, right_reg, operation_type);
 	}
-	else if (left_kind == AREG && right_kind == ACONST && type_is_integer(operation_type))
+	else if (left_kind == AREG && right_kind == ACONST && type_is_integer(info->sx, operation_type))
 	{
 		to_code_operation_reg_const_i32(info, operation, left_reg, right_const);
 	}
@@ -706,7 +671,7 @@ static void inc_dec_expression(information *const info, node *const nd)
 		case UN_POSTINC:
 		case UN_POSTDEC:
 		{
-			if (type_is_integer(operation_type))
+			if (type_is_integer(info->sx, operation_type))
 			{
 				to_code_operation_reg_const_i32(info, operation == UN_PREINC || operation == UN_POSTINC ? BIN_ADD : BIN_SUB
 					, info->register_num - 1, 1);
@@ -748,7 +713,7 @@ static void unary_operation(information *const info, node *const nd)
 
 			to_code_try_zext_to(info);
 
-			if (operation == UN_MINUS && type_is_integer(operation_type))
+			if (operation == UN_MINUS && type_is_integer(info->sx, operation_type))
 			{
 				to_code_operation_const_reg_i32(info, BIN_SUB, 0, info->answer_reg);
 			}
@@ -800,7 +765,7 @@ static void unary_operation(information *const info, node *const nd)
 			uni_printf(info->sx->io, " %%.%" PRIitem " = call ", info->register_num);
 			type_to_io(info, type);
 
-			if (type_is_integer(type))
+			if (type_is_integer(info->sx, type))
 			{
 				uni_printf(info->sx->io, " @abs(");
 				info->was_abs = true;
@@ -909,6 +874,23 @@ static void expression(information *const info, node *const nd)
 {
 	switch (node_get_type(nd))
 	{
+		case OP_CAST:
+		{
+			const item_t target_type = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			const item_t source_type = expression_get_type(nd);
+			expression(info, nd);
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+			type_to_io(info, source_type);
+			uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
+			type_to_io(info, target_type);
+			uni_printf(info->sx->io, "\n");
+
+			info->answer_reg = info->register_num++;
+		}
+		break;
 		case OP_IDENTIFIER:
 		{
 			item_t type = node_get_arg(nd, 0);
@@ -931,11 +913,16 @@ static void expression(information *const info, node *const nd)
 			info->answer_kind = AREG;
 		}
 		break;
-		case OP_CONSTANT:
+		case OP_LITERAL:
 		{
 			const item_t type = node_get_arg(nd, 0);
 
-			if (type_is_integer(type))
+			if (type_is_string(info->sx, type))
+			{
+				info->answer_string = node_get_arg(nd, 2);
+				info->answer_kind = ASTR;
+			}
+			else if (type_is_integer(info->sx, type))
 			{
 				const item_t num = node_get_arg(nd, 2);
 
@@ -1104,12 +1091,10 @@ static void expression(information *const info, node *const nd)
 			for (size_t i = 0; i < args; i++)
 			{
 				info->variable_location = LFREE;
-				item_t answer_type = expression_get_type(nd);
 				expression(info, nd);
 				// TODO: сделать параметры других типов (логическое)
 				arguments_type[i] = info->answer_kind;
 				arguments_value_type[i] = type_function_get_parameter_type(info->sx, type_ref, i);
-				to_code_try_widen(info, arguments_value_type[i], answer_type);
 
 				if (info->answer_kind == AREG)
 				{
@@ -1119,7 +1104,7 @@ static void expression(information *const info, node *const nd)
 				{
 					arguments[i] = info->answer_string;
 				}
-				else if (type_is_integer(arguments_value_type[i])) // ACONST
+				else if (type_is_integer(info->sx, arguments_value_type[i])) // ACONST
 				{
 					arguments[i] = info->answer_const;
 				}
@@ -1176,7 +1161,7 @@ static void expression(information *const info, node *const nd)
 						, string_length + 1
 						, index);
 				}
-				else if (type_is_integer(arguments_value_type[i])) // ACONST
+				else if (type_is_integer(info->sx, arguments_value_type[i])) // ACONST
 				{
 					uni_printf(info->sx->io, " %" PRIitem, arguments[i]);
 				}
@@ -1188,16 +1173,38 @@ static void expression(information *const info, node *const nd)
 			uni_printf(info->sx->io, ")\n");
 		}
 		break;
-		case OP_STRING:
-		{	
-			info->answer_string = node_get_arg(nd, 2);
-			info->answer_kind = ASTR;
+		case OP_SELECT:
+		{
+			const item_t place = node_get_arg(nd, 2);
+			const item_t elem_type = node_get_arg(nd, 0);
+			node_set_next(nd);
+
+			item_t type = node_get_arg(nd, 0);
+			const item_t displ = ident_get_displ(info->sx, (size_t)node_get_arg(nd, 2));
+
+			const bool is_pointer = type_is_pointer(info->sx, type);
+			if (is_pointer)
+			{
+				to_code_load(info, info->register_num++, displ, type, false);
+				type = type_pointer_get_element_type(info->sx, type);
+			}
+
+			uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem 
+				", %%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n"
+				, info->register_num, type, type, is_pointer ? "" : "var"
+				, is_pointer ? info->register_num - 1 : displ, place);
+
+			if (info->variable_location != LMEM)
+			{
+				info->register_num++;
+				to_code_load(info, info->register_num, info->register_num - 1, elem_type, true);
+				info->answer_kind = AREG;
+			}
+
+			info->answer_reg = info->register_num++;
 			node_set_next(nd);
 		}
 		break;
-		case OP_SELECT:
-			node_set_next(nd);
-			break;
 			
 		case OP_UNARY:
 			unary_operation(info, nd);
@@ -1435,7 +1442,7 @@ static void statement(information *const info, node *const nd)
 			expression(info, nd);
 
 			// TODO: добавить обработку других ответов (ALOGIC)
-			if (info->answer_kind == ACONST && type_is_integer(answer_type))
+			if (info->answer_kind == ACONST && type_is_integer(info->sx, answer_type))
 			{
 				uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 			}
@@ -1529,7 +1536,7 @@ static void init(information *const info, node *const nd, const item_t displ, co
 			info->answer_const = i;
 			to_code_slice(info, displ, 0, 0, type);
 
-			if (type_is_integer(type))
+			if (type_is_integer(info->sx, type))
 			{
 				to_code_store_const_i32(info, value_int, info->register_num - 1, true);
 			}
@@ -1629,6 +1636,7 @@ static void block(information *const info, node *const nd)
 				}
 			}
 			break;
+			case OP_DECL_TYPE:
 			case OP_NOP:
 				node_set_next(nd);
 				break;
@@ -1831,9 +1839,16 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-
-				const item_t param_type = type_function_get_parameter_type(info->sx, func_type, j);
-				type_to_io(info, param_type);
+				
+				// TODO: будет исправлено, когда будет введён тип char
+				if (i == BI_FOPEN)
+				{
+					uni_printf(info->sx->io, "i8*");
+				}
+				else
+				{				
+					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
+				}
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
