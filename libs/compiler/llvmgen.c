@@ -1371,11 +1371,6 @@ static void emit_initialization(information *const info, const node *const nd, c
 			}
 		}
 	}
-	else
-	{
-		// TODO: конвертация в другие типы
-		emit_expression(info, nd);
-	}
 }
 
 
@@ -1407,8 +1402,14 @@ static void emit_variable_declaration(information *const info, const node *const
 		type_to_io(info, type);
 		uni_printf(info->sx->io, ", align 4\n");
 
-		info->variable_location = LMEM;
-		info->request_reg = displ;
+		if (declaration_variable_has_initializer(nd))
+		{
+			info->variable_location = LMEM;
+			info->request_reg = displ;
+
+			const node initializer = declaration_variable_get_initializer(nd);
+			emit_expression(info, &initializer);
+		}
 	}
 	else if (!type_is_array(info->sx, type) && displ < 0) // глобальные переменные
 	{
@@ -1416,7 +1417,13 @@ static void emit_variable_declaration(information *const info, const node *const
 		type_to_io(info, type);
 		uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
 
-		info->variable_location = LFREE;
+		if (declaration_variable_has_initializer(nd))
+		{
+			info->variable_location = LFREE;
+
+			const node initializer = declaration_variable_get_initializer(nd);
+			emit_expression(info, &initializer);
+		}
 	}
 	else // массив
 	{
