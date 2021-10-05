@@ -1413,9 +1413,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	}
 	else if (!type_is_array(info->sx, type) && displ < 0) // глобальные переменные
 	{
-		uni_printf(info->sx->io, "@var.%" PRIitem " = common global ", displ);
-		type_to_io(info, type);
-		uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
+		uni_printf(info->sx->io, "@var.%" PRIitem " = ", displ);
 
 		if (declaration_variable_has_initializer(nd))
 		{
@@ -1423,6 +1421,26 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
+
+			if (info->answer_kind == ACONST)
+			{
+				uni_printf(info->sx->io, "global ");
+				type_to_io(info, type);
+				if (type_is_integer(info->sx, type))
+				{
+					uni_printf(info->sx->io, " %" PRIitem ", align 4\n", info->answer_const);
+				}
+				else
+				{
+					uni_printf(info->sx->io, " %f, align 4\n", info->answer_const_double);
+				}
+			}
+		}
+		else
+		{
+			uni_printf(info->sx->io, "common global ");
+			type_to_io(info, type);
+			uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
 		}
 	}
 	else // массив
