@@ -302,7 +302,7 @@ static void to_code_load(information *const info, const item_t result, const ite
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
@@ -312,21 +312,21 @@ static void to_code_store_reg(information *const info, const item_t reg, const i
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
 	, const bool is_array)
 {
-	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
-		, arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %s%s.%" PRIitem ", align 4\n"
+		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
 	, const bool is_array)
 {
-	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n"
-		, arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store double %f, double* %s%s.%" PRIitem ", align 4\n"
+		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static void to_code_store_null(information *const info, const item_t displ, const item_t type)
@@ -1401,7 +1401,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
-	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
+	if (!type_is_array(info->sx, type) && displ > 0) // обычная переменная int a; или struct point p;
 	{
 		uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
 		type_to_io(info, type);
@@ -1409,6 +1409,14 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		info->variable_location = LMEM;
 		info->request_reg = displ;
+	}
+	else if (!type_is_array(info->sx, type) && displ < 0) // глобальные переменные
+	{
+		uni_printf(info->sx->io, "@var.%" PRIitem " = common global ", displ);
+		type_to_io(info, type);
+		uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
+
+		info->variable_location = LFREE;
 	}
 	else // массив
 	{
