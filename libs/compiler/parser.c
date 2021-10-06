@@ -25,14 +25,6 @@ static const char *const DEFAULT_TREE = "tree.txt";
 static const size_t MAX_LABELS = 10000;
 
 
-/**	Kinds of block to parse */
-typedef enum BLOCK
-{
-	REGBLOCK,
-	FUNCBODY,
-} block_t;
-
-
 /** Parser */
 typedef struct parser
 {
@@ -73,7 +65,6 @@ static location consume_token(parser *const prs);
 static node parse_expression(parser *const prs);
 static node parse_initializer(parser *const prs);
 static void parse_statement(parser *const prs, node *const parent);
-static void parse_compound_statement(parser *const prs, node *const parent, const block_t type);
 
 
 /*
@@ -1198,293 +1189,6 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	}
 }
 
-/**
- *	Parse function declarator
- *
- *	@param	prs			Parser structure
- *	@param	level		Level of declarator
- *	@param	func_def	@c 0 for function without arguments,
- *						@c 1 for function definition,
- *						@c 2 for function declaration,
- *						@c 3 for others
- *	@param	return_type	Return type of declarated function
- *
- *	@return	Index of types table, @c type_undefined on failure
- */
-static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
-{
-	item_t local_modetab[100];
-	size_t local_md = 3;
-	size_t args = 0;
-
-	if (try_consume_token(prs, TK_R_PAREN))
-	{
-		prs->func_def = 0;
-	}
-	else
-	{
-		do
-		{
-			int arg_func = 0;	/**< Тип возврата функции-параметра:
-									 @c 0 - обычный тип,
-									 @c 1 - была '*',
-									 @c 2 - была '[' */
-			item_t type = parse_type_specifier(prs, NULL);
-
-			if (try_consume_token(prs, TK_STAR))
-			{
-				arg_func = 1;
-				type = type_pointer(prs->sx, type);
-			}
-
-			// На 1 уровне это может быть определением функции или предописанием;
-			// На остальных уровнях - только декларатором (без идентов)
-			bool was_ident = false;
-			if (level)
-			{
-				if (try_consume_token(prs, TK_IDENTIFIER))
-				{
-					was_ident = true;
-					func_add(prs->sx, (item_t)prs->lxr.repr);
-				}
-			}
-			else if (prs->token == TK_IDENTIFIER)
-			{
-				parser_error(prs, ident_in_declarator);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return TYPE_UNDEFINED;
-			}
-
-			if (type_is_void(type) && prs->token != TK_L_PAREN)
-			{
-				parser_error(prs, par_type_void_with_nofun);
-			}
-
-			if (prs->token == TK_L_SQUARE)
-			{
-				arg_func = 2;
-				if (type_is_pointer(prs->sx, type) && !was_ident)
-				{
-					parser_error(prs, aster_with_row);
-				}
-
-				while (try_consume_token(prs, TK_L_SQUARE))
-				{
-					type = type_array(prs->sx, type);
-					if (!try_consume_token(prs, TK_R_SQUARE))
-					{
-						parser_error(prs, wait_right_sq_br);
-						skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-					}
-				}
-			}
-
-			if (try_consume_token(prs, TK_L_PAREN))
-			{
-				expect_and_consume(prs, TK_STAR, wrong_func_as_arg);
-				if (prs->token == TK_IDENTIFIER)
-				{
-					if (level)
-					{
-						consume_token(prs);
-						if (!was_ident)
-						{
-							was_ident = true;
-						}
-						else
-						{
-							parser_error(prs, two_idents_for_1_declarer);
-							return TYPE_UNDEFINED;
-						}
-						func_add(prs->sx, -((item_t)prs->lxr.repr));
-					}
-					else
-					{
-						parser_error(prs, ident_in_declarator);
-						return TYPE_UNDEFINED;
-					}
-				}
-
-				expect_and_consume(prs, TK_R_PAREN, no_right_br_in_arg_func);
-				expect_and_consume(prs, TK_L_PAREN, wrong_func_as_arg);
-				if (arg_func == 1)
-				{
-					parser_error(prs, aster_before_func);
-					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-				}
-				else if (arg_func == 2)
-				{
-					parser_error(prs, array_before_func);
-					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-				}
-
-				const int old_func_def = prs->func_def;
-				type = parse_function_declarator(prs, 0, 2, type);
-				prs->func_def = old_func_def;
-			}
-			if (func_def == 3)
-			{
-				func_def = was_ident ? 1 : 2;
-			}
-			else if (func_def == 2 && was_ident)
-			{
-				parser_error(prs, wait_declarator);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				// На случай, если после этого заголовка стоит тело функции
-				if (try_consume_token(prs, TK_L_BRACE))
-				{
-					skip_until(prs, TK_R_BRACE);
-				}
-				return TYPE_UNDEFINED;
-			}
-			else if (func_def == 1 && !was_ident)
-			{
-				parser_error(prs, wait_definition);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return TYPE_UNDEFINED;
-			}
-
-			args++;
-			local_modetab[local_md++] = type;
-		} while (try_consume_token(prs, TK_COMMA));
-
-		expect_and_consume(prs, TK_R_PAREN, wrong_param_list);
-		prs->func_def = func_def;
-	}
-
-	local_modetab[0] = TYPE_FUNCTION;
-	local_modetab[1] = return_type;
-	local_modetab[2] = (item_t)args;
-
-	return type_add(prs->sx, local_modetab, local_md);
-}
-
-/**
- *	Parse function body
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	function_id	Function number
- */
-static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
-{
-	prs->function_mode = (size_t)ident_get_type(prs->sx, function_id);
-	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
-	const size_t param_number = (size_t)type_get(prs->sx, prs->function_mode + 2);
-
-	vector_resize(&prs->labels, 0);
-	prs->was_return = 0;
-
-	const item_t prev = ident_get_prev(prs->sx, function_id);
-	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
-	{
-		if (prs->function_mode != (size_t)ident_get_type(prs->sx, (size_t)prev))
-		{
-			parser_error(prs, decl_and_def_have_diff_type);
-			skip_until(prs, TK_R_BRACE);
-			return;
-		}
-		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
-	}
-
-	node nd = node_add_child(parent, OP_FUNC_DEF);
-	node_add_arg(&nd, (item_t)function_id);
-	node_add_arg(&nd, 0); // for max_displ
-
-	const item_t old_displ = scope_func_enter(prs->sx);
-
-	for (size_t i = 0; i < param_number; i++)
-	{
-		item_t type = type_get(prs->sx, prs->function_mode + i + 3);
-		const item_t repr = func_get(prs->sx, function_number + i + 1);
-
-		const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
-
-		size_t dim = 0;
-		while (type_is_array(prs->sx, type))
-		{
-			dim++;
-			type = type_array_get_element_type(prs->sx, type);
-		}
-
-		node param = node_add_child(&nd, OP_DECL_VAR);
-		node_add_arg(&param, (item_t)id);	// id
-		node_add_arg(&param, (item_t)dim);	// dim
-		node_add_arg(&param, false);		// has init
-	}
-
-	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
-
-	parse_compound_statement(prs, &nd, FUNCBODY);
-
-	if (type_get(prs->sx, prs->function_mode + 1) != TYPE_VOID && !prs->was_return)
-	{
-		parser_error(prs, no_ret_in_func);
-	}
-
-	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
-	node_set_arg(&nd, 1, max_displ);
-
-	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
-	{
-		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i));
-		const size_t line_number = (size_t)llabs(vector_get(&prs->labels, i + 1));
-		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->labels, i)))
-		{
-			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
-		}
-	}
-}
-
-/**
- *	Parse function definition [C99 6.9.1]
- *
- *	function-definition:
- *		declarator declaration-list[opt] compound-statement
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Return type of a function
- */
-static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
-{
-	const size_t function_num = func_reserve(prs->sx);
-	const size_t function_repr = prs->lxr.repr;
-
-	consume_token(prs);
-	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
-
-	if (prs->func_def == 0 && prs->token == TK_L_BRACE)
-	{
-		prs->func_def = 1;
-	}
-	else if (prs->func_def == 0)
-	{
-		prs->func_def = 2;
-	}
-
-	const size_t function_id = to_identab(prs, function_repr, (item_t)function_num, function_mode);
-
-	if (prs->token == TK_L_BRACE)
-	{
-		if (prs->func_def == 1)
-		{
-			parse_function_body(prs, parent, function_id);
-		}
-		else
-		{
-			parser_error(prs, func_decl_req_params);
-			skip_until(prs, TK_R_BRACE);
-		}
-	}
-	else if (prs->func_def == 1)
-	{
-		parser_error(prs, function_has_no_body);
-		// На тот случай, если после неправильного декларатора стоит ';'
-		try_consume_token(prs, TK_SEMICOLON);
-	}
-}
-
 static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number)
 {
 	const size_t old_id = to_identab(prs, prs->lxr.repr, 0, type);
@@ -1803,7 +1507,7 @@ static void parse_default_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser
  *	@param	parent		Parent node in AST
  */
-static void parse_compound_statement(parser *const prs, node *const parent, const block_t type)
+static void parse_compound_statement(parser *const prs, node *const parent, const bool is_function_body)
 {
 	consume_token(prs); // '{'
 	node nd = node_add_child(parent, OP_BLOCK);
@@ -1811,7 +1515,7 @@ static void parse_compound_statement(parser *const prs, node *const parent, cons
 	item_t old_displ = 0;
 	item_t old_lg = 0;
 
-	if (type != FUNCBODY)
+	if (!is_function_body)
 	{
 		scope_block_enter(prs->sx, &old_displ, &old_lg);
 	}
@@ -1833,7 +1537,7 @@ static void parse_compound_statement(parser *const prs, node *const parent, cons
 		expect_and_consume(prs, TK_R_BRACE, expected_end);
 	}
 
-	if (type != FUNCBODY)
+	if (!is_function_body)
 	{
 		scope_block_exit(prs->sx, old_displ, old_lg);
 	}
@@ -2393,7 +2097,7 @@ static void parse_statement(parser *const prs, node *const parent)
 			return;
 
 		case TK_L_BRACE:
-			parse_compound_statement(prs, parent, REGBLOCK);
+			parse_compound_statement(prs, parent, /*is_function_body=*/false);
 			return;
 
 		case TK_IF:
@@ -2456,6 +2160,292 @@ static void parse_statement(parser *const prs, node *const parent)
 
 
 
+/**
+ *	Parse function declarator
+ *
+ *	@param	prs			Parser structure
+ *	@param	level		Level of declarator
+ *	@param	func_def	@c 0 for function without arguments,
+ *						@c 1 for function definition,
+ *						@c 2 for function declaration,
+ *						@c 3 for others
+ *	@param	return_type	Return type of declarated function
+ *
+ *	@return	Index of types table, @c type_undefined on failure
+ */
+static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
+{
+	item_t local_modetab[100];
+	size_t local_md = 3;
+	size_t args = 0;
+
+	if (try_consume_token(prs, TK_R_PAREN))
+	{
+		prs->func_def = 0;
+	}
+	else
+	{
+		do
+		{
+			int arg_func = 0;	/**< Тип возврата функции-параметра:
+									 @c 0 - обычный тип,
+									 @c 1 - была '*',
+									 @c 2 - была '[' */
+			item_t type = parse_type_specifier(prs, NULL);
+
+			if (try_consume_token(prs, TK_STAR))
+			{
+				arg_func = 1;
+				type = type_pointer(prs->sx, type);
+			}
+
+			// На 1 уровне это может быть определением функции или предописанием;
+			// На остальных уровнях - только декларатором (без идентов)
+			bool was_ident = false;
+			if (level)
+			{
+				if (try_consume_token(prs, TK_IDENTIFIER))
+				{
+					was_ident = true;
+					func_add(prs->sx, (item_t)prs->lxr.repr);
+				}
+			}
+			else if (prs->token == TK_IDENTIFIER)
+			{
+				parser_error(prs, ident_in_declarator);
+				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+				return TYPE_UNDEFINED;
+			}
+
+			if (type_is_void(type) && prs->token != TK_L_PAREN)
+			{
+				parser_error(prs, par_type_void_with_nofun);
+			}
+
+			if (prs->token == TK_L_SQUARE)
+			{
+				arg_func = 2;
+				if (type_is_pointer(prs->sx, type) && !was_ident)
+				{
+					parser_error(prs, aster_with_row);
+				}
+
+				while (try_consume_token(prs, TK_L_SQUARE))
+				{
+					type = type_array(prs->sx, type);
+					if (!try_consume_token(prs, TK_R_SQUARE))
+					{
+						parser_error(prs, wait_right_sq_br);
+						skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+					}
+				}
+			}
+
+			if (try_consume_token(prs, TK_L_PAREN))
+			{
+				expect_and_consume(prs, TK_STAR, wrong_func_as_arg);
+				if (prs->token == TK_IDENTIFIER)
+				{
+					if (level)
+					{
+						consume_token(prs);
+						if (!was_ident)
+						{
+							was_ident = true;
+						}
+						else
+						{
+							parser_error(prs, two_idents_for_1_declarer);
+							return TYPE_UNDEFINED;
+						}
+						func_add(prs->sx, -((item_t)prs->lxr.repr));
+					}
+					else
+					{
+						parser_error(prs, ident_in_declarator);
+						return TYPE_UNDEFINED;
+					}
+				}
+
+				expect_and_consume(prs, TK_R_PAREN, no_right_br_in_arg_func);
+				expect_and_consume(prs, TK_L_PAREN, wrong_func_as_arg);
+				if (arg_func == 1)
+				{
+					parser_error(prs, aster_before_func);
+					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+				}
+				else if (arg_func == 2)
+				{
+					parser_error(prs, array_before_func);
+					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+				}
+
+				const int old_func_def = prs->func_def;
+				type = parse_function_declarator(prs, 0, 2, type);
+				prs->func_def = old_func_def;
+			}
+			if (func_def == 3)
+			{
+				func_def = was_ident ? 1 : 2;
+			}
+			else if (func_def == 2 && was_ident)
+			{
+				parser_error(prs, wait_declarator);
+				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+				// На случай, если после этого заголовка стоит тело функции
+				if (try_consume_token(prs, TK_L_BRACE))
+				{
+					skip_until(prs, TK_R_BRACE);
+				}
+				return TYPE_UNDEFINED;
+			}
+			else if (func_def == 1 && !was_ident)
+			{
+				parser_error(prs, wait_definition);
+				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+				return TYPE_UNDEFINED;
+			}
+
+			args++;
+			local_modetab[local_md++] = type;
+		} while (try_consume_token(prs, TK_COMMA));
+
+		expect_and_consume(prs, TK_R_PAREN, wrong_param_list);
+		prs->func_def = func_def;
+	}
+
+	local_modetab[0] = TYPE_FUNCTION;
+	local_modetab[1] = return_type;
+	local_modetab[2] = (item_t)args;
+
+	return type_add(prs->sx, local_modetab, local_md);
+}
+
+/**
+ *	Parse function body
+ *
+ *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
+ *	@param	function_id	Function number
+ */
+static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
+{
+	prs->function_mode = (size_t)ident_get_type(prs->sx, function_id);
+	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
+	const size_t param_number = (size_t)type_get(prs->sx, prs->function_mode + 2);
+
+	vector_resize(&prs->labels, 0);
+	prs->was_return = 0;
+
+	const item_t prev = ident_get_prev(prs->sx, function_id);
+	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
+	{
+		if (prs->function_mode != (size_t)ident_get_type(prs->sx, (size_t)prev))
+		{
+			parser_error(prs, decl_and_def_have_diff_type);
+			skip_until(prs, TK_R_BRACE);
+			return;
+		}
+		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
+	}
+
+	node nd = node_add_child(parent, OP_FUNC_DEF);
+	node_add_arg(&nd, (item_t)function_id);
+	node_add_arg(&nd, 0); // for max_displ
+
+	const item_t old_displ = scope_func_enter(prs->sx);
+
+	for (size_t i = 0; i < param_number; i++)
+	{
+		item_t type = type_get(prs->sx, prs->function_mode + i + 3);
+		const item_t repr = func_get(prs->sx, function_number + i + 1);
+
+		const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
+
+		size_t dim = 0;
+		while (type_is_array(prs->sx, type))
+		{
+			dim++;
+			type = type_array_get_element_type(prs->sx, type);
+		}
+
+		node param = node_add_child(&nd, OP_DECL_VAR);
+		node_add_arg(&param, (item_t)id);	// id
+		node_add_arg(&param, (item_t)dim);	// dim
+		node_add_arg(&param, false);		// has init
+	}
+
+	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
+
+	parse_compound_statement(prs, &nd, /*is_function_body=*/true);
+
+	if (type_get(prs->sx, prs->function_mode + 1) != TYPE_VOID && !prs->was_return)
+	{
+		parser_error(prs, no_ret_in_func);
+	}
+
+	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
+	node_set_arg(&nd, 1, max_displ);
+
+	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
+	{
+		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i));
+		const size_t line_number = (size_t)llabs(vector_get(&prs->labels, i + 1));
+		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->labels, i)))
+		{
+			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
+		}
+	}
+}
+
+/**
+ *	Parse function definition [C99 6.9.1]
+ *
+ *	function-definition:
+ *		declarator declaration-list[opt] compound-statement
+ *
+ *	@param	prs			Parser structure
+ *	@param	parent		Parent node in AST
+ *	@param	type		Return type of a function
+ */
+static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
+{
+	const size_t function_num = func_reserve(prs->sx);
+	const size_t function_repr = prs->lxr.repr;
+
+	consume_token(prs);
+	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
+
+	if (prs->func_def == 0 && prs->token == TK_L_BRACE)
+	{
+		prs->func_def = 1;
+	}
+	else if (prs->func_def == 0)
+	{
+		prs->func_def = 2;
+	}
+
+	const size_t function_id = to_identab(prs, function_repr, (item_t)function_num, function_mode);
+
+	if (prs->token == TK_L_BRACE)
+	{
+		if (prs->func_def == 1)
+		{
+			parse_function_body(prs, parent, function_id);
+		}
+		else
+		{
+			parser_error(prs, func_decl_req_params);
+			skip_until(prs, TK_R_BRACE);
+		}
+	}
+	else if (prs->func_def == 1)
+	{
+		parser_error(prs, function_has_no_body);
+		// На тот случай, если после неправильного декларатора стоит ';'
+		try_consume_token(prs, TK_SEMICOLON);
+	}
+}
 
 /**
  *	Parse external definition
