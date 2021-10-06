@@ -154,6 +154,18 @@ static location consume_token(parser *const prs)
 }
 
 /**
+ *	Peek ahead token without consuming it
+ *
+ *	@param	prs			Parser
+ *
+ *	@return	Peeked token
+ */
+static inline token_t peek_token(parser *const prs)
+{
+	return peek(&prs->lxr);
+}
+
+/**
  *	Consume the current 'peek token' if it is expected
  *
  *	@param	prs			Parser
@@ -2428,7 +2440,7 @@ static void parse_statement(parser *const prs, node *const parent)
 			break;
 
 		case TK_IDENTIFIER:
-			if (peek(&prs->lxr) == TK_COLON)
+			if (peek_token(prs) == TK_COLON)
 			{
 				parse_labeled_statement(prs, parent);
 				break;
