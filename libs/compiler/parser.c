@@ -43,7 +43,7 @@ typedef struct parser
 	vector labels;						/**< Labels table */
 
 	token_t token;						/**< Current 'peek token' */
-	item_t function_type;				/**< Type of current parsed function */
+	size_t function_mode;				/**< Mode of current parsed function */
 	size_t array_dimensions;			/**< Array dimensions counter */
 
 	int func_def;						/**< @c 0 for function without arguments,
@@ -1368,9 +1368,9 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
  */
 static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
-	prs->function_type = ident_get_type(prs->sx, function_id);
+	prs->function_mode = (size_t)ident_get_type(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
-	const size_t param_number = type_function_get_parameter_amount(prs->sx, prs->function_type);
+	const size_t param_number = (size_t)type_get(prs->sx, prs->function_mode + 2);
 
 	vector_resize(&prs->labels, 0);
 	prs->was_return = 0;
@@ -1378,7 +1378,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	const item_t prev = ident_get_prev(prs->sx, function_id);
 	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
 	{
-		if (prs->function_type != ident_get_type(prs->sx, (size_t)prev))
+		if (prs->function_mode != (size_t)ident_get_type(prs->sx, (size_t)prev))
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
 			skip_until(prs, TK_R_BRACE);
@@ -1395,7 +1395,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	for (size_t i = 0; i < param_number; i++)
 	{
-		item_t type = type_function_get_parameter_type(prs->sx, prs->function_type, i);
+		item_t type = type_get(prs->sx, prs->function_mode + i + 3);
 		const item_t repr = func_get(prs->sx, function_number + i + 1);
 
 		const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
@@ -1417,7 +1417,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	parse_compound_statement(prs, &nd, FUNCBODY);
 
-	if (!type_is_void(type_function_get_return_type(prs->sx, prs->function_type)) && !prs->was_return)
+	if (type_get(prs->sx, prs->function_mode + 1) != TYPE_VOID && !prs->was_return)
 	{
 		parser_error(prs, no_ret_in_func);
 	}
@@ -2139,7 +2139,7 @@ static void parse_break_statement(parser *const prs, node *const parent)
 static void parse_return_statement(parser *const prs, node *const parent)
 {
 	consume_token(prs); // kw_return
-	const item_t return_type = type_function_get_return_type(prs->sx, prs->function_type);
+	const item_t return_type = type_function_get_return_type(prs->sx, (item_t)prs->function_mode);
 	prs->was_return = true;
 
 	node nd = node_add_child(parent, OP_RETURN);
