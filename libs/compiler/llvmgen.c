@@ -1404,11 +1404,28 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (declaration_variable_has_initializer(nd))
 		{
-			info->variable_location = LMEM;
+			info->variable_location = LFREE;
 			info->request_reg = displ;
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
+
+			if (info->answer_kind == ACONST)
+			{
+				if (type_is_integer(info->sx, type))
+				{
+					to_code_store_const_i32(info, info->answer_const, info->request_reg, false);
+				}
+				else
+				{
+					to_code_store_const_double(info, info->answer_const_double, info->request_reg, false);
+				}
+			}
+			else if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, displ, type, false, false);
+			}
+
 		}
 	}
 	else if (!type_is_array(info->sx, type) && displ < 0) // глобальные переменные
