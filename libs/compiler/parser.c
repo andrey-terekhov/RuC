@@ -2451,7 +2451,7 @@ static void parse_statement(parser *const prs, node *const parent)
  *	@param	prs			Parser
  *	@param	root		Root node in AST
  */
-static void parse_external_declaration(parser *const prs, node *const root)
+static void parse_external_definition(parser *const prs, node *const root)
 {
 	prs->was_type_def = 0;
 	prs->func_def = 3;
@@ -2509,7 +2509,7 @@ static void parse_translation_unit(parser *const prs, node *const root)
 {
 	do
 	{
-		parse_external_declaration(prs, root);
+		parse_external_definition(prs, root);
 	} while (prs->token != TK_EOF);
 }
 
