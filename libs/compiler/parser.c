@@ -235,11 +235,6 @@ static void skip_until(parser *const prs, const uint8_t tokens)
 				{
 					return;
 				}
-				else
-				{
-					consume_token(prs);
-					break;
-				}
 
 			default:
 				consume_token(prs);
