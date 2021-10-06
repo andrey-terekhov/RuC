@@ -2383,72 +2383,72 @@ static void parse_statement(parser *const prs, node *const parent)
 		case TK_SEMICOLON:
 			consume_token(prs);
 			node_add_child(parent, OP_NOP);
-			break;
+			return;
 
 		case TK_CASE:
 			parse_case_statement(prs, parent);
-			break;
+			return;
 		case TK_DEFAULT:
 			parse_default_statement(prs, parent);
-			break;
+			return;
 
 		case TK_L_BRACE:
 			parse_compound_statement(prs, parent, REGBLOCK);
-			break;
+			return;
 
 		case TK_IF:
 			parse_if_statement(prs, parent);
-			break;
+			return;
 		case TK_SWITCH:
 			parse_switch_statement(prs, parent);
-			break;
+			return;
 
 		case TK_WHILE:
 			parse_while_statement(prs, parent);
-			break;
+			return;
 		case TK_DO:
 			parse_do_statement(prs, parent);
-			break;
+			return;
 		case TK_FOR:
 			parse_for_statement(prs, parent);
-			break;
+			return;
 
 		case TK_GOTO:
 			parse_goto_statement(prs, parent);
-			break;
+			return;
 		case TK_CONTINUE:
 			parse_continue_statement(prs, parent);
-			break;
+			return;
 		case TK_BREAK:
 			parse_break_statement(prs, parent);
-			break;
+			return;
 		case TK_RETURN:
 			parse_return_statement(prs, parent);
-			break;
+			return;
 
 		case TK_PRINTID:
 			parse_printid_statement(prs, parent);
-			break;
+			return;
 		case TK_PRINTF:
 			parse_printf_statement(prs, parent);
-			break;
+			return;
 		case TK_PRINT:
 			parse_print_statement(prs, parent);
-			break;
+			return;
 		case TK_GETID:
 			parse_getid_statement(prs, parent);
-			break;
+			return;
 
 		case TK_IDENTIFIER:
 			if (peek_token(prs) == TK_COLON)
 			{
 				parse_labeled_statement(prs, parent);
-				break;
+				return;
 			}
 
 		default:
 			parse_expression_statement(prs, parent);
-			break;
+			return;
 	}
 }
 
