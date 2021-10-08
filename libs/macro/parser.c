@@ -20,6 +20,8 @@
 
 
 
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -60,11 +62,49 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
-	char32_t cur = uni_scan_char(prs->in);// хранить в парсере ?
+	char32_t cur = uni_scan_char(prs->in);
 
 	while (cur != (char32_t)EOF)
 	{
-		uni_print_char(prs->out, cur);
+		switch (cur)
+		{
+			case '\n':
+			case '\r':
+				prs->line++;
+				uni_print_char(prs->out, cur);
+				break;
+
+			case '#':
+				if (parser_parse_key_word(prs))
+				{
+					return -1;
+				}
+				break;
+
+			case '\'':
+				if (parser_skip_char(prs))
+				{
+					return -1;
+				}
+				break;
+			case '\"':
+				if (parser_skip_string(prs))
+				{
+					return -1;
+				}
+				break;
+			
+			case '/':
+				if (parser_skip_comment(prs))
+				{
+					return -1;
+				}
+				break;
+
+			default:
+				uni_print_char(prs->out, cur);
+		}
+
 		cur = uni_scan_char(prs->in);
 	}
 

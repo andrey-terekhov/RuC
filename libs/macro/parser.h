@@ -58,7 +58,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
  *	@param	prs		Parser structure
  *	@param	in		Input data
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int parser_preprocess(parser *const prs, universal_io *const in); 
 
@@ -68,7 +68,7 @@ int parser_preprocess(parser *const prs, universal_io *const in);
  *
  *	@param	prs		Parser structure
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int parser_disable_recovery(parser *const prs);
 
