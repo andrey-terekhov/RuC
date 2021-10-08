@@ -1018,6 +1018,7 @@ static void emit_void_expression(encoder *const enc, const node *const nd)
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+
 /**
  *	Check that there are only strings in array initializer
  *
