@@ -237,7 +237,13 @@ unary_t token_to_unary(const token_t token);
  */
 binary_t token_to_binary(const token_t token);
 
-/** Return the precedence of the specified binary/ternary operator token */
+/**
+ *	Get precedence of the specified binary/ternary operator token
+ *
+ *	@param	token		Token
+ *
+ *	@return	Precedence of operator token
+ */
 precedence_t get_operator_precedence(const token_t token);
 
 /**
