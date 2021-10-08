@@ -527,6 +527,7 @@ static void check_type_and_branch(information *const info)
  *	  \/_____/   \/_/\/_/   \/_/     \/_/ /_/   \/_____/   \/_____/   \/_____/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+
 /**
  *	Emit cast expression
  *
@@ -560,14 +561,13 @@ static void emit_identifier_expression(information *const info, const node *cons
 {
 	item_t type = expression_get_type(nd);
 	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
-	bool is_addr_to_val = false;
+	const bool is_addr_to_val = info->variable_location == LMEM;
 
-	if (info->variable_location == LMEM)
+	if (is_addr_to_val)
 	{
 		to_code_load(info, info->register_num, displ, type, false);
 		info->register_num++;
 		info->variable_location = LREG;
-		is_addr_to_val = true;
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
