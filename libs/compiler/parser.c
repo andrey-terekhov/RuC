@@ -21,6 +21,9 @@
 #include "writer.h"
 
 
+#define MAX_PRINTF_ARGS 20
+
+
 static const char *const DEFAULT_TREE = "tree.txt";
 static const size_t MAX_LABELS = 10000;
 
@@ -563,11 +566,10 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		const token_t op_token = prs->token;
 		location op_loc = consume_token(prs);
 
-		bool is_binary = true;
+		const bool is_binary = next_token_prec != PREC_CONDITIONAL;
 		node middle = node_broken();
-		if (next_token_prec == PREC_CONDITIONAL)
+		if (!is_binary)
 		{
-			is_binary = false;
 			middle = parse_expression(prs);
 
 			if (prs->token != TK_COLON)
@@ -1266,9 +1268,6 @@ static void parse_declaration(parser *const prs, node *const parent)
  */
 
 
-#define MAX_PRINTF_ARGS 20
-
-
 /** Check if current token is part of a declaration specifier */
 static bool is_declaration_specifier(parser *const prs)
 {
@@ -1316,6 +1315,7 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 	consume_token(prs); // identifier
 	node nd = node_add_child(parent, OP_LABEL);
 	const size_t repr = prs->lxr.repr;
+	
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	consume_token(prs);
 	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
