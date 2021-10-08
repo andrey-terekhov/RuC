@@ -18,8 +18,32 @@
 #include "uniprinter.h"
 #include "uniscanner.h"
 
+/**
+ *	Увеличивает значение line и сбрасывает значение position
+ */
+static inline void parser_new_string(parser *const prs)
+{
+	prs->line++;
+	prs->position = 0;
+}
 
+/**
+ *	Добавляет символ в строку кода
+ */
+static inline void parser_add_char(parser *const prs, const char32_t cur)
+{
+	prs->string[prs->position] = cur;
+	prs->string[prs->position + 1] = '\0';
+}
 
+/**
+ *	Считывает следующий символ и увеличивает значение position
+ */
+static inline char32_t parser_next_char(parser *const prs)
+{
+	prs->position++;
+	return uni_scan_char(prs->in);
+}
 
 
 /*
@@ -47,7 +71,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.out = out;
 
 	prs.line = 1;
-	prs.position = 1;
+	prs.position = 0;
 	prs.string[0] = '\0';
 
 	prs.is_recovery_disabled = false;
@@ -72,42 +96,27 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		{
 			case '\n':
 			case '\r':
-				prs->line++;
+				new_string(prs);
 				uni_print_char(prs->out, cur);
 				break;
 
 			case '#':
-				if (parser_parse_key_word(prs))
-				{
-					return -1;
-				}
-				break;
+				
 
 			case '\'':
-				if (parser_skip_char(prs))
-				{
-					return -1;
-				}
-				break;
+				
 			case '\"':
-				if (parser_skip_string(prs))
-				{
-					return -1;
-				}
-				break;
+				
 			
 			case '/':
-				if (parser_skip_comment(prs))
-				{
-					return -1;
-				}
-				break;
+				
 
 			default:
+				parser_add_char(prs, cur);
 				uni_print_char(prs->out, cur);
 		}
 
-		cur = uni_scan_char(prs->in);
+		cur = parser_next_char(prs);
 	}
 
 	uni_print_char(prs->out, '\n');
