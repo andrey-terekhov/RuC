@@ -1387,6 +1387,7 @@ static void emit_initialization(information *const info, const node *const nd, c
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+
 /**
  *	Emit variable declaration
  *
@@ -1558,6 +1559,7 @@ static void emit_declaration(information *const info, const node *const nd)
  *	 \/\_____\    \ \_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\  \ \_\\"\_\    \ \_\  \/\_____\
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
+
 
 /**
  *	Emit labeled statement
