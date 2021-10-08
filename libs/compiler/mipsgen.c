@@ -354,6 +354,7 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+
 /**
  * Emit function definition
  *
@@ -446,6 +447,7 @@ static void emit_declaration(information *const info, const node *const nd)
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
 
+
 /**
  *	Emit translation unit
  *
@@ -455,7 +457,6 @@ static void emit_declaration(information *const info, const node *const nd)
 static int emit_translation_unit(information *const info, const node *const nd)
 {
 	const size_t size = translation_unit_get_size(nd);
-
 	for (size_t i = 0; i < size; i++)
 	{
 		const node decl = translation_unit_get_declaration(nd, i);
