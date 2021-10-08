@@ -94,6 +94,25 @@ typedef enum BINARY
 	BIN_COMMA, 			/**< Comma */
 } binary_t;
 
+/** Binary/ternary operator precedence levels */
+typedef enum PRECEDENCE
+{
+	PREC_UNKNOWN,			/**< Not binary operator */
+	PREC_COMMA,				/**< Comma operator precedence */
+	PREC_ASSIGNMENT,		/**< Assignment operator precedence */
+	PREC_CONDITIONAL,		/**< Conditional operator precedence */
+	PREC_LOGICAL_OR,		/**< Logical OR operator precedence */
+	PREC_LOGICAL_AND,		/**< Logical AND operator precedence */
+	PREC_OR,				/**< Bitwise OR operator precedence */
+	PREC_XOR,				/**< Bitwise XOR operator precedence */
+	PREC_AND,				/**< Bitwise AND operator precedence */
+	PREC_EQUALITY,			/**< Equality operators precedence */
+	PREC_RELATIONAL,		/**< Relational operators precedence */
+	PREC_SHIFT,				/**< Shift operators precedence */
+	PREC_ADDITIVE,			/**< Additive operators precedence */
+	PREC_MULTIPLICATIVE,	/**< Multiplicative operators precedence */
+} precedence_t;
+
 /** AST node kinds */
 typedef enum OPERATION
 {
@@ -217,6 +236,9 @@ unary_t token_to_unary(const token_t token);
  *	@return	Binary operator
  */
 binary_t token_to_binary(const token_t token);
+
+/** Return the precedence of the specified binary/ternary operator token */
+precedence_t get_operator_precedence(const token_t token);
 
 /**
  *	Check if operator is assignment
