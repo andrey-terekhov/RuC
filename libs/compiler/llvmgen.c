@@ -1972,7 +1972,6 @@ static void emit_statement(information *const info, const node *const nd)
 static int emit_translation_unit(information *const info, const node *const nd)
 {
 	const size_t size = translation_unit_get_size(nd);
-
 	for (size_t i = 0; i < size; i++)
 	{
 		const node decl = translation_unit_get_declaration(nd, i);
