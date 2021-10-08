@@ -677,7 +677,7 @@ static void emit_subscript_expression(information *const info, const node *const
 			system_error(such_array_is_not_supported);
 		}
 
-		item_t prev_slice = info->register_num - 1;
+		const item_t prev_slice = info->register_num - 1;
 		info->variable_location = LFREE;
 		const node outer_index = expression_subscript_get_index(nd);
 		emit_expression(info, &outer_index);
@@ -707,7 +707,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
 
-	size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+	const size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 	const location_t location = info->variable_location;
 
 	info->variable_location = LFREE;
