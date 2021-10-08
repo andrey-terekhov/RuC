@@ -583,8 +583,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_CALL1);
 	}
 
-	const item_t func_type = expression_get_type(&callee);
-	const size_t args = type_function_get_parameter_amount(enc->sx, func_type);
+	const size_t args = expression_call_get_arguments_amount(nd);
 	for (size_t i = 0; i < args; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
@@ -625,7 +624,7 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 	emit_expression(enc, &base);
 	mem_add(enc, IC_COPYST);
 	mem_add(enc, member_displ);
-	mem_add(enc, type);
+	mem_add(enc, (item_t)type_size(enc->sx, type));
 	mem_add(enc, (item_t)type_size(enc->sx, base_type));
 }
 
@@ -1018,6 +1017,7 @@ static void emit_void_expression(encoder *const enc, const node *const nd)
  *	 \ \____-  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
+
 
 /**
  *	Check that there are only strings in array initializer
