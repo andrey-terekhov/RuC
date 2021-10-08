@@ -1431,7 +1431,7 @@ static void emit_variable_declaration(information *const info, const node *const
 				{
 					if (!hash_get_by_index(&info->arrays, index, IS_STATIC))
 					{
-						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+						system_error(array_borders_cannot_be_static_dynamic);
 					}
 
 					hash_set_by_index(&info->arrays, index, j, info->answer_const);
@@ -1440,7 +1440,7 @@ static void emit_variable_declaration(information *const info, const node *const
 				{
 					if (hash_get_by_index(&info->arrays, index, IS_STATIC) && j > 1)
 					{
-						system_error(array_borders_cannot_be_static_dynamic, node_get_type(nd));
+						system_error(array_borders_cannot_be_static_dynamic);
 					}
 
 					hash_set_by_index(&info->arrays, index, j, info->answer_reg);
