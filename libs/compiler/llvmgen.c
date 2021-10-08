@@ -87,7 +87,7 @@ typedef struct information
 
 static void emit_statement(information *const info, const node *const nd);
 static void emit_expression(information *const info, const node *const nd);
-static void emit_declaration(information *const info, const node *const nd);
+static void emit_declaration(information *const info, const node *const nd, const bool is_local);
 
 
 // TODO: такая функция есть в builder, хотелось бы не дублировать
@@ -302,7 +302,7 @@ static void to_code_load(information *const info, const item_t result, const ite
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
@@ -312,21 +312,21 @@ static void to_code_store_reg(information *const info, const item_t reg, const i
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%%s.%" PRIitem ", align 4\n", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
 	, const bool is_array)
 {
-	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %%%s.%" PRIitem ", align 4\n"
-		, arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %s%s.%" PRIitem ", align 4\n"
+		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
 	, const bool is_array)
 {
-	uni_printf(info->sx->io, " store double %f, double* %%%s.%" PRIitem ", align 4\n"
-		, arg, is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, " store double %f, double* %s%s.%" PRIitem ", align 4\n"
+		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
 }
 
 static void to_code_store_null(information *const info, const item_t displ, const item_t type)
@@ -1371,11 +1371,6 @@ static void emit_initialization(information *const info, const node *const nd, c
 			}
 		}
 	}
-	else
-	{
-		// TODO: конвертация в другие типы
-		emit_expression(info, nd);
-	}
 }
 
 
@@ -1394,7 +1389,7 @@ static void emit_initialization(information *const info, const node *const nd, c
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static void emit_variable_declaration(information *const info, const node *const nd)
+static void emit_variable_declaration(information *const info, const node *const nd, const bool is_local)
 {
 	// TODO: объявления глобальных переменных
 	const size_t id = declaration_variable_get_id(nd);
@@ -1402,14 +1397,69 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
-	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
+	if (!type_is_array(info->sx, type) && is_local) // обычная переменная int a; или struct point p;
 	{
 		uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
 		type_to_io(info, type);
 		uni_printf(info->sx->io, ", align 4\n");
 
-		info->variable_location = LMEM;
-		info->request_reg = displ;
+		if (declaration_variable_has_initializer(nd))
+		{
+			info->variable_location = LFREE;
+			info->request_reg = displ;
+
+			const node initializer = declaration_variable_get_initializer(nd);
+			emit_expression(info, &initializer);
+
+			if (info->answer_kind == ACONST)
+			{
+				if (type_is_integer(info->sx, type))
+				{
+					to_code_store_const_i32(info, info->answer_const, info->request_reg, false);
+				}
+				else
+				{
+					to_code_store_const_double(info, info->answer_const_double, info->request_reg, false);
+				}
+			}
+			else if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, displ, type, false, false);
+			}
+
+		}
+	}
+	else if (!type_is_array(info->sx, type) && !is_local) // глобальные переменные
+	{
+		uni_printf(info->sx->io, "@var.%" PRIitem " = ", displ);
+
+		if (declaration_variable_has_initializer(nd))
+		{
+			info->variable_location = LFREE;
+
+			const node initializer = declaration_variable_get_initializer(nd);
+			emit_expression(info, &initializer);
+
+			if (info->answer_kind == ACONST)
+			{
+				uni_printf(info->sx->io, "global ");
+				type_to_io(info, type);
+				if (type_is_integer(info->sx, type))
+				{
+					uni_printf(info->sx->io, " %" PRIitem ", align 4\n", info->answer_const);
+				}
+				else
+				{
+					uni_printf(info->sx->io, " %f, align 4\n", info->answer_const_double);
+				}
+			}
+		}
+		else
+		{
+			uni_printf(info->sx->io, "common global ");
+			type_to_io(info, type);
+			uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
+		}
 	}
 	else // массив
 	{
@@ -1533,12 +1583,12 @@ static void emit_function_definition(information *const info, const node *const 
 	info->was_stack_functions |= info->was_dynamic;
 }
 
-static void emit_declaration(information *const info, const node *const nd)
+static void emit_declaration(information *const info, const node *const nd, const bool is_local)
 {
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
-			emit_variable_declaration(info, nd);
+			emit_variable_declaration(info, nd, is_local);
 			return;
 
 		case DECL_FUNC:
@@ -1888,7 +1938,7 @@ static void emit_statement(information *const info, const node *const nd)
 	switch (statement_get_class(nd))
 	{
 		case STMT_DECL:
-			emit_declaration(info, nd);
+			emit_declaration(info, nd, true);
 			return;
 
 		case STMT_LABEL:
@@ -1975,7 +2025,7 @@ static int emit_translation_unit(information *const info, const node *const nd)
 	for (size_t i = 0; i < size; i++)
 	{
 		const node decl = translation_unit_get_declaration(nd, i);
-		emit_declaration(info, &decl);
+		emit_declaration(info, &decl, false);
 	}
 
 	// FIXME: если это тоже объявление функций, почему тут, а не в functions_declaration?
