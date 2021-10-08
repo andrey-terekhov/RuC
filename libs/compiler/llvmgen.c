@@ -679,8 +679,8 @@ static void emit_subscript_expression(information *const info, const node *const
 
 		const item_t prev_slice = info->register_num - 1;
 		info->variable_location = LFREE;
-		const node outer_index = expression_subscript_get_index(nd);
-		emit_expression(info, &outer_index);
+		const node out_index = expression_subscript_get_index(nd);
+		emit_expression(info, &out_index);
 		cur_dimension--;
 
 		// Проверка, что значение cur_dimension корректное и в пределах допустимого
