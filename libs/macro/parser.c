@@ -46,7 +46,9 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
-	prs.line = 0;
+	prs.line = 1;
+	prs.position = 1;
+	prs.string[0] = '\0';
 
 	prs.is_recovery_disabled = false;
 
@@ -126,7 +128,13 @@ int parser_disable_recovery(parser *const prs)
 	return 0;
 }
 
-void parser_error(parser *const prs, const error_t num); 
+void parser_error(parser *const prs, const error_t num)
+{
+	if (!prs->is_recovery_disabled)
+	{
+		macro_error(num, linker_current_path(prs->lk), prs->string, prs->line, prs->position);
+	}
+}
 
 
 bool parser_is_correct(const parser *const prs)

@@ -32,10 +32,12 @@ typedef struct parser
 	linker *lk;						/**< Linker structure */
 	storage *stg;					/**< Storage structure */
 
-	universal_io *in;				/**< Input io structure */ 
-	universal_io *out;				/**< Output io structure */ 
+	universal_io *in;				/**< Input io structure */
+	universal_io *out;				/**< Output io structure */
 
-	size_t line;					/**< Сurrent line number in input */ 
+	size_t line;					/**< Сurrent line number in input */
+	size_t position;				/**< Сurrent character number in line */
+	char32_t string[256];			/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 } parser;
