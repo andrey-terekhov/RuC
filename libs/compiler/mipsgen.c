@@ -15,6 +15,7 @@
  */
 
 #include "mipsgen.h"
+#include "AST.h"
 #include "operations.h"
 #include "uniprinter.h"
 
@@ -345,77 +346,124 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 }
 
 
-static int codegen(information *const info)
+/*
+ *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
+ *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
+ *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
+ *	 \ \____-  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
+ */
+
+
+/**
+ * Emit function definition
+ *
+ * @param	info	Encoder
+ * @param	nd		Node in AST
+ */
+static void emit_function_definition(information *const info, const node *const nd)
 {
-	node root = node_get_root(&info->sx->tree);
+	const size_t ref_ident = declaration_function_get_id(nd);
+	const item_t func_type = ident_get_type(info->sx, ref_ident);
+	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
-	while (true)
+	if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 	{
-		switch (node_get_type(&root))
+		info->main_label = ref_ident;
+	}
+
+	to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
+	to_code_label(info->sx->io, L_FUNC, ref_ident);
+
+	// Выделение на стеке памяти для функции
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL);
+	// Сохранение данных перед началом работы функции
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
+	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
+	uni_printf(info->sx->io, "\n");
+
+	for (size_t i = 0; i < parameters; i++)
+	{
+		const size_t id = declaration_function_get_param(nd, i);
+		const item_t param_type = ident_get_type(info->sx, id);
+
+		// TODO: сделать параметры
+		if (type_is_floating(param_type))
 		{
-			case OP_FUNC_DEF:
-			{
-				const size_t ref_ident = (size_t)node_get_arg(&root, 0);
-				// Выравнивание смещения на 8
-				const item_t max_displ = (node_get_arg(&root, 1) + 7) * 8 / 8;
-				const item_t func_type = ident_get_type(info->sx, ref_ident);
-				const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
-				if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
-				{
-					info->main_label = ref_ident;
-				}
+		}
+		else
+		{
 
-				node_set_next(&root);
-				to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
-				to_code_label(info->sx->io, L_FUNC, ref_ident);
-
-				// Выделение на стеке памяти для функции
-				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -max_displ - FUNC_DISPL);
-				// Сохранение данных перед началом работы функции
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
-				to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
-				uni_printf(info->sx->io, "\n");
-
-				for (size_t i = 0; i < parameters; i++)
-				{
-					const size_t id = (size_t)node_get_arg(&root, 0);
-					const item_t param_type = ident_get_type(info->sx, id);
-					node_set_next(&root);
-
-					// TODO: сделать параметры
-					if (type_is_floating(param_type))
-					{
-
-					}
-					else
-					{
-
-					}
-				}
-
-				// block(info, &root);
-				uni_printf(info->sx->io, "\n");
-				to_code_label(info->sx->io, L_FUNCEND, ref_ident);
-
-				// Восстановление стека после работы функции
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
-				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, max_displ + FUNC_DISPL);
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
-				to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
-				to_code_label(info->sx->io, L_NEXT, ref_ident);
-			}
-			break;
-			default:
-			{
-				if (node_set_next(&root) != 0)
-				{
-					return 0;
-				}
-			}
 		}
 	}
+
+	// const node body = declaration_function_get_body(nd);
+	// emit_statement(info, &body);
+
+	uni_printf(info->sx->io, "\n");
+	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
+
+	// TODO: тут будет высчитываться добавочное смещение функции для локальных переменных
+	//		сейчас реализован случай, когда нет локальных переменных
+	//		потом max_displ будет вычитаться при выделении памяти на стеке и прибавляться при восстанвлении стека
+
+	// Выравнивание смещения на 8
+	// const item_t max_displ = (info->max_displ + 7) * 8 / 8;
+
+	// Восстановление стека после работы функции
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, FUNC_DISPL);
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
+	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
+	to_code_label(info->sx->io, L_NEXT, ref_ident);
+}
+
+static void emit_declaration(information *const info, const node *const nd)
+{
+	switch (declaration_get_class(nd))
+	{
+		case DECL_VAR:
+			// emit_variable_declaration(info, nd);
+			return;
+
+		case DECL_FUNC:
+			emit_function_definition(info, nd);
+			return;
+
+		default:
+			// С объявлением типа ничего делать не нужно
+			return;
+	}
+}
+
+
+/*
+ *	 ______     ______   ______     ______   ______     __    __     ______     __   __     ______   ______
+ *	/\  ___\   /\__  _\ /\  __ \   /\__  _\ /\  ___\   /\ "-./  \   /\  ___\   /\ "-.\ \   /\__  _\ /\  ___\
+ *	\ \___  \  \/_/\ \/ \ \  __ \  \/_/\ \/ \ \  __\   \ \ \-./\ \  \ \  __\   \ \ \-.  \  \/_/\ \/ \ \___  \
+ *	 \/\_____\    \ \_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\  \ \_\\"\_\    \ \_\  \/\_____\
+ *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
+ */
+
+
+/**
+ *	Emit translation unit
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static int emit_translation_unit(information *const info, const node *const nd)
+{
+	const size_t size = translation_unit_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = translation_unit_get_declaration(nd, i);
+		emit_declaration(info, &decl);
+	}
+
+	return info->sx->was_error;
 }
 
 
@@ -485,7 +533,9 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 
 	pregen(sx);
-	const int ret = codegen(&info);
+	// TODO: нормальное получение корня
+	const node root = node_get_root(&info.sx->tree);
+	const int ret = emit_translation_unit(&info, &root);
 	postgen(&info);
 	
 	return ret;
