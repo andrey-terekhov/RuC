@@ -63,7 +63,6 @@ typedef struct location
 typedef struct syntax
 {
 	universal_io *io;			/**< Universal io structure */
-	node nd;					/**< Node for expression subtree [temp] */
 
 	strings string_literals;	/**< String literals list */
 

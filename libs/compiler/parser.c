@@ -33,6 +33,7 @@ typedef struct parser
 {
 	syntax *sx;							/**< Syntax structure */
 
+	builder bld;						/**< AST builder */
 	lexer lxr;							/**< Lexer */
 
 	vector labels;						/**< Labels table */
@@ -91,6 +92,7 @@ static inline parser prs_create(const workspace *const ws, syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
+	prs.bld = bld_create(sx);
 	prs.lxr = lexer_create(ws, sx);
 
 	prs.labels = vector_create(MAX_LABELS);
@@ -312,7 +314,7 @@ static node parse_primary_expression(parser *const prs)
 			const size_t name = prs->lxr.repr;
 			const location loc = consume_token(prs);
 
-			return build_identifier_expression(prs->sx, name, loc);
+			return build_identifier_expression(&prs->bld, name, loc);
 		}
 
 		case TK_CHAR_CONST:
@@ -321,7 +323,7 @@ static node parse_primary_expression(parser *const prs)
 			const item_t value = prs->lxr.num;
 			const location loc = consume_token(prs);
 
-			return build_integer_literal_expression(prs->sx, value, loc);
+			return build_integer_literal_expression(&prs->bld, value, loc);
 		}
 
 		case TK_FLOAT_CONST:
@@ -329,7 +331,7 @@ static node parse_primary_expression(parser *const prs)
 			const double value = prs->lxr.num_double;
 			const location loc = consume_token(prs);
 
-			return build_floating_literal_expression(prs->sx, value, loc);
+			return build_floating_literal_expression(&prs->bld, value, loc);
 		}
 
 		case TK_STRING:
@@ -337,13 +339,13 @@ static node parse_primary_expression(parser *const prs)
 			const size_t value = prs->lxr.num_string;
 			const location loc = consume_token(prs);
 
-			return build_string_literal_expression(prs->sx, value, loc);
+			return build_string_literal_expression(&prs->bld, value, loc);
 		}
 
 		case TK_NULL:
 		{
 			const location loc = consume_token(prs);
-			return build_null_pointer_literal_expression(prs->sx, loc);
+			return build_null_pointer_literal_expression(&prs->bld, loc);
 		}
 
 		case TK_L_PAREN:
@@ -425,7 +427,7 @@ static node parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_SQUARE)
 				{
 					const location r_loc = consume_token(prs);
-					operand = build_subscript_expression(prs->sx, &operand, &index, l_loc, r_loc);
+					operand = build_subscript_expression(&prs->bld, &operand, &index, l_loc, r_loc);
 				}
 				else
 				{
@@ -445,7 +447,7 @@ static node parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = consume_token(prs);
-					operand = build_call_expression(prs->sx, &operand, NULL, l_loc, r_loc);
+					operand = build_call_expression(&prs->bld, &operand, NULL, l_loc, r_loc);
 
 					continue;
 				}
@@ -454,7 +456,7 @@ static node parse_postfix_expression(parser *const prs)
 				if (prs->token == TK_R_PAREN)
 				{
 					const location r_loc = consume_token(prs);
-					operand = build_call_expression(prs->sx, &operand, &args, l_loc, r_loc);
+					operand = build_call_expression(&prs->bld, &operand, &args, l_loc, r_loc);
 				}
 				else
 				{
@@ -479,7 +481,7 @@ static node parse_postfix_expression(parser *const prs)
 					const size_t name = prs->lxr.repr;
 					const location id_loc = consume_token(prs);
 
-					operand = build_member_expression(prs->sx, &operand, name, is_arrow, op_loc, id_loc);
+					operand = build_member_expression(&prs->bld, &operand, name, is_arrow, op_loc, id_loc);
 				}
 				else
 				{
@@ -493,14 +495,14 @@ static node parse_postfix_expression(parser *const prs)
 			case TK_PLUS_PLUS:
 			{
 				const location op_loc = consume_token(prs);
-				operand = build_unary_expression(prs->sx, &operand, UN_POSTINC, op_loc);
+				operand = build_unary_expression(&prs->bld, &operand, UN_POSTINC, op_loc);
 				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
 				const location op_loc = consume_token(prs);
-				operand = build_unary_expression(prs->sx, &operand, UN_POSTDEC, op_loc);
+				operand = build_unary_expression(&prs->bld, &operand, UN_POSTDEC, op_loc);
 				continue;
 			}
 		}
@@ -544,7 +546,7 @@ static node parse_unary_expression(parser *const prs)
 			const location op_loc = consume_token(prs);
 			node operand = parse_unary_expression(prs);
 
-			return build_unary_expression(prs->sx, &operand, operator, op_loc);
+			return build_unary_expression(&prs->bld, &operand, operator, op_loc);
 		}
 	}
 }
@@ -597,11 +599,11 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		{
 			// Отказ от node_copy, так как node_broken все равно нужно скопировать
 			const binary_t op_kind = token_to_binary(op_token);
-			*LHS = build_binary_expression(prs->sx, LHS, &RHS, op_kind, op_loc);
+			*LHS = build_binary_expression(&prs->bld, LHS, &RHS, op_kind, op_loc);
 		}
 		else
 		{
-			*LHS = build_ternary_expression(prs->sx, LHS, &middle, &RHS, op_loc);
+			*LHS = build_ternary_expression(&prs->bld, LHS, &middle, &RHS, op_loc);
 		}
 	}
 
@@ -695,7 +697,7 @@ static node parse_initializer(parser *const prs)
 		if (prs->token == TK_R_BRACE)
 		{
 			const location r_loc = consume_token(prs);
-			const node result = build_init_list_expression(prs->sx, &inits, l_loc, r_loc);
+			const node result = build_initializer_list(&prs->bld, &inits, l_loc, r_loc);
 
 			node_vector_clear(&inits);
 			return result;
@@ -930,7 +932,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 		}
 		else
 		{
-			node_copy(&prs->sx->nd, parent);
+			node_copy(&prs->bld.context, parent);
 			const node size = parse_assignment_expression(prs);
 			const item_t size_type = expression_get_type(&size);
 			if (!type_is_integer(prs->sx, size_type))
@@ -1090,7 +1092,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	if (try_consume_token(prs, TK_EQUAL))
 	{
 		node_set_arg(&nd, 2, true);
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 
 		node initializer = parse_initializer(prs);
 		if (!node_is_correct(&initializer))
@@ -1099,7 +1101,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 			return;
 		}
 
-		check_assignment_operands(prs->sx, type, &initializer);
+		check_assignment_operands(&prs->bld, type, &initializer);
 	}
 }
 
@@ -1136,7 +1138,7 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 		{
 			const size_t repr = prs->lxr.repr;
 			consume_token(prs);
-			node_copy(&prs->sx->nd, parent);
+			node_copy(&prs->bld.context, parent);
 
 			node expr = parse_constant_expression(prs);
 			const item_t type_expr = expression_get_type(&expr);
@@ -1368,7 +1370,7 @@ static void parse_case_statement(parser *const prs, node *const parent)
 
 	consume_token(prs); // kw_case
 	node nd = node_add_child(parent, OP_CASE);
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	const node condition = parse_constant_expression(prs);
 	const item_t condition_type = expression_get_type(&condition);
 	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
@@ -1466,7 +1468,7 @@ static void parse_compound_statement(parser *const prs, node *const parent, cons
  */
 static void parse_expression_statement(parser *const prs, node *const parent)
 {
-	node_copy(&prs->sx->nd, parent);
+	node_copy(&prs->bld.context, parent);
 	const node expr = parse_expression(prs);
 	if (!node_is_correct(&expr))
 	{
@@ -1492,7 +1494,7 @@ static void parse_if_statement(parser *const prs, node *const parent)
 	node nd = node_add_child(parent, OP_IF);
 	node_add_arg(&nd, 0); // ref_else
 
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
 	parse_expression(prs);
 	expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
@@ -1519,7 +1521,7 @@ static void parse_switch_statement(parser *const prs, node *const parent)
 	consume_token(prs); // kw_switch
 	node nd = node_add_child(parent, OP_SWITCH);
 
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
 	const node condition = parse_expression(prs);
 	expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
@@ -1549,7 +1551,7 @@ static void parse_while_statement(parser *const prs, node *const parent)
 	consume_token(prs); // kw_while
 	node nd = node_add_child(parent, OP_WHILE);
 
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
 	parse_expression(prs);
 	expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
@@ -1581,7 +1583,7 @@ static void parse_do_statement(parser *const prs, node *const parent)
 
 	if (try_consume_token(prs, TK_WHILE))
 	{
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 		expect_and_consume(prs, TK_L_PAREN, cond_must_be_in_brkts);
 		parse_expression(prs);
 		expect_and_consume(prs, TK_R_PAREN, cond_must_be_in_brkts);
@@ -1628,7 +1630,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 		}
 		else
 		{
-			node_copy(&prs->sx->nd, &nd);
+			node_copy(&prs->bld.context, &nd);
 			parse_expression(prs);
 			expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 		}
@@ -1637,7 +1639,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	if (!try_consume_token(prs, TK_SEMICOLON))
 	{
 		node_set_arg(&nd, 1, 1); // ref_condition
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 		parse_expression(prs);
 		expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_for);
 	}
@@ -1645,7 +1647,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	if (!try_consume_token(prs, TK_R_PAREN))
 	{
 		node_set_arg(&nd, 2, 1); // ref_increment
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 		parse_expression(prs);
 		expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_for);
 	}
@@ -1774,9 +1776,9 @@ static void parse_return_statement(parser *const prs, node *const parent)
 			parser_error(prs, notvoidret_in_void_func);
 		}
 
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 		node expr = parse_assignment_expression(prs);
-		check_assignment_operands(prs->sx, return_type, &expr);
+		check_assignment_operands(&prs->bld, return_type, &expr);
 		// FIXME: надо кинуть ошибку с другой формулировкой
 
 		expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -1822,7 +1824,7 @@ static void parse_print_statement(parser *const prs, node *const parent)
 
 	node nd = node_add_child(parent, OP_PRINT);
 
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	const node expr = parse_assignment_expression(prs);
 	if (!node_is_correct(&expr))
 	{
@@ -1956,15 +1958,15 @@ static void parse_printf_statement(parser *const prs, node *const parent)
 
 	const size_t expected_args = evaluate_args(prs, &prs->lxr.lexstr, format_types, placeholders);
 
-	node_copy(&prs->sx->nd, &nd);
+	node_copy(&prs->bld.context, &nd);
 	parse_assignment_expression(prs);
 
 	size_t actual_args = 0;
 	while (try_consume_token(prs, TK_COMMA) && actual_args != expected_args)
 	{
-		node_copy(&prs->sx->nd, &nd);
+		node_copy(&prs->bld.context, &nd);
 		node expr = parse_assignment_expression(prs);
-		check_assignment_operands(prs->sx, format_types[actual_args], &expr);
+		check_assignment_operands(&prs->bld, format_types[actual_args], &expr);
 		// FIXME: кинуть другую ошибку
 		actual_args++;
 	}

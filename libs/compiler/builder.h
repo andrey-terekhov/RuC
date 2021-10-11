@@ -28,88 +28,93 @@
 extern "C" {
 #endif
 
+/** AST builder */
+typedef struct builder
+{
+	syntax *sx;				/**< Syntax structure */
+
+	node context;			/**< Context for creating new nodes */
+} builder;
+
+/**
+ *	Create AST builder
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	AST builder
+ */
+builder bld_create(syntax *const sx);
+
 /**
  *	Check assignment operands
  *	@note	TODO: Remove
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	expected_type	Expected type
  *	@param	init			Initializer
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, node *const init);
+bool check_assignment_operands(builder *const bld, const item_t expected_type, node *const init);
 
 /**
  *	Build an identifier expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	name			Index of record in representations table
  *	@param	loc				Source location
  *
  *	@return	Identifier expression node
  */
-node build_identifier_expression(syntax *const sx, const size_t name, const location loc);
-
-/**
- *	Build an enum literal expression
- *
- *	@param	sx				Syntax structure
- *	@param	value			Literal value
- *	@param	loc				Source location
- *	@param	type			Enum type
- *
- *	@return	Enum literal expression node
- */
-node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc);
+node build_identifier_expression(builder *const bld, const size_t name, const location loc);
 
 /**
  *	Build an integer literal expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	value			Literal value
  *	@param	loc				Source location
  *
  *	@return	Integer literal expression node
  */
-node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc);
+node build_integer_literal_expression(builder *const bld, const item_t value, const location loc);
 
 /**
  *	Build a floating literal expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	value			Literal value
  *	@param	loc				Source location
  *
  *	@return	Floating literal expression node
  */
-node build_floating_literal_expression(syntax *const sx, const double value, const location loc);
+node build_floating_literal_expression(builder *const bld, const double value, const location loc);
 
 /**
  *	Build a string literal expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	index			Literal index in strings vector
  *	@param	loc				Source location
  *
  *	@return	String literal expression node
  */
-node build_string_literal_expression(syntax *const sx, const size_t index, const location loc);
+node build_string_literal_expression(builder *const bld, const size_t index, const location loc);
 
 /**
  *	Build a null pointer literal expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	loc				Source location
  *
  *	@return Null pointer literal expression node
  */
-node build_null_pointer_literal_expression(syntax *const sx, const location loc);
+node build_null_pointer_literal_expression(builder *const bld, const location loc);
 
 /**
  *	Build a subscript expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	base			First operand of subscripting expression
  *	@param	index			Second operand of subscripting expression
  *	@param	l_loc			Left square bracket location
@@ -117,13 +122,13 @@ node build_null_pointer_literal_expression(syntax *const sx, const location loc)
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(syntax *const sx, node *const base, node *const index
+node build_subscript_expression(builder *const bld, node *const base, node *const index
 	, const location l_loc, const location r_loc);
 
 /**
  *	Build a call expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	callee			Called expression
  *	@param	args			Argument list
  *	@param	l_loc			Left paren location
@@ -131,13 +136,13 @@ node build_subscript_expression(syntax *const sx, node *const base, node *const 
  *
  *	@return	Call expression node
  */
-node build_call_expression(syntax *const sx, node *const callee
+node build_call_expression(builder *const bld, node *const callee
 	, node_vector *const args, const location l_loc, const location r_loc);
 
 /**
  *	Build a member expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	base			First operand of member expression
  *	@param	name			Second operand of member expression
  *	@param	is_arrow		Set if operator is '->'
@@ -146,7 +151,7 @@ node build_call_expression(syntax *const sx, node *const callee
  *
  *	@return	Member expression node
  */
-node build_member_expression(syntax *const sx, node *const base, const size_t name
+node build_member_expression(builder *const bld, node *const base, const size_t name
 	, const bool is_arrow, const location op_loc, const location id_loc);
 
 /**
@@ -162,19 +167,19 @@ node build_cast_expression(const item_t target_type, node *const expr);
 /**
  *	Build an unary expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	operand			Operand of unary operator
  *	@param	op_kind			Operator kind
  *	@param	op_loc			Operator location
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(syntax *const sx, node *const operand, const unary_t op_kind, const location op_loc);
+node build_unary_expression(builder *const bld, node *const operand, const unary_t op_kind, const location op_loc);
 
 /**
  *	Build a binary expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	LHS				Left operand
  *	@param	RHS				Right operand
  *	@param	op_kind			Operator kind
@@ -182,13 +187,13 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
+node build_binary_expression(builder *const bld, node *const LHS, node *const RHS
 	, const binary_t op_kind, const location op_loc);
 
 /**
  *	Build a ternary expression
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	cond			First operand
  *	@param	LHS				Second operand
  *	@param	RHS				Third operand
@@ -196,19 +201,19 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, location op_loc);
+node build_ternary_expression(builder *const bld, node *const cond, node *const LHS, node *const RHS, location op_loc);
 
 /**
  *	Build an initializer list
  *
- *	@param	sx				Syntax structure
+ *	@param	bld				AST builder
  *	@param	exprs			Vector of expressions
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer list expression
+ *	@return	Initializer list
  */
-node build_init_list_expression(syntax *const sx, node_vector *const exprs, const location l_loc, const location r_loc);
+node build_initializer_list(builder *const bld, node_vector *const exprs, const location l_loc, const location r_loc);
 
 #ifdef __cplusplus
 } /* extern "C" */

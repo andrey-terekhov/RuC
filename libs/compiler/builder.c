@@ -18,49 +18,38 @@
 #include "AST.h"
 
 
-static inline node node_create(syntax *const sx, operation_t type)
-{
-	return node_add_child(&sx->nd, type);
-}
-
 /**
  *	Emit a semantic error
  *
- *	@param	sx			Syntax structure
+ *	@param	bld			AST builder
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantic_error(syntax *const sx, const location loc, error_t num, ...)
+static void semantic_error(builder *const bld, const location loc, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
 
-	const size_t prev_loc = in_get_position(sx->io);
-	in_set_position(sx->io, loc.begin);
+	const size_t prev_loc = in_get_position(bld->sx->io);
+	in_set_position(bld->sx->io, loc.begin);
 
-	verror(sx->io, num, args);
-	sx->was_error = true;
+	verror(bld->sx->io, num, args);
+	bld->sx->was_error = true;
 
-	in_set_position(sx->io, prev_loc);
+	in_set_position(bld->sx->io, prev_loc);
 
 	va_end(args);
 }
 
-static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, node *const RHS)
+static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
 	if (type_is_floating(LHS_type) || type_is_floating(RHS_type))
 	{
-		if (type_is_integer(sx, LHS_type))
-		{
-			*LHS = build_cast_expression(TYPE_FLOATING, LHS);
-		}
-		else if (type_is_integer(sx, RHS_type))
-		{
-			*RHS = build_cast_expression(TYPE_FLOATING, RHS);
-		}
+		*LHS = build_cast_expression(TYPE_FLOATING, LHS);
+		*RHS = build_cast_expression(TYPE_FLOATING, RHS);
 
 		return TYPE_FLOATING;
 	}
@@ -68,7 +57,7 @@ static item_t usual_arithmetic_conversions(syntax *const sx, node *const LHS, no
 	return TYPE_INTEGER;
 }
 
-static node fold_unary_expression(syntax *const sx, const item_t type, const category_t ctg
+static node fold_unary_expression(builder *const bld, const item_t type, const category_t ctg
 	, node *const expr, const unary_t op, const location loc)
 {
 	if (expression_get_class(expr) != EXPR_LITERAL)
@@ -80,9 +69,9 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 	{
 		// Это может быть только UN_LOGNOT
 		node_remove(expr);
-		return build_integer_literal_expression(sx, true, loc);
+		return build_integer_literal_expression(bld, true, loc);
 	}
-	else if (type_is_integer(sx, type))
+	else if (type_is_integer(bld->sx, type))
 	{
 		const item_t value = expression_literal_get_integer(expr);
 		node_remove(expr);
@@ -90,13 +79,13 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 		switch (op)
 		{
 			case UN_MINUS:
-				return build_integer_literal_expression(sx, -value, loc);
+				return build_integer_literal_expression(bld, -value, loc);
 			case UN_NOT:
-				return build_integer_literal_expression(sx, ~value, loc);
+				return build_integer_literal_expression(bld, ~value, loc);
 			case UN_LOGNOT:
-				return build_integer_literal_expression(sx, value == 0 ? 1 : 0, loc);
+				return build_integer_literal_expression(bld, value == 0 ? 1 : 0, loc);
 			case UN_ABS:
-				return build_integer_literal_expression(sx, value >= 0 ? value : -value, loc);
+				return build_integer_literal_expression(bld, value >= 0 ? value : -value, loc);
 			default:
 				return node_broken();
 		}
@@ -109,16 +98,16 @@ static node fold_unary_expression(syntax *const sx, const item_t type, const cat
 		switch (op)
 		{
 			case UN_MINUS:
-				return build_floating_literal_expression(sx, -value, loc);
+				return build_floating_literal_expression(bld, -value, loc);
 			case UN_ABS:
-				return build_floating_literal_expression(sx, value >= 0 ? value : -value, loc);
+				return build_floating_literal_expression(bld, value >= 0 ? value : -value, loc);
 			default:
 				return node_broken();
 		}
 	}
 }
 
-static node fold_binary_expression(syntax *const sx, const item_t type
+static node fold_binary_expression(builder *const bld, const item_t type
 	, node *const LHS, node *const RHS, const binary_t op, const location loc)
 {
 	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
@@ -134,9 +123,9 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 
 	const item_t left_type = expression_get_type(LHS);
 	const item_t right_type = expression_get_type(RHS);
-	if (type_is_integer(sx, type))
+	if (type_is_integer(bld->sx, type))
 	{
-		if (type_is_integer(sx, left_type) && type_is_integer(sx, right_type))
+		if (type_is_integer(bld->sx, left_type) && type_is_integer(bld->sx, right_type))
 		{
 			const item_t left_value = expression_literal_get_integer(LHS);
 			const item_t right_value = expression_literal_get_integer(RHS);
@@ -146,52 +135,52 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 			switch (op)
 			{
 				case BIN_MUL:
-					return build_integer_literal_expression(sx, left_value * right_value, loc);
+					return build_integer_literal_expression(bld, left_value * right_value, loc);
 				case BIN_DIV:
-					return build_integer_literal_expression(sx, left_value / right_value, loc);
+					return build_integer_literal_expression(bld, left_value / right_value, loc);
 				case BIN_REM:
-					return build_integer_literal_expression(sx, left_value % right_value, loc);
+					return build_integer_literal_expression(bld, left_value % right_value, loc);
 				case BIN_ADD:
-					return build_integer_literal_expression(sx, left_value + right_value, loc);
+					return build_integer_literal_expression(bld, left_value + right_value, loc);
 				case BIN_SUB:
-					return build_integer_literal_expression(sx, left_value - right_value, loc);
+					return build_integer_literal_expression(bld, left_value - right_value, loc);
 				case BIN_SHL:
-					return build_integer_literal_expression(sx, left_value << right_value, loc);
+					return build_integer_literal_expression(bld, left_value << right_value, loc);
 				case BIN_SHR:
-					return build_integer_literal_expression(sx, left_value >> right_value, loc);
+					return build_integer_literal_expression(bld, left_value >> right_value, loc);
 				case BIN_LT:
-					return build_integer_literal_expression(sx, left_value < right_value, loc);
+					return build_integer_literal_expression(bld, left_value < right_value, loc);
 				case BIN_GT:
-					return build_integer_literal_expression(sx, left_value > right_value, loc);
+					return build_integer_literal_expression(bld, left_value > right_value, loc);
 				case BIN_LE:
-					return build_integer_literal_expression(sx, left_value <= right_value, loc);
+					return build_integer_literal_expression(bld, left_value <= right_value, loc);
 				case BIN_GE:
-					return build_integer_literal_expression(sx, left_value >= right_value, loc);
+					return build_integer_literal_expression(bld, left_value >= right_value, loc);
 				case BIN_EQ:
-					return build_integer_literal_expression(sx, left_value == right_value, loc);
+					return build_integer_literal_expression(bld, left_value == right_value, loc);
 				case BIN_NE:
-					return build_integer_literal_expression(sx, left_value != right_value, loc);
+					return build_integer_literal_expression(bld, left_value != right_value, loc);
 				case BIN_AND:
-					return build_integer_literal_expression(sx, left_value & right_value, loc);
+					return build_integer_literal_expression(bld, left_value & right_value, loc);
 				case BIN_XOR:
-					return build_integer_literal_expression(sx, left_value ^ right_value, loc);
+					return build_integer_literal_expression(bld, left_value ^ right_value, loc);
 				case BIN_OR:
-					return build_integer_literal_expression(sx, left_value | right_value, loc);
+					return build_integer_literal_expression(bld, left_value | right_value, loc);
 				case BIN_LOG_AND:
-					return build_integer_literal_expression(sx, left_value && right_value, loc);
+					return build_integer_literal_expression(bld, left_value && right_value, loc);
 				case BIN_LOG_OR:
-					return build_integer_literal_expression(sx, left_value || right_value, loc);
+					return build_integer_literal_expression(bld, left_value || right_value, loc);
 				default:
 					return node_broken();
 			}
 		}
 		else
-    {
-			const double left_value = type_is_integer(sx, left_type)
+		{
+			const double left_value = type_is_integer(bld->sx, left_type)
 				? expression_literal_get_integer(LHS)
 				: expression_literal_get_floating(LHS);
 
-			const double right_value = type_is_integer(sx, right_type)
+			const double right_value = type_is_integer(bld->sx, right_type)
 				? expression_literal_get_integer(RHS)
 				: expression_literal_get_floating(RHS);
 
@@ -201,17 +190,17 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 			switch (op)
 			{
 				case BIN_LT:
-					return build_integer_literal_expression(sx, left_value < right_value, loc);
+					return build_integer_literal_expression(bld, left_value < right_value, loc);
 				case BIN_GT:
-					return build_integer_literal_expression(sx, left_value > right_value, loc);
+					return build_integer_literal_expression(bld, left_value > right_value, loc);
 				case BIN_LE:
-					return build_integer_literal_expression(sx, left_value <= right_value, loc);
+					return build_integer_literal_expression(bld, left_value <= right_value, loc);
 				case BIN_GE:
-					return build_integer_literal_expression(sx, left_value >= right_value, loc);
+					return build_integer_literal_expression(bld, left_value >= right_value, loc);
 				case BIN_EQ:
-					return build_integer_literal_expression(sx, left_value == right_value, loc);
+					return build_integer_literal_expression(bld, left_value == right_value, loc);
 				case BIN_NE:
-					return build_integer_literal_expression(sx, left_value != right_value, loc);
+					return build_integer_literal_expression(bld, left_value != right_value, loc);
 				default:
 					return node_broken();
 			}
@@ -219,11 +208,11 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 	}
 	else // if (type_is_floating(type))
 	{
-		const double left_value = type_is_integer(sx, left_type)
+		const double left_value = type_is_integer(bld->sx, left_type)
 			? expression_literal_get_integer(LHS)
 			: expression_literal_get_floating(LHS);
 
-		const double right_value = type_is_integer(sx, right_type)
+		const double right_value = type_is_integer(bld->sx, right_type)
 			? expression_literal_get_integer(RHS)
 			: expression_literal_get_floating(RHS);
 
@@ -233,20 +222,21 @@ static node fold_binary_expression(syntax *const sx, const item_t type
 		switch (op)
 		{
 			case BIN_MUL:
-				return build_floating_literal_expression(sx, left_value * right_value, loc);
+				return build_floating_literal_expression(bld, left_value * right_value, loc);
 			case BIN_DIV:
-				return build_floating_literal_expression(sx, left_value / right_value, loc);
+				return build_floating_literal_expression(bld, left_value / right_value, loc);
 			case BIN_ADD:
-				return build_floating_literal_expression(sx, left_value + right_value, loc);
+				return build_floating_literal_expression(bld, left_value + right_value, loc);
 			case BIN_SUB:
-				return build_floating_literal_expression(sx, left_value - right_value, loc);
+				return build_floating_literal_expression(bld, left_value - right_value, loc);
 			default:
 				return node_broken();
 		}
 	}
 }
 
-static node fold_ternary_expression(syntax *const sx, const item_t type, node *const cond, node *const LHS, node *const RHS, location loc)
+static node fold_ternary_expression(builder *const bld, const item_t type
+	, node *const cond, node *const LHS, node *const RHS, location loc)
 {
 	if (expression_get_class(cond) != EXPR_LITERAL)
 	{
@@ -260,7 +250,7 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
 		node_remove(LHS);
 		return *RHS;
 	}
-	else if (type_is_integer(sx, cond_type))
+	else if (type_is_integer(bld->sx, cond_type))
 	{
 		const item_t value = expression_literal_get_integer(cond);
 		node_remove(cond);
@@ -292,28 +282,28 @@ static node fold_ternary_expression(syntax *const sx, const item_t type, node *c
 	}
 }
 
-static node build_upb_expression(syntax *const sx, node *const callee, node_vector *const args, const location r_loc)
+static node build_upb_expression(builder *const bld, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (argc != 2)
 	{
-		semantic_error(sx, r_loc, wrong_number_of_params);
+		semantic_error(bld, r_loc, wrong_number_of_params);
 		return node_broken();
 	}
 
 	const node fst = node_vector_get(args, 0);
 	const item_t fst_type = expression_get_type(&fst);
-	if (!type_is_integer(sx, fst_type))
+	if (!type_is_integer(bld->sx, fst_type))
 	{
-		semantic_error(sx, expression_get_location(&fst), not_int_in_stanfunc);
+		semantic_error(bld, expression_get_location(&fst), not_int_in_stanfunc);
 		return node_broken();
 	}
 
 	const node snd = node_vector_get(args, 1);
 	const item_t snd_type = expression_get_type(&snd);
-	if (!type_is_array(sx, snd_type))
+	if (!type_is_array(bld->sx, snd_type))
 	{
-		semantic_error(sx, expression_get_location(&snd), not_array_in_stanfunc);
+		semantic_error(bld, expression_get_location(&snd), not_array_in_stanfunc);
 		return node_broken();
 	}
 
@@ -331,13 +321,23 @@ static node build_upb_expression(syntax *const sx, node *const callee, node_vect
  */
 
 
-bool check_assignment_operands(syntax *const sx, const item_t expected_type, node *const init)
+builder bld_create(syntax *const sx)
+{
+	builder bld;
+	bld.sx = sx;
+
+	return bld;
+}
+
+
+bool check_assignment_operands(builder *const bld, const item_t expected_type, node *const init)
 {
 	if (!node_is_correct(init))
 	{
 		return true;
 	}
 
+	syntax *const sx = bld->sx;
 	const location loc = expression_get_location(init);
 	if (expression_get_class(init) == EXPR_LIST)
 	{
@@ -347,7 +347,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
 			if (expected_inits != actual_inits)
 			{
-				semantic_error(sx, loc, wrong_init_in_actparam, expected_inits, actual_inits);
+				semantic_error(bld, loc, wrong_init_in_actparam, expected_inits, actual_inits);
 				return false;
 			}
 
@@ -355,7 +355,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 			{
 				const item_t type = type_structure_get_member_type(sx, expected_type, i);
 				node subexpr = expression_list_get_subexpr(init, i);
-				if (!check_assignment_operands(sx, type, &subexpr))
+				if (!check_assignment_operands(bld, type, &subexpr))
 				{
 					return false;
 				}
@@ -370,7 +370,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 			for (size_t i = 0; i < actual_inits; i++)
 			{
 				node subexpr = expression_list_get_subexpr(init, i);
-				if (!check_assignment_operands(sx, type, &subexpr))
+				if (!check_assignment_operands(bld, type, &subexpr))
 				{
 					return false;
 				}
@@ -381,7 +381,7 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 		}
 		else
 		{
-			semantic_error(sx, loc, wrong_init);
+			semantic_error(bld, loc, wrong_init);
 			return false;
 		}
 	}
@@ -404,102 +404,62 @@ bool check_assignment_operands(syntax *const sx, const item_t expected_type, nod
 	}
 
 	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
-  {
-    return true;
-  }
+	{
+		return true;
+	}
 	
-  if (expected_type == actual_type)
+	if (expected_type == actual_type)
 	{
 		return true;
 	}
 
-	semantic_error(sx, loc, wrong_init);
+	semantic_error(bld, loc, wrong_init);
 	return false;
 }
 
-node build_identifier_expression(syntax *const sx, const size_t name, const location loc)
+node build_identifier_expression(builder *const bld, const size_t name, const location loc)
 {
-	const item_t identifier = repr_get_reference(sx, name);
+	const item_t identifier = repr_get_reference(bld->sx, name);
 
 	if (identifier == ITEM_MAX)
 	{
-		semantic_error(sx, loc, undeclared_var_use, repr_get_name(sx, name));
+		semantic_error(bld, loc, undeclared_var_use, repr_get_name(bld->sx, name));
 		return node_broken();
 	}
 
-	const item_t type = ident_get_type(sx, (size_t)identifier);
-	if (type_is_enum_field(sx, type))
+	const item_t type = ident_get_type(bld->sx, (size_t)identifier);
+	if (type_is_enum_field(bld->sx, type))
 	{
-		return build_enum_literal_expression(sx, ident_get_displ(sx, (size_t)identifier), type, loc);
+		const item_t enum_type = get_enum_field_type(bld->sx, type);
+		const item_t value = ident_get_displ(bld->sx, (size_t)identifier);
+		return expression_integer_literal(&bld->context, enum_type, value, loc);
 	}
 
-	const category_t category = type_is_function(sx, type) ? RVALUE : LVALUE;
-
-	return expression_identifier(sx, type, category, (size_t)identifier, loc);
+	return expression_identifier(&bld->context, type, (size_t)identifier, loc);
 }
 
-node build_enum_literal_expression(syntax *const sx, const item_t value, const item_t type, const location loc)
+node build_integer_literal_expression(builder *const bld, const item_t value, const location loc)
 {
-	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, get_enum_field_type(sx,type));						// Тип значения литерала
-	node_add_arg(&nd, RVALUE);						// Категория значения литерала
-	node_add_arg(&nd, value);						// Значение литерала
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция литерала
-
-	return nd;
+	return expression_integer_literal(&bld->context, TYPE_INTEGER, value, loc);
 }
 
-node build_integer_literal_expression(syntax *const sx, const item_t value, const location loc)
+node build_floating_literal_expression(builder *const bld, const double value, const location loc)
 {
-	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, TYPE_INTEGER);				// Тип значения литерала
-	node_add_arg(&nd, RVALUE);						// Категория значения литерала
-	node_add_arg(&nd, value);						// Значение литерала
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция литерала
-
-	return nd;
+	return expression_floating_literal(&bld->context, TYPE_FLOATING, value, loc);
 }
 
-node build_floating_literal_expression(syntax *const sx, const double value, const location loc)
+node build_string_literal_expression(builder *const bld, const size_t index, const location loc)
 {
-	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, TYPE_FLOATING);				// Тип значения литерала
-	node_add_arg(&nd, RVALUE);						// Категория значения литерала
-	node_add_arg_double(&nd, value);				// Значение литерала
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция литерала
-
-	return nd;
+	const item_t type = type_array(bld->sx, TYPE_INTEGER);
+	return expression_integer_literal(&bld->context, type, (item_t)index, loc);
 }
 
-node build_string_literal_expression(syntax *const sx, const size_t index, const location loc)
+node build_null_pointer_literal_expression(builder *const bld, const location loc)
 {
-	const item_t type = type_array(sx, TYPE_INTEGER);
-
-	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, type);						// Тип значения литерала
-	node_add_arg(&nd, RVALUE);						// Категория значения литерала
-	node_add_arg(&nd, (item_t)index);				// Индекс в списке строк
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция строки
-
-	return nd;
+	return expression_integer_literal(&bld->context, TYPE_NULL_POINTER, 0, loc);
 }
 
-node build_null_pointer_literal_expression(syntax *const sx, const location loc)
-{
-	node nd = node_create(sx, OP_LITERAL);
-	node_add_arg(&nd, TYPE_NULL_POINTER);			// Тип значения литерала
-	node_add_arg(&nd, RVALUE);						// Категория значения литерала
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция литерала
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция литерала
-
-	return nd;
-}
-
-node build_subscript_expression(syntax *const sx, node *const base, node *const index
+node build_subscript_expression(builder *const bld, node *const base, node *const index
 	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(base) || !node_is_correct(index))
@@ -508,26 +468,26 @@ node build_subscript_expression(syntax *const sx, node *const base, node *const 
 	}
 
 	const item_t base_type = expression_get_type(base);
-	if (!type_is_array(sx, base_type))
+	if (!type_is_array(bld->sx, base_type))
 	{
-		semantic_error(sx, l_loc, typecheck_subscript_value);
+		semantic_error(bld, l_loc, typecheck_subscript_value);
 		return node_broken();
 	}
 
 	const item_t index_type = expression_get_type(index);
-	if (!type_is_integer(sx, index_type))
+	if (!type_is_integer(bld->sx, index_type))
 	{
-		semantic_error(sx, expression_get_location(index), typecheck_subscript_not_integer);
+		semantic_error(bld, expression_get_location(index), typecheck_subscript_not_integer);
 		return node_broken();
 	}
 
-	const item_t element_type = type_array_get_element_type(sx, base_type);
+	const item_t element_type = type_array_get_element_type(bld->sx, base_type);
 
 	const location loc = { expression_get_location(base).begin, r_loc.end };
 	return expression_subscript(element_type, base, index, loc);
 }
 
-node build_call_expression(syntax *const sx, node *const callee
+node build_call_expression(builder *const bld, node *const callee
 	, node_vector *const args, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(callee))
@@ -536,31 +496,31 @@ node build_call_expression(syntax *const sx, node *const callee
 	}
 
 	const item_t callee_type = expression_get_type(callee);
-	if (!type_is_function(sx, callee_type))
+	if (!type_is_function(bld->sx, callee_type))
 	{
-		semantic_error(sx, l_loc, typecheck_call_not_function);
+		semantic_error(bld, l_loc, typecheck_call_not_function);
 		return node_broken();
 	}
 
 	if (expression_get_class(callee) == EXPR_IDENTIFIER && expression_identifier_get_id(callee) == BI_UPB)
 	{
-		return build_upb_expression(sx, callee, args, r_loc);
+		return build_upb_expression(bld, callee, args, r_loc);
 	}
 
-	const size_t expected_args = type_function_get_parameter_amount(sx, callee_type);
+	const size_t expected_args = type_function_get_parameter_amount(bld->sx, callee_type);
 	const size_t actual_args = args != NULL ? node_vector_size(args) : 0;
 
 	if (expected_args != actual_args)
 	{
-		semantic_error(sx, r_loc, wrong_number_of_params, expected_args, actual_args);
+		semantic_error(bld, r_loc, wrong_number_of_params, expected_args, actual_args);
 		return node_broken();
 	}
 
 	for (size_t i = 0; i < actual_args; i++)
 	{
-		const item_t expected_type = type_function_get_parameter_type(sx, callee_type, i);
+		const item_t expected_type = type_function_get_parameter_type(bld->sx, callee_type, i);
 		node argument = node_vector_get(args, i);
-		if (!check_assignment_operands(sx, expected_type, &argument))
+		if (!check_assignment_operands(bld, expected_type, &argument))
 		{
 			return node_broken();
 		}
@@ -568,12 +528,12 @@ node build_call_expression(syntax *const sx, node *const callee
 		node_vector_set(args, i, &argument);
 	}
 
-	const item_t return_type = type_function_get_return_type(sx, callee_type);
+	const item_t return_type = type_function_get_return_type(bld->sx, callee_type);
 	const location loc = { expression_get_location(callee).begin, r_loc.end };
 	return expression_call(return_type, callee, args, loc);
 }
 
-node build_member_expression(syntax *const sx, node *const base, const size_t name
+node build_member_expression(builder *const bld, node *const base, const size_t name
 	, const bool is_arrow, const location op_loc, const location id_loc)
 {
 	if (!node_is_correct(base))
@@ -587,9 +547,9 @@ node build_member_expression(syntax *const sx, node *const base, const size_t na
 
 	if (!is_arrow)
 	{
-		if (!type_is_structure(sx, base_type))
+		if (!type_is_structure(bld->sx, base_type))
 		{
-			semantic_error(sx, op_loc, typecheck_member_reference_struct);
+			semantic_error(bld, op_loc, typecheck_member_reference_struct);
 			return node_broken();
 		}
 
@@ -598,29 +558,29 @@ node build_member_expression(syntax *const sx, node *const base, const size_t na
 	}
 	else
 	{
-		if (!type_is_struct_pointer(sx, base_type))
+		if (!type_is_struct_pointer(bld->sx, base_type))
 		{
-			semantic_error(sx, op_loc, typecheck_member_reference_arrow);
+			semantic_error(bld, op_loc, typecheck_member_reference_arrow);
 			return node_broken();
 		}
 
-		struct_type = type_pointer_get_element_type(sx, base_type);
+		struct_type = type_pointer_get_element_type(bld->sx, base_type);
 		category = LVALUE;
 	}
 
-	const size_t member_amount = type_structure_get_member_amount(sx, struct_type);
+	const size_t member_amount = type_structure_get_member_amount(bld->sx, struct_type);
 	for (size_t i = 0; i < member_amount; i++)
 	{
-		if (name == type_structure_get_member_name(sx, struct_type, i))
+		if (name == type_structure_get_member_name(bld->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(sx, struct_type, i);
+			const item_t type = type_structure_get_member_type(bld->sx, struct_type, i);
 			const location loc = { expression_get_location(base).begin, id_loc.end };
 			
 			return expression_member(type, category, i, is_arrow, base, loc);
 		}
 	}
 
-	semantic_error(sx, id_loc, no_member, repr_get_name(sx, name));
+	semantic_error(bld, id_loc, no_member, repr_get_name(bld->sx, name));
 	return node_broken();
 }
 
@@ -658,7 +618,7 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	return *expr;
 }
 
-node build_unary_expression(syntax *const sx, node *const operand, const unary_t op_kind, const location op_loc)
+node build_unary_expression(builder *const bld, node *const operand, const unary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(operand))
 	{
@@ -678,15 +638,15 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
-			if (!type_is_arithmetic(sx, operand_type))
+			if (!type_is_arithmetic(bld->sx, operand_type))
 			{
-				semantic_error(sx, op_loc, typecheck_illegal_increment, op_kind);
+				semantic_error(bld, op_loc, typecheck_illegal_increment, op_kind);
 				return node_broken();
 			}
 
 			if (!expression_is_lvalue(operand))
 			{
-				semantic_error(sx, op_loc, typecheck_expression_not_lvalue);
+				semantic_error(bld, op_loc, typecheck_expression_not_lvalue);
 				return node_broken();
 			}
 
@@ -697,59 +657,59 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 		{
 			if (!expression_is_lvalue(operand))
 			{
-				semantic_error(sx, op_loc, typecheck_invalid_lvalue_addrof);
+				semantic_error(bld, op_loc, typecheck_invalid_lvalue_addrof);
 				return node_broken();
 			}
 
-			const item_t type = type_pointer(sx, operand_type);
-			return fold_unary_expression(sx, type, RVALUE, operand, op_kind, loc);
+			const item_t type = type_pointer(bld->sx, operand_type);
+			return fold_unary_expression(bld, type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_INDIRECTION:
 		{
-			if (!type_is_pointer(sx, operand_type))
+			if (!type_is_pointer(bld->sx, operand_type))
 			{
-				semantic_error(sx, op_loc, typecheck_indirection_requires_pointer);
+				semantic_error(bld, op_loc, typecheck_indirection_requires_pointer);
 				return node_broken();
 			}
 
-			const item_t type = type_pointer_get_element_type(sx, operand_type);
-			return fold_unary_expression(sx, type, LVALUE, operand, op_kind, loc);
+			const item_t type = type_pointer_get_element_type(bld->sx, operand_type);
+			return fold_unary_expression(bld, type, LVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ABS:
 		case UN_PLUS:
 		case UN_MINUS:
 		{
-			if (!type_is_arithmetic(sx, operand_type))
+			if (!type_is_arithmetic(bld->sx, operand_type))
 			{
-				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bld, op_loc, typecheck_unary_expr, operand_type);
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, operand_type, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bld, operand_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_NOT:
 		{
-			if (!type_is_integer(sx, operand_type))
+			if (!type_is_integer(bld->sx, operand_type))
 			{
-				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bld, op_loc, typecheck_unary_expr, operand_type);
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bld, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_LOGNOT:
 		{
-			if (!type_is_scalar(sx, operand_type))
+			if (!type_is_scalar(bld->sx, operand_type))
 			{
-				semantic_error(sx, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bld, op_loc, typecheck_unary_expr, operand_type);
 				return node_broken();
 			}
 
-			return fold_unary_expression(sx, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bld, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
 		}
 
 		default:
@@ -758,7 +718,7 @@ node build_unary_expression(syntax *const sx, node *const operand, const unary_t
 	}
 }
 
-node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
+node build_binary_expression(builder *const bld, node *const LHS, node *const RHS
 	, const binary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(LHS) || !node_is_correct(RHS))
@@ -773,11 +733,11 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	{
 		if (!expression_is_lvalue(LHS))
 		{
-			semantic_error(sx, op_loc, unassignable);
+			semantic_error(bld, op_loc, unassignable);
 			return node_broken();
 		}
 
-		if (!check_assignment_operands(sx, left_type, RHS))
+		if (!check_assignment_operands(bld, left_type, RHS))
 		{
 			return node_broken();
 		}
@@ -794,13 +754,13 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_XOR:
 		case BIN_OR:
 		{
-			if (!type_is_integer(sx, left_type) || !type_is_integer(sx, right_type))
+			if (!type_is_integer(bld->sx, left_type) || !type_is_integer(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_MUL:
@@ -808,14 +768,14 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_ADD:
 		case BIN_SUB:
 		{
-			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
+			if (!type_is_arithmetic(bld->sx, left_type) || !type_is_arithmetic(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
-			return fold_binary_expression(sx, type, LHS, RHS, op_kind, loc);
+			const item_t type = usual_arithmetic_conversions(LHS, RHS);
+			return fold_binary_expression(bld, type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_LT:
@@ -823,14 +783,14 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_LE:
 		case BIN_GE:
 		{
-			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
+			if (!type_is_arithmetic(bld->sx, left_type) || !type_is_arithmetic(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			usual_arithmetic_conversions(sx, LHS, RHS);
-			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			usual_arithmetic_conversions(LHS, RHS);
+			return fold_binary_expression(bld, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_EQ:
@@ -838,40 +798,40 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		{
 			if (type_is_floating(left_type) || type_is_floating(right_type))
 			{
-				warning(sx->io, variable_deviation);
+				warning(bld->sx->io, variable_deviation);
 			}
 
-			if (type_is_arithmetic(sx, left_type) && type_is_arithmetic(sx, right_type))
+			if (type_is_arithmetic(bld->sx, left_type) && type_is_arithmetic(bld->sx, right_type))
 			{
-				usual_arithmetic_conversions(sx, LHS, RHS);
+				usual_arithmetic_conversions(LHS, RHS);
 				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
-			if ((type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
-				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
+			if ((type_is_pointer(bld->sx, left_type) && type_is_null_pointer(right_type))
+				|| (type_is_null_pointer(left_type) && type_is_pointer(bld->sx, right_type))
 				|| left_type == right_type)
 			{
 				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
-			semantic_error(sx, op_loc, typecheck_binary_expr);
+			semantic_error(bld, op_loc, typecheck_binary_expr);
 			return node_broken();
 		}
 
 		case BIN_LOG_AND:
 		case BIN_LOG_OR:
 		{
-			if (!type_is_scalar(sx, left_type) || !type_is_scalar(sx, right_type))
+			if (!type_is_scalar(bld->sx, left_type) || !type_is_scalar(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_ASSIGN:
-			return fold_binary_expression(sx, left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, left_type, LHS, RHS, op_kind, loc);
 
 		case BIN_REM_ASSIGN:
 		case BIN_SHL_ASSIGN:
@@ -880,13 +840,13 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_XOR_ASSIGN:
 		case BIN_OR_ASSIGN:
 		{
-			if (!type_is_integer(sx, left_type) || !type_is_integer(sx, right_type))
+			if (!type_is_integer(bld->sx, left_type) || !type_is_integer(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			return fold_binary_expression(sx, left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_MUL_ASSIGN:
@@ -894,17 +854,17 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 		case BIN_ADD_ASSIGN:
 		case BIN_SUB_ASSIGN:
 		{
-			if (!type_is_arithmetic(sx, left_type) || !type_is_arithmetic(sx, right_type))
+			if (!type_is_arithmetic(bld->sx, left_type) || !type_is_arithmetic(bld->sx, right_type))
 			{
-				semantic_error(sx, op_loc, typecheck_binary_expr);
+				semantic_error(bld, op_loc, typecheck_binary_expr);
 				return node_broken();
 			}
 
-			return fold_binary_expression(sx, left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_COMMA:
-			return fold_binary_expression(sx, right_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bld, right_type, LHS, RHS, op_kind, loc);
 
 		default:
 			// Unknown binary operator
@@ -912,7 +872,7 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 	}
 }
 
-node build_ternary_expression(syntax *const sx, node *const cond, node *const LHS, node *const RHS, location op_loc)
+node build_ternary_expression(builder *const bld, node *const cond, node *const LHS, node *const RHS, location op_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(LHS) || !node_is_correct(RHS))
 	{
@@ -920,9 +880,9 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 	}
 
 	const item_t cond_type = expression_get_type(cond);
-	if (!type_is_scalar(sx, cond_type))
+	if (!type_is_scalar(bld->sx, cond_type))
 	{
-		semantic_error(sx, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
@@ -930,36 +890,36 @@ node build_ternary_expression(syntax *const sx, node *const cond, node *const LH
 
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
-	if (type_is_arithmetic(sx, LHS_type) && type_is_arithmetic(sx, RHS_type))
+	if (type_is_arithmetic(bld->sx, LHS_type) && type_is_arithmetic(bld->sx, RHS_type))
 	{
-		const item_t type = usual_arithmetic_conversions(sx, LHS, RHS);
-		return fold_ternary_expression(sx, type, cond, LHS, RHS, loc);
+		const item_t type = usual_arithmetic_conversions(LHS, RHS);
+		return fold_ternary_expression(bld, type, cond, LHS, RHS, loc);
 	}
 
-	if (type_is_pointer(sx, LHS_type) && type_is_null_pointer(RHS_type))
+	if (type_is_pointer(bld->sx, LHS_type) && type_is_null_pointer(RHS_type))
 	{
-		return fold_ternary_expression(sx, LHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(bld, LHS_type, cond, LHS, RHS, loc);
 	}
 
-	if ((type_is_null_pointer(LHS_type) && type_is_pointer(sx, RHS_type))
+	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bld->sx, RHS_type))
 		|| (LHS_type == RHS_type))
 	{
-		return fold_ternary_expression(sx, RHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(bld, RHS_type, cond, LHS, RHS, loc);
 	}
 
-	semantic_error(sx, op_loc, typecheck_cond_incompatible_operands);
+	semantic_error(bld, op_loc, typecheck_cond_incompatible_operands);
 	return node_broken();
 }
 
-node build_init_list_expression(syntax *const sx, node_vector *const exprs, const location l_loc, const location r_loc)
+node build_initializer_list(builder *const bld, node_vector *const exprs, const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = node_vector_size(exprs);
 	if (actual_inits == 0)
 	{
-		semantic_error(sx, l_loc, empty_init);
+		semantic_error(bld, l_loc, empty_init);
 		return node_broken();
 	}
 
 	const location loc = { l_loc.begin, r_loc.end };
-	return expression_list(sx, exprs, loc);
+	return expression_list(exprs, loc);
 }

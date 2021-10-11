@@ -144,16 +144,14 @@ inline location expression_get_location(const node *const nd)
 /**
  *	Create new identifier expression
  *
- *	@param	sx			Syntax structure
+ *	@param	context		Context node
  *	@param	type		Value type
- *	@param	ctg			Value category
  *	@param	id			Index in identifiers table
- *	@param	loc			Expression location
+ *	@param	loc			Identifier location
  *
  *	@return	Identifier expression
  */
-node expression_identifier(syntax *const sx, const item_t type
-	, const category_t ctg, const size_t id, const location loc);
+node expression_identifier(node *const context, const item_t type, const size_t id, const location loc);
 
 /**
  *	Get index in indentifiers table of identifier expression
@@ -167,6 +165,17 @@ inline size_t expression_identifier_get_id(const node *const nd)
 	return node_get_type(nd) == OP_IDENTIFIER ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
 }
 
+/**
+ *	Create new integer literal expression
+ *
+ *	@param	context		Context node
+ *	@param	type		Value type
+ *	@param	value		Literal value
+ *	@param	loc			Literal location
+ *
+ *	@return	Integer literal expression
+ */
+node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc);
 
 /**
  *	Get integer value of literal expression
@@ -179,6 +188,19 @@ inline int expression_literal_get_integer(const node *const nd)
 {
 	return node_get_type(nd) == OP_LITERAL ? (int)node_get_arg(nd, 2) : INT_MAX;
 }
+
+
+/**
+ *	Create new floating literal expression
+ *
+ *	@param	context		Context node
+ *	@param	type		Value type
+ *	@param	value		Literal value
+ *	@param	loc			Literal location
+ *
+ *	@return	Floating literal expression
+ */
+node expression_floating_literal(node *const context, const item_t type, const double value, const location loc);
 
 /**
  *	Get floating value of literal expression
@@ -521,13 +543,12 @@ inline node expression_ternary_get_RHS(const node *const nd)
 /**
  *	Create new expression list
  *
- *	@param	sx			Syntax structure
  *	@param	exprs		Subexpressions
  *	@param	loc			Expression location
  *
  *	@return	Expression list
  */
-node expression_list(syntax *const sx, node_vector *const exprs, const location loc);
+node expression_list(node_vector *const exprs, const location loc);
 
 /**
  *	Set type of expression list

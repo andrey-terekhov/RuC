@@ -672,7 +672,15 @@ static void emit_cast_expression(encoder *const enc, const node *const nd)
 {
 	const node subexpr = expression_cast_get_operand(nd);
 	emit_expression(enc, &subexpr);
-	mem_add(enc, IC_WIDEN);
+
+	const item_t target_type = expression_get_type(nd);
+	const item_t source_type = expression_get_type(&subexpr);
+
+	// Необходимо только преобразование 'int' -> 'float'
+	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
+	{
+		mem_add(enc, IC_WIDEN);
+	}
 }
 
 /**
