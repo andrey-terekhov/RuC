@@ -106,7 +106,7 @@ static void output(const char *const file, const char *const str, const size_t l
 	}
 
 	char tag[MAX_TAG_SIZE];
-	sprintf("%s:%zu:%zu", file, line, size);
+	sprintf(tag, "%s:%zu:%zu", file, line, size);
 
 	func(tag, msg, str, size);
 }
