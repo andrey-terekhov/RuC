@@ -560,7 +560,7 @@ static void emit_cast_expression(information *const info, const node *const nd)
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
 	item_t type = expression_get_type(nd);
-	const item_t displ = expression_identifier_get_id(nd);
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
 	const bool is_addr_to_val = info->variable_location == LMEM;
 
 	if (is_addr_to_val)
@@ -642,7 +642,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		const node identifier = expression_subscript_get_base(&base);
-		const item_t displ = expression_identifier_get_id(&identifier);
+		const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&identifier));
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 		const location_t location = info->variable_location;
@@ -705,7 +705,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-	const item_t displ = expression_identifier_get_id(&base);
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
 	const location_t location = info->variable_location;
@@ -865,7 +865,7 @@ static void emit_member_expression(information *const info, const node *const nd
 	const node base = expression_member_get_base(nd);
 
 	item_t type = expression_get_type(&base);
-	const item_t displ = expression_identifier_get_id(&base);
+	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
 
 	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
@@ -905,7 +905,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	item_t displ = 0;
 	if (!is_array)
 	{
-		displ = expression_identifier_get_id(&operand);
+		displ = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
 	}
 	else // OP_SLICE_IDENT
 	{
@@ -1007,7 +1007,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		case UN_ADDRESS:
 		{
 			// TODO: тут тоже не только идентификатор может быть
-			info->answer_reg = expression_identifier_get_id(&operand);
+			info->answer_reg = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
 			info->answer_kind = AMEM;
 			return;
 		}
@@ -1393,7 +1393,7 @@ static void emit_variable_declaration(information *const info, const node *const
 {
 	// TODO: объявления глобальных переменных
 	const size_t id = declaration_variable_get_id(nd);
-	const item_t displ = id;
+	const item_t displ = ident_get_displ(info->sx, id);
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
@@ -1553,7 +1553,7 @@ static void emit_function_definition(information *const info, const node *const 
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
-		const item_t param_displ = id;
+		const item_t param_displ = ident_get_displ(info->sx, id);
 		const item_t param_type = ident_get_type(info->sx, id);
 
 		uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
