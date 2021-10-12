@@ -932,3 +932,44 @@ node build_initializer_list(builder *const bld, node_vector *const exprs, const 
 	const location loc = { l_loc.begin, r_loc.end };
 	return expression_list(exprs, loc);
 }
+
+node build_continue_statement(builder *const bld, const location continue_loc)
+{
+	return statement_continue(&bld->context, continue_loc);
+}
+
+node build_break_statement(builder *const bld, const location break_loc)
+{
+	return statement_break(&bld->context, break_loc);
+}
+
+node build_return_statement(builder *const bld, node *const expr, const location return_loc)
+{
+	location loc = return_loc;
+	if (expr != NULL)
+	{
+		if (!node_is_correct(expr))
+		{
+			return node_broken();
+		}
+
+		if (type_is_void(bld->func_type))
+		{
+			semantic_error(bld, expression_get_location(expr), notvoidret_in_void_func);
+			return node_broken();
+		}
+
+		check_assignment_operands(bld, bld->func_type, expr);
+		loc.end = expression_get_location(expr).end;
+	}
+	else
+	{
+		if (!type_is_void(bld->func_type))
+		{
+			semantic_error(bld, return_loc, no_ret_in_func);
+			return node_broken();
+		}
+	}
+
+	return statement_return(&bld->context, expr, loc);
+}

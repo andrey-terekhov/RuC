@@ -35,6 +35,8 @@ typedef struct builder
 
 	node context;			/**< Context for creating new nodes */
 	vector labels;			/**< Labels table */
+
+	item_t func_type;		/**< Type of current parsed function */
 } builder;
 
 /**
@@ -222,6 +224,61 @@ node build_ternary_expression(builder *const bld, node *const cond, node *const 
  *	@return	Initializer list
  */
 node build_initializer_list(builder *const bld, node_vector *const exprs, const location l_loc, const location r_loc);
+
+
+/**
+ *	Build a labeled statement
+ *
+ *	@param	bld				AST builder
+ *	@param	name			Index in representations table
+ *	@param	substmt			Substatement
+ *	@param	id_loc			Identifier location
+ *
+ *	@return	Labeled statement
+ */
+node build_labeled_statement(builder *const bld, const size_t name, node *const substmt, const location id_loc);
+
+/**
+ *	Build a goto statement
+ *
+ *	@param	bld				AST builder
+ *	@param	name			Index in representations table
+ *	@param	goto_loc		Keyword location
+ *	@param	id_loc			Identifier location	
+ *
+ *	@return	Goto statement
+ */
+node build_goto_statement(builder *const bld, const size_t name, const location goto_loc, const location id_loc);
+
+/**
+ *	Build a continue statement
+ *
+ *	@param	bld				AST builder
+ *	@param	continue_loc	Keyword location
+ *
+ *	@return	Continue statement
+ */
+node build_continue_statement(builder *const bld, const location continue_loc);
+
+/**
+ *	Build a break statement
+ *
+ *	@param	bld				AST builder
+ *	@param	break_loc		Keyword location
+ *
+ *	@return	Break statement
+ */
+node build_break_statement(builder *const bld, const location break_loc);
+
+/**
+ *	Build a return statement
+ *
+ *	@param	bld				AST builder
+ *	@param	return_loc		Keyword location
+ *
+ *	@return	Return statement
+ */
+node build_return_statement(builder *const bld, node *const expr, const location return_loc);
 
 #ifdef __cplusplus
 } /* extern "C" */

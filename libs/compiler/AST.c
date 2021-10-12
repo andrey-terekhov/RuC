@@ -304,7 +304,7 @@ node expression_ternary(const item_t type, node *const cond, node *const LHS, no
 	node_set_arg(&nd, 0, type);						// Тип значения выражения
 	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
 	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
-	node_set_arg(&nd, 3, (item_t)loc.begin);		// Конечная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
@@ -376,6 +376,65 @@ statement_t statement_get_class(const node *const nd)
 		default:
 			return STMT_EXPR;
 	}
+}
+
+node statement_labeled(const size_t label, node *const substmt, const location loc)
+{
+	node nd = node_insert(substmt, OP_LABEL, 3);
+
+	node_set_arg(&nd, 0, (item_t)label);			// ID метки
+	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_goto(node *const context, const size_t label, const location loc)
+{
+	node nd = node_create(context, OP_GOTO);
+
+	node_add_arg(&nd, (item_t)label);				// ID метки
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_continue(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_CONTINUE);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_break(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_BREAK);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_return(node *const context, node *const expr, const location loc)
+{
+	node nd = node_create(context, OP_RETURN);
+
+	node_add_arg(&nd, 0);							// Содержит ли выражение
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+	
+	if (expr)
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, expr);
+	}
+
+	return nd;
 }
 
 declaration_t declaration_get_class(const node *const nd)
