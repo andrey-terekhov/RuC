@@ -66,6 +66,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_COMM_NOT_ENDED:
 			sprintf(msg, "незакрытый комментарий в конце файла");
 			break;
+		case PARSER_STRING_NOT_ENDED:
+			sprintf(msg, "перенос строки в константе");
+			break;
+		case PARSER_UNEXPECTED_EOF:
+			sprintf(msg, "непредвиденное обнаружение конца файла");
+			break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");

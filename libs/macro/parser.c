@@ -36,7 +36,6 @@ static void parser_strcpy(parser *const dest, parser *const src)
 	strcpy((char *)dest->string, (char *)src->string);
 }
 
-
 /**
  *	Увеличивает значение line и сбрасывает значение position
  */
@@ -63,6 +62,52 @@ static inline char32_t parser_next_char(parser *const prs)
 {
 	prs->position++;
 	return uni_scan_char(prs->in);
+}
+
+
+/**
+ *	Считывает символы до конца строковой константы и буфферизирует текущую строку кода
+ */
+static void parser_skip_string(parser *const prs, const char32_t ch)
+{
+	const size_t old_line = prs->line;
+	const size_t old_position = prs->position;
+
+	parser_add_char(prs, ch);
+
+	char32_t cur = parser_next_char(prs);;
+	while (cur != (char32_t)EOF)
+	{
+		if (cur == ch)					// Строка считана, выход из функции
+		{
+			parser_add_char(prs, cur);
+			uni_print_char(prs->out, cur);
+			return;
+		}
+		else if (cur == '\n' || '\r')	// Ошибка из-за наличия переноса строки
+		{
+			const char32_t temp_line = prs->line;
+			const char32_t temp_position = prs->position;
+
+			prs->line = old_line;
+			prs->position = old_position;
+
+			parser_error(prs, PARSER_STRING_NOT_ENDED);
+			parser_next_string(prs);
+
+			prs->line = temp_line;
+			prs->position = temp_position;
+		}
+		else							// Независимо от корректности строки выводит ее в out
+		{
+			parser_add_char(prs, cur);
+			uni_print_char(prs->out, cur);
+		}
+
+		cur = parser_next_char(prs);
+	}
+
+	parser_error(prs, PARSER_UNEXPECTED_EOF);
 }
 
 
@@ -117,7 +162,7 @@ static void parser_skip_long_comment(parser *const prs)
 					case '/':
 						prs->position++;
 						parser_add_char(prs, next);
-						return;	// Комментарий считан, выход из функции
+						return;							// Комментарий считан, выход из функции
 
 					default:							// Если встретился один '*', добавляет его в буффер строки кода
 														// и обрабатывает следующие символы
@@ -129,7 +174,6 @@ static void parser_skip_long_comment(parser *const prs)
 
 			default:
 				parser_add_char(prs, cur);
-				parser_next_char(prs);
 		}
 
 		cur = parser_next_char(prs);
@@ -142,6 +186,8 @@ static void parser_skip_long_comment(parser *const prs)
 	}
 
 	parser_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
+
+	parser_clear(&comm_beginning);
 }
 
 
@@ -203,10 +249,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				
 
 			case '\'':
-				parser_skip_char(prs);
+				parser_skip_string(prs, '\'');
 				break;
 			case '\"':
-				parser_skip_string(prs);
+				parser_skip_string(prs, '\"');
 				break;
 
 			case '/':
