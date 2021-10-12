@@ -1139,17 +1139,18 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_binary_get_LHS(nd);
-	item_t displ = 0;
+	item_t id = 0;
 	bool is_array = expression_get_class(&LHS) == EXPR_SUBSCRIPT;
 	if (!is_array)
 	{
-		displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
+		// displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
+		id = expression_identifier_get_id(&LHS);
 	}
 	else // OP_SLICE_IDENT
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &LHS); // OP_SLICE_IDENT or UN_ADDRESS
-		displ = info->answer_reg;
+		id = info->answer_reg;
 	}
 
 	info->variable_location = LFREE;
@@ -1161,7 +1162,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, displ, operation_type, is_array);
+		to_code_load(info, info->register_num, id, operation_type, is_array);
 		info->register_num++;
 
 		if (info->answer_kind == AREG)
@@ -1184,20 +1185,20 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
-		to_code_store_reg(info, result, displ, operation_type, is_array
+		to_code_store_reg(info, result, id, operation_type, is_array
 			, info->answer_kind == AMEM);
 	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и опериция =
 	{
-		to_code_store_const_i32(info, info->answer_const, displ, is_array);
+		to_code_store_const_i32(info, info->answer_const, id, is_array);
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, displ, is_array);
+		to_code_store_const_double(info, info->answer_const_double, id, is_array);
 	}
 	else
 	{
-		to_code_store_null(info, displ, operation_type);
+		to_code_store_null(info, id, operation_type);
 	}
 }
 
@@ -1338,14 +1339,14 @@ static void emit_expression(information *const info, const node *const nd)
  *	@param	displ		Displacement of target lvalue
  *	@param	elem_type	Element type of target lvalue
  */
-static void emit_initialization(information *const info, const node *const nd, const item_t displ, const item_t elem_type)
+static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t elem_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t N = expression_list_get_size(nd);
 
-		const size_t index = hash_get_index(&info->arrays, displ);
+		const size_t index = hash_get_index(&info->arrays, id);
 		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
 		const item_t type = array_get_type(info, elem_type);
@@ -1359,7 +1360,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 			const item_t value_int = info->answer_const;
 			info->answer_const = (item_t)i;
-			to_code_slice(info, displ, 0, 0, type);
+			to_code_slice(info, id, 0, 0, type);
 
 			if (type_is_integer(info->sx, type))
 			{
@@ -1393,20 +1394,20 @@ static void emit_variable_declaration(information *const info, const node *const
 {
 	// TODO: объявления глобальных переменных
 	const size_t id = declaration_variable_get_id(nd);
-	const item_t displ = ident_get_displ(info->sx, id);
+	// const item_t displ = ident_get_displ(info->sx, id);
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
 	if (!type_is_array(info->sx, type) && is_local) // обычная переменная int a; или struct point p;
 	{
-		uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", displ);
+		uni_printf(info->sx->io, " %%var.%zu = alloca ", id);
 		type_to_io(info, type);
 		uni_printf(info->sx->io, ", align 4\n");
 
 		if (declaration_variable_has_initializer(nd))
 		{
 			info->variable_location = LFREE;
-			info->request_reg = displ;
+			info->request_reg = id;
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
@@ -1424,14 +1425,14 @@ static void emit_variable_declaration(information *const info, const node *const
 			}
 			else if (info->answer_kind == AREG)
 			{
-				to_code_store_reg(info, info->answer_reg, displ, type, false, false);
+				to_code_store_reg(info, info->answer_reg, id, type, false, false);
 			}
 
 		}
 	}
 	else if (!type_is_array(info->sx, type) && !is_local) // глобальные переменные
 	{
-		uni_printf(info->sx->io, "@var.%" PRIitem " = ", displ);
+		uni_printf(info->sx->io, "@var.%zu = ", id);
 
 		if (declaration_variable_has_initializer(nd))
 		{
@@ -1465,7 +1466,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	{
 		const size_t dimensions = array_get_dim(info, type);
 		const item_t element_type = array_get_type(info, type);
-		const size_t index = hash_add(&info->arrays, displ, 1 + dimensions);
+		const size_t index = hash_add(&info->arrays, id, 1 + dimensions);
 		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 		// получение и сохранение границ
@@ -1519,7 +1520,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	if (has_init)
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
-		emit_initialization(info, &initializer, displ, type);
+		emit_initialization(info, &initializer, id, type);
 	}
 }
 
@@ -1553,10 +1554,10 @@ static void emit_function_definition(information *const info, const node *const 
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
-		const item_t param_displ = ident_get_displ(info->sx, id);
+		// const item_t param_displ = ident_get_displ(info->sx, id);
 		const item_t param_type = ident_get_type(info->sx, id);
 
-		uni_printf(info->sx->io, " %%var.%" PRIitem " = alloca ", param_displ);
+		uni_printf(info->sx->io, " %%var.%zu = alloca ", id);
 		type_to_io(info, param_type);
 		uni_printf(info->sx->io, ", align 4\n");
 
@@ -1564,7 +1565,7 @@ static void emit_function_definition(information *const info, const node *const 
 		type_to_io(info, param_type);
 		uni_printf(info->sx->io, " %%%zu, ", i);
 		type_to_io(info, param_type);
-		uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", param_displ);
+		uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
 	}
 
 	const node body = declaration_function_get_body(nd);
