@@ -63,6 +63,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		case PARSER_COMM_NOT_ENDED:
+			sprintf(msg, "незакрытый комментарий в конце файла");
+			break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;

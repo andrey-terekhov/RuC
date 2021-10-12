@@ -116,7 +116,7 @@ static void parser_skip_long_comment(parser *const prs)
 		cur = parser_next_char(prs);
 	}
 
-	//parser_error(prs, parser_comm_not_ended);
+	parser_error(prs, PARSER_COMM_NOT_ENDED);
 }
 
 
