@@ -15,6 +15,7 @@
  */
 
 #include "parser.h"
+#include <string.h>
 #include "error.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
@@ -22,6 +23,18 @@
 
 const size_t FST_LINE_INDEX =		1;
 const size_t FST_CHARACTER_INDEX =	0;
+
+
+/**
+ *	Копирует string
+ *
+ *	@param	dest		Куда
+ *	@param	src			Откуда
+ */
+static void parser_strcpy(parser *const dest, parser *const src)
+{
+	strcpy((char *)dest->string, (char *)src->string);
+}
 
 
 /**
@@ -77,6 +90,9 @@ static void parser_skip_short_comment(parser *const prs)
  */
 static void parser_skip_long_comment(parser *const prs)
 {
+	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
+	parser comm_beginning = *prs;
+
 	prs->position++;	// Увеличивает значение position, поскольку, был считан '*'
 	parser_add_char(prs, '*');
 
@@ -87,6 +103,7 @@ static void parser_skip_long_comment(parser *const prs)
 		{
 			case '\n':
 			case '\r':
+				parser_strcpy(&comm_beginning, prs);	// В случае многострочного комментария сохраняет буффер строки кода
 				parser_next_string(prs);
 				break;
 
@@ -102,8 +119,10 @@ static void parser_skip_long_comment(parser *const prs)
 						parser_add_char(prs, next);
 						return;	// Комментарий считан, выход из функции
 
-					default:	// Если встретился один '*', добавляет его в буффер строки кода и обрабатывает следующие символы
-						uni_unscan_char(prs->in, next);	// Символ не имеет отношения к комментарию. Будет считан повторно и проанализирован снаружи
+					default:							// Если встретился один '*', добавляет его в буффер строки кода
+														// и обрабатывает следующие символы
+						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
+														// он будет считан повторно и проанализирован снаружи
 				}
 			}
 			break;
@@ -116,7 +135,13 @@ static void parser_skip_long_comment(parser *const prs)
 		cur = parser_next_char(prs);
 	}
 
-	parser_error(prs, PARSER_COMM_NOT_ENDED);
+	// В случае однострочного комментария сохраняет буффер строки кода
+	if (prs->line == comm_beginning.line)
+	{
+		parser_strcpy(&comm_beginning, prs);
+	}
+
+	parser_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
 }
 
 
@@ -178,10 +203,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				
 
 			case '\'':
-				
+				parser_skip_char(prs);
+				break;
 			case '\"':
-				
-			
+				parser_skip_string(prs);
+				break;
+
 			case '/':
 			{
 				parser_add_char(prs, cur);
@@ -198,7 +225,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 					default:	// Если встретился один '/', печатает его в out и обрабатывает следующие символы
 						uni_print_char(prs->out, cur);
-						uni_unscan_char(prs->in, next);	// Символ не имеет отношения к комментарию. Будет считан повторно и проанализирован снаружи
+						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
+														// он будет считан повторно и проанализирован снаружи
 				}
 			}
 			break;
