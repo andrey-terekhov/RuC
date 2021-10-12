@@ -1416,12 +1416,11 @@ static void parse_compound_statement(parser *const prs, node *const parent, cons
 	consume_token(prs); // '{'
 	node nd = node_add_child(parent, OP_BLOCK);
 
-	item_t old_displ = 0;
-	item_t old_lg = 0;
+	scope scp = { ITEM_MAX, ITEM_MAX };
 
 	if (!is_function_body)
 	{
-		scope_block_enter(prs->sx, &old_displ, &old_lg);
+		scp = scope_block_enter(prs->sx);
 	}
 
 	if (!try_consume_token(prs, TK_R_BRACE))
@@ -1443,7 +1442,7 @@ static void parse_compound_statement(parser *const prs, node *const parent, cons
 
 	if (!is_function_body)
 	{
-		scope_block_exit(prs->sx, old_displ, old_lg);
+		scope_block_exit(prs->sx, scp);
 	}
 }
 
@@ -1608,9 +1607,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	node_add_arg(&nd, 1); // ref_statement
 	expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_for);
 
-	item_t old_displ;
-	item_t old_lg;
-	scope_block_enter(prs->sx, &old_displ, &old_lg);
+	const scope scp = scope_block_enter(prs->sx);
 	if (!try_consume_token(prs, TK_SEMICOLON))
 	{
 		node_set_arg(&nd, 0, 1); // ref_inition
@@ -1647,7 +1644,7 @@ static void parse_for_statement(parser *const prs, node *const parent)
 	parse_statement(prs, &nd);
 
 	prs->is_in_loop = old_in_loop;
-	scope_block_exit(prs->sx, old_displ, old_lg);
+	scope_block_exit(prs->sx, scp);
 }
 
 /**
