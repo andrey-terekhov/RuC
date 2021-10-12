@@ -15,20 +15,22 @@
  */
 
 #include "parser.h"
+#include "error.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 
 /**
  *	Увеличивает значение line и сбрасывает значение position
  */
-static inline void parser_new_string(parser *const prs)
+static inline void parser_next_string(parser *const prs)
 {
 	prs->line++;
 	prs->position = 0;
+	prs->string[prs->position] = '\0';
 }
 
 /**
- *	Добавляет символ в строку кода
+ *	Добавляет символ в string
  */
 static inline void parser_add_char(parser *const prs, const char32_t cur)
 {
@@ -43,6 +45,73 @@ static inline char32_t parser_next_char(parser *const prs)
 {
 	prs->position++;
 	return uni_scan_char(prs->in);
+}
+
+
+/**
+ *	Пропускает символы до конца комментария ('\n', '\r' или EOF)
+ *
+ *	@note Буфферизация строки кода не производится, поскольку, комментарий идет до конца строки
+ */
+static void parser_skip_short_comment(parser *const prs)
+{
+	char32_t cur = uni_scan_char(prs->in);
+	while(cur != '\n' || cur != '\r' || cur != (char32_t)EOF)
+	{
+		cur = uni_scan_char(prs->in);
+	}
+
+	if (cur != (char32_t)EOF)
+	{
+		parser_next_string(prs);
+	}
+}
+
+/**
+ *	Считывает символы до конца длинного комментария и буфферизирует текущую строку кода
+ */
+static void parser_skip_long_comment(parser *const prs)
+{
+	prs->position++;	// Увеличивает значение position, поскольку, был считан '*'
+	parser_add_char(prs, '*');
+
+	char32_t cur = parser_next_char(prs);;
+	while (cur != (char32_t)EOF)
+	{
+		switch (cur)
+		{
+			case '\n':
+			case '\r':
+				parser_next_string(prs);
+				break;
+
+			case '*':
+			{
+				parser_add_char(prs, cur);
+
+				char32_t next = uni_scan_char(prs->in);
+				switch (next)
+				{
+					case '/':
+						prs->position++;
+						parser_add_char(prs, next);
+						return;	// Комментарий считан, выход из функции
+
+					default:	// Если встретился один '*', добавляет его в буффер строки кода и обрабатывает следующие символы
+						uni_unscan_char(prs->in, next);	// Символ не имеет отношения к комментарию. Будет считан повторно и проанализирован снаружи
+				}
+			}
+			break;
+
+			default:
+				parser_add_char(prs, cur);
+				parser_next_char(prs);
+		}
+
+		cur = parser_next_char(prs);
+	}
+
+	//parser_error(prs, parser_comm_not_ended);
 }
 
 
@@ -88,15 +157,15 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
-	char32_t cur = uni_scan_char(prs->in);
 
+	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
 		switch (cur)
 		{
 			case '\n':
 			case '\r':
-				new_string(prs);
+				parser_next_string(prs);
 				uni_print_char(prs->out, cur);
 				break;
 
@@ -109,7 +178,25 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				
 			
 			case '/':
-				
+			{
+				parser_add_char(prs, cur);
+
+				char32_t next = uni_scan_char(prs->in);
+				switch (next)
+				{
+					case '/':
+						parser_skip_short_comment(prs);
+						break;
+					case '*':
+						parser_skip_long_comment(prs);
+						break;
+
+					default:	// Если встретился один '/', печатает его в out и обрабатывает следующие символы
+						uni_print_char(prs->out, cur);
+						uni_unscan_char(prs->in, next);	// Символ не имеет отношения к комментарию. Будет считан повторно и проанализирован снаружи
+				}
+			}
+			break;
 
 			default:
 				parser_add_char(prs, cur);
@@ -141,7 +228,7 @@ void parser_error(parser *const prs, const error_t num)
 {
 	if (!prs->is_recovery_disabled)
 	{
-		macro_error(num, linker_current_path(prs->lk), prs->string, prs->line, prs->position);
+		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
 	}
 }
 
@@ -154,5 +241,5 @@ bool parser_is_correct(const parser *const prs)
 
 int parser_clear(parser *const prs)
 {
-	return prs != NULL && linker_clear(&prs->lk) && storage_clear(&prs->stg) && out_clear(&prs->out);
+	return prs != NULL && linker_clear(prs->lk) && storage_clear(prs->stg) && out_clear(prs->out);
 }
