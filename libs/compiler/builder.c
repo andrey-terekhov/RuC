@@ -18,6 +18,9 @@
 #include "AST.h"
 
 
+static const size_t MAX_LABELS = 10000;
+
+
 /**
  *	Emit a semantic error
  *
@@ -325,8 +328,14 @@ builder bld_create(syntax *const sx)
 {
 	builder bld;
 	bld.sx = sx;
+	bld.labels = vector_create(MAX_LABELS);
 
 	return bld;
+}
+
+void bld_clear(builder *const bld)
+{
+	vector_clear(&bld->labels);
 }
 
 

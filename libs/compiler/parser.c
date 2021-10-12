@@ -25,7 +25,6 @@
 
 
 static const char *const DEFAULT_TREE = "tree.txt";
-static const size_t MAX_LABELS = 10000;
 
 
 /** Parser */
@@ -35,8 +34,6 @@ typedef struct parser
 
 	builder bld;						/**< AST builder */
 	lexer lxr;							/**< Lexer */
-
-	vector labels;						/**< Labels table */
 
 	token_t token;						/**< Current 'peek token' */
 	size_t function_mode;				/**< Mode of current parsed function */
@@ -51,7 +48,6 @@ typedef struct parser
 											@c 1 for string initialization,
 											@c 2 for parsing before initialization */
 
-	int flag_array_in_struct;			/**< Set, if parsed struct declaration has an array */
 	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
 
 	bool is_in_switch;					/**< Set, if parser is in switch body */
@@ -95,7 +91,6 @@ static inline parser prs_create(const workspace *const ws, syntax *const sx)
 	prs.bld = bld_create(sx);
 	prs.lxr = lexer_create(ws, sx);
 
-	prs.labels = vector_create(MAX_LABELS);
 	consume_token(&prs);
 
 	return prs;
@@ -108,7 +103,7 @@ static inline parser prs_create(const workspace *const ws, syntax *const sx)
  */
 static inline void prs_clear(parser *const prs)
 {
-	vector_clear(&prs->labels);
+	bld_clear(&prs->bld);
 	lexer_clear(&prs->lxr);
 }
 
@@ -748,7 +743,6 @@ static node parse_initializer(parser *const prs)
  */
 static item_t parse_type_specifier(parser *const prs, node *const parent)
 {
-	prs->flag_array_in_struct = 0;
 	switch (prs->token)
 	{
 		case TK_VOID:
@@ -775,13 +769,12 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			const item_t id = repr_get_reference(prs->sx, prs->lxr.repr);
 			consume_token(prs);
 
-			if (id == ITEM_MAX || ident_get_displ(prs->sx, (size_t)id) < 1000)
+			if (id == ITEM_MAX || !ident_is_type_specifier(prs->sx, (size_t)id))
 			{
 				parser_error(prs, ident_not_type);
 				return TYPE_UNDEFINED;
 			}
 
-			prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
 			return ident_get_type(prs->sx, (size_t)id);
 		}
 
@@ -869,7 +862,6 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 			{
 				const item_t type = parse_struct_declaration_list(prs, parent);
 				const size_t id = to_identab(prs, repr, 1000, type);
-				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
 
 				return ident_get_type(prs->sx, id);
@@ -885,7 +877,6 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 				}
 
 				// TODO: what if it was not a struct name?
-				prs->flag_array_in_struct = (int)ident_get_displ(prs->sx, (size_t)id) - 1000;
 				return ident_get_type(prs->sx, (size_t)id);
 			}
 		}
@@ -1193,7 +1184,6 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 			{
 				const item_t type = parse_enum_declaration_list(prs, parent);
 				const size_t id = to_identab(prs, repr, 1000, type);
-				ident_set_displ(prs->sx, id, 1000 + prs->flag_array_in_struct);
 				prs->was_type_def = true;
 				return ident_get_type(prs->sx, (size_t)id);
 			}
@@ -1295,7 +1285,7 @@ static bool is_declaration_specifier(parser *const prs)
 				return false;
 			}
 
-			return ident_get_displ(prs->sx, (size_t)id) >= 1000;
+			return ident_is_type_specifier(prs->sx, (size_t)id);
 		}
 
 		default:
@@ -1320,20 +1310,20 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 	
 	// Не проверяем, что это ':', так как по нему узнали, что это labeled statement
 	consume_token(prs);
-	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
+	for (size_t i = 0; i < vector_size(&prs->bld.labels); i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i)))
+		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->bld.labels, i)))
 		{
-			const item_t id = vector_get(&prs->labels, i);
+			const item_t id = vector_get(&prs->bld.labels, i);
 			node_add_arg(&nd, id);
 
-			if (vector_get(&prs->labels, i + 1) < 0)
+			if (vector_get(&prs->bld.labels, i + 1) < 0)
 			{
 				parser_error(prs, repeated_label, repr_get_name(prs->sx, repr));
 			}
 			else
 			{
-				vector_set(&prs->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
+				vector_set(&prs->bld.labels, i + 1, -1);	// TODO: здесь должен быть номер строки
 			}
 
 			ident_set_type(prs->sx, (size_t)id, 1);
@@ -1345,8 +1335,8 @@ static void parse_labeled_statement(parser *const prs, node *const parent)
 	// Это определение метки, если она встретилась до переходов на нее
 	const item_t id = (item_t)to_identab(prs, repr, 1, 0);
 	node_add_arg(&nd, id);
-	vector_add(&prs->labels, id);
-	vector_add(&prs->labels, -1);	// TODO: здесь должен быть номер строки
+	vector_add(&prs->bld.labels, id);
+	vector_add(&prs->bld.labels, -1);	// TODO: здесь должен быть номер строки
 
 	ident_set_type(prs->sx, (size_t)id, 1);
 	parse_statement(prs, &nd);
@@ -1676,16 +1666,16 @@ static void parse_goto_statement(parser *const prs, node *const parent)
 	expect_and_consume(prs, TK_IDENTIFIER, no_ident_after_goto);
 	const size_t repr = prs->lxr.repr;
 
-	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
+	for (size_t i = 0; i < vector_size(&prs->bld.labels); i += 2)
 	{
-		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i)))
+		if (repr == (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->bld.labels, i)))
 		{
-			const item_t id = vector_get(&prs->labels, i);
+			const item_t id = vector_get(&prs->bld.labels, i);
 			node_add_arg(&nd, id);
-			if (vector_get(&prs->labels, (size_t)id + 1) >= 0) // Перехода на метку еще не было
+			if (vector_get(&prs->bld.labels, (size_t)id + 1) >= 0) // Перехода на метку еще не было
 			{
-				vector_add(&prs->labels, id);
-				vector_add(&prs->labels, 1);	// TODO: здесь должен быть номер строки
+				vector_add(&prs->bld.labels, id);
+				vector_add(&prs->bld.labels, 1);	// TODO: здесь должен быть номер строки
 			}
 
 			expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -1698,8 +1688,8 @@ static void parse_goto_statement(parser *const prs, node *const parent)
 	// будет отрицательной
 	const item_t id = (item_t)to_identab(prs, repr, 1, 0);
 	node_add_arg(&nd, -id);
-	vector_add(&prs->labels, id);
-	vector_add(&prs->labels, 1);	// TODO: здесь должен быть номер строки
+	vector_add(&prs->bld.labels, id);
+	vector_add(&prs->bld.labels, 1);	// TODO: здесь должен быть номер строки
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 }
 
@@ -2260,7 +2250,7 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
 	const size_t param_number = (size_t)type_get(prs->sx, prs->function_mode + 2);
 
-	vector_resize(&prs->labels, 0);
+	vector_resize(&prs->bld.labels, 0);
 	prs->was_return = 0;
 
 	const item_t prev = ident_get_prev(prs->sx, function_id);
@@ -2313,11 +2303,11 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
 	node_set_arg(&nd, 1, max_displ);
 
-	for (size_t i = 0; i < vector_size(&prs->labels); i += 2)
+	for (size_t i = 0; i < vector_size(&prs->bld.labels); i += 2)
 	{
-		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->labels, i));
-		const size_t line_number = (size_t)llabs(vector_get(&prs->labels, i + 1));
-		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->labels, i)))
+		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->bld.labels, i));
+		const size_t line_number = (size_t)llabs(vector_get(&prs->bld.labels, i + 1));
+		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->bld.labels, i)))
 		{
 			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
 		}

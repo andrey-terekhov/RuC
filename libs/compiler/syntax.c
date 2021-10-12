@@ -484,6 +484,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 3, displ) : -1;
 }
 
+bool ident_is_type_specifier(syntax *const sx, const size_t index)
+{
+	return ident_get_displ(sx, index) >= 1000;
+}
+
 
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {

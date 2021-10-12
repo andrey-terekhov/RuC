@@ -34,16 +34,24 @@ typedef struct builder
 	syntax *sx;				/**< Syntax structure */
 
 	node context;			/**< Context for creating new nodes */
+	vector labels;			/**< Labels table */
 } builder;
 
 /**
  *	Create AST builder
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	AST builder
  */
 builder bld_create(syntax *const sx);
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	bld				AST builder
+ */
+void bld_clear(builder *const bld);
 
 /**
  *	Check assignment operands

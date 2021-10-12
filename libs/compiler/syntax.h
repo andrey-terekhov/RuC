@@ -296,6 +296,16 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type);
  */
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
+/**
+ *	Check if identifier is declared as type specifier
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	@c 0 on true, @c 0 on false
+ */
+bool ident_is_type_specifier(syntax *const sx, const size_t index);
+
 
 /**
  *	Add a new record to types table
