@@ -19,13 +19,18 @@
 #include "uniprinter.h"
 #include "uniscanner.h"
 
+
+const size_t FST_LINE_INDEX =		1;
+const size_t FST_CHARACTER_INDEX =	0;
+
+
 /**
  *	Увеличивает значение line и сбрасывает значение position
  */
 static inline void parser_next_string(parser *const prs)
 {
 	prs->line++;
-	prs->position = 0;
+	prs->position = FST_CHARACTER_INDEX;
 	prs->string[prs->position] = '\0';
 }
 
@@ -139,8 +144,8 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
-	prs.line = 1;
-	prs.position = 0;
+	prs.line = FST_LINE_INDEX;
+	prs.position = FST_CHARACTER_INDEX;
 	prs.string[0] = '\0';
 
 	prs.is_recovery_disabled = false;
