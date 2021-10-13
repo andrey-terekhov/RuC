@@ -99,7 +99,7 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 static void output(const char *const file, const char *const str, const size_t line, const size_t symbol
 	, const char *const msg, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
-	size_t size = 1;
+	size_t size = 0;
 	for (size_t i = 0; i < symbol && str[i] != '\0'; i += utf8_symbol_size(str[i]))
 	{
 		size++;

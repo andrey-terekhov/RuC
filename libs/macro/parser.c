@@ -41,15 +41,7 @@ static inline void parser_next_string(parser *const prs)
 static inline void parser_add_char(parser *const prs, const char32_t cur)
 {
 	utf8_to_string(&prs->string[strlen(prs->string)], cur);
-}
-
-/**
- *	Считывает следующий символ и увеличивает значение position
- */
-static inline char32_t parser_next_char(parser *const prs)
-{
 	prs->position++;
-	return uni_scan_char(prs->in);
 }
 
 
@@ -64,13 +56,12 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	parser_add_char(prs, ch);
 	uni_print_char(prs->out, ch);
 
-	char32_t cur = parser_next_char(prs);
+	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
 		if (cur == ch)							// Строка считана, выход из функции
 		{
 			parser_add_char(prs, cur);
-			prs->position++;
 			uni_print_char(prs->out, cur);
 			return;
 		}
@@ -98,7 +89,6 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		else									// Независимо от корректности строки выводит ее в out
 		{
 			parser_add_char(prs, cur);
-			prs->position++;
 			uni_print_char(prs->out, cur);
 		}
 
@@ -145,12 +135,13 @@ static void parser_skip_short_comment(parser *const prs)
 static void parser_skip_long_comment(parser *const prs)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
+	prs->position--;	// Указывает на '/'
 	parser comm_beginning = *prs;
 	const char32_t old_position = prs->position;
+	parser_add_char(&comm_beginning, '*');
 
-	prs->position++;	// Был считан '/'
-	parser_add_char(prs, '*');
 	prs->position++;
+	parser_add_char(prs, '*');
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
@@ -166,13 +157,11 @@ static void parser_skip_long_comment(parser *const prs)
 			case '*':
 			{
 				parser_add_char(prs, cur);
-				prs->position++;
 
 				// Буфферизация комментария для вывода полной строки кода в случае незавершенного комментария
 				if (prs->line == comm_beginning.line)
 				{
 					parser_add_char(&comm_beginning, cur);
-					comm_beginning.position++;
 				}
 
 				char32_t next = uni_scan_char(prs->in);
@@ -180,7 +169,6 @@ static void parser_skip_long_comment(parser *const prs)
 				{
 					case '/':							// Комментарий считан, выход из функции
 						parser_add_char(prs, next);
-						prs->position++;
 						return;
 
 					default:							// Если встретился один '*', добавляет его в буффер строки кода
@@ -193,12 +181,10 @@ static void parser_skip_long_comment(parser *const prs)
 
 			default:
 				parser_add_char(prs, cur);
-				prs->position++;
 
 				if (prs->line == comm_beginning.line)
 				{
 					parser_add_char(&comm_beginning, cur);
-					comm_beginning.position++;
 				}
 		}
 
@@ -302,7 +288,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 			default:
 				parser_add_char(prs, cur);
-				prs->position++;
 				uni_print_char(prs->out, cur);
 		}
 

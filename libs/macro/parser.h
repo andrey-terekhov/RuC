@@ -37,7 +37,7 @@ typedef struct parser
 
 	size_t line;					/**< Сurrent line number in input */
 	size_t position;				/**< Сurrent character number in line */
-	char string[256];			/**< Сode line */
+	char string[256];				/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 	bool was_error;					/**< Set, if was error */
