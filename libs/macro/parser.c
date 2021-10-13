@@ -44,13 +44,61 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 	prs->position++;
 }
 
+/**
+ *	Добавляет символ в string и увеличивает значение position
+ */
+static inline void parser_fill_string(parser *const prs)
+{
+	char32_t cur = uni_scan_char(prs->in);
+	while (cur != '\r' && cur != '\n' && cur != (char32_t)EOF)
+	{
+		parser_add_char(prs, cur);
+		cur = uni_scan_char(prs->in);
+	}
+}
+
+
+/**
+ *	Ошибка парсера препроцессора
+ */
+static void parser_macro_error(parser *const prs, const error_t num, const bool need_skip)
+{
+	if (parser_is_correct(prs) && !prs->is_recovery_disabled && !prs->was_error)
+	{
+		if (need_skip)
+		{
+			const size_t old_position = prs->position;
+			parser_fill_string(prs);
+			prs->position = old_position;
+		}
+		prs->was_error = true;
+		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
+	}
+}
+
+/**
+ *	Предупреждение парсера препроцессора
+ */
+static void parser_macro_warning(parser *const prs, const error_t num, const bool need_skip)
+{
+	if (parser_is_correct(prs))
+	{
+		if (need_skip)
+		{
+			const size_t old_position = prs->position;
+			parser_fill_string(prs);
+			prs->position = old_position;
+		}
+		macro_warning(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
+	}
+}
+
 
 /**
  *	Считывает символы до конца строковой константы и буфферизирует текущую строку кода
  */
 static void parser_skip_string(parser *const prs, const char32_t ch)
 {
-	const size_t old_line = prs->line;
 	const size_t old_position = prs->position;
 
 	parser_add_char(prs, ch);
@@ -67,13 +115,9 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		}
 		else if (cur == '\r' || cur == '\n')	// Ошибка из-за наличия переноса строки
 		{
-			const char32_t temp_line = prs->line;
-			prs->line = old_line;
 			prs->position = old_position;
+			parser_macro_error(prs, PARSER_STRING_NOT_ENDED, false);
 
-			parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
-
-			prs->line = temp_line;
 			parser_next_string(prs);
 
 			// Специфика последовательности "\r\n"
@@ -95,7 +139,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		cur = uni_scan_char(prs->in);
 	}
 
-	parser_macro_error(prs, PARSER_UNEXPECTED_EOF);
+	parser_macro_error(prs, PARSER_UNEXPECTED_EOF, false);
 }
 
 
@@ -193,7 +237,7 @@ static void parser_skip_long_comment(parser *const prs)
 	}
 
 	comm_beginning.position = old_position;
-	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
+	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED, false);
 	prs->was_error = true;
 	parser_clear(&comm_beginning);
 }
@@ -288,8 +332,31 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			break;
 
 			default:
-				parser_add_char(prs, cur);
-				uni_print_char(prs->out, cur);
+				if (utf8_is_letter(cur))	//	Здесь будет макроподстановка
+				{
+					parser_add_char(prs, cur);
+					uni_print_char(prs->out, cur);
+				}
+				else
+				{
+					parser_add_char(prs, cur);
+					uni_print_char(prs->out, cur);
+
+					if (cur == '*')	// Проверка на наличие конца длинного комментария без его начала
+					{
+						char32_t next = uni_scan_char(prs->in);
+						if (next == '/')
+						{
+							parser_add_char(prs, next);
+							prs->position -= 2;	// Сдвигает position до '*'
+							parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING, true);
+							prs->position += 2;
+						}
+
+						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
+														// он будет считан повторно и проанализирован снаружи
+					}
+				}
 		}
 
 		cur = uni_scan_char(prs->in);
@@ -313,14 +380,14 @@ int parser_disable_recovery(parser *const prs)
 	return 0;
 }
 
-void parser_macro_error(parser *const prs, const error_t num)
+/*void parser_macro_error(parser *const prs, const error_t num)
 {
 	if (parser_is_correct(prs) && !prs->is_recovery_disabled && !prs->was_error)
 	{
 		prs->was_error = true;
 		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
 	}
-}
+}*/
 
 
 bool parser_is_correct(const parser *const prs)

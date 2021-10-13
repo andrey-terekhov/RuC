@@ -1,5 +1,4 @@
-void main()
+int main()
 {
-	return;
+	*/return 0;
 }
-//long comment
