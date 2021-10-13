@@ -115,6 +115,8 @@ static int compile_from_ws(workspace *const ws, const encoder enc)
 #ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
+	in_clear(&io);
+	out_clear(&io);
 	return ret;
 }
 
