@@ -15,7 +15,6 @@
  */
 
 #include "parser.h"
-#include <string.h>
 #include "error.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
@@ -24,17 +23,6 @@
 const size_t FST_LINE_INDEX =		1;
 const size_t FST_CHARACTER_INDEX =	1;
 
-
-/**
- *	Копирует string
- *
- *	@param	dest		Куда
- *	@param	src			Откуда
- */
-static void parser_strcpy(parser *const dest, parser *const src)
-{
-	strcpy((char *)dest->string, (char *)src->string);
-}
 
 /**
  *	Увеличивает значение line и сбрасывает значение position
@@ -137,7 +125,7 @@ static void parser_skip_short_comment(parser *const prs)
 	if (cur != (char32_t)EOF)
 	{
 		// Специфика последовательности "\r\n"
-		if (cur != '\n')
+		if (cur == '\r')
 		{
 			char32_t next = uni_scan_char(prs->in);
 			if (next != '\n')
@@ -158,11 +146,13 @@ static void parser_skip_long_comment(parser *const prs)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
 	parser comm_beginning = *prs;
+	const char32_t old_position = prs->position;
 
-	prs->position++;	// Увеличивает значение position, поскольку, был считан '*'
+	prs->position++;	// Был считан '/'
 	parser_add_char(prs, '*');
+	prs->position++;
 
-	char32_t cur = parser_next_char(prs);;
+	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
 		switch (cur)
@@ -170,19 +160,25 @@ static void parser_skip_long_comment(parser *const prs)
 			case '\r':
 				uni_scan_char(prs->in);
 			case '\n':
-				//parser_strcpy(&comm_beginning, prs);	// В случае многострочного комментария сохраняет буффер строки кода
 				parser_next_string(prs);
 				break;
 
 			case '*':
 			{
 				parser_add_char(prs, cur);
+				prs->position++;
+
+				// Буфферизация комментария для вывода полной строки кода в случае незавершенного комментария
+				if (prs->line == comm_beginning.line)
+				{
+					parser_add_char(&comm_beginning, cur);
+					comm_beginning.position++;
+				}
 
 				char32_t next = uni_scan_char(prs->in);
 				switch (next)
 				{
 					case '/':							// Комментарий считан, выход из функции
-						prs->position++;
 						parser_add_char(prs, next);
 						prs->position++;
 						return;
@@ -198,19 +194,20 @@ static void parser_skip_long_comment(parser *const prs)
 			default:
 				parser_add_char(prs, cur);
 				prs->position++;
+
+				if (prs->line == comm_beginning.line)
+				{
+					parser_add_char(&comm_beginning, cur);
+					comm_beginning.position++;
+				}
 		}
 
 		cur = uni_scan_char(prs->in);
 	}
 
-	// В случае однострочного комментария сохраняет буффер строки кода
-	if (prs->line == comm_beginning.line)
-	{
-		parser_strcpy(&comm_beginning, prs);
-	}
-
+	comm_beginning.position = old_position;
 	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
-
+	prs->was_error = true;
 	parser_clear(&comm_beginning);
 }
 
@@ -244,6 +241,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.string[0] = '\0';
 
 	prs.is_recovery_disabled = false;
+	prs.was_error = false;
 
 	return prs;
 } 
@@ -303,17 +301,18 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			break;
 
 			default:
-				parser_add_char(prs, cur);prs->position++;
+				parser_add_char(prs, cur);
+				prs->position++;
 				uni_print_char(prs->out, cur);
 		}
 
-		cur = uni_scan_char(prs->in);//parser_next_char(prs);
+		cur = uni_scan_char(prs->in);
 	}
 
 	uni_print_char(prs->out, '\n');
 	uni_print_char(prs->out, '\n');
 
-	return 0;
+	return !prs->was_error ? 0 : -1;
 }
 
 
@@ -330,8 +329,9 @@ int parser_disable_recovery(parser *const prs)
 
 void parser_macro_error(parser *const prs, const error_t num)
 {
-	if (!prs->is_recovery_disabled)
+	if (!prs->is_recovery_disabled && !prs->was_error)
 	{
+		prs->was_error = true;
 		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
 	}
 }

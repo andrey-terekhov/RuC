@@ -40,6 +40,7 @@ typedef struct parser
 	char32_t string[256];			/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
+	bool was_error;					/**< Set, if was error */
 } parser;
 
 /**
