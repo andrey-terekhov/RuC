@@ -15,13 +15,14 @@
  */
 
 #include "parser.h"
+#include <string.h>
 #include "error.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 
 
 const size_t FST_LINE_INDEX =		1;
-const size_t FST_CHARACTER_INDEX =	1;
+const size_t FST_CHARACTER_INDEX =	0;
 
 
 /**
@@ -31,7 +32,7 @@ static inline void parser_next_string(parser *const prs)
 {
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
-	prs->string[prs->position - 1] = '\0';
+	prs->string[0] = '\0';
 }
 
 /**
@@ -39,8 +40,7 @@ static inline void parser_next_string(parser *const prs)
  */
 static inline void parser_add_char(parser *const prs, const char32_t cur)
 {
-	prs->string[prs->position - 1] = cur;
-	prs->string[prs->position] = '\0';
+	utf8_to_string(&prs->string[strlen(prs->string)], cur);
 }
 
 /**
