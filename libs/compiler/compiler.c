@@ -112,11 +112,10 @@ static int compile_from_ws(workspace *const ws, const encoder enc)
 	out_set_file(&io, ws_get_output(ws));
 	const int ret = compile_from_io(ws, &io, enc);
 
+	io_erase(&io);
 #ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
-	in_clear(&io);
-	out_clear(&io);
 	return ret;
 }
 
