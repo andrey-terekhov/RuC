@@ -45,14 +45,14 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
- *	Добавляет символ в string и увеличивает значение position
+ *	Заполняет string до конца строки
  */
 static inline void parser_fill_string(parser *const prs)
 {
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != '\r' && cur != '\n' && cur != (char32_t)EOF)
 	{
-		parser_add_char(prs, cur);
+		utf8_to_string(&prs->string[strlen(prs->string)], cur);
 		cur = uni_scan_char(prs->in);
 	}
 }
@@ -67,9 +67,7 @@ static void parser_macro_error(parser *const prs, const error_t num, const bool 
 	{
 		if (need_skip)
 		{
-			const size_t old_position = prs->position;
 			parser_fill_string(prs);
-			prs->position = old_position;
 		}
 		prs->was_error = true;
 		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
@@ -85,9 +83,7 @@ static void parser_macro_warning(parser *const prs, const error_t num, const boo
 	{
 		if (need_skip)
 		{
-			const size_t old_position = prs->position;
 			parser_fill_string(prs);
-			prs->position = old_position;
 		}
 		macro_warning(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
 	}
