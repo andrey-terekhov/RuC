@@ -22,7 +22,7 @@
 
 
 const size_t FST_LINE_INDEX =		1;
-const size_t FST_CHARACTER_INDEX =	0;
+const size_t FST_CHARACTER_INDEX =	1;
 
 
 /**
@@ -43,7 +43,7 @@ static inline void parser_next_string(parser *const prs)
 {
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
-	prs->string[prs->position] = '\0';
+	prs->string[prs->position - 1] = '\0';
 }
 
 /**
@@ -51,8 +51,8 @@ static inline void parser_next_string(parser *const prs)
  */
 static inline void parser_add_char(parser *const prs, const char32_t cur)
 {
-	prs->string[prs->position] = cur;
-	prs->string[prs->position + 1] = '\0';
+	prs->string[prs->position - 1] = cur;
+	prs->string[prs->position] = '\0';
 }
 
 /**
@@ -74,40 +74,50 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	const size_t old_position = prs->position;
 
 	parser_add_char(prs, ch);
+	uni_print_char(prs->out, ch);
 
-	char32_t cur = parser_next_char(prs);;
+	char32_t cur = parser_next_char(prs);
 	while (cur != (char32_t)EOF)
 	{
-		if (cur == ch)					// Строка считана, выход из функции
+		if (cur == ch)							// Строка считана, выход из функции
 		{
 			parser_add_char(prs, cur);
+			prs->position++;
 			uni_print_char(prs->out, cur);
 			return;
 		}
-		else if (cur == '\n' || '\r')	// Ошибка из-за наличия переноса строки
+		else if (cur == '\r' || cur == '\n')	// Ошибка из-за наличия переноса строки
 		{
 			const char32_t temp_line = prs->line;
-			const char32_t temp_position = prs->position;
-
 			prs->line = old_line;
 			prs->position = old_position;
 
-			parser_error(prs, PARSER_STRING_NOT_ENDED);
-			parser_next_string(prs);
+			parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
 
 			prs->line = temp_line;
-			prs->position = temp_position;
+			parser_next_string(prs);
+
+			// Специфика последовательности "\r\n"
+			if (cur == '\r')
+			{
+				char32_t next = uni_scan_char(prs->in);
+				if (next != '\n')
+				{
+					uni_unscan_char(prs->in, next);
+				}
+			}
 		}
-		else							// Независимо от корректности строки выводит ее в out
+		else									// Независимо от корректности строки выводит ее в out
 		{
 			parser_add_char(prs, cur);
+			prs->position++;
 			uni_print_char(prs->out, cur);
 		}
 
-		cur = parser_next_char(prs);
+		cur = uni_scan_char(prs->in);
 	}
 
-	parser_error(prs, PARSER_UNEXPECTED_EOF);
+	parser_macro_error(prs, PARSER_UNEXPECTED_EOF);
 }
 
 
@@ -119,13 +129,24 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 static void parser_skip_short_comment(parser *const prs)
 {
 	char32_t cur = uni_scan_char(prs->in);
-	while(cur != '\n' || cur != '\r' || cur != (char32_t)EOF)
+	while(cur != '\n' && cur != '\r' && cur != (char32_t)EOF)
 	{
 		cur = uni_scan_char(prs->in);
 	}
 
 	if (cur != (char32_t)EOF)
 	{
+		// Специфика последовательности "\r\n"
+		if (cur != '\n')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			if (next != '\n')
+			{
+				uni_unscan_char(prs->in, next);
+			}
+		}
+
+		uni_print_char(prs->out, '\n');
 		parser_next_string(prs);
 	}
 }
@@ -146,9 +167,10 @@ static void parser_skip_long_comment(parser *const prs)
 	{
 		switch (cur)
 		{
-			case '\n':
 			case '\r':
-				parser_strcpy(&comm_beginning, prs);	// В случае многострочного комментария сохраняет буффер строки кода
+				uni_scan_char(prs->in);
+			case '\n':
+				//parser_strcpy(&comm_beginning, prs);	// В случае многострочного комментария сохраняет буффер строки кода
 				parser_next_string(prs);
 				break;
 
@@ -159,10 +181,11 @@ static void parser_skip_long_comment(parser *const prs)
 				char32_t next = uni_scan_char(prs->in);
 				switch (next)
 				{
-					case '/':
+					case '/':							// Комментарий считан, выход из функции
 						prs->position++;
 						parser_add_char(prs, next);
-						return;							// Комментарий считан, выход из функции
+						prs->position++;
+						return;
 
 					default:							// Если встретился один '*', добавляет его в буффер строки кода
 														// и обрабатывает следующие символы
@@ -174,9 +197,10 @@ static void parser_skip_long_comment(parser *const prs)
 
 			default:
 				parser_add_char(prs, cur);
+				prs->position++;
 		}
 
-		cur = parser_next_char(prs);
+		cur = uni_scan_char(prs->in);
 	}
 
 	// В случае однострочного комментария сохраняет буффер строки кода
@@ -185,7 +209,7 @@ static void parser_skip_long_comment(parser *const prs)
 		parser_strcpy(&comm_beginning, prs);
 	}
 
-	parser_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
+	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED);
 
 	parser_clear(&comm_beginning);
 }
@@ -239,8 +263,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	{
 		switch (cur)
 		{
-			case '\n':
 			case '\r':
+				uni_scan_char(prs->in);
+			case '\n':
 				parser_next_string(prs);
 				uni_print_char(prs->out, cur);
 				break;
@@ -278,11 +303,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			break;
 
 			default:
-				parser_add_char(prs, cur);
+				parser_add_char(prs, cur);prs->position++;
 				uni_print_char(prs->out, cur);
 		}
 
-		cur = parser_next_char(prs);
+		cur = uni_scan_char(prs->in);//parser_next_char(prs);
 	}
 
 	uni_print_char(prs->out, '\n');
@@ -303,7 +328,7 @@ int parser_disable_recovery(parser *const prs)
 	return 0;
 }
 
-void parser_error(parser *const prs, const error_t num)
+void parser_macro_error(parser *const prs, const error_t num)
 {
 	if (!prs->is_recovery_disabled)
 	{

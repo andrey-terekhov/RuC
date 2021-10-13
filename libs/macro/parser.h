@@ -80,7 +80,7 @@ int parser_disable_recovery(parser *const prs);
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-void parser_error(parser *const prs, const error_t num); 
+void parser_macro_error(parser *const prs, const error_t num);
 
 
 /**
