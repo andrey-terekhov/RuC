@@ -55,9 +55,9 @@ typedef struct information
 	item_t register_num;					/**< Номер регистра */
 	item_t label_num;						/**< Номер метки */
 	item_t init_num;						/**< Счётчик для инициализации */
-	item_t compound_num;					/**< Номер блока */
+	item_t block_num;						/**< Номер блока */
 
-	item_t request_reg;						/**< Регистр на запрос */
+	size_t request_reg;						/**< Регистр на запрос */
 	location_t variable_location;			/**< Расположение переменной */
 
 	item_t answer_reg;						/**< Регистр с ответом */
@@ -375,6 +375,8 @@ static void to_code_stack_save(information *const info, const item_t index)
 	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n"
 		, info->register_num, index);
 	info->register_num++;
+
+	info->was_stack_functions = true;
 }
 
 static void to_code_stack_load(information *const info, const item_t index)
@@ -384,6 +386,8 @@ static void to_code_stack_load(information *const info, const item_t index)
 		, info->register_num, index);
 	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
 	info->register_num++;
+
+	info->was_stack_functions = true;
 }
 
 static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
@@ -563,19 +567,20 @@ static void emit_cast_expression(information *const info, const node *const nd)
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
 	item_t type = expression_get_type(nd);
-	const item_t id = expression_identifier_get_id(nd);
+	const size_t id = expression_identifier_get_id(nd);
+	const bool is_local = ident_is_local(info->sx, id);
 	const bool is_addr_to_val = info->variable_location == LMEM;
 
 	if (is_addr_to_val)
 	{
-		to_code_load(info, info->register_num, id, type, false, ident_is_local(info->sx, (size_t)id));
+		to_code_load(info, info->register_num, id, type, false, is_local);
 		info->register_num++;
 		info->variable_location = LREG;
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
-	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
-		, is_addr_to_val, is_addr_to_val ? true : ident_is_local(info->sx, (size_t)id));
+	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : (item_t)id, type
+		, is_addr_to_val, is_addr_to_val ? true : is_local);
 	info->answer_reg = info->register_num++;
 	info->answer_kind = AREG;
 }
@@ -601,7 +606,7 @@ static void emit_literal_expression(information *const info, const node *const n
 		if (info->variable_location == LMEM)
 		{
 			to_code_store_const_i32(info, num, info->request_reg, false
-				, ident_is_local(info->sx, (size_t)info->request_reg));
+				, ident_is_local(info->sx, info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
@@ -616,7 +621,7 @@ static void emit_literal_expression(information *const info, const node *const n
 		if (info->variable_location == LMEM)
 		{
 			to_code_store_const_double(info, num, info->request_reg, false
-				, ident_is_local(info->sx, (size_t)info->request_reg));
+				, ident_is_local(info->sx, info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
@@ -870,18 +875,18 @@ static void emit_member_expression(information *const info, const node *const nd
 	const node base = expression_member_get_base(nd);
 
 	item_t type = expression_get_type(&base);
-	const item_t id = expression_identifier_get_id(&base);
+	const size_t id = expression_identifier_get_id(&base);
 
 	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
 	{
-		to_code_load(info, info->register_num++, id, type, false, ident_is_local(info->sx, (size_t)id));
+		to_code_load(info, info->register_num++, id, type, false, ident_is_local(info->sx, id));
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
 		"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
+		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : (item_t)id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -907,7 +912,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
 	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT;
-	item_t id = 0;
+	size_t id = 0;
 	if (!is_array)
 	{
 		id = expression_identifier_get_id(&operand);
@@ -916,10 +921,10 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &operand); // OP_SLICE_IDENT
-		id = info->answer_reg;
+		id = (size_t)info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, (size_t)id));
+	to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, id));
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -947,7 +952,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false, ident_is_local(info->sx, (size_t)id));
+	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false, ident_is_local(info->sx, id));
 	info->register_num++;
 }
 
@@ -1582,8 +1587,6 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, " ret void\n");
 	}
 	uni_printf(info->sx->io, "}\n\n");
-
-	info->was_stack_functions |= info->was_dynamic;
 }
 
 static void emit_declaration(information *const info, const node *const nd, const bool is_local)
@@ -1640,11 +1643,11 @@ static void emit_compound_statement(information *const info, const node *const n
 {
 	const size_t size = statement_compound_get_size(nd);
 	const node parent = node_get_parent(nd);
-	const item_t compound_num = info->compound_num++;
+	const item_t block_num = info->block_num++;
 
 	if (statement_get_class(&parent) != STMT_DECL)
 	{
-		to_code_stack_save(info, compound_num);
+		to_code_stack_save(info, block_num);
 	}
 
 	for (size_t i = 0; i < size; i++)
@@ -1655,9 +1658,8 @@ static void emit_compound_statement(information *const info, const node *const n
 
 	if (statement_get_class(&parent) != STMT_DECL)
 	{
-		to_code_stack_load(info, compound_num);
+		to_code_stack_load(info, block_num);
 	}
-	info->was_stack_functions = true;
 }
 
 /**
@@ -2204,7 +2206,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
-	info.compound_num = 1;
+	info.block_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;

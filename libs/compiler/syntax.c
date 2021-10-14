@@ -484,9 +484,9 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 3, displ) : -1;
 }
 
-bool ident_is_local(const syntax *const sx, const size_t id)
+bool ident_is_local(const syntax *const sx, const size_t index)
 {
-	return ident_get_displ(sx, id) > 0;
+	return ident_get_displ(sx, index) > 0;
 }
 
 
