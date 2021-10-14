@@ -1065,7 +1065,7 @@ node build_for_statement(builder *const bld, node *const init
 		return node_broken();
 	}
 
-	if (!type_is_scalar(bld->sx, expression_get_type(cond)))
+	if (cond && !type_is_scalar(bld->sx, expression_get_type(cond)))
 	{
 		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
@@ -1108,7 +1108,8 @@ node build_return_statement(builder *const bld, node *const expr, const location
 			return node_broken();
 		}
 
-		check_assignment_operands(bld, bld->func_type, expr);
+		const item_t return_type = type_function_get_return_type(bld->sx, bld->func_type);
+		check_assignment_operands(bld, return_type, expr);
 		loc.end = expression_get_location(expr).end;
 	}
 	else

@@ -276,6 +276,13 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
 	return ret;
 }
 
+static inline void node_set_child(const node *const parent, const node *const child)
+{
+	node temp = node_add_child(parent, OP_NOP);
+	node_swap(child, &temp);
+	node_remove(&temp);
+}
+
 
 /*
  *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
@@ -736,7 +743,7 @@ static node parse_condition(parser *const prs)
 		return node_broken();
 	}
 
-	if (prs->token != TK_R_PAREN)
+	if (!try_consume_token(prs, TK_R_PAREN))
 	{
 		parser_error(prs, expected_r_paren, l_loc);
 		skip_until(prs, TK_SEMICOLON);
@@ -1259,7 +1266,7 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 static node parse_declaration(parser *const prs)
 {
 	// TODO: рефакторинг разбора объявлений
-	node parent = prs->bld.context;
+	node parent = node_add_child(&prs->bld.context, OP_BLOCK);
 
 	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, &parent);
@@ -1636,6 +1643,7 @@ static node parse_for_statement(parser *const prs)
 	node init;
 	if (!try_consume_token(prs, TK_SEMICOLON))
 	{
+		has_init = true;
 		if (is_declaration_specifier(prs))
 		{
 			init = parse_declaration(prs);
@@ -1648,6 +1656,13 @@ static node parse_for_statement(parser *const prs)
 				skip_until(prs, TK_SEMICOLON);
 				return node_broken();
 			}
+
+			if (!try_consume_token(prs, TK_SEMICOLON))
+			{
+				parser_error(prs, no_semicolon_in_for);
+				skip_until(prs, TK_SEMICOLON);
+				return node_broken();
+			}
 		}
 	}
 
@@ -1655,6 +1670,7 @@ static node parse_for_statement(parser *const prs)
 	node cond;
 	if (!try_consume_token(prs, TK_SEMICOLON))
 	{
+		has_cond = true;
 		cond = parse_expression(prs);
 		if (!node_is_correct(&cond))
 		{
@@ -1674,6 +1690,7 @@ static node parse_for_statement(parser *const prs)
 	node incr;
 	if (prs->token != TK_R_PAREN)
 	{
+		has_incr = true;
 		incr = parse_expression(prs);
 		if (!node_is_correct(&incr))
 		{
@@ -1787,6 +1804,7 @@ static node parse_break_statement(parser *const prs)
  */
 static node parse_return_statement(parser *const prs)
 {
+	prs->was_return = true;
 	const location return_loc = consume_token(prs);
 	if (try_consume_token(prs, TK_SEMICOLON))
 	{
@@ -2323,7 +2341,8 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
 	node_copy(&prs->bld.context, &nd);
-	parse_compound_statement(prs, /*is_function_body=*/true);
+	node body = parse_compound_statement(prs, /*is_function_body=*/true);
+	node_set_child(&nd, &body);
 
 	if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
 	{

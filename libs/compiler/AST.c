@@ -496,6 +496,10 @@ node statement_for(node *const init, node *const cond, node *const incr, node *c
 {
 	node nd = node_insert(body, OP_FOR, 5);
 
+	node_set_arg(&nd, 0, 0);
+	node_set_arg(&nd, 1, 0);
+	node_set_arg(&nd, 2, 0);
+
 	if (init)
 	{
 		node_set_arg(&nd, 0, 1);
@@ -505,13 +509,13 @@ node statement_for(node *const init, node *const cond, node *const incr, node *c
 	if (cond)
 	{
 		node_set_arg(&nd, 1, 1);
-		node_set_child(&nd, init);
+		node_set_child(&nd, cond);
 	}
 
 	if (incr)
 	{
 		node_set_arg(&nd, 2, 1);
-		node_set_child(&nd, init);
+		node_set_child(&nd, incr);
 	}
 
 	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция оператора
