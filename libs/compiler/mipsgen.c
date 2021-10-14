@@ -97,6 +97,7 @@ typedef enum LABEL
 	L_FUNC,							/**< Тип метки -- вход в функцию */
 	L_NEXT,							/**< Тип метки -- следующая функция */
 	L_FUNCEND,						/**< Тип метки -- выход из функции */
+	L_STRING,						/**< Тип метки -- строка */
 } mips_label_t;
 
 
@@ -106,6 +107,9 @@ typedef struct information
 
 	item_t main_label;					/**< Метка функции main */
 } information;
+
+
+static void emit_statement(information *const info, const node *const nd);
 
 
 static void mips_register_to_io(universal_io *const io, const mips_register_t reg)
@@ -262,6 +266,9 @@ static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 		case L_FUNCEND:
 			uni_printf(io, "FUNCEND");
 			break;
+		case L_STRING:
+			uni_printf(io, "STRING");
+			break;
 	}
 }
 
@@ -399,8 +406,8 @@ static void emit_function_definition(information *const info, const node *const 
 		}
 	}
 
-	// const node body = declaration_function_get_body(nd);
-	// emit_statement(info, &body);
+	const node body = declaration_function_get_body(nd);
+	emit_statement(info, &body);
 
 	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
@@ -447,6 +454,131 @@ static void emit_declaration(information *const info, const node *const nd)
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
 
+
+/**
+ *	Emit compound statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_compound_statement(information *const info, const node *const nd)
+{
+	const size_t size = statement_compound_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node substmt = statement_compound_get_substmt(nd, i);
+		emit_statement(info, &substmt);
+	}
+}
+
+/**
+ *	Emit printf statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_printf_statement(information *const info, const node *const nd)
+{
+	const size_t argc = statement_printf_get_argc(nd);
+	const node string = statement_printf_get_format_str(nd);
+	const size_t index = expression_literal_get_string(&string);
+
+	for (size_t i = 0; i < argc; i++)
+	{
+		// info->variable_location = LREG;
+
+		// const node arg = statement_printf_get_argument(nd, i);
+		// emit_expression(info, &arg);
+	}
+
+	// TODO: может можно как-то покрасивее это написать?
+	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
+	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
+	uni_printf(info->sx->io, "\tjal printf\n");
+}
+
+/**
+ *	Emit statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_statement(information *const info, const node *const nd)
+{
+	switch (statement_get_class(nd))
+	{
+		case STMT_DECL:
+			emit_declaration(info, nd);
+			return;
+
+		case STMT_LABEL:
+			// emit_labeled_statement(info, nd);
+			return;
+
+		case STMT_CASE:
+			// emit_case_statement(info, nd);
+			return;
+
+		case STMT_DEFAULT:
+			// emit_default_statement(info, nd);
+			return;
+
+		case STMT_COMPOUND:
+			emit_compound_statement(info, nd);
+			return;
+
+		case STMT_EXPR:
+			// emit_expression(info, nd);
+			return;
+
+		case STMT_NULL:
+			return;
+
+		case STMT_IF:
+			// emit_if_statement(info, nd);
+			return;
+
+		case STMT_SWITCH:
+			// emit_switch_statement(info, nd);
+			return;
+
+		case STMT_WHILE:
+			// emit_while_statement(info, nd);
+			return;
+
+		case STMT_DO:
+			// emit_do_statement(info, nd);
+			return;
+
+		case STMT_FOR:
+			// emit_for_statement(info, nd);
+			return;
+
+		case STMT_GOTO:
+			// to_code_unconditional_branch(info, (item_t)statement_goto_get_label(nd));
+			return;
+
+		case STMT_CONTINUE:
+			// to_code_unconditional_branch(info, info->label_continue);
+			return;
+
+		case STMT_BREAK:
+			// to_code_unconditional_branch(info, info->label_break);
+			return;
+
+		case STMT_RETURN:
+			// emit_return_statement(info, nd);
+			return;
+
+		case STMT_PRINTF:
+			emit_printf_statement(info, nd);
+			return;
+
+		// Printid и Getid, которые будут сделаны парсере
+		default:
+			return;
+	}
+}
 
 /**
  *	Emit translation unit
@@ -498,6 +630,39 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\n");
 }
 
+static void strings_declaration(information *const info)
+{
+	uni_printf(info->sx->io, "\t.rdata\n");
+	uni_printf(info->sx->io, "\t.align 2\n");
+
+	const size_t amount = strings_amount(info->sx);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const char *string = string_get(info->sx, i);
+		const size_t length = strings_length(info->sx, i);
+
+		to_code_label(info->sx->io, L_STRING, i);
+		uni_printf(info->sx->io, "\t.ascii \"");
+
+		for (size_t j = 0; j < length; j++)
+		{
+			const char ch = string[j];
+			if (ch == '\n')
+			{
+				uni_printf(info->sx->io, "\\n");
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c", ch);
+			}
+		}
+
+		uni_printf(info->sx->io, "\\0\"\n");
+	}
+	uni_printf(info->sx->io, "\t.text\n");
+	uni_printf(info->sx->io, "\t.align 2\n\n");
+}
+
 // TODO: подписать, что значит каждая директива и команда
 static void postgen(information *const info)
 {
@@ -533,6 +698,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 
 	pregen(sx);
+	strings_declaration(&info);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&info.sx->tree);
 	const int ret = emit_translation_unit(&info, &root);
