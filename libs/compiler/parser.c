@@ -1853,6 +1853,7 @@ static node parse_print_statement(parser *const prs)
 	{
 		parser_error(prs, print_without_br);
 		skip_until(prs, TK_SEMICOLON);
+		return node_broken();
 	}
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
@@ -1884,7 +1885,8 @@ static node parse_printid_statement(parser *const prs)
 		else
 		{
 			parser_error(prs, no_ident_in_printid);
-			skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+			skip_until(prs, TK_SEMICOLON);
+			return node_broken();
 		}
 	} while (try_consume_token(prs, TK_COMMA));
 
@@ -1919,7 +1921,8 @@ static node parse_getid_statement(parser *const prs)
 		else
 		{
 			parser_error(prs, no_ident_in_getid);
-			skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+			skip_until(prs, TK_SEMICOLON);
+			return node_broken();
 		}
 	} while (try_consume_token(prs, TK_COMMA));
 
