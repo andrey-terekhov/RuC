@@ -55,6 +55,7 @@ typedef struct information
 	item_t register_num;					/**< Номер регистра */
 	item_t label_num;						/**< Номер метки */
 	item_t init_num;						/**< Счётчик для инициализации */
+	item_t compound_num;					/**< Номер блока */
 
 	item_t request_reg;						/**< Регистр на запрос */
 	location_t variable_location;			/**< Расположение переменной */
@@ -366,19 +367,21 @@ static inline void to_code_conditional_branch(information *const info)
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
-static void to_code_stack_save(information *const info)
+static void to_code_stack_save(information *const info, const item_t index)
 {
 	// команды сохранения состояния стека
-	uni_printf(info->sx->io, " %%dyn = alloca i8*, align 4\n");
+	uni_printf(info->sx->io, " %%dyn.%" PRIitem " = alloca i8*, align 4\n", index);
 	uni_printf(info->sx->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
-	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn, align 4\n", info->register_num);
+	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n"
+		, info->register_num, index);
 	info->register_num++;
 }
 
-static void to_code_stack_load(information *const info)
+static void to_code_stack_load(information *const info, const item_t index)
 {
 	// команды восстановления состояния стека
-	uni_printf(info->sx->io, " %%.%" PRIitem " = load i8*, i8** %%dyn, align 4\n", info->register_num);
+	uni_printf(info->sx->io, " %%.%" PRIitem " = load i8*, i8** %%dyn.%" PRIitem ", align 4\n"
+		, info->register_num, index);
 	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
 	info->register_num++;
 }
@@ -1509,7 +1512,7 @@ static void emit_variable_declaration(information *const info, const node *const
 		{
 			if (!info->was_dynamic)
 			{
-				to_code_stack_save(info);
+				to_code_stack_save(info, -1);
 			}
 
 			to_code_alloc_array_dynamic(info, index, element_type);
@@ -1574,7 +1577,7 @@ static void emit_function_definition(information *const info, const node *const 
 	{
 		if (info->was_dynamic)
 		{
-			to_code_stack_load(info);
+			to_code_stack_load(info, -1);
 		}
 		uni_printf(info->sx->io, " ret void\n");
 	}
@@ -1636,11 +1639,25 @@ static void emit_labeled_statement(information *const info, const node *const nd
 static void emit_compound_statement(information *const info, const node *const nd)
 {
 	const size_t size = statement_compound_get_size(nd);
+	const node parent = node_get_parent(nd);
+	const item_t compound_num = info->compound_num++;
+
+	if (statement_get_class(&parent) != STMT_DECL)
+	{
+		to_code_stack_save(info, compound_num);
+	}
+
 	for (size_t i = 0; i < size; i++)
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
 		emit_statement(info, &substmt);
 	}
+
+	if (statement_get_class(&parent) != STMT_DECL)
+	{
+		to_code_stack_load(info, compound_num);
+	}
+	info->was_stack_functions = true;
 }
 
 /**
@@ -1844,7 +1861,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 {
 	if (info->was_dynamic)
 	{
-		to_code_stack_load(info);
+		to_code_stack_load(info, -1);
 	}
 
 	if (statement_return_has_expression(nd))
@@ -2187,6 +2204,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.register_num = 1;
 	info.label_num = 1;
 	info.init_num = 1;
+	info.compound_num = 1;
 	info.variable_location = LREG;
 	info.request_reg = 0;
 	info.answer_reg = 0;
