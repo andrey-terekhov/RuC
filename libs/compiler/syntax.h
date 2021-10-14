@@ -308,12 +308,12 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type);
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
 /**
- *	Get if identifier is local or not by index
+ *	Check if identifier is local by index
  *
  *	@param	sx			Syntax structure
  *	@param	id			Identifier of target lvalue
  *
- *	@return	@c bool on local identifier, @c false on global identifier
+ *	@return @c 1 on true, @c 0 on false
  */
 bool ident_is_local(const syntax *const sx, const size_t index);
 
