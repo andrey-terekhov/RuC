@@ -560,18 +560,18 @@ static void emit_cast_expression(information *const info, const node *const nd)
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
 	item_t type = expression_get_type(nd);
-	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(nd));
+	const item_t id = expression_identifier_get_id(nd);
 	const bool is_addr_to_val = info->variable_location == LMEM;
 
 	if (is_addr_to_val)
 	{
-		to_code_load(info, info->register_num, displ, type, false);
+		to_code_load(info, info->register_num, id, type, false);
 		info->register_num++;
 		info->variable_location = LREG;
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
-	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : displ, type
+	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
 		, is_addr_to_val);
 	info->answer_reg = info->register_num++;
 	info->answer_kind = AREG;
@@ -642,9 +642,9 @@ static void emit_subscript_expression(information *const info, const node *const
 	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		const node identifier = expression_subscript_get_base(&base);
-		const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&identifier));
+		const item_t id = expression_identifier_get_id(&identifier);
 
-		size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 		const location_t location = info->variable_location;
 
 		info->variable_location = LFREE;
@@ -652,15 +652,15 @@ static void emit_subscript_expression(information *const info, const node *const
 		emit_expression(info, &index);
 
 		// TODO: пока только для динамических массивов размерности 2
-		if (!hash_get(&info->arrays, displ, IS_STATIC) && cur_dimension == 1)
+		if (!hash_get(&info->arrays, id, IS_STATIC) && cur_dimension == 1)
 		{
 			if (info->answer_kind == ACONST)
 			{
-				to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, displ, 2));
+				to_code_operation_const_reg_i32(info, BIN_MUL, info->answer_const, hash_get(&info->arrays, id, 2));
 			}
 			else // if (info->answer_kind == AREG)
 			{
-				to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, displ, 2),
+				to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, id, 2),
 					TYPE_INTEGER);
 			}
 
@@ -670,7 +670,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 		if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, displ, cur_dimension, 0, type);
+			to_code_slice(info, id, cur_dimension, 0, type);
 		}
 		else
 		{
@@ -687,7 +687,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 		if (cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, displ, cur_dimension, prev_slice, type);
+			to_code_slice(info, id, cur_dimension, prev_slice, type);
 		}
 		else
 		{
@@ -705,9 +705,9 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
+	const item_t id = expression_identifier_get_id(&base);
 
-	const size_t cur_dimension = hash_get_amount(&info->arrays, displ) - 2;
+	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 	const location_t location = info->variable_location;
 
 	info->variable_location = LFREE;
@@ -718,7 +718,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 	if (cur_dimension < MAX_DIMENSIONS)
 	{
-		to_code_slice(info, displ, cur_dimension, 0, type);
+		to_code_slice(info, id, cur_dimension, 0, type);
 	}
 	else
 	{
@@ -865,18 +865,18 @@ static void emit_member_expression(information *const info, const node *const nd
 	const node base = expression_member_get_base(nd);
 
 	item_t type = expression_get_type(&base);
-	const item_t displ = ident_get_displ(info->sx, expression_identifier_get_id(&base));
+	const item_t id = expression_identifier_get_id(&base);
 
 	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
 	{
-		to_code_load(info, info->register_num++, displ, type, false);
+		to_code_load(info, info->register_num++, id, type, false);
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
 		"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : displ, place);
+		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -902,19 +902,19 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
 	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT;
-	item_t displ = 0;
+	item_t id = 0;
 	if (!is_array)
 	{
-		displ = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
+		id = expression_identifier_get_id(&operand);
 	}
 	else // OP_SLICE_IDENT
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &operand); // OP_SLICE_IDENT
-		displ = info->answer_reg;
+		id = info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, displ, operation_type, is_array);
+	to_code_load(info, info->register_num, id, operation_type, is_array);
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -942,7 +942,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, displ, operation_type, is_array, false);
+	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false);
 	info->register_num++;
 }
 
@@ -1007,7 +1007,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		case UN_ADDRESS:
 		{
 			// TODO: тут тоже не только идентификатор может быть
-			info->answer_reg = ident_get_displ(info->sx, expression_identifier_get_id(&operand));
+			info->answer_reg = expression_identifier_get_id(&operand);
 			info->answer_kind = AMEM;
 			return;
 		}
@@ -1143,7 +1143,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 	bool is_array = expression_get_class(&LHS) == EXPR_SUBSCRIPT;
 	if (!is_array)
 	{
-		// displ = ident_get_displ(info->sx, expression_identifier_get_id(&LHS));
 		id = expression_identifier_get_id(&LHS);
 	}
 	else // OP_SLICE_IDENT
@@ -1336,7 +1335,7 @@ static void emit_expression(information *const info, const node *const nd)
  *
  *	@param	info		Encoder
  *	@param	nd			Node in AST
- *	@param	displ		Displacement of target lvalue
+ *	@param	id			Identifier of target lvalue
  *	@param	elem_type	Element type of target lvalue
  */
 static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t elem_type)
@@ -1394,7 +1393,6 @@ static void emit_variable_declaration(information *const info, const node *const
 {
 	// TODO: объявления глобальных переменных
 	const size_t id = declaration_variable_get_id(nd);
-	// const item_t displ = ident_get_displ(info->sx, id);
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
@@ -1554,7 +1552,6 @@ static void emit_function_definition(information *const info, const node *const 
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
-		// const item_t param_displ = ident_get_displ(info->sx, id);
 		const item_t param_type = ident_get_type(info->sx, id);
 
 		uni_printf(info->sx->io, " %%var.%zu = alloca ", id);
