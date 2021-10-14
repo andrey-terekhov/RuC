@@ -276,14 +276,6 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
 	return ret;
 }
 
-// Штука нужна только для присоединения тела функции к заголовку
-static inline void node_set_child(const node *const parent, const node *const child)
-{
-	node temp = node_add_child(parent, OP_NOP);
-	node_swap(child, &temp);
-	node_remove(&temp);
-}
-
 
 /*
  *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
@@ -2348,7 +2340,10 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 
 	node_copy(&prs->bld.context, &nd);
 	node body = parse_compound_statement(prs, /*is_function_body=*/true);
-	node_set_child(&nd, &body);
+
+	node temp = node_add_child(&nd, OP_NOP);
+	node_swap(&body, &temp);
+	node_remove(&temp);
 
 	if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
 	{
