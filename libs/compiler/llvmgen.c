@@ -597,7 +597,8 @@ static void emit_literal_expression(information *const info, const node *const n
 		const int num = expression_literal_get_integer(nd);
 		if (info->variable_location == LMEM)
 		{
-			to_code_store_const_i32(info, num, info->request_reg, false, ident_is_local(info->sx, info->request_reg));
+			to_code_store_const_i32(info, num, info->request_reg, false
+				, ident_is_local(info->sx, (size_t)info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
@@ -611,7 +612,8 @@ static void emit_literal_expression(information *const info, const node *const n
 		const double num = expression_literal_get_floating(nd);
 		if (info->variable_location == LMEM)
 		{
-			to_code_store_const_double(info, num, info->request_reg, false, ident_is_local(info->sx, info->request_reg));
+			to_code_store_const_double(info, num, info->request_reg, false
+				, ident_is_local(info->sx, (size_t)info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
