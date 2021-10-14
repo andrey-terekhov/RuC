@@ -276,6 +276,7 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
 	return ret;
 }
 
+// Штука нужна только для присоединения тела функции к заголовку
 static inline void node_set_child(const node *const parent, const node *const child)
 {
 	node temp = node_add_child(parent, OP_NOP);
@@ -1458,7 +1459,7 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 	const location l_loc = consume_token(prs);
 
 	node_vector stmts = node_vector_create();
-	while (prs->token != TK_R_BRACE)
+	while (prs->token != TK_R_BRACE && prs->token != TK_EOF)
 	{
 		const node stmt = is_declaration_specifier(prs)
 			? parse_declaration(prs)
@@ -1480,7 +1481,9 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 	}
 
 	const location r_loc = consume_token(prs);
-	return build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
+	node result = build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
+	node_vector_clear(&stmts);
+	return result;
 }
 
 /**

@@ -866,7 +866,7 @@ static void write_for_statement(writer *const wrt, const node *const nd)
  */
 static void write_goto_statement(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "STMT_GOTO\n");
+	write_line(wrt, "STMT_GOTO");
 
 	const size_t label = statement_goto_get_label(nd);
 	const char *const spelling = ident_get_spelling(wrt->sx, label);

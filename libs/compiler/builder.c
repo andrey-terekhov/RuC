@@ -314,6 +314,23 @@ static node build_upb_expression(builder *const bld, node *const callee, node_ve
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
+// Временная штука, пока что нужна только для меток
+static size_t to_identab(builder *const bld, const size_t repr, const item_t type, const item_t mode, const location loc)
+{
+	const size_t ret = ident_add(bld->sx, repr, type, mode, 3);
+
+	if (ret == SIZE_MAX)
+	{
+		semantic_error(bld, loc, redefinition_of_main);
+	}
+	else if (ret == SIZE_MAX - 1)
+	{
+		semantic_error(bld, loc, repeated_decl, repr_get_name(bld->sx, repr));
+	}
+
+	return ret;
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -941,10 +958,35 @@ node build_labeled_statement(builder *const bld, const size_t name, node *const 
 		return node_broken();
 	}
 
-	(void)bld;
-	// FIXME: labels
 	const location loc = { id_loc.begin, node_get_location(substmt).end };
-	return statement_labeled(name, substmt, loc);
+	for (size_t i = 0; i < vector_size(&bld->labels); i += 2)
+	{
+		if (name == (size_t)ident_get_repr(bld->sx, (size_t)vector_get(&bld->labels, i)))
+		{
+			const size_t id = (size_t)vector_get(&bld->labels, i);
+
+			if (vector_get(&bld->labels, i + 1) < 0)
+			{
+				semantic_error(bld, id_loc, repeated_label, repr_get_name(bld->sx, name));
+			}
+			else
+			{
+				vector_set(&bld->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
+			}
+
+			ident_set_type(bld->sx, (size_t)id, 1);
+			return statement_labeled(id, substmt, loc);
+		}
+	}
+
+	// Это определение метки, если она встретилась до переходов на нее
+	const size_t id = to_identab(bld, name, 1, 0, id_loc);
+	vector_add(&bld->labels, (item_t)id);
+	vector_add(&bld->labels, -1);	// TODO: здесь должен быть номер строки
+
+	ident_set_type(bld->sx, id, 1);
+
+	return statement_labeled(id, substmt, loc);
 }
 
 node build_case_statement(builder *const bld, node *const expr, node *const substmt, const location case_loc)
@@ -976,10 +1018,23 @@ node build_default_statement(builder *const bld, node *const substmt, const loca
 	return statement_default(substmt, loc);
 }
 
-node build_compound_statement(builder *const bld, node_vector *const item_list, location l_loc, location r_loc)
+node build_compound_statement(builder *const bld, node_vector *const stmts, location l_loc, location r_loc)
 {
+	if (stmts)
+	{
+		const size_t amount = node_vector_size(stmts);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node item = node_vector_get(stmts, i);
+			if (!node_is_correct(&item))
+			{
+				return node_broken();
+			}
+		}
+	}
+
 	const location loc = { l_loc.begin, r_loc.end };
-	return statement_compound(&bld->context, item_list, loc);
+	return statement_compound(&bld->context, stmts, loc);
 }
 
 node build_null_statement(builder *const bld, const location semi_loc)
@@ -1077,9 +1132,31 @@ node build_for_statement(builder *const bld, node *const init
 
 node build_goto_statement(builder *const bld, const size_t name, const location goto_loc, const location id_loc)
 {
-	// FIXME: labels
 	const location loc = { goto_loc.begin, id_loc.end };
-	return statement_goto(&bld->context, name, loc);
+
+	for (size_t i = 0; i < vector_size(&bld->labels); i += 2)
+	{
+		if (name == (size_t)ident_get_repr(bld->sx, (size_t)vector_get(&bld->labels, i)))
+		{
+			const size_t id = (size_t)vector_get(&bld->labels, i);
+			if (vector_get(&bld->labels, id + 1) >= 0) // Перехода на метку еще не было
+			{
+				vector_add(&bld->labels, (item_t)id);
+				vector_add(&bld->labels, 1);	// TODO: здесь должен быть номер строки
+			}
+
+			return statement_goto(&bld->context, id, loc);
+		}
+	}
+
+	// Первый раз встретился переход на метку, которой не было,
+	// в этом случае ссылка на identtab, стоящая после TGoto,
+	// будет отрицательной
+	const size_t id = to_identab(bld, name, 1, 0, id_loc);
+	vector_add(&bld->labels, (item_t)id);
+	vector_add(&bld->labels, 1);	// TODO: здесь должен быть номер строки
+
+	return statement_goto(&bld->context, id, loc);
 }
 
 node build_continue_statement(builder *const bld, const location continue_loc)
@@ -1095,6 +1172,7 @@ node build_break_statement(builder *const bld, const location break_loc)
 node build_return_statement(builder *const bld, node *const expr, const location return_loc)
 {
 	location loc = return_loc;
+	const item_t return_type = type_function_get_return_type(bld->sx, bld->func_type);
 	if (expr != NULL)
 	{
 		if (!node_is_correct(expr))
@@ -1102,19 +1180,23 @@ node build_return_statement(builder *const bld, node *const expr, const location
 			return node_broken();
 		}
 
-		if (type_is_void(bld->func_type))
+		if (type_is_void(return_type))
 		{
 			semantic_error(bld, expression_get_location(expr), notvoidret_in_void_func);
 			return node_broken();
 		}
 
-		const item_t return_type = type_function_get_return_type(bld->sx, bld->func_type);
-		check_assignment_operands(bld, return_type, expr);
+		// TODO: void*?
+		if (return_type != type_pointer(bld->sx, TYPE_VOID))
+		{
+			check_assignment_operands(bld, return_type, expr);
+		}
+
 		loc.end = expression_get_location(expr).end;
 	}
 	else
 	{
-		if (!type_is_void(bld->func_type))
+		if (!type_is_void(return_type))
 		{
 			semantic_error(bld, return_loc, no_ret_in_func);
 			return node_broken();
