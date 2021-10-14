@@ -745,6 +745,17 @@ inline node statement_compound_get_substmt(const node *const nd, const size_t in
 
 
 /**
+ *	Create new null statement
+ *
+ *	@param	context			Context node
+ *	@param	loc				Statement location
+ *
+ *	@return	Null statement
+ */
+node statement_null(node *const context, const location loc);
+
+
+/**
  *	Create new if statement
  *
  *	@param	cond			Contidion
@@ -914,6 +925,19 @@ inline node statement_do_get_body(const node *const nd)
 
 
 /**
+ *	Create new for statement
+ *
+ *	@param	init			Inition
+ *	@param	cond			Contidion
+ *	@param	incr			Increment
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	For statement
+ */
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc);
+
+/**
  *	Check if for statement has inition
  *
  *	@param	nd				For statement
@@ -958,7 +982,7 @@ inline bool statement_for_has_increment(const node *const nd)
  */
 inline node statement_for_get_inition(const node *const nd)
 {
-	return statement_for_has_inition(nd) ? node_get_child(nd, 0) : node_broken();
+	return statement_for_has_inition(nd) ? node_get_child(nd, 1) : node_broken();
 }
 
 /**
@@ -971,7 +995,7 @@ inline node statement_for_get_inition(const node *const nd)
 inline node statement_for_get_condition(const node *const nd)
 {
 	return statement_for_has_condition(nd)
-		? node_get_child(nd, statement_for_has_inition(nd) ? 1 : 0)
+		? node_get_child(nd, statement_for_has_inition(nd) ? 2 : 1)
 		: node_broken();
 }
 
@@ -985,7 +1009,7 @@ inline node statement_for_get_condition(const node *const nd)
 inline node statement_for_get_increment(const node *const nd)
 {
 	return statement_for_has_increment(nd)
-		? node_get_child(nd, node_get_amount(nd) - 2)
+		? node_get_child(nd, node_get_amount(nd) - 1)
 		: node_broken();
 }
 
@@ -998,9 +1022,7 @@ inline node statement_for_get_increment(const node *const nd)
  */
 inline node statement_for_get_body(const node *const nd)
 {
-	return node_get_type(nd) == OP_FOR
-		? node_get_child(nd, node_get_amount(nd) - 1)
-		: node_broken();
+	return node_get_type(nd) == OP_FOR ? node_get_child(nd, 0) : node_broken();
 }
 
 

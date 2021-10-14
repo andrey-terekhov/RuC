@@ -431,6 +431,16 @@ node statement_compound(node *const context, node_vector *const stmts, const loc
 	return nd;
 }
 
+node statement_null(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_NOP);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
 node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc)
 {
 	node nd = node_insert(cond, OP_IF, 3);
@@ -478,6 +488,34 @@ node statement_do(node *const body, node *const cond, const location loc)
 
 	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
 	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc)
+{
+	node nd = node_insert(body, OP_FOR, 5);
+
+	if (init)
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, init);
+	}
+
+	if (cond)
+	{
+		node_set_arg(&nd, 1, 1);
+		node_set_child(&nd, init);
+	}
+
+	if (incr)
+	{
+		node_set_arg(&nd, 2, 1);
+		node_set_child(&nd, init);
+	}
+
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция оператора
 
 	return nd;
 }

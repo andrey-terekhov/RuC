@@ -934,6 +934,19 @@ node build_initializer_list(builder *const bld, node_vector *const exprs, const 
 }
 
 
+node build_labeled_statement(builder *const bld, const size_t name, node *const substmt, const location id_loc)
+{
+	if (!node_is_correct(substmt))
+	{
+		return node_broken();
+	}
+
+	(void)bld;
+	// FIXME: labels
+	const location loc = { id_loc.begin, node_get_location(substmt).end };
+	return statement_labeled(name, substmt, loc);
+}
+
 node build_case_statement(builder *const bld, node *const expr, node *const substmt, const location case_loc)
 {
 	if (!node_is_correct(expr) || !node_is_correct(substmt))
@@ -967,6 +980,11 @@ node build_compound_statement(builder *const bld, node_vector *const item_list, 
 {
 	const location loc = { l_loc.begin, r_loc.end };
 	return statement_compound(&bld->context, item_list, loc);
+}
+
+node build_null_statement(builder *const bld, const location semi_loc)
+{
+	return statement_null(&bld->context, semi_loc);
 }
 
 node build_if_statement(builder *const bld, node *const cond
@@ -1036,6 +1054,32 @@ node build_do_statement(builder *const bld, node *const body, node *const cond, 
 
 	const location loc = { do_loc.begin, node_get_location(cond).end };
 	return statement_do(body, cond, loc);
+}
+
+node build_for_statement(builder *const bld, node *const init
+	, node *const cond, node *const incr, node *const body, const location for_loc)
+{
+	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond))
+		|| (incr && !node_is_correct(incr)) || !node_is_correct(body))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_scalar(bld->sx, expression_get_type(cond)))
+	{
+		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
+		return node_broken();
+	}
+
+	const location loc = { for_loc.begin, node_get_location(body).end };
+	return statement_for(init, cond, incr, body, loc);
+}
+
+node build_goto_statement(builder *const bld, const size_t name, const location goto_loc, const location id_loc)
+{
+	// FIXME: labels
+	const location loc = { goto_loc.begin, id_loc.end };
+	return statement_goto(&bld->context, name, loc);
 }
 
 node build_continue_statement(builder *const bld, const location continue_loc)

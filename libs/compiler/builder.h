@@ -274,6 +274,16 @@ node build_default_statement(builder *const bld, node *const substmt, const loca
 node build_compound_statement(builder *const bld, node_vector *const stmts, location l_loc, location r_loc);
 
 /**
+ *	Build a null statement
+ *
+ *	@param	bld				AST builder
+ *	@param	semi_loc		Semicolon location
+ *
+ *	@return	Null statement
+ */
+node build_null_statement(builder *const bld, const location semi_loc);
+
+/**
  *	Build an if statement
  *
  *	@param	bld				AST builder
@@ -322,6 +332,21 @@ node build_while_statement(builder *const bld, node *const cond, node *const bod
  *	@return	Do statement
  */
 node build_do_statement(builder *const bld, node *const body, node *const cond, const location do_loc);
+
+/**
+ *	Build a for statement
+ *
+ *	@param	bld				AST builder
+ *	@param	init			Inition
+ *	@param	cond			Contidion
+ *	@param	incr			Increment
+ *	@param	body			Substatement
+ *	@param	for_loc			Keyword location
+ *
+ *	@return	For statement
+ */
+node build_for_statement(builder *const bld, node *const init
+	, node *const cond, node *const incr, node *const body, const location for_loc);
 
 /**
  *	Build a goto statement
