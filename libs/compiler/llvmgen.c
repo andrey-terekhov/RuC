@@ -295,47 +295,47 @@ static void to_code_operation_null_reg(information *const info, const item_t ope
 	uni_printf(info->sx->io, "* null, %%.%" PRIitem "\n", snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const item_t displ, const item_t type
-	, const bool is_array)
+static void to_code_load(information *const info, const item_t result, const item_t id, const item_t type
+	, const bool is_array, const bool is_local)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static void to_code_store_reg(information *const info, const item_t reg, const item_t displ, const item_t type
-	, const bool is_array, const bool is_pointer)
+static void to_code_store_reg(information *const info, const item_t reg, const item_t id, const item_t type
+	, const bool is_array, const bool is_pointer, const bool is_local)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
+	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t displ
-	, const bool is_array)
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t id
+	, const bool is_array, const bool is_local)
 {
 	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %s%s.%" PRIitem ", align 4\n"
-		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
+		, arg, is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static inline void to_code_store_const_double(information *const info, const double arg, const item_t displ
-	, const bool is_array)
+static inline void to_code_store_const_double(information *const info, const double arg, const item_t id
+	, const bool is_array, const bool is_local)
 {
 	uni_printf(info->sx->io, " store double %f, double* %s%s.%" PRIitem ", align 4\n"
-		, arg, displ > 0 ? "%" : "@", is_array ? "" : "var", displ);
+		, arg, is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static void to_code_store_null(information *const info, const item_t displ, const item_t type)
+static void to_code_store_null(information *const info, const item_t id, const item_t type)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " null, ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", displ);
+	uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", id);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -430,17 +430,17 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 	uni_printf(info->sx->io, ", i32 %%.%" PRIitem ", align 4\n", to_alloc);
 }
 
-static void to_code_slice(information *const info, const item_t displ, const size_t cur_dimension
+static void to_code_slice(information *const info, const item_t id, const size_t cur_dimension
 	, const item_t prev_slice, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
-	const size_t dimensions = hash_get_amount(&info->arrays, displ) - 1;
+	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 
-	if (hash_get(&info->arrays, displ, IS_STATIC))
+	if (hash_get(&info->arrays, id, IS_STATIC))
 	{
 		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, i));
 		}
 		type_to_io(info, type);
 
@@ -452,7 +452,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
 		{
-			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, displ, i));
+			uni_printf(info->sx->io, "[%" PRIitem " x ", hash_get(&info->arrays, id, i));
 		}
 		type_to_io(info, type);
 
@@ -463,7 +463,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 
 		if (cur_dimension == dimensions - 1)
 		{
-			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", displ);
+			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", id);
 		}
 		else
 		{
@@ -475,7 +475,7 @@ static void to_code_slice(information *const info, const item_t displ, const siz
 		type_to_io(info, type);
 		uni_printf(info->sx->io, ", ");
 		type_to_io(info, type);
-		uni_printf(info->sx->io, "* %%dynarr.%" PRIitem, displ);
+		uni_printf(info->sx->io, "* %%dynarr.%" PRIitem, id);
 	}
 	else
 	{
@@ -565,14 +565,14 @@ static void emit_identifier_expression(information *const info, const node *cons
 
 	if (is_addr_to_val)
 	{
-		to_code_load(info, info->register_num, id, type, false);
+		to_code_load(info, info->register_num, id, type, false, ident_is_local(info->sx, (size_t)id));
 		info->register_num++;
 		info->variable_location = LREG;
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
 	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
-		, is_addr_to_val);
+		, is_addr_to_val, is_addr_to_val ? true : ident_is_local(info->sx, (size_t)id));
 	info->answer_reg = info->register_num++;
 	info->answer_kind = AREG;
 }
@@ -597,7 +597,7 @@ static void emit_literal_expression(information *const info, const node *const n
 		const int num = expression_literal_get_integer(nd);
 		if (info->variable_location == LMEM)
 		{
-			to_code_store_const_i32(info, num, info->request_reg, false);
+			to_code_store_const_i32(info, num, info->request_reg, false, ident_is_local(info->sx, info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
@@ -611,7 +611,7 @@ static void emit_literal_expression(information *const info, const node *const n
 		const double num = expression_literal_get_floating(nd);
 		if (info->variable_location == LMEM)
 		{
-			to_code_store_const_double(info, num, info->request_reg, false);
+			to_code_store_const_double(info, num, info->request_reg, false, ident_is_local(info->sx, info->request_reg));
 			info->answer_kind = AREG;
 		}
 		else
@@ -696,7 +696,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 		if (location != LMEM)
 		{
-			to_code_load(info, info->register_num, info->register_num - 1, type, true);
+			to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
 			info->register_num++;
 		}
 
@@ -727,7 +727,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 	if (location != LMEM)
 	{
-		to_code_load(info, info->register_num, info->register_num - 1, type, true);
+		to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
 		info->register_num++;
 	}
 
@@ -870,7 +870,7 @@ static void emit_member_expression(information *const info, const node *const nd
 	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
 	{
-		to_code_load(info, info->register_num++, id, type, false);
+		to_code_load(info, info->register_num++, id, type, false, ident_is_local(info->sx, (size_t)id));
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
@@ -881,7 +881,7 @@ static void emit_member_expression(information *const info, const node *const nd
 	if (info->variable_location != LMEM)
 	{
 		info->register_num++;
-		to_code_load(info, info->register_num, info->register_num - 1, elem_type, true);
+		to_code_load(info, info->register_num, info->register_num - 1, elem_type, true, true);
 		info->answer_kind = AREG;
 	}
 
@@ -914,7 +914,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 		id = info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, id, operation_type, is_array);
+	to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, (size_t)id));
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -942,7 +942,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false);
+	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false, ident_is_local(info->sx, (size_t)id));
 	info->register_num++;
 }
 
@@ -1161,7 +1161,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, id, operation_type, is_array);
+		to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, (size_t)id));
 		info->register_num++;
 
 		if (info->answer_kind == AREG)
@@ -1185,15 +1185,15 @@ static void emit_assignment_expression(information *const info, const node *cons
 	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
 		to_code_store_reg(info, result, id, operation_type, is_array
-			, info->answer_kind == AMEM);
+			, info->answer_kind == AMEM, ident_is_local(info->sx, (size_t)id));
 	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и опериция =
 	{
-		to_code_store_const_i32(info, info->answer_const, id, is_array);
+		to_code_store_const_i32(info, info->answer_const, id, is_array, ident_is_local(info->sx, (size_t)id));
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_array);
+		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, (size_t)id));
 	}
 	else
 	{
@@ -1363,11 +1363,11 @@ static void emit_initialization(information *const info, const node *const nd, c
 
 			if (type_is_integer(info->sx, type))
 			{
-				to_code_store_const_i32(info, value_int, info->register_num - 1, true);
+				to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
 			}
 			else
 			{
-				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true);
+				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
 			}
 		}
 	}
@@ -1414,16 +1414,16 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				if (type_is_integer(info->sx, type))
 				{
-					to_code_store_const_i32(info, info->answer_const, info->request_reg, false);
+					to_code_store_const_i32(info, info->answer_const, info->request_reg, false, is_local);
 				}
 				else
 				{
-					to_code_store_const_double(info, info->answer_const_double, info->request_reg, false);
+					to_code_store_const_double(info, info->answer_const_double, info->request_reg, false, is_local);
 				}
 			}
 			else if (info->answer_kind == AREG)
 			{
-				to_code_store_reg(info, info->answer_reg, id, type, false, false);
+				to_code_store_reg(info, info->answer_reg, id, type, false, false, is_local);
 			}
 
 		}
