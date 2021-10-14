@@ -710,6 +710,15 @@ static node parse_initializer(parser *const prs)
 	return parse_assignment_expression(prs);
 }
 
+/**
+ *	Parse parenthesized expression
+ *
+ *	'(' expression ')'
+ *
+ *	@param	prs			Parser
+ *
+ *	@return Parenthesized expression
+ */
 static node parse_condition(parser *const prs)
 {
 	if (prs->token != TK_L_PAREN)
@@ -1829,6 +1838,76 @@ static node parse_print_statement(parser *const prs)
 	return nd;
 }
 
+/**	Parse printid statement [RuC] */
+static node parse_printid_statement(parser *const prs)
+{
+	consume_token(prs); // kw_printid
+	expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_printid);
+
+	node parent = node_add_child(&prs->bld.context, OP_BLOCK);
+
+	do
+	{
+		if (try_consume_token(prs, TK_IDENTIFIER))
+		{
+			const size_t repr = prs->lxr.repr;
+			const item_t id = repr_get_reference(prs->sx, repr);
+			if (id == ITEM_MAX)
+			{
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+			}
+
+			node nd = node_add_child(&parent, OP_PRINTID);
+			node_add_arg(&nd, id);
+		}
+		else
+		{
+			parser_error(prs, no_ident_in_printid);
+			skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+		}
+	} while (try_consume_token(prs, TK_COMMA));
+
+	expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_printid);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+
+	return parent;
+}
+
+/**	Parse getid statement [RuC] */
+static node parse_getid_statement(parser *const prs)
+{
+	consume_token(prs); // kw_getid
+	expect_and_consume(prs, TK_L_PAREN, no_leftbr_in_getid);
+
+	node parent = node_add_child(&prs->bld.context, OP_BLOCK);
+
+	do
+	{
+		if (try_consume_token(prs, TK_IDENTIFIER))
+		{
+			const size_t repr = prs->lxr.repr;
+			const item_t id = repr_get_reference(prs->sx, repr);
+			if (id == ITEM_MAX)
+			{
+				parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+			}
+
+			node nd = node_add_child(&parent, OP_GETID);
+			node_add_arg(&nd, id);
+		}
+		else
+		{
+			parser_error(prs, no_ident_in_getid);
+			skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+		}
+	} while (try_consume_token(prs, TK_COMMA));
+
+	expect_and_consume(prs, TK_R_PAREN, no_rightbr_in_getid);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+
+	return parent;
+}
+
 static size_t evaluate_args(parser *const prs, const vector *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
 {
@@ -1990,10 +2069,14 @@ static node parse_statement(parser *const prs)
 		case TK_RETURN:
 			return parse_return_statement(prs);
 
+		case TK_PRINTID:
+			return parse_printid_statement(prs);
 		case TK_PRINTF:
 			return parse_printf_statement(prs);
 		case TK_PRINT:
 			return parse_print_statement(prs);
+		case TK_GETID:
+			return parse_getid_statement(prs);
 
 		case TK_IDENTIFIER:
 			if (peek_token(prs) == TK_COLON)
