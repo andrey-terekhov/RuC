@@ -93,6 +93,19 @@ inline node node_broken()
 	return node_load(NULL, SIZE_MAX);
 }
 
+/**
+ *	Get node location
+ *
+ *	@param	nd				Node
+ *
+ *	@return	Node location
+ */
+inline location node_get_location(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
+}
+
 
 /**
  *	Get expression class
@@ -136,6 +149,7 @@ inline bool expression_is_lvalue(const node *const nd)
  */
 inline location expression_get_location(const node *const nd)
 {
+	// FIXME: useless
 	const size_t argc = node_get_argc(nd);
 	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
@@ -636,6 +650,17 @@ inline node statement_labeled_get_substmt(const node *const nd)
 
 
 /**
+ *	Create new case statement
+ *
+ *	@param	expr			Case expression
+ *	@param	substmt			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Case statement
+ */
+node statement_case(node *const expr, node *const substmt, const location loc);
+
+/**
  *	Get expression of case statement
  *
  *	@param	nd				Case statement
@@ -661,6 +686,16 @@ inline node statement_case_get_substmt(const node *const nd)
 
 
 /**
+ *	Create new default statement
+ *
+ *	@param	substmt			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Default statement
+ */
+node statement_default(node *const substmt, const location loc);
+
+/**
  *	Get substatement of default statement
  *
  *	@param	nd				Default statement
@@ -672,6 +707,16 @@ inline node statement_default_get_substmt(const node *const nd)
 	return node_get_type(nd) == OP_DEFAULT ? node_get_child(nd, 0) : node_broken();
 }
 
+/**
+ *	Create new compound statement
+ *
+ *	@param	context			Context node
+ *	@param	stmts			Substatements
+ *	@param	loc				Statement location
+ *
+ *	@return	Compound statement
+ */
+node statement_compound(node *const context, node_vector *const stmts, const location loc);
 
 /**
  *	Get size of compound statement
@@ -698,6 +743,18 @@ inline node statement_compound_get_substmt(const node *const nd, const size_t in
 	return node_get_type(nd) == OP_BLOCK ? node_get_child(nd, index) : node_broken();
 }
 
+
+/**
+ *	Create new if statement
+ *
+ *	@param	cond			Contidion
+ *	@param	then_stmt		Then-substatement
+ *	@param	else_stmt		Else-substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	If statement
+ */
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc);
 
 /**
  *	Check if if statement has else-substatement
@@ -749,6 +806,17 @@ inline node statement_if_get_else_substmt(const node *const nd)
 
 
 /**
+ *	Create new switch statement
+ *
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Switch statement
+ */
+node statement_switch(node *const cond, node *const body, const location loc);
+
+/**
  *	Get condition of switch statement
  *
  *	@param	nd				Switch statement
@@ -774,6 +842,17 @@ inline node statement_switch_get_body(const node *const nd)
 
 
 /**
+ *	Create new while statement
+ *
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	While statement
+ */
+node statement_while(node *const cond, node *const body, const location loc);
+
+/**
  *	Get condition of while statement
  *
  *	@param	nd				While statement
@@ -797,6 +876,17 @@ inline node statement_while_get_body(const node *const nd)
 	return node_get_type(nd) == OP_WHILE ? node_get_child(nd, 1) : node_broken();
 }
 
+
+/**
+ *	Create new do statement
+ *
+ *	@param	body			Substatement
+ *	@param	cond			Contidion
+ *	@param	loc				Statement location
+ *
+ *	@return	Do statement
+ */
+node statement_do(node *const body, node *const cond, const location loc);
 
 /**
  *	Get condition of do statement

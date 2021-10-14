@@ -1209,13 +1209,24 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 /**
  *	Parse declaration
  *
+ *	declaration:
+ *		type-specifier init-declarator-list[opt] ';'
+ *
+ *	init-declarator-list:
+ *		init-declarator
+ *		init-declarator-list ',' init-declarator
+ *
  *	@param	prs			Parser
- *	@param	parent		Parent node in AST
+ *
+ *	@return Declaration
  */
-static void parse_declaration(parser *const prs, node *const parent)
+static node parse_declaration(parser *const prs)
 {
+	// TODO: рефакторинг разбора объявлений
+	node parent = node_add_child(&prs->bld.context, OP_DECL_STMT);
+
 	prs->was_type_def = 0;
-	item_t group_type = parse_type_specifier(prs, parent);
+	item_t group_type = parse_type_specifier(prs, &parent);
 
 	if (type_is_void(group_type))
 	{
@@ -1224,7 +1235,7 @@ static void parse_declaration(parser *const prs, node *const parent)
 	}
 	else if (prs->was_type_def && try_consume_token(prs, TK_SEMICOLON))
 	{
-		return;
+		return parent;
 	}
 
 	do
@@ -1237,7 +1248,7 @@ static void parse_declaration(parser *const prs, node *const parent)
 
 		if (try_consume_token(prs, TK_IDENTIFIER))
 		{
-			parse_init_declarator(prs, parent, type);
+			parse_init_declarator(prs, &parent, type);
 		}
 		else
 		{
@@ -1247,6 +1258,7 @@ static void parse_declaration(parser *const prs, node *const parent)
 	} while (try_consume_token(prs, TK_COMMA));
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
+	return parent;
 }
 
 
@@ -1257,6 +1269,8 @@ static void parse_declaration(parser *const prs, node *const parent)
  *	 \/\_____\    \ \_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \ \_\  \ \_____\  \ \_\\"\_\    \ \_\  \/\_____\
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
+
+node parse_condition(parser *const prs);
 
 
 /** Check if current token is part of a declaration specifier */
@@ -1319,28 +1333,32 @@ static node parse_labeled_statement(parser *const prs)
  *	labeled-statement:
  *		'case' constant-expression ':' statement
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
+ *
+ *	@return	Case statement
  */
-static void parse_case_statement(parser *const prs, node *const parent)
+static node parse_case_statement(parser *const prs)
 {
 	if (!prs->is_in_switch)
 	{
 		parser_error(prs, case_not_in_switch);
+		skip_until(prs, TK_SEMICOLON);
+		return node_broken();
 	}
 
-	consume_token(prs); // kw_case
-	node nd = node_add_child(parent, OP_CASE);
-	node_copy(&prs->bld.context, &nd);
-	const node condition = parse_constant_expression(prs);
-	const item_t condition_type = expression_get_type(&condition);
-	if (node_is_correct(&condition) && !type_is_integer(prs->sx, condition_type))
+	const location case_loc = consume_token(prs);
+
+	node expr = parse_constant_expression(prs);
+	if (!node_is_correct(&expr))
 	{
-		parser_error(prs, float_in_switch);
+		skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+		return node_broken();
 	}
 
 	expect_and_consume(prs, TK_COLON, expected_colon_after_case);
-	parse_statement(prs, &nd);
+	node substmt = parse_statement(prs);
+
+	return build_case_statement(&prs->bld, &expr, &substmt, case_loc);
 }
 
 /**
@@ -1349,20 +1367,25 @@ static void parse_case_statement(parser *const prs, node *const parent)
  *	labeled-statement:
  *		'default' ':' statement
  *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
+ *	@param	prs			Parser
+ *
+ *	@return	Default statement
  */
-static void parse_default_statement(parser *const prs, node *const parent)
+static node parse_default_statement(parser *const prs)
 {
 	if (!prs->is_in_switch)
 	{
 		parser_error(prs, default_not_in_switch);
+		skip_until(prs, TK_SEMICOLON);
+		return node_broken();
 	}
 
-	consume_token(prs); // kw_default
-	node nd = node_add_child(parent, OP_DEFAULT);
+	const location default_loc = consume_token(prs);
+
 	expect_and_consume(prs, TK_COLON, expected_colon_after_default);
-	parse_statement(prs, &nd);
+	node substmt = parse_statement(prs);
+
+	return build_default_statement(&prs->bld, &substmt, default_loc);
 }
 
 /**
@@ -1380,41 +1403,43 @@ static void parse_default_statement(parser *const prs, node *const parent)
  *		statement
  *
  *	@param	prs			Parser
- *	@param	parent		Parent node in AST
+ *
+ *	@return	Compound statement
  */
-static void parse_compound_statement(parser *const prs, node *const parent, const bool is_function_body)
+static node parse_compound_statement(parser *const prs, const bool is_function_body)
 {
-	consume_token(prs); // '{'
-	node nd = node_add_child(parent, OP_BLOCK);
-
 	scope scp = { ITEM_MAX, ITEM_MAX };
-
 	if (!is_function_body)
 	{
 		scp = scope_block_enter(prs->sx);
 	}
 
-	if (!try_consume_token(prs, TK_R_BRACE))
-	{
-		while (prs->token != TK_EOF && prs->token != TK_R_BRACE)
-		{
-			if (is_declaration_specifier(prs))
-			{
-				parse_declaration(prs, &nd);
-			}
-			else
-			{
-				parse_statement(prs, &nd);
-			}
-		}
+	const location l_loc = consume_token(prs);
 
-		expect_and_consume(prs, TK_R_BRACE, expected_end);
+	node_vector stmts = node_vector_create();
+	while (prs->token != TK_R_BRACE)
+	{
+		const node stmt = is_declaration_specifier(prs)
+			? parse_declaration(prs)
+			: parse_statement(prs);
+
+		node_vector_add(&stmts, &stmt);
 	}
 
 	if (!is_function_body)
 	{
 		scope_block_exit(prs->sx, scp);
 	}
+
+	if (prs->token != TK_R_BRACE)
+	{
+		parser_error(prs, expected_end, l_loc);
+		node_vector_clear(&stmts);
+		return node_broken();
+	}
+
+	const location r_loc = consume_token(prs);
+	return build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
 }
 
 /**
@@ -1453,18 +1478,18 @@ static node parse_expression_statement(parser *const prs)
  */
 static node parse_if_statement(parser *const prs)
 {
-	token_consume(prs);
+	const location if_loc = consume_token(prs);
 
-	const node nd_cond = parse_condition(prs);
-	const node nd_then = parse_statement(prs);
+	node condition = parse_condition(prs);
+	node then_stmt = parse_statement(prs);
 
-	if (token_try_consume(prs, TK_ELSE))
+	if (try_consume_token(prs, TK_ELSE))
 	{
-		const node nd_else = parse_statement(prs);
-		return build_if_statement(prs->sx, &nd_cond, &nd_then, &nd_else);
+		node else_stmt = parse_statement(prs);
+		return build_if_statement(&prs->bld, &condition, &then_stmt, &else_stmt, if_loc);
 	}
 
-	return build_if_statement(prs->sx, &nd_cond, &nd_then, NULL);
+	return build_if_statement(&prs->bld, &condition, &then_stmt, NULL, if_loc);
 }
 
 /**
@@ -1479,16 +1504,16 @@ static node parse_if_statement(parser *const prs)
  */
 static node parse_switch_statement(parser *const prs)
 {
-	token_consume(prs);
+	const location switch_loc = consume_token(prs);
 
-	const node nd_cond = parse_condition(prs);
+	node condition = parse_condition(prs);
 
 	const bool old_in_switch = prs->is_in_switch;
 	prs->is_in_switch = true;
-	const node nd_body = parse_statement(prs);
+	node body = parse_statement(prs);
 	prs->is_in_switch = old_in_switch;
 
-	return build_switch_statement(prs->sx, &nd_cond, &nd_body);
+	return build_switch_statement(&prs->bld, &condition, &body, switch_loc);
 }
 
 /**
@@ -1503,16 +1528,16 @@ static node parse_switch_statement(parser *const prs)
  */
 static node parse_while_statement(parser *const prs)
 {
-	token_consume(prs);
+	const location while_loc = consume_token(prs);
 
-	const node nd_cond = parse_condition(prs);
+	node condition = parse_condition(prs);
 
 	const bool old_in_switch = prs->is_in_switch;
 	prs->is_in_loop = true;
-	const node nd_body = parse_statement(prs);
+	node body = parse_statement(prs);
 	prs->is_in_loop = old_in_switch;
 
-	return build_while_statement(prs->sx, &nd_cond, &nd_body);
+	return build_while_statement(&prs->bld, &condition, &body, while_loc);
 }
 
 /**
@@ -1527,24 +1552,24 @@ static node parse_while_statement(parser *const prs)
  */
 static node parse_do_statement(parser *const prs)
 {
-	const location do_loc = token_consume(prs);
+	const location do_loc = consume_token(prs);
 
 	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
-	const node nd_body = parse_statement(prs);
+	node body = parse_statement(prs);
 	prs->is_in_loop = old_in_loop;
 
-	if (!token_try_consume(prs, TK_WHILE))
+	if (!try_consume_token(prs, TK_WHILE))
 	{
 		parser_error(prs, expected_while, do_loc);
-		token_skip_until(prs, TK_SEMICOLON);
-		return build_broken_node();
+		skip_until(prs, TK_SEMICOLON);
+		return node_broken();
 	}
 
-	const node nd_cond = parse_condition(prs);
+	node condition = parse_condition(prs);
 
-	token_expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
-	return build_do_statement(prs->sx, &nd_body, &nd_cond);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+	return build_do_statement(&prs->bld, &body, &condition, do_loc);
 }
 
 /**

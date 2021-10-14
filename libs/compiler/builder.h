@@ -239,6 +239,91 @@ node build_initializer_list(builder *const bld, node_vector *const exprs, const 
 node build_labeled_statement(builder *const bld, const size_t name, node *const substmt, const location id_loc);
 
 /**
+ *	Build a case statement
+ *
+ *	@param	bld				AST builder
+ *	@param	expr			Case expression
+ *	@param	substmt			Substatement
+ *	@param	case_loc		Keyword location
+ *
+ *	@return	Case statement
+ */
+node build_case_statement(builder *const bld, node *const expr, node *const substmt, const location case_loc);
+
+/**
+ *	Build a default statement
+ *
+ *	@param	bld				AST builder
+ *	@param	substmt			Substatement
+ *	@param	default_loc		Keyword location
+ *
+ *	@return	Default statement
+ */
+node build_default_statement(builder *const bld, node *const substmt, const location default_loc);
+
+/**
+ *	Build a compound statement
+ *
+ *	@param	bld				AST builder
+ *	@param	stmts			Vector of substatements
+ *	@param	l_loc			Left brace location
+ *	@param	r_loc			Right brace location
+ *
+ *	@return	Compound statement
+ */
+node build_compound_statement(builder *const bld, node_vector *const stmts, location l_loc, location r_loc);
+
+/**
+ *	Build an if statement
+ *
+ *	@param	bld				AST builder
+ *	@param	cond			Contidion
+ *	@param	then_stmt		Then-substatement
+ *	@param	else_stmt		Else-substatement
+ *	@param	if_loc			Keyword location
+ *
+ *	@return	If statement
+ */
+node build_if_statement(builder *const bld, node *const cond
+	, node *const then_stmt, node *const else_stmt, const location if_loc);
+
+/**
+ *	Build a switch statement
+ *
+ *	@param	bld				AST builder
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	switch_loc		Keyword location
+ *
+ *	@return	Switch statement
+ */
+node build_switch_statement(builder *const bld, node *const cond, node *const body, const location switch_loc);
+
+/**
+ *	Build a while statement
+ *
+ *	@param	bld				AST builder
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	while_loc		Keyword location
+ *
+ *	@return	While statement
+ */
+node build_while_statement(builder *const bld, node *const cond, node *const body, const location while_loc);
+
+/**
+ *	Build a do statement
+ *
+ *	@param	bld				AST builder
+ *	@param	body			Substatement
+ *	@param	cond			Contidion
+ *	@param	do_loc			Keyword location
+ *
+ *	@return	Do statement
+ */
+node build_do_statement(builder *const bld, node *const body, node *const cond, const location do_loc);
+
+/**
  *	Build a goto statement
  *
  *	@param	bld				AST builder

@@ -17,6 +17,7 @@
 #include "AST.h"
 
 extern node node_broken();
+extern location node_get_location(const node *const nd);
 
 extern item_t expression_get_type(const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
@@ -385,6 +386,98 @@ node statement_labeled(const size_t label, node *const substmt, const location l
 	node_set_arg(&nd, 0, (item_t)label);			// ID метки
 	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
 	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_case(node *const expr, node *const substmt, const location loc)
+{
+	node nd = node_insert(expr, OP_CASE, 2);
+	node_set_child(&nd, substmt);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_default(node *const substmt, const location loc)
+{
+	node nd = node_insert(substmt, OP_DEFAULT, 2);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_compound(node *const context, node_vector *const stmts, const location loc)
+{
+	node nd = node_create(context, OP_BLOCK);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	if (stmts)
+	{
+		const size_t amount = node_vector_size(stmts);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node item = node_vector_get(stmts, i);
+			node_set_child(&nd, &item);
+		}
+	}
+
+	return nd;
+}
+
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc)
+{
+	node nd = node_insert(cond, OP_IF, 3);
+	node_set_child(&nd, then_stmt);
+
+	node_set_arg(&nd, 0, 0);						// Флаг наличия else-части
+	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	if (else_stmt)
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, else_stmt);
+	}
+
+	return nd;
+}
+
+node statement_switch(node *const cond, node *const body, const location loc)
+{
+	node nd = node_insert(cond, OP_SWITCH, 2);
+	node_set_child(&nd, body);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_while(node *const cond, node *const body, const location loc)
+{
+	node nd = node_insert(cond, OP_WHILE, 2);
+	node_set_child(&nd, body);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_do(node *const body, node *const cond, const location loc)
+{
+	node nd = node_insert(body, OP_DO, 2);
+	node_set_child(&nd, cond);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
 
 	return nd;
 }

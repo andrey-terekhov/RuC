@@ -933,6 +933,111 @@ node build_initializer_list(builder *const bld, node_vector *const exprs, const 
 	return expression_list(exprs, loc);
 }
 
+
+node build_case_statement(builder *const bld, node *const expr, node *const substmt, const location case_loc)
+{
+	if (!node_is_correct(expr) || !node_is_correct(substmt))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_integer(bld->sx, expression_get_type(expr)))
+	{
+		semantic_error(bld, expression_get_location(expr), float_in_switch);
+		return node_broken();
+	}
+
+	const location loc = { case_loc.begin, node_get_location(substmt).end };
+	return statement_case(expr, substmt, loc);
+}
+
+node build_default_statement(builder *const bld, node *const substmt, const location default_loc)
+{
+	if (!node_is_correct(substmt))
+	{
+		return node_broken();
+	}
+
+	(void)bld;
+	const location loc = { default_loc.begin, node_get_location(substmt).end };
+	return statement_default(substmt, loc);
+}
+
+node build_compound_statement(builder *const bld, node_vector *const item_list, location l_loc, location r_loc)
+{
+	const location loc = { l_loc.begin, r_loc.end };
+	return statement_compound(&bld->context, item_list, loc);
+}
+
+node build_if_statement(builder *const bld, node *const cond
+	, node *const then_stmt, node *const else_stmt, const location if_loc)
+{
+	if (!node_is_correct(cond) || !node_is_correct(then_stmt) || (else_stmt && !node_is_correct(else_stmt)))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_scalar(bld->sx, expression_get_type(cond)))
+	{
+		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
+		return node_broken();
+	}
+
+	const location loc = { if_loc.begin, node_get_location(else_stmt ? else_stmt : then_stmt).end };
+	return statement_if(cond, then_stmt, else_stmt, loc);
+}
+
+node build_switch_statement(builder *const bld, node *const cond, node *const body, const location switch_loc)
+{
+	if (!node_is_correct(cond) || !node_is_correct(body))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_integer(bld->sx, expression_get_type(cond)))
+	{
+		semantic_error(bld, expression_get_location(cond), float_in_switch);
+		return node_broken();
+	}
+
+	const location loc = { switch_loc.begin, node_get_location(body).end };
+	return statement_switch(cond, body, loc);
+}
+
+node build_while_statement(builder *const bld, node *const cond, node *const body, const location while_loc)
+{
+	if (!node_is_correct(cond) || !node_is_correct(body))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_scalar(bld->sx, expression_get_type(cond)))
+	{
+		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
+		return node_broken();
+	}
+
+	const location loc = { while_loc.begin, node_get_location(body).end };
+	return statement_while(cond, body, loc);
+}
+
+node build_do_statement(builder *const bld, node *const body, node *const cond, const location do_loc)
+{
+	if (!node_is_correct(body) || !node_is_correct(cond))
+	{
+		return node_broken();
+	}
+
+	if (!type_is_scalar(bld->sx, expression_get_type(cond)))
+	{
+		semantic_error(bld, expression_get_location(cond), typecheck_statement_requires_scalar);
+		return node_broken();
+	}
+
+	const location loc = { do_loc.begin, node_get_location(cond).end };
+	return statement_do(body, cond, loc);
+}
+
 node build_continue_statement(builder *const bld, const location continue_loc)
 {
 	return statement_continue(&bld->context, continue_loc);
