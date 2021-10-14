@@ -87,6 +87,7 @@ typedef struct information
 
 
 static void emit_statement(information *const info, const node *const nd);
+static void emit_compound_statement(information *const info, const node *const nd, const bool is_function_body);
 static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
 
@@ -1576,7 +1577,7 @@ static void emit_function_definition(information *const info, const node *const 
 	}
 
 	const node body = declaration_function_get_body(nd);
-	emit_statement(info, &body);
+	emit_compound_statement(info, &body, true);
 
 	if (type_is_void(ret_type))
 	{
@@ -1639,13 +1640,12 @@ static void emit_labeled_statement(information *const info, const node *const nd
  *	@param	info		Encoder
  *	@param	nd			Node in AST
  */
-static void emit_compound_statement(information *const info, const node *const nd)
+static void emit_compound_statement(information *const info, const node *const nd, const bool is_function_body)
 {
 	const size_t size = statement_compound_get_size(nd);
-	const node parent = node_get_parent(nd);
 	const item_t block_num = info->block_num++;
 
-	if (statement_get_class(&parent) != STMT_DECL)
+	if (!is_function_body)
 	{
 		to_code_stack_save(info, block_num);
 	}
@@ -1656,7 +1656,7 @@ static void emit_compound_statement(information *const info, const node *const n
 		emit_statement(info, &substmt);
 	}
 
-	if (statement_get_class(&parent) != STMT_DECL)
+	if (!is_function_body)
 	{
 		to_code_stack_load(info, block_num);
 	}
@@ -1975,7 +1975,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_COMPOUND:
-			emit_compound_statement(info, nd);
+			emit_compound_statement(info, nd, false);
 			return;
 
 		case STMT_EXPR:
