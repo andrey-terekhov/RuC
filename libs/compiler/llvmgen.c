@@ -60,7 +60,7 @@ typedef struct information
 	size_t request_reg;						/**< Регистр на запрос */
 	location_t variable_location;			/**< Расположение переменной */
 
-	size_t answer_reg;						/**< Регистр с ответом */
+	item_t answer_reg;						/**< Регистр с ответом */
 	item_t answer_const;					/**< Константа с ответом */
 	size_t answer_string;					/**< Индекс строки с ответом */
 	double answer_const_double;				/**< Константа с ответом типа double */
@@ -1168,7 +1168,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	emit_expression(info, &RHS);
 
 	to_code_try_zext_to(info);
-	size_t result = info->answer_reg;
+	item_t result = info->answer_reg;
 
 	if (assignment_type != BIN_ASSIGN)
 	{
