@@ -642,7 +642,7 @@ static void strings_declaration(information *const info)
 		uni_printf(info->sx->io, "\t.ascii \"");
 
 		const char *string = string_get(info->sx, i);
-		for (size_t j = 0; string[j] != 0; j++)
+		for (size_t j = 0; string[j] != '\0'; j++)
 		{
 			const char ch = string[j];
 			if (ch == '\n')
