@@ -1286,6 +1286,22 @@ static void emit_declaration(encoder *const enc, const node *const nd)
 
 
 /**
+ *	Emit declaration statement
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_declaration_statement(encoder *const enc, const node *const nd)
+{
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = statement_declaration_get_declarator(nd, i);
+		emit_declaration(enc, &decl);
+	}
+}
+
+/**
  *	Emit labeled statement
  *
  *	@param	enc			Encoder
@@ -1718,7 +1734,7 @@ static void emit_statement(encoder *const enc, const node *const nd)
 	switch (statement_get_class(nd))
 	{
 		case STMT_DECL:
-			emit_declaration(enc, nd);
+			emit_declaration_statement(enc, nd);
 			return;
 
 		case STMT_LABEL:
