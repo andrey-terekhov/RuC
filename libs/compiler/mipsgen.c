@@ -466,8 +466,8 @@ static void emit_compound_statement(information *const info, const node *const n
 	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
-		const node substmt = statement_compound_get_substmt(nd, i);
-		emit_statement(info, &substmt);
+		const node sub_stmt = statement_compound_get_substmt(nd, i);
+		emit_statement(info, &sub_stmt);
 	}
 }
 
@@ -638,13 +638,11 @@ static void strings_declaration(information *const info)
 	const size_t amount = strings_amount(info->sx);
 	for (size_t i = 0; i < amount; i++)
 	{
-		const char *string = string_get(info->sx, i);
-		const size_t length = strings_length(info->sx, i);
-
 		to_code_label(info->sx->io, L_STRING, i);
 		uni_printf(info->sx->io, "\t.ascii \"");
 
-		for (size_t j = 0; j < length; j++)
+		const char *string = string_get(info->sx, i);
+		for (size_t j = 0; string[j] != 0; j++)
 		{
 			const char ch = string[j];
 			if (ch == '\n')
