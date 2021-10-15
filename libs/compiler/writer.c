@@ -662,7 +662,7 @@ static void write_declaration(writer *const wrt, const node *const nd)
 			write_function_declaration(wrt, nd);
 			break;
 	}
-	
+
 	wrt->indent--;
 }
 
@@ -1110,7 +1110,7 @@ static void write_statement(writer *const wrt, const node *const nd)
 static void write_translation_unit(writer *const wrt, const node *const nd)
 {
 	write(wrt, "Translation unit\n");
-	wrt->indent = 1;
+	wrt->indent = 0;
 
 	const size_t size = translation_unit_get_size(nd);
 	for (size_t i = 0; i < size; i++)
