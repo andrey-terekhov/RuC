@@ -647,6 +647,7 @@ static void write_declaration(writer *const wrt, const node *const nd)
 		return;
 	}
 
+	wrt->indent++;
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
@@ -661,6 +662,8 @@ static void write_declaration(writer *const wrt, const node *const nd)
 			write_function_declaration(wrt, nd);
 			break;
 	}
+	
+	wrt->indent--;
 }
 
 
@@ -672,6 +675,24 @@ static void write_declaration(writer *const wrt, const node *const nd)
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
 
+
+/**
+ *	Write declaration statement
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_declaration_statement(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "STMT_DECL\n");
+
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = statement_declaration_get_declarator(nd, i);
+		write_declaration(wrt, &decl);
+	}
+}
 
 /**
  *	Write labeled statement
@@ -1001,7 +1022,7 @@ static void write_statement(writer *const wrt, const node *const nd)
 	switch (class)
 	{
 		case STMT_DECL:
-			write_declaration(wrt, nd);
+			write_declaration_statement(wrt, nd);
 			break;
 
 		case STMT_LABEL:

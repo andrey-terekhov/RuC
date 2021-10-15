@@ -1145,6 +1145,31 @@ inline node statement_printf_get_argument(const node *const nd, const size_t ind
 
 
 /**
+ *	Get size of declaration statement
+ *
+ *	@param	nd				Declaration statement
+ *
+ *	@return	Size
+ */
+inline size_t statement_declaration_get_size(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_amount(nd) : SIZE_MAX;
+}
+
+/**
+ *	Get declarator of declaration statement
+ *
+ *	@param	nd				Declaration statement
+ *
+ *	@return	Declarator
+ */
+inline node statement_declaration_get_declarator(const node *const nd, const size_t index)
+{
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_child(nd, index) : node_broken();
+}
+
+
+/**
  *	Get declaration class
  *
  *	@param	nd				Declaration

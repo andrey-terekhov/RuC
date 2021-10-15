@@ -101,6 +101,9 @@ extern size_t statement_printf_get_argc(const node *const nd);
 extern node statement_printf_get_format_str(const node *const nd);
 extern node statement_printf_get_argument(const node *const nd, const size_t index);
 
+extern size_t statement_declaration_get_size(const node *const nd);
+extern node statement_declaration_get_declarator(const node *const nd, const size_t index);
+
 
 extern size_t translation_unit_get_size(const node *const nd);
 extern node translation_unit_get_declaration(const node *const nd, const size_t index);
@@ -334,9 +337,7 @@ statement_t statement_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_DECL_VAR:
-		case OP_DECL_TYPE:
-		case OP_FUNC_DEF:
+		case OP_DECLSTMT:
 			return STMT_DECL;
 		case OP_LABEL:
 			return STMT_LABEL;
