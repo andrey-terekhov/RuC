@@ -297,22 +297,22 @@ static void to_code_operation_null_reg(information *const info, const item_t ope
 	uni_printf(info->sx->io, "* null, %%.%" PRIitem "\n", snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const size_t id, const item_t type
+static void to_code_load(information *const info, const size_t result, const size_t id, const item_t type
 	, const bool is_array, const bool is_local)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
+	uni_printf(info->sx->io, " %%.%zu = load ", result);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static void to_code_store_reg(information *const info, const item_t reg, const size_t id, const item_t type
+static void to_code_store_reg(information *const info, const size_t reg, const size_t id, const item_t type
 	, const bool is_array, const bool is_pointer, const bool is_local)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %%%s.%zu, ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
