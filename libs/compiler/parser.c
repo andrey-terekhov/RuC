@@ -2291,6 +2291,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
  */
 static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
 {
+	if (function_id == SIZE_MAX)
+	{
+		// skip whole function body
+		skip_until(prs, TK_R_BRACE);
+		return;
+	}
+
 	prs->bld.func_type = ident_get_type(prs->sx, function_id);
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
 	const size_t param_number = type_function_get_parameter_amount(prs->sx, prs->bld.func_type);
