@@ -83,11 +83,11 @@ static node parse_statement(parser *const prs);
  *
  *	@return	Parser
  */
-static inline parser prs_create(const workspace *const ws, syntax *const sx)
+static inline parser parser_create(const workspace *const ws, syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
-	prs.bld = bld_create(sx);
+	prs.bld = builder_create(sx);
 	prs.lxr = lexer_create(ws, sx);
 
 	consume_token(&prs);
@@ -100,9 +100,9 @@ static inline parser prs_create(const workspace *const ws, syntax *const sx)
  *
  *	@param	prs			Parser
  */
-static inline void prs_clear(parser *const prs)
+static inline void parser_clear(parser *const prs)
 {
-	bld_clear(&prs->bld);
+	builder_clear(&prs->bld);
 	lexer_clear(&prs->lxr);
 }
 
@@ -2505,7 +2505,7 @@ int parse(const workspace *const ws, syntax *const sx)
 		return -1;
 	}
 
-	parser prs = prs_create(ws, sx);
+	parser prs = parser_create(ws, sx);
 	node root = node_get_root(&sx->tree);
 
 	parse_translation_unit(&prs, &root);
@@ -2514,6 +2514,6 @@ int parse(const workspace *const ws, syntax *const sx)
 	write_tree(DEFAULT_TREE, sx);
 #endif
 
-	prs_clear(&prs);
+	parser_clear(&prs);
 	return !sx_is_correct(sx);
 }
