@@ -1259,7 +1259,7 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 static node parse_declaration(parser *const prs)
 {
 	// TODO: рефакторинг разбора объявлений
-	node parent = node_add_child(&prs->bld.context, OP_BLOCK);
+	node parent = node_add_child(&prs->bld.context, OP_DECLSTMT);
 
 	prs->was_type_def = 0;
 	item_t group_type = parse_type_specifier(prs, &parent);
