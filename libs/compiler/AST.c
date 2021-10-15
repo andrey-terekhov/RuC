@@ -223,7 +223,7 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
 {
 	node nd = node_insert(callee, OP_CALL, 4);		// Операнд выражения
 
-	if (args)
+	if (node_vector_is_correct(args))
 	{
 		const size_t amount = node_vector_size(args);
 		for (size_t i = 0; i < amount; i++)
@@ -418,7 +418,7 @@ node statement_compound(node *const context, node_vector *const stmts, const loc
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
 
-	if (stmts)
+	if (node_vector_is_correct(stmts))
 	{
 		const size_t amount = node_vector_size(stmts);
 		for (size_t i = 0; i < amount; i++)
@@ -450,7 +450,7 @@ node statement_if(node *const cond, node *const then_stmt, node *const else_stmt
 	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
 	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
 
-	if (else_stmt)
+	if (node_is_correct(else_stmt))
 	{
 		node_set_arg(&nd, 0, 1);
 		node_set_child(&nd, else_stmt);
@@ -500,19 +500,19 @@ node statement_for(node *const init, node *const cond, node *const incr, node *c
 	node_set_arg(&nd, 1, 0);
 	node_set_arg(&nd, 2, 0);
 
-	if (init)
+	if (node_is_correct(init))
 	{
 		node_set_arg(&nd, 0, 1);
 		node_set_child(&nd, init);
 	}
 
-	if (cond)
+	if (node_is_correct(cond))
 	{
 		node_set_arg(&nd, 1, 1);
 		node_set_child(&nd, cond);
 	}
 
-	if (incr)
+	if (node_is_correct(incr))
 	{
 		node_set_arg(&nd, 2, 1);
 		node_set_child(&nd, incr);
@@ -563,7 +563,7 @@ node statement_return(node *const context, node *const expr, const location loc)
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
 	
-	if (expr)
+	if (node_is_correct(expr))
 	{
 		node_set_arg(&nd, 0, 1);
 		node_set_child(&nd, expr);
