@@ -298,7 +298,7 @@ static node build_upb_expression(builder *const bldr, node *const callee, node_v
 	const item_t fst_type = expression_get_type(&fst);
 	if (!type_is_integer(bldr->sx, fst_type))
 	{
-		semantic_error(bldr, expression_get_location(&fst), not_int_in_stanfunc);
+		semantic_error(bldr, node_get_location(&fst), not_int_in_stanfunc);
 		return node_broken();
 	}
 
@@ -306,11 +306,11 @@ static node build_upb_expression(builder *const bldr, node *const callee, node_v
 	const item_t snd_type = expression_get_type(&snd);
 	if (!type_is_array(bldr->sx, snd_type))
 	{
-		semantic_error(bldr, expression_get_location(&snd), not_array_in_stanfunc);
+		semantic_error(bldr, node_get_location(&snd), not_array_in_stanfunc);
 		return node_broken();
 	}
 
-	const location loc = { expression_get_location(callee).begin, r_loc.end };
+	const location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
@@ -364,7 +364,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	}
 
 	syntax *const sx = bldr->sx;
-	const location loc = expression_get_location(init);
+	const location loc = node_get_location(init);
 	if (expression_get_class(init) == EXPR_LIST)
 	{
 		const size_t actual_inits = expression_list_get_size(init);
@@ -503,13 +503,13 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
 	const item_t index_type = expression_get_type(index);
 	if (!type_is_integer(bldr->sx, index_type))
 	{
-		semantic_error(bldr, expression_get_location(index), typecheck_subscript_not_integer);
+		semantic_error(bldr, node_get_location(index), typecheck_subscript_not_integer);
 		return node_broken();
 	}
 
 	const item_t element_type = type_array_get_element_type(bldr->sx, base_type);
 
-	const location loc = { expression_get_location(base).begin, r_loc.end };
+	const location loc = { node_get_location(base).begin, r_loc.end };
 	return expression_subscript(element_type, base, index, loc);
 }
 
@@ -555,7 +555,7 @@ node build_call_expression(builder *const bldr, node *const callee
 	}
 
 	const item_t return_type = type_function_get_return_type(bldr->sx, callee_type);
-	const location loc = { expression_get_location(callee).begin, r_loc.end };
+	const location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(return_type, callee, args, loc);
 }
 
@@ -600,7 +600,7 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
 			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
-			const location loc = { expression_get_location(base).begin, id_loc.end };
+			const location loc = { node_get_location(base).begin, id_loc.end };
 			
 			return expression_member(type, category, i, is_arrow, base, loc);
 		}
@@ -618,7 +618,7 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	}
 
 	const item_t source_type = expression_get_type(expr);
-	const location loc = expression_get_location(expr);
+	const location loc = node_get_location(expr);
 
 	if (target_type != source_type)
 	{
@@ -654,8 +654,8 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 	const item_t operand_type = expression_get_type(operand);
 
 	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
-		? (location){ op_loc.begin, expression_get_location(operand).end }
-		: (location){ expression_get_location(operand).begin, op_loc.end };
+		? (location){ op_loc.begin, node_get_location(operand).end }
+		: (location){ node_get_location(operand).begin, op_loc.end };
 
 	switch (op_kind)
 	{
@@ -769,7 +769,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		}
 	}
 
-	const location loc = { expression_get_location(LHS).begin, expression_get_location(RHS).end };
+	const location loc = { node_get_location(LHS).begin, node_get_location(RHS).end };
 
 	switch (op_kind)
 	{
@@ -908,11 +908,11 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	const item_t cond_type = expression_get_type(cond);
 	if (!type_is_scalar(bldr->sx, cond_type))
 	{
-		semantic_error(bldr, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bldr, node_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
-	const location loc = { expression_get_location(cond).begin, expression_get_location(RHS).end };
+	const location loc = { node_get_location(cond).begin, node_get_location(RHS).end };
 
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
@@ -998,7 +998,7 @@ node build_case_statement(builder *const bldr, node *const expr, node *const sub
 
 	if (!type_is_integer(bldr->sx, expression_get_type(expr)))
 	{
-		semantic_error(bldr, expression_get_location(expr), float_in_switch);
+		semantic_error(bldr, node_get_location(expr), float_in_switch);
 		return node_broken();
 	}
 
@@ -1052,7 +1052,7 @@ node build_if_statement(builder *const bldr, node *const cond
 
 	if (!type_is_scalar(bldr->sx, expression_get_type(cond)))
 	{
-		semantic_error(bldr, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bldr, node_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
@@ -1069,7 +1069,7 @@ node build_switch_statement(builder *const bldr, node *const cond, node *const b
 
 	if (!type_is_integer(bldr->sx, expression_get_type(cond)))
 	{
-		semantic_error(bldr, expression_get_location(cond), float_in_switch);
+		semantic_error(bldr, node_get_location(cond), float_in_switch);
 		return node_broken();
 	}
 
@@ -1086,7 +1086,7 @@ node build_while_statement(builder *const bldr, node *const cond, node *const bo
 
 	if (!type_is_scalar(bldr->sx, expression_get_type(cond)))
 	{
-		semantic_error(bldr, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bldr, node_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
@@ -1103,7 +1103,7 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
 
 	if (!type_is_scalar(bldr->sx, expression_get_type(cond)))
 	{
-		semantic_error(bldr, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bldr, node_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
@@ -1122,7 +1122,7 @@ node build_for_statement(builder *const bldr, node *const init
 
 	if (cond && !type_is_scalar(bldr->sx, expression_get_type(cond)))
 	{
-		semantic_error(bldr, expression_get_location(cond), typecheck_statement_requires_scalar);
+		semantic_error(bldr, node_get_location(cond), typecheck_statement_requires_scalar);
 		return node_broken();
 	}
 
@@ -1182,7 +1182,7 @@ node build_return_statement(builder *const bldr, node *const expr, const locatio
 
 		if (type_is_void(return_type))
 		{
-			semantic_error(bldr, expression_get_location(expr), notvoidret_in_void_func);
+			semantic_error(bldr, node_get_location(expr), notvoidret_in_void_func);
 			return node_broken();
 		}
 
@@ -1192,7 +1192,7 @@ node build_return_statement(builder *const bldr, node *const expr, const locatio
 			check_assignment_operands(bldr, return_type, expr);
 		}
 
-		loc.end = expression_get_location(expr).end;
+		loc.end = node_get_location(expr).end;
 	}
 	else
 	{

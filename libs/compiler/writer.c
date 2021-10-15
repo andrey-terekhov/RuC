@@ -278,7 +278,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
 	write_type(wrt, expression_get_type(nd));
 	write(wrt, "'");
 
-	write_location(wrt, expression_get_location(nd));
+	write_location(wrt, node_get_location(nd));
 }
 
 /**

@@ -140,20 +140,6 @@ inline bool expression_is_lvalue(const node *const nd)
 	return node_get_arg(nd, 1) == LVALUE;
 }
 
-/**
- *	Get expression location
- *
- *	@param	nd				Expression
- *
- *	@return	Expression location
- */
-inline location expression_get_location(const node *const nd)
-{
-	// FIXME: useless
-	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
-}
-
 
 /**
  *	Create new identifier expression
