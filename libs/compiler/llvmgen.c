@@ -1150,7 +1150,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_binary_get_LHS(nd);
-	item_t id = 0;
+	size_t id = 0;
 	bool is_array = expression_get_class(&LHS) == EXPR_SUBSCRIPT;
 	if (!is_array)
 	{
