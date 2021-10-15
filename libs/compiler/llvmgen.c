@@ -52,7 +52,7 @@ typedef struct information
 {
 	syntax *sx;								/**< Структура syntax с таблицами */
 
-	item_t register_num;					/**< Номер регистра */
+	size_t register_num;					/**< Номер регистра */
 	item_t label_num;						/**< Номер метки */
 	item_t init_num;						/**< Счётчик для инициализации */
 	item_t block_num;						/**< Номер блока */
@@ -297,47 +297,47 @@ static void to_code_operation_null_reg(information *const info, const item_t ope
 	uni_printf(info->sx->io, "* null, %%.%" PRIitem "\n", snd);
 }
 
-static void to_code_load(information *const info, const item_t result, const item_t id, const item_t type
+static void to_code_load(information *const info, const item_t result, const size_t id, const item_t type
 	, const bool is_array, const bool is_local)
 {
 	uni_printf(info->sx->io, " %%.%" PRIitem " = load ", result);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
+	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static void to_code_store_reg(information *const info, const item_t reg, const item_t id, const item_t type
+static void to_code_store_reg(information *const info, const item_t reg, const size_t id, const item_t type
 	, const bool is_array, const bool is_pointer, const bool is_local)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " %%%s.%" PRIitem ", ", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %s%s.%" PRIitem ", align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
+	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static inline void to_code_store_const_i32(information *const info, const item_t arg, const item_t id
+static inline void to_code_store_const_i32(information *const info, const item_t arg, const size_t id
 	, const bool is_array, const bool is_local)
 {
-	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %s%s.%" PRIitem ", align 4\n"
+	uni_printf(info->sx->io, " store i32 %" PRIitem ", i32* %s%s.%zu, align 4\n"
 		, arg, is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static inline void to_code_store_const_double(information *const info, const double arg, const item_t id
+static inline void to_code_store_const_double(information *const info, const double arg, const size_t id
 	, const bool is_array, const bool is_local)
 {
-	uni_printf(info->sx->io, " store double %f, double* %s%s.%" PRIitem ", align 4\n"
+	uni_printf(info->sx->io, " store double %f, double* %s%s.%zu, align 4\n"
 		, arg, is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
-static void to_code_store_null(information *const info, const item_t id, const item_t type)
+static void to_code_store_null(information *const info, const size_t id, const item_t type)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, " null, ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%var.%" PRIitem ", align 4\n", id);
+	uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -580,8 +580,8 @@ static void emit_identifier_expression(information *const info, const node *cons
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
-	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : (item_t)id, type
-		, is_addr_to_val, is_addr_to_val ? true : is_local);
+	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
+		, is_addr_to_val, is_addr_to_val || is_local);
 	info->answer_reg = info->register_num++;
 	info->answer_kind = AREG;
 }
@@ -887,7 +887,7 @@ static void emit_member_expression(information *const info, const node *const nd
 
 	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
 		"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : (item_t)id, place);
+		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -1642,14 +1642,13 @@ static void emit_labeled_statement(information *const info, const node *const nd
  */
 static void emit_compound_statement(information *const info, const node *const nd, const bool is_function_body)
 {
-	const size_t size = statement_compound_get_size(nd);
 	const item_t block_num = info->block_num++;
-
 	if (!is_function_body)
 	{
 		to_code_stack_save(info, block_num);
 	}
 
+	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
