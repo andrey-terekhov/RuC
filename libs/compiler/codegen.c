@@ -568,6 +568,111 @@ static void emit_argument(encoder *const enc, const node *const nd)
 	}
 }
 
+static void compress_ident(encoder *const enc, const size_t ref)
+{
+	if (vector_get(&enc->sx->identifiers, ref) == ITEM_MAX)
+	{
+		mem_add(enc, ident_get_repr(enc->sx, ref));
+		return;
+	}
+
+	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
+	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
+	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
+	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
+
+	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
+	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
+	{
+		vector_add(&enc->representations, (item_t)utf8_convert(&buffer[i]));
+	}
+	vector_add(&enc->representations, '\0');
+
+	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
+	ident_set_repr(enc->sx, ref, new_ref);
+	mem_add(enc, new_ref);
+}
+
+/**
+ *	Emit printid expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_printid_expression(encoder *const enc, const node *const nd)
+{
+	const size_t argc = expression_call_get_arguments_amount(nd);
+	for (size_t i = 0; i < argc; i++)
+	{
+		mem_add(enc, IC_PRINTID);
+
+		const node arg = expression_call_get_argument(nd, i);
+		compress_ident(enc, expression_identifier_get_id(&arg)); // Ссылка в identtab
+	}
+}
+
+/**
+ *	Emit getid expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_getid_expression(encoder *const enc, const node *const nd)
+{
+	const size_t argc = expression_call_get_arguments_amount(nd);
+	for (size_t i = 0; i < argc; i++)
+	{
+		mem_add(enc, IC_GETID);
+
+		const node arg = expression_call_get_argument(nd, i);
+		compress_ident(enc, expression_identifier_get_id(&arg)); // Ссылка в identtab
+	}
+}
+
+/**
+ *	Emit printf expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_printf_expression(encoder *const enc, const node *const nd)
+{
+	size_t sum_size = 0;
+	const size_t argc = expression_call_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		emit_expression(enc, &arg);
+
+		sum_size += type_size(enc->sx, expression_get_type(&arg));
+	}
+
+	const node format_string = expression_call_get_argument(nd, 0);
+	emit_expression(enc, &format_string);
+
+	mem_add(enc, IC_PRINTF);
+	mem_add(enc, (item_t)sum_size);
+}
+
+/**
+ *	Emit print expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_print_expression(encoder *const enc, const node *const nd)
+{
+	const size_t argc = expression_call_get_arguments_amount(nd);
+	for (size_t i = 0; i < argc; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		emit_expression(enc, &arg);
+
+		mem_add(enc, IC_PRINT);
+		mem_add(enc, expression_get_type(&arg));
+	}
+}
+
 /**
  *	Emit call expression
  *
@@ -578,6 +683,23 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func = expression_identifier_get_id(&callee);
+
+	switch (func)
+	{
+		case BI_PRINTF:
+			emit_printf_expression(enc, nd);
+			return;
+		case BI_PRINT:
+			emit_print_expression(enc, nd);
+			return;
+		case BI_PRINTID:
+			emit_printid_expression(enc, nd);
+			return;
+		case BI_GETID:
+			emit_getid_expression(enc, nd);
+			return;
+	}
+
 	if (func >= BEGIN_USER_FUNC)
 	{
 		mem_add(enc, IC_CALL1);
@@ -1634,95 +1756,6 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 	}
 }
 
-static void compress_ident(encoder *const enc, const size_t ref)
-{
-	if (vector_get(&enc->sx->identifiers, ref) == ITEM_MAX)
-	{
-		mem_add(enc, ident_get_repr(enc->sx, ref));
-		return;
-	}
-
-	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
-	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
-	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
-	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
-
-	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
-	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
-	{
-		vector_add(&enc->representations, (item_t)utf8_convert(&buffer[i]));
-	}
-	vector_add(&enc->representations, '\0');
-
-	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
-	ident_set_repr(enc->sx, ref, new_ref);
-	mem_add(enc, new_ref);
-}
-
-/**
- *	Emit printid statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_printid_statement(encoder *const enc, const node *const nd)
-{
-	mem_add(enc, IC_PRINTID);
-	compress_ident(enc, (size_t)node_get_arg(nd, 0)); // Ссылка в identtab
-}
-
-/**
- *	Emit getid statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_getid_statement(encoder *const enc, const node *const nd)
-{
-	mem_add(enc, IC_GETID);
-	compress_ident(enc, (size_t)node_get_arg(nd, 0)); // Cсылка в identtab
-}
-
-/**
- *	Emit printf statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_printf_statement(encoder *const enc, const node *const nd)
-{
-	size_t sum_size = 0;
-	const size_t argc = statement_printf_get_argc(nd);
-	for (size_t i = 0; i < argc; i++)
-	{
-		const node arg = statement_printf_get_argument(nd, i);
-		emit_expression(enc, &arg);
-
-		sum_size += type_size(enc->sx, expression_get_type(&arg));
-	}
-
-	const node format_string = statement_printf_get_format_str(nd);
-	emit_expression(enc, &format_string);
-
-	mem_add(enc, IC_PRINTF);
-	mem_add(enc, (item_t)sum_size);
-}
-
-/**
- *	Emit print statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_print_statement(encoder *const enc, const node *const nd)
-{
-	const node subexpr = node_get_child(nd, 0);
-	emit_expression(enc, &subexpr);
-
-	mem_add(enc, IC_PRINT);
-	mem_add(enc, expression_get_type(&subexpr));
-}
-
 /**
  *	Emit statement
  *
@@ -1785,19 +1818,6 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			return;
 		case STMT_RETURN:
 			emit_return_statement(enc, nd);
-			return;
-
-		case STMT_PRINTF:
-			emit_printf_statement(enc, nd);
-			return;
-		case STMT_PRINT:
-			emit_print_statement(enc, nd);
-			return;
-		case STMT_PRINTID:
-			emit_printid_statement(enc, nd);
-			return;
-		case STMT_GETID:
-			emit_getid_statement(enc, nd);
 			return;
 	}
 }

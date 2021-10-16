@@ -68,10 +68,6 @@ typedef enum STATEMENT
 	STMT_CONTINUE,		/**< Continue statement */
 	STMT_BREAK,			/**< Break statement */
 	STMT_RETURN,		/**< Return statement */
-	STMT_PRINTF,		/**< Printf statement */
-	STMT_PRINT,			/**< Print statement */
-	STMT_PRINTID,		/**< Printid statement */
-	STMT_GETID,			/**< Getid statement */
 } statement_t;
 
 /** Declaration class */
@@ -1091,42 +1087,6 @@ inline bool statement_return_has_expression(const node *const nd)
 inline node statement_return_get_expression(const node *const nd)
 {
 	return statement_return_has_expression(nd) ? node_get_child(nd, 0) : node_broken();
-}
-
-/**
- *	Get argument count of printf statement
- *
- *	@param	nd				Printf statement
- *
- *	@return	Argument count
- */
-inline size_t statement_printf_get_argc(const node *const nd)
-{
-	return node_get_type(nd) == OP_PRINTF && node_get_amount(nd) > 0 ? node_get_amount(nd) - 1 : 0;
-}
-
-/**
- *	Get format string of printf statement
- *
- *	@param	nd				Printf statement
- *
- *	@return	Format string
- */
-inline node statement_printf_get_format_str(const node *const nd)
-{
-	return node_get_type(nd) == OP_PRINTF ? node_get_child(nd, 0) : node_broken();
-}
-
-/**
- *	Get argument of printf statement
- *
- *	@param	nd				Printf statement
- *
- *	@return	Argument
- */
-inline node statement_printf_get_argument(const node *const nd, const size_t index)
-{
-	return statement_printf_get_argc(nd) > index ? node_get_child(nd, 1 + index) : node_broken();
 }
 
 

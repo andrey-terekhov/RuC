@@ -936,69 +936,6 @@ static void write_return_statement(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write printf statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_printf_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINTF\n");
-
-	const node format_str = statement_printf_get_format_str(nd);
-	write_expression(wrt, &format_str);
-
-	const size_t argc = statement_printf_get_argc(nd);
-	for (size_t i = 0; i < argc; i++)
-	{
-		const node argument = statement_printf_get_argument(nd, i);
-		write_expression(wrt, &argument);
-	}
-}
-
-/**
- *	Write print statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_print_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINT\n");
-
-	const node argument = node_get_child(nd, 0);
-	write_expression(wrt, &argument);
-}
-
-/**
- *	Write printid statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_printid_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINTID");
-
-	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id = %zu\n", id);
-}
-
-/**
- *	Write getid statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_getid_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_GETID");
-
-	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id = %zu\n", id);
-}
-
-/**
  *	Write statement
  *
  *	@param	wrt			Writer
@@ -1079,19 +1016,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 
 		case STMT_RETURN:
 			write_return_statement(wrt, nd);
-			break;
-
-		case STMT_PRINTF:
-			write_printf_statement(wrt, nd);
-			break;
-		case STMT_PRINT:
-			write_print_statement(wrt, nd);
-			break;
-		case STMT_PRINTID:
-			write_printid_statement(wrt, nd);
-			break;
-		case STMT_GETID:
-			write_getid_statement(wrt, nd);
 			break;
 
 		default:

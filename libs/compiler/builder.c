@@ -18,6 +18,9 @@
 #include "AST.h"
 
 
+#define MAX_PRINTF_ARGS 20
+
+
 static const size_t MAX_LABELS = 10000;
 
 
@@ -285,6 +288,185 @@ static node fold_ternary_expression(builder *const bldr, const item_t type
 	}
 }
 
+
+static size_t evaluate_args(builder *const bldr, const node *const format_str
+	, item_t *const format_types, char32_t *const placeholders)
+{
+	const size_t str_index = expression_literal_get_string(format_str);
+	const char *const string = string_get(bldr->sx, str_index);
+	const size_t length = string_length(bldr->sx, str_index);
+
+	size_t args = 0;
+	for (size_t i = 0; i < length; i++)
+	{
+		if (string[i] == '%')
+		{
+			i++;
+			const char32_t placeholder = (char32_t)string[i];
+			if (placeholder != '%')
+			{
+				if (args == MAX_PRINTF_ARGS)
+				{
+					semantic_error(bldr, node_get_location(format_str), too_many_printf_args, (size_t)MAX_PRINTF_ARGS);
+					return 0;
+				}
+
+				placeholders[args] = placeholder;
+			}
+
+			switch (placeholder)
+			{
+				case 'i':
+				case U'ц':
+				case 'c':
+				case U'л':
+					format_types[args++] = TYPE_INTEGER;
+					break;
+
+				case 'f':
+				case U'в':
+					format_types[args++] = TYPE_FLOATING;
+					break;
+
+				case 's':
+				case U'с':
+					format_types[args++] = type_array(bldr->sx, TYPE_INTEGER);
+					break;
+
+				case '%':
+					break;
+
+				case '\0':
+					semantic_error(bldr, node_get_location(format_str), printf_no_format_placeholder);
+					return 0;
+
+				default:
+					semantic_error(bldr, node_get_location(format_str), printf_unknown_format_placeholder, placeholder);
+					return 0;
+			}
+		}
+	}
+
+	return args;
+}
+
+static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+{
+	const size_t argc = node_vector_size(args);
+	if (args == NULL || argc == 0)
+	{
+		semantic_error(bldr, r_loc, wrong_first_printf_param);
+		return node_broken();
+	}
+
+	if (argc >= MAX_PRINTF_ARGS)
+	{
+		semantic_error(bldr, r_loc, too_many_printf_args);
+		return node_broken();
+	}
+
+	const node fst = node_vector_get(args, 0);
+	if (expression_get_class(&fst) != EXPR_LITERAL || !type_is_string(bldr->sx, expression_get_type(&fst)))
+	{
+		semantic_error(bldr, node_get_location(&fst), wrong_first_printf_param);
+		return node_broken();
+	}
+
+	char32_t placeholders[MAX_PRINTF_ARGS];
+	item_t format_types[MAX_PRINTF_ARGS];
+	const size_t expected_args = evaluate_args(bldr, &fst, format_types, placeholders);
+
+	if (expected_args != argc - 1)
+	{
+		semantic_error(bldr, r_loc, wrong_printf_param_number);
+		return node_broken();
+	}
+
+	for (size_t i = 1; i < argc; i++)
+	{
+		node argument = node_vector_get(args, i);
+		if (!check_assignment_operands(bldr, format_types[i - 1], &argument))
+		{
+			// FIXME: кинуть другую ошибку
+			return node_broken();
+		}
+
+		node_vector_set(args, i, &argument);
+	}
+
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_INTEGER, callee, args, loc);
+}
+
+static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+{
+	const size_t argc = node_vector_size(args);
+	if (args == NULL || argc == 0)
+	{
+		semantic_error(bldr, r_loc, expected_expression);
+		return node_broken();
+	}
+
+	for (size_t i = 0; i < argc; i++)
+	{
+		const node argument = node_vector_get(args, i);
+		if (type_is_pointer(bldr->sx, expression_get_type(&argument)))
+		{
+			semantic_error(bldr, node_get_location(&argument), pointer_in_print);
+			return node_broken();
+		}
+	}
+
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_VOID, callee, args, loc);
+}
+
+static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+{
+	const size_t argc = node_vector_size(args);
+	if (args == NULL || argc == 0)
+	{
+		semantic_error(bldr, r_loc, no_ident_in_printid);
+		return node_broken();
+	}
+
+	for (size_t i = 0; i < argc; i++)
+	{
+		const node argument = node_vector_get(args, i);
+		if (expression_get_class(&argument) != EXPR_IDENTIFIER)
+		{
+			semantic_error(bldr, node_get_location(&argument), no_ident_in_printid);
+			return node_broken();
+		}
+	}
+
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_VOID, callee, args, loc);
+}
+
+static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+{
+	const size_t argc = node_vector_size(args);
+	if (args == NULL || argc == 0)
+	{
+		semantic_error(bldr, r_loc, no_ident_in_getid);
+		return node_broken();
+	}
+
+	for (size_t i = 0; i < argc; i++)
+	{
+		const node argument = node_vector_get(args, i);
+		if (expression_get_class(&argument) != EXPR_IDENTIFIER)
+		{
+			semantic_error(bldr, node_get_location(&argument), no_ident_in_getid);
+			return node_broken();
+		}
+	}
+
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_VOID, callee, args, loc);
+}
+
 static node build_upb_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
@@ -528,9 +710,23 @@ node build_call_expression(builder *const bldr, node *const callee
 		return node_broken();
 	}
 
-	if (expression_get_class(callee) == EXPR_IDENTIFIER && expression_identifier_get_id(callee) == BI_UPB)
+	if (expression_get_class(callee) == EXPR_IDENTIFIER)
 	{
-		return build_upb_expression(bldr, callee, args, r_loc);
+		switch (expression_identifier_get_id(callee))
+		{
+			case BI_UPB:
+				return build_upb_expression(bldr, callee, args, r_loc);
+			case BI_PRINTF:
+				return build_printf_expression(bldr, callee, args, r_loc);
+			case BI_PRINT:
+				return build_print_expression(bldr, callee, args, r_loc);
+			case BI_PRINTID:
+				return build_printid_expression(bldr, callee, args, r_loc);
+			case BI_GETID:
+				return build_getid_expression(bldr, callee, args, r_loc);
+			default:
+				break;
+		}
 	}
 
 	const size_t expected_args = type_function_get_parameter_amount(bldr->sx, callee_type);
