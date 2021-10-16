@@ -294,15 +294,14 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 {
 	const size_t str_index = expression_literal_get_string(format_str);
 	const char *const string = string_get(bldr->sx, str_index);
-	const size_t length = string_length(bldr->sx, str_index);
 
 	size_t args = 0;
-	for (size_t i = 0; i < length; i++)
+	for (size_t i = 0; string[i] != '\0'; i += utf8_symbol_size(string[i]))
 	{
-		if (string[i] == '%')
+		if (utf8_convert(&string[i]) == '%')
 		{
-			i++;
-			const char32_t placeholder = (char32_t)string[i];
+			i += utf8_symbol_size(string[i]);
+			const char32_t placeholder = utf8_convert(&string[i]);
 			if (placeholder != '%')
 			{
 				if (args == MAX_PRINTF_ARGS)
