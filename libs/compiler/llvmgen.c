@@ -238,7 +238,7 @@ static void operation_to_io(information *const info, const item_t operation_type
 static void to_code_operation_reg_reg(information *const info, const item_t operation
 	, const item_t fst, const item_t snd, const item_t type)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, type);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
@@ -248,7 +248,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 static void to_code_operation_reg_const_i32(information *const info, const item_t operation
 	, const item_t fst, const item_t snd)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " i32 %%.%" PRIitem ", %" PRIitem "\n", fst, snd);
 }
@@ -256,7 +256,7 @@ static void to_code_operation_reg_const_i32(information *const info, const item_
 static void to_code_operation_reg_const_double(information *const info, const item_t operation
 	, const item_t fst, const double snd)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_FLOATING);
 	uni_printf(info->sx->io, " double %%.%" PRIitem ", %f\n", fst, snd);
 }
@@ -264,7 +264,7 @@ static void to_code_operation_reg_const_double(information *const info, const it
 static void to_code_operation_const_reg_i32(information *const info, const item_t operation
 	, const item_t fst, const item_t snd)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " i32 %" PRIitem ", %%.%" PRIitem "\n", fst, snd);
 }
@@ -272,7 +272,7 @@ static void to_code_operation_const_reg_i32(information *const info, const item_
 static void to_code_operation_const_reg_double(information *const info, const item_t operation
 	, const double fst, const item_t snd)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_FLOATING);
 	uni_printf(info->sx->io, " double %f, %%.%" PRIitem "\n", fst, snd);
 }
@@ -280,7 +280,7 @@ static void to_code_operation_const_reg_double(information *const info, const it
 static void to_code_operation_reg_null(information *const info, const item_t operation
 	, const item_t fst, const item_t type)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
@@ -290,7 +290,7 @@ static void to_code_operation_reg_null(information *const info, const item_t ope
 static void to_code_operation_null_reg(information *const info, const item_t operation
 	, const item_t snd, const item_t type)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
@@ -347,7 +347,7 @@ static void to_code_try_zext_to(information *const info)
 		return;
 	}
 
-	uni_printf(info->sx->io, " %%.%" PRIitem " = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
+	uni_printf(info->sx->io, " %%.%zu = zext i1 %%.%" PRIitem " to i32\n", info->register_num, info->answer_reg);
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 }
@@ -372,7 +372,7 @@ static void to_code_stack_save(information *const info, const item_t index)
 {
 	// команды сохранения состояния стека
 	uni_printf(info->sx->io, " %%dyn.%" PRIitem " = alloca i8*, align 4\n", index);
-	uni_printf(info->sx->io, " %%.%" PRIitem " = call i8* @llvm.stacksave()\n", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = call i8* @llvm.stacksave()\n", info->register_num);
 	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n"
 		, info->register_num, index);
 	info->register_num++;
@@ -383,9 +383,9 @@ static void to_code_stack_save(information *const info, const item_t index)
 static void to_code_stack_load(information *const info, const item_t index)
 {
 	// команды восстановления состояния стека
-	uni_printf(info->sx->io, " %%.%" PRIitem " = load i8*, i8** %%dyn.%" PRIitem ", align 4\n"
+	uni_printf(info->sx->io, " %%.%zu = load i8*, i8** %%dyn.%" PRIitem ", align 4\n"
 		, info->register_num, index);
-	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%" PRIitem ")\n", info->register_num);
+	uni_printf(info->sx->io, " call void @llvm.stackrestore(i8* %%.%zu)\n", info->register_num);
 	info->register_num++;
 
 	info->was_stack_functions = true;
@@ -429,7 +429,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 
 	for (size_t i = 2; i <= dim; i++)
 	{
-		uni_printf(info->sx->io, " %%.%" PRIitem " = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
+		uni_printf(info->sx->io, " %%.%zu = mul nuw i32 %%.%" PRIitem ", %%.%" PRIitem "\n"
 			, info->register_num, to_alloc, hash_get_by_index(&info->arrays, index, i));
 		to_alloc = info->register_num++;
 	}
@@ -441,7 +441,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 static void to_code_slice(information *const info, const item_t id, const size_t cur_dimension
 	, const item_t prev_slice, const item_t type)
 {
-	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds ", info->register_num);
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 
 	if (hash_get(&info->arrays, id, IS_STATIC))
@@ -550,7 +550,7 @@ static void emit_cast_expression(information *const info, const node *const nd)
 	const node expression_to_cast = expression_cast_get_operand(nd);
 	emit_expression(info, &expression_to_cast);
 
-	uni_printf(info->sx->io, " %%.%" PRIitem " = sitofp ", info->register_num);
+	uni_printf(info->sx->io, " %%.%zu = sitofp ", info->register_num);
 	type_to_io(info, source_type);
 	uni_printf(info->sx->io, " %%.%" PRIitem " to ", info->answer_reg);
 	type_to_io(info, target_type);
@@ -805,7 +805,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 
 	if (!type_is_void(func_type))
 	{
-		uni_printf(info->sx->io, " %%.%" PRIitem " =", info->register_num);
+		uni_printf(info->sx->io, " %%.%zu =", info->register_num);
 		info->answer_kind = AREG;
 		info->answer_reg = info->register_num++;
 	}
@@ -885,8 +885,8 @@ static void emit_member_expression(information *const info, const node *const nd
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
-	uni_printf(info->sx->io, " %%.%" PRIitem " = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-		"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %" PRIitem "\n", info->register_num, type, type
+	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+		"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
 		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
@@ -1036,7 +1036,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			info->variable_location = LFREE;
 			emit_expression(info, &operand);
 
-			uni_printf(info->sx->io, " %%.%" PRIitem " = call ", info->register_num);
+			uni_printf(info->sx->io, " %%.%zu = call ", info->register_num);
 			type_to_io(info, type);
 
 			if (type_is_integer(info->sx, type))
@@ -1925,7 +1925,7 @@ static void emit_printf_statement(information *const info, const node *const nd)
 		args_type[i] = expression_get_type(&arg);
 	}
 
-	uni_printf(info->sx->io, " %%.%" PRIitem " = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
+	uni_printf(info->sx->io, " %%.%zu = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
 		"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
 		, info->register_num
 		, string_length + 1
