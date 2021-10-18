@@ -1160,7 +1160,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &LHS); // OP_SLICE_IDENT or UN_ADDRESS
-		id = info->answer_reg;
+		id = (size_t)info->answer_reg;
 	}
 
 	info->variable_location = LFREE;
