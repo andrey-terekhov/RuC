@@ -106,6 +106,8 @@ typedef struct information
 	syntax *sx;							/**< Структура syntax с таблицами */
 
 	item_t main_label;					/**< Метка функции main */
+
+	mips_register_t request_reg;		/**< Регистр на запрос */
 } information;
 
 
@@ -363,6 +365,35 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 
 
 /**
+ *	Emit variable declaration
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_variable_declaration(information *const info, const node *const nd)
+{
+	const size_t id = declaration_variable_get_id(nd);
+	const bool has_init = declaration_variable_has_initializer(nd);
+	const item_t type = ident_get_type(info->sx, id);
+
+	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
+	{
+		// TODO: регистровые переменные
+		// TODO: вещественные числа
+
+		if (has_init)
+		{
+			info->request_reg = R_T0;
+
+			// TODO: тип char
+
+			// const node initializer = statement_printf_get_argument(nd, i);
+			// emit_expression(info, &initializer);
+		}
+	}
+}
+
+/**
  * Emit function definition
  *
  * @param	info	Encoder
@@ -383,7 +414,7 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 	// Выделение на стеке памяти для функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL/* - max_displ*/);
 	// Сохранение данных перед началом работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
@@ -421,7 +452,7 @@ static void emit_function_definition(information *const info, const node *const 
 
 	// Восстановление стека после работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, FUNC_DISPL);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, FUNC_DISPL/* + max_displ*/);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
 	to_code_label(info->sx->io, L_NEXT, ref_ident);
@@ -432,7 +463,7 @@ static void emit_declaration(information *const info, const node *const nd)
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
-			// emit_variable_declaration(info, nd);
+			emit_variable_declaration(info, nd);
 			return;
 
 		case DECL_FUNC:
