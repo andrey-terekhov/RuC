@@ -108,6 +108,8 @@ typedef struct information
 	item_t main_label;					/**< Метка функции main */
 
 	mips_register_t request_reg;		/**< Регистр на запрос */
+
+	size_t max_displ;					/**< Максимальное смещение */
 } information;
 
 
@@ -355,6 +357,21 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 }
 
 
+static int size_of(information *const info, const item_t type)
+{
+	if (type_is_integer(info->sx, type))
+	{
+		return 4;
+	}
+	else if (type_is_floating(type))
+	{
+		return 8;
+	}
+
+	return 0;
+}
+
+
 /*
  *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
  *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
@@ -376,6 +393,11 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
+	info->max_displ += size_of(info, type);
+	const size_t value_displ = info->max_displ;
+	// TODO: в глобальных переменных регистр gp
+	const mips_register_t value_reg = R_SP;
+
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{
 		// TODO: регистровые переменные
@@ -389,6 +411,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			// const node initializer = statement_printf_get_argument(nd, i);
 			// emit_expression(info, &initializer);
+			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -value_displ);
 		}
 	}
 }
@@ -414,12 +437,13 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 	// Выделение на стеке памяти для функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL/* - max_displ*/);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL/* -info->max_displ*/);
 	// Сохранение данных перед началом работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
 	uni_printf(info->sx->io, "\n");
+	info->max_displ = FUNC_DISPL;
 
 	for (size_t i = 0; i < parameters; i++)
 	{
@@ -452,7 +476,7 @@ static void emit_function_definition(information *const info, const node *const 
 
 	// Восстановление стека после работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, FUNC_DISPL/* + max_displ*/);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, info->max_displ);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
 	to_code_label(info->sx->io, L_NEXT, ref_ident);
@@ -725,6 +749,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	information info;
 	info.sx = sx;
 	info.main_label = 0;
+	info.max_displ = 0;
 
 	pregen(sx);
 	strings_declaration(&info);
