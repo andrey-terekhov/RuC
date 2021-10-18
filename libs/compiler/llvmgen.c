@@ -1150,7 +1150,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_binary_get_LHS(nd);
-	item_t id = 0;
+	size_t id = 0;
 	bool is_array = expression_get_class(&LHS) == EXPR_SUBSCRIPT;
 	if (!is_array)
 	{
@@ -1172,7 +1172,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, (size_t)id));
+		to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, id));
 		info->register_num++;
 
 		if (info->answer_kind == AREG)
@@ -1196,15 +1196,15 @@ static void emit_assignment_expression(information *const info, const node *cons
 	if (info->answer_kind == AREG || info->answer_kind == AMEM)
 	{
 		to_code_store_reg(info, result, id, operation_type, is_array
-			, info->answer_kind == AMEM, ident_is_local(info->sx, (size_t)id));
+			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
 	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и опериция =
 	{
-		to_code_store_const_i32(info, info->answer_const, id, is_array, ident_is_local(info->sx, (size_t)id));
+		to_code_store_const_i32(info, info->answer_const, id, is_array, ident_is_local(info->sx, id));
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, (size_t)id));
+		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, id));
 	}
 	else
 	{
