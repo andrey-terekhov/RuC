@@ -373,6 +373,82 @@ static int size_of(information *const info, const item_t type)
 
 
 /*
+ *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
+ *	/\  ___\   /\_\_\_\   /\  == \ /\  == \   /\  ___\   /\  ___\   /\  ___\   /\ \   /\  __ \   /\ "-.\ \   /\  ___\
+ *	\ \  __\   \/_/\_\/_  \ \  _-/ \ \  __<   \ \  __\   \ \___  \  \ \___  \  \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
+ *	 \ \_____\   /\_\/\_\  \ \_\    \ \_\ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/_____/   \/_/\/_/   \/_/     \/_/ /_/   \/_____/   \/_____/   \/_____/   \/_/   \/_____/   \/_/ \/_/   \/_____/
+ */
+
+
+/**
+ *	Emit literal expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_literal_expression(information *const info, const node *const nd)
+{
+	const item_t type = expression_get_type(nd);
+
+	if (type_is_integer(info->sx, type))
+	{
+		const int num = expression_literal_get_integer(nd);
+
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, info->request_reg, R_ZERO, num);
+	}
+}
+
+/**
+ *	Emit expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_expression(information *const info, const node *const nd)
+{
+	switch (expression_get_class(nd))
+	{
+		case EXPR_CAST:
+			// emit_cast_expression(info, nd);
+			return;
+
+		case EXPR_IDENTIFIER:
+			// emit_identifier_expression(info, nd);
+			return;
+
+		case EXPR_LITERAL:
+			emit_literal_expression(info, nd);
+			return;
+
+		case EXPR_SUBSCRIPT:
+			// emit_subscript_expression(info, nd);
+			return;
+
+		case EXPR_CALL:
+			// emit_call_expression(info, nd);
+			return;
+
+		case EXPR_MEMBER:
+			// emit_member_expression(info, nd);
+			return;
+
+		case EXPR_UNARY:
+			// emit_unary_expression(info, nd);
+			return;
+
+		case EXPR_BINARY:
+			// emit_binary_expression(info, nd);
+			return;
+
+		default:
+			// TODO: генерация оставшихся выражений
+			return;
+	}
+}
+
+
+/*
  *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
  *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
  *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
@@ -409,8 +485,8 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			// TODO: тип char
 
-			// const node initializer = statement_printf_get_argument(nd, i);
-			// emit_expression(info, &initializer);
+			const node initializer = declaration_variable_get_initializer(nd);
+			emit_expression(info, &initializer);
 			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
 		}
 	}
@@ -542,8 +618,8 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	{
 		// info->variable_location = LREG;
 
-		// const node arg = statement_printf_get_argument(nd, i);
-		// emit_expression(info, &arg);
+		const node arg = statement_printf_get_argument(nd, i);
+		emit_expression(info, &arg);
 	}
 
 	// TODO: может можно как-то покрасивее это написать?
@@ -583,7 +659,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_EXPR:
-			// emit_expression(info, nd);
+			emit_expression(info, nd);
 			return;
 
 		case STMT_NULL:
