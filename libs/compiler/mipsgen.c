@@ -20,12 +20,12 @@
 #include "uniprinter.h"
 
 
-static const item_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
-static const item_t HEAP_DISPL = -8000;					/**< Смещение кучи относительно глобальной памяти */
+static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
+static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
 // TODO: расписать, что за данные сохраняются в стеке при вызове
-static const item_t FUNC_DISPL = 80;					/**< Смещение в стеке для сохранения данных вызова функции */
-static const item_t SP_DISPL = 20;						/**< Смещение в стеке для сохранения значения регистра R_SP */
-static const item_t RA_DISPL = 16;						/**< Смещение в стеке для сохранения значения регистра R_RA */
+static const size_t FUNC_DISPL = 80;					/**< Смещение в стеке для сохранения данных вызова функции */
+static const size_t SP_DISPL = 20;						/**< Смещение в стеке для сохранения значения регистра R_SP */
+static const size_t RA_DISPL = 16;						/**< Смещение в стеке для сохранения значения регистра R_RA */
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -411,7 +411,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			// const node initializer = statement_printf_get_argument(nd, i);
 			// emit_expression(info, &initializer);
-			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -value_displ);
+			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
 		}
 	}
 }
@@ -681,7 +681,7 @@ static void pregen(syntax *const sx)
 	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_FP, R_FP, -4);
 	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_FP);
 	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, HEAP_DISPL - 60, R_GP);
+	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
 	uni_printf(sx->io, "\n");
 }
 
