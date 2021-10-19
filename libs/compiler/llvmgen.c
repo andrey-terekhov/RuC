@@ -373,7 +373,7 @@ static void to_code_stack_save(information *const info, const item_t index)
 	// команды сохранения состояния стека
 	uni_printf(info->sx->io, " %%dyn.%" PRIitem " = alloca i8*, align 4\n", index);
 	uni_printf(info->sx->io, " %%.%zu = call i8* @llvm.stacksave()\n", info->register_num);
-	uni_printf(info->sx->io, " store i8* %%.%" PRIitem ", i8** %%dyn.%" PRIitem ", align 4\n"
+	uni_printf(info->sx->io, " store i8* %%.%zu, i8** %%dyn.%" PRIitem ", align 4\n"
 		, info->register_num, index);
 	info->register_num++;
 
