@@ -437,7 +437,7 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 	// Выделение на стеке памяти для функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -FUNC_DISPL/* -info->max_displ*/);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)FUNC_DISPL/* -info->max_displ*/);
 	// Сохранение данных перед началом работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
