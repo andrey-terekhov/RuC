@@ -17,12 +17,38 @@
 #include "parser.h"
 #include <string.h>
 #include "error.h"
+#include "keywords.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 
 
 const size_t FST_LINE_INDEX =		1;
 const size_t FST_CHARACTER_INDEX =	0;
+
+
+/**
+ *	Checks if сharacter is separator
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+static bool utf8_is_separator(const char32_t symbol)
+{
+	return  symbol == U' ' || symbol == U'\t';
+}
+
+/**
+ *	Checks if сharacter is line_breaker
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+static bool utf8_is_line_breaker(const char32_t symbol)
+{
+	return  symbol == U'\r' || symbol == U'\n';
+}
 
 
 /**
@@ -33,6 +59,21 @@ static inline void parser_next_string(parser *const prs)
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
 	prs->string[0] = '\0';
+}
+
+/**
+ *	Добавляет str в string
+ */
+static inline size_t parser_add_string(parser *const prs, const char *const str)
+{
+	size_t i = 0;
+	do
+	{
+		prs->string[strlen(prs->string)] = str[i];
+		i ++;
+	} while (str[i] != '\0');
+
+	return i;
 }
 
 /**
@@ -50,7 +91,7 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 static inline void parser_fill_string(parser *const prs)
 {
 	char32_t cur = uni_scan_char(prs->in);
-	while (cur != '\r' && cur != '\n' && cur != (char32_t)EOF)
+	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
 		utf8_to_string(&prs->string[strlen(prs->string)], cur);
 		cur = uni_scan_char(prs->in);
@@ -109,7 +150,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			uni_print_char(prs->out, cur);
 			return;
 		}
-		else if (cur == '\r' || cur == '\n')	// Ошибка из-за наличия переноса строки
+		else if (utf8_is_line_breaker(cur))	// Ошибка из-за наличия переноса строки
 		{
 			prs->position = old_position;
 			parser_macro_error(prs, PARSER_STRING_NOT_ENDED, false);
@@ -117,10 +158,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			parser_next_string(prs);
 
 			// Специфика последовательности "\r\n"
-			if (cur == '\r')
+			if (cur == U'\r')
 			{
 				char32_t next = uni_scan_char(prs->in);
-				if (next != '\n')
+				if (next != U'\n')
 				{
 					uni_unscan_char(prs->in, next);
 				}
@@ -138,7 +179,6 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	parser_macro_error(prs, PARSER_UNEXPECTED_EOF, false);
 }
 
-
 /**
  *	Пропускает символы до конца комментария ('\n', '\r' или EOF)
  *
@@ -146,10 +186,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
  */
 static void parser_skip_short_comment(parser *const prs)
 {
-	parser_add_char(prs, '\\');
+	parser_add_char(prs, U'\\');
 
 	char32_t cur = uni_scan_char(prs->in);
-	while(cur != '\n' && cur != '\r' && cur != (char32_t)EOF)
+	while(!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
 		cur = uni_scan_char(prs->in);
 	}
@@ -157,16 +197,16 @@ static void parser_skip_short_comment(parser *const prs)
 	if (cur != (char32_t)EOF)
 	{
 		// Специфика последовательности "\r\n"
-		if (cur == '\r')
+		if (cur == U'\r')
 		{
 			char32_t next = uni_scan_char(prs->in);
-			if (next != '\n')
+			if (next != U'\n')
 			{
 				uni_unscan_char(prs->in, next);
 			}
 		}
 
-		uni_print_char(prs->out, '\n');
+		uni_print_char(prs->out, U'\n');
 		parser_next_string(prs);
 	}
 }
@@ -177,25 +217,25 @@ static void parser_skip_short_comment(parser *const prs)
 static void parser_skip_long_comment(parser *const prs)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
-	const char32_t old_position = prs->position;
-	parser_add_char(prs, '\\');
+	const size_t old_position = prs->position;
+	parser_add_char(prs, U'\\');
 	parser comm_beginning = *prs;
-	parser_add_char(&comm_beginning, '*');
+	parser_add_char(&comm_beginning, U'*');
 
-	parser_add_char(prs, '*');
+	parser_add_char(prs, U'*');
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
 		switch (cur)
 		{
-			case '\r':
+			case U'\r':
 				uni_scan_char(prs->in);
-			case '\n':
+			case U'\n':
 				parser_next_string(prs);
 					break;
 
-			case '*':
+			case U'*':
 			{
 				parser_add_char(prs, cur);
 
@@ -208,7 +248,7 @@ static void parser_skip_long_comment(parser *const prs)
 				char32_t next = uni_scan_char(prs->in);
 				switch (next)
 				{
-					case '/':							// Комментарий считан, выход из функции
+					case U'/':							// Комментарий считан, выход из функции
 						parser_add_char(prs, next);
 							return;
 
@@ -236,6 +276,122 @@ static void parser_skip_long_comment(parser *const prs)
 	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED, false);
 	prs->was_error = true;
 	parser_clear(&comm_beginning);
+}
+
+/**
+ *	Считывает разделители и комментарии, буфферизирует текущую строку кода
+ */
+static void parser_skip_separators(parser *const prs)
+{
+	/*
+	char32_t cur = uni_scan_char(prs->in);
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		if (cur == U'/')
+		{
+			const char32_t next = uni_scan_char(prs->in);
+			if (next == )
+		}
+		parser_add_char(prs, cur);
+		cur = uni_scan_char(prs->in);
+	}
+
+	uni_unscan_char(prs->in, cur);	// Этот символ не является разделителем
+	*/
+}
+
+
+/**
+ *	Определяет тип комментария и пропускает его
+ */
+static void parser_scan_comment(parser *const prs)
+{
+	char32_t next = uni_scan_char(prs->in);
+	switch (next)
+	{
+		case U'/':
+			parser_skip_short_comment(prs);
+				break;
+		case U'*':
+			parser_skip_long_comment(prs);
+				break;
+
+		default:	// Если встретился один '/', печатает его в out и обрабатывает следующие символы
+			parser_add_char(prs, U'/');
+			uni_print_char(prs->out, U'/');
+			uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
+											// он будет считан повторно и проанализирован снаружи
+	}
+}
+
+/**
+ *	Определяет тип ключевого слова и разбирает дальнейшее выражение
+ */
+static void parser_scan_keyword(parser *const prs)
+{
+	char32_t last;
+	size_t res = storage_search(prs->stg, prs->in, &last);
+
+	size_t length = parser_add_string(prs, storage_last_read(prs->stg));	// Буфферизация считанного ключевого слова
+	parser_add_char(prs, last);	// Добавление символа после ключевого слова
+	prs->position --;	// Возврат позиции на '#'
+
+	if (res == SIZE_MAX)
+	{
+		parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
+	}
+
+	prs->position += length + 1;
+
+	switch (res)
+	{
+		case KW_INCLUDE:
+	
+		case KW_DEFINE:
+			printf("define\n");
+		case KW_SET:
+		case KW_UNDEF:
+
+		case KW_MACRO:
+		case KW_ENDM:
+
+		case KW_IFDEF:
+		case KW_IFNDEF:
+		case KW_IF:
+		case KW_ELIF:
+		case KW_ELSE:
+		case KW_ENDIF:
+
+		case KW_EVAL:
+
+		case KW_WHILE:
+		case KW_ENDW:
+
+		default:
+		printf("def\n");
+	}
+	uni_unscan_char(prs->in, last);
+
+	/*
+	parser_add_char(prs, U'#');
+
+	parser_skip_separators(prs);
+	
+	char32_t cur = uni_scan_char(prs->in);
+	while (utf8_is_letter(cur))
+	{
+		// Запись в буфер
+	}
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
+	{
+		parser_macro_warning(prs, PARSER_LONELY_GRID, false);
+	}
+
+	if (!utf8_is_letter(cur))
+	{
+		parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
+	}
+	*/
 }
 
 
@@ -288,44 +444,28 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	{
 		switch (cur)
 		{
-			case '\r':
+			case U'\r':
 				uni_scan_char(prs->in);
-			case '\n':
+			case U'\n':
 				parser_next_string(prs);
-				uni_print_char(prs->out, cur);
+				uni_print_char(prs->out, U'\n');
 					break;
 
-			case '#':
-				//parser_scan_keyword(prs);
+			case U'#':
+				uni_unscan_char(prs->in, cur);
+				parser_scan_keyword(prs);
 					break;
 
-			case '\'':
-				parser_skip_string(prs, '\'');
+			case U'\'':
+				parser_skip_string(prs, U'\'');
 					break;
-			case '\"':
-				parser_skip_string(prs, '\"');
+			case U'\"':
+				parser_skip_string(prs, U'\"');
 					break;
 
-			case '/':
-			{
-				char32_t next = uni_scan_char(prs->in);
-				switch (next)
-				{
-					case '/':
-						parser_skip_short_comment(prs);
-							break;
-					case '*':
-						parser_skip_long_comment(prs);
-							break;
-
-					default:	// Если встретился один '/', печатает его в out и обрабатывает следующие символы
-						parser_add_char(prs, cur);
-						uni_print_char(prs->out, cur);
-						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
-														// он будет считан повторно и проанализирован снаружи
-				}
-			}
-			break;
+			case U'/':
+				parser_scan_comment(prs);
+					break;
 
 			default:
 				if (utf8_is_letter(cur))	//	Здесь будет макроподстановка
@@ -338,10 +478,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					parser_add_char(prs, cur);
 					uni_print_char(prs->out, cur);
 
-					if (cur == '*')	// Проверка на наличие конца длинного комментария без его начала
+					if (cur == U'*')	// Проверка на наличие конца длинного комментария без его начала
 					{
 						char32_t next = uni_scan_char(prs->in);
-						if (next == '/')
+						if (next == U'/')
 						{
 							parser_add_char(prs, next);
 							prs->position -= 2;	// Сдвигает position до '*'
@@ -358,8 +498,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		cur = uni_scan_char(prs->in);
 	}
 
-	uni_print_char(prs->out, '\n');
-	uni_print_char(prs->out, '\n');
+	uni_print_char(prs->out, U'\n');
+	uni_print_char(prs->out, U'\n');
 
 	return !prs->was_error ? 0 : -1;
 }

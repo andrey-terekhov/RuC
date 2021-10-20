@@ -73,6 +73,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "непредвиденное обнаружение конца файла");
 			break;
 
+		case PARSER_UNIDETIFIED_KEYWORD:
+			sprintf(msg, "нераспознанная директива препроцессора");
+			break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;
