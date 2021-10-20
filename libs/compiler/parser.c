@@ -1634,11 +1634,10 @@ static node parse_for_statement(parser *const prs)
 	const location l_loc = consume_token(prs);
 
 	// TODO: протестировать восстановление после ошибок
-	bool has_init = false;
 	node init;
-	if (!try_consume_token(prs, TK_SEMICOLON))
+	const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
+	if (has_init)
 	{
-		has_init = true;
 		if (is_declaration_specifier(prs))
 		{
 			init = parse_declaration(prs);
@@ -1661,11 +1660,10 @@ static node parse_for_statement(parser *const prs)
 		}
 	}
 
-	bool has_cond = false;
 	node cond;
-	if (!try_consume_token(prs, TK_SEMICOLON))
+	const bool has_cond = !try_consume_token(prs, TK_SEMICOLON);
+	if (has_cond)
 	{
-		has_cond = true;
 		cond = parse_expression(prs);
 		if (!node_is_correct(&cond))
 		{
@@ -1681,11 +1679,10 @@ static node parse_for_statement(parser *const prs)
 		}
 	}
 
-	bool has_incr = false;
 	node incr;
-	if (prs->token != TK_R_PAREN)
+	const bool has_incr = prs->token != TK_R_PAREN;
+	if (has_incr)
 	{
-		has_incr = true;
 		incr = parse_expression(prs);
 		if (!node_is_correct(&incr))
 		{
