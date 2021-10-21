@@ -141,14 +141,25 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	parser_add_char(prs, ch);
 	uni_print_char(prs->out, ch);
 
+	bool was_slash = false;
+
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
 		if (cur == ch)							// Строка считана, выход из функции
 		{
-			parser_add_char(prs, cur);
-			uni_print_char(prs->out, cur);
-			return;
+			if (was_slash)
+			{
+				was_slash = false;
+				parser_add_char(prs, cur);
+				uni_print_char(prs->out, cur);
+			}
+			else
+			{
+				parser_add_char(prs, cur);
+				uni_print_char(prs->out, cur);
+				return;
+			}
 		}
 		else if (utf8_is_line_breaker(cur))	// Ошибка из-за наличия переноса строки
 		{
@@ -169,6 +180,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		}
 		else									// Независимо от корректности строки выводит ее в out
 		{
+			was_slash = cur == U'\\' ? true : false;
 			parser_add_char(prs, cur);
 			uni_print_char(prs->out, cur);
 		}
@@ -278,28 +290,6 @@ static void parser_skip_long_comment(parser *const prs)
 	parser_clear(&comm_beginning);
 }
 
-/**
- *	Считывает разделители и комментарии, буфферизирует текущую строку кода
- */
-static void parser_skip_separators(parser *const prs)
-{
-	/*
-	char32_t cur = uni_scan_char(prs->in);
-	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		if (cur == U'/')
-		{
-			const char32_t next = uni_scan_char(prs->in);
-			if (next == )
-		}
-		parser_add_char(prs, cur);
-		cur = uni_scan_char(prs->in);
-	}
-
-	uni_unscan_char(prs->in, cur);	// Этот символ не является разделителем
-	*/
-}
-
 
 /**
  *	Определяет тип комментария и пропускает его
@@ -348,7 +338,6 @@ static void parser_scan_keyword(parser *const prs)
 		case KW_INCLUDE:
 	
 		case KW_DEFINE:
-			printf("define\n");
 		case KW_SET:
 		case KW_UNDEF:
 
@@ -367,31 +356,10 @@ static void parser_scan_keyword(parser *const prs)
 		case KW_WHILE:
 		case KW_ENDW:
 
-		default:
-		printf("def\n");
+		//default:
 	}
+
 	uni_unscan_char(prs->in, last);
-
-	/*
-	parser_add_char(prs, U'#');
-
-	parser_skip_separators(prs);
-	
-	char32_t cur = uni_scan_char(prs->in);
-	while (utf8_is_letter(cur))
-	{
-		// Запись в буфер
-	}
-	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
-	{
-		parser_macro_warning(prs, PARSER_LONELY_GRID, false);
-	}
-
-	if (!utf8_is_letter(cur))
-	{
-		parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
-	}
-	*/
 }
 
 
