@@ -76,6 +76,13 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_UNIDETIFIED_KEYWORD:
 			sprintf(msg, "нераспознанная директива препроцессора");
 			break;
+		case PARSER_UNEXPECTED_LEXEME:
+			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
+			break;
+
+		case PARSER_INCLUDE_NEED_FILENAME:
+			sprintf(msg, "#include требуется \"FILENAME\"");
+			break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");

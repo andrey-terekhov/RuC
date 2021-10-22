@@ -1,5 +1,6 @@
 
-#define/**/ gvbhnjkml;pk bhnjlk vbhknjlml bhnjkml
+#include /*
+*/"( qwe[/*"
 
 int main()
 {

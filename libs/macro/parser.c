@@ -18,6 +18,7 @@
 #include <string.h>
 #include "error.h"
 #include "keywords.h"
+#include "uniio.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 
@@ -66,14 +67,8 @@ static inline void parser_next_string(parser *const prs)
  */
 static inline size_t parser_add_string(parser *const prs, const char *const str)
 {
-	size_t i = 0;
-	do
-	{
-		prs->string[strlen(prs->string)] = str[i];
-		i ++;
-	} while (str[i] != '\0');
-
-	return i;
+	strcat(prs->string, str);
+	return strlen(str);
 }
 
 /**
@@ -96,6 +91,27 @@ static inline void parser_fill_string(parser *const prs)
 		utf8_to_string(&prs->string[strlen(prs->string)], cur);
 		cur = uni_scan_char(prs->in);
 	}
+}
+
+/**
+ *	Сохраняет считанный код
+ */
+static inline void parser_add_to_buffer(char *const buffer, const char *const string)
+{
+	if (string == NULL)
+	{
+		return;
+	}
+
+	strcat(buffer, string);
+}
+
+/**
+ *	Сохраняет считанный символ
+ */
+static inline void parser_add_char_to_buffer(const char32_t ch, char *const buffer)
+{
+	utf8_to_string(&buffer[strlen(buffer)], ch);
 }
 
 
@@ -292,6 +308,106 @@ static void parser_skip_long_comment(parser *const prs)
 
 
 /**
+ *	Считывает путь к файлу и выполняет его обработку
+ */
+static void parser_include(parser *const prs)
+{
+	size_t include_position = prs->position;
+
+	char32_t cur = U'\0';
+	storage_search(prs->stg, prs->in, &cur);
+	
+	// Пропуск разделителей и комментариев
+	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		if (storage_last_read(prs->stg) == NULL && utf8_is_separator(cur))
+		{
+			parser_add_char(prs, cur);
+		}
+		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
+		{
+			parser_add_char(prs, cur);
+			parser_skip_long_comment(prs);
+		}
+		else
+		{
+			parser_add_string(prs, storage_last_read(prs->stg));
+			parser_add_char(prs, cur);
+			prs->position = include_position;
+			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+		}
+		storage_search(prs->stg, prs->in, &cur);
+	}
+
+	if (storage_last_read(prs->stg) != NULL)
+	{
+		parser_add_string(prs, storage_last_read(prs->stg));
+		parser_add_char(prs, cur);
+		prs->position = include_position;
+		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+	}
+
+	// ОБработка пути
+	char buffer[1024] = "\0";
+	if (cur == U'\"')
+	{
+		storage_search(prs->stg, prs->in, &cur);
+		parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+
+		while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+		{
+			parser_add_char_to_buffer(cur, buffer);
+			storage_search(prs->stg, prs->in, &cur);
+			parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+		}
+
+		if (cur != U'\"')
+		{
+			prs->position = include_position;
+			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+		}
+	}
+	else
+	{
+		prs->position = include_position;
+		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+	}
+
+	// Обработка символов за путем
+	storage_search(prs->stg, prs->in, &cur);
+	if (storage_last_read(prs->stg) != NULL)
+	{
+		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+	}
+
+	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		if (storage_last_read(prs->stg) == NULL && utf8_is_separator(cur))
+		{
+			parser_add_char(prs, cur);
+		}
+		else if (cur == U'/' && uni_scan_char(prs->in) == U'/' && storage_last_read(prs->stg) == NULL)
+		{
+			parser_add_char(prs, cur);
+			parser_skip_short_comment(prs);
+		}
+		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
+		{
+			parser_add_char(prs, cur);
+			parser_skip_long_comment(prs);
+		}
+		else
+		{
+			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+		}
+	}
+
+	// Необходимо подключить файл и вызвать parser_preprocess
+	printf("\"%s\"\n", buffer);
+}
+
+
+/**
  *	Определяет тип комментария и пропускает его
  */
 static void parser_scan_comment(parser *const prs)
@@ -336,6 +452,8 @@ static void parser_scan_keyword(parser *const prs)
 	switch (res)
 	{
 		case KW_INCLUDE:
+			parser_include(prs);
+			break;
 	
 		case KW_DEFINE:
 		case KW_SET:
@@ -356,7 +474,8 @@ static void parser_scan_keyword(parser *const prs)
 		case KW_WHILE:
 		case KW_ENDW:
 
-		//default:
+		default:
+		printf("\n");
 	}
 
 	uni_unscan_char(prs->in, last);
@@ -456,9 +575,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 							parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING, true);
 							prs->position += 2;
 						}
-
-						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
-														// он будет считан повторно и проанализирован снаружи
+						else
+						{
+							uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
+															// он будет считан повторно и проанализирован снаружи
+						}
 					}
 				}
 		}
