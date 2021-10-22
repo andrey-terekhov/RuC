@@ -150,12 +150,6 @@ typedef enum OPERATION
 	OP_DECL_VAR,			/**< Variable declaration node */
 	OP_DECL_TYPE,			/**< Type declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
-
-	// Built-in functions
-	OP_PRINTID,
-	OP_PRINT,
-	OP_GETID,
-	OP_PRINTF,
 } operation_t;
 
 typedef enum builtin
@@ -216,7 +210,12 @@ typedef enum builtin
 	BI_EXIT					= 162,
 	BI_UPB					= 166,
 
-	BEGIN_USER_FUNC			= 170,
+	BI_PRINTF				= 170,
+	BI_PRINT				= 174,
+	BI_PRINTID				= 178,
+	BI_GETID				= 182,
+
+	BEGIN_USER_FUNC			= 186,
 } builtin_t;
 
 

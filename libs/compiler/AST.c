@@ -366,14 +366,6 @@ statement_t statement_get_class(const node *const nd)
 			return STMT_BREAK;
 		case OP_RETURN:
 			return STMT_RETURN;
-		case OP_PRINTF:
-			return STMT_PRINTF;
-		case OP_PRINT:
-			return STMT_PRINT;
-		case OP_PRINTID:
-			return STMT_PRINTID;
-		case OP_GETID:
-			return STMT_GETID;
 		default:
 			return STMT_EXPR;
 	}

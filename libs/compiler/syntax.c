@@ -76,12 +76,6 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
-
-	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
-	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
-	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
-	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
-	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
 }
 
@@ -225,6 +219,10 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
 	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
+	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, NULL));
+	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
 }
 
 
