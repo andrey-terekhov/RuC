@@ -219,29 +219,17 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
  */
 static void parser_skip_short_comment(parser *const prs)
 {
-	parser_add_char(prs, U'\\');
+	parser_add_char(prs, U'/');
+	parser_add_char(prs, U'/');
 
 	char32_t cur = uni_scan_char(prs->in);
 	while(!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
+		parser_add_char(prs, cur);
 		cur = uni_scan_char(prs->in);
 	}
 
-	if (cur != (char32_t)EOF)
-	{
-		// Специфика последовательности "\r\n"
-		if (cur == U'\r')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			if (next != U'\n')
-			{
-				uni_unscan_char(prs->in, next);
-			}
-		}
-
-		uni_print_char(prs->out, U'\n');
-		parser_next_string(prs);
-	}
+	uni_unscan_char(prs->in, cur);
 }
 
 /**
@@ -251,7 +239,7 @@ static void parser_skip_long_comment(parser *const prs)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
 	const size_t old_position = prs->position;
-	parser_add_char(prs, U'\\');
+	parser_add_char(prs, U'/');
 	parser comm_beginning = *prs;
 	parser_add_char(&comm_beginning, U'*');
 
@@ -397,6 +385,7 @@ static void parser_include(parser *const prs)
 		if (storage_last_read(prs->stg) != NULL)
 		{
 			parser_add_string(prs, storage_last_read(prs->stg));
+			parser_add_char(prs, cur);
 			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
 		}
 		if (utf8_is_separator(cur))
@@ -423,11 +412,126 @@ static void parser_include(parser *const prs)
 	if (storage_last_read(prs->stg) != NULL)
 	{
 		parser_add_string(prs, storage_last_read(prs->stg));
+		parser_add_char(prs, cur);
 		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
 	}
 
 	// Необходимо подключить файл и вызвать parser_preprocess
 	printf("\"%s\"\n", buffer);
+}
+
+/**
+ *	Считывает имя идентификатора, его значение, добавляет в stg
+ */
+static void parser_define(parser *const prs)
+{
+	char32_t cur = uni_scan_char(prs->in);
+
+	// Пропуск разделителей и комментариев
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		parser_add_char(prs, cur);
+		
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'/':
+					parser_skip_short_comment(prs);
+					break;
+				case U'*':
+					parser_skip_long_comment(prs);
+					break;
+				default:
+					uni_unscan_char(prs->in, next);
+					parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
+			}
+		}
+
+		cur = uni_scan_char(prs->in);
+	}
+
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
+	{
+		parser_macro_error(prs, PARSER_DEFINE_NEED_IDENT, true);
+	}
+	else if (!utf8_is_letter(cur))
+	{
+		parser_add_char(prs, cur);
+		parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
+	}
+	else
+	{
+		char32_t id[1024];
+		char32_t value[1024];
+		//value[0] = U'q';
+		value[0] = U'\0';
+
+		// Запись идентификатора
+		size_t i = 0;
+		while (!utf8_is_separator(cur) && cur != U'/' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+		{
+			parser_add_char(prs, cur);
+			if (utf8_is_letter(cur) || utf8_is_digit(cur))
+			{
+				id[i] = cur;
+			}
+			else
+			{
+				parser_add_char(prs, cur);
+				parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
+				break;
+			}
+
+			cur = uni_scan_char(prs->in);
+			i++;
+		}
+
+		if (storage_add(prs->stg, id, value) == SIZE_MAX)	// Проверка существования
+		{
+			parser_macro_error(prs, PARSER_DEFINE_EXIST_IDENT, true);
+		}
+		else
+		{
+			// Запись значения
+			size_t j = 0;
+			while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+			{
+				parser_add_char(prs, cur);
+
+				if (cur == U'/')
+				{
+					char32_t next = uni_scan_char(prs->in);
+					switch (next)
+					{
+						case U'/':
+							parser_skip_short_comment(prs);
+							break;
+						case U'*':
+							parser_skip_long_comment(prs);
+							break;
+						default:
+							value[j] = cur;
+							uni_unscan_char(prs->in, next);
+					}
+				}
+				else
+				{
+					value[j] = cur;
+				}
+
+				cur = uni_scan_char(prs->in);
+				j++;
+			}
+
+			value[j] = U'\0';
+		}
+
+		storage_remove(prs->stg, id);
+		storage_add(prs->stg, id, value);
+		
+	}
 }
 
 
@@ -463,15 +567,14 @@ static void parser_scan_keyword(parser *const prs)
 	size_t res = storage_search(prs->stg, prs->in, &last);
 
 	size_t length = parser_add_string(prs, storage_last_read(prs->stg));	// Буфферизация считанного ключевого слова
-	parser_add_char(prs, last);	// Добавление символа после ключевого слова
-	prs->position --;	// Возврат позиции на '#'
 
 	if (res == SIZE_MAX)
 	{
 		parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
 	}
 
-	prs->position += length + 1;
+	parser_add_char(prs, last);	// Добавление символа после ключевого слова
+	prs->position += length - 1;
 
 	switch (res)
 	{
@@ -480,6 +583,8 @@ static void parser_scan_keyword(parser *const prs)
 			break;
 	
 		case KW_DEFINE:
+			parser_define(prs);
+			break;
 		case KW_SET:
 		case KW_UNDEF:
 

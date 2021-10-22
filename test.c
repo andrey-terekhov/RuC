@@ -1,5 +1,5 @@
-
-#include "( qwe[/*" nghjk
+#define a1        b
+#define a1
 
 int main()
 {

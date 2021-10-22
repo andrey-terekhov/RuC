@@ -84,6 +84,16 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "#include требуется \"FILENAME\"");
 			break;
 
+		case PARSER_DEFINE_NEED_IDENT:
+			sprintf(msg, "#define требуется идентификатор");
+			break;
+		case PARSER_DEFINE_INCORRECT_IDENT_NAME:
+			sprintf(msg, "некорректное имя идентификатора");
+			break;
+		case PARSER_DEFINE_EXIST_IDENT:
+			sprintf(msg, "переопределение существующего идентификатора");
+			break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;
