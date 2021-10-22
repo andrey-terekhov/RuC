@@ -484,6 +484,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 	return sx != NULL ? vector_set(&sx->identifiers, index + 3, displ) : -1;
 }
 
+bool ident_is_type_specifier(syntax *const sx, const size_t index)
+{
+	return ident_get_displ(sx, index) >= 1000;
+}
+
 
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 {
@@ -801,22 +806,20 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref)
 }
 
 
-int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg)
+scope scope_block_enter(syntax *const sx)
 {
-	if (sx == NULL || displ == NULL || lg == NULL)
+	if (sx == NULL)
 	{
-		return -1;
+		return (scope){ ITEM_MAX, ITEM_MAX };
 	}
 
 	sx->cur_id = vector_size(&sx->identifiers);
-	*displ = sx->displ;
-	*lg = sx->lg;
-	return 0;
+	return (scope){ sx->displ, sx->lg };
 }
 
-int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
+int scope_block_exit(syntax *const sx, const scope scp)
 {
-	if (sx == NULL)
+	if (sx == NULL || scp.lg == ITEM_MAX || scp.displ == ITEM_MAX)
 	{
 		return -1;
 	}
@@ -827,8 +830,8 @@ int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
 		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), prev == ITEM_MAX - 1 ? ITEM_MAX : prev);
 	}
 
-	sx->displ = displ;
-	sx->lg = lg;
+	sx->displ = scp.displ;
+	sx->lg = scp.lg;
 	return 0;
 }
 
