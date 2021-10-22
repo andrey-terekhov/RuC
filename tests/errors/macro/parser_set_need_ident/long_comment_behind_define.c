@@ -1,5 +1,5 @@
-#define A
-#define A
+#define /* long 
+comment */
 
 int main()
 {

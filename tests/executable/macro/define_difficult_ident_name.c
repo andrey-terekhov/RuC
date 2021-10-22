@@ -5,7 +5,7 @@ int main()
 	int a = 0;
 
 	a = A1_;
-	assert(a, "long comment before ident");
+	assert(a, "difficult name");
 
 	return 0;
 }

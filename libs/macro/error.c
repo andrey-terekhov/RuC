@@ -84,14 +84,17 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "#include требуется \"FILENAME\"");
 			break;
 
+		case PARSER_INCORRECT_IDENT_NAME:
+			sprintf(msg, "некорректное имя идентификатора");
+			break;
 		case PARSER_DEFINE_NEED_IDENT:
 			sprintf(msg, "#define требуется идентификатор");
 			break;
-		case PARSER_DEFINE_INCORRECT_IDENT_NAME:
-			sprintf(msg, "некорректное имя идентификатора");
+		case PARSER_SET_NEED_IDENT:
+			sprintf(msg, "#set требуется идентификатор");
 			break;
-		case PARSER_DEFINE_EXIST_IDENT:
-			sprintf(msg, "переопределение существующего идентификатора");
+		case PARSER_UNDEF_NEED_IDENT:
+			sprintf(msg, "#undef требуется идентификатор");
 			break;
 
 		default:
@@ -112,6 +115,13 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 
 		case PARSER_COMM_END_WITHOUT_BEGINNING:
 			sprintf(msg, "\"*/\" найден вне комментария");
+			break;
+		
+		case PARSER_DEFINE_EXIST_IDENT:
+			sprintf(msg, "определение существующего идентификатора");
+			break;
+		case PARSER_SET_NOT_EXIST_IDENT:
+			sprintf(msg, "переопределение несуществующего идентификатора");
 			break;
 
 		default:

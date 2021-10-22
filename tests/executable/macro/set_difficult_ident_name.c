@@ -1,10 +1,11 @@
-#define ABF 1
+#define  A1_ 0
+#set A1_ 1
 
 int main()
 {
 	int a = 0;
 
-	a = ABF;
+	a = A1_;
 	assert(a, "difficult name");
 
 	return 0;

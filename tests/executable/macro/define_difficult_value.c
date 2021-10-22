@@ -1,4 +1,4 @@
-#define  A assert(a, "long comment before ident")
+#define  A assert(a, "difficult value")
 
 int main()
 {

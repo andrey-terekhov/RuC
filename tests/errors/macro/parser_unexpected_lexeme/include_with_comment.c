@@ -1,4 +1,4 @@
-#include "" nghjk //comment
+#include "" /* */ nghjk //comment
 
 int main()
 {
