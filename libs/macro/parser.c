@@ -67,6 +67,11 @@ static inline void parser_next_string(parser *const prs)
  */
 static inline size_t parser_add_string(parser *const prs, const char *const str)
 {
+	if (str == NULL)
+	{
+		return 0;
+	}
+
 	strcat(prs->string, str);
 	return strlen(str);
 }
@@ -312,7 +317,7 @@ static void parser_skip_long_comment(parser *const prs)
  */
 static void parser_include(parser *const prs)
 {
-	size_t include_position = prs->position;
+	const size_t include_position = prs->position;
 
 	char32_t cur = U'\0';
 	storage_search(prs->stg, prs->in, &cur);
@@ -351,16 +356,22 @@ static void parser_include(parser *const prs)
 	char buffer[1024] = "\0";
 	if (cur == U'\"')
 	{
+		parser_add_char(prs, cur);
 		storage_search(prs->stg, prs->in, &cur);
 		parser_add_to_buffer(buffer, storage_last_read(prs->stg));
 
 		while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
 			parser_add_char_to_buffer(cur, buffer);
+			parser_add_char(prs, cur);
+
 			storage_search(prs->stg, prs->in, &cur);
 			parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+
+			prs->position += parser_add_string(prs, storage_last_read(prs->stg));
 		}
 
+		parser_add_char(prs, cur);
 		if (cur != U'\"')
 		{
 			prs->position = include_position;
@@ -377,29 +388,42 @@ static void parser_include(parser *const prs)
 	storage_search(prs->stg, prs->in, &cur);
 	if (storage_last_read(prs->stg) != NULL)
 	{
-		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+		parser_add_string(prs, storage_last_read(prs->stg));
+		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
 	}
 
 	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		if (storage_last_read(prs->stg) == NULL && utf8_is_separator(cur))
+		if (storage_last_read(prs->stg) != NULL)
+		{
+			parser_add_string(prs, storage_last_read(prs->stg));
+			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
+		}
+		if (utf8_is_separator(cur))
 		{
 			parser_add_char(prs, cur);
 		}
-		else if (cur == U'/' && uni_scan_char(prs->in) == U'/' && storage_last_read(prs->stg) == NULL)
+		else if (cur == U'/' && uni_scan_char(prs->in) == U'/')
 		{
-			parser_add_char(prs, cur);
-			parser_skip_short_comment(prs);
+			break;
 		}
-		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
+		else if (cur == U'/' && uni_scan_char(prs->in) == U'*')
 		{
 			parser_add_char(prs, cur);
 			parser_skip_long_comment(prs);
+			break;
 		}
 		else
 		{
-			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME, true);
+			parser_add_string(prs, storage_last_read(prs->stg));
+			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
 		}
+		storage_search(prs->stg, prs->in, &cur);
+	}
+	if (storage_last_read(prs->stg) != NULL)
+	{
+		parser_add_string(prs, storage_last_read(prs->stg));
+		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME, true);
 	}
 
 	// Необходимо подключить файл и вызвать parser_preprocess

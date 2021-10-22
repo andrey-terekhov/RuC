@@ -1,6 +1,5 @@
 
-#include /*
-*/"( qwe[/*"
+#include "( qwe[/*" nghjk
 
 int main()
 {
