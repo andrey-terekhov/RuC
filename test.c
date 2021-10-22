@@ -1,10 +1,10 @@
-#define ABF 1
+#undef ABF /**/ d
 
 int main()
 {
 	int a = 0;
 
-	a = ABF;
+	a = 1;
 	assert(a, "difficult name");
 
 	return 0;

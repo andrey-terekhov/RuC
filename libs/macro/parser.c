@@ -132,7 +132,7 @@ static void parser_macro_error(parser *const prs, const error_t num, const bool 
 			parser_fill_string(prs);
 		}
 		prs->was_error = true;
-		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
+		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position - 1, num);
 	}
 }
 
@@ -147,7 +147,7 @@ static void parser_macro_warning(parser *const prs, const error_t num, const boo
 		{
 			parser_fill_string(prs);
 		}
-		macro_warning(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
+		macro_warning(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position - 1, num);
 	}
 }
 
@@ -625,7 +625,7 @@ static void parser_scan_keyword(parser *const prs)
 	}
 
 	uni_unscan_char(prs->in, last);
-	prs->position += length - 1;
+	prs->position += length;
 
 	switch (res)
 	{
