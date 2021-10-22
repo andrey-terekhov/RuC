@@ -458,14 +458,13 @@ static void parser_define(parser *const prs)
 	}
 	else if (!utf8_is_letter(cur))
 	{
-		parser_add_char(prs, cur);
 		parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
 	}
 	else
 	{
 		char32_t id[1024];
+		id[0] = U'\0';
 		char32_t value[1024];
-		//value[0] = U'q';
 		value[0] = U'\0';
 
 		// Запись идентификатора
@@ -475,17 +474,15 @@ static void parser_define(parser *const prs)
 			parser_add_char(prs, cur);
 			if (utf8_is_letter(cur) || utf8_is_digit(cur))
 			{
-				id[i] = cur;
+				id[i++] = cur;
 			}
 			else
 			{
-				parser_add_char(prs, cur);
 				parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
 				break;
 			}
 
 			cur = uni_scan_char(prs->in);
-			i++;
 		}
 
 		if (storage_add(prs->stg, id, value) == SIZE_MAX)	// Проверка существования
@@ -512,24 +509,22 @@ static void parser_define(parser *const prs)
 							parser_skip_long_comment(prs);
 							break;
 						default:
-							value[j] = cur;
+							value[j++] = cur;
 							uni_unscan_char(prs->in, next);
 					}
 				}
 				else
 				{
-					value[j] = cur;
+					value[j++] = cur;
 				}
 
 				cur = uni_scan_char(prs->in);
-				j++;
 			}
 
 			value[j] = U'\0';
 		}
 
-		storage_remove(prs->stg, id);
-		storage_add(prs->stg, id, value);
+		storage_set(prs->stg, id, value);
 		
 	}
 }
@@ -686,8 +681,19 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			default:
 				if (utf8_is_letter(cur))	//	Здесь будет макроподстановка
 				{
-					parser_add_char(prs, cur);
-					uni_print_char(prs->out, cur);
+					uni_unscan_char(prs->in, cur);
+
+					size_t id = storage_search(prs->stg, prs->in, &cur);
+					if (id != SIZE_MAX)
+					{
+						uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, id));
+					}
+					else
+					{
+						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
+						uni_printf(prs->out, "%s", storage_last_read(prs->stg));
+					}
+					uni_unscan_char(prs->in, cur);
 				}
 				else
 				{
