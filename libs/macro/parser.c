@@ -271,6 +271,7 @@ static void parser_skip_long_comment(parser *const prs)
 				{
 					case U'/':							// Комментарий считан, выход из функции
 						parser_add_char(prs, next);
+						prs->position--;
 							return;
 
 					default:							// Если встретился один '*', добавляет его в буффер строки кода
@@ -429,9 +430,7 @@ static void parser_define(parser *const prs)
 
 	// Пропуск разделителей и комментариев
 	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		parser_add_char(prs, cur);
-		
+	{		
 		if (cur == U'/')
 		{
 			char32_t next = uni_scan_char(prs->in);
@@ -444,6 +443,7 @@ static void parser_define(parser *const prs)
 					parser_skip_long_comment(prs);
 					break;
 				default:
+					parser_add_char(prs, cur);
 					uni_unscan_char(prs->in, next);
 					parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
 			}
@@ -458,6 +458,7 @@ static void parser_define(parser *const prs)
 	}
 	else if (!utf8_is_letter(cur))
 	{
+		parser_add_char(prs, cur);
 		parser_macro_error(prs, PARSER_DEFINE_INCORRECT_IDENT_NAME, true);
 	}
 	else
