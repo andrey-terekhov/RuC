@@ -1,4 +1,4 @@
-#undef ABF /**/ d
+#undef ABF / d
 
 int main()
 {

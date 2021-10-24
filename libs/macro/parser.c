@@ -214,8 +214,6 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 
 /**
  *	Пропускает символы до конца комментария ('\n', '\r' или EOF)
- *
- *	@note Буфферизация строки кода не производится, поскольку, комментарий идет до конца строки
  */
 static void parser_skip_short_comment(parser *const prs)
 {
@@ -709,6 +707,154 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
+	// comment_create
+
+	char32_t cur = U'\0';
+	size_t index = 0;
+	bool was_slash = false;
+
+
+	index = storage_search(prs->stg, prs->in, &cur);
+	while (cur != (char32_t)EOF)
+	{
+		switch (index)
+		{
+			case KW_INCLUDE:
+				parser_include(prs);
+				break;
+		
+			case KW_DEFINE:
+				parser_define(prs, KW_DEFINE);
+				break;
+			case KW_SET:
+				parser_define(prs, KW_SET);
+				break;
+			case KW_UNDEF:
+				parser_define(prs, KW_UNDEF);
+				break;
+
+			case KW_MACRO:
+			case KW_ENDM:
+
+			case KW_IFDEF:
+			case KW_IFNDEF:
+			case KW_IF:
+			case KW_ELIF:
+			case KW_ELSE:
+			case KW_ENDIF:
+
+			case KW_EVAL:
+
+			case KW_WHILE:
+			case KW_ENDW:
+
+			default:
+				if (storage_last_read(prs->stg) != NULL)
+				{
+					if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+					if (storage_last_read(prs->stg)[0] == '#')
+					{
+						parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
+					}
+
+					if (index != SIZE_MAX)
+					{
+						// Макроподстановка
+						parser_add_string(prs, storage_get_by_index(prs->stg, index));
+						uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
+					}
+					else
+					{
+						parser_add_string(prs, storage_last_read(prs->stg));
+						uni_printf(prs->out, "%s", storage_last_read(prs->stg));
+					}
+				}
+
+				switch (cur)
+				{
+					case U'#':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+						parser_add_char(prs, cur);
+						uni_print_char(prs->out, cur);
+						break;
+
+					case U'\'':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+						parser_skip_string(prs, U'\'');
+						break;
+					case U'\"':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+						parser_skip_string(prs, U'\"');
+						break;
+
+					case U'\r':
+						uni_scan_char(prs->in);
+					case U'\n':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+						parser_next_string(prs);
+						uni_print_char(prs->out, U'\n');
+						break;
+
+					case U'/':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+						else
+						{
+							was_slash = true;
+						}
+						break;
+					case U'*':
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_long_comment(prs);
+						}
+
+					default:
+						if (was_slash)
+						{
+							was_slash = false;
+							parser_skip_short_comment(prs);
+						}
+
+						parser_add_char(prs, cur);
+						uni_print_char(prs->out, cur);
+				}
+		}
+
+		index = storage_search(prs->stg, prs->in, &cur);
+	}
+
+
+	/*
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
@@ -751,21 +897,22 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					else
 					{
 						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
-						uni_printf(prs->out, "%s", storage_last_read(prs->stg));
+						if (storage_last_read(prs->stg) != NULL)
+						{
+							uni_printf(prs->out, "%s", storage_last_read(prs->stg));
+						}
 					}
 					uni_unscan_char(prs->in, cur);
 				}
 				else
 				{
-					parser_add_char(prs, cur);
-					uni_print_char(prs->out, cur);
-
 					if (cur == U'*')	// Проверка на наличие конца длинного комментария без его начала
 					{
 						char32_t next = uni_scan_char(prs->in);
 						if (next == U'/')
 						{
 							parser_add_char(prs, next);
+
 							prs->position -= 2;	// Сдвигает position до '*'
 							parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING, true);
 							prs->position += 2;
@@ -776,6 +923,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 															// он будет считан повторно и проанализирован снаружи
 						}
 					}
+
+					parser_add_char(prs, cur);
+					uni_print_char(prs->out, cur);
 				}
 		}
 
@@ -784,6 +934,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	uni_print_char(prs->out, U'\n');
 	uni_print_char(prs->out, U'\n');
+	*/
 
 	return !prs->was_error ? 0 : -1;
 }
