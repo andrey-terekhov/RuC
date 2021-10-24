@@ -1,11 +1,5 @@
-#undef ABF / d
-
 int main()
 {
-	int a = 0;
-
-	a = 1;
-	assert(a, "difficult name");
-
+	pri/*nt(1);
 	return 0;
 }

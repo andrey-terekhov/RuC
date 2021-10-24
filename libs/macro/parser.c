@@ -233,7 +233,7 @@ static void parser_skip_short_comment(parser *const prs)
 /**
  *	Считывает символы до конца длинного комментария и буфферизирует текущую строку кода
  */
-static void parser_skip_long_comment(parser *const prs)
+static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
 	const size_t old_position = prs->position;
@@ -292,7 +292,9 @@ static void parser_skip_long_comment(parser *const prs)
 	}
 
 	comm_beginning.position = old_position;
-	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED, false);
+	//uni_unscan_char(prs->in, cur);
+	*last = (char32_t)EOF;
+	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED, false);//if (cur == (char32_t)EOF)printf("'%c'\t \n", cur);
 	prs->was_error = true;
 	parser_clear(&comm_beginning);
 }
@@ -318,7 +320,7 @@ static void parser_include(parser *const prs)
 		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
 		{
 			parser_add_char(prs, cur);
-			parser_skip_long_comment(prs);
+			parser_skip_long_comment(prs, &cur);
 		}
 		else
 		{
@@ -397,7 +399,7 @@ static void parser_include(parser *const prs)
 		else if (cur == U'/' && uni_scan_char(prs->in) == U'*')
 		{
 			parser_add_char(prs, cur);
-			parser_skip_long_comment(prs);
+			parser_skip_long_comment(prs, &cur);
 			break;
 		}
 		else
@@ -443,7 +445,7 @@ static void parser_define(parser *const prs, const keyword_t mode)
 					parser_skip_short_comment(prs);
 					break;
 				case U'*':
-					parser_skip_long_comment(prs);
+					parser_skip_long_comment(prs, &cur);
 					break;
 				default:
 					parser_add_char(prs, cur);
@@ -523,7 +525,7 @@ static void parser_define(parser *const prs, const keyword_t mode)
 							parser_skip_short_comment(prs);
 							break;
 						case U'*':
-							parser_skip_long_comment(prs);
+							parser_skip_long_comment(prs, &cur);
 							break;
 						default:
 							parser_add_char(prs, cur);
@@ -562,7 +564,7 @@ static void parser_define(parser *const prs, const keyword_t mode)
 						parser_skip_short_comment(prs);
 						break;
 					case U'*':
-						parser_skip_long_comment(prs);
+						parser_skip_long_comment(prs, &cur);
 						break;
 					default:
 						value[j++] = cur;
@@ -585,32 +587,9 @@ static void parser_define(parser *const prs, const keyword_t mode)
 
 
 /**
- *	Определяет тип комментария и пропускает его
- */
-static void parser_scan_comment(parser *const prs)
-{
-	char32_t next = uni_scan_char(prs->in);
-	switch (next)
-	{
-		case U'/':
-			parser_skip_short_comment(prs);
-				break;
-		case U'*':
-			parser_skip_long_comment(prs);
-				break;
-
-		default:	// Если встретился один '/', печатает его в out и обрабатывает следующие символы
-			parser_add_char(prs, U'/');
-			uni_print_char(prs->out, U'/');
-			uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
-											// он будет считан повторно и проанализирован снаружи
-	}
-}
-
-/**
  *	Определяет тип ключевого слова и разбирает дальнейшее выражение
  */
-static void parser_scan_keyword(parser *const prs)
+/*static void parser_scan_keyword(parser *const prs)
 {
 	char32_t last;
 	size_t res = storage_search(prs->stg, prs->in, &last);
@@ -661,7 +640,7 @@ static void parser_scan_keyword(parser *const prs)
 	}
 
 	uni_unscan_char(prs->in, last);
-}
+}*/
 
 
 /*
@@ -714,9 +693,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	bool was_slash = false;
 
 
-	index = storage_search(prs->stg, prs->in, &cur);
+	//index = storage_search(prs->stg, prs->in, &cur);
 	while (cur != (char32_t)EOF)
 	{
+		index = storage_search(prs->stg, prs->in, &cur);
 		switch (index)
 		{
 			case KW_INCLUDE:
@@ -777,6 +757,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 				switch (cur)
 				{
+					case U'@':
+					printf("%li\n", in_get_position(prs->in));
 					case U'#':
 						if (was_slash)
 						{
@@ -792,7 +774,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_short_comment(prs);
 						}
 
 						parser_skip_string(prs, U'\'');
@@ -801,7 +782,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_short_comment(prs);
 						}
 
 						parser_skip_string(prs, U'\"');
@@ -835,22 +815,26 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_long_comment(prs);
+							parser_skip_long_comment(prs, &cur);
+							break;
 						}
+						else
+						{
+							parser_add_char(prs, cur);
+							uni_print_char(prs->out, cur);
+						}
+						break;
 
 					default:
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_short_comment(prs);
 						}
 
 						parser_add_char(prs, cur);
 						uni_print_char(prs->out, cur);
 				}
 		}
-
-		index = storage_search(prs->stg, prs->in, &cur);
 	}
 
 
