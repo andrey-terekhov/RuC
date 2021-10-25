@@ -546,7 +546,7 @@ static void emit_function_definition(information *const info, const node *const 
 	emit_statement(info, &body);
 
 	// Выделение на стеке памяти для функции
-	to_code_2R_I(old_io, IC_MIPS_ADDI, R_FP, R_FP, -info->max_displ);
+	to_code_2R_I(old_io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
 
 	// Запись буфера с телом функции в старый io
 	char* buffer = out_extract_buffer(info->sx->io);
