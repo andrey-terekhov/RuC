@@ -20,6 +20,7 @@
 #include "uniprinter.h"
 
 
+static const size_t BUFFER_SIZE = 65536;				/**< Размер буфера для тела функции */
 static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
 // TODO: расписать, что за данные сохраняются в стеке при вызове
@@ -512,8 +513,12 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
-	// Выделение на стеке памяти для функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)FUNC_DISPL/* -info->max_displ*/);
+	// Создание буфера для тела функции
+	universal_io* old_io = info->sx->io;
+	universal_io new_io = io_create();
+  	out_set_buffer(&new_io, BUFFER_SIZE);
+	info->sx->io = &new_io;
+	
 	// Сохранение данных перед началом работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
@@ -539,6 +544,15 @@ static void emit_function_definition(information *const info, const node *const 
 
 	const node body = declaration_function_get_body(nd);
 	emit_statement(info, &body);
+
+	// Выделение на стеке памяти для функции
+	to_code_2R_I(old_io, IC_MIPS_ADDI, R_FP, R_FP, -info->max_displ);
+
+	// Запись буфера с телом функции в старый io
+	char* buffer = out_extract_buffer(info->sx->io);
+	uni_printf(old_io, "%s", buffer);
+	free(buffer);
+	info->sx->io = old_io;
 
 	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
