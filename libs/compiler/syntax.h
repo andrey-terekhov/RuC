@@ -47,9 +47,9 @@ enum TYPE
 	TYPE_MSG_INFO 		= 2,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
-	TYPE_ENUM,
 	TYPE_ARRAY,
 	TYPE_POINTER,
+	TYPE_ENUM,
 
 	BEGIN_USER_TYPE = 15,
 };
@@ -306,6 +306,16 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
+
+/**
+ *	Check if identifier is local by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	id			Identifier of target lvalue
+ *
+ *	@return @c 1 on true, @c 0 on false
+ */
+bool ident_is_local(const syntax *const sx, const size_t index);
 
 
 /**
