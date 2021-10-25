@@ -16,11 +16,15 @@
 
 #include "mipsgen.h"
 #include "AST.h"
+#include "hash.h"
 #include "operations.h"
 #include "uniprinter.h"
 
 
 static const size_t BUFFER_SIZE = 65536;				/**< Размер буфера для тела функции */
+static const size_t HASH_TABLE_SIZE = 1024;				/**< Размер хеш-таблицы для смещений и регистров */
+static const bool IS_ON_STACK = true;					/**< Хранится ли переменная на стеке */
+
 static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
 // TODO: расписать, что за данные сохраняются в стеке при вызове
@@ -111,6 +115,10 @@ typedef struct information
 	mips_register_t request_reg;		/**< Регистр на запрос */
 
 	size_t max_displ;					/**< Максимальное смещение */
+	hash displacements;					/**< Хеш таблица с информацией о расположении идентификаторов:
+												@с key		 - ссылка на таблицу идентификаторов
+												@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре 
+												@c value[1]  - смещение или номер регистра */
 } information;
 
 
@@ -477,6 +485,8 @@ static void emit_variable_declaration(information *const info, const node *const
 
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{
+		hash_set_by_index(&info->displacements, id, 0, IS_ON_STACK);
+		hash_set_by_index(&info->displacements, id, 1, value_displ);
 		// TODO: регистровые переменные
 		// TODO: вещественные числа
 
@@ -841,12 +851,16 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 	info.max_displ = 0;
 
+	info.displacements = hash_create(HASH_TABLE_SIZE);
+
 	pregen(sx);
 	strings_declaration(&info);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&info.sx->tree);
 	const int ret = emit_translation_unit(&info, &root);
 	postgen(&info);
+
+	hash_clear(&info.displacements);
 	
 	return ret;
 }
