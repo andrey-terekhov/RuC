@@ -419,13 +419,14 @@ static void emit_identifier_expression(information *const info, const node *cons
 	const size_t id = expression_identifier_get_id(nd);
 	printf("2 %zu\n", id);
 	const bool is_on_stack = (bool)hash_get_by_index(&info->displacements, id, 0);
-	const size_t displ = (size_t)hash_get_by_index(&info->displacements, id, 1);
+	const size_t value_displ = (size_t)hash_get_by_index(&info->displacements, id, 1);
+	printf("%zu\n", value_displ);
 
 	if (is_on_stack)
 	{
 		// TODO: глобальные переменные
 		// TODO: тип float
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -(item_t)displ, R_SP);
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -(item_t)value_displ, R_SP);
 	}
 	// TODO: регистровые переменные
 }
@@ -509,6 +510,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	{
 		printf("1 %zu\n", id);
 		hash_set_by_index(&info->displacements, id, 0, IS_ON_STACK);
+		printf("%zu\n", value_displ);
 		hash_set_by_index(&info->displacements, id, 1, value_displ);
 		// TODO: регистровые переменные
 		// TODO: вещественные числа
