@@ -409,6 +409,28 @@ static void emit_literal_expression(information *const info, const node *const n
 }
 
 /**
+ *	Emit identifier expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_identifier_expression(information *const info, const node *const nd)
+{
+	const size_t id = expression_identifier_get_id(nd);
+	printf("2 %zu\n", id);
+	const bool is_on_stack = hash_get_by_index(&info->displacements, id, 0);
+	const size_t displ = hash_get_by_index(&info->displacements, id, 1);
+
+	if (is_on_stack)
+	{
+		// TODO: глобальные переменные
+		// TODO: тип float
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -(item_t)displ, R_SP);
+	}
+	// TODO: регистровые переменные
+}
+
+/**
  *	Emit expression
  *
  *	@param	info	Encoder
@@ -423,7 +445,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_IDENTIFIER:
-			// emit_identifier_expression(info, nd);
+			emit_identifier_expression(info, nd);
 			return;
 
 		case EXPR_LITERAL:
@@ -485,6 +507,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{
+		printf("1 %zu\n", id);
 		hash_set_by_index(&info->displacements, id, 0, IS_ON_STACK);
 		hash_set_by_index(&info->displacements, id, 1, value_displ);
 		// TODO: регистровые переменные
@@ -555,6 +578,9 @@ static void emit_function_definition(information *const info, const node *const 
 	const node body = declaration_function_get_body(nd);
 	emit_statement(info, &body);
 
+	// Выравнивание смещения на 8
+	// info->max_displ = (info->max_displ + 7) * 8 / 8;
+
 	// Выделение на стеке памяти для функции
 	to_code_2R_I(old_io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
 
@@ -566,13 +592,6 @@ static void emit_function_definition(information *const info, const node *const 
 
 	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
-
-	// TODO: тут будет высчитываться добавочное смещение функции для локальных переменных
-	//		сейчас реализован случай, когда нет локальных переменных
-	//		потом max_displ будет вычитаться при выделении памяти на стеке и прибавляться при восстанвлении стека
-
-	// Выравнивание смещения на 8
-	// const item_t max_displ = (info->max_displ + 7) * 8 / 8;
 
 	// Восстановление стека после работы функции
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
