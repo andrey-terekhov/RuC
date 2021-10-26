@@ -757,8 +757,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 				switch (cur)
 				{
-					case U'@':
-					printf("%li\n", in_get_position(prs->in));
 					case U'#':
 						if (was_slash)
 						{
