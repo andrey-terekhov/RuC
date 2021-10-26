@@ -57,6 +57,7 @@ static bool utf8_is_line_breaker(const char32_t symbol)
  */
 static inline void parser_next_string(parser *const prs)
 {
+	prs->line_position = in_get_position(prs->in);
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
 	prs->string[0] = '\0';
@@ -667,6 +668,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
+	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
 	prs.position = FST_CHARACTER_INDEX;
 	prs.string[0] = '\0';
@@ -692,7 +694,22 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	size_t index = 0;
 	bool was_slash = false;
 
-
+/*
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+size_t a = in_get_position(prs->in);
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+in_set_position(prs->in, 1);
+printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
+exit(2345);
+*/
 	//index = storage_search(prs->stg, prs->in, &cur);
 	while (cur != (char32_t)EOF)
 	{
