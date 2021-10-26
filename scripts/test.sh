@@ -3,6 +3,7 @@
 init()
 {
 	exit_code=1
+	# vm_exec=export.txt
 	llvm_exec=export.ll
 	clang_output=output
 
@@ -132,6 +133,39 @@ build_folder()
 	fi
 }
 
+# build_vm()
+# {
+# 	if ! [[ -z $remove ]] ; then
+# 		rm -rf ruc-vm
+# 	fi
+
+# 	if ! [[ -d ruc-vm ]] ; then
+# 		git clone -b $vm_release --recursive https://github.com/andrey-terekhov/RuC-VM ruc-vm
+# 		cd ruc-vm
+# 	else
+# 		cd ruc-vm
+# 		git checkout $vm_release
+# 	fi
+
+# 	if [[ $OSTYPE != "msys" ]] ; then
+# 		CMAKE_BUILD_TYPE=-DCMAKE_BUILD_TYPE=Release
+# 	fi
+
+# 	mkdir -p build && cd build && cmake .. $CMAKE_BUILD_TYPE -DTESTING_EXIT_CODE=$exit_code
+# 	if ! cmake --build . --config Release ; then
+# 		exit 1
+# 	fi
+
+# 	cd ../..
+# 	if [[ $OSTYPE == "msys" ]] ; then
+# 		interpreter=./ruc-vm/build/Release/ruc-vm
+# 	else
+# 		interpreter=./ruc-vm/build/ruc-vm
+# 	fi
+
+# 	interpreter_debug=$interpreter
+# }
+
 build()
 {
 	cd `dirname $0`/..
@@ -143,6 +177,10 @@ build()
 	else
 		compiler_debug=$compiler
 	fi
+
+	# if [[ -z $ignore ]] ; then
+	# 	build_vm
+	# fi
 }
 
 run()
@@ -158,12 +196,14 @@ run()
 	build_type=""
 	if [[ $exec != $exec_debug ]] ; then
 		if [[ $ret == 0 ]] ; then
+			# mv $vm_exec $buf
 			mv $llvm_exec $buf
 
 			$runner $exec_debug $@ &>$log
 			ret=$?
 
 			if [[ $ret == 0 ]] ; then
+				# mv $buf $vm_exec
 				mv $buf $llvm_exec
 			else
 				build_type="(Debug)"
@@ -222,6 +262,8 @@ message_failure()
 execution()
 {
 	if [[ $path == $dir_exec/* ]] ; then
+		# action="execution"
+		# run $interpreter $interpreter_debug $vm_exec
 		action="clang exe"
 		clang $llvm_exec -o $clang_output
 
@@ -314,6 +356,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
+		# run $compiler $compiler_debug $sources -o $vm_exec
 		run $compiler $compiler_debug $sources -LLVM -o $llvm_exec
 
 		case $? in
