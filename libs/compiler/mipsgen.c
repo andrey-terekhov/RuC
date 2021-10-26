@@ -418,8 +418,8 @@ static void emit_identifier_expression(information *const info, const node *cons
 {
 	const size_t id = expression_identifier_get_id(nd);
 	printf("2 %zu\n", id);
-	const bool is_on_stack = (bool)hash_get_by_index(&info->displacements, id, 0);
-	const size_t value_displ = (size_t)hash_get_by_index(&info->displacements, id, 1);
+	const bool is_on_stack = (bool)hash_get(&info->displacements, id, 0);
+	const size_t value_displ = (size_t)hash_get(&info->displacements, id, 1);
 	printf("%zu\n", value_displ);
 
 	if (is_on_stack)
@@ -509,9 +509,9 @@ static void emit_variable_declaration(information *const info, const node *const
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{
 		printf("1 %zu\n", id);
-		hash_set_by_index(&info->displacements, id, 0, IS_ON_STACK);
+		hash_set(&info->displacements, id, 0, IS_ON_STACK);
 		printf("%zu\n", value_displ);
-		hash_set_by_index(&info->displacements, id, 1, value_displ);
+		hash_set(&info->displacements, id, 1, value_displ);
 		// TODO: регистровые переменные
 		// TODO: вещественные числа
 
