@@ -418,8 +418,8 @@ static void emit_identifier_expression(information *const info, const node *cons
 {
 	const size_t id = expression_identifier_get_id(nd);
 	printf("2 %zu\n", id);
-	const bool is_on_stack = hash_get_by_index(&info->displacements, id, 0);
-	const size_t displ = hash_get_by_index(&info->displacements, id, 1);
+	const bool is_on_stack = (bool)hash_get_by_index(&info->displacements, id, 0);
+	const size_t displ = (size_t)hash_get_by_index(&info->displacements, id, 1);
 
 	if (is_on_stack)
 	{
