@@ -206,7 +206,6 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	const size_t old_position = prs->position;
 
 	parser_add_char(prs, ch);
-	uni_print_char(prs->out, ch);
 
 	bool was_slash = false;
 
@@ -219,12 +218,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			{
 				was_slash = false;
 				parser_add_char(prs, cur);
-				uni_print_char(prs->out, cur);
 			}
 			else
 			{
 				parser_add_char(prs, cur);
-				uni_print_char(prs->out, cur);
 				return;
 			}
 		}
@@ -249,7 +246,6 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		{
 			was_slash = cur == U'\\' ? true : false;
 			parser_add_char(prs, cur);
-			uni_print_char(prs->out, cur);
 		}
 
 		cur = uni_scan_char(prs->in);
@@ -263,13 +259,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
  */
 static void parser_skip_short_comment(parser *const prs)
 {
-	parser_add_char(prs, U'/');
-	parser_add_char(prs, U'/');
-
 	char32_t cur = uni_scan_char(prs->in);
 	while(!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		parser_add_char(prs, cur);
+		prs->position++;
 		cur = uni_scan_char(prs->in);
 	}
 
@@ -283,11 +276,11 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 {
 	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
 	const size_t old_position = prs->position;
-	parser_add_char(prs, U'/');
+	//parser_add_char(prs, U'/');
 	parser comm_beginning = *prs;
-	parser_add_char(&comm_beginning, U'*');
+	//parser_add_char(&comm_beginning, U'*');
 
-	parser_add_char(prs, U'*');
+	//parser_add_char(prs, U'*');
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
@@ -302,19 +295,13 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 
 			case U'*':
 			{
-				parser_add_char(prs, cur);
-
-				// Буфферизация комментария для вывода полной строки кода в случае незавершенного комментария
-				if (prs->line == comm_beginning.line)
-				{
-					parser_add_char(&comm_beginning, cur);
-				}
+				//parser_add_char(prs, cur);
 
 				char32_t next = uni_scan_char(prs->in);
 				switch (next)
 				{
 					case U'/':							// Комментарий считан, выход из функции
-						parser_add_char(prs, next);
+						//parser_add_char(prs, next);
 							return;
 
 					default:							// Если встретился один '*', добавляет его в буффер строки кода
@@ -325,13 +312,8 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 			}
 			break;
 
-			default:
-				parser_add_char(prs, cur);
-
-				if (prs->line == comm_beginning.line)
-				{
-					parser_add_char(&comm_beginning, cur);
-				}
+			//default:
+				//parser_add_char(prs, cur);
 		}
 
 		cur = uni_scan_char(prs->in);
@@ -809,12 +791,10 @@ exit(2345);
 					{
 						// Макроподстановка
 						parser_add_string(prs, storage_get_by_index(prs->stg, index));
-						uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
 					}
 					else
 					{
 						parser_add_string(prs, storage_last_read(prs->stg));
-						uni_printf(prs->out, "%s", storage_last_read(prs->stg));
 					}
 				}
 
@@ -824,11 +804,9 @@ exit(2345);
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_short_comment(prs);
 						}
 
 						parser_add_char(prs, cur);
-						uni_print_char(prs->out, cur);
 						break;
 
 					case U'\'':
@@ -854,11 +832,9 @@ exit(2345);
 						if (was_slash)
 						{
 							was_slash = false;
-							parser_skip_short_comment(prs);
 						}
 
 						parser_next_line(prs);
-						uni_print_char(prs->out, U'\n');
 						break;
 
 					case U'/':
@@ -882,7 +858,6 @@ exit(2345);
 						else
 						{
 							parser_add_char(prs, cur);
-							uni_print_char(prs->out, cur);
 						}
 						break;
 
@@ -893,7 +868,6 @@ exit(2345);
 						}
 
 						parser_add_char(prs, cur);
-						uni_print_char(prs->out, cur);
 				}
 		}
 	}
