@@ -147,7 +147,10 @@ static inline void parser_add_char_to_buffer(const char32_t ch, char *const buff
 
 
 /**
- *	Ошибка парсера препроцессора
+ *	Emit an error from parser
+ *
+ *	@param	prs			Parser structure
+ *	@param	num			Error code
  */
 static void parser_macro_error(parser *const prs, const error_t num)
 {
@@ -173,9 +176,12 @@ static void parser_macro_error(parser *const prs, const error_t num)
 }
 
 /**
- *	Предупреждение парсера препроцессора
+ *	Emit an warning from parser
+ *
+ *	@param	prs			Parser structure
+ *	@param	num			Error code
  */
-static void parser_macro_warning(parser *const prs, const error_t num)
+static void parser_macro_warning(parser *const prs, const warning_t num)
 {
 	if (parser_is_correct(prs))
 	{
@@ -614,63 +620,6 @@ static void parser_define(parser *const prs, const keyword_t mode)
 }
 
 
-/**
- *	Определяет тип ключевого слова и разбирает дальнейшее выражение
- */
-/*static void parser_scan_keyword(parser *const prs)
-{
-	char32_t last;
-	size_t res = storage_search(prs->stg, prs->in, &last);
-
-	size_t length = parser_add_string(prs, storage_last_read(prs->stg));	// Буфферизация считанного ключевого слова
-
-	if (res == SIZE_MAX)
-	{
-		parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD, true);
-	}
-
-	uni_unscan_char(prs->in, last);
-	prs->position += length;
-
-	switch (res)
-	{
-		case KW_INCLUDE:
-			parser_include(prs);
-			break;
-	
-		case KW_DEFINE:
-			parser_define(prs, KW_DEFINE);
-			break;
-		case KW_SET:
-			parser_define(prs, KW_SET);
-			break;
-		case KW_UNDEF:
-			parser_define(prs, KW_UNDEF);
-			break;
-
-		case KW_MACRO:
-		case KW_ENDM:
-
-		case KW_IFDEF:
-		case KW_IFNDEF:
-		case KW_IF:
-		case KW_ELIF:
-		case KW_ELSE:
-		case KW_ENDIF:
-
-		case KW_EVAL:
-
-		case KW_WHILE:
-		case KW_ENDW:
-
-		default:
-		printf("\n");
-	}
-
-	uni_unscan_char(prs->in, last);
-}*/
-
-
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -687,7 +636,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	{
 		prs.lk = NULL;
 		return prs;
-	}printf("691\n");
+	}
 
 	prs.lk = lk;
 	prs.stg = stg;
@@ -697,8 +646,8 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 
 	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
-	prs.position = FST_CHARACTER_INDEX;printf("701\n");
-	prs.string = strings_create(256);printf("702\n");
+	prs.position = FST_CHARACTER_INDEX;
+	prs.string = strings_create(256);
 
 	prs.is_recovery_disabled = false;
 	prs.was_error = false;
@@ -721,24 +670,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	size_t index = 0;
 	bool was_slash = false;
 
-
-/*
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-size_t a = in_get_position(prs->in);
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-in_set_position(prs->in, 1);
-printf("%li\t'%c'\t%li\n", in_get_position(prs->in), uni_scan_char(prs->in), in_get_position(prs->in));
-exit(2345);
-*/
-	//index = storage_search(prs->stg, prs->in, &cur);
 	while (cur != (char32_t)EOF)
 	{
 		index = storage_search(prs->stg, prs->in, &cur);
@@ -776,11 +707,7 @@ exit(2345);
 			default:
 				if (storage_last_read(prs->stg) != NULL)
 				{
-					if (was_slash)
-						{
-							was_slash = false;
-							parser_skip_short_comment(prs);
-						}
+					was_slash = false;
 
 					if (storage_last_read(prs->stg)[0] == '#')
 					{
@@ -801,39 +728,28 @@ exit(2345);
 				switch (cur)
 				{
 					case U'#':
-						if (was_slash)
-						{
-							was_slash = false;
-						}
-
-						parser_add_char(prs, cur);
+						was_slash = false;
+						parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
 						break;
 
 					case U'\'':
-						if (was_slash)
-						{
-							was_slash = false;
-						}
-
+						was_slash = false;
 						parser_skip_string(prs, U'\'');
 						break;
 					case U'\"':
-						if (was_slash)
-						{
-							was_slash = false;
-						}
-
+						was_slash = false;
 						parser_skip_string(prs, U'\"');
 						break;
 
 					case U'\r':
-						uni_scan_char(prs->in);
-					case U'\n':
-						if (was_slash)
+						cur = uni_scan_char(prs->in);
+						if (cur != U'\n' && cur != (char32_t)EOF)
 						{
-							was_slash = false;
+							uni_unscan_char(prs->in, cur);
 						}
-
+					case U'\n':
+					case (char32_t)EOF:
+						was_slash = false;
 						parser_next_line(prs);
 						break;
 
@@ -841,17 +757,20 @@ exit(2345);
 						if (was_slash)
 						{
 							was_slash = false;
+							strings_remove(&prs->string);
 							parser_skip_short_comment(prs);
 						}
 						else
 						{
 							was_slash = true;
+							parser_add_char(prs, cur);
 						}
 						break;
 					case U'*':
 						if (was_slash)
 						{
 							was_slash = false;
+							strings_remove(&prs->string);
 							parser_skip_long_comment(prs, &cur);
 							break;
 						}
@@ -862,11 +781,7 @@ exit(2345);
 						break;
 
 					default:
-						if (was_slash)
-						{
-							was_slash = false;
-						}
-
+						was_slash = false;
 						parser_add_char(prs, cur);
 				}
 		}
@@ -969,15 +884,6 @@ int parser_disable_recovery(parser *const prs)
 	prs->is_recovery_disabled = true;
 	return 0;
 }
-
-/*void parser_macro_error(parser *const prs, const error_t num)
-{
-	if (parser_is_correct(prs) && !prs->is_recovery_disabled && !prs->was_error)
-	{
-		prs->was_error = true;
-		macro_error(linker_current_path(prs->lk), (char *)prs->string, prs->line, prs->position, num);
-	}
-}*/
 
 
 bool parser_is_correct(const parser *const prs)

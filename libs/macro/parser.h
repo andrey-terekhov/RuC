@@ -39,7 +39,7 @@ typedef struct parser
 	size_t line_position;			/**< Сurrent line first character position in file */
 	size_t line;					/**< Сurrent line number in input */
 	size_t position;				/**< Сurrent character number in line */
-	strings string;				/**< Сode line */
+	strings string;					/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 	bool was_error;					/**< Set, if was error */
@@ -76,14 +76,6 @@ int parser_preprocess(parser *const prs, universal_io *const in);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int parser_disable_recovery(parser *const prs);
-
-/**
- *	Emit an error from parser
- *
- *	@param	prs			Parser structure
- *	@param	num			Error code
- */
-//void parser_macro_error(parser *const prs, const error_t num);
 
 
 /**
