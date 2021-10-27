@@ -244,7 +244,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			}
 
 			parser_next_line(prs);
-			uni_print_char(prs->out, '\n');
+			uni_print_char(prs->out, U'\n');
 			return;
 		}
 		else									// Независимо от корректности строки выводит ее в out
@@ -275,11 +275,16 @@ static void parser_skip_short_comment(parser *const prs)
 	char32_t cur = uni_scan_char(prs->in);
 	while(!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		prs->position++;
 		cur = uni_scan_char(prs->in);
 	}
 
-	uni_unscan_char(prs->in, cur);
+	if (cur == U'\r')
+	{
+		uni_scan_char(prs->in);
+	}
+
+	parser_next_line(prs);
+	uni_print_char(prs->out, U'\n');
 }
 
 /**
@@ -293,6 +298,8 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
 	prs->position++;										// '*' был считан снаружи
+
+	bool was_star = false;
 
 	char32_t cur = U'*';//uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
@@ -308,21 +315,14 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 				parser_next_line(prs);
 					break;
 
-			case U'*':
-			{
-				char32_t next = uni_scan_char(prs->in);
-				switch (next)
+			case U'/':
+				if (was_star)
 				{
-					case U'/':								// Комментарий считан, выход из функции
-						prs->position++;
-						return;
-
-					default:
-						uni_unscan_char(prs->in, next);		// Символ next не имеет отношения к комментарию,
-															// он будет считан повторно и проанализирован снаружи
+					return;
 				}
-			}
-			break;
+			default:
+				was_star = cur == U'*' ? true : false;
+				break;
 		}
 	}
 
@@ -355,7 +355,13 @@ static inline void parser_skip_line(parser *const prs)
 		cur = uni_scan_char(prs->in);
 	}
 
-	uni_unscan_char(prs->in, cur);
+	if (cur == U'\r')
+	{
+		uni_scan_char(prs->in);
+	}
+
+	parser_next_line(prs);
+	uni_print_char(prs->out, U'\n');
 }
 
 
@@ -798,16 +804,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 					case U'\r':
 						cur = uni_scan_char(prs->in);
-						if (cur != U'\n' && cur != (char32_t)EOF)
-						{
-							uni_unscan_char(prs->in, cur);
-						}
 					case U'\n':
 					case (char32_t)EOF:
 						was_slash = false;
 						was_lexeme = false;
 						parser_next_line(prs);
-						uni_print_char(prs->out, '\n');
+						uni_print_char(prs->out, U'\n');
 						break;
 
 					case U'/':
