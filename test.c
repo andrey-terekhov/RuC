@@ -1,6 +1,5 @@
 int main()
 {
-	print(1);
+	pri/*nt(1);
 	return 0;
 }
- "dfgh

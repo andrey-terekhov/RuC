@@ -62,8 +62,6 @@ static inline void parser_print(parser *const prs)
 	{
 		uni_printf(prs->out, "%s", strings_get(&prs->string, i));
 	}
-
-	uni_print_char(prs->out, '\n');
 }
 
 /**
@@ -209,7 +207,7 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
  */
 static void parser_skip_string(parser *const prs, const char32_t ch)
 {
-	const size_t old_position = prs->position;	// Позиция начала строковой константы
+	const size_t position = prs->position;		// Позиция начала строковой константы
 
 	bool was_slash = false;
 	parser_add_char(prs, ch);					// Вывод символа начала строковой константы
@@ -231,7 +229,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		}
 		else if (utf8_is_line_breaker(cur))		// Ошибка из-за наличия переноса строки
 		{
-			prs->position = old_position;
+			prs->position = position;
 			parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
 
 			if (prs->is_recovery_disabled)		// Добавление '\"' в конец незаконченной строковой константы
@@ -245,6 +243,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			}
 
 			parser_next_line(prs);
+			uni_print_char(prs->out, '\n');
 			return;
 		}
 		else									// Независимо от корректности строки выводит ее в out
@@ -287,13 +286,10 @@ static void parser_skip_short_comment(parser *const prs)
  */
 static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 {
-	// Сохранение позиции начала комментария на случай ошибки c возможностью буфферизации до конца строки
-	const size_t old_position = prs->position;
-	//parser_add_char(prs, U'/');
-	parser comm_beginning = *prs;
-	//parser_add_char(&comm_beginning, U'*');
-
-	//parser_add_char(prs, U'*');
+	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
+	const size_t line = prs->line;							// Номер строки с началом комментария
+	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
+	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
@@ -308,36 +304,40 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 
 			case U'*':
 			{
-				//parser_add_char(prs, cur);
-
 				char32_t next = uni_scan_char(prs->in);
 				switch (next)
 				{
-					case U'/':							// Комментарий считан, выход из функции
-						//parser_add_char(prs, next);
-							return;
+					case U'/':								// Комментарий считан, выход из функции
+						prs->position++;
+						return;
 
-					default:							// Если встретился один '*', добавляет его в буффер строки кода
-														// и обрабатывает следующие символы
-						uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
-														// он будет считан повторно и проанализирован снаружи
+					default:
+						uni_unscan_char(prs->in, next);		// Символ next не имеет отношения к комментарию,
+															// он будет считан повторно и проанализирован снаружи
 				}
 			}
 			break;
-
-			//default:
-				//parser_add_char(prs, cur);
 		}
 
+		prs->position++;
 		cur = uni_scan_char(prs->in);
 	}
 
-	comm_beginning.position = old_position;
-	//uni_unscan_char(prs->in, cur);
-	*last = (char32_t)EOF;
-	parser_macro_error(&comm_beginning, PARSER_COMM_NOT_ENDED);//if (cur == (char32_t)EOF)printf("'%c'\t \n", cur);
-	prs->was_error = true;
-	parser_clear(&comm_beginning);
+	prs->line_position = line_position;
+	prs->line = line;
+	prs->position = position;
+
+	*last = (char32_t)EOF;									// Необходимо для корректной работы снаружи
+	parser_macro_error(prs, PARSER_COMM_NOT_ENDED);
+
+	if (prs->is_recovery_disabled)							// Пропускает начало комментария
+	{
+		*last = U'/';
+		prs->line_position = line_position;
+		prs->line = line;
+		prs->position = position + 2;
+		in_set_position(prs->in, comment_text_position);
+	}
 }
 
 
@@ -758,6 +758,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					case (char32_t)EOF:
 						was_slash = false;
 						parser_next_line(prs);
+						uni_print_char(prs->out, '\n');
 						break;
 
 					case U'/':
