@@ -661,7 +661,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	{
 		const node identifier = expression_subscript_get_base(&base);
 		const item_t id = expression_identifier_get_id(&identifier);
-		const bool is_local = ident_is_local(info->sx, id);
+		const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 		const location_t location = info->variable_location;
@@ -725,7 +725,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	}
 
 	const item_t id = expression_identifier_get_id(&base);
-	const bool is_local = ident_is_local(info->sx, id);
+	const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 	const location_t location = info->variable_location;
