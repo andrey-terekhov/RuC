@@ -170,7 +170,7 @@ static void parser_macro_error(parser *const prs, const error_t num)
 		}
 
 		prs->was_error = true;
-		macro_error(linker_current_path(prs->lk), str, prs->line, prs->position - 1, num);
+		macro_error(linker_current_path(prs->lk), str, prs->line, prs->position, num);
 		in_set_position(prs->in, position);
 	}
 }
@@ -198,7 +198,7 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
 			cur = uni_scan_char(prs->in);
 		}
 
-		macro_warning(linker_current_path(prs->lk), str, prs->line, prs->position - 1, num);
+		macro_warning(linker_current_path(prs->lk), str, prs->line, prs->position, num);
 		in_set_position(prs->in, position);
 	}
 }
@@ -209,16 +209,15 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
  */
 static void parser_skip_string(parser *const prs, const char32_t ch)
 {
-	const size_t old_position = prs->position;
-
-	parser_add_char(prs, ch);
+	const size_t old_position = prs->position;	// Позиция начала строковой константы
 
 	bool was_slash = false;
+	parser_add_char(prs, ch);					// Вывод символа начала строковой константы
 
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
-		if (cur == ch)							// Строка считана, выход из функции
+		if (cur == ch)
 		{
 			if (was_slash)
 			{
@@ -227,26 +226,26 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 			}
 			else
 			{
-				parser_add_char(prs, cur);
-				return;
+				return;							// Строка считана, выход из функции
 			}
 		}
-		else if (utf8_is_line_breaker(cur))	// Ошибка из-за наличия переноса строки
+		else if (utf8_is_line_breaker(cur))		// Ошибка из-за наличия переноса строки
 		{
 			prs->position = old_position;
 			parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
 
-			parser_next_line(prs);
-
-			// Специфика последовательности "\r\n"
-			if (cur == U'\r')
+			if (prs->is_recovery_disabled)		// Добавление '\"' в конец незаконченной строковой константы
 			{
-				char32_t next = uni_scan_char(prs->in);
-				if (next != U'\n')
-				{
-					uni_unscan_char(prs->in, next);
-				}
+				parser_add_char(prs, ch);
 			}
+
+			if (cur == U'\r')					// Обработка переноса строки
+			{
+				uni_scan_char(prs->in);
+			}
+
+			parser_next_line(prs);
+			return;
 		}
 		else									// Независимо от корректности строки выводит ее в out
 		{
@@ -258,6 +257,14 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	}
 
 	parser_macro_error(prs, PARSER_UNEXPECTED_EOF);
+
+	if (prs->is_recovery_disabled)				// Добавление "\";" в конец незаконченной строковой константы
+	{
+		parser_add_char(prs, ch);
+		parser_add_char(prs, U';');
+	}
+
+	parser_next_line(prs);
 }
 
 /**
@@ -717,11 +724,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						parser_add_string(prs, storage_get_by_index(prs->stg, index));
+						prs->position += parser_add_string(prs, storage_get_by_index(prs->stg, index));
 					}
 					else
 					{
-						parser_add_string(prs, storage_last_read(prs->stg));
+						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
 					}
 				}
 
@@ -786,89 +793,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				}
 		}
 	}
-
-
-	/*
-
-	char32_t cur = uni_scan_char(prs->in);
-	while (cur != (char32_t)EOF)
-	{
-		switch (cur)
-		{
-			case U'\r':
-				uni_scan_char(prs->in);
-			case U'\n':
-				parser_next_string(prs);
-				uni_print_char(prs->out, U'\n');
-					break;
-
-			case U'#':
-				uni_unscan_char(prs->in, cur);
-				parser_scan_keyword(prs);
-					break;
-
-			case U'\'':
-				parser_skip_string(prs, U'\'');
-					break;
-			case U'\"':
-				parser_skip_string(prs, U'\"');
-					break;
-
-			case U'/':
-				parser_scan_comment(prs);
-					break;
-
-			default:
-				if (utf8_is_letter(cur))	//	Здесь будет макроподстановка
-				{
-					uni_unscan_char(prs->in, cur);
-
-					size_t id = storage_search(prs->stg, prs->in, &cur);
-					if (id != SIZE_MAX)
-					{
-						uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, id));
-					}
-					else
-					{
-						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
-						if (storage_last_read(prs->stg) != NULL)
-						{
-							uni_printf(prs->out, "%s", storage_last_read(prs->stg));
-						}
-					}
-					uni_unscan_char(prs->in, cur);
-				}
-				else
-				{
-					if (cur == U'*')	// Проверка на наличие конца длинного комментария без его начала
-					{
-						char32_t next = uni_scan_char(prs->in);
-						if (next == U'/')
-						{
-							parser_add_char(prs, next);
-
-							prs->position -= 2;	// Сдвигает position до '*'
-							parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING, true);
-							prs->position += 2;
-						}
-						else
-						{
-							uni_unscan_char(prs->in, next);	// Символ next не имеет отношения к комментарию,
-															// он будет считан повторно и проанализирован снаружи
-						}
-					}
-
-					parser_add_char(prs, cur);
-					uni_print_char(prs->out, cur);
-				}
-		}
-
-		cur = uni_scan_char(prs->in);
-	}
-
-	uni_print_char(prs->out, U'\n');
-	uni_print_char(prs->out, U'\n');
-	*/
 
 	return !prs->was_error ? 0 : -1;
 }
