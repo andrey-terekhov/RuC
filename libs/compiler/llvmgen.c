@@ -478,7 +478,7 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 
 		if (cur_dimension == dimensions - 1)
 		{
-			uni_printf(info->sx->io, "* %sarr.%" PRIitem ", i32 0", is_local ? "%%" : "@", id);
+			uni_printf(info->sx->io, "* %sarr.%" PRIitem ", i32 0", is_local ? "%" : "@", id);
 		}
 		else
 		{
