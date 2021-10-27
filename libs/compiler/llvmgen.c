@@ -391,9 +391,16 @@ static void to_code_stack_load(information *const info, const item_t index)
 	info->was_stack_functions = true;
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
+static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type, const bool is_local)
 {
-	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	if (is_local)
+	{
+		uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	}
+	else
+	{
+		uni_printf(info->sx->io, "@arr.%" PRIitem " = common global ", hash_get_key(&info->arrays, index));
+	}
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	if (dim == 0 || dim > MAX_DIMENSIONS)
@@ -412,7 +419,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	{
 		uni_printf(info->sx->io, "]");
 	}
-	uni_printf(info->sx->io, ", align 4\n");
+	uni_printf(info->sx->io, "%s, align 4\n", is_local ? "" : " zeroinitializer");
 }
 
 static void to_code_alloc_array_dynamic(information *const info, const size_t index, const item_t type)
@@ -439,7 +446,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 }
 
 static void to_code_slice(information *const info, const item_t id, const size_t cur_dimension
-	, const item_t prev_slice, const item_t type)
+	, const item_t prev_slice, const item_t type, const bool is_local)
 {
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds ", info->register_num);
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
@@ -471,7 +478,7 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 
 		if (cur_dimension == dimensions - 1)
 		{
-			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", id);
+			uni_printf(info->sx->io, "* %sarr.%" PRIitem ", i32 0", is_local ? "%%" : "@", id);
 		}
 		else
 		{
@@ -654,6 +661,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	{
 		const node identifier = expression_subscript_get_base(&base);
 		const item_t id = expression_identifier_get_id(&identifier);
+		const bool is_local = ident_is_local(info->sx, id);
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 		const location_t location = info->variable_location;
@@ -681,7 +689,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 		if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, id, cur_dimension, 0, type);
+			to_code_slice(info, id, cur_dimension, 0, type, is_local);
 		}
 		else
 		{
@@ -698,7 +706,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 		if (cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, id, cur_dimension, prev_slice, type);
+			to_code_slice(info, id, cur_dimension, prev_slice, type, is_local);
 		}
 		else
 		{
@@ -717,6 +725,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	}
 
 	const item_t id = expression_identifier_get_id(&base);
+	const bool is_local = ident_is_local(info->sx, id);
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 	const location_t location = info->variable_location;
@@ -729,7 +738,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 	if (cur_dimension < MAX_DIMENSIONS)
 	{
-		to_code_slice(info, id, cur_dimension, 0, type);
+		to_code_slice(info, id, cur_dimension, 0, type, is_local);
 	}
 	else
 	{
@@ -1360,7 +1369,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
 		const item_t type = array_get_type(info, elem_type);
-		to_code_alloc_array_static(info, index, type);
+		to_code_alloc_array_static(info, index, type, true);
 
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		for (size_t i = 0; i < N; i++)
@@ -1370,7 +1379,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 			const item_t value_int = info->answer_const;
 			info->answer_const = (item_t)i;
-			to_code_slice(info, id, 0, 0, type);
+			to_code_slice(info, id, 0, 0, type, true);
 
 			if (type_is_integer(info->sx, type))
 			{
@@ -1512,7 +1521,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_init)
 		{
-			to_code_alloc_array_static(info, index, element_type);
+			to_code_alloc_array_static(info, index, element_type, is_local);
 		}
 		else if (!has_init) // объявление массива, если он динамический
 		{
