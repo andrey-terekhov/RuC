@@ -217,10 +217,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	{
 		if (cur == ch)
 		{
+			parser_add_char(prs, cur);
 			if (was_slash)
 			{
-				was_slash = false;
-				parser_add_char(prs, cur);
+				was_slash = cur == U'\\' ? true : false;
 			}
 			else
 			{
@@ -291,9 +291,14 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
-	char32_t cur = uni_scan_char(prs->in);
+	prs->position++;										// '*' был считан снаружи
+
+	char32_t cur = U'*';//uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
+		cur = uni_scan_char(prs->in);
+		prs->position++;
+
 		switch (cur)
 		{
 			case U'\r':
@@ -318,9 +323,6 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 			}
 			break;
 		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
 	}
 
 	prs->line_position = line_position;
@@ -340,6 +342,40 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 	}
 }
 
+/**
+ *	Пропускает строку
+ */
+static inline void parser_skip_line(parser *const prs)
+{
+	char32_t cur = uni_scan_char(prs->in);
+	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
+
+	uni_unscan_char(prs->in, cur);
+}
+
+
+/**
+ *	Проверяет наличие лексем перед директивой препроцессора
+ */
+static inline int parser_check_kw_position(parser *const prs, const bool was_lexeme)
+{
+	if (was_lexeme)
+	{
+		parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
+
+		if (prs->is_recovery_disabled)
+		{
+			parser_skip_line(prs);
+		}
+		return 0;
+	}
+
+	return -1;
+}
 
 /**
  *	Считывает путь к файлу и выполняет его обработку
@@ -676,6 +712,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	char32_t cur = U'\0';
 	size_t index = 0;
 	bool was_slash = false;
+	bool was_lexeme = false;
 
 	while (cur != (char32_t)EOF)
 	{
@@ -683,10 +720,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		switch (index)
 		{
 			case KW_INCLUDE:
+				parser_check_kw_position(prs, was_lexeme);
 				parser_include(prs);
 				break;
 		
 			case KW_DEFINE:
+				parser_check_kw_position(prs, was_lexeme);
 				parser_define(prs, KW_DEFINE);
 				break;
 			case KW_SET:
@@ -712,13 +751,26 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_ENDW:
 
 			default:
+				if (!utf8_is_separator(cur))	// Перед '#' могут быть разделители и длинные однострочные комментарии
+				{
+					was_lexeme = true;
+				}
+
 				if (storage_last_read(prs->stg) != NULL)
 				{
 					was_slash = false;
 
 					if (storage_last_read(prs->stg)[0] == '#')
 					{
-						parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+						if (parser_check_kw_position(prs, was_lexeme))	// Перед '#' есть лексемы -> '#' не на месте
+																		// Перед '#' нет лексем   -> неправильная директива
+						{
+							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+							if (prs->is_recovery_disabled)
+							{
+								parser_skip_line(prs);
+							}
+						}
 					}
 
 					if (index != SIZE_MAX)
@@ -736,7 +788,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				{
 					case U'#':
 						was_slash = false;
-						parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+
+						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
+						if (prs->is_recovery_disabled)
+						{
+							parser_skip_line(prs);
+						}
 						break;
 
 					case U'\'':
@@ -757,6 +814,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					case U'\n':
 					case (char32_t)EOF:
 						was_slash = false;
+						was_lexeme = false;
 						parser_next_line(prs);
 						uni_print_char(prs->out, '\n');
 						break;
@@ -780,6 +838,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 							was_slash = false;
 							strings_remove(&prs->string);
 							parser_skip_long_comment(prs, &cur);
+							was_lexeme = false;
 							break;
 						}
 						else

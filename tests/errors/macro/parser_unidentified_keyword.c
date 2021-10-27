@@ -1,5 +1,5 @@
 int a = 0;
-/*gvbhnjkm*/#define
+#wrongkw a = 1;
 
 int main()
 {

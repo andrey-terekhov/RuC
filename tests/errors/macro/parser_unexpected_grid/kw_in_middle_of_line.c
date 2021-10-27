@@ -1,5 +1,4 @@
-int a = 0;
-/*gvbhnjkm*/#define
+int a = 0; #define a 1
 
 int main()
 {
