@@ -125,14 +125,15 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 /**
  *	Сохраняет считанный код
  */
-static inline void parser_add_to_buffer(char *const buffer, const char *const string)
+static inline size_t parser_add_to_buffer(char *const buffer, const char *const str)
 {
-	if (string == NULL)
+	if (str == NULL)
 	{
-		return;
+		return 0;
 	}
 
-	strcat(buffer, string);
+	strcat(buffer, str);
+	return strlen(str);
 }
 
 /**
@@ -343,7 +344,7 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 }
 
 /**
- *	Пропускает строку
+ *	Пропускает строку c текущего символа
  */
 static inline void parser_skip_line(parser *const prs)
 {
@@ -392,17 +393,15 @@ static void parser_include(parser *const prs)
 	{
 		if (storage_last_read(prs->stg) == NULL && utf8_is_separator(cur))
 		{
-			parser_add_char(prs, cur);
+			prs->position++;
 		}
 		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
 		{
-			parser_add_char(prs, cur);
+			prs->position++;
 			parser_skip_long_comment(prs, &cur);
 		}
 		else
 		{
-			parser_add_string(prs, storage_last_read(prs->stg));
-			parser_add_char(prs, cur);
 			prs->position = include_position;
 			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		}
@@ -411,8 +410,6 @@ static void parser_include(parser *const prs)
 
 	if (storage_last_read(prs->stg) != NULL)
 	{
-		parser_add_string(prs, storage_last_read(prs->stg));
-		parser_add_char(prs, cur);
 		prs->position = include_position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 	}
@@ -421,22 +418,20 @@ static void parser_include(parser *const prs)
 	char buffer[1024] = "\0";
 	if (cur == U'\"')
 	{
-		parser_add_char(prs, cur);
+		prs->position++;
 		storage_search(prs->stg, prs->in, &cur);
 		parser_add_to_buffer(buffer, storage_last_read(prs->stg));
 
 		while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
 			parser_add_char_to_buffer(cur, buffer);
-			parser_add_char(prs, cur);
+			prs->position++;
 
 			storage_search(prs->stg, prs->in, &cur);
-			parser_add_to_buffer(buffer, storage_last_read(prs->stg));
-
-			prs->position += parser_add_string(prs, storage_last_read(prs->stg));
+			prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
 		}
 
-		parser_add_char(prs, cur);
+		prs->position++;
 		if (cur != U'\"')
 		{
 			prs->position = include_position;
@@ -453,7 +448,6 @@ static void parser_include(parser *const prs)
 	storage_search(prs->stg, prs->in, &cur);
 	if (storage_last_read(prs->stg) != NULL)
 	{
-		parser_add_string(prs, storage_last_read(prs->stg));
 		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 	}
 
@@ -461,13 +455,12 @@ static void parser_include(parser *const prs)
 	{
 		if (storage_last_read(prs->stg) != NULL)
 		{
-			parser_add_string(prs, storage_last_read(prs->stg));
-			parser_add_char(prs, cur);
+			prs->position++;
 			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 		}
 		if (utf8_is_separator(cur))
 		{
-			parser_add_char(prs, cur);
+			prs->position++;
 		}
 		else if (cur == U'/' && uni_scan_char(prs->in) == U'/')
 		{
@@ -475,21 +468,19 @@ static void parser_include(parser *const prs)
 		}
 		else if (cur == U'/' && uni_scan_char(prs->in) == U'*')
 		{
-			parser_add_char(prs, cur);
+			prs->position++;
 			parser_skip_long_comment(prs, &cur);
 			break;
 		}
 		else
 		{
-			parser_add_string(prs, storage_last_read(prs->stg));
 			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 		}
 		storage_search(prs->stg, prs->in, &cur);
 	}
 	if (storage_last_read(prs->stg) != NULL)
 	{
-		parser_add_string(prs, storage_last_read(prs->stg));
-		parser_add_char(prs, cur);
+		prs->position++;
 		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 	}
 

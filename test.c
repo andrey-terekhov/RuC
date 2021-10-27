@@ -1,7 +1,6 @@
 int a = 0;
-/*gvbhnjkm*/#define
 
-int main()
+int главная()/*
 {
 	assert(a, "recovery is not working");
 	return 0;
