@@ -18,6 +18,7 @@
 
 #include "linker.h"
 #include "storage.h"
+#include "strings.h"
 #include "uniio.h"
 #include "error.h"
 
@@ -38,7 +39,7 @@ typedef struct parser
 	size_t line_position;			/**< Сurrent line first character position in file */
 	size_t line;					/**< Сurrent line number in input */
 	size_t position;				/**< Сurrent character number in line */
-	char string[256];				/**< Сode line */
+	strings string;				/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 	bool was_error;					/**< Set, if was error */
