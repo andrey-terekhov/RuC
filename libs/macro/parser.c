@@ -105,6 +105,28 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
+ *	Сохраняет считанный код
+ */
+static inline size_t parser_add_to_buffer(char *const buffer, const char *const str)
+{
+	if (str == NULL)
+	{
+		return 0;
+	}
+
+	strcat(buffer, str);
+	return strlen(str);
+}
+
+/**
+ *	Сохраняет считанный символ
+ */
+static inline void parser_add_char_to_buffer(char *const buffer, const char32_t ch)
+{
+	utf8_to_string(&buffer[strlen(buffer)], ch);
+}
+
+/**
  *	Заполняет string до конца строки
  */
 /*static inline char parser_fill_string(parser *const prs)
@@ -122,28 +144,6 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 	return str;
 }*/
 
-/**
- *	Сохраняет считанный код
- */
-static inline size_t parser_add_to_buffer(char *const buffer, const char *const str)
-{
-	if (str == NULL)
-	{
-		return 0;
-	}
-
-	strcat(buffer, str);
-	return strlen(str);
-}
-
-/**
- *	Сохраняет считанный символ
- */
-static inline void parser_add_char_to_buffer(const char32_t ch, char *const buffer)
-{
-	utf8_to_string(&buffer[strlen(buffer)], ch);
-}
-
 
 /**
  *	Emit an error from parser
@@ -153,7 +153,7 @@ static inline void parser_add_char_to_buffer(const char32_t ch, char *const buff
  */
 static void parser_macro_error(parser *const prs, const error_t num)
 {
-	if (parser_is_correct(prs) && !prs->is_recovery_disabled && !prs->was_error)
+	if (parser_is_correct(prs) && !prs->is_recovery_disabled)
 	{
 		size_t position = in_get_position(prs->in);
 		in_set_position(prs->in, prs->line_position);
@@ -430,7 +430,7 @@ static void parser_include(parser *const prs)
 
 		while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
-			parser_add_char_to_buffer(cur, buffer);
+			parser_add_char_to_buffer(buffer, cur);
 			prs->position++;
 
 			storage_search(prs->stg, prs->in, &cur);
@@ -748,7 +748,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_ENDW:
 
 			default:
-				if (!utf8_is_separator(cur))	// Перед '#' могут быть разделители и длинные однострочные комментарии
+				if (!utf8_is_separator(cur) && cur != U'/')	// Перед '#' могут быть разделители и длинные однострочные комментарии
 				{
 					was_lexeme = true;
 				}
@@ -831,7 +831,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 							was_slash = false;
 							strings_remove(&prs->string);
 							parser_skip_long_comment(prs, &cur);
-							was_lexeme = false;
 							break;
 						}
 						else
