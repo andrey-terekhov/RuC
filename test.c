@@ -1,7 +1,7 @@
 int a = 1;
-/* */ l #define a 0
+/* */ #define a 0
 
-#include /*comment*/"file"
+#include /*comment*/"file.c"
 
 int main()
 {

@@ -382,11 +382,10 @@ static inline int parser_check_kw_position(parser *const prs, const bool was_lex
 /**
  *	Считывает путь к файлу и выполняет его обработку
  */
-static void parser_include(parser *const prs)
+static void parser_include(parser *const prs, char32_t cur)
 {
 	const size_t position = prs->position;
 
-	char32_t cur = U'\0';
 	storage_search(prs->stg, prs->in, &cur);
 	
 	// Пропуск разделителей и комментариев
@@ -408,8 +407,8 @@ static void parser_include(parser *const prs)
 			}
 		}
 
-		cur = uni_scan_char(prs->in);
 		prs->position++;
+		cur = uni_scan_char(prs->in);
 	}
 	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF || cur != U'\"')
 	{
@@ -426,6 +425,7 @@ static void parser_include(parser *const prs)
 
 	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
+		parser_add_char_to_buffer(buffer, cur);
 		prs->position++;
 
 		storage_search(prs->stg, prs->in, &cur);
@@ -437,11 +437,13 @@ static void parser_include(parser *const prs)
 	{
 		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-	parser_skip_line(prs);
+		parser_skip_line(prs);
 	return;
 	}
 
 	// Обработка символов за путем
+	prs->position++;
+	cur = uni_scan_char(prs->in);
 	while (utf8_is_separator(cur) || cur == U'/')
 	{
 		if (cur == U'/')
@@ -506,8 +508,8 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 			}
 		}
 
-		cur = uni_scan_char(prs->in);
 		prs->position++;
+		cur = uni_scan_char(prs->in);
 	}
 
 	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
@@ -709,7 +711,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		{
 			case KW_INCLUDE:
 				parser_check_kw_position(prs, was_lexeme);
-				parser_include(prs);
+				parser_include(prs, cur);
 				was_lexeme = false;
 				break;
 		
