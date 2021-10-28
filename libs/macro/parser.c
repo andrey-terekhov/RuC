@@ -53,6 +53,18 @@ static bool utf8_is_line_breaker(const char32_t symbol)
 
 
 /**
+ *	Увеличивает значение line и сбрасывает значение position
+ */
+static inline void parser_next_line(parser *const prs)
+{
+	prs->line_position = in_get_position(prs->in);
+	prs->line++;
+	prs->position = FST_CHARACTER_INDEX;
+	strings_clear(&prs->string);
+	prs->string = strings_create(256);
+}
+
+/**
  *	Печатает в prs.out строку кода
  */
 static inline void parser_print(parser *const prs)
@@ -62,20 +74,8 @@ static inline void parser_print(parser *const prs)
 	{
 		uni_printf(prs->out, "%s", strings_get(&prs->string, i));
 	}
-}
 
-/**
- *	Увеличивает значение line и сбрасывает значение position
- */
-static inline void parser_next_line(parser *const prs)
-{
-	parser_print(prs);
-
-	prs->line_position = in_get_position(prs->in);
-	prs->line++;
-	prs->position = FST_CHARACTER_INDEX;
-	strings_clear(&prs->string);
-	prs->string = strings_create(256);
+	parser_next_line(prs);
 }
 
 /**
@@ -243,7 +243,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 				uni_scan_char(prs->in);
 			}
 
-			parser_next_line(prs);
+			parser_print(prs);
 			uni_print_char(prs->out, U'\n');
 			return;
 		}
@@ -264,7 +264,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		parser_add_char(prs, U';');
 	}
 
-	parser_next_line(prs);
+	parser_print(prs);
 }
 
 /**
@@ -283,7 +283,7 @@ static void parser_skip_short_comment(parser *const prs)
 		uni_scan_char(prs->in);
 	}
 
-	parser_next_line(prs);
+	parser_print(prs);
 	uni_print_char(prs->out, U'\n');
 }
 
@@ -312,7 +312,7 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 			case U'\r':
 				uni_scan_char(prs->in);
 			case U'\n':
-				parser_next_line(prs);
+				parser_print(prs);
 					break;
 
 			case U'/':
@@ -360,7 +360,7 @@ static inline void parser_skip_line(parser *const prs)
 		uni_scan_char(prs->in);
 	}
 
-	parser_next_line(prs);
+	parser_print(prs);
 	uni_print_char(prs->out, U'\n');
 }
 
@@ -609,7 +609,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		}
 
 		// Запись значения
-		size_t j = 0;
+		size_t j = 0;printf("wr\n");
 		while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
 			if (cur == U'/')
@@ -640,9 +640,15 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		}
 		value[j] = U'\0';
 
+		//storage_remove(prs->stg, id);
+		//printf("%zi\n", storage_add(prs->stg, id, value));
 		storage_set(prs->stg, id, value);
-
-		parser_skip_line(prs);
+		if (cur == U'\r')
+		{
+			uni_scan_char(prs->in);
+		}
+		parser_next_line(prs);
+		uni_print_char(prs->out, U'\n');
 	}
 }
 
@@ -709,14 +715,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				break;
 		
 			case KW_DEFINE:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_define(prs, cur, KW_DEFINE);
-				break;
 			case KW_SET:
-				parser_define(prs, cur, KW_SET);
-				break;
 			case KW_UNDEF:
-				parser_define(prs, cur, KW_UNDEF);
+				printf("case\n");parser_check_kw_position(prs, was_lexeme);
+				parser_define(prs, cur, index);
 				break;
 
 			case KW_MACRO:
@@ -789,7 +791,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					case (char32_t)EOF:
 						was_slash = false;
 						was_lexeme = false;
-						parser_next_line(prs);
+						parser_print(prs);
 						uni_print_char(prs->out, U'\n');
 						break;
 
