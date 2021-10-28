@@ -557,7 +557,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		id[i] = U'\0';
 
 		// Проверка существования
-		const char32_t temp = in_get_position(prs->in);
+		const size_t temp = in_get_position(prs->in);
 		if (mode == KW_DEFINE && storage_add(prs->stg, id, value) == SIZE_MAX)
 		{
 			in_set_position(prs->in, position);
