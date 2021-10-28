@@ -609,7 +609,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		}
 
 		// Запись значения
-		size_t j = 0;printf("wr\n");
+		size_t j = 0;
 		while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
 			if (cur == U'/')
@@ -640,8 +640,6 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		}
 		value[j] = U'\0';
 
-		//storage_remove(prs->stg, id);
-		//printf("%zi\n", storage_add(prs->stg, id, value));
 		storage_set(prs->stg, id, value);
 		if (cur == U'\r')
 		{
@@ -712,13 +710,15 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_INCLUDE:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_include(prs);
+				was_lexeme = false;
 				break;
 		
 			case KW_DEFINE:
 			case KW_SET:
 			case KW_UNDEF:
-				printf("case\n");parser_check_kw_position(prs, was_lexeme);
+				parser_check_kw_position(prs, was_lexeme);
 				parser_define(prs, cur, index);
+				was_lexeme = false;
 				break;
 
 			case KW_MACRO:
@@ -737,7 +737,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_ENDW:
 
 			default:
-				if (!utf8_is_separator(cur) && cur != U'/')	// Перед '#' могут быть разделители и длинные однострочные комментарии
+				if ((!utf8_is_separator(cur) && cur != U'/' && cur != U'*')	// Перед '#' могут быть разделители
+					|| storage_last_read(prs->stg) != NULL)					// и длинные однострочные комментарии
 				{
 					was_lexeme = true;
 				}
