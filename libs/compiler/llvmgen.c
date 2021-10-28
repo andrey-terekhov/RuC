@@ -1390,7 +1390,9 @@ static void emit_initialization(information *const info, const node *const nd, c
 		}
 		else
 		{
-			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x i32] [", id, N);
+			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
+			type_to_io(info, type);
+			uni_printf(info->sx->io, "] [");
 		}
 
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
