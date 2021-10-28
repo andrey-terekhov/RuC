@@ -508,53 +508,43 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
 
 	// Пропуск разделителей и комментариев
-	bool was_slash = false;
-	while (utf8_is_separator(cur) || cur == U'/' || cur == U'*')
+	while (utf8_is_separator(cur) || cur == U'/')
 	{
-		switch (cur)
+		if (cur == U'/')
 		{
-			case U'*':
-				if (was_slash)
-				{
-					was_slash = false;
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'*':
 					parser_skip_long_comment(prs, &cur);
-				}
-				else
-				{
+					break;
+				default:
+					uni_unscan_char(prs->in, next);
 					parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-					parser_next_line(prs);
-					uni_print_char(prs->out, U'\n');
-				}
-				break;
-			default:
-				if (was_slash && !utf8_is_separator(cur))
-				{
-					prs->position--;
-					parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-					parser_next_line(prs);
-					uni_print_char(prs->out, U'\n');
+					parser_skip_line(prs);
 					return;
-				}
-				was_slash = cur == U'/' ? true : false;
+			}
 		}
+
 		cur = uni_scan_char(prs->in);
 		prs->position++;
 	}
 
 	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
 	{
-		prs->position = position;
 		parser_macro_error(prs, mode == KW_DEFINE
 								? PARSER_DEFINE_NEED_IDENT
 								: mode == KW_SET
 									? PARSER_SET_NEED_IDENT
 									: PARSER_UNDEF_NEED_IDENT);
-		parser_next_line(prs);
-		uni_print_char(prs->out, U'\n');
+		parser_skip_line(prs);
+		return;
 	}
 	else if (!utf8_is_letter(cur))
 	{
 		parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+		parser_skip_line(prs);
+		return;
 	}
 	else
 	{
@@ -575,9 +565,9 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 			}
 			else
 			{
+				in_set_position(prs->in, position);
 				parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-				parser_next_line(prs);
-				uni_print_char(prs->out, U'\n');
+				parser_skip_line(prs);
 				return;
 			}
 
@@ -605,50 +595,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 			storage_remove(prs->stg, id);
 
 			// Проверка последующего кода для #undef
-			was_slash = false;
-			while (utf8_is_separator(cur) || cur == U'/' || cur == U'*')
-			{printf("%zi '%lc' %i\n", prs->position, cur, was_slash);
-				switch (cur)
-				{
-					case U'/':
-						if (was_slash)
-						{
-							was_slash = false;
-							parser_skip_short_comment(prs);
-						}
-						else
-						{
-							was_slash = true;
-						}
-						break;
-					case U'*':
-						if (was_slash)
-						{
-							was_slash = false;
-							parser_skip_long_comment(prs, &cur);
-						}
-						else
-						{
-							parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-							parser_next_line(prs);
-							uni_print_char(prs->out, U'\n');
-							return;
-						}
-						break;
-					default:
-						if (!utf8_is_separator(cur))
-						{
-							parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-							parser_next_line(prs);
-							uni_print_char(prs->out, U'\n');
-							return;
-						}
-				}
-
-				prs->position++;
-				cur = uni_scan_char(prs->in);
-			}
-			/*while (utf8_is_separator(cur) || cur == U'/')
+			while (utf8_is_separator(cur) || cur == U'/')
 			{
 				if (cur == U'/')
 				{
@@ -657,37 +604,35 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 					{
 						case U'/':
 							parser_skip_short_comment(prs);
-							break;
+							return;
 						case U'*':
 							parser_skip_long_comment(prs, &cur);
 							break;
 						default:
-							parser_add_char(prs, cur);
 							uni_unscan_char(prs->in, next);
-							parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+							parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+							parser_skip_line(prs);
+							return;
 					}
 				}
-				else
-				{
-					parser_add_char(prs, cur);
-				}
 
+				prs->position++;
 				cur = uni_scan_char(prs->in);
 			}
 
 			if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 			{
-				parser_add_char(prs, cur);
 				parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 			}
-			return;*/
+
+			parser_skip_line(prs);
+			return;
 		}
 
 		// Запись значения
 		size_t j = 0;
 		while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 		{
-
 			if (cur == U'/')
 			{
 				char32_t next = uni_scan_char(prs->in);
@@ -695,7 +640,9 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 				{
 					case U'/':
 						parser_skip_short_comment(prs);
-						break;
+						value[j] = U'\0';
+						storage_set(prs->stg, id, value);
+						return;
 					case U'*':
 						parser_skip_long_comment(prs, &cur);
 						break;
@@ -711,19 +658,12 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 
 			prs->position++;
 			cur = uni_scan_char(prs->in);
-
 		}
-
 		value[j] = U'\0';
 
 		storage_set(prs->stg, id, value);
 
-		if (cur == U'\r')
-		{
-			uni_scan_char(prs->in);
-		}
-		parser_next_line(prs);
-		uni_print_char(prs->out, U'\n');
+		parser_skip_line(prs);
 	}
 }
 
