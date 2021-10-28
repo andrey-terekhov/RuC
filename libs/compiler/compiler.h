@@ -20,7 +20,7 @@
 #include "workspace.h"
 
 
-#define GENERATE_MACRO
+..#define GENERATE_MACRO
 
 
 #ifdef __cplusplus
