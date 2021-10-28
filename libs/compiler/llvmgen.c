@@ -1206,18 +1206,29 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_reg(info, result, id, operation_type, is_array
 			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
+
+		info->answer_kind = AREG;
+		info->answer_reg = result;
 	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и опериция =
 	{
 		to_code_store_const_i32(info, info->answer_const, id, is_array, ident_is_local(info->sx, id));
+
+		info->answer_kind = ACONST;
+		info->answer_const = info->answer_const;
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, id));
+		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, id));\
+
+		info->answer_kind = ACONST;
+		info->answer_const_double = info->answer_const_double;
 	}
 	else
 	{
 		to_code_store_null(info, id, operation_type);
+
+		info->answer_kind = ANULL;
 	}
 }
 
