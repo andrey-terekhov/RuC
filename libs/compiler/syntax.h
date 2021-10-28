@@ -53,17 +53,10 @@ enum TYPE
 };
 
 
-typedef struct location
-{
-	size_t begin;
-	size_t end;
-} location;
-
 /** Global vars definition */
 typedef struct syntax
 {
 	universal_io *io;			/**< Universal io structure */
-	node nd;					/**< Node for expression subtree [temp] */
 
 	strings string_literals;	/**< String literals list */
 
@@ -90,6 +83,20 @@ typedef struct syntax
 	
 	bool was_error;				/**< Set, if was error */
 } syntax;
+
+/** Source location */
+typedef struct location
+{
+	size_t begin;
+	size_t end;
+} location;
+
+/** Scope */
+typedef struct scope
+{
+	item_t displ;
+	item_t lg;
+} scope;
 
 
 /**
@@ -296,6 +303,16 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type);
  *	@return	@c 0 on success, @c -1 on failure
  */
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
+
+/**
+ *	Check if identifier is declared as type specifier
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	@c 0 on true, @c 0 on false
+ */
+bool ident_is_type_specifier(syntax *const sx, const size_t index);
 
 
 /**
@@ -699,20 +716,19 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
  *	@param	displ		Variable to save previous stack displacement
  *	@param	lg			Variable to save previous value of lg
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Scope
  */
-int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg);
+scope scope_block_enter(syntax *const sx);
 
 /**
  *	Exit block scope
  *
  *	@param	sx			Syntax structure
- *	@param	displ		Stack displacement at the start of the scope
- *	@param	lg			Previous value of lg
+ *	@param	scp			Scope
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg);
+int scope_block_exit(syntax *const sx, const scope scp);
 
 /**
  *	Enter function scope

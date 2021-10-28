@@ -76,12 +76,6 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
-
-	repr_add_keyword(reprtab, U"print", U"печать", TK_PRINT);
-	repr_add_keyword(reprtab, U"printf", U"печатьф", TK_PRINTF);
-	repr_add_keyword(reprtab, U"printid", U"печатьид", TK_PRINTID);
-	repr_add_keyword(reprtab, U"scanf", U"читатьф", TK_SCANF);
-	repr_add_keyword(reprtab, U"getid", U"читатьид", TK_GETID);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
 }
 
@@ -225,6 +219,10 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
 	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
+	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, NULL));
+	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
 }
 
 
@@ -482,6 +480,11 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type)
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 {
 	return sx != NULL ? vector_set(&sx->identifiers, index + 3, displ) : -1;
+}
+
+bool ident_is_type_specifier(syntax *const sx, const size_t index)
+{
+	return ident_get_displ(sx, index) >= 1000;
 }
 
 
@@ -801,22 +804,20 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref)
 }
 
 
-int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg)
+scope scope_block_enter(syntax *const sx)
 {
-	if (sx == NULL || displ == NULL || lg == NULL)
+	if (sx == NULL)
 	{
-		return -1;
+		return (scope){ ITEM_MAX, ITEM_MAX };
 	}
 
 	sx->cur_id = vector_size(&sx->identifiers);
-	*displ = sx->displ;
-	*lg = sx->lg;
-	return 0;
+	return (scope){ sx->displ, sx->lg };
 }
 
-int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
+int scope_block_exit(syntax *const sx, const scope scp)
 {
-	if (sx == NULL)
+	if (sx == NULL || scp.lg == ITEM_MAX || scp.displ == ITEM_MAX)
 	{
 		return -1;
 	}
@@ -827,8 +828,8 @@ int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg)
 		repr_set_reference(sx, (size_t)ident_get_repr(sx, i), prev == ITEM_MAX - 1 ? ITEM_MAX : prev);
 	}
 
-	sx->displ = displ;
-	sx->lg = lg;
+	sx->displ = scp.displ;
+	sx->lg = scp.lg;
 	return 0;
 }
 
