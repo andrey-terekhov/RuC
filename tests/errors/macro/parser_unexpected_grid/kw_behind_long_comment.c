@@ -1,5 +1,5 @@
-int a = 0; /*long
-comment*/#define a 1
+int a = 1; /*long
+comment*/#define a 0
 
 int main()
 {

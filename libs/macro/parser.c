@@ -373,11 +373,6 @@ static inline int parser_check_kw_position(parser *const prs, const bool was_lex
 	if (was_lexeme)
 	{
 		parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
-
-		if (prs->is_recovery_disabled)
-		{
-			parser_skip_line(prs);
-		}
 		return 0;
 	}
 
@@ -389,105 +384,91 @@ static inline int parser_check_kw_position(parser *const prs, const bool was_lex
  */
 static void parser_include(parser *const prs)
 {
-	const size_t include_position = prs->position;
+	const size_t position = prs->position;
 
 	char32_t cur = U'\0';
 	storage_search(prs->stg, prs->in, &cur);
 	
 	// Пропуск разделителей и комментариев
-	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	while (utf8_is_separator(cur) || cur == U'/')
 	{
-		if (storage_last_read(prs->stg) == NULL && utf8_is_separator(cur))
+		if (cur == U'/')
 		{
-			prs->position++;
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'*':
+					parser_skip_long_comment(prs, &cur);
+					break;
+				default:
+					prs->position = position;
+					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
+					parser_skip_line(prs);
+					return;
+			}
 		}
-		else if (cur == U'/' && uni_scan_char(prs->in) == U'*' && storage_last_read(prs->stg) == NULL)
-		{
-			prs->position++;
-			parser_skip_long_comment(prs, &cur);
-		}
-		else
-		{
-			prs->position = include_position;
-			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		}
-		storage_search(prs->stg, prs->in, &cur);
-	}
 
-	if (storage_last_read(prs->stg) != NULL)
+		cur = uni_scan_char(prs->in);
+		prs->position++;
+	}
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF || cur != U'\"')
 	{
-		prs->position = include_position;
+		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
+		parser_skip_line(prs);
+		return;
 	}
 
 	// ОБработка пути
-	char buffer[1024] = "\0";
-	if (cur == U'\"')
+	char buffer[MAX_ARG_SIZE] = "\0";
+	storage_search(prs->stg, prs->in, &cur);
+	prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+
+	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
 		prs->position++;
+
 		storage_search(prs->stg, prs->in, &cur);
-		parser_add_to_buffer(buffer, storage_last_read(prs->stg));
-
-		while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-		{
-			parser_add_char_to_buffer(buffer, cur);
-			prs->position++;
-
-			storage_search(prs->stg, prs->in, &cur);
-			prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
-		}
-
-		prs->position++;
-		if (cur != U'\"')
-		{
-			prs->position = include_position;
-			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		}
+		prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
 	}
-	else
+
+	prs->position++;
+	if (cur != U'\"')
 	{
-		prs->position = include_position;
+		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
+	parser_skip_line(prs);
+	return;
 	}
 
 	// Обработка символов за путем
-	storage_search(prs->stg, prs->in, &cur);
-	if (storage_last_read(prs->stg) != NULL)
+	while (utf8_is_separator(cur) || cur == U'/')
 	{
-		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'/':
+					parser_skip_short_comment(prs);
+					return;
+				case U'*':
+					parser_skip_long_comment(prs, &cur);
+					break;
+				default:
+					parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+					parser_skip_line(prs);
+			}
+		}
+
+		prs->position++;
+		cur = uni_scan_char(prs->in);
 	}
 
-	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		if (storage_last_read(prs->stg) != NULL)
-		{
-			prs->position++;
-			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-		}
-		if (utf8_is_separator(cur))
-		{
-			prs->position++;
-		}
-		else if (cur == U'/' && uni_scan_char(prs->in) == U'/')
-		{
-			break;
-		}
-		else if (cur == U'/' && uni_scan_char(prs->in) == U'*')
-		{
-			prs->position++;
-			parser_skip_long_comment(prs, &cur);
-			break;
-		}
-		else
-		{
-			parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-		}
-		storage_search(prs->stg, prs->in, &cur);
-	}
-	if (storage_last_read(prs->stg) != NULL)
-	{
-		prs->position++;
 		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+		parser_skip_line(prs);
 	}
 
 	// Необходимо подключить файл и вызвать parser_preprocess
@@ -519,7 +500,6 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 					parser_skip_long_comment(prs, &cur);
 					break;
 				default:
-					uni_unscan_char(prs->in, next);
 					parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
 					parser_skip_line(prs);
 					return;
@@ -609,8 +589,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 							parser_skip_long_comment(prs, &cur);
 							break;
 						default:
-							uni_unscan_char(prs->in, next);
-							parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+							parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
 							parser_skip_line(prs);
 							return;
 					}
@@ -648,7 +627,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 						break;
 					default:
 						value[j++] = cur;
-						uni_unscan_char(prs->in, next);
+						uni_unscan_char(prs->in, next);	// next будет считан и обработан в цикле
 				}
 			}
 			else
@@ -771,11 +750,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 																		// Перед '#' нет лексем   -> неправильная директива
 						{
 							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
-							if (prs->is_recovery_disabled)
-							{
-								parser_skip_line(prs);
-							}
 						}
+						parser_skip_line(prs);
+						break;
 					}
 
 					if (index != SIZE_MAX)
@@ -793,12 +770,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				{
 					case U'#':
 						was_slash = false;
-
 						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
-						if (prs->is_recovery_disabled)
-						{
-							parser_skip_line(prs);
-						}
+						parser_skip_line(prs);
 						break;
 
 					case U'\'':

@@ -1,8 +1,12 @@
-int a = 0; /*long
-comment*/#define a 1
-
+#define /* long
+comment*/ A 1
+#
 int main()
 {
-	assert(a, "recovery is not working");
+	int a = 0;
+
+	a = A;
+	assert(a, "long comment before ident");
+
 	return 0;
 }
