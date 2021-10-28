@@ -1369,7 +1369,18 @@ static void emit_initialization(information *const info, const node *const nd, c
 		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
 		const item_t type = array_get_type(info, elem_type);
-		to_code_alloc_array_static(info, index, type, true);
+		const item_t is_local = ident_is_local(info->sx, (size_t)id);
+
+		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
+		// а неконстантными выражениями глобальный массив может инициализироваться?
+		if (is_local)
+		{
+			to_code_alloc_array_static(info, index, type, true);
+		}
+		else
+		{
+			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x i32] [", id, N);
+		}
 
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		for (size_t i = 0; i < N; i++)
@@ -1379,15 +1390,33 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 			const item_t value_int = info->answer_const;
 			info->answer_const = (item_t)i;
-			to_code_slice(info, id, 0, 0, type, true);
+
+			if (is_local)
+			{
+				to_code_slice(info, id, 0, 0, type, true);
+			}
 
 			if (type_is_integer(info->sx, type))
 			{
-				to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
+				if (is_local)
+				{
+					to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "i32 %" PRIitem "%s", value_int, i != N - 1 ? ", " : "], align 4\n");
+				}
 			}
 			else
 			{
-				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+				if (is_local)
+				{
+					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
+				}
 			}
 		}
 	}
