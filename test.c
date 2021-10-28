@@ -1,11 +1,9 @@
-int a = 1;
-/* */ #define a 0
+int a = 0;
 
-#include /*comment*/"file.c"
 
 int main()
 {
-	assert(a, "lexeme before kw");
-
+#include "test_2.c" f
+printf("%i", a);
 	return 0;
 }

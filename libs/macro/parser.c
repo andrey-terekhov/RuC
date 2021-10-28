@@ -17,8 +17,8 @@
 #include "parser.h"
 #include <string.h>
 #include "error.h"
+#include "commenter.h"
 #include "keywords.h"
-#include "uniio.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 
@@ -366,6 +366,33 @@ static inline void parser_skip_line(parser *const prs)
 
 
 /**
+ *	Preprocess included file
+ *
+ *	@param	prs		Parser structure
+ *	@param	path	File path
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+static int parser_preprocess_file(parser *const prs, const char *const path)
+{
+	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
+	universal_io in = linker_add_header(prs->lk, linker_search_external(prs->lk, path));
+	if (!in_is_correct(&in))
+	{
+		macro_system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
+	}
+
+	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
+	int ret = parser_preprocess(&new_prs, &in);
+	prs->was_error = new_prs.was_error;
+
+	in_clear(&in);
+
+	return ret;
+}
+
+
+/**
  *	Проверяет наличие лексем перед директивой препроцессора
  */
 static inline int parser_check_kw_position(parser *const prs, const bool was_lexeme)
@@ -382,7 +409,7 @@ static inline int parser_check_kw_position(parser *const prs, const bool was_lex
 /**
  *	Считывает путь к файлу и выполняет его обработку
  */
-static void parser_include(parser *const prs, char32_t cur)
+static int parser_include(parser *const prs, char32_t cur)
 {
 	const size_t position = prs->position;
 
@@ -403,7 +430,7 @@ static void parser_include(parser *const prs, char32_t cur)
 					prs->position = position;
 					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 					parser_skip_line(prs);
-					return;
+					return 0;
 			}
 		}
 
@@ -415,7 +442,7 @@ static void parser_include(parser *const prs, char32_t cur)
 		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs);
-		return;
+		return 0;
 	}
 
 	// ОБработка пути
@@ -438,43 +465,14 @@ static void parser_include(parser *const prs, char32_t cur)
 		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs);
-	return;
+		return 0;
 	}
 
-	// Обработка символов за путем
-	prs->position++;
-	cur = uni_scan_char(prs->in);
-	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'/':
-					parser_skip_short_comment(prs);
-					return;
-				case U'*':
-					parser_skip_long_comment(prs, &cur);
-					break;
-				default:
-					parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-					parser_skip_line(prs);
-			}
-		}
+	// Пропуск символов за путем
+	parser_skip_line(prs);
 
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
-		parser_skip_line(prs);
-	}
-
-	// Необходимо подключить файл и вызвать parser_preprocess
-	printf("\"%s\"\n", buffer);
+	// Парсинг подключенного файла
+	return parser_preprocess_file(prs, buffer);
 }
 
 /**
@@ -856,5 +854,5 @@ bool parser_is_correct(const parser *const prs)
 
 int parser_clear(parser *const prs)
 {
-	return prs != NULL && linker_clear(prs->lk) && storage_clear(prs->stg) &&  strings_clear(&prs->string) && out_clear(prs->out);
+	return prs != NULL && linker_clear(prs->lk) && storage_clear(prs->stg) &&  strings_clear(&prs->string);
 }
