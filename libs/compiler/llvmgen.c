@@ -1600,7 +1600,15 @@ static void emit_function_definition(information *const info, const node *const 
 
 	uni_printf(info->sx->io, "define ");
 	type_to_io(info, ret_type);
-	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
+	
+	if (!strcmp(ident_get_spelling(info->sx, ref_ident), "MAIN"))
+	{
+		uni_printf(info->sx->io, " @main(");
+	}
+	else
+	{
+		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
+	}
 
 	for (size_t i = 0; i < parameters; i++)
 	{
