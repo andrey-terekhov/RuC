@@ -113,6 +113,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "#macro требуется идентификатор");
 			break;
 
+		case PARSER_MACRO_NOT_ENDED:
+			sprintf(msg, "отсутствует #endm для этой директивы");
+			break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;

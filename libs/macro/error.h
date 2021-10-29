@@ -52,6 +52,8 @@ typedef enum ERROR
 	PARSER_SET_NEED_IDENT,
 	PARSER_UNDEF_NEED_IDENT,
 	PARSER_MACRO_NEED_IDENT,
+
+	PARSER_MACRO_NOT_ENDED,
 } error_t;
 
 /** Warning codes */
