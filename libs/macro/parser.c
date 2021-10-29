@@ -607,22 +607,28 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		id[i] = U'\0';
 
 		// Проверка существования
-		const size_t temp = in_get_position(prs->in);
+		const size_t temp = prs->position;
 		const size_t index = storage_add(prs->stg, id, value);
 		if (mode == KW_DEFINE && index == SIZE_MAX)
 		{
-			in_set_position(prs->in, position);
+			prs->position = position;
 			parser_macro_warning(prs, PARSER_DEFINE_EXIST_IDENT);
-			in_set_position(prs->in, temp);
+			prs->position = temp;
 		}
 		else if (mode == KW_SET && index != SIZE_MAX)
 		{
-			in_set_position(prs->in, position);
+			prs->position = position;
 			parser_macro_warning(prs, PARSER_SET_NOT_EXIST_IDENT);
-			in_set_position(prs->in, temp);
+			prs->position = temp;
 		}
 		else if (mode == KW_UNDEF)
 		{
+			if (index != SIZE_MAX)
+			{
+				prs->position = position;
+				parser_macro_warning(prs, PARSER_UNDEF_NOT_EXIST_IDENT);
+				prs->position = temp;
+			}
 			storage_remove(prs->stg, id);
 
 			// Проверка последующего кода для #undef
