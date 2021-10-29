@@ -756,7 +756,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	char32_t cur = U'\0';
 	size_t index = 0;
-	bool was_slash = false;
+	//bool was_slash = false;
+	bool was_star = false;
 	bool was_lexeme = false;
 
 	while (cur != (char32_t)EOF)
@@ -768,6 +769,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				parser_check_kw_position(prs, was_lexeme);
 				parser_include(prs, cur);
 				was_lexeme = false;
+				was_star = false;
 				break;
 		
 			case KW_DEFINE:
@@ -776,6 +778,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				parser_check_kw_position(prs, was_lexeme);
 				parser_define(prs, cur, index);
 				was_lexeme = false;
+				was_star = false;
 				break;
 
 			case KW_MACRO:
@@ -802,7 +805,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 				if (storage_last_read(prs->stg) != NULL)
 				{
-					was_slash = false;
+					//was_slash = false;
+					was_star = false;
 
 					if (storage_last_read(prs->stg)[0] == '#')
 					{
@@ -829,24 +833,28 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				switch (cur)
 				{
 					case U'#':
-						was_slash = false;
+						//was_slash = false;
+						was_star = false;
 						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 						parser_skip_short_comment(prs);
 						break;
 
 					case U'\'':
-						was_slash = false;
+						//was_slash = false;
+						was_star = false;
 						parser_skip_string(prs, U'\'');
 						break;
 					case U'\"':
-						was_slash = false;
+						//was_slash = false;
+						was_star = false;
 						parser_skip_string(prs, U'\"');
 						break;
 
 					case U'\r':
 						cur = uni_scan_char(prs->in);
 					case U'\n':
-						was_slash = false;
+						//was_slash = false;
+						was_star = false;
 						was_lexeme = false;
 						parser_add_char(prs, U'\n');
 						parser_print(prs);
@@ -856,34 +864,45 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						break;
 
 					case U'/':
-						if (was_slash)
+					{
+						char32_t next = uni_scan_char(prs->in);
+						if (next == U'/')
 						{
-							was_slash = false;
-							strings_remove(&prs->string);
+							was_star = false;
 							parser_skip_short_comment(prs);
 						}
-						else
+						else if (next == U'*')
 						{
-							was_slash = true;
-							parser_add_char(prs, cur);
-						}
-						break;
-					case U'*':
-						if (was_slash)
-						{
-							was_slash = false;
-							strings_remove(&prs->string);
+							was_star = false;
+							prs->position++;
 							parser_skip_long_comment(prs, &cur);
-							break;
 						}
 						else
 						{
-							parser_add_char(prs, cur);
+							uni_unscan_char(prs->in, next);
+							if (was_star)
+							{
+								was_star = false;
+								strings_remove(&prs->string);	// '*' был записан в буффер
+								prs->position--;
+								parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING);
+								prs->position += 2;	// необходимо пропустить
+							}
+							else
+							{
+								parser_add_char(prs, cur);
+							}
 						}
+					}
+					break;
+					case U'*':
+						was_star = true;
+						parser_add_char(prs, cur);
 						break;
 
 					default:
-						was_slash = false;
+						//was_slash = false;
+						was_star = false;
 						parser_add_char(prs, cur);
 				}
 		}
