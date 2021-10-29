@@ -2216,6 +2216,12 @@ static void builin_functions_declaration(information *const info)
 {
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
+		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
+		if (i == BI_ASSERT)
+		{
+			continue;
+		}
+
 		if (info->was_function[i])
 		{
 			const item_t func_type = ident_get_type(info->sx, i);
@@ -2243,6 +2249,32 @@ static void builin_functions_declaration(information *const info)
 			uni_printf(info->sx->io, ")\n");
 		}
 	}
+}
+
+// TODO: возможно, тут стоит читать из файла. Или как вообще красиво это сделать?
+//  И надо добавлять другие встроенные функции сюда
+static void runtime(information *const info)
+{
+	// assert
+	uni_printf(info->sx->io, "@.str = private unnamed_addr constant [3 x i8] c\"%%s\\00\", align 1\n"
+		"define void @assert(i32, i8*) {\n"
+		" %%3 = alloca i32, align 4\n"
+		" %%4 = alloca i8*, align 8\n"
+		" store i32 %%0, i32* %%3, align 4\n"
+		" store i8* %%1, i8** %%4, align 8\n"
+		" %%5 = load i32, i32* %%3, align 4\n"
+		" %%6 = icmp ne i32 %%5, 0\n"
+		" br i1 %%6, label %%10, label %%7\n"
+		" ; <label>:7:                                      ; preds = %%2\n"
+		" %%8 = load i8*, i8** %%4, align 8\n"
+		" %%9 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i32 0, i32 0), i8* %%8)\n"
+		" call void @exit(i32 1)\n"
+		" unreachable\n"
+		"; <label>:10:                                     ; preds = %%2\n"
+		" ret void\n"
+		"}\n"
+		"declare void @exit(i32)\n\n");
+	info->was_printf = true;
 }
 
 
@@ -2287,6 +2319,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	architecture(ws, sx);
 	structs_declaration(&info);
 	strings_declaration(&info);
+	runtime(&info);
 
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&info.sx->tree);
