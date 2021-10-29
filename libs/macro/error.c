@@ -82,6 +82,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_UNEXPECTED_LEXEME:
 			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
 			break;
+		case PARSER_UNEXPECTED_ENDM:
+			sprintf(msg, "отсутствует #macro для этой директивы");
+			break;
+		case PARSER_UNEXPECTED_ENDIF:
+			sprintf(msg, "отсутствует #if для этой директивы");
+			break;
+		case PARSER_UNEXPECTED_ENDW:
+			sprintf(msg, "отсутствует #while для этой директивы");
+			break;
 
 		case PARSER_INCLUDE_NEED_FILENAME:
 			sprintf(msg, "#include требуется \"FILENAME\"");
@@ -93,6 +102,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_INCORRECT_IDENT_NAME:
 			sprintf(msg, "некорректное имя идентификатора");
 			break;
+
 		case PARSER_DEFINE_NEED_IDENT:
 			sprintf(msg, "#define требуется идентификатор");
 			break;
@@ -119,7 +129,7 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
-		case PARSER_COMM_END_WITHOUT_BEGINNING:
+		case PARSER_UNEXPECTED_COMM_END:
 			sprintf(msg, "\"*/\" найден вне комментария");
 			break;
 		

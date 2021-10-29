@@ -756,7 +756,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	char32_t cur = U'\0';
 	size_t index = 0;
-	//bool was_slash = false;
 	bool was_star = false;
 	bool was_lexeme = false;
 
@@ -766,7 +765,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		switch (index)
 		{
 			case KW_INCLUDE:
-				parser_check_kw_position(prs, was_lexeme);
+				parser_check_kw_position(prs, was_lexeme);	// Проверка на наличие лексем перед директивой
 				parser_include(prs, cur);
 				was_lexeme = false;
 				was_star = false;
@@ -776,25 +775,55 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_SET:
 			case KW_UNDEF:
 				parser_check_kw_position(prs, was_lexeme);
-				parser_define(prs, cur, index);
+				parser_define(prs, cur, index);	// Одна функция разбора, index указывает на режим работы
 				was_lexeme = false;
 				was_star = false;
 				break;
 
 			case KW_MACRO:
+				parser_check_kw_position(prs, was_lexeme);
+				was_lexeme = false;
+				was_star = false;
+				break;
 			case KW_ENDM:
+				parser_check_kw_position(prs, was_lexeme);
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDM);
+				parser_skip_short_comment(prs);
+				was_lexeme = false;
+				was_star = false;
+				break;
 
 			case KW_IFDEF:
 			case KW_IFNDEF:
 			case KW_IF:
+				parser_check_kw_position(prs, was_lexeme);
+				was_lexeme = false;
+				was_star = false;
+				break;
 			case KW_ELIF:
 			case KW_ELSE:
 			case KW_ENDIF:
+				parser_check_kw_position(prs, was_lexeme);
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDIF);
+				parser_skip_short_comment(prs);
+				was_lexeme = false;
+				was_star = false;
+				break;
 
 			case KW_EVAL:
 
 			case KW_WHILE:
+				parser_check_kw_position(prs, was_lexeme);
+				was_lexeme = false;
+				was_star = false;
+				break;
 			case KW_ENDW:
+				parser_check_kw_position(prs, was_lexeme);
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
+				parser_skip_short_comment(prs);
+				was_lexeme = false;
+				was_star = false;
+				break;
 
 			default:
 				if ((!utf8_is_separator(cur) && cur != U'/' && cur != U'*')	// Перед '#' могут быть разделители
@@ -805,7 +834,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 				if (storage_last_read(prs->stg) != NULL)
 				{
-					//was_slash = false;
 					was_star = false;
 
 					if (storage_last_read(prs->stg)[0] == '#')
@@ -833,19 +861,16 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				switch (cur)
 				{
 					case U'#':
-						//was_slash = false;
 						was_star = false;
 						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 						parser_skip_short_comment(prs);
 						break;
 
 					case U'\'':
-						//was_slash = false;
 						was_star = false;
 						parser_skip_string(prs, U'\'');
 						break;
 					case U'\"':
-						//was_slash = false;
 						was_star = false;
 						parser_skip_string(prs, U'\"');
 						break;
@@ -853,7 +878,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					case U'\r':
 						cur = uni_scan_char(prs->in);
 					case U'\n':
-						//was_slash = false;
 						was_star = false;
 						was_lexeme = false;
 						parser_add_char(prs, U'\n');
@@ -885,7 +909,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 								was_star = false;
 								strings_remove(&prs->string);	// '*' был записан в буффер
 								prs->position--;
-								parser_macro_warning(prs, PARSER_COMM_END_WITHOUT_BEGINNING);
+								parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
 								prs->position += 2;	// необходимо пропустить
 							}
 							else
@@ -901,7 +925,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						break;
 
 					default:
-						//was_slash = false;
 						was_star = false;
 						parser_add_char(prs, cur);
 				}
