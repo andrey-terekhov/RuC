@@ -79,9 +79,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_UNEXPECTED_GRID:
 			sprintf(msg, "знак \'#\' здесь не предполагается");
 			break;
-		case PARSER_UNEXPECTED_LEXEME:
-			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
-			break;
 		case PARSER_UNEXPECTED_ENDM:
 			sprintf(msg, "отсутствует #macro для этой директивы");
 			break;
@@ -112,6 +109,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_UNDEF_NEED_IDENT:
 			sprintf(msg, "#undef требуется идентификатор");
 			break;
+		case PARSER_MACRO_NEED_IDENT:
+			sprintf(msg, "#macro требуется идентификатор");
+			break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");
@@ -132,6 +132,9 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		case PARSER_UNEXPECTED_COMM_END:
 			sprintf(msg, "\"*/\" найден вне комментария");
 			break;
+		case PARSER_UNEXPECTED_LEXEME:
+			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
+			break;
 		
 		case PARSER_DEFINE_EXIST_IDENT:
 			sprintf(msg, "определение существующего идентификатора");
@@ -141,6 +144,9 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			break;
 		case PARSER_UNDEF_NOT_EXIST_IDENT:
 			sprintf(msg, "удаление несуществующего идентификатора");
+			break;
+		case PARSER_MACRO_EXIST_IDENT:
+			sprintf(msg, "макроопределение существующего идентификатора");
 			break;
 
 		default:

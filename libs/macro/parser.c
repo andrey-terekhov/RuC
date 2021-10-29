@@ -506,7 +506,7 @@ static int parser_include(parser *const prs, char32_t cur)
 					parser_skip_long_comment(prs, &cur);
 					break;
 				default:
-					parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
 					parser_skip_short_comment(prs);
 					return ret;
 			}
@@ -517,7 +517,7 @@ static int parser_include(parser *const prs, char32_t cur)
 
 	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+		parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
 	}
 
 	parser_skip_short_comment(prs);
@@ -646,7 +646,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 							parser_skip_long_comment(prs, &cur);
 							break;
 						default:
-							parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+							parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
 							parser_skip_short_comment(prs);
 							return;
 					}
@@ -658,7 +658,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 
 			if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 			{
-				parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+				parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
 			}
 
 			parser_skip_short_comment(prs);
@@ -707,6 +707,106 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 	}
 }
 
+/**
+ *	Считывает имя идентификатора, его значение, добавляет в stg
+ *
+ *	@param	prs			Структура парсера
+ */
+static void parser_macro(parser *const prs, char32_t cur)
+{
+	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
+
+	// Пропуск разделителей и комментариев
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'*':
+					parser_skip_long_comment(prs, &cur);
+					break;
+				default:
+					parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+					parser_skip_short_comment(prs);
+					return;
+			}
+		}
+
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
+
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
+	{
+		parser_macro_error(prs, PARSER_MACRO_NEED_IDENT);
+		parser_skip_short_comment(prs);
+		return;
+	}
+	else if (!utf8_is_letter(cur))
+	{
+		parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+		parser_skip_short_comment(prs);
+		return;
+	}
+	else
+	{
+		char32_t id[1024];
+		id[0] = U'\0';
+		char32_t value[1024];
+		value[0] = U'\0';
+
+		// Запись идентификатора
+		const size_t position = prs->position - 1;	// Позиция начала идентификатора
+
+		size_t i = 0;
+		while (!utf8_is_separator(cur) && cur != U'/' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+		{
+			if (utf8_is_letter(cur) || utf8_is_digit(cur))
+			{
+				id[i++] = cur;
+			}
+			else
+			{
+				in_set_position(prs->in, position);
+				parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
+				parser_skip_short_comment(prs);
+				return;
+			}
+
+			prs->position++;
+			cur = uni_scan_char(prs->in);
+		}
+		id[i] = U'\0';
+
+		// Проверка существования
+		const size_t temp = prs->position;
+		const size_t index = storage_add(prs->stg, id, value);
+		if (index == SIZE_MAX)
+		{
+			prs->position = position;
+			parser_macro_warning(prs, PARSER_MACRO_EXIST_IDENT);
+			prs->position = temp;
+		}
+	}
+}
+
+/**
+ *	Считывает имя идентификатора, его значение, добавляет в stg
+ *
+ *	@param	prs			Структура парсера
+ *	@param	mode		Режим работы функции
+ *						@c KW_DEFINE #define
+ *						@c KW_SET	 #set
+ *						@c KW_UNDEF	 #undef
+ */
+static void parser_if(parser *const prs, char32_t cur, const keyword_t mode)
+{
+	(void)prs;
+	(void)cur;
+	(void)mode;
+}
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -782,6 +882,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 			case KW_MACRO:
 				parser_check_kw_position(prs, was_lexeme);
+				parser_macro(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -797,6 +898,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_IFNDEF:
 			case KW_IF:
 				parser_check_kw_position(prs, was_lexeme);
+				parser_if(prs, cur, index);
 				was_lexeme = false;
 				was_star = false;
 				break;

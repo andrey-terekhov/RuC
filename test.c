@@ -1,5 +1,5 @@
 int a = 1;
-#endm a = 0;
+#определить a№ 0
 
 int main()
 {
