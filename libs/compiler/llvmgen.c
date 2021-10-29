@@ -791,6 +791,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		const node argument = expression_call_get_argument(nd, i);
 		arguments_value_type[i] = expression_get_type(&argument);
 		emit_expression(info, &argument);
+		to_code_try_zext_to(info);
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
 
