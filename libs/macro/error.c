@@ -86,6 +86,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_INCLUDE_NEED_FILENAME:
 			sprintf(msg, "#include требуется \"FILENAME\"");
 			break;
+		case PARSER_INCLUDE_INCORRECT_FILENAME:
+			sprintf(msg, "не удается открыть источник файл");
+			break;
 
 		case PARSER_INCORRECT_IDENT_NAME:
 			sprintf(msg, "некорректное имя идентификатора");

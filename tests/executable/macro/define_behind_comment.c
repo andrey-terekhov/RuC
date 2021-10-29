@@ -1,5 +1,5 @@
 int a = 0;
-/* */ #define a 0
+/* */ #define a 1
 
 int main()
 {

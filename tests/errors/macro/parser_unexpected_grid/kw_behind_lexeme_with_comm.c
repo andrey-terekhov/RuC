@@ -1,7 +1,6 @@
 int a = 1;
 /* */ l #define a 0
-
-#include /*comment*/"file"
+#define B
 
 int main()
 {
