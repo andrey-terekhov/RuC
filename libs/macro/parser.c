@@ -311,7 +311,7 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 
 	bool was_star = false;
 
-	char32_t cur = U'*';//uni_scan_char(prs->in);
+	char32_t cur = U'*';
 	while (cur != (char32_t)EOF)
 	{
 		cur = uni_scan_char(prs->in);
@@ -483,11 +483,44 @@ static int parser_include(parser *const prs, char32_t cur)
 	}
 
 	// Парсинг подключенного файла
+	size_t temp = prs->position;
 	prs->position = position;
 	int ret = parser_preprocess_file(prs, path);
 
 	// Пропуск символов за путем
-	parser_skip_line(prs);
+	prs->position = temp;
+
+	cur = uni_scan_char(prs->in);
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		prs->position++;
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'/':
+					parser_skip_short_comment(prs);
+					break;
+				case U'*':
+					parser_skip_long_comment(prs, &cur);
+					break;
+				default:
+					parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+					parser_skip_short_comment(prs);
+					return ret;
+			}
+		}
+
+		cur = uni_scan_char(prs->in);
+	}
+
+	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		parser_macro_error(prs, PARSER_UNEXPECTED_LEXEME);
+	}
+
+	parser_skip_short_comment(prs);
 
 	return ret;
 }

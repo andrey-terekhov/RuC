@@ -1,3 +1,3 @@
-a = 1;
+int b = 0;
 
-// assert(0, "short comment_ in included file");
+char r[] = { '1', '2' };
