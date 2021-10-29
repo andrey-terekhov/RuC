@@ -1602,7 +1602,7 @@ static void emit_function_definition(information *const info, const node *const 
 	uni_printf(info->sx->io, "define ");
 	type_to_io(info, ret_type);
 	
-	if (!strcmp(ident_get_spelling(info->sx, ref_ident), "MAIN"))
+	if (strcmp(ident_get_spelling(info->sx, ref_ident), "MAIN") == 0)
 	{
 		uni_printf(info->sx->io, " @main(");
 	}
