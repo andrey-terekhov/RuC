@@ -1,9 +1,9 @@
-int a = 0;
+#define a 1
+#define b/**/a + 1
 
 int main()
 {
-#include "temp.c"
 
-	assert(a, "#include is not working");
+	assert(b, "#include is not working");
 	return 0;
 }

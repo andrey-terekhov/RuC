@@ -262,8 +262,8 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 				uni_scan_char(prs->in);
 			}
 
+			parser_add_char(prs, U'\n');
 			parser_print(prs);
-			uni_print_char(prs->out, U'\n');
 			return;
 		}
 		else									// Независимо от корректности строки выводит ее в out
@@ -293,8 +293,8 @@ static void parser_skip_short_comment(parser *const prs)
 {
 	parser_skip_line(prs);
 
+	parser_add_char(prs, U'\n');
 	parser_print(prs);
-	uni_print_char(prs->out, U'\n');
 }
 
 /**
@@ -380,6 +380,32 @@ static int parser_preprocess_file(parser *const prs, const char *const path)
 	return ret;
 }
 
+/**
+ *	Preprocess buffer
+ *
+ *	@param	prs		Parser structure
+ *	@param	path	File path
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
+{
+	parser_print(prs);
+
+	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
+
+	universal_io in = io_create();
+	in_set_buffer(&in, buffer);
+
+	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
+	int ret = parser_preprocess(&new_prs, &in);
+	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
+
+	in_clear(&in);
+
+	return ret;
+}
+
 
 /**
  *	Проверяет наличие лексем перед директивой препроцессора
@@ -434,17 +460,17 @@ static int parser_include(parser *const prs, char32_t cur)
 	}
 
 	// ОБработка пути
-	char buffer[MAX_ARG_SIZE] = "\0";
+	char path[MAX_ARG_SIZE] = "\0";
 	storage_search(prs->stg, prs->in, &cur);
-	prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+	prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
 
 	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		parser_add_char_to_buffer(buffer, cur);
+		parser_add_char_to_buffer(path, cur);
 		prs->position++;
 
 		storage_search(prs->stg, prs->in, &cur);
-		prs->position += parser_add_to_buffer(buffer, storage_last_read(prs->stg));
+		prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
 	}
 
 	prs->position++;
@@ -458,7 +484,7 @@ static int parser_include(parser *const prs, char32_t cur)
 
 	// Парсинг подключенного файла
 	prs->position = position;
-	int ret = parser_preprocess_file(prs, buffer);
+	int ret = parser_preprocess_file(prs, path);
 
 	// Пропуск символов за путем
 	parser_skip_line(prs);
@@ -549,13 +575,14 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 
 		// Проверка существования
 		const size_t temp = in_get_position(prs->in);
-		if (mode == KW_DEFINE && storage_add(prs->stg, id, value) == SIZE_MAX)
+		const size_t index = storage_add(prs->stg, id, value);
+		if (mode == KW_DEFINE && index == SIZE_MAX)
 		{
 			in_set_position(prs->in, position);
 			parser_macro_warning(prs, PARSER_DEFINE_EXIST_IDENT);
 			in_set_position(prs->in, temp);
 		}
-		else if (mode == KW_SET && storage_add(prs->stg, id, value) != SIZE_MAX)
+		else if (mode == KW_SET && index != SIZE_MAX)
 		{
 			in_set_position(prs->in, position);
 			parser_macro_warning(prs, PARSER_SET_NOT_EXIST_IDENT);
@@ -629,7 +656,12 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 			prs->position++;
 			cur = uni_scan_char(prs->in);
 		}
-		value[j] = U'\0';
+		value[j] = (char32_t)EOF;
+
+		if (mode == KW_SET)
+		{
+			// Для случая #set A A + 1
+		}
 
 		storage_set(prs->stg, id, value);
 		parser_skip_short_comment(prs);
@@ -747,7 +779,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						prs->position += parser_add_string(prs, storage_get_by_index(prs->stg, index));
+						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
 					}
 					else
 					{
@@ -777,8 +809,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					case U'\n':
 						was_slash = false;
 						was_lexeme = false;
+						parser_add_char(prs, U'\n');
 						parser_print(prs);
-						uni_print_char(prs->out, U'\n');
+						break;
+					case (char32_t)EOF:
+						parser_print(prs);
 						break;
 
 					case U'/':
@@ -814,7 +849,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				}
 		}
 	}
-printf("%i\n",prs->was_error);
+
 	return !prs->was_error ? 0 : -1;
 }
 
