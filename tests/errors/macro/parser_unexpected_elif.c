@@ -1,5 +1,5 @@
-int a = 0;
-#elif a = 1;
+int a = 1;
+#elif a = 0;
 
 int main()
 {

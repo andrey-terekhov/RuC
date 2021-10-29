@@ -1,8 +1,8 @@
+int a = 1;
+#endm a = 0;
+
 int main()
 {
-	int a = 0;
-	a = */ 1;
-
-	assert(a == 1, "\"*/\" should convert to \"\"");
+	assert(a, "recovery is not working");
 	return 0;
 }

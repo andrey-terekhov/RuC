@@ -1,5 +1,5 @@
-int a = 0;
-#endm a = 1;
+int a = 1;
+#endm a = 0;
 
 int main()
 {

@@ -1,5 +1,5 @@
-int a = 0;
-#wrongkw a = 1;
+int a = 1;
+#wrongkw a = 0;
 
 int main()
 {
