@@ -571,14 +571,14 @@ static int parser_include(parser *const prs, char32_t cur)
 		return prs->was_error ? 1 : 0;
 	}
 
-	// Пропуск символов за путем
-	prs->position = temp;
-	parser_find_unexpected_lexeme(prs, uni_scan_char(prs->in));
-
 	// Парсинг подключенного файла
 	size_t temp = prs->position;
 	prs->position = position;
 	int ret = parser_preprocess_file(prs, path, ch);
+
+	// Пропуск символов за путем
+	prs->position = temp;
+	parser_find_unexpected_lexeme(prs, uni_scan_char(prs->in));
 
 	return ret;
 }
