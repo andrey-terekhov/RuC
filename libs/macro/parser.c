@@ -260,49 +260,51 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 {
 	const size_t position = prs->position;		// Позиция начала строковой константы
 
-	bool was_slash = false;
 	parser_add_char(prs, ch);					// Вывод символа начала строковой константы
 
+	char32_t prev = U'\0';
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
-	{
 		if (cur == ch)
 		{
 			parser_add_char(prs, cur);
-			if (was_slash)
-			{
-				was_slash = cur == U'\\' ? true : false;
-			}
-			else
+
+			if (prev != U'\\')
 			{
 				return;							// Строка считана, выход из функции
 			}
+
 		}
 		else if (utf8_is_line_breaker(cur))		// Ошибка из-за наличия переноса строки
 		{
-			prs->position = position;
-			parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
-
-			if (prs->is_recovery_disabled)		// Добавление '\"' в конец незаконченной строковой константы
-			{
-				parser_add_char(prs, ch);
-			}
-
 			if (cur == U'\r')					// Обработка переноса строки
 			{
 				uni_scan_char(prs->in);
 			}
 
-			parser_add_char(prs, U'\n');
-			parser_print(prs);
-			return;
+			if (prev != U'\\')
+			{
+				prs->position = position;
+				parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
+
+				if (prs->is_recovery_disabled)		// Добавление '\"' в конец незаконченной строковой константы
+				{
+					parser_add_char(prs, ch);
+				}
+				
+				parser_add_char(prs, U'\n');
+				parser_print(prs);
+				
+				return;
+			}
+			strings_remove(&prs->string);
 		}
 		else									// Независимо от корректности строки выводит ее в out
 		{
-			was_slash = cur == U'\\' ? true : false;
 			parser_add_char(prs, cur);
 		}
 
+		prev = cur;
 		cur = uni_scan_char(prs->in);
 	}
 
