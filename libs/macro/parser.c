@@ -577,10 +577,11 @@ static keyword_t parser_find_value(parser *const prs, char32_t *const value, cha
 				parser_next_line(prs);
 			}
 			else if (cur == U'#')
-			{
+			{printf("1 '%lc'\n",  cur);
 				const size_t grid_position = in_get_position(prs->in);
-				uni_unscan_char(prs->in, U'#');
-				if (storage_search(prs->stg, prs->in, &cur) == KW_ENDM && !was_lexeme)
+				//uni_unscan_char(prs->in, U'#');
+				size_t index = storage_search(prs->stg, prs->in, &cur);printf("2 '%lc'\n",  cur);
+				if ( index == KW_ENDM && !was_lexeme)
 				{
 					// Проверка и пропуск кода в той же строке, что и символ завершения блока
 					parser_find_unexpected_lexeme(prs, &cur);
@@ -593,7 +594,7 @@ static keyword_t parser_find_value(parser *const prs, char32_t *const value, cha
 				}
 			}
 		}
-
+printf("'%lc' '%lc'\n", value[j-1], cur);
 		value[j] = cur;
 		j++;
 
@@ -602,6 +603,7 @@ static keyword_t parser_find_value(parser *const prs, char32_t *const value, cha
 	}
 
 	value[j] = (char32_t)EOF;
+	*last = cur;
 	return mode;
 }
 
