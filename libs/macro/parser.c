@@ -23,6 +23,10 @@
 #include "uniscanner.h"
 
 
+#define CMT_BUFFER_SIZE			MAX_ARG_SIZE + 128
+#define UTF8_CHAR_BUFFER_SIZE	8
+#define AVERAGE_LINE_SIZE		256
+
 const size_t FST_LINE_INDEX =		1;
 const size_t FST_CHARACTER_INDEX =	0;
 
@@ -54,6 +58,8 @@ static bool utf8_is_line_breaker(const char32_t symbol)
 
 /**
  *	Увеличивает значение line и сбрасывает значение position
+ *
+ *	@param	prs			Структура парсера
  */
 static inline void parser_next_line(parser *const prs)
 {
@@ -61,11 +67,13 @@ static inline void parser_next_line(parser *const prs)
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
 	strings_clear(&prs->string);
-	prs->string = strings_create(256);
+	prs->string = strings_create(AVERAGE_LINE_SIZE);
 }
 
 /**
  *	Печатает в prs.out строку кода
+ *
+ *	@param	prs			Структура парсера
  */
 static inline void parser_print(parser *const prs)
 {
@@ -80,6 +88,11 @@ static inline void parser_print(parser *const prs)
 
 /**
  *	Добавляет str в string
+ *
+ *	@param	prs			Структура парсера
+ *	@param	str			Строка
+ *
+ *	@return	Длина записанной строки
  */
 static inline size_t parser_add_string(parser *const prs, const char *const str)
 {
@@ -94,10 +107,13 @@ static inline size_t parser_add_string(parser *const prs, const char *const str)
 
 /**
  *	Добавляет символ в string и увеличивает значение position
+ *
+ *	@param	prs			Структура парсера
+ *	@param	ch			Символ
  */
 static inline void parser_add_char(parser *const prs, const char32_t cur)
 {
-	char buffer[9];
+	char buffer[UTF8_CHAR_BUFFER_SIZE];
 	utf8_to_string(buffer, cur);
 
 	strings_add(&prs->string, buffer);
@@ -105,7 +121,36 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
+ *	Добавляет комментарий в string
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_comment(parser *const prs)
+{
+	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
+	char buffer[CMT_BUFFER_SIZE];
+	cmt_to_string(&cmt);
+	parser_add_string(prs, buffer);
+}
+
+/**
+ *	Добавляет макро комментарий в string
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_macro_comment(parser *const prs)
+{
+	comment cmt = cmt_create_macro(linker_current_path(prs->lk), prs->line), prs->position);
+	char buffer[CMT_BUFFER_SIZE];
+	cmt_to_string(&cmt);
+	parser_add_string(prs, buffer);
+}
+
+/**
  *	Сохраняет считанный код
+ *
+ *	@param	prs			Структура парсера
+ *	@param	str			Строка
  */
 static inline size_t parser_add_to_buffer(char *const buffer, const char *const str)
 {
@@ -120,29 +165,14 @@ static inline size_t parser_add_to_buffer(char *const buffer, const char *const 
 
 /**
  *	Сохраняет считанный символ
+ *
+ *	@param	prs			Структура парсера
+ *	@param	ch			Символ
  */
 static inline void parser_add_char_to_buffer(char *const buffer, const char32_t ch)
 {
 	utf8_to_string(&buffer[strlen(buffer)], ch);
 }
-
-/**
- *	Заполняет string до конца строки
- */
-/*static inline char parser_fill_string(parser *const prs)
-{
-	char str[256];
-	str[0] = '\0';
-
-	char32_t cur = uni_scan_char(prs->in);
-	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		utf8_to_string(&str[strlen(str)], cur);
-		cur = uni_scan_char(prs->in);
-	}
-
-	return str;
-}*/
 
 
 /**
@@ -204,7 +234,10 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
 
 
 /**
- *	Считывает символы до конца строковой константы и буфферизирует текущую строку кода
+ *	Считывает символы до конца строковой константы
+ *
+ *	@param	prs			Структура парсера
+ *	@param	ch			Символ начала строки
  */
 static void parser_skip_string(parser *const prs, const char32_t ch)
 {
@@ -269,6 +302,8 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 
 /**
  *	Пропускает строку c текущего символа до '\r', '\n', EOF
+ *
+ *	@param	prs			Структура парсера
  */
 static void parser_skip_line(parser *const prs)
 {
@@ -283,7 +318,9 @@ static void parser_skip_line(parser *const prs)
 }
 
 /**
- *	Считывает символы до конца длинного комментария и буфферизирует текущую строку кода
+ *	Считывает символы до конца длинного комментария
+ *
+ *	@param	prs			Структура парсера
  */
 static void parser_skip_long_comment(parser *const prs)
 {
@@ -395,8 +432,13 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 
 /**
  *	Проверяет наличие лексем перед директивой препроцессора
+ *
+ *	@param	prs			Структура парсера
+ *	@param	was_lexeme	Флаг, указывающий наличие лексемы
+ *
+ *	@return	@c 1 если позиция корректна, @c 0 если позиция некорректна 
  */
-static inline int parser_check_kw_position(parser *const prs, const bool was_lexeme)
+static inline bool parser_check_kw_position(parser *const prs, const bool was_lexeme)
 {
 	if (was_lexeme)
 	{
@@ -625,7 +667,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
 	prs.position = FST_CHARACTER_INDEX;
-	prs.string = strings_create(256);
+	prs.string = strings_create(AVERAGE_LINE_SIZE);
 
 	prs.is_recovery_disabled = false;
 	prs.was_error = false;
