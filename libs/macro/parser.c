@@ -265,6 +265,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	char32_t prev = U'\0';
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
+	{
 		if (cur == ch)
 		{
 			parser_add_char(prs, cur);
