@@ -129,7 +129,7 @@ static inline void parser_comment(parser *const prs)
 {
 	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
 	char buffer[CMT_BUFFER_SIZE];
-	cmt_to_string(&cmt);
+	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
 }
 
@@ -140,9 +140,9 @@ static inline void parser_comment(parser *const prs)
  */
 static inline void parser_macro_comment(parser *const prs)
 {
-	comment cmt = cmt_create_macro(linker_current_path(prs->lk), prs->line), prs->position);
+	comment cmt = cmt_create_macro(linker_current_path(prs->lk), prs->line, prs->position);
 	char buffer[CMT_BUFFER_SIZE];
-	cmt_to_string(&cmt);
+	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
 }
 
@@ -350,6 +350,11 @@ static void parser_skip_long_comment(parser *const prs)
 			case U'/':
 				if (was_star)
 				{
+					if (prs->line != line)
+					{
+						parser_add_char(prs, U'\n');
+						parser_comment(prs);
+					}
 					return;
 				}
 			default:
@@ -684,7 +689,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
-	// comment_create
+	parser_comment(prs);
 
 	char32_t cur = U'\0';
 	parser_preprocess_code(prs, cur, 0);
