@@ -204,24 +204,6 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
 
 
 /**
- *	Пропускает строку c текущего символа
- */
-static void parser_skip_line(parser *const prs)
-{
-	char32_t cur = uni_scan_char(prs->in);
-	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (cur == U'\r')
-	{
-		uni_scan_char(prs->in);
-	}
-}
-
-/**
  *	Считывает символы до конца строковой константы и буфферизирует текущую строку кода
  */
 static void parser_skip_string(parser *const prs, const char32_t ch)
@@ -286,20 +268,24 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 }
 
 /**
- *	Пропускает символы до конца комментария ('\n', '\r' или EOF)
+ *	Пропускает строку c текущего символа до '\r', '\n', EOF
  */
-static void parser_skip_short_comment(parser *const prs)
+static void parser_skip_line(parser *const prs)
 {
-	parser_skip_line(prs);
+	char32_t cur = uni_scan_char(prs->in);
+	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
 
-	parser_add_char(prs, U'\n');
-	parser_print(prs);
+	uni_scan_char(prs->in);	// Необходимо, чтобы следующий символ был переносом строки или концом файла
 }
 
 /**
  *	Считывает символы до конца длинного комментария и буфферизирует текущую строку кода
  */
-static void parser_skip_long_comment(parser *const prs, char32_t *const last)
+static void parser_skip_long_comment(parser *const prs)
 {
 	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
 	const size_t line = prs->line;							// Номер строки с началом комментария
@@ -339,12 +325,12 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
 	prs->line = line;
 	prs->position = position;
 
-	*last = (char32_t)EOF;									// Необходимо для корректной работы снаружи
+	//*last = (char32_t)EOF;									// Необходимо для корректной работы снаружи
 	parser_macro_error(prs, PARSER_COMM_NOT_ENDED);
 
 	if (prs->is_recovery_disabled)							// Пропускает начало комментария
 	{
-		*last = U'/';
+		//*last = U'/';
 		prs->line_position = line_position;
 		prs->line = line;
 		prs->position = position + 2;
@@ -361,9 +347,10 @@ static void parser_skip_long_comment(parser *const prs, char32_t *const last)
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-static int parser_preprocess_file(parser *const prs, const char *const path)
+/*static int parser_preprocess_file(parser *const prs, const char *const path)
 {
 	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
+
 	universal_io in = linker_add_header(prs->lk, linker_search_external(prs->lk, path));
 	if (!in_is_correct(&in))
 	{
@@ -377,13 +364,13 @@ static int parser_preprocess_file(parser *const prs, const char *const path)
 	in_clear(&in);
 
 	return ret;
-}
+}*/
 
 /**
  *	Preprocess buffer
  *
  *	@param	prs		Parser structure
- *	@param	path	File path
+ *	@param	buffer	Code for preprocessing
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -421,462 +408,193 @@ static inline int parser_check_kw_position(parser *const prs, const bool was_lex
 }
 
 /**
- *	Пропускает строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
+ *	Разбирает код
+ *
+ *	@param	prs			Структура парсера
+ *	@param	cur			Текущий символ
+ *	@param	mode		Режим работы функции
  */
-static int parser_find_ident_begining(parser *const prs, char32_t *const last)
+static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode)
 {
-	char32_t cur = *last;
-	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'*':
-					parser_skip_long_comment(prs, &cur);
-					break;
-				default:
-					//parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-					return -1;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
-	{
-		//parser_macro_error(prs, PARSER_MACRO_NEED_IDENT);
-		return -2;
-	}
-	else if (!utf8_is_letter(cur))
-	{
-		//parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-		return -1;
-	}
-
-	*last = cur;
-	return 0;
-}
-
-/**
- *	Пропускает строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
- */
-static size_t parser_find_id(parser *const prs, char32_t *const id, char32_t *const last)
-{
-	char32_t cur = *last;
-	const size_t position = prs->position - 1;	// Позиция начала идентификатора
-
-	size_t i = 0;
-	while (!utf8_is_separator(cur) && cur != U'/' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		if (utf8_is_letter(cur) || utf8_is_digit(cur))
-		{
-			id[i++] = cur;
-		}
-		else
-		{
-			in_set_position(prs->in, position);
-			parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-			parser_skip_short_comment(prs);
-			return position;
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-	id[i] = U'\0';
-	*last = cur;
-	return position;
-}
-
-/**
- *	Пропускает строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
- */
-static void parser_find_unexpected_lexeme(parser *const prs, char32_t *const last)
-{
-	char32_t cur = *last;
-	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'/':
-					parser_skip_short_comment(prs);
-					return;
-				case U'*':
-					parser_skip_long_comment(prs, &cur);
-					break;
-				default:
-					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
-					parser_skip_short_comment(prs);
-					return;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
-	}
-
-	parser_skip_short_comment(prs);
-}
-
-/**
- *	Пропускает строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
- */
-static keyword_t parser_find_value(parser *const prs, char32_t *const value, char32_t *const last, const keyword_t mode)
-{
-	size_t j = 0;
+	size_t index = 0;
+	bool was_star = false;
 	bool was_lexeme = false;
-	char32_t cur = *last;
-	while ((!utf8_is_line_breaker(cur) || (mode != KW_SET && mode != KW_DEFINE)) && cur != (char32_t)EOF)
+	while (cur != (char32_t)EOF)
 	{
-		if (cur == U'/')	// Пропуск комментариев
+		index = storage_search(prs->stg, prs->in, &cur);
+		switch (index)
 		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'/':
+			case KW_INCLUDE:
+				parser_check_kw_position(prs, was_lexeme);	// Проверка на наличие лексем перед директивой
+				//parser_include(prs, cur);
+				was_lexeme = false;
+				was_star = false;
+				break;
+		
+			case KW_DEFINE:
+			case KW_SET:
+			case KW_UNDEF:
+				parser_check_kw_position(prs, was_lexeme);
+				//parser_define(prs, cur, index);	// Одна функция разбора, index указывает на режим работы
+				was_lexeme = false;
+				was_star = false;
+				break;
+
+			case KW_MACRO:
+				parser_check_kw_position(prs, was_lexeme);
+				//parser_macro(prs, cur, &cur);
+				was_lexeme = false;
+				was_star = false;
+				break;
+			case KW_ENDM:
+				parser_check_kw_position(prs, was_lexeme);
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDM);
+				parser_skip_line(prs);
+				was_lexeme = false;
+				was_star = false;
+				break;
+
+			case KW_IFDEF:
+			case KW_IFNDEF:
+			case KW_IF:
+				parser_check_kw_position(prs, was_lexeme);
+				//parser_if(prs, cur, index);
+				was_lexeme = false;
+				was_star = false;
+				break;
+			case KW_ELIF:
+			case KW_ELSE:
+			case KW_ENDIF:
+				parser_check_kw_position(prs, was_lexeme);
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDIF);
+				parser_skip_line(prs);
+				was_lexeme = false;
+				was_star = false;
+				break;
+
+			case KW_EVAL:
+
+			case KW_WHILE:
+				parser_check_kw_position(prs, was_lexeme);
+				//parser_while(prs, cur, index);
+				was_lexeme = false;
+				was_star = false;
+				break;
+			case KW_ENDW:
+				parser_check_kw_position(prs, was_lexeme);
+				if (mode != KW_WHILE)
+				{
+					parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
 					parser_skip_line(prs);
-					if (mode == KW_SET || mode == KW_DEFINE)	// Выход для #define и #set
+				}
+				was_lexeme = false;
+				was_star = false;
+				return;
+
+			default:
+				if (!utf8_is_separator(cur) || storage_last_read(prs->stg) != NULL)	// Перед '#' могут быть только разделители
+				{
+					was_lexeme = true;
+				}
+
+				if (storage_last_read(prs->stg) != NULL)
+				{
+					was_star = false;
+
+					if (storage_last_read(prs->stg)[0] == '#')
 					{
+						if (parser_check_kw_position(prs, was_lexeme))	// Перед '#' есть лексемы -> '#' не на месте
+																		// Перед '#' нет лексем   -> неправильная директива
+						{
+							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+						}
+						parser_skip_line(prs);
+						break;
+					}
+
+					if (index != SIZE_MAX)
+					{
+						// Макроподстановка
+						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+					}
+					else
+					{
+						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
+					}
+				}
+
+				switch (cur)
+				{
+					case U'#':
+						was_star = false;
+						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
+						parser_skip_line(prs);
+						break;
+
+					case U'\'':
+						was_star = false;
+						parser_skip_string(prs, U'\'');
+						break;
+					case U'\"':
+						was_star = false;
+						parser_skip_string(prs, U'\"');
+						break;
+
+					case U'\r':
+						cur = uni_scan_char(prs->in);
+					case U'\n':
+						was_star = false;
+						was_lexeme = false;
 						parser_add_char(prs, U'\n');
 						parser_print(prs);
-						value[j] = (char32_t)EOF;
-						return mode;
+						break;
+					case (char32_t)EOF:
+						parser_print(prs);
+						break;
+
+					case U'/':
+					{
+						char32_t next = uni_scan_char(prs->in);
+						if (next == U'/')
+						{
+							was_star = false;
+							parser_skip_line(prs);
+						}
+						else if (next == U'*')
+						{
+							was_star = false;
+							prs->position++;
+							parser_skip_long_comment(prs);
+						}
+						else
+						{
+							uni_unscan_char(prs->in, next);
+							if (was_star)
+							{
+								was_star = false;
+								strings_remove(&prs->string);	// '*' был записан в буффер
+								prs->position--;
+								parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
+								prs->position += 2;	// необходимо пропустить
+							}
+							else
+							{
+								parser_add_char(prs, cur);
+							}
+						}
 					}
 					break;
-				case U'*':
-					cur = uni_scan_char(prs->in);
-					parser_skip_long_comment(prs, &cur);
-					break;
-				default:
-					//value[j] = cur;
-					uni_unscan_char(prs->in, next);	// next будет считан и обработан в цикле
-			}
-		}
-		else if (mode != KW_SET && mode != KW_DEFINE)	// Для #macro, #ifdef, #if
-		{
-			if (utf8_is_line_breaker(cur))
-			{
-				if (cur == U'\r')
-				{
-					cur = uni_scan_char(prs->in);
-				}
-
-				was_lexeme = false;
-				parser_next_line(prs);
-			}
-			else if (cur == U'#')
-			{printf("1 '%lc'\n",  cur);
-				const size_t grid_position = in_get_position(prs->in);
-				//uni_unscan_char(prs->in, U'#');
-				size_t index = storage_search(prs->stg, prs->in, &cur);printf("2 '%lc'\n",  cur);
-				if ( index == KW_ENDM && !was_lexeme)
-				{
-					// Проверка и пропуск кода в той же строке, что и символ завершения блока
-					parser_find_unexpected_lexeme(prs, &cur);
-					*last = cur;
-					return mode;
-				}
-				else
-				{
-					in_set_position(prs->in, grid_position);
-				}
-			}
-		}
-printf("'%lc' '%lc'\n", value[j-1], cur);
-		value[j] = cur;
-		j++;
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	value[j] = (char32_t)EOF;
-	*last = cur;
-	return mode;
-}
-
-/**
- *	Считывает путь к файлу и выполняет его обработку
- */
-static int parser_include(parser *const prs, char32_t cur)
-{
-	const size_t position = prs->position;
-	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
-	
-	// Пропуск разделителей и комментариев
-	while (utf8_is_separator(cur) || cur == U'/')
-	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'*':
-					parser_skip_long_comment(prs, &cur);
-					break;
-				default:
-					prs->position = position;
-					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-					parser_skip_short_comment(prs);
-					return 0;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF || cur != U'\"')
-	{
-		prs->position = position;
-		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		parser_skip_short_comment(prs);
-		return 0;
-	}
-
-	// ОБработка пути
-	char path[MAX_ARG_SIZE] = "\0";
-	storage_search(prs->stg, prs->in, &cur);
-	prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
-
-	while (cur != U'\"' && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-	{
-		parser_add_char_to_buffer(path, cur);
-		prs->position++;
-
-		storage_search(prs->stg, prs->in, &cur);
-		prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
-	}
-
-	prs->position++;
-	if (cur != U'\"')
-	{
-		prs->position = position;
-		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		parser_skip_short_comment(prs);
-		return 0;
-	}
-
-	// Парсинг подключенного файла
-	size_t temp = prs->position;
-	prs->position = position;
-	int ret = parser_preprocess_file(prs, path);
-
-	// Пропуск символов за путем
-	prs->position = temp;
-
-	cur = uni_scan_char(prs->in);
-	parser_find_unexpected_lexeme(prs, &cur);
-
-	return ret;
-}
-
-/**
- *	Считывает имя идентификатора, его значение, добавляет в stg
- *
- *	@param	prs			Структура парсера
- *	@param	mode		Режим работы функции
- *						@c KW_DEFINE #define
- *						@c KW_SET	 #set
- *						@c KW_UNDEF	 #undef
- */
-static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
-{
-	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
-
-	// Пропуск разделителей и комментариев
-	const int res = parser_find_ident_begining(prs, &cur);
-	if (res == -1)
-	{
-		parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-		parser_skip_short_comment(prs);
-		return;
-	}
-	else if (res == -2)
-	{
-		parser_macro_error(prs, mode == KW_DEFINE
-								? PARSER_DEFINE_NEED_IDENT
-								: mode == KW_SET
-									? PARSER_SET_NEED_IDENT
-									: PARSER_UNDEF_NEED_IDENT);
-		parser_skip_short_comment(prs);
-		return;
-	}
-	else
-	{
-		char32_t id[1024];
-		id[0] = U'\0';
-		char32_t value[1024];
-		value[0] = U'\0';
-
-		// Запись идентификатора
-		const size_t position = parser_find_id(prs, id, &cur);	// Позиция начала идентификатора
-
-		// Проверка существования
-		const size_t temp = prs->position;
-		const size_t index = storage_add(prs->stg, id, value);
-		if (mode == KW_DEFINE && index == SIZE_MAX)
-		{
-			prs->position = position;
-			parser_macro_warning(prs, PARSER_DEFINE_EXIST_IDENT);
-			prs->position = temp;
-		}
-		else if (mode == KW_SET && index != SIZE_MAX)
-		{
-			prs->position = position;
-			parser_macro_warning(prs, PARSER_SET_NOT_EXIST_IDENT);
-			prs->position = temp;
-		}
-		else if (mode == KW_UNDEF)
-		{
-			if (index != SIZE_MAX)
-			{
-				prs->position = position;
-				parser_macro_warning(prs, PARSER_UNDEF_NOT_EXIST_IDENT);
-				prs->position = temp;
-			}
-			storage_remove(prs->stg, id);
-
-			// Проверка последующего кода для #undef
-			parser_find_unexpected_lexeme(prs, &cur);
-			return;
-		}
-
-		// Запись значения
-		/*size_t j = 0;
-		while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-		{
-			if (cur == U'/')
-			{
-				char32_t next = uni_scan_char(prs->in);
-				switch (next)
-				{
-					case U'/':
-						parser_skip_short_comment(prs);
-						value[j] = U'\0';
-						storage_set(prs->stg, id, value);
-						return;
 					case U'*':
-						parser_skip_long_comment(prs, &cur);
+						was_star = true;
+						parser_add_char(prs, cur);
 						break;
+
 					default:
-						value[j++] = cur;
-						uni_unscan_char(prs->in, next);	// next будет считан и обработан в цикле
+						was_star = false;
+						parser_add_char(prs, cur);
 				}
-			}
-			else
-			{
-				value[j++] = cur;
-			}
-
-			prs->position++;
-			cur = uni_scan_char(prs->in);
 		}
-		value[j] = (char32_t)EOF;*/
-		parser_find_value(prs, value, &cur, mode);
-
-		if (mode == KW_SET)
-		{
-			// Для случая #set A A + 1
-		}
-
-		storage_set(prs->stg, id, value);
-		//parser_skip_short_comment(prs);
 	}
-}
-
-/**
- *	Считывает имя идентификатора, его значение, добавляет в stg
- *
- *	@param	prs			Структура парсера
- */
-static void parser_macro(parser *const prs, char32_t cur, char32_t *const last)
-{
-	const size_t kw_line_position = prs->line_position;		// Позиция начала строки с началом #macro
-	const size_t kw_line = prs->line;						// Номер строки с началом #macro
-	const size_t kw_position = prs->position;				// Позиция начала #macro в строке
-	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
-
-	// Пропуск разделителей и комментариев
-	const int res = parser_find_ident_begining(prs, &cur);
-	if (res == -1)
-	{
-		parser_macro_error(prs, PARSER_INCORRECT_IDENT_NAME);
-		parser_skip_short_comment(prs);
-		return;
-	}
-	else if (res == -2)
-	{
-		parser_macro_error(prs, PARSER_MACRO_NEED_IDENT);
-		parser_skip_short_comment(prs);
-		return;
-	}
-	else
-	{
-		char32_t id[1024];
-		id[0] = U'\0';
-		char32_t value[1024];
-		value[0] = U'\0';
-
-		// Запись идентификатора
-		const size_t position = parser_find_id(prs, id, &cur);	// Позиция начала идентификатора
-printf("id '%lc'\n", cur);
-		// Проверка существования
-		const size_t temp = prs->position;
-		const size_t index = storage_add(prs->stg, id, value);
-		if (index == SIZE_MAX)
-		{
-			prs->position = position;
-			parser_macro_warning(prs, PARSER_MACRO_EXIST_IDENT);
-			prs->position = temp;
-		}
-
-		// Проверка и пропуск кода в той же строке, что и #macro
-		parser_find_unexpected_lexeme(prs, &cur);printf("lex '%lc'\n", cur);
-
-		// Запись значения
-		parser_find_value(prs, value, &cur, KW_MACRO);
-
-		if (cur == (char32_t)EOF)
-		{
-			prs->line_position = kw_line_position;
-			prs->line = kw_line;
-			prs->position = kw_position;
-
-			*last = (char32_t)EOF;									// Необходимо для корректной работы снаружи
-			parser_macro_error(prs, PARSER_MACRO_NOT_ENDED);
-		}
-
-		storage_set(prs->stg, id, value);
-		//parser_skip_short_comment(prs);
-	}
-}
-
-/**
- *	Считывает имя идентификатора, его значение, добавляет в stg
- *
- *	@param	prs			Структура парсера
- *	@param	mode		Режим работы функции
- *						@c KW_DEFINE #define
- *						@c KW_SET	 #set
- *						@c KW_UNDEF	 #undef
- */
-static void parser_if(parser *const prs, char32_t cur, const keyword_t mode)
-{
-	(void)prs;
-	(void)cur;
-	(void)mode;
 }
 
 
@@ -927,183 +645,16 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	// comment_create
 
 	char32_t cur = U'\0';
-	size_t index = 0;
-	bool was_star = false;
-	bool was_lexeme = false;
+	parser_preprocess_code(prs, cur, 0);
+/*size_t i = storage_search(prs->stg, prs->in, &cur);
+printf("%i \n", i);
+if (cur == (char32_t)EOF) printf("EOF\n");
+printf("%s\n", storage_last_read(prs->stg));
 
-	while (cur != (char32_t)EOF)
-	{
-		index = storage_search(prs->stg, prs->in, &cur);
-		switch (index)
-		{
-			case KW_INCLUDE:
-				parser_check_kw_position(prs, was_lexeme);	// Проверка на наличие лексем перед директивой
-				parser_include(prs, cur);
-				was_lexeme = false;
-				was_star = false;
-				break;
-		
-			case KW_DEFINE:
-			case KW_SET:
-			case KW_UNDEF:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_define(prs, cur, index);	// Одна функция разбора, index указывает на режим работы
-				was_lexeme = false;
-				was_star = false;
-				break;
-
-			case KW_MACRO:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_macro(prs, cur, &cur);
-				was_lexeme = false;
-				was_star = false;
-				break;
-			case KW_ENDM:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_macro_error(prs, PARSER_UNEXPECTED_ENDM);
-				parser_skip_short_comment(prs);
-				was_lexeme = false;
-				was_star = false;
-				break;
-
-			case KW_IFDEF:
-			case KW_IFNDEF:
-			case KW_IF:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_if(prs, cur, index);
-				was_lexeme = false;
-				was_star = false;
-				break;
-			case KW_ELIF:
-			case KW_ELSE:
-			case KW_ENDIF:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_macro_error(prs, PARSER_UNEXPECTED_ENDIF);
-				parser_skip_short_comment(prs);
-				was_lexeme = false;
-				was_star = false;
-				break;
-
-			case KW_EVAL:
-
-			case KW_WHILE:
-				parser_check_kw_position(prs, was_lexeme);
-				was_lexeme = false;
-				was_star = false;
-				break;
-			case KW_ENDW:
-				parser_check_kw_position(prs, was_lexeme);
-				parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
-				parser_skip_short_comment(prs);
-				was_lexeme = false;
-				was_star = false;
-				break;
-
-			default:
-				if ((!utf8_is_separator(cur) && cur != U'/' && cur != U'*')	// Перед '#' могут быть разделители
-					|| storage_last_read(prs->stg) != NULL)					// и длинные однострочные комментарии
-				{
-					was_lexeme = true;
-				}
-
-				if (storage_last_read(prs->stg) != NULL)
-				{
-					was_star = false;
-
-					if (storage_last_read(prs->stg)[0] == '#')
-					{
-						if (parser_check_kw_position(prs, was_lexeme))	// Перед '#' есть лексемы -> '#' не на месте
-																		// Перед '#' нет лексем   -> неправильная директива
-						{
-							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
-						}
-						parser_skip_short_comment(prs);
-						break;
-					}
-
-					if (index != SIZE_MAX)
-					{
-						// Макроподстановка
-						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
-					}
-					else
-					{
-						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
-					}
-				}
-
-				switch (cur)
-				{
-					case U'#':
-						was_star = false;
-						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
-						parser_skip_short_comment(prs);
-						break;
-
-					case U'\'':
-						was_star = false;
-						parser_skip_string(prs, U'\'');
-						break;
-					case U'\"':
-						was_star = false;
-						parser_skip_string(prs, U'\"');
-						break;
-
-					case U'\r':
-						cur = uni_scan_char(prs->in);
-					case U'\n':
-						was_star = false;
-						was_lexeme = false;
-						parser_add_char(prs, U'\n');
-						parser_print(prs);
-						break;
-					case (char32_t)EOF:
-						parser_print(prs);
-						break;
-
-					case U'/':
-					{
-						char32_t next = uni_scan_char(prs->in);
-						if (next == U'/')
-						{
-							was_star = false;
-							parser_skip_short_comment(prs);
-						}
-						else if (next == U'*')
-						{
-							was_star = false;
-							prs->position++;
-							parser_skip_long_comment(prs, &cur);
-						}
-						else
-						{
-							uni_unscan_char(prs->in, next);
-							if (was_star)
-							{
-								was_star = false;
-								strings_remove(&prs->string);	// '*' был записан в буффер
-								prs->position--;
-								parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
-								prs->position += 2;	// необходимо пропустить
-							}
-							else
-							{
-								parser_add_char(prs, cur);
-							}
-						}
-					}
-					break;
-					case U'*':
-						was_star = true;
-						parser_add_char(prs, cur);
-						break;
-
-					default:
-						was_star = false;
-						parser_add_char(prs, cur);
-				}
-		}
-	}
+i = storage_search(prs->stg, prs->in, &cur);
+printf("%i \n", i);
+if (cur == (char32_t)EOF) printf("EOF\n");
+printf("%s\n", storage_last_read(prs->stg));*/
 
 	return !prs->was_error ? 0 : -1;
 }
