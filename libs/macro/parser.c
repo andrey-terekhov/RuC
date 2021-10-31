@@ -510,10 +510,12 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 
 
 /**
- *	считать путь к файлу и выполняет его обработку
+ *	Считать путь к файлу и выполняет его обработку
  *
  *	@param	prs			Структура парсера
  *	@param	cur			Символ после директивы
+ *
+ *	@return	@c 0 on success, @c -1 on failure
  */
 static int parser_include(parser *const prs, char32_t cur)
 {
@@ -604,7 +606,7 @@ static int parser_include(parser *const prs, char32_t cur)
 
 
 /**
- *	Разбирает код
+ *	Разобрать код
  *
  *	@param	prs			Структура парсера
  *	@param	cur			Текущий символ
