@@ -98,13 +98,21 @@ typedef enum REGISTER
 										which a function should return control */
 } mips_register_t;
 
+// Назначение регистров взято из документации MIPS® Architecture for Programmers 
+// Volume II-A: The MIPS32® Instruction 
+// Set Manual
 typedef enum INSTRUCTION
 {
 	IC_MIPS_MOVE,					/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
 	IC_MIPS_LI,						/**< MIPS Pseudo-Instruction. Load a constant into a register */
+
 	IC_MIPS_ADDI,					/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+
+	IC_MIPS_ADD,					/**< To add 32-bit integers. If an overflow occurs, then trap */
+
 	IC_MIPS_SW,						/**< To store a word to memory */
 	IC_MIPS_LW,						/**< To load a word from memory as a signed value */
+
 	IC_MIPS_JR,						/**< To execute a branch to an instruction address in a register */
 	IC_MIPS_JAL,					/**< To execute a procedure call within the current 256MB-aligned region */
 	IC_MIPS_J,						/**< To branch within the current 256 MB-aligned region */
@@ -143,6 +151,68 @@ typedef struct information
 static void emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
 
+
+static mips_instruction_t get_instruction(information *const info, const item_t operation_type)
+{
+	switch (operation_type)
+	{
+		case BIN_ADD_ASSIGN:
+		case BIN_ADD:
+			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_ADD;
+
+		// case BIN_SUB_ASSIGN:
+		// case BIN_SUB:
+		// 	break;
+
+		// case BIN_MUL_ASSIGN:
+		// case BIN_MUL:
+		// 	break;
+
+		// case BIN_DIV_ASSIGN:
+		// case BIN_DIV:
+		// 	break;
+
+		// case BIN_REM_ASSIGN:
+		// case BIN_REM:
+		// 	break;
+
+		// case BIN_SHL_ASSIGN:
+		// case BIN_SHL:
+		// 	break;
+
+		// case BIN_SHR_ASSIGN:
+		// case BIN_SHR:
+		// 	break;
+
+		// case BIN_AND_ASSIGN:
+		// case BIN_AND:
+		// 	break;
+
+		// case BIN_XOR_ASSIGN:
+		// case BIN_XOR:
+		// 	break;
+
+		// case BIN_OR_ASSIGN:
+		// case BIN_OR:
+		// 	break;
+
+		// case BIN_EQ:
+		// 	break;
+		// case BIN_NE:
+		// 	break;
+		// case BIN_LT:
+		// 	break;
+		// case BIN_GT:
+		// 	break;
+		// case BIN_LE:
+		// 	break;
+		// case BIN_GE:
+		// 	break;
+
+		default:
+			return IC_MIPS_ADDI;
+	}
+}
 
 static void mips_register_to_io(universal_io *const io, const mips_register_t reg)
 {
@@ -267,6 +337,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_ADDI:
 			uni_printf(io, "addi");
 			break;
+		case IC_MIPS_ADD:
+			uni_printf(io, "add");
+			break;
 		case IC_MIPS_SW:
 			uni_printf(io, "sw");
 			break;
@@ -329,6 +402,21 @@ static void to_code_2R_I(universal_io *const io, const mips_instruction_t instru
 	uni_printf(io, ", ");
 	mips_register_to_io(io, snd_reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg, imm
+static void to_code_3R(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t fst_reg, const mips_register_t snd_reg, const mips_register_t thd_reg)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	mips_register_to_io(io, fst_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, snd_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, thd_reg);
+	uni_printf(io, "\n");
 }
 
 // Вид инструкции:	instr	fst_reg, imm(snd_reg)
@@ -489,14 +577,27 @@ static void emit_assignment_expression(information *const info, const node *cons
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
-	if (assignment_type != BIN_ASSIGN)
-	{
-
-	}
-
 	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
 
-	if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
+	if (assignment_type != BIN_ASSIGN)
+	{
+		const mips_register_t variable = R_T1;
+
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+
+		if (info->answer_kind == ACONST)
+		{
+			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable, info->answer_const);
+		}
+		else if (info->answer_kind == AREG)
+		{
+			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
+		}
+
+		info->answer_kind = AREG;
+	}
+
+	if (info->answer_kind == ACONST && type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
 	}
