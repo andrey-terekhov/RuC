@@ -107,6 +107,11 @@ typedef enum INSTRUCTION
 	IC_MIPS_LI,						/**< MIPS Pseudo-Instruction. Load a constant into a register */
 
 	IC_MIPS_ADDI,					/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	IC_MIPS_SLL,					/**< To left-shift a word by a fixed number of bits */
+	IC_MIPS_SRA,					/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_MIPS_ANDI,					/**< To do a bitwise logical AND with a constant */
+	IC_MIPS_XORI,					/**< To do a bitwise logical Exclusive OR with a constant */
+	IC_MIPS_ORI,					/**< To do a bitwise logical OR with a constant */
 
 	IC_MIPS_ADD,					/**< To add 32-bit integers. If an overflow occurs, then trap */
 	IC_MIPS_SUB,					/**< To subtract 32-bit integers. If overflow occurs, then trap */
@@ -116,6 +121,11 @@ typedef enum INSTRUCTION
 	IC_MIPS_MOD,					/**< MOD performs a signed 32-bit integer division, and places
 										 the 32-bit remainder result in the destination register.
 										 The remainder result has the same sign as the dividend */
+	IC_MIPS_SLLV,					/**< To left-shift a word by a variable number of bits */
+	IC_MIPS_SRAV,					/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_MIPS_AND,					/**< To do a bitwise logical AND */
+	IC_MIPS_XOR,					/**< To do a bitwise logical Exclusive OR */
+	IC_MIPS_OR,						/**< To do a bitwise logical OR */
 
 	IC_MIPS_SW,						/**< To store a word to memory */
 	IC_MIPS_LW,						/**< To load a word from memory as a signed value */
@@ -183,25 +193,25 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		case BIN_REM:
 			return IC_MIPS_MOD;
 
-		// case BIN_SHL_ASSIGN:
-		// case BIN_SHL:
-		// 	break;
+		case BIN_SHL_ASSIGN:
+		case BIN_SHL:
+			return info->answer_kind == ACONST ? IC_MIPS_SLL : IC_MIPS_SLLV;
 
-		// case BIN_SHR_ASSIGN:
-		// case BIN_SHR:
-		// 	break;
+		case BIN_SHR_ASSIGN:
+		case BIN_SHR:
+			return info->answer_kind == ACONST ? IC_MIPS_SRA : IC_MIPS_SRAV;
 
-		// case BIN_AND_ASSIGN:
-		// case BIN_AND:
-		// 	break;
+		case BIN_AND_ASSIGN:
+		case BIN_AND:
+			return info->answer_kind == ACONST ? IC_MIPS_ANDI : IC_MIPS_AND;
 
-		// case BIN_XOR_ASSIGN:
-		// case BIN_XOR:
-		// 	break;
+		case BIN_XOR_ASSIGN:
+		case BIN_XOR:
+			return info->answer_kind == ACONST ? IC_MIPS_XORI : IC_MIPS_XOR;
 
-		// case BIN_OR_ASSIGN:
-		// case BIN_OR:
-		// 	break;
+		case BIN_OR_ASSIGN:
+		case BIN_OR:
+			return info->answer_kind == ACONST ? IC_MIPS_ORI : IC_MIPS_OR;
 
 		// case BIN_EQ:
 		// 	break;
@@ -341,9 +351,26 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_LI:
 			uni_printf(io, "li");
 			break;
+
 		case IC_MIPS_ADDI:
 			uni_printf(io, "addi");
 			break;
+		case IC_MIPS_SLL:
+			uni_printf(io, "sll");
+			break;
+		case IC_MIPS_SRA:
+			uni_printf(io, "sra");
+			break;
+		case IC_MIPS_ANDI:
+			uni_printf(io, "andi");
+			break;
+		case IC_MIPS_XORI:
+			uni_printf(io, "xori");
+			break;
+		case IC_MIPS_ORI:
+			uni_printf(io, "ori");
+			break;
+
 		case IC_MIPS_ADD:
 			uni_printf(io, "add");
 			break;
@@ -359,12 +386,29 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_MOD:
 			uni_printf(io, "mod");
 			break;
+		case IC_MIPS_SLLV:
+			uni_printf(io, "sllv");
+			break;
+		case IC_MIPS_SRAV:
+			uni_printf(io, "srav");
+			break;
+		case IC_MIPS_AND:
+			uni_printf(io, "and");
+			break;
+		case IC_MIPS_XOR:
+			uni_printf(io, "xor");
+			break;
+		case IC_MIPS_OR:
+			uni_printf(io, "or");
+			break;
+
 		case IC_MIPS_SW:
 			uni_printf(io, "sw");
 			break;
 		case IC_MIPS_LW:
 			uni_printf(io, "lw");
 			break;
+
 		case IC_MIPS_JR:
 			uni_printf(io, "jr");
 			break;
@@ -602,7 +646,9 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		mips_register_t variable = R_T1;
 
-		if (info->answer_kind == ACONST && (assignment_type == BIN_ADD_ASSIGN || assignment_type == BIN_SUB_ASSIGN))
+		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
+		if (info->answer_kind == ACONST && assignment_type != BIN_MUL_ASSIGN && assignment_type != BIN_DIV_ASSIGN
+			&& assignment_type != BIN_REM_ASSIGN)
 		{
 			variable = result;
 
