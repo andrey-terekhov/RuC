@@ -110,6 +110,12 @@ typedef enum INSTRUCTION
 
 	IC_MIPS_ADD,					/**< To add 32-bit integers. If an overflow occurs, then trap */
 	IC_MIPS_SUB,					/**< To subtract 32-bit integers. If overflow occurs, then trap */
+	IC_MIPS_MUL,					/**< To multiply two words and write the result to a GPR */
+	IC_MIPS_DIV,					/**< DIV performs a signed 32-bit integer division, and places
+										 the 32-bit quotient result in the destination register */
+	IC_MIPS_MOD,					/**< MOD performs a signed 32-bit integer division, and places
+										 the 32-bit remainder result in the destination register.
+										 The remainder result has the same sign as the dividend */
 
 	IC_MIPS_SW,						/**< To store a word to memory */
 	IC_MIPS_LW,						/**< To load a word from memory as a signed value */
@@ -165,17 +171,17 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		case BIN_SUB:
 			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_SUB;
 
-		// case BIN_MUL_ASSIGN:
-		// case BIN_MUL:
-		// 	break;
+		case BIN_MUL_ASSIGN:
+		case BIN_MUL:
+			return IC_MIPS_MUL;
 
-		// case BIN_DIV_ASSIGN:
-		// case BIN_DIV:
-		// 	break;
+		case BIN_DIV_ASSIGN:
+		case BIN_DIV:
+			return IC_MIPS_DIV;
 
-		// case BIN_REM_ASSIGN:
-		// case BIN_REM:
-		// 	break;
+		case BIN_REM_ASSIGN:
+		case BIN_REM:
+			return IC_MIPS_MOD;
 
 		// case BIN_SHL_ASSIGN:
 		// case BIN_SHL:
@@ -343,6 +349,15 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			break;
 		case IC_MIPS_SUB:
 			uni_printf(io, "sub");
+			break;
+		case IC_MIPS_MUL:
+			uni_printf(io, "mul");
+			break;
+		case IC_MIPS_DIV:
+			uni_printf(io, "div");
+			break;
+		case IC_MIPS_MOD:
+			uni_printf(io, "mod");
 			break;
 		case IC_MIPS_SW:
 			uni_printf(io, "sw");
@@ -593,15 +608,15 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
 			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable
-				, assignment_type == BIN_ADD_ASSIGN ? info->answer_const : -info->answer_const);
+				, assignment_type != BIN_SUB_ASSIGN ? info->answer_const : -info->answer_const);
 		}
-		else if (info->answer_const == ACONST)
-		{
-			
-		}
-		else if (info->answer_kind == AREG)
+		else
 		{
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+			if (info->answer_kind == ACONST)
+			{
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
+			}
 			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
 		}
 
