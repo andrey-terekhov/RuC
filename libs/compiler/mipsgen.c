@@ -109,6 +109,7 @@ typedef enum INSTRUCTION
 	IC_MIPS_ADDI,					/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
 
 	IC_MIPS_ADD,					/**< To add 32-bit integers. If an overflow occurs, then trap */
+	IC_MIPS_SUB,					/**< To subtract 32-bit integers. If overflow occurs, then trap */
 
 	IC_MIPS_SW,						/**< To store a word to memory */
 	IC_MIPS_LW,						/**< To load a word from memory as a signed value */
@@ -160,9 +161,9 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		case BIN_ADD:
 			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_ADD;
 
-		// case BIN_SUB_ASSIGN:
-		// case BIN_SUB:
-		// 	break;
+		case BIN_SUB_ASSIGN:
+		case BIN_SUB:
+			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_SUB;
 
 		// case BIN_MUL_ASSIGN:
 		// case BIN_MUL:
@@ -339,6 +340,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			break;
 		case IC_MIPS_ADD:
 			uni_printf(io, "add");
+			break;
+		case IC_MIPS_SUB:
+			uni_printf(io, "sub");
 			break;
 		case IC_MIPS_SW:
 			uni_printf(io, "sw");
@@ -581,16 +585,23 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		const mips_register_t variable = R_T1;
+		mips_register_t variable = R_T1;
 
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
-
-		if (info->answer_kind == ACONST)
+		if (info->answer_kind == ACONST && (assignment_type == BIN_ADD_ASSIGN || assignment_type == BIN_SUB_ASSIGN))
 		{
-			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable, info->answer_const);
+			variable = result;
+
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable
+				, assignment_type == BIN_ADD_ASSIGN ? info->answer_const : -info->answer_const);
+		}
+		else if (info->answer_const == ACONST)
+		{
+			
 		}
 		else if (info->answer_kind == AREG)
 		{
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
 			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
 		}
 
