@@ -42,6 +42,7 @@ typedef enum ANSWER
 typedef enum REQUEST
 {
 	RREG,								/**< Переменная находится в регистре */
+	RREGF,								/**< Переменная находится в регистре или константе */
 	RFREE,								/**< Свободный запрос значения */
 } request_t;
 
@@ -453,7 +454,7 @@ static void emit_identifier_expression(information *const info, const node *cons
 	{
 		// TODO: глобальные переменные
 		// TODO: тип float
-		if (info->request_kind == RREG)
+		if (info->request_kind == RREG || info->request_kind == RREGF)
 		{
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -(item_t)value_displ, R_SP);
 
@@ -483,7 +484,8 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: обработать случай глобальных переменных
 	const size_t displ = (size_t)hash_get(&info->displacements, id, 1);
 
-	info->request_kind = RFREE;
+	info->request_kind = RREGF;
+	info->request_reg = R_T0;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
@@ -492,20 +494,17 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	}
 
-	if (info->answer_kind == AREG)
-	{
+	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
 
-	}
-	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
+	if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
-		const mips_register_t result = info->request_kind == RREG ? info->request_reg : R_T0;
-
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
-		to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -(item_t)displ, R_SP);
-
-		info->answer_kind = AREG;
-		info->answer_reg = result;
 	}
+
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -(item_t)displ, R_SP);
+
+	info->answer_kind = AREG;
+	info->answer_reg = result;
 }
 
 /**
