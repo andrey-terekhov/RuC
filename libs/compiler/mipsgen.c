@@ -645,7 +645,7 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	const answer_t left_kind = info->answer_kind;
 	const item_t left_reg = info->answer_reg;
-	// const item_t left_const = info->answer_const;
+	const item_t left_const = info->answer_const;
 
 	info->request_kind = RREGF;
 	info->request_reg = get_register(info);
@@ -678,7 +678,17 @@ static void emit_integral_expression(information *const info, const node *const 
 	}
 	else if (left_kind == ACONST && right_kind == AREG)
 	{
-
+		// Коммутативные операции, для которых есть команды, работающие с константами
+		if (operation == BIN_ADD || operation == BIN_AND || operation == BIN_OR || operation == BIN_XOR)
+		{
+			info->answer_kind = ACONST;
+			to_code_2R_I(info->sx->io, get_instruction(info, operation), result, right_reg, left_const);
+		}
+		else
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, R_ZERO, left_const);
+			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
+		}
 	}
 
 	info->answer_kind = AREG;
