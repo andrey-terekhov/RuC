@@ -637,13 +637,14 @@ static void emit_identifier_expression(information *const info, const node *cons
  */
 static void emit_integral_expression(information *const info, const node *const nd)
 {
+	const binary_t operation = expression_binary_get_operator(nd);
+
 	info->request_kind = RREGF;
-	info->request_reg = get_register(info);
 	const node LHS = expression_binary_get_LHS(nd);
 	emit_expression(info, &LHS);
 
-	// const answer_t left_kind = info->answer_kind;
-	// const item_t left_reg = info->answer_reg;
+	const answer_t left_kind = info->answer_kind;
+	const item_t left_reg = info->answer_reg;
 	// const item_t left_const = info->answer_const;
 
 	info->request_kind = RREGF;
@@ -651,9 +652,24 @@ static void emit_integral_expression(information *const info, const node *const 
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
-	// const answer_t right_kind = info->answer_kind;
-	// const item_t right_reg = info->answer_reg;
+	const answer_t right_kind = info->answer_kind;
+	const item_t right_reg = info->answer_reg;
 	// const item_t right_const = info->answer_const;
+
+	const mips_register_t result = right_reg;
+
+	if (left_kind == AREG && right_kind == AREG)
+	{
+		to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
+	}
+	else if (left_kind == AREG && right_kind == ACONST)
+	{
+
+	}
+	else if (left_kind == ACONST && right_kind == AREG)
+	{
+
+	}
 
 	free_register(info);
 	free_register(info);
