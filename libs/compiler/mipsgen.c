@@ -162,6 +162,8 @@ typedef struct information
 												@с key		 - ссылка на таблицу идентификаторов
 												@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре 
 												@c value[1]  - смещение или номер регистра */
+
+	mips_register_t next_register;		/**< Следующий регистр для выделения */
 } information;
 
 
@@ -550,6 +552,17 @@ static int size_of(information *const info, const item_t type)
 	return 0;
 }
 
+// TODO: в этих двух функциях реализовано распределение регистров. Сейчас оно такое
+static mips_register_t get_register(information *const info)
+{
+	return info->next_register++;
+}
+
+static void free_register(information *const info)
+{
+	info->next_register--;
+}
+
 
 /*
  *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
@@ -617,6 +630,36 @@ static void emit_identifier_expression(information *const info, const node *cons
 }
 
 /**
+ *	Emit non-assignment binary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_integral_expression(information *const info, const node *const nd)
+{
+	info->request_kind = RREGF;
+	info->request_reg = get_register(info);
+	const node LHS = expression_binary_get_LHS(nd);
+	emit_expression(info, &LHS);
+
+	// const answer_t left_kind = info->answer_kind;
+	// const item_t left_reg = info->answer_reg;
+	// const item_t left_const = info->answer_const;
+
+	info->request_kind = RREGF;
+	info->request_reg = get_register(info);
+	const node RHS = expression_binary_get_RHS(nd);
+	emit_expression(info, &RHS);
+
+	// const answer_t right_kind = info->answer_kind;
+	// const item_t right_reg = info->answer_reg;
+	// const item_t right_const = info->answer_const;
+
+	free_register(info);
+	free_register(info);
+}
+
+/**
  *	Emit assignment expression
  *
  *	@param	info	Encoder
@@ -636,15 +679,15 @@ static void emit_assignment_expression(information *const info, const node *cons
 	const size_t displ = (size_t)hash_get(&info->displacements, id, 1);
 
 	info->request_kind = RREGF;
-	info->request_reg = R_T0;
+	info->request_reg = get_register(info);
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
-	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
+	const mips_register_t result = info->request_reg;
 
 	if (assignment_type != BIN_ASSIGN)
 	{
-		mips_register_t variable = R_T1;
+		mips_register_t variable;
 
 		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
 		if (info->answer_kind == ACONST && assignment_type != BIN_MUL_ASSIGN && assignment_type != BIN_DIV_ASSIGN
@@ -658,12 +701,16 @@ static void emit_assignment_expression(information *const info, const node *cons
 		}
 		else
 		{
+			variable = get_register(info);
+
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
 			if (info->answer_kind == ACONST)
 			{
 				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
 			}
 			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
+
+			free_register(info);
 		}
 
 		info->answer_kind = AREG;
@@ -678,6 +725,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	info->answer_kind = AREG;
 	info->answer_reg = result;
+	free_register(info);
 }
 
 /**
@@ -707,8 +755,6 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_AND:
 		case BIN_XOR:
 		case BIN_OR:
-			// emit_integral_expression(info, nd, AREG);
-			return;
 
 		case BIN_LT:
 		case BIN_GT:
@@ -716,10 +762,9 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_GE:
 		case BIN_EQ:
 		case BIN_NE:
-			// emit_integral_expression(info, nd, ALOGIC);
+			emit_integral_expression(info, nd);
 			return;
 
-		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
 			return;
@@ -816,7 +861,7 @@ static void emit_variable_declaration(information *const info, const node *const
 		if (has_init)
 		{
 			info->request_kind = RREG;
-			info->request_reg = R_T0;
+			info->request_reg = get_register(info);
 
 			// TODO: тип char
 
@@ -826,6 +871,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			info->answer_kind = AREG;
 			info->answer_reg = info->request_reg;
+			free_register(info);
 		}
 	}
 }
@@ -1173,6 +1219,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.sx = sx;
 	info.main_label = 0;
 	info.max_displ = 0;
+	info.next_register = R_T0;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
