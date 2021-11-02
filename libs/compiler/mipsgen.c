@@ -654,9 +654,9 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	const answer_t right_kind = info->answer_kind;
 	const item_t right_reg = info->answer_reg;
-	// const item_t right_const = info->answer_const;
+	const item_t right_const = info->answer_const;
 
-	const mips_register_t result = right_reg;
+	const mips_register_t result = info->request_reg;
 
 	if (left_kind == AREG && right_kind == AREG)
 	{
@@ -664,13 +664,25 @@ static void emit_integral_expression(information *const info, const node *const 
 	}
 	else if (left_kind == AREG && right_kind == ACONST)
 	{
-
+		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
+		if (operation != BIN_MUL && operation != BIN_DIV && operation != BIN_REM)
+		{
+			to_code_2R_I(info->sx->io, get_instruction(info, operation), result, left_reg
+				, operation != BIN_SUB ? right_const : -right_const);
+		}
+		else
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, right_const);
+			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, result);
+		}
 	}
 	else if (left_kind == ACONST && right_kind == AREG)
 	{
 
 	}
 
+	info->answer_kind = AREG;
+	info->answer_reg = result;
 	free_register(info);
 	free_register(info);
 }
