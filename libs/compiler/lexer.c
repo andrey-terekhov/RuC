@@ -302,11 +302,11 @@ static token_t lex_char_constant(lexer *const lxr)
 	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
-		lxr->num = 0;
+		lxr->char_value = 0;
 		return TK_CHAR_CONST;
 	}
 
-	lxr->num = get_next_string_elem(lxr);
+	lxr->char_value = get_next_string_elem(lxr);
 
 	if (scan(lxr) == '\'')
 	{

@@ -2041,81 +2041,94 @@ void write_tree(const char *const path, syntax *const sx)
 }
 
 
-size_t write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
+int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
 {
-	if (type_is_null_pointer(type))
+	const type_t type_class = type_get_class(sx, type);
+	switch (type_class)
 	{
-		return sprintf(buffer, "nullptr");
-	}
-	else if (type_is_integer(sx, type))
-	{
-		return sprintf(buffer, "int");
-	}
-	else if (type_is_floating(type))
-	{
-		return sprintf(buffer, "float");
-	}
-	else if (type_is_file(type))
-	{
-		return sprintf(buffer, "FILE");
-	}
-	else if (type_is_void(type))
-	{
-		return sprintf(buffer, "void");
-	}
-	else if (type_is_array(sx, type))
-	{
-		const item_t element_type = type_array_get_element_type(sx, type);
-		size_t index = write_type_spelling(sx, element_type, buffer);
-		index += sprintf(&buffer[index], "[]");
-		return index;
-	}
-	else if (type_is_pointer(sx, type))
-	{
-		const item_t element_type = type_pointer_get_element_type(sx, type);
-		size_t index = write_type_spelling(sx, element_type, buffer);
-		index += sprintf(&buffer[index], "*");
-		return index;
-	}
-	else if (type_is_structure(sx, type))
-	{
-		size_t index = sprintf(buffer, "struct { ");
+		case TYPE_VARARG:
+			return sprintf(buffer, "...");
 
-		const size_t member_amount = type_structure_get_member_amount(sx, type);
-		for (size_t i = 0; i < member_amount; i++)
+		case TYPE_NULL_POINTER:
+			return sprintf(buffer, "nullptr");
+
+		case TYPE_FILE:
+			return sprintf(buffer, "FILE");
+
+		case TYPE_VOID:
+			return sprintf(buffer, "void");
+
+		case TYPE_FLOATING:
+			return sprintf(buffer, "double");
+
+		case TYPE_CHARACTER:
+			return sprintf(buffer, "char");
+
+		case TYPE_INTEGER:
+			return sprintf(buffer, "int");
+
+		case TYPE_UNDEFINED:
+			return sprintf(buffer, "UNDEFINED");
+
+		case TYPE_FUNCTION:
 		{
-			const item_t member_type = type_structure_get_member_type(sx, type, i);
-			const size_t member_repr = type_structure_get_member_name(sx, type, i);
+			int index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
+			index += sprintf(&buffer[index], " (");
 
-			index += write_type_spelling(sx, member_type, &buffer[index]);
-			index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
-		}
-
-		index += sprintf(&buffer[index], "}");
-		return index;
-	}
-	else if (type_is_function(sx, type))
-	{
-		size_t index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
-		index += sprintf(&buffer[index], " (");
-
-		const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
-		for (size_t i = 0; i < parameter_amount; i++)
-		{
-			const item_t parameter_type = type_function_get_parameter_type(sx, type, i);
-
-			index += write_type_spelling(sx, parameter_type, &buffer[index]);
-			if (i != parameter_amount - 1)
+			const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
+			for (size_t i = 0; i < parameter_amount; i++)
 			{
-				index += sprintf(&buffer[index], ", ");
+				const item_t parameter_type = type_function_get_parameter_type(sx, type, i);
+
+				index += write_type_spelling(sx, parameter_type, &buffer[index]);
+				if (i != parameter_amount - 1)
+				{
+					index += sprintf(&buffer[index], ", ");
+				}
 			}
+
+			index += sprintf(&buffer[index], ")");
+			return index;
 		}
 
-		index += sprintf(&buffer[index], ")");
-		return index;
-	}
+		case TYPE_MSG_INFO:
+		case TYPE_STRUCTURE:
+		{
+			int index = sprintf(buffer, "struct { ");
 
-	return 0;
+			const size_t member_amount = type_structure_get_member_amount(sx, type);
+			for (size_t i = 0; i < member_amount; i++)
+			{
+				const item_t member_type = type_structure_get_member_type(sx, type, i);
+				const size_t member_repr = type_structure_get_member_name(sx, type, i);
+
+				index += write_type_spelling(sx, member_type, &buffer[index]);
+				index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
+			}
+
+			index += sprintf(&buffer[index], "}");
+			return index;
+		}
+
+		case TYPE_ARRAY:
+		{
+			const item_t element_type = type_array_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "[]");
+			return index;
+		}
+
+		case TYPE_POINTER:
+		{
+			const item_t element_type = type_pointer_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "*");
+			return index;
+		}
+
+		default:
+			return 0;
+	}
 }
 
 void write_codes(const char *const path, const vector *const memory)

@@ -35,13 +35,15 @@ extern "C" {
 #endif
 
 /** Type qualifiers */
-enum TYPE
+typedef enum TYPE
 {
-	TYPE_NULL_POINTER	= -8,
+	TYPE_VARARG			= -9,
+	TYPE_NULL_POINTER,
 	TYPE_FILE,
 	TYPE_VOID,
 	TYPE_FLOATING		= -3,
-	TYPE_INTEGER		= -1,
+	TYPE_CHARACTER,
+	TYPE_INTEGER,
 	TYPE_UNDEFINED,
 
 	TYPE_MSG_INFO 		= 2,
@@ -50,7 +52,7 @@ enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_ENUM,
-};
+} type_t;
 
 
 /** Global vars definition */
@@ -338,14 +340,14 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
- *	Get an item from types table by index
+ *	Get type class
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in types table
+ *	@param	type		Type
  *
- *	@return	Item by index from types table, @c ITEM_MAX on failure
+ *	@return	Type class
  */
-item_t type_get(const syntax *const sx, const size_t index);
+type_t type_get_class(const syntax *const sx, const item_t type);
 
 /**
  *	Get type size
@@ -634,6 +636,16 @@ item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
  *	@return	Array type
  */
 item_t type_array(syntax *const sx, const item_t type);
+
+/**
+ *	Create string type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Element type
+ *
+ *	@return	String type
+ */
+item_t type_string(syntax *const sx);
 
 /**
  *	Get enum field type

@@ -470,48 +470,63 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
  */
 static void emit_literal_expression(encoder *const enc, const node *const nd)
 {
-	const item_t type = expression_get_type(nd);
-
-	if (type_is_null_pointer(type))
+	switch (type_get_class(enc->sx, expression_get_type(nd)))
 	{
-		mem_add(enc, IC_LI);
-		mem_add(enc, 0);
-	}
-	else if (type_is_integer(enc->sx, type))
-	{
-		const int value = expression_literal_get_integer(nd);
-
-		mem_add(enc, IC_LI);
-		mem_add(enc, value);
-	}
-	else if (type_is_floating(type))
-	{
-		const double value = expression_literal_get_floating(nd);
-
-		mem_add(enc, IC_LID);
-		mem_add_double(enc, value);
-	}
-	else // if (type_is_string(enc->sx, type))
-	{
-		const size_t string_num = expression_literal_get_string(nd);
-		const char *const string = string_get(enc->sx, string_num);
-
-		mem_add(enc, IC_LI);
-		const size_t reserved = mem_size(enc) + 4;
-		mem_add(enc, (item_t)reserved);
-		mem_add(enc, IC_B);
-		mem_increase(enc, 2);
-
-
-		item_t length = 0;
-		for (size_t i = 0; string[i] != '\0'; i += utf8_symbol_size(string[i]))
+		case TYPE_NULL_POINTER:
 		{
-			mem_add(enc, utf8_convert(&string[i]));
-			length++;
+			mem_add(enc, IC_LI);
+			mem_add(enc, 0);
+			return;
 		}
 
-		mem_set(enc, reserved - 1, length);
-		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
+		case TYPE_CHARACTER:
+		case TYPE_INTEGER:
+		case TYPE_ENUM:
+		{
+			const int value = expression_literal_get_integer(nd);
+
+			mem_add(enc, IC_LI);
+			mem_add(enc, value);
+			return;
+		}
+
+		case TYPE_FLOATING:
+		{
+			const double value = expression_literal_get_floating(nd);
+
+			mem_add(enc, IC_LID);
+			mem_add_double(enc, value);
+			return;
+		}
+
+		case TYPE_ARRAY:
+		{
+			// Это может быть только строка
+			const size_t string_num = expression_literal_get_string(nd);
+			const char *const string = string_get(enc->sx, string_num);
+
+			mem_add(enc, IC_LI);
+			const size_t reserved = mem_size(enc) + 4;
+			mem_add(enc, (item_t)reserved);
+			mem_add(enc, IC_B);
+			mem_increase(enc, 2);
+
+
+			item_t length = 0;
+			for (size_t i = 0; string[i] != '\0'; i += utf8_symbol_size(string[i]))
+			{
+				mem_add(enc, utf8_convert(&string[i]));
+				length++;
+			}
+
+			mem_set(enc, reserved - 1, length);
+			mem_set(enc, reserved - 2, (item_t)mem_size(enc));
+			return;
+		}
+
+		default:
+			// Таких литералов не бывает
+			return;
 	}
 }
 
