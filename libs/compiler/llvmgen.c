@@ -1126,7 +1126,7 @@ static void emit_integral_expression(information *const info, const node *const 
 	{
 		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
 	}
-	else if (left_kind == ACONST && right_kind == AREG && operation_type)
+	else if (left_kind == ACONST && right_kind == AREG && type_is_integer(info->sx, operation_type))
 	{
 		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
 	}
