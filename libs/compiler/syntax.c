@@ -783,9 +783,9 @@ bool type_is_undefined(const item_t type)
 }
 
 
-size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
+size_t repr_reserve(syntax *const sx, char32_t *const last)
 {
-	return map_reserve_by_utf8(&sx->representations, spelling);
+	return map_reserve_by_io(&sx->representations, sx->io, last);
 }
 
 const char *repr_get_name(const syntax *const sx, const size_t index)

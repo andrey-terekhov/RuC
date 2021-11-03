@@ -668,14 +668,14 @@ item_t type_pointer(syntax *const sx, const item_t type);
 
 
 /**
- *	Add a new record to representations table or return existing
+ *	Add a new record from io to representations table or return existing
  *
  *	@param	sx			Syntax structure
- *	@param	spelling	Unique UTF-8 string key
+ *	@param	last		Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t repr_reserve(syntax *const sx, const char32_t *const spelling);
+size_t repr_reserve(syntax *const sx, char32_t *const last);
 
 /**
  *	Get identifier name from representations table
