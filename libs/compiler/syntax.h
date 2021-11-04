@@ -641,6 +641,7 @@ item_t type_array(syntax *const sx, const item_t type);
  *	Create string type
  *
  *	@param	sx			Syntax structure
+ *	@param	type		Element type
  *
  *	@return	String type
  */
@@ -724,6 +725,8 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
  *	Enter block scope
  *
  *	@param	sx			Syntax structure
+ *	@param	displ		Variable to save previous stack displacement
+ *	@param	lg			Variable to save previous value of lg
  *
  *	@return	Scope
  */

@@ -70,7 +70,7 @@ instruction_t builtin_to_instruction(const builtin_t func)
 
 		default:
 			system_error(node_unexpected);
-			return IC_NOP;
+			return 0;
 	}
 }
 

@@ -459,7 +459,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case wrong_printf_param_type: // test_exist
 		{
-			int index = sprintf(msg, "тип параметра printf/печатьф не соответствует спецификатору: %%");
+			size_t index = sprintf(msg, "тип параметра printf/печатьф не соответствует спецификатору: %%");
 			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
 			index += utf8_to_string(&msg[index], bad_printf_placeholder);
 			switch (bad_printf_placeholder)
@@ -501,7 +501,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case printf_unknown_format_placeholder: // test_exist
 		{
-			int index = sprintf(msg, "в printf/печатьф неизвестный спецификатор типа %%");
+			size_t index = sprintf(msg, "в printf/печатьф неизвестный спецификатор типа %%");
 			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
 			index += utf8_to_string(&msg[index], bad_printf_placeholder);
 		}

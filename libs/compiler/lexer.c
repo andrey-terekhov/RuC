@@ -178,7 +178,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 
 	while (utf8_is_digit(lxr->character))
 	{
-		num_int = num_int * 10 + (int)(lxr->character - '0');
+		num_int = num_int * 10 + (lxr->character - '0');
 		num_double = num_double * 10 + (lxr->character - '0');
 		scan(lxr);
 	}
@@ -225,7 +225,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 
 		while (utf8_is_digit(lxr->character))
 		{
-			power = power * 10 + (int)(lxr->character - '0');
+			power = power * 10 + (lxr->character - '0');
 			scan(lxr);
 		}
 
