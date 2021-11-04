@@ -97,7 +97,7 @@ static inline void type_init(syntax *const sx)
 static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * type_size(sx, type);
+	sx->displ += sx->lg * (item_t)type_size(sx, type);
 
 	if (sx->lg > 0)
 	{
@@ -528,7 +528,7 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 
 item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size)
 {
-	if (sx == NULL || record == NULL || !type_is_enum(sx, sx->types.size - 1))
+	if (sx == NULL || record == NULL || !type_is_enum(sx, (item_t)sx->types.size - 1))
 	{
 		return ITEM_MAX;
 	}
