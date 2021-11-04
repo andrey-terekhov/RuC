@@ -1035,14 +1035,14 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
 			{
 				usual_arithmetic_conversions(LHS, RHS);
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
 				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type))
 				|| left_type == right_type)
 			{
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(bldr, op_loc, typecheck_binary_expr);
