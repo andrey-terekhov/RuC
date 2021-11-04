@@ -922,7 +922,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT;
+	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
 	size_t id = 0;
 	if (!is_array)
 	{
