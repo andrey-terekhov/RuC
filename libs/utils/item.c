@@ -28,6 +28,55 @@
 static const item_status DEFAULT_STATUS = item_int32;
 
 
+static inline size_t item_get_size(const item_status status)
+{
+	if (status <= item_error || status >= item_types)
+	{
+		return 0;
+	}
+
+	size_t size = status == item_int64 || status == item_uint64
+					? 1
+					: status == item_int32 || status == item_uint32
+						? 2
+						: status == item_int16 || status == item_uint16
+							? 4
+							: 8;
+
+	if (abs(ITEM) <= 32 / size)
+	{
+		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
+	}
+
+	return size;
+}
+
+static inline size_t item_get_shift(const size_t size)
+{
+	return 64 / size;
+}
+
+static inline uint64_t item_get_mask(const size_t shift)
+{
+	uint64_t mask = 0x00000000000000FF;
+	for (size_t i = 8; i < shift; i *= 2)
+	{
+		mask = (mask << i) | mask;
+	}
+
+	return mask;
+}
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
 item_status item_get_status(const workspace *const ws)
 {
 	if (!ws_is_correct(ws))
@@ -225,34 +274,17 @@ size_t item_store_int64(const int64_t value, item_t *const stg)
 
 size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg)
 {
-	if (stg == NULL || status <= item_error || status >= item_types)
+	const size_t size = item_get_size(status);
+	if (stg == NULL || size == 0)
 	{
 		return SIZE_MAX;
 	}
 
-	size_t size = status == item_int64 || status == item_uint64
-					? 1
-					: status == item_int32 || status == item_uint32
-						? 2
-						: status == item_int16 || status == item_uint16
-							? 4
-							: 8;
-
-	if (abs(ITEM) <= 32 / size)
-	{
-		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
-	}
-
-	const size_t shift = 64 / size;
-	uint64_t mask = 0x00000000000000FF;
-	for (size_t i = 8; i < shift; i *= 2)
-	{
-		mask = (mask << i) | mask;
-	}
-
-	uint64_t sign = status == item_int64 || status == item_int32
-					|| status == item_int16 || status == item_int8
-						? ~mask : 0;
+	const size_t shift = item_get_shift(size);
+	uint64_t mask = item_get_mask(shift);
+	const uint64_t sign = status == item_int64 || status == item_int32
+							|| status == item_int16 || status == item_int8
+								? ~mask : 0;
 
 	for (size_t i = 0; i < size; i++)
 	{
@@ -286,30 +318,14 @@ int64_t item_restore_int64(const item_t *const stg)
 
 int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg)
 {
-	if (stg == NULL || status <= item_error || status >= item_types)
+	const size_t size = item_get_size(status);
+	if (stg == NULL || size == 0)
 	{
 		return LLONG_MAX;
 	}
 
-	size_t size = status == item_int64 || status == item_uint64
-					? 1
-					: status == item_int32 || status == item_uint32
-						? 2
-						: status == item_int16 || status == item_uint16
-							? 4
-							: 8;
-
-	if (abs(ITEM) <= 32 / size)
-	{
-		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
-	}
-
-	const size_t shift = 64 / size;
-	uint64_t mask = 0x00000000000000FF;
-	for (size_t i = 8; i < shift; i *= 2)
-	{
-		mask = (mask << i) | mask;
-	}
+	const size_t shift = item_get_shift(size);
+	const uint64_t mask = item_get_mask(shift);
 
 	int64_t value = 0;
 	for (size_t i = 0; i < size; i++)
