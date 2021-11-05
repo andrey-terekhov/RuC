@@ -231,15 +231,19 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 	}
 
 	const size_t shift = 64 / size;
-	int64_t mask = 0x00000000000000FF;
+	uint64_t mask = 0x00000000000000FF;
 	for (size_t i = 8; i < shift; i *= 2)
 	{
 		mask = (mask << i) | mask;
 	}
 
+	uint64_t sign = status == item_int64 || status == item_int32
+					|| status == item_int16 || status == item_int8
+						? ~mask : 0;
+
 	for (size_t i = 0; i < size; i++)
 	{
-		stg[i] = (item_t)((value & mask) >> (shift * i));
+		stg[i] = (item_t)(((value & mask) >> (shift * i)) | sign);
 		mask <<= shift;
 	}
 
@@ -258,15 +262,15 @@ int64_t item_restore_int64(const item_t *const stg)
 #elif abs(ITEM) > 16
 	const size_t size = 2;
 	const size_t shift = 32;
-	const int64_t mask = 0x00000000FFFFFFFF;
+	const uint64_t mask = 0x00000000FFFFFFFF;
 #elif abs(ITEM) > 8
 	const size_t size = 4;
 	const size_t shift = 16;
-	const int64_t mask = 0x000000000000FFFF;
+	const uint64_t mask = 0x000000000000FFFF;
 #elif
 	const size_t size = 8;
 	const size_t shift = 8;
-	const int64_t mask = 0x00000000000000FF;
+	const uint64_t mask = 0x00000000000000FF;
 #endif
 
 #if abs(ITEM) <= 32
