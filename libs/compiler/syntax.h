@@ -48,6 +48,7 @@ enum TYPE
 	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
+	TYPE_ENUM,
 	TYPE_ARRAY,
 	TYPE_POINTER,
 };
@@ -329,6 +330,25 @@ bool type_is_array(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_structure(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum field
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum_field(const item_t type);
 
 /**
  *	Check if type is function
