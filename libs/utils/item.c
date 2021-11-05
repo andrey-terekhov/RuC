@@ -188,7 +188,18 @@ double item_restore_double(const item_t *const stg)
 	return value;
 }
 
-double item_restore_double_for_target(const item_status status, const item_t *const stg);
+double item_restore_double_for_target(const item_status status, const item_t *const stg)
+{
+	const int64_t temp = item_restore_int64_for_target(status, stg);
+	if (temp == LLONG_MAX)
+	{
+		return DBL_MAX;
+	}
+
+	double value;
+	memcpy(&value, &temp, sizeof(double));
+	return value;	
+}
 
 
 size_t item_store_int64(const int64_t value, item_t *const stg)
