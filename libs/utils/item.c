@@ -188,6 +188,8 @@ double item_restore_double(const item_t *const stg)
 	return value;
 }
 
+double item_restore_double_for_target(const item_status status, const item_t *const stg);
+
 
 size_t item_store_int64(const int64_t value, item_t *const stg)
 {
@@ -283,6 +285,8 @@ int64_t item_restore_int64(const item_t *const stg)
 	return value;
 #endif
 }
+
+int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg);
 
 
 bool item_check_var(const item_status status, const item_t var)
