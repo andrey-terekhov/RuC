@@ -265,6 +265,27 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 
 int64_t item_restore_int64(const item_t *const stg)
 {
+#if ITEM > 32
+	return item_restore_int64_for_target(item_uint64, stg);
+#elif ITEM > 16
+	return item_restore_int64_for_target(item_uint32, stg);
+#elif ITEM > 8
+	return item_restore_int64_for_target(item_uint16, stg);
+#elif ITEM >= 0
+	return item_restore_int64_for_target(item_uint8, stg);
+#elif ITEM >= -8
+	return item_restore_int64_for_target(item_int8, stg);
+#elif ITEM >= -16
+	return item_restore_int64_for_target(item_int16, stg);
+#elif ITEM >= -32
+	return item_restore_int64_for_target(item_int32, stg);
+#else
+	return item_restore_int64_for_target(item_int64, stg);
+#endif
+}
+
+int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg)
+{
 	if (stg == NULL)
 	{
 		return LLONG_MAX;
@@ -296,8 +317,6 @@ int64_t item_restore_int64(const item_t *const stg)
 	return value;
 #endif
 }
-
-int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg);
 
 
 bool item_check_var(const item_status status, const item_t var)
