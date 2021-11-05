@@ -286,28 +286,31 @@ int64_t item_restore_int64(const item_t *const stg)
 
 int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg)
 {
-	if (stg == NULL)
+	if (stg == NULL || status <= item_error || status >= item_types)
 	{
 		return LLONG_MAX;
 	}
 
-#if abs(ITEM) > 32
-	return stg[0];
-#elif abs(ITEM) > 16
-	const size_t size = 2;
-	const size_t shift = 32;
-	const uint64_t mask = 0x00000000FFFFFFFF;
-#elif abs(ITEM) > 8
-	const size_t size = 4;
-	const size_t shift = 16;
-	const uint64_t mask = 0x000000000000FFFF;
-#elif
-	const size_t size = 8;
-	const size_t shift = 8;
-	const uint64_t mask = 0x00000000000000FF;
-#endif
+	size_t size = status == item_int64 || status == item_uint64
+					? 1
+					: status == item_int32 || status == item_uint32
+						? 2
+						: status == item_int16 || status == item_uint16
+							? 4
+							: 8;
 
-#if abs(ITEM) <= 32
+	if (abs(ITEM) <= 32 / size)
+	{
+		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
+	}
+
+	const size_t shift = 64 / size;
+	uint64_t mask = 0x00000000000000FF;
+	for (size_t i = 8; i < shift; i *= 2)
+	{
+		mask = (mask << i) | mask;
+	}
+
 	int64_t value = 0;
 	for (size_t i = 0; i < size; i++)
 	{
@@ -315,7 +318,6 @@ int64_t item_restore_int64_for_target(const item_status status, const item_t *co
 	}
 
 	return value;
-#endif
 }
 
 
