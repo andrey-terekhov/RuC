@@ -1335,6 +1335,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	info->variable_location = LFREE;
 	const node LHS = expression_ternary_get_LHS(nd);
+	const item_t if_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
 
 	const answer_t if_answer = info->answer_kind;
@@ -1346,6 +1347,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	info->variable_location = LFREE;
 	const node RHS = expression_ternary_get_RHS(nd);
+	const item_t else_type = expression_get_type(&RHS);
 	emit_expression(info, &RHS);
 
 	const answer_t else_answer = info->answer_kind;
@@ -1356,7 +1358,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 	to_code_label(info, label_end);
 
 	uni_printf(info->sx->io, " %%.%zu = phi ", info->register_num);
-	type_to_io(info, TYPE_INTEGER);
+	type_to_io(info, if_type == TYPE_FLOATING || else_type == TYPE_FLOATING ? TYPE_FLOATING : TYPE_INTEGER);
 	uni_printf(info->sx->io, " [ %s%" PRIitem ", %%label%" PRIitem " ]", if_answer == AREG ? "%." : ""
 		, if_answer == AREG ? if_reg : if_const, label_if);
 	uni_printf(info->sx->io, ", [ %s%" PRIitem ", %%label%" PRIitem " ]\n", else_answer == AREG ? "%." : ""
