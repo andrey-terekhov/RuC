@@ -91,14 +91,7 @@ static inline size_t mem_add(encoder *const enc, const item_t value)
 
 static inline size_t mem_add_double(encoder *const enc, const double value)
 {
-	int64_t num64;
-	memcpy(&num64, &value, sizeof(int64_t));
-
-	const int32_t fst = num64 & 0x00000000ffffffff;
-	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
-
-	mem_add(enc, fst);
-	return mem_add(enc, snd);
+	return vector_add_double(&enc->memory, value);
 }
 
 static inline int mem_set(encoder *const enc, const size_t index, const item_t value)
