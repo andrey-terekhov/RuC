@@ -84,6 +84,11 @@ static inline int mem_increase(encoder *const enc, const size_t size)
 	return vector_increase(&enc->memory, size);
 }
 
+static inline size_t mem_size(const encoder *const enc)
+{
+	return vector_size(&enc->memory);
+}
+
 static inline size_t mem_add(encoder *const enc, const item_t value)
 {
 	return vector_add(&enc->memory, value);
@@ -91,7 +96,15 @@ static inline size_t mem_add(encoder *const enc, const item_t value)
 
 static inline size_t mem_add_double(encoder *const enc, const double value)
 {
-	return vector_add_double(&enc->memory, value);
+	item_t buffer[8];
+	const size_t size = item_store_double_for_target(enc->target, value, buffer);
+
+	for (size_t i = 0; i < size; i++)
+	{
+		mem_add(enc, buffer[i]);
+	}
+
+	return mem_size(enc) - 1;
 }
 
 static inline int mem_set(encoder *const enc, const size_t index, const item_t value)
@@ -102,11 +115,6 @@ static inline int mem_set(encoder *const enc, const size_t index, const item_t v
 static inline item_t mem_get(const encoder *const enc, const size_t index)
 {
 	return vector_get(&enc->memory, index);
-}
-
-static inline size_t mem_size(const encoder *const enc)
-{
-	return vector_size(&enc->memory);
 }
 
 static inline size_t mem_reserve(encoder *const enc)
