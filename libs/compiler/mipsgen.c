@@ -37,7 +37,6 @@ typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
-	ANOANSWER,							/**< Нет ответа */
 } answer_t;
 
 typedef enum REQUEST
@@ -705,7 +704,7 @@ static void emit_integral_expression(information *const info, const node *const 
 	if (was_allocate_reg_left)
 	{
 		free_register(info);
-		info->answer_kind = ANOANSWER;
+		info->request_kind = RNOREQUEST;
 	}
 }
 
@@ -783,7 +782,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	if (was_allocate_reg)
 	{
 		free_register(info);
-		info->answer_kind = ANOANSWER;
+		info->request_kind = RNOREQUEST;
 	}
 }
 
@@ -1280,7 +1279,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 	info.max_displ = 0;
 	info.next_register = R_T0;
-	info.answer_kind = ANOANSWER;
 	info.request_kind = RNOREQUEST;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
