@@ -37,6 +37,7 @@ typedef enum ANSWER
 {
 	AREG,								/**< Ответ находится в регистре */
 	ACONST,								/**< Ответ является константой */
+	ANOANSWER,							/**< Нет ответа */
 } answer_t;
 
 typedef enum REQUEST
@@ -44,6 +45,7 @@ typedef enum REQUEST
 	RREG,								/**< Переменная находится в регистре */
 	RREGF,								/**< Переменная находится в регистре или константе */
 	RFREE,								/**< Свободный запрос значения */
+	RNOREQUEST,							/**< Нет запроса */
 } request_t;
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -638,13 +640,20 @@ static void emit_identifier_expression(information *const info, const node *cons
 static void emit_integral_expression(information *const info, const node *const nd)
 {
 	const binary_t operation = expression_binary_get_operator(nd);
+	bool was_allocate_reg_left = false;
 
-	info->request_kind = RREGF;
+	if (!(info->request_kind == RREGF || info->request_kind == RREG))
+	{
+		info->request_kind = RREGF;
+		info->request_reg = get_register(info);
+		was_allocate_reg_left = true;
+	}
+	const mips_register_t result = info->request_reg;
 	const node LHS = expression_binary_get_LHS(nd);
 	emit_expression(info, &LHS);
 
 	const answer_t left_kind = info->answer_kind;
-	const item_t left_reg = info->answer_reg;
+	const item_t left_reg = info->answer_kind == AREG ? info->answer_reg : info->request_reg;
 	const item_t left_const = info->answer_const;
 
 	info->request_kind = RREGF;
@@ -653,10 +662,8 @@ static void emit_integral_expression(information *const info, const node *const 
 	emit_expression(info, &RHS);
 
 	const answer_t right_kind = info->answer_kind;
-	const item_t right_reg = info->answer_reg;
+	const item_t right_reg = info->answer_kind == AREG ? info->answer_reg : info->request_reg;
 	const item_t right_const = info->answer_const;
-
-	const mips_register_t result = info->request_reg;
 
 	if (left_kind == AREG && right_kind == AREG)
 	{
@@ -672,8 +679,8 @@ static void emit_integral_expression(information *const info, const node *const 
 		}
 		else
 		{
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, right_const);
-			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, result);
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, R_ZERO, right_const);
+			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
 		}
 	}
 	else if (left_kind == ACONST && right_kind == AREG)
@@ -694,7 +701,12 @@ static void emit_integral_expression(information *const info, const node *const 
 	info->answer_kind = AREG;
 	info->answer_reg = result;
 	free_register(info);
-	free_register(info);
+
+	if (was_allocate_reg_left)
+	{
+		free_register(info);
+		info->answer_kind = ANOANSWER;
+	}
 }
 
 /**
@@ -715,13 +727,17 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: обработать случай регистровых переменных
 	// TODO: обработать случай глобальных переменных
 	const size_t displ = (size_t)hash_get(&info->displacements, id, 1);
+	bool was_allocate_reg = false;
 
-	info->request_kind = RREGF;
-	info->request_reg = get_register(info);
+	if (!(info->request_kind == RREGF || info->request_kind == RREG))
+	{
+		info->request_kind = RREGF;
+		info->request_reg = get_register(info);
+		was_allocate_reg = true;
+	}
+	const mips_register_t result = info->request_reg;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
-
-	const mips_register_t result = info->request_reg;
 
 	if (assignment_type != BIN_ASSIGN)
 	{
@@ -763,7 +779,12 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	info->answer_kind = AREG;
 	info->answer_reg = result;
-	free_register(info);
+
+	if (was_allocate_reg)
+	{
+		free_register(info);
+		info->answer_kind = ANOANSWER;
+	}
 }
 
 /**
@@ -910,6 +931,7 @@ static void emit_variable_declaration(information *const info, const node *const
 			info->answer_kind = AREG;
 			info->answer_reg = info->request_reg;
 			free_register(info);
+			info->request_kind = RNOREQUEST;
 		}
 	}
 }
@@ -1258,6 +1280,8 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 	info.max_displ = 0;
 	info.next_register = R_T0;
+	info.answer_kind = ANOANSWER;
+	info.request_kind = RNOREQUEST;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
