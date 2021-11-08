@@ -1221,6 +1221,8 @@ static void strings_declaration(information *const info)
 	const size_t amount = strings_amount(info->sx);
 	for (size_t i = 0; i < amount; i++)
 	{
+		item_t args_for_printf = 0; 
+
 		to_code_label(info->sx->io, L_STRING, i);
 		uni_printf(info->sx->io, "\t.ascii \"");
 
@@ -1231,6 +1233,22 @@ static void strings_declaration(information *const info)
 			if (ch == '\n')
 			{
 				uni_printf(info->sx->io, "\\n");
+			}
+			else if (ch == '%')
+			{
+				args_for_printf++;
+				j++;
+
+				uni_printf(info->sx->io, "%c", ch);
+				uni_printf(info->sx->io, "%c", string[j]);
+
+				// Если конец строки
+				if (string[j + 2] == '\0' || string[j + 1] == '\0')
+                    continue;
+
+				uni_printf(info->sx->io, "\\0\"\n");
+				to_code_label(info->sx->io, L_STRING, i + args_for_printf * amount);
+				uni_printf(info->sx->io, "\t.ascii \"");
 			}
 			else
 			{
