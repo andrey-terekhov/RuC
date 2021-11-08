@@ -1068,16 +1068,26 @@ static void emit_printf_statement(information *const info, const node *const nd)
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		// info->variable_location = LREG;
+		info->request_kind = RREG;
+		info->request_reg = get_register(info);
 
 		const node arg = statement_printf_get_argument(nd, i);
 		emit_expression(info, &arg);
+
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\tjal printf\n");
+
+		free_register(info);
 	}
 
 	// TODO: может можно как-то покрасивее это написать?
-	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
-	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
-	uni_printf(info->sx->io, "\tjal printf\n");
+	if (argc == 0)
+	{
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\tjal printf\n");
+	}
 }
 
 /**
