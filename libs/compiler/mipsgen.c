@@ -142,6 +142,8 @@ typedef enum LABEL
 	L_NEXT,							/**< Тип метки -- следующая функция */
 	L_FUNCEND,						/**< Тип метки -- выход из функции */
 	L_STRING,						/**< Тип метки -- строка */
+	L_ELSE,							/**< Тип метки -- переход по else */
+	L_END,							/**< Тип метки -- переход в конец конструкции */
 } mips_label_t;
 
 
@@ -165,6 +167,8 @@ typedef struct information
 												@c value[1]  - смещение или номер регистра */
 
 	mips_register_t next_register;		/**< Следующий регистр для выделения */
+
+	item_t label_num;						/**< Номер метки */
 } information;
 
 
@@ -439,6 +443,12 @@ static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 			break;
 		case L_STRING:
 			uni_printf(io, "STRING");
+			break;
+		case L_ELSE:
+			uni_printf(io, "ELSE");
+			break;
+		case L_END:
+			uni_printf(io, "END");
 			break;
 	}
 }
@@ -1091,6 +1101,40 @@ static void emit_printf_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit if statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_if_statement(information *const info, const node *const nd)
+{
+	const item_t label_else = info->label_num++;
+	const item_t label_end = info->label_num++;
+
+	info->request_kind = RFREE;
+	const node condition = statement_if_get_condition(nd);
+	emit_expression(info, &condition);
+
+	const node then_substmt = statement_if_get_then_substmt(nd);
+	emit_statement(info, &then_substmt);
+
+	if (statement_if_has_else_substmt(nd))
+	{
+		to_code_L(info->sx->io, IC_MIPS_J, L_END, label_end);
+		to_code_label(info->sx->io, L_ELSE, label_else);
+
+		const node else_substmt = statement_if_get_else_substmt(nd);
+		emit_statement(info, &else_substmt);
+
+		to_code_label(info->sx->io, L_END, label_end);
+	}
+	else
+	{
+		to_code_label(info->sx->io, L_ELSE, label_else);
+	}
+}
+
+/**
  *	Emit statement
  *
  *	@param	info		Encoder
@@ -1128,7 +1172,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_IF:
-			// emit_if_statement(info, nd);
+			emit_if_statement(info, nd);
 			return;
 
 		case STMT_SWITCH:
@@ -1308,6 +1352,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.max_displ = 0;
 	info.next_register = R_T0;
 	info.request_kind = RNOREQUEST;
+	info.label_num = 1;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
