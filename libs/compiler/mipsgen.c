@@ -1065,20 +1065,20 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	const size_t argc = statement_printf_get_argc(nd);
 	const node string = statement_printf_get_format_str(nd);
 	const size_t index = expression_literal_get_string(&string);
+	const size_t amount = strings_amount(info->sx);
 
 	for (size_t i = 0; i < argc; i++)
 	{
 		info->request_kind = RREG;
-		info->request_reg = get_register(info);
+		// TODO: хорошо бы определённый регистр тоже через функцию выделять
+		info->request_reg = R_A1;
 
 		const node arg = statement_printf_get_argument(nd, i);
 		emit_expression(info, &arg);
 
-		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
-		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
 		uni_printf(info->sx->io, "\tjal printf\n");
-
-		free_register(info);
 	}
 
 	// TODO: может можно как-то покрасивее это написать?
