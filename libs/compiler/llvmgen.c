@@ -70,6 +70,7 @@ typedef struct information
 	item_t label_false;						/**< Метка перехода при false */
 	item_t label_break;						/**< Метка перехода для break */
 	item_t label_continue;					/**< Метка перехода для continue */
+	item_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -1345,7 +1346,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	if (if_is_ternary)
 	{
-		label_if = info->label_num - 1;
+		label_if = info->label_ternary_end;
 	}
 
 	to_code_unconditional_branch(info, label_end);
@@ -1363,7 +1364,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	if (else_is_ternary)
 	{
-		label_else = info->label_num - 1;
+		label_else = info->label_ternary_end;
 	}
 
 	to_code_unconditional_branch(info, label_end);
@@ -1381,6 +1382,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	info->label_true = old_label_true;
 	info->label_false = old_label_false;
+	info->label_ternary_end = label_end;
 }
 
 /**
