@@ -2228,9 +2228,12 @@ static int emit_translation_unit(information *const info, const node *const nd)
 	{
 		uni_printf(info->sx->io, "declare double @llvm.fabs.f64(double)\n");
 	}
-	
-	uni_printf(info->sx->io, "!llvm.linker.options = !{!0}\n");
-	uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
+
+
+	#ifdef _MSC_VER
+		uni_printf(info->sx->io, "!llvm.linker.options = !{!0}\n");
+		uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
+	#endif
 
 	return info->sx->was_error;
 }
