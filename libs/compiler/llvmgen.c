@@ -1318,8 +1318,8 @@ static void emit_ternary_expression(information *const info, const node *const n
 {
 	const item_t old_label_true = info->label_true;
 	const item_t old_label_false = info->label_false;
-	const item_t label_if = info->label_num++;
-	const item_t label_else = info->label_num++;
+	item_t label_if = info->label_num++;
+	item_t label_else = info->label_num++;
 	const item_t label_end = info->label_num++;
 
 	info->label_true = label_if;
@@ -1335,6 +1335,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	info->variable_location = LFREE;
 	const node LHS = expression_ternary_get_LHS(nd);
+	const bool if_is_ternary = expression_get_class(&LHS) == EXPR_TERNARY;
 	const item_t if_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
 
@@ -1342,17 +1343,28 @@ static void emit_ternary_expression(information *const info, const node *const n
 	const item_t if_reg = info->answer_reg;
 	const item_t if_const = info->answer_const;
 
+	if (if_is_ternary)
+	{
+		label_if = info->label_num - 1;
+	}
+
 	to_code_unconditional_branch(info, label_end);
 	to_code_label(info, label_else);
 
 	info->variable_location = LFREE;
 	const node RHS = expression_ternary_get_RHS(nd);
+	const bool else_is_ternary = expression_get_class(&RHS) == EXPR_TERNARY;
 	const item_t else_type = expression_get_type(&RHS);
 	emit_expression(info, &RHS);
 
 	const answer_t else_answer = info->answer_kind;
 	const item_t else_reg = info->answer_reg;
 	const item_t else_const = info->answer_const;
+
+	if (else_is_ternary)
+	{
+		label_else = info->label_num - 1;
+	}
 
 	to_code_unconditional_branch(info, label_end);
 	to_code_label(info, label_end);
