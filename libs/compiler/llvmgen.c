@@ -1459,7 +1459,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 	{
 		info->answer_const = (item_t)i;
 		info->answer_kind = ACONST;
-		const item_t slice_reg = info->register_num;
+		const size_t slice_reg = (size_t)info->register_num;
 		if (is_local)
 		{
 			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
@@ -1505,7 +1505,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 		else
 		{
 			emit_one_dimension_initialization(info, &initializer, id, arr_type, cur_dimension - 1
-				, slice_reg, true);
+				, (item_t)slice_reg, true);
 		}
 	}
 }
