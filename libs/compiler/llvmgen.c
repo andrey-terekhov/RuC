@@ -1451,10 +1451,12 @@ static void emit_expression(information *const info, const node *const nd)
 static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type
 	, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
 {
+	const size_t N = expression_list_get_size(nd);
+	const item_t type = array_get_type(info, arr_type);
+
+	// случай, когда только одно измерение
 	if (cur_dimension == 0 && prev_slice == 0)
 	{
-		const size_t N = expression_list_get_size(nd);
-		const item_t type = array_get_type(info, arr_type);
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		for (size_t i = 0; i < N; i++)
 		{
@@ -1491,6 +1493,60 @@ static void emit_one_dimension_initialization(information *const info, const nod
 					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
 				}
 			}
+		}
+	}
+	// случай, когда много измерений, но первая вырезка
+	else if (cur_dimension != 0 && prev_slice == 0)
+	{	
+		for (size_t i = 0; i < N; i++)
+		{
+			info->answer_const = (item_t)i;
+			to_code_slice(info, id, cur_dimension, 0, type, true);
+
+			info->variable_location = LFREE;
+			const node initializer = expression_list_get_subexpr(nd, i);
+			emit_one_dimension_initialization(info, &initializer, id, arr_type, cur_dimension - 1
+				, info->register_num - 1, true);
+		}
+	}
+	// случай, когда много измерений, но вырезка последняя
+	else if (cur_dimension == 0 && prev_slice != 0)
+	{
+		for (size_t i = 0; i < N; i++)
+		{
+			info->variable_location = LFREE;
+			const node initializer = expression_list_get_subexpr(nd, i);
+			emit_expression(info, &initializer);
+			const item_t value_int = info->answer_const;
+			info->answer_const = (item_t)i;
+
+			if (is_local)
+			{
+				to_code_slice(info, id, 0, prev_slice, type, true);
+			}
+
+			if (type_is_integer(info->sx, type))
+			{
+				to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
+			}
+			else
+			{
+				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+			}
+		}
+	}
+	// случай, когда много измерений, и вырезка ни первая, ни последняя
+	else if (cur_dimension != 0 && prev_slice != 0)
+	{	
+		for (size_t i = 0; i < N; i++)
+		{
+			info->answer_const = (item_t)i;
+			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
+
+			info->variable_location = LFREE;
+			const node initializer = expression_list_get_subexpr(nd, i);
+			emit_one_dimension_initialization(info, &initializer, id, arr_type, cur_dimension - 1
+				, info->register_num - 1, true);
 		}
 	}
 }
