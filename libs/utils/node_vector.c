@@ -22,4 +22,5 @@ extern size_t node_vector_add(node_vector *const vec, const node *const nd);
 extern int node_vector_set(node_vector *const vec, const size_t index, const node *const nd);
 extern node node_vector_get(const node_vector *const vec, const size_t index);
 extern size_t node_vector_size(const node_vector *const vec);
+extern bool node_vector_is_correct(const node_vector *const vec);
 extern int node_vector_clear(node_vector *const vec);

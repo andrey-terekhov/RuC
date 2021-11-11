@@ -148,17 +148,8 @@ static inline void skip_block_comment(lexer *const lxr)
  */
 static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
-	char32_t spelling[MAX_STRING_LENGTH];
-	size_t length = 0;
-
-	do
-	{
-		spelling[length++] = lxr->character;
-		scan(lxr);
-	} while (utf8_is_letter(lxr->character) || utf8_is_digit(lxr->character));
-	spelling[length] = '\0';
-
-	const size_t repr = repr_reserve(lxr->sx, spelling);
+	uni_unscan_char(lxr->sx->io, lxr->character);
+	const size_t repr = repr_reserve(lxr->sx, &lxr->character);
 	const item_t ref = repr_get_reference(lxr->sx, repr);
 	if (ref >= 0 && repr != ITEM_MAX)
 	{
@@ -311,11 +302,11 @@ static token_t lex_char_constant(lexer *const lxr)
 	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
-		lxr->num = 0;
+		lxr->char_value = 0;
 		return TK_CHAR_CONST;
 	}
 
-	lxr->num = get_next_string_elem(lxr);
+	lxr->char_value = get_next_string_elem(lxr);
 
 	if (scan(lxr) == '\'')
 	{
