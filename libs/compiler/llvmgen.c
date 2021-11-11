@@ -1458,6 +1458,8 @@ static void emit_one_dimension_initialization(information *const info, const nod
 	for (size_t i = 0; i < N; i++)
 	{
 		info->answer_const = (item_t)i;
+		info->answer_kind = ACONST;
+		const item_t slice_reg = info->register_num;
 		if (is_local)
 		{
 			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
@@ -1471,22 +1473,28 @@ static void emit_one_dimension_initialization(information *const info, const nod
 		{
 			emit_expression(info, &initializer);
 
-			if (type_is_integer(info->sx, type))
+			if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, slice_reg, type, true, false, is_local);
+			}
+			// константа типа int
+			else if (type_is_integer(info->sx, type))
 			{
 				if (is_local)
 				{
-					to_code_store_const_i32(info, info->answer_const, info->register_num - 1, true, true);
+					to_code_store_const_i32(info, info->answer_const, slice_reg, true, true);
 				}
 				else
 				{
 					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != N - 1 ? ", " : "], align 4\n");
 				}
 			}
+			// константа типа double
 			else
 			{
 				if (is_local)
 				{
-					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+					to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
 				}
 				else
 				{
@@ -1497,7 +1505,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 		else
 		{
 			emit_one_dimension_initialization(info, &initializer, id, arr_type, cur_dimension - 1
-				, info->register_num - 1, true);
+				, slice_reg, true);
 		}
 	}
 }
