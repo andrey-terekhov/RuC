@@ -1440,37 +1440,21 @@ static void emit_expression(information *const info, const node *const nd)
 /**
  *	Emit initialization of lvalue
  *
- *	@param	info		Encoder
- *	@param	nd			Node in AST
- *	@param	id			Identifier of target lvalue
- *	@param	elem_type	Element type of target lvalue
+ *	@param	info			Encoder
+ *	@param	nd				Node in AST
+ *	@param	id				Identifier of target lvalue
+ *	@param	arr_type		Array type of target lvalue
+ *	@param	cur_dimension	Current dimension of slice
+ *	@param	prev_slice		Register of previous slice, if it exists
+ *	@param	is_local		Is array local or global
  */
-static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t elem_type)
+static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type
+	, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
 {
-	// TODO: пока реализовано только для одномерных массивов
-	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	if (cur_dimension == 0 && prev_slice == 0)
 	{
 		const size_t N = expression_list_get_size(nd);
-
-		const size_t index = hash_get_index(&info->arrays, id);
-		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
-
-		const item_t type = array_get_type(info, elem_type);
-		const item_t is_local = ident_is_local(info->sx, (size_t)id);
-
-		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
-		// а неконстантными выражениями глобальный массив может инициализироваться?
-		if (is_local)
-		{
-			to_code_alloc_array_static(info, index, type, true);
-		}
-		else
-		{
-			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
-			type_to_io(info, type);
-			uni_printf(info->sx->io, "] [");
-		}
-
+		const item_t type = array_get_type(info, arr_type);
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		for (size_t i = 0; i < N; i++)
 		{
@@ -1508,6 +1492,51 @@ static void emit_initialization(information *const info, const node *const nd, c
 				}
 			}
 		}
+	}
+}
+
+/**
+ *	Emit initialization of lvalue
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ *	@param	id			Identifier of target lvalue
+ *	@param	arr_type	Array type of target lvalue
+ */
+static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type)
+{
+	// TODO: пока реализовано только для одномерных массивов
+	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	{
+		const size_t dimensions = array_get_dim(info, arr_type);
+		const size_t N = expression_list_get_size(nd);
+
+		const size_t index = hash_get_index(&info->arrays, id);
+
+		node list_expression = *nd;
+		for (size_t i = 0; i < dimensions; i++)
+		{
+			hash_set_by_index(&info->arrays, index, 1 + i, (item_t)expression_list_get_size(&list_expression));
+			list_expression = expression_list_get_subexpr(&list_expression, 0);
+		}
+
+		const item_t type = array_get_type(info, arr_type);
+		const item_t is_local = ident_is_local(info->sx, (size_t)id);
+
+		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
+		// а неконстантными выражениями глобальный массив может инициализироваться?
+		if (is_local)
+		{
+			to_code_alloc_array_static(info, index, type, true);
+		}
+		else
+		{
+			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
+			type_to_io(info, type);
+			uni_printf(info->sx->io, "] [");
+		}
+
+		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
 }
 
