@@ -52,6 +52,7 @@ typedef enum TOKEN
 	TK_GOTO,						/**< 'goto'		keyword */
 	TK_RETURN,						/**< 'return'	keyword */
 	TK_NULL,						/**< 'null'		keyword */
+	TK_ABS,							/**< 'abs'		keyword */
 
 	// Identifiers [C99 6.4.2]
 	TK_IDENTIFIER,					/**< Identifier [C99 6.4.2] */
@@ -108,13 +109,6 @@ typedef enum TOKEN
 	TK_GREATER_GREATER,				/**< '>>'	punctuator */
 	TK_LESS_LESS_EQUAL,				/**< '<<='	punctuator */
 	TK_GREATER_GREATER_EQUAL,		/**< '>>='	punctuator */
-
-	TK_PRINT,						/**< 'print'	keyword	*/
-	TK_PRINTF,						/**< 'printf'	keyword */
-	TK_PRINTID,						/**< 'printid'	keyword */
-	TK_SCANF,						/**< 'scanf'	keyword */
-	TK_GETID,						/**< 'getid'	keyword */
-	TK_ABS,							/**< 'abs'		keyword */
 } token_t;
 
 #ifdef __cplusplus

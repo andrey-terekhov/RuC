@@ -17,10 +17,10 @@
 #include "AST.h"
 
 extern node node_broken();
+extern location node_get_location(const node *const nd);
 
 extern item_t expression_get_type(const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
-extern location expression_get_location(const node *const nd);
 
 extern size_t expression_identifier_get_id(const node *const nd);
 extern int expression_literal_get_integer(const node *const nd);
@@ -100,6 +100,9 @@ extern size_t statement_printf_get_argc(const node *const nd);
 extern node statement_printf_get_format_str(const node *const nd);
 extern node statement_printf_get_argument(const node *const nd, const size_t index);
 
+extern size_t statement_declaration_get_size(const node *const nd);
+extern node statement_declaration_get_declarator(const node *const nd, const size_t index);
+
 
 extern size_t translation_unit_get_size(const node *const nd);
 extern node translation_unit_get_declaration(const node *const nd, const size_t index);
@@ -114,9 +117,9 @@ extern size_t declaration_function_get_id(const node *const nd);
 extern node declaration_function_get_body(const node *const nd);
 
 
-static inline node node_create(syntax *const sx, operation_t type)
+static inline node node_create(node *const context, const operation_t type)
 {
-	return node_add_child(&sx->nd, type);
+	return node_add_child(context, type);
 }
 
 static inline void node_set_child(const node *const parent, const node *const child)
@@ -166,13 +169,39 @@ expression_t expression_get_class(const node *const nd)
 	}
 }
 
-node expression_identifier(syntax *const sx, const item_t type
-	, const category_t ctg, const size_t id, const location loc)
+node expression_identifier(node *const context, const item_t type, const size_t id, const location loc)
 {
-	node nd = node_create(sx, OP_IDENTIFIER);
+	node nd = node_create(context, OP_IDENTIFIER);
+
 	node_add_arg(&nd, type);						// Тип значения выражения
-	node_add_arg(&nd, ctg);							// Категория значения выражения
+	node_add_arg(&nd, LVALUE);						// Категория значения выражения
 	node_add_arg(&nd, (item_t)id);					// Индекс в таблице идентификаторов
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc)
+{
+	node nd = node_create(context, OP_LITERAL);
+
+	node_add_arg(&nd, type);						// Тип значения выражения
+	node_add_arg(&nd, RVALUE);						// Категория значения выражения
+	node_add_arg(&nd, value);						// Значение литерала
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+
+	return nd;
+}
+
+node expression_floating_literal(node *const context, const item_t type, const double value, const location loc)
+{
+	node nd = node_create(context, OP_LITERAL);
+
+	node_add_arg(&nd, type);						// Тип значения выражения
+	node_add_arg(&nd, RVALUE);						// Категория значения выражения
+	node_add_arg_double(&nd, value);				// Значение литерала
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 
@@ -196,7 +225,7 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
 {
 	node nd = node_insert(callee, OP_CALL, 4);		// Операнд выражения
 
-	if (args)
+	if (node_vector_is_correct(args))
 	{
 		const size_t amount = node_vector_size(args);
 		for (size_t i = 0; i < amount; i++)
@@ -278,21 +307,23 @@ node expression_ternary(const item_t type, node *const cond, node *const LHS, no
 	node_set_arg(&nd, 0, type);						// Тип значения выражения
 	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
 	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
-	node_set_arg(&nd, 3, (item_t)loc.begin);		// Конечная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
 
 	return nd;
 }
 
-node expression_list(syntax *const sx, node_vector *const exprs, const location loc)
+node expression_list(node_vector *const exprs, const location loc)
 {
-	node nd = node_create(sx, OP_LIST);
-	node_add_arg(&nd, TYPE_UNDEFINED);				// Тип значения выражения
-	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
-	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+	node fst = node_vector_get(exprs, 0);
+	node nd = node_insert(&fst, OP_LIST, 4);
+
+	node_set_arg(&nd, 0, TYPE_UNDEFINED);			// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения
 
 	const size_t amount = node_vector_size(exprs);
-	for (size_t i = 0; i < amount; i++)
+	for (size_t i = 1; i < amount; i++)
 	{
 		node subexpr = node_vector_get(exprs, i);
 		node_set_child(&nd, &subexpr);				// i-ое подвыражение списка
@@ -305,9 +336,7 @@ statement_t statement_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
 	{
-		case OP_DECL_VAR:
-		case OP_DECL_TYPE:
-		case OP_FUNC_DEF:
+		case OP_DECLSTMT:
 			return STMT_DECL;
 		case OP_LABEL:
 			return STMT_LABEL;
@@ -337,17 +366,202 @@ statement_t statement_get_class(const node *const nd)
 			return STMT_BREAK;
 		case OP_RETURN:
 			return STMT_RETURN;
-		case OP_PRINTF:
-			return STMT_PRINTF;
-		case OP_PRINT:
-			return STMT_PRINT;
-		case OP_PRINTID:
-			return STMT_PRINTID;
-		case OP_GETID:
-			return STMT_GETID;
 		default:
 			return STMT_EXPR;
 	}
+}
+
+node statement_labeled(const size_t label, node *const substmt, const location loc)
+{
+	node nd = node_insert(substmt, OP_LABEL, 3);
+
+	node_set_arg(&nd, 0, (item_t)label);			// ID метки
+	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_case(node *const expr, node *const substmt, const location loc)
+{
+	node nd = node_insert(expr, OP_CASE, 2);
+	node_set_child(&nd, substmt);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_default(node *const substmt, const location loc)
+{
+	node nd = node_insert(substmt, OP_DEFAULT, 2);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_compound(node *const context, node_vector *const stmts, const location loc)
+{
+	node nd = node_create(context, OP_BLOCK);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	if (node_vector_is_correct(stmts))
+	{
+		const size_t amount = node_vector_size(stmts);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node item = node_vector_get(stmts, i);
+			node_set_child(&nd, &item);
+		}
+	}
+
+	return nd;
+}
+
+node statement_null(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_NOP);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc)
+{
+	node nd = node_insert(cond, OP_IF, 3);
+	node_set_child(&nd, then_stmt);
+
+	node_set_arg(&nd, 0, 0);						// Флаг наличия else-части
+	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	if (node_is_correct(else_stmt))
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, else_stmt);
+	}
+
+	return nd;
+}
+
+node statement_switch(node *const cond, node *const body, const location loc)
+{
+	node nd = node_insert(cond, OP_SWITCH, 2);
+	node_set_child(&nd, body);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_while(node *const cond, node *const body, const location loc)
+{
+	node nd = node_insert(cond, OP_WHILE, 2);
+	node_set_child(&nd, body);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_do(node *const body, node *const cond, const location loc)
+{
+	node nd = node_insert(body, OP_DO, 2);
+	node_set_child(&nd, cond);
+
+	node_set_arg(&nd, 0, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 1, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc)
+{
+	node nd = node_insert(body, OP_FOR, 5);
+
+	node_set_arg(&nd, 0, 0);
+	node_set_arg(&nd, 1, 0);
+	node_set_arg(&nd, 2, 0);
+
+	if (node_is_correct(init))
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, init);
+	}
+
+	if (node_is_correct(cond))
+	{
+		node_set_arg(&nd, 1, 1);
+		node_set_child(&nd, cond);
+	}
+
+	if (node_is_correct(incr))
+	{
+		node_set_arg(&nd, 2, 1);
+		node_set_child(&nd, incr);
+	}
+
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_goto(node *const context, const size_t label, const location loc)
+{
+	node nd = node_create(context, OP_GOTO);
+
+	node_add_arg(&nd, (item_t)label);				// ID метки
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_continue(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_CONTINUE);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_break(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_BREAK);
+
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+node statement_return(node *const context, node *const expr, const location loc)
+{
+	node nd = node_create(context, OP_RETURN);
+
+	node_add_arg(&nd, 0);							// Содержит ли выражение
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+	
+	if (node_is_correct(expr))
+	{
+		node_set_arg(&nd, 0, 1);
+		node_set_child(&nd, expr);
+	}
+
+	return nd;
 }
 
 declaration_t declaration_get_class(const node *const nd)
