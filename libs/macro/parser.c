@@ -773,24 +773,6 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						}
 						break;
 				}
-
-				/*if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
-				{
-					switch (cur)
-					{
-						case U'\r':
-							cur = uni_scan_char(prs->in);
-						case U'\n':
-							was_star = false;
-							was_lexeme = false;
-							parser_add_char(prs, U'\n');
-							parser_print(prs);
-							break;
-						case (char32_t)EOF:
-							parser_print(prs);
-							break;
-					}
-				}*/
 		}
 	}
 }
