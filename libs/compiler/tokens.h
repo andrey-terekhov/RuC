@@ -35,7 +35,10 @@ typedef enum TOKEN
 	TK_INT,							/**< 'int'		keyword	*/
 	TK_LONG,						/**< 'long'		keyword */
 	TK_STRUCT,						/**< 'struct'	keyword */
+	TK_ENUM,						/**< 'enum'		keyword */
 	TK_VOID,						/**< 'void'		keyword */
+	TK_FILE,						/**< 'file'		keyword */
+	TK_TYPEDEF,						/**< 'typedef'	keyword */
 	TK_IF,							/**< 'if'		keyword */
 	TK_ELSE,						/**< 'else'		keyword */
 	TK_DO,							/**< 'do'		keyword */
@@ -114,54 +117,7 @@ typedef enum TOKEN
 	TK_SCANF,						/**< 'scanf'	keyword */
 	TK_GETID,						/**< 'getid'	keyword */
 	TK_ABS,							/**< 'abs'		keyword */
-	TK_SQRT,						/**< 'sqrt'		keyword */
-	TK_EXP,							/**< 'exp'		keyword */
-	TK_SIN,							/**< 'sin'		keyword */
-	TK_COS,							/**< 'cos'		keyword */
-	TK_LOG,							/**< 'log'		keyword */
-	TK_LOG10,						/**< 'log10'	keyword */
-	TK_ASIN,						/**< 'asin'		keyword */
-	TK_RAND,						/**< 'rand'		keyword */
-	TK_ROUND,						/**< 'round'	keyword */
-	TK_ASSERT,						/**< 'assert'	keyword */
 	TK_UPB,							/**< 'upb'		keyword */
-	TK_CREATE_DIRECT,				/**< 't_create_direct'	keyword */
-	TK_EXIT_DIRECT,					/**< 't_exit_direct'	keyword */
-
-	BEGIN_TK_STR,
-	TK_STRCPY,						/**< 'strcpy'	keyword */
-	TK_STRNCPY,						/**< 'strncpy'	keyword */
-	TK_STRCAT,						/**< 'strcat'	keyword */
-	TK_STRNCAT,						/**< 'strncat'	keyword */
-	TK_STRCMP,						/**< 'strcmp'	keyword */
-	TK_STRNCMP,						/**< 'strncmp'	keyword */
-	TK_STRSTR,						/**< 'strstr'	keyword */
-	TK_STRLEN,						/**< 'strlen'	keyword */
-	END_TK_STR,
-
-	BEGIN_TK_THREAD,
-	TK_MSG_SEND,					/**< 't_msg_send'		keyword */
-	TK_MSG_RECEIVE,					/**< 't_msg_receive'	keyword */
-	TK_JOIN,						/**< 't_join'			keyword */
-	TK_SLEEP,						/**< 't_sleep'			keyword */
-	TK_SEM_CREATE,					/**< 't_sem_create'		keyword */
-	TK_SEM_WAIT,					/**< 't_sem_wait'		keyword */
-	TK_SEM_POST,					/**< 't_sem_post'		keyword */
-	TK_CREATE,						/**< 't_create'			keyword */
-	TK_INIT,						/**< 't_init'			keyword */
-	TK_DESTROY,						/**< 't_destroy'		keyword */
-	TK_EXIT,						/**< 't_exit'			keyword */
-	TK_GETNUM,						/**< 't_getnum'			keyword */
-	END_TK_THREAD,
-
-	BEGIN_TK_ROBOT,
-	TK_ROBOT_SEND_INT,				/**< 'send_int_to_robot'			keyword */
-	TK_ROBOT_SEND_FLOAT,			/**< 'send_float_to_robot'			keyword */
-	TK_ROBOT_SEND_STRING,			/**< 'send_string_to_robot'			keyword */
-	TK_ROBOT_RECEIVE_INT,			/**< 'receive_int_from_robot'		keyword */
-	TK_ROBOT_RECEIVE_FLOAT,			/**< 'receive_float_from_robot'		keyword */
-	TK_ROBOT_RECEIVE_STRING,		/**< 'receive_string_from_robot'	keyword */
-	END_TK_ROBOT,
 
 	END_TK_FUNC,
 } token_t;

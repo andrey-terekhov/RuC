@@ -77,50 +77,50 @@ operation_t token_to_unary(const token_t token)
 	}
 }
 
-operation_t token_to_function(const token_t token)
+instruction_t builtin_to_instruction(const builtin_t func)
 {
-	switch (token)
+	switch (func)
 	{
-		case TK_ABS:					return OP_ABS;
-		case TK_SQRT:					return OP_SQRT;
-		case TK_EXP:					return OP_EXP;
-		case TK_SIN:					return OP_SIN;
-		case TK_COS:					return OP_COS;
-		case TK_LOG:					return OP_LOG;
-		case TK_LOG10:					return OP_LOG10;
-		case TK_ASIN:					return OP_ASIN;
-		case TK_RAND:					return OP_RAND;
-		case TK_ROUND:					return OP_ROUND;
-		case TK_STRCPY:					return OP_STRCPY;
-		case TK_STRNCPY:				return OP_STRNCPY;
-		case TK_STRCAT:					return OP_STRCAT;
-		case TK_STRNCAT:				return OP_STRNCAT;
-		case TK_STRCMP:					return OP_STRCMP;
-		case TK_STRNCMP:				return OP_STRNCMP;
-		case TK_STRSTR:					return OP_STRSTR;
-		case TK_STRLEN:					return OP_STRLEN;
-		case TK_ASSERT:					return OP_ASSERT;
-		case TK_UPB:					return OP_UPB;
-		case TK_CREATE_DIRECT:			return OP_CREATE_DIRECT;
-		case TK_EXIT_DIRECT:			return OP_EXIT_DIRECT;
-		case TK_MSG_SEND:				return OP_MSG_SEND;
-		case TK_MSG_RECEIVE:			return OP_MSG_RECEIVE;
-		case TK_JOIN:					return OP_JOIN;
-		case TK_SLEEP:					return OP_SLEEP;
-		case TK_SEM_CREATE:				return OP_SEM_CREATE;
-		case TK_SEM_WAIT:				return OP_SEM_WAIT;
-		case TK_SEM_POST:				return OP_SEM_POST;
-		case TK_CREATE:					return OP_CREATE;
-		case TK_INIT:					return OP_INIT;
-		case TK_DESTROY:				return OP_DESTROY;
-		case TK_EXIT:					return OP_EXIT;
-		case TK_GETNUM:					return OP_GETNUM;
-		case TK_ROBOT_SEND_INT:			return OP_ROBOT_SEND_INT;
-		case TK_ROBOT_SEND_FLOAT:		return OP_ROBOT_SEND_FLOAT;
-		case TK_ROBOT_SEND_STRING:		return OP_ROBOT_SEND_STRING;
-		case TK_ROBOT_RECEIVE_INT:		return OP_ROBOT_RECEIVE_INT;
-		case TK_ROBOT_RECEIVE_FLOAT:	return OP_ROBOT_RECEIVE_FLOAT;
-		case TK_ROBOT_RECEIVE_STRING:	return OP_ROBOT_RECEIVE_STRING;
+		case BI_SQRT:					return IC_SQRT;
+		case BI_EXP:					return IC_EXP;
+		case BI_SIN:					return IC_SIN;
+		case BI_COS:					return IC_COS;
+		case BI_LOG:					return IC_LOG;
+		case BI_LOG10:					return IC_LOG10;
+		case BI_ASIN:					return IC_ASIN;
+		case BI_RAND:					return IC_RAND;
+		case BI_ROUND:					return IC_ROUND;
+		case BI_STRCPY:					return IC_STRCPY;
+		case BI_STRNCPY:				return IC_STRNCPY;
+		case BI_STRCAT:					return IC_STRCAT;
+		case BI_STRNCAT:				return IC_STRNCAT;
+		case BI_STRCMP:					return IC_STRCMP;
+		case BI_STRNCMP:				return IC_STRNCMP;
+		case BI_STRSTR:					return IC_STRSTR;
+		case BI_STRLEN:					return IC_STRLEN;
+		case BI_ASSERT:					return IC_ASSERT;
+		case BI_MSG_SEND:				return IC_MSG_SEND;
+		case BI_MSG_RECEIVE:			return IC_MSG_RECEIVE;
+		case BI_JOIN:					return IC_JOIN;
+		case BI_SLEEP:					return IC_SLEEP;
+		case BI_SEM_CREATE:				return IC_SEM_CREATE;
+		case BI_SEM_WAIT:				return IC_SEM_WAIT;
+		case BI_SEM_POST:				return IC_SEM_POST;
+		case BI_CREATE:					return IC_CREATE;
+		case BI_INIT:					return IC_INIT;
+		case BI_DESTROY:				return IC_DESTROY;
+		case BI_EXIT:					return IC_EXIT;
+		case BI_GETNUM:					return IC_GETNUM;
+		case BI_ROBOT_SEND_INT:			return IC_ROBOT_SEND_INT;
+		case BI_ROBOT_SEND_FLOAT:		return IC_ROBOT_SEND_FLOAT;
+		case BI_ROBOT_SEND_STRING:		return IC_ROBOT_SEND_STRING;
+		case BI_ROBOT_RECEIVE_INT:		return IC_ROBOT_RECEIVE_INT;
+		case BI_ROBOT_RECEIVE_FLOAT:	return IC_ROBOT_RECEIVE_FLOAT;
+		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
+		case BI_FOPEN:					return IC_FOPEN;
+		case BI_FGETC:					return IC_FGETC;
+		case BI_FPUTC:					return IC_FPUTC;
+		case BI_FCLOSE:					return IC_FCLOSE;
 
 		default:
 			system_error(node_unexpected);

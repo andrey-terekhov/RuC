@@ -482,46 +482,40 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 			argc = 1;
 			sprintf(buffer, "TGetid");
 			break;
-		case OP_CREATE:
+		case IC_CREATE:
 			sprintf(buffer, "TCREATE");
 			break;
-		case OP_CREATE_DIRECT:
-			sprintf(buffer, "TCREATEDIRECT");
-			break;
-		case OP_EXIT:
+		case IC_EXIT:
 			sprintf(buffer, "TEXIT");
 			break;
-		case OP_EXIT_DIRECT:
-			sprintf(buffer, "TEXITDIRECT");
-			break;
-		case OP_MSG_SEND:
+		case IC_MSG_SEND:
 			sprintf(buffer, "TMSGSEND");
 			break;
-		case OP_MSG_RECEIVE:
+		case IC_MSG_RECEIVE:
 			sprintf(buffer, "TMSGRECEIVE");
 			break;
-		case OP_JOIN:
+		case IC_JOIN:
 			sprintf(buffer, "TJOIN");
 			break;
-		case OP_SLEEP:
+		case IC_SLEEP:
 			sprintf(buffer, "TSLEEP");
 			break;
-		case OP_SEM_CREATE:
+		case IC_SEM_CREATE:
 			sprintf(buffer, "TSEMCREATE");
 			break;
-		case OP_SEM_WAIT:
+		case IC_SEM_WAIT:
 			sprintf(buffer, "TSEMWAIT");
 			break;
-		case OP_SEM_POST:
+		case IC_SEM_POST:
 			sprintf(buffer, "TSEMPOST");
 			break;
-		case OP_INIT:
+		case IC_INIT:
 			sprintf(buffer, "INITC");
 			break;
-		case OP_DESTROY:
+		case IC_DESTROY:
 			sprintf(buffer, "DESTROYC");
 			break;
-		case OP_GETNUM:
+		case IC_GETNUM:
 			sprintf(buffer, "GETNUMC");
 			break;
 
@@ -548,56 +542,56 @@ static size_t elem_get_name(const item_t elem, const size_t num, char *const buf
 		case OP_ABSI:
 			sprintf(buffer, "ABSI");
 			break;
-		case OP_SQRT:
+		case IC_SQRT:
 			sprintf(buffer, "SQRT");
 			break;
-		case OP_EXP:
+		case IC_EXP:
 			sprintf(buffer, "EXP");
 			break;
-		case OP_SIN:
+		case IC_SIN:
 			sprintf(buffer, "SIN");
 			break;
-		case OP_COS:
+		case IC_COS:
 			sprintf(buffer, "COS");
 			break;
-		case OP_LOG:
+		case IC_LOG:
 			sprintf(buffer, "LOG");
 			break;
-		case OP_LOG10:
+		case IC_LOG10:
 			sprintf(buffer, "LOG10");
 			break;
-		case OP_ASIN:
+		case IC_ASIN:
 			sprintf(buffer, "ASIN");
 			break;
-		case OP_RAND:
+		case IC_RAND:
 			sprintf(buffer, "RAND");
 			break;
-		case OP_ROUND:
+		case IC_ROUND:
 			sprintf(buffer, "ROUND");
 			break;
 
-		case OP_STRCPY:
+		case IC_STRCPY:
 			sprintf(buffer, "STRCPY");
 			break;
-		case OP_STRNCPY:
+		case IC_STRNCPY:
 			sprintf(buffer, "STRNCPY");
 			break;
-		case OP_STRCAT:
+		case IC_STRCAT:
 			sprintf(buffer, "STRCAT");
 			break;
-		case OP_STRNCAT:
+		case IC_STRNCAT:
 			sprintf(buffer, "STRNCAT");
 			break;
-		case OP_STRCMP:
+		case IC_STRCMP:
 			sprintf(buffer, "STRCMP");
 			break;
-		case OP_STRNCMP:
+		case IC_STRNCMP:
 			sprintf(buffer, "STRNCMP");
 			break;
-		case OP_STRSTR:
+		case IC_STRSTR:
 			sprintf(buffer, "STRSTR");
 			break;
-		case OP_STRLEN:
+		case IC_STRLEN:
 			sprintf(buffer, "STRLENC");
 			break;
 

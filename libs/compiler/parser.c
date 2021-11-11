@@ -101,7 +101,7 @@ int parse(const workspace *const ws, universal_io *const io, syntax *const sx)
 	parser_clear(&prs);
 
 #ifndef NDEBUG
-	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->modes, &sx->tree);
+	tables_and_tree(DEFAULT_TREE, &sx->identifiers, &sx->types, &sx->tree);
 #endif
 
 	return prs.was_error || prs.lxr->was_error || !sx_is_correct(sx);
@@ -197,52 +197,6 @@ void token_skip_until(parser *const prs, const uint8_t tokens)
 }
 
 
-bool mode_is_function(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_function;
-}
-
-bool mode_is_array(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_array;
-}
-
-bool mode_is_string(syntax *const sx, const item_t mode)
-{
-	return mode_is_array(sx, mode) && mode_get(sx, (size_t)mode + 1) == mode_character;
-}
-
-bool mode_is_pointer(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_pointer;
-}
-
-bool mode_is_struct(syntax *const sx, const item_t mode)
-{
-	return mode > 0 && mode_get(sx, (size_t)mode) == mode_struct;
-}
-
-bool mode_is_float(const item_t mode)
-{
-	return mode == mode_float;
-}
-
-bool mode_is_int(const item_t mode)
-{
-	return mode == mode_integer || mode == mode_character;
-}
-
-bool mode_is_void(const item_t mode)
-{
-	return mode == mode_void;
-}
-
-bool mode_is_undefined(const item_t mode)
-{
-	return mode == mode_undefined;
-}
-
-
 size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
 	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
@@ -262,14 +216,6 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
 	}
 
 	return ret;
-}
-
-item_t to_modetab(parser *const prs, const item_t mode, const item_t element)
-{
-	item_t temp[2];
-	temp[0] = mode;
-	temp[1] = element;
-	return (item_t)mode_add(prs->sx, temp, 2);
 }
 
 void to_tree(parser *const prs, const item_t operation)

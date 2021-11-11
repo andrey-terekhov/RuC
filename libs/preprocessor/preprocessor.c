@@ -166,11 +166,15 @@ int macro_to_file(workspace *const ws, const char *const path)
 char *auto_macro(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return macro(&ws);
+	char *ret = macro(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 int auto_macro_to_file(const int argc, const char *const *const argv, const char *const path)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return macro_to_file(&ws, path);
+	const int ret = macro_to_file(&ws, path);
+	ws_clear(&ws);
+	return ret;
 }
