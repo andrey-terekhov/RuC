@@ -171,6 +171,15 @@ void token_skip_until(parser *const prs, const uint8_t tokens);
 item_t parse_expression(parser *const prs, node *const parent);
 
 /**
+ *	Parse enum field expression [C99 6.5.17]
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Value of parsed enum field, @c ITEM_MAX on failure
+ */
+item_t parse_enum_field_expression(parser *const prs, node *const parent);
+
+/**
  *	Parse assignment expression [C99 6.5.16]
  *
  *	assignment-expression:
@@ -348,6 +357,19 @@ size_t to_identab(parser *const prs, const size_t repr, const item_t type, const
  *	@param	op			New node type
  */
 void to_tree(parser *const prs, const item_t op);
+
+/**
+ *	The ability to assign to a enum type
+ *
+ *	@param	sx		Syntax structure
+ *	@param	type		Variable type
+ *	@param	expr_type	Expression type
+ *	@param	field_repr	Representation of field
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool check_enum_initializer(const syntax *const sx
+	, const item_t type, const item_t expr_type, const size_t field_repr);
 
 #ifdef __cplusplus
 } /* extern "C" */
