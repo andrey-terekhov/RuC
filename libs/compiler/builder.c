@@ -844,14 +844,14 @@ node build_binary_expression(syntax *const sx, node *const LHS, node *const RHS
 			if (type_is_arithmetic(sx, left_type) && type_is_arithmetic(sx, right_type))
 			{
 				usual_arithmetic_conversions(sx, LHS, RHS);
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			if ((type_is_pointer(sx, left_type) && type_is_null_pointer(right_type))
 				|| (type_is_null_pointer(left_type) && type_is_pointer(sx, right_type))
 				|| left_type == right_type)
 			{
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(sx, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(sx, op_loc, typecheck_binary_expr);

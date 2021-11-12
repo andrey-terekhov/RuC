@@ -391,9 +391,16 @@ static void to_code_stack_load(information *const info, const item_t index)
 	info->was_stack_functions = true;
 }
 
-static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type)
+static void to_code_alloc_array_static(information *const info, const size_t index, const item_t type, const bool is_local)
 {
-	uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	if (is_local)
+	{
+		uni_printf(info->sx->io, " %%arr.%" PRIitem " = alloca ", hash_get_key(&info->arrays, index));
+	}
+	else
+	{
+		uni_printf(info->sx->io, "@arr.%" PRIitem " = common global ", hash_get_key(&info->arrays, index));
+	}
 
 	const size_t dim = hash_get_amount_by_index(&info->arrays, index) - 1;
 	if (dim == 0 || dim > MAX_DIMENSIONS)
@@ -412,7 +419,7 @@ static void to_code_alloc_array_static(information *const info, const size_t ind
 	{
 		uni_printf(info->sx->io, "]");
 	}
-	uni_printf(info->sx->io, ", align 4\n");
+	uni_printf(info->sx->io, "%s, align 4\n", is_local ? "" : " zeroinitializer");
 }
 
 static void to_code_alloc_array_dynamic(information *const info, const size_t index, const item_t type)
@@ -439,7 +446,7 @@ static void to_code_alloc_array_dynamic(information *const info, const size_t in
 }
 
 static void to_code_slice(information *const info, const item_t id, const size_t cur_dimension
-	, const item_t prev_slice, const item_t type)
+	, const item_t prev_slice, const item_t type, const bool is_local)
 {
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds ", info->register_num);
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
@@ -471,7 +478,7 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 
 		if (cur_dimension == dimensions - 1)
 		{
-			uni_printf(info->sx->io, "* %%arr.%" PRIitem ", i32 0", id);
+			uni_printf(info->sx->io, "* %sarr.%" PRIitem ", i32 0", is_local ? "%" : "@", id);
 		}
 		else
 		{
@@ -654,6 +661,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	{
 		const node identifier = expression_subscript_get_base(&base);
 		const item_t id = expression_identifier_get_id(&identifier);
+		const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 		const location_t location = info->variable_location;
@@ -681,7 +689,7 @@ static void emit_subscript_expression(information *const info, const node *const
 
 		if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, id, cur_dimension, 0, type);
+			to_code_slice(info, id, cur_dimension, 0, type, is_local);
 		}
 		else
 		{
@@ -698,7 +706,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 		if (cur_dimension < MAX_DIMENSIONS)
 		{
-			to_code_slice(info, id, cur_dimension, prev_slice, type);
+			to_code_slice(info, id, cur_dimension, prev_slice, type, is_local);
 		}
 		else
 		{
@@ -717,6 +725,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	}
 
 	const item_t id = expression_identifier_get_id(&base);
+	const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
 	const location_t location = info->variable_location;
@@ -729,7 +738,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
 	if (cur_dimension < MAX_DIMENSIONS)
 	{
-		to_code_slice(info, id, cur_dimension, 0, type);
+		to_code_slice(info, id, cur_dimension, 0, type, is_local);
 	}
 	else
 	{
@@ -782,6 +791,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		const node argument = expression_call_get_argument(nd, i);
 		arguments_value_type[i] = expression_get_type(&argument);
 		emit_expression(info, &argument);
+		to_code_try_zext_to(info);
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
 
@@ -912,7 +922,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT;
+	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
 	size_t id = 0;
 	if (!is_array)
 	{
@@ -1116,7 +1126,7 @@ static void emit_integral_expression(information *const info, const node *const 
 	{
 		to_code_operation_reg_const_double(info, operation, left_reg, right_const_double);
 	}
-	else if (left_kind == ACONST && right_kind == AREG && operation_type)
+	else if (left_kind == ACONST && right_kind == AREG && type_is_integer(info->sx, operation_type))
 	{
 		to_code_operation_const_reg_i32(info, operation, left_const, right_reg);
 	}
@@ -1197,18 +1207,23 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_reg(info, result, id, operation_type, is_array
 			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
+
+		info->answer_kind = AREG;
+		info->answer_reg = result;
 	}
-	else if (type_is_integer(info->sx, operation_type)) // ACONST и опериция =
+	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
 		to_code_store_const_i32(info, info->answer_const, id, is_array, ident_is_local(info->sx, id));
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, id));
+		to_code_store_const_double(info, info->answer_const_double, id, is_array, ident_is_local(info->sx, id));\
 	}
 	else
 	{
 		to_code_store_null(info, id, operation_type);
+
+		info->answer_kind = ANULL;
 	}
 }
 
@@ -1360,7 +1375,20 @@ static void emit_initialization(information *const info, const node *const nd, c
 		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
 		const item_t type = array_get_type(info, elem_type);
-		to_code_alloc_array_static(info, index, type);
+		const item_t is_local = ident_is_local(info->sx, (size_t)id);
+
+		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
+		// а неконстантными выражениями глобальный массив может инициализироваться?
+		if (is_local)
+		{
+			to_code_alloc_array_static(info, index, type, true);
+		}
+		else
+		{
+			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
+			type_to_io(info, type);
+			uni_printf(info->sx->io, "] [");
+		}
 
 		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 		for (size_t i = 0; i < N; i++)
@@ -1370,15 +1398,33 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 			const item_t value_int = info->answer_const;
 			info->answer_const = (item_t)i;
-			to_code_slice(info, id, 0, 0, type);
+
+			if (is_local)
+			{
+				to_code_slice(info, id, 0, 0, type, true);
+			}
 
 			if (type_is_integer(info->sx, type))
 			{
-				to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
+				if (is_local)
+				{
+					to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "i32 %" PRIitem "%s", value_int, i != N - 1 ? ", " : "], align 4\n");
+				}
 			}
 			else
 			{
-				to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+				if (is_local)
+				{
+					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
+				}
 			}
 		}
 	}
@@ -1512,7 +1558,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (hash_get_by_index(&info->arrays, index, IS_STATIC) && !has_init)
 		{
-			to_code_alloc_array_static(info, index, element_type);
+			to_code_alloc_array_static(info, index, element_type, is_local);
 		}
 		else if (!has_init) // объявление массива, если он динамический
 		{
@@ -1549,7 +1595,15 @@ static void emit_function_definition(information *const info, const node *const 
 
 	uni_printf(info->sx->io, "define ");
 	type_to_io(info, ret_type);
-	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
+	
+	if (ref_ident == info->sx->ref_main)
+	{
+		uni_printf(info->sx->io, " @main(");
+	}
+	else
+	{
+		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
+	}
 
 	for (size_t i = 0; i < parameters; i++)
 	{
@@ -1905,6 +1959,9 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	const size_t argc = statement_printf_get_argc(nd);
 	item_t args[MAX_PRINTF_ARGS];
 	item_t args_type[MAX_PRINTF_ARGS];
+	answer_t args_kind[MAX_PRINTF_ARGS];
+	item_t args_const[MAX_PRINTF_ARGS];
+	double args_const_double[MAX_PRINTF_ARGS];
 	if (argc > MAX_PRINTF_ARGS)
 	{
 		system_error(too_many_arguments);
@@ -1922,6 +1979,9 @@ static void emit_printf_statement(information *const info, const node *const nd)
 		const node arg = statement_printf_get_argument(nd, i);
 		emit_expression(info, &arg);
 		args[i] = info->answer_reg;
+		args_kind[i] = info->answer_kind;
+		args_const[i] = info->answer_const;
+		args_const_double[i] = info->answer_const_double;
 		args_type[i] = expression_get_type(&arg);
 	}
 
@@ -1938,7 +1998,19 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	{
 		uni_printf(info->sx->io, ", ");
 		type_to_io(info, args_type[i]);
-		uni_printf(info->sx->io, " signext %%.%" PRIitem, args[i]);
+
+		if (args_kind[i] == AREG)
+		{
+			uni_printf(info->sx->io, " signext %%.%" PRIitem, args[i]);
+		}
+		else if (args_kind[i] == ACONST && type_is_integer(info->sx, args_type[i]))
+		{
+			uni_printf(info->sx->io, " %" PRIitem, args_const[i]);
+		}
+		else if (args_kind[i] == ACONST && type_is_floating(args_type[i]))
+		{
+			uni_printf(info->sx->io, " %f", args_const_double[i]);
+		}
 	}
 
 	uni_printf(info->sx->io, ")\n");
@@ -2157,6 +2229,12 @@ static void builin_functions_declaration(information *const info)
 {
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
+		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
+		if (i == BI_ASSERT)
+		{
+			continue;
+		}
+
 		if (info->was_function[i])
 		{
 			const item_t func_type = ident_get_type(info->sx, i);
@@ -2184,6 +2262,32 @@ static void builin_functions_declaration(information *const info)
 			uni_printf(info->sx->io, ")\n");
 		}
 	}
+}
+
+// TODO: возможно, тут стоит читать из файла. Или как вообще красиво это сделать?
+//  И надо добавлять другие встроенные функции сюда
+static void runtime(information *const info)
+{
+	// assert
+	uni_printf(info->sx->io, "@.str = private unnamed_addr constant [3 x i8] c\"%%s\\00\", align 1\n"
+		"define void @assert(i32, i8*) {\n"
+		" %%3 = alloca i32, align 4\n"
+		" %%4 = alloca i8*, align 8\n"
+		" store i32 %%0, i32* %%3, align 4\n"
+		" store i8* %%1, i8** %%4, align 8\n"
+		" %%5 = load i32, i32* %%3, align 4\n"
+		" %%6 = icmp ne i32 %%5, 0\n"
+		" br i1 %%6, label %%10, label %%7\n"
+		" ; <label>:7:                                      ; preds = %%2\n"
+		" %%8 = load i8*, i8** %%4, align 8\n"
+		" %%9 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i32 0, i32 0), i8* %%8)\n"
+		" call void @exit(i32 1)\n"
+		" unreachable\n"
+		"; <label>:10:                                     ; preds = %%2\n"
+		" ret void\n"
+		"}\n"
+		"declare void @exit(i32)\n\n");
+	info->was_printf = true;
 }
 
 
@@ -2228,6 +2332,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	architecture(ws, sx);
 	structs_declaration(&info);
 	strings_declaration(&info);
+	runtime(&info);
 
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&info.sx->tree);
