@@ -366,7 +366,7 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 }
 
 
-static int size_of(information *const info, const item_t type)
+static inline int size_of(information *const info, const item_t type)
 {
 	return type_is_integer(info->sx, type) ? 4 : type_is_floating(type) ? 8 : 0;
 }
