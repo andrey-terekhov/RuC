@@ -628,7 +628,7 @@ static void emit_identifier_expression(information *const info, const node *cons
  */
 static void emit_integral_expression(information *const info, const node *const nd)
 {
-	const binary_t operation = expression_binary_get_operator(nd);
+	const binary_t operator = expression_binary_get_operator(nd);
 	bool was_allocate_reg_left = false;
 
 	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
@@ -656,34 +656,34 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	if (left_kind == A_REG && right_kind == A_REG)
 	{
-		to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
+		to_code_3R(info->sx->io, get_instruction(info, operator), result, left_reg, right_reg);
 	}
 	else if (left_kind == A_REG && right_kind == A_CONST)
 	{
 		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
-		if (operation != BIN_MUL && operation != BIN_DIV && operation != BIN_REM)
+		if (operator != BIN_MUL && operator != BIN_DIV && operator != BIN_REM)
 		{
-			to_code_2R_I(info->sx->io, get_instruction(info, operation), result, left_reg
-				, operation != BIN_SUB ? right_const : -right_const);
+			to_code_2R_I(info->sx->io, get_instruction(info, operator), result, left_reg
+				, operator != BIN_SUB ? right_const : -right_const);
 		}
 		else
 		{
 			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, R_ZERO, right_const);
-			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
+			to_code_3R(info->sx->io, get_instruction(info, operator), result, left_reg, right_reg);
 		}
 	}
 	else if (left_kind == A_CONST && right_kind == A_REG)
 	{
 		// Коммутативные операции, для которых есть команды, работающие с константами
-		if (operation == BIN_ADD || operation == BIN_AND || operation == BIN_OR || operation == BIN_XOR)
+		if (operator == BIN_ADD || operator == BIN_AND || operator == BIN_OR || operator == BIN_XOR)
 		{
 			info->answer_kind = A_CONST;
-			to_code_2R_I(info->sx->io, get_instruction(info, operation), result, right_reg, left_const);
+			to_code_2R_I(info->sx->io, get_instruction(info, operator), result, right_reg, left_const);
 		}
 		else
 		{
 			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, R_ZERO, left_const);
-			to_code_3R(info->sx->io, get_instruction(info, operation), result, left_reg, right_reg);
+			to_code_3R(info->sx->io, get_instruction(info, operator), result, left_reg, right_reg);
 		}
 	}
 
