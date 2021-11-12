@@ -821,7 +821,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->answer_reg = info->register_num++;
 	}
 	uni_printf(info->sx->io, " call ");
-	type_to_io(info, func_type);
+	type_to_io(info, expression_get_type(&callee));
 	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
 
 	for (size_t i = 0; i < args; i++)
