@@ -1032,9 +1032,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			type = type_pointer(prs->sx, element_type);
 		}
 
-		const size_t repr = token_get_ident_name(&prs->tk);
-		if (try_consume_token(prs, TK_IDENTIFIER))
+		if (token_is(&prs->tk, TK_IDENTIFIER))
 		{
+			const size_t repr = token_get_ident_name(&prs->tk);
+			consume_token(prs);
+
 			if (token_is(&prs->tk, TK_L_SQUARE))
 			{
 				if (!was_array)
@@ -1053,17 +1055,17 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 				node_set_arg(&decl, 0, type);
 				node_set_arg(&decl, 1, (item_t)fields);
 			}
+
+			local_modetab[local_md++] = type;
+			local_modetab[local_md++] = (item_t)repr;
+			fields++;
+			displ += type_size(prs->sx, type);
 		}
 		else
 		{
 			parser_error(prs, wait_ident_after_semicolon_in_struct);
 			skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
 		}
-
-		local_modetab[local_md++] = type;
-		local_modetab[local_md++] = (item_t)repr;
-		fields++;
-		displ += type_size(prs->sx, type);
 
 		expect_and_consume(prs, TK_SEMICOLON, no_semicolon_in_struct);
 	} while (!try_consume_token(prs, TK_R_BRACE));
