@@ -310,6 +310,13 @@ static node parse_primary_expression(parser *const prs)
 		}
 
 		case TK_CHAR_CONST:
+		{
+			const char32_t value = prs->lxr.char_value;
+			const location loc = consume_token(prs);
+
+			return build_character_literal_expression(&prs->bld, value, loc);
+		}
+
 		case TK_INT_CONST:
 		{
 			const item_t value = prs->lxr.num;
@@ -782,6 +789,9 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 			return TYPE_VOID;
 
 		case TK_CHAR:
+			consume_token(prs);
+			return TYPE_CHARACTER;
+			
 		case TK_INT:
 		case TK_LONG:
 			consume_token(prs);

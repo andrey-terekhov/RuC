@@ -219,10 +219,15 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
 	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
-	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, NULL));
+	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
 	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
 	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
 	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
+}
+
+static item_t type_get(const syntax *const sx, const size_t index)
+{
+	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
 }
 
 
@@ -536,9 +541,9 @@ item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const 
 	return (item_t)sx->start_type + 1;
 }
 
-item_t type_get(const syntax *const sx, const size_t index)
+type_t type_get_class(const syntax *const sx, const item_t type)
 {
-	return sx != NULL ? vector_get(&sx->types, index) : ITEM_MAX;
+	return (type_t)(type > 0 ? type_get(sx, (size_t)type) : type);
 }
 
 size_t type_size(const syntax *const sx, const item_t type)
@@ -559,7 +564,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 
 bool type_is_integer(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
+	return type == TYPE_CHARACTER || type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
 }
 
 bool type_is_floating(const item_t type)
@@ -624,7 +629,7 @@ bool type_is_aggregate(const syntax *const sx, const item_t type)
 
 bool type_is_string(const syntax *const sx, const item_t type)
 {
-	return type_is_array(sx, type) && type_is_integer(sx, type_get(sx, (size_t)type + 1));
+	return type_is_array(sx, type) && type_get(sx, (size_t)type + 1) == TYPE_CHARACTER;
 }
 
 bool type_is_struct_pointer(const syntax *const sx, const item_t type)
@@ -696,6 +701,11 @@ item_t type_array(syntax *const sx, const item_t type)
 	return type_add(sx, (item_t[]){ TYPE_ARRAY, type }, 2);
 }
 
+item_t type_string(syntax *const sx)
+{
+	return type_add(sx, (item_t[]){ TYPE_ARRAY, TYPE_CHARACTER }, 2);
+}
+
 item_t get_enum_field_type(const syntax *const sx, const item_t type)
 {
 	return type_is_enum_field(sx, type) ? -type : 0;
@@ -714,6 +724,7 @@ item_t get_enum_field_type(const syntax *const sx, const item_t type)
  *		m -> msg_info
  *		P -> FILE*
  *		T -> void*(void*)
+ *		. -> ...
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args)
 {
@@ -736,10 +747,10 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 					local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
 					break;
 				case 's':
-					local_modetab[3 + i] = type_array(sx, TYPE_INTEGER);
+					local_modetab[3 + i] = type_string(sx);
 					break;
 				case 'S':
-					local_modetab[3 + i] = type_pointer(sx, type_array(sx, TYPE_INTEGER));
+					local_modetab[3 + i] = type_pointer(sx, type_string(sx));
 					break;
 				case 'i':
 					local_modetab[3 + i] = TYPE_INTEGER;
@@ -762,6 +773,9 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 				case 'T':
 					local_modetab[3 + i] = type_function(sx, type_pointer(sx, TYPE_VOID), "V");
 					break;
+				case '.':
+					local_modetab[3 + i] = TYPE_VARARG;
+					break;
 			}
 
 			i++;
@@ -783,9 +797,9 @@ bool type_is_undefined(const item_t type)
 }
 
 
-size_t repr_reserve(syntax *const sx, const char32_t *const spelling)
+size_t repr_reserve(syntax *const sx, char32_t *const last)
 {
-	return map_reserve_by_utf8(&sx->representations, spelling);
+	return map_reserve_by_io(&sx->representations, sx->io, last);
 }
 
 const char *repr_get_name(const syntax *const sx, const size_t index)

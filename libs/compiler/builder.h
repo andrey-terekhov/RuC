@@ -73,6 +73,17 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc);
 
 /**
+ *	Build a character literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *
+ *	@return	Character literal expression node
+ */
+node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc);
+
+/**
  *	Build an integer literal expression
  *
  *	@param	bldr			AST builder

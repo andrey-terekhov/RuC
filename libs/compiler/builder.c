@@ -329,7 +329,7 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 
 				case 's':
 				case U'с':
-					format_types[args++] = type_array(bldr->sx, TYPE_INTEGER);
+					format_types[args++] = type_string(bldr->sx);
 					break;
 
 				case '%':
@@ -610,6 +610,11 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return true; // check int initializer
 	}
 
+	if (type_is_integer(sx, expected_type) && type_is_integer(sx, actual_type))
+	{
+		return true;
+	}
+
 	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
 	{
 		return true;
@@ -645,6 +650,11 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 	return expression_identifier(&bldr->context, type, (size_t)identifier, loc);
 }
 
+node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
+{
+	return expression_integer_literal(&bldr->context, TYPE_CHARACTER, value, loc);
+}
+
 node build_integer_literal_expression(builder *const bldr, const item_t value, const location loc)
 {
 	return expression_integer_literal(&bldr->context, TYPE_INTEGER, value, loc);
@@ -657,7 +667,7 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
 
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc)
 {
-	const item_t type = type_array(bldr->sx, TYPE_INTEGER);
+	const item_t type = type_string(bldr->sx);
 	return expression_integer_literal(&bldr->context, type, (item_t)index, loc);
 }
 
@@ -1025,14 +1035,14 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
 			{
 				usual_arithmetic_conversions(LHS, RHS);
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
 				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type))
 				|| left_type == right_type)
 			{
-				return expression_binary(TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(bldr, op_loc, typecheck_binary_expr);
