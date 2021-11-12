@@ -3,8 +3,7 @@
 init()
 {
 	exit_code=1
-	vm_exec=export.ll
-	llvm_exec=export
+	vm_exec=export.txt
 
 	vm_release=master
 	output_time=0.0
@@ -177,9 +176,9 @@ build()
 		compiler_debug=$compiler
 	fi
 
-	# if [[ -z $ignore ]] ; then
-	# 	build_vm
-	# fi
+	if [[ -z $ignore ]] ; then
+		build_vm
+	fi
 }
 
 run()
@@ -260,7 +259,7 @@ execution()
 {
 	if [[ $path == $dir_exec/* ]] ; then
 		action="execution"
-		run $llvm_exec $llvm_exec
+		run $interpreter $interpreter_debug $vm_exec
 
 		case $? in
 			0)
@@ -351,7 +350,7 @@ compiling()
 {
 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang $vm_exec -o $llvm_exec &>$log
+		run $compiler $compiler_debug $sources -o $vm_exec
 
 		case $? in
 			0)
