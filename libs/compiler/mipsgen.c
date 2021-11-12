@@ -871,6 +871,20 @@ static void emit_expression(information *const info, const node *const nd)
 	}
 }
 
+/**
+ *	Emit expression which will be evaluated as a void expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_void_expression(information *const info, const node *const nd)
+{
+	const request_t old_request = info->request_kind;
+	info->request_kind = RQ_NO_REQUEST;
+	emit_expression(info, nd);
+	info->request_kind = old_request;
+}
+
 
 /*
  *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
@@ -1101,7 +1115,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_EXPR:
-			emit_expression(info, nd);
+			emit_void_expression(info, nd);
 			return;
 
 		case STMT_NULL:
