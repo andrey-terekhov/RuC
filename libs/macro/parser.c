@@ -474,6 +474,9 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 
 	in_clear(&in);
 
+	parser_add_char(prs, U'\n');
+	parser_comment(prs);
+
 	return ret;
 }
 
@@ -499,6 +502,9 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
 
 	in_clear(&in);
+
+	parser_add_char(prs, U'\n');
+	parser_macro_comment(prs);
 
 	return ret;
 }
@@ -576,8 +582,6 @@ static int parser_include(parser *const prs, char32_t cur)
 	size_t temp = prs->position;
 	prs->position = position;
 	int ret = parser_preprocess_file(prs, path, ch);
-	parser_add_char(prs, U'\n');
-	parser_comment(prs);
 
 	// Пропуск символов за путем
 	prs->position = temp;
