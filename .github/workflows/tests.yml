@@ -7,7 +7,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v1
-      - run: patch ./scripts/test.sh < ./scripts/llvm.patch
+      - shell: bash
+        run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
         shell: bash
         run: ./scripts/test.sh
@@ -17,7 +18,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v1
-      - run: patch ./scripts/test.sh < ./scripts/llvm.patch
+      - shell: bash
+        run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
         shell: bash
         run: ./scripts/test.sh
