@@ -31,34 +31,34 @@ extern "C" {
 /** Lexer structure */
 typedef struct lexer
 {
-	universal_io *io;						/**< Universal io structure */
 	syntax *sx;								/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
+	size_t location;						/**< */
 	size_t repr;							/**< Pointer to representation of the read identifier */
 	int num;								/**< Value of the read integer number */
 	double num_double;						/**< Value of the read double number */
-	char32_t lexstr[MAX_STRING_LENGTH + 1];	/**< Representation of the read string literal */
+	size_t num_string;						/**< Index of string literal in strings vector */
+
+	vector lexstr;							/**< Representation of the read string literal */
 
 	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
-	bool was_error;							/**< Set, if was error */
 } lexer;
 
 /**
  *	Create lexer structure
  *
  *	@param	ws		Compiler workspace
- *	@param	io		Universal io structure
  *	@param	sx		Syntax structure
  *
- *	@return	Lexer structure
+ *	@return	Lexer
  */
-lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *const sx);
+lexer lexer_create(const workspace *const ws, syntax *const sx);
 
 /**
  *	Lex next token from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr		Lexer
  *
  *	@return	Lexed token
  */
@@ -67,11 +67,20 @@ token_t lex(lexer *const lxr);
 /**
  *	Peek next token from io
  *
- *	@param	lxr		Lexer structure
+ *	@param	lxr		Lexer
  *
  *	@return	Peeked token
  */
 token_t peek(lexer *const lxr);
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	lxr		Lexer
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int lexer_clear(lexer *const lxr);
 
 #ifdef __cplusplus
 } /* extern "C" */
