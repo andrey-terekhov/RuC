@@ -94,7 +94,7 @@ static inline size_t mem_add(encoder *const enc, const item_t value)
 	return vector_add(&enc->memory, value);
 }
 
-static inline size_t mem_add_double(encoder *const enc, const double value)
+static inline void mem_add_double(encoder *const enc, const double value)
 {
 	item_t buffer[8];
 	const size_t size = item_store_double_for_target(enc->target, value, buffer);
@@ -103,8 +103,6 @@ static inline size_t mem_add_double(encoder *const enc, const double value)
 	{
 		mem_add(enc, buffer[i]);
 	}
-
-	return mem_size(enc) - 1;
 }
 
 static inline int mem_set(encoder *const enc, const size_t index, const item_t value)
