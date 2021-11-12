@@ -34,7 +34,8 @@ typedef struct lexer
 	syntax *sx;								/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
-	size_t location;						/**< */
+	size_t location;						/**< Current location */
+
 	size_t repr;							/**< Pointer to representation of the read identifier */
 	char32_t char_value;					/** Value of the read character literal */
 	int num;								/**< Value of the read integer number */
