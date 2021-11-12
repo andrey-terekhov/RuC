@@ -98,9 +98,9 @@ typedef enum REGISTER
 										which a function should return control */
 } mips_register_t;
 
-// Назначение регистров взято из документации MIPS® Architecture for Programmers 
+// Назначение команд взято из документации MIPS® Architecture for Programmers 
 // Volume II-A: The MIPS32® Instruction 
-// Set Manual
+// Set Manual 2016
 typedef enum INSTRUCTION
 {
 	IC_MIPS_MOVE,					/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
@@ -615,7 +615,7 @@ static void emit_identifier_expression(information *const info, const node *cons
  */
 static void emit_assignment_expression(information *const info, const node *const nd)
 {
-	const binary_t assignment_type = expression_binary_get_operator(nd);
+	const binary_t operator = expression_binary_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
 	const node LHS = expression_binary_get_LHS(nd);
@@ -633,19 +633,19 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
 
-	if (assignment_type != BIN_ASSIGN)
+	if (operator != BIN_ASSIGN)
 	{
 		mips_register_t variable = R_T1;
 
 		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
-		if (info->answer_kind == ACONST && assignment_type != BIN_MUL_ASSIGN && assignment_type != BIN_DIV_ASSIGN
-			&& assignment_type != BIN_REM_ASSIGN)
+		if (info->answer_kind == ACONST && operator != BIN_MUL_ASSIGN && operator != BIN_DIV_ASSIGN
+			&& operator != BIN_REM_ASSIGN)
 		{
 			variable = result;
 
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
-			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable
-				, assignment_type != BIN_SUB_ASSIGN ? info->answer_const : -info->answer_const);
+			to_code_2R_I(info->sx->io, get_instruction(info, operator), result, variable
+				, operator != BIN_SUB_ASSIGN ? info->answer_const : -info->answer_const);
 		}
 		else
 		{
@@ -654,7 +654,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 			{
 				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
 			}
-			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
+			to_code_3R(info->sx->io, get_instruction(info, operator), result, variable, result);
 		}
 
 		info->answer_kind = AREG;
