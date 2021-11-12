@@ -79,6 +79,72 @@ binary_t token_to_binary(const token_t token)
 	}
 }
 
+precedence_t get_operator_precedence(const token_t token)
+{
+	switch (token)
+	{
+		case TK_COMMA:
+			return PREC_COMMA;
+
+		case TK_EQUAL:
+		case TK_STAR_EQUAL:
+		case TK_SLASH_EQUAL:
+		case TK_PERCENT_EQUAL:
+		case TK_PLUS_EQUAL:
+		case TK_MINUS_EQUAL:
+		case TK_LESS_LESS_EQUAL:
+		case TK_GREATER_GREATER_EQUAL:
+		case TK_AMP_EQUAL:
+		case TK_CARET_EQUAL:
+		case TK_PIPE_EQUAL:
+			return PREC_ASSIGNMENT;
+
+		case TK_QUESTION:
+			return PREC_CONDITIONAL;
+
+		case TK_PIPE_PIPE:
+			return PREC_LOGICAL_OR;
+
+		case TK_AMP_AMP:
+			return PREC_LOGICAL_AND;
+
+		case TK_PIPE:
+			return PREC_OR;
+
+		case TK_CARET:
+			return PREC_XOR;
+
+		case TK_AMP:
+			return PREC_AND;
+
+		case TK_EQUAL_EQUAL:
+		case TK_EXCLAIM_EQUAL:
+			return PREC_EQUALITY;
+
+		case TK_GREATER_EQUAL:
+		case TK_LESS_EQUAL:
+		case TK_GREATER:
+		case TK_LESS:
+			return PREC_RELATIONAL;
+
+		case TK_LESS_LESS:
+		case TK_GREATER_GREATER:
+			return PREC_SHIFT;
+
+		case TK_PLUS:
+		case TK_MINUS:
+			return PREC_ADDITIVE;
+
+		case TK_STAR:
+		case TK_SLASH:
+		case TK_PERCENT:
+			return PREC_MULTIPLICATIVE;
+
+		default:
+			return PREC_UNKNOWN;
+	}
+}
+
 bool operation_is_assignment(const binary_t operator)
 {
 	switch (operator)

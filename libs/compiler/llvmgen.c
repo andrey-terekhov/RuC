@@ -2074,72 +2074,19 @@ static void emit_return_statement(information *const info, const node *const nd)
 }
 
 /**
- *	Emit printf statement
+ *	Emit translation unit
  *
  *	@param	info		Encoder
  *	@param	nd			Node in AST
  */
-static void emit_printf_statement(information *const info, const node *const nd)
+static void emit_declaration_statement(information *const info, const node *const nd)
 {
-	const size_t argc = statement_printf_get_argc(nd);
-	item_t args[MAX_PRINTF_ARGS];
-	item_t args_type[MAX_PRINTF_ARGS];
-	answer_t args_kind[MAX_PRINTF_ARGS];
-	item_t args_const[MAX_PRINTF_ARGS];
-	double args_const_double[MAX_PRINTF_ARGS];
-	if (argc > MAX_PRINTF_ARGS)
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
 	{
-		system_error(too_many_arguments);
-		return;
+		const node decl = statement_declaration_get_declarator(nd, i);
+		emit_declaration(info, &decl, true);
 	}
-
-	const node string = statement_printf_get_format_str(nd);
-	const size_t index = expression_literal_get_string(&string);
-	const size_t string_length = strings_length(info->sx, index);
-
-	for (size_t i = 0; i < argc; i++)
-	{
-		info->variable_location = LREG;
-
-		const node arg = statement_printf_get_argument(nd, i);
-		emit_expression(info, &arg);
-		args[i] = info->answer_reg;
-		args_kind[i] = info->answer_kind;
-		args_const[i] = info->answer_const;
-		args_const_double[i] = info->answer_const_double;
-		args_type[i] = expression_get_type(&arg);
-	}
-
-	uni_printf(info->sx->io, " %%.%zu = call i32 (i8*, ...) @printf(i8* getelementptr inbounds "
-		"([%zu x i8], [%zu x i8]* @.str%zu, i32 0, i32 0)"
-		, info->register_num
-		, string_length + 1
-		, string_length + 1
-		, index);
-
-	info->register_num++;
-
-	for (size_t i = 0; i < argc; i++)
-	{
-		uni_printf(info->sx->io, ", ");
-		type_to_io(info, args_type[i]);
-
-		if (args_kind[i] == AREG)
-		{
-			uni_printf(info->sx->io, " signext %%.%" PRIitem, args[i]);
-		}
-		else if (args_kind[i] == ACONST && type_is_integer(info->sx, args_type[i]))
-		{
-			uni_printf(info->sx->io, " %" PRIitem, args_const[i]);
-		}
-		else if (args_kind[i] == ACONST && type_is_floating(args_type[i]))
-		{
-			uni_printf(info->sx->io, " %f", args_const_double[i]);
-		}
-	}
-
-	uni_printf(info->sx->io, ")\n");
-	info->was_printf = true;
 }
 
 /**
@@ -2153,7 +2100,7 @@ static void emit_statement(information *const info, const node *const nd)
 	switch (statement_get_class(nd))
 	{
 		case STMT_DECL:
-			emit_declaration(info, nd, true);
+			emit_declaration_statement(info, nd);
 			return;
 
 		case STMT_LABEL:
@@ -2216,10 +2163,6 @@ static void emit_statement(information *const info, const node *const nd)
 
 		case STMT_RETURN:
 			emit_return_statement(info, nd);
-			return;
-
-		case STMT_PRINTF:
-			emit_printf_statement(info, nd);
 			return;
 
 		// Printid и Getid, которые будут сделаны парсере
