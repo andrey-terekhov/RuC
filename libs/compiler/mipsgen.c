@@ -33,6 +33,19 @@ static const size_t SP_DISPL = 20;						/**< Смещение в стеке дл
 static const size_t RA_DISPL = 16;						/**< Смещение в стеке для сохранения значения регистра R_RA */
 
 
+typedef enum ANSWER
+{
+	AREG,								/**< Ответ находится в регистре */
+	ACONST,								/**< Ответ является константой */
+} answer_t;
+
+typedef enum REQUEST
+{
+	RREG,								/**< Переменная находится в регистре */
+	RREGF,								/**< Переменная находится в регистре или константе */
+	RFREE,								/**< Свободный запрос значения */
+} request_t;
+
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 // TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
 typedef enum REGISTER
@@ -85,13 +98,38 @@ typedef enum REGISTER
 										which a function should return control */
 } mips_register_t;
 
+// Назначение регистров взято из документации MIPS® Architecture for Programmers 
+// Volume II-A: The MIPS32® Instruction 
+// Set Manual
 typedef enum INSTRUCTION
 {
 	IC_MIPS_MOVE,					/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
 	IC_MIPS_LI,						/**< MIPS Pseudo-Instruction. Load a constant into a register */
+
 	IC_MIPS_ADDI,					/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	IC_MIPS_SLL,					/**< To left-shift a word by a fixed number of bits */
+	IC_MIPS_SRA,					/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_MIPS_ANDI,					/**< To do a bitwise logical AND with a constant */
+	IC_MIPS_XORI,					/**< To do a bitwise logical Exclusive OR with a constant */
+	IC_MIPS_ORI,					/**< To do a bitwise logical OR with a constant */
+
+	IC_MIPS_ADD,					/**< To add 32-bit integers. If an overflow occurs, then trap */
+	IC_MIPS_SUB,					/**< To subtract 32-bit integers. If overflow occurs, then trap */
+	IC_MIPS_MUL,					/**< To multiply two words and write the result to a GPR */
+	IC_MIPS_DIV,					/**< DIV performs a signed 32-bit integer division, and places
+										 the 32-bit quotient result in the destination register */
+	IC_MIPS_MOD,					/**< MOD performs a signed 32-bit integer division, and places
+										 the 32-bit remainder result in the destination register.
+										 The remainder result has the same sign as the dividend */
+	IC_MIPS_SLLV,					/**< To left-shift a word by a variable number of bits */
+	IC_MIPS_SRAV,					/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_MIPS_AND,					/**< To do a bitwise logical AND */
+	IC_MIPS_XOR,					/**< To do a bitwise logical Exclusive OR */
+	IC_MIPS_OR,						/**< To do a bitwise logical OR */
+
 	IC_MIPS_SW,						/**< To store a word to memory */
 	IC_MIPS_LW,						/**< To load a word from memory as a signed value */
+
 	IC_MIPS_JR,						/**< To execute a branch to an instruction address in a register */
 	IC_MIPS_JAL,					/**< To execute a procedure call within the current 256MB-aligned region */
 	IC_MIPS_J,						/**< To branch within the current 256 MB-aligned region */
@@ -113,6 +151,11 @@ typedef struct information
 	item_t main_label;					/**< Метка функции main */
 
 	mips_register_t request_reg;		/**< Регистр на запрос */
+	request_t request_kind;				/**< Вид запроса */
+
+	item_t answer_reg;					/**< Регистр с ответом */
+	item_t answer_const;				/**< Константа с ответом */
+	answer_t answer_kind;				/**< Вид ответа */
 
 	size_t max_displ;					/**< Максимальное смещение */
 	hash displacements;					/**< Хеш таблица с информацией о расположении идентификаторов:
@@ -122,8 +165,71 @@ typedef struct information
 } information;
 
 
+static void emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
 
+
+static mips_instruction_t get_instruction(information *const info, const item_t operation_type)
+{
+	switch (operation_type)
+	{
+		case BIN_ADD_ASSIGN:
+		case BIN_ADD:
+			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_ADD;
+
+		case BIN_SUB_ASSIGN:
+		case BIN_SUB:
+			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_SUB;
+
+		case BIN_MUL_ASSIGN:
+		case BIN_MUL:
+			return IC_MIPS_MUL;
+
+		case BIN_DIV_ASSIGN:
+		case BIN_DIV:
+			return IC_MIPS_DIV;
+
+		case BIN_REM_ASSIGN:
+		case BIN_REM:
+			return IC_MIPS_MOD;
+
+		case BIN_SHL_ASSIGN:
+		case BIN_SHL:
+			return info->answer_kind == ACONST ? IC_MIPS_SLL : IC_MIPS_SLLV;
+
+		case BIN_SHR_ASSIGN:
+		case BIN_SHR:
+			return info->answer_kind == ACONST ? IC_MIPS_SRA : IC_MIPS_SRAV;
+
+		case BIN_AND_ASSIGN:
+		case BIN_AND:
+			return info->answer_kind == ACONST ? IC_MIPS_ANDI : IC_MIPS_AND;
+
+		case BIN_XOR_ASSIGN:
+		case BIN_XOR:
+			return info->answer_kind == ACONST ? IC_MIPS_XORI : IC_MIPS_XOR;
+
+		case BIN_OR_ASSIGN:
+		case BIN_OR:
+			return info->answer_kind == ACONST ? IC_MIPS_ORI : IC_MIPS_OR;
+
+		// case BIN_EQ:
+		// 	break;
+		// case BIN_NE:
+		// 	break;
+		// case BIN_LT:
+		// 	break;
+		// case BIN_GT:
+		// 	break;
+		// case BIN_LE:
+		// 	break;
+		// case BIN_GE:
+		// 	break;
+
+		default:
+			return IC_MIPS_ADDI;
+	}
+}
 
 static void mips_register_to_io(universal_io *const io, const mips_register_t reg)
 {
@@ -245,15 +351,64 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_LI:
 			uni_printf(io, "li");
 			break;
+
 		case IC_MIPS_ADDI:
 			uni_printf(io, "addi");
 			break;
+		case IC_MIPS_SLL:
+			uni_printf(io, "sll");
+			break;
+		case IC_MIPS_SRA:
+			uni_printf(io, "sra");
+			break;
+		case IC_MIPS_ANDI:
+			uni_printf(io, "andi");
+			break;
+		case IC_MIPS_XORI:
+			uni_printf(io, "xori");
+			break;
+		case IC_MIPS_ORI:
+			uni_printf(io, "ori");
+			break;
+
+		case IC_MIPS_ADD:
+			uni_printf(io, "add");
+			break;
+		case IC_MIPS_SUB:
+			uni_printf(io, "sub");
+			break;
+		case IC_MIPS_MUL:
+			uni_printf(io, "mul");
+			break;
+		case IC_MIPS_DIV:
+			uni_printf(io, "div");
+			break;
+		case IC_MIPS_MOD:
+			uni_printf(io, "mod");
+			break;
+		case IC_MIPS_SLLV:
+			uni_printf(io, "sllv");
+			break;
+		case IC_MIPS_SRAV:
+			uni_printf(io, "srav");
+			break;
+		case IC_MIPS_AND:
+			uni_printf(io, "and");
+			break;
+		case IC_MIPS_XOR:
+			uni_printf(io, "xor");
+			break;
+		case IC_MIPS_OR:
+			uni_printf(io, "or");
+			break;
+
 		case IC_MIPS_SW:
 			uni_printf(io, "sw");
 			break;
 		case IC_MIPS_LW:
 			uni_printf(io, "lw");
 			break;
+
 		case IC_MIPS_JR:
 			uni_printf(io, "jr");
 			break;
@@ -310,6 +465,21 @@ static void to_code_2R_I(universal_io *const io, const mips_instruction_t instru
 	uni_printf(io, ", ");
 	mips_register_to_io(io, snd_reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg, imm
+static void to_code_3R(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t fst_reg, const mips_register_t snd_reg, const mips_register_t thd_reg)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	mips_register_to_io(io, fst_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, snd_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, thd_reg);
+	uni_printf(io, "\n");
 }
 
 // Вид инструкции:	instr	fst_reg, imm(snd_reg)
@@ -395,7 +565,18 @@ static void emit_literal_expression(information *const info, const node *const n
 	{
 		const int num = expression_literal_get_integer(nd);
 
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, info->request_reg, R_ZERO, num);
+		if (info->request_kind == RREG)
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, info->request_reg, R_ZERO, num);
+
+			info->answer_kind = AREG;
+			info->answer_reg = info->request_reg;
+		}
+		else
+		{
+			info->answer_kind = ACONST;
+			info->answer_const = num;
+		}
 	}
 }
 
@@ -415,9 +596,129 @@ static void emit_identifier_expression(information *const info, const node *cons
 	{
 		// TODO: глобальные переменные
 		// TODO: тип float
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -value_displ, R_SP);
+		if (info->request_kind == RREG || info->request_kind == RREGF)
+		{
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -value_displ, R_SP);
+
+			info->answer_kind = AREG;
+			info->answer_reg = info->request_reg;
+		}
 	}
 	// TODO: регистровые переменные
+}
+
+/**
+ *	Emit assignment expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_assignment_expression(information *const info, const node *const nd)
+{
+	const binary_t assignment_type = expression_binary_get_operator(nd);
+	const item_t operation_type = expression_get_type(nd);
+
+	const node LHS = expression_binary_get_LHS(nd);
+
+	// TODO: обработать случай, когда слева вырезка или выборка
+	const size_t id = expression_identifier_get_id(&LHS);
+	// TODO: обработать случай регистровых переменных
+	// TODO: обработать случай глобальных переменных
+	const size_t displ = (size_t)hash_get(&info->displacements, id, 1);
+
+	info->request_kind = RREGF;
+	info->request_reg = R_T0;
+	const node RHS = expression_binary_get_RHS(nd);
+	emit_expression(info, &RHS);
+
+	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
+
+	if (assignment_type != BIN_ASSIGN)
+	{
+		mips_register_t variable = R_T1;
+
+		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
+		if (info->answer_kind == ACONST && assignment_type != BIN_MUL_ASSIGN && assignment_type != BIN_DIV_ASSIGN
+			&& assignment_type != BIN_REM_ASSIGN)
+		{
+			variable = result;
+
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+			to_code_2R_I(info->sx->io, get_instruction(info, assignment_type), result, variable
+				, assignment_type != BIN_SUB_ASSIGN ? info->answer_const : -info->answer_const);
+		}
+		else
+		{
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+			if (info->answer_kind == ACONST)
+			{
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
+			}
+			to_code_3R(info->sx->io, get_instruction(info, assignment_type), result, variable, result);
+		}
+
+		info->answer_kind = AREG;
+	}
+
+	if (info->answer_kind == ACONST && type_is_integer(info->sx, operation_type)) // ACONST и операция =
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
+	}
+
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -(item_t)displ, R_SP);
+
+	info->answer_kind = AREG;
+	info->answer_reg = result;
+}
+
+/**
+ *	Emit binary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_binary_expression(information *const info, const node *const nd)
+{
+	const binary_t operator = expression_binary_get_operator(nd);
+	if (operation_is_assignment(operator))
+	{
+		emit_assignment_expression(info, nd);
+		return;
+	}
+
+	switch (operator)
+	{
+		case BIN_MUL:
+		case BIN_DIV:
+		case BIN_REM:
+		case BIN_ADD:
+		case BIN_SUB:
+		case BIN_SHL:
+		case BIN_SHR:
+		case BIN_AND:
+		case BIN_XOR:
+		case BIN_OR:
+			// emit_integral_expression(info, nd, AREG);
+			return;
+
+		case BIN_LT:
+		case BIN_GT:
+		case BIN_LE:
+		case BIN_GE:
+		case BIN_EQ:
+		case BIN_NE:
+			// emit_integral_expression(info, nd, ALOGIC);
+			return;
+
+		// TODO: протестировать и при необходимости реализовать случай, когда && и || есть в арифметических выражениях
+		case BIN_LOG_OR:
+		case BIN_LOG_AND:
+			return;
+
+		default:
+			// TODO: оставшиеся бинарные операторы
+			return;
+	}
 }
 
 /**
@@ -459,7 +760,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_BINARY:
-			// emit_binary_expression(info, nd);
+			emit_binary_expression(info, nd);
 			return;
 
 		default:
@@ -505,6 +806,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (has_init)
 		{
+			info->request_kind = RREG;
 			info->request_reg = R_T0;
 
 			// TODO: тип char
@@ -512,6 +814,9 @@ static void emit_variable_declaration(information *const info, const node *const
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
 			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
+
+			info->answer_kind = AREG;
+			info->answer_reg = info->request_reg;
 		}
 	}
 }
