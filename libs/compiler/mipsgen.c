@@ -622,7 +622,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: обработать случай, когда слева вырезка или выборка
 	const size_t id = expression_identifier_get_id(&LHS);
 	// TODO: обработать случай регистровых и глобальных переменных
-	const item_t displ = (size_t)hash_get(&info->displacements, id, 1);
+	const item_t displ = hash_get(&info->displacements, id, 1);
 
 	info->request_kind = RQ_REG_CONST;
 	info->request_reg = R_T0;
