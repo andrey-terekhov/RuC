@@ -35,15 +35,15 @@ static const size_t RA_DISPL = 16;						/**< Смещение в стеке дл
 
 typedef enum ANSWER
 {
-	AREG,								/**< Ответ находится в регистре */
-	ACONST,								/**< Ответ является константой */
+	A_REG,								/**< Ответ находится в регистре */
+	A_CONST,							/**< Ответ является константой */
 } answer_t;
 
 typedef enum REQUEST
 {
-	RREG,								/**< Переменная находится в регистре */
-	RREGF,								/**< Переменная находится в регистре или константе */
-	RFREE,								/**< Свободный запрос значения */
+	RQ_REG,								/**< Переменная находится в регистре */
+	RQ_REG_CONST,						/**< Переменная находится в регистре или константе */
+	RQ_FREE,							/**< Свободный запрос значения */
 } request_t;
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -175,11 +175,11 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 	{
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_ADD;
+			return info->answer_kind == A_CONST ? IC_MIPS_ADDI : IC_MIPS_ADD;
 
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-			return info->answer_kind == ACONST ? IC_MIPS_ADDI : IC_MIPS_SUB;
+			return info->answer_kind == A_CONST ? IC_MIPS_ADDI : IC_MIPS_SUB;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
@@ -195,23 +195,23 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
-			return info->answer_kind == ACONST ? IC_MIPS_SLL : IC_MIPS_SLLV;
+			return info->answer_kind == A_CONST ? IC_MIPS_SLL : IC_MIPS_SLLV;
 
 		case BIN_SHR_ASSIGN:
 		case BIN_SHR:
-			return info->answer_kind == ACONST ? IC_MIPS_SRA : IC_MIPS_SRAV;
+			return info->answer_kind == A_CONST ? IC_MIPS_SRA : IC_MIPS_SRAV;
 
 		case BIN_AND_ASSIGN:
 		case BIN_AND:
-			return info->answer_kind == ACONST ? IC_MIPS_ANDI : IC_MIPS_AND;
+			return info->answer_kind == A_CONST ? IC_MIPS_ANDI : IC_MIPS_AND;
 
 		case BIN_XOR_ASSIGN:
 		case BIN_XOR:
-			return info->answer_kind == ACONST ? IC_MIPS_XORI : IC_MIPS_XOR;
+			return info->answer_kind == A_CONST ? IC_MIPS_XORI : IC_MIPS_XOR;
 
 		case BIN_OR_ASSIGN:
 		case BIN_OR:
-			return info->answer_kind == ACONST ? IC_MIPS_ORI : IC_MIPS_OR;
+			return info->answer_kind == A_CONST ? IC_MIPS_ORI : IC_MIPS_OR;
 
 		// case BIN_EQ:
 		// 	break;
@@ -565,16 +565,16 @@ static void emit_literal_expression(information *const info, const node *const n
 	{
 		const int num = expression_literal_get_integer(nd);
 
-		if (info->request_kind == RREG)
+		if (info->request_kind == RQ_REG)
 		{
 			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, info->request_reg, R_ZERO, num);
 
-			info->answer_kind = AREG;
+			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
 		}
 		else
 		{
-			info->answer_kind = ACONST;
+			info->answer_kind = A_CONST;
 			info->answer_const = num;
 		}
 	}
@@ -594,13 +594,12 @@ static void emit_identifier_expression(information *const info, const node *cons
 
 	if (is_on_stack)
 	{
-		// TODO: глобальные переменные
-		// TODO: тип float
-		if (info->request_kind == RREG || info->request_kind == RREGF)
+		// TODO: глобальные переменные и тип float
+		if (info->request_kind == RQ_REG || info->request_kind == RQ_REG_CONST)
 		{
 			to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -value_displ, R_SP);
 
-			info->answer_kind = AREG;
+			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
 		}
 	}
@@ -622,52 +621,51 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	// TODO: обработать случай, когда слева вырезка или выборка
 	const size_t id = expression_identifier_get_id(&LHS);
-	// TODO: обработать случай регистровых переменных
-	// TODO: обработать случай глобальных переменных
-	const size_t displ = (size_t)hash_get(&info->displacements, id, 1);
+	// TODO: обработать случай регистровых и глобальных переменных
+	const item_t displ = (size_t)hash_get(&info->displacements, id, 1);
 
-	info->request_kind = RREGF;
+	info->request_kind = RQ_REG_CONST;
 	info->request_reg = R_T0;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
-	const mips_register_t result = info->answer_kind == AREG ? info->answer_reg : R_T0;
+	const mips_register_t result = info->answer_kind == A_REG ? info->answer_reg : R_T0;
 
 	if (operator != BIN_ASSIGN)
 	{
 		mips_register_t variable = R_T1;
 
 		// Операции, для которых есть команды, работающие с константами, благодаря чему их можно сделать оптимальнее
-		if (info->answer_kind == ACONST && operator != BIN_MUL_ASSIGN && operator != BIN_DIV_ASSIGN
+		if (info->answer_kind == A_CONST && operator != BIN_MUL_ASSIGN && operator != BIN_DIV_ASSIGN
 			&& operator != BIN_REM_ASSIGN)
 		{
 			variable = result;
 
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -displ, R_SP);
 			to_code_2R_I(info->sx->io, get_instruction(info, operator), result, variable
 				, operator != BIN_SUB_ASSIGN ? info->answer_const : -info->answer_const);
 		}
 		else
 		{
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -(item_t)displ, R_SP);
-			if (info->answer_kind == ACONST)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, variable, -displ, R_SP);
+			if (info->answer_kind == A_CONST)
 			{
 				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
 			}
 			to_code_3R(info->sx->io, get_instruction(info, operator), result, variable, result);
 		}
 
-		info->answer_kind = AREG;
+		info->answer_kind = A_REG;
 	}
 
-	if (info->answer_kind == ACONST && type_is_integer(info->sx, operation_type)) // ACONST и операция =
+	if (info->answer_kind == A_CONST && type_is_integer(info->sx, operation_type)) // A_CONST и операция =
 	{
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, info->answer_const);
 	}
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -(item_t)displ, R_SP);
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -displ, R_SP);
 
-	info->answer_kind = AREG;
+	info->answer_kind = A_REG;
 	info->answer_reg = result;
 }
 
@@ -698,7 +696,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_AND:
 		case BIN_XOR:
 		case BIN_OR:
-			// emit_integral_expression(info, nd, AREG);
+			// emit_integral_expression(info, nd, A_REG);
 			return;
 
 		case BIN_LT:
@@ -806,7 +804,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (has_init)
 		{
-			info->request_kind = RREG;
+			info->request_kind = RQ_REG;
 			info->request_reg = R_T0;
 
 			// TODO: тип char
@@ -815,7 +813,7 @@ static void emit_variable_declaration(information *const info, const node *const
 			emit_expression(info, &initializer);
 			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
 
-			info->answer_kind = AREG;
+			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
 		}
 	}
