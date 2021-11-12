@@ -334,6 +334,9 @@ static inline void parser_skip_short_comment(parser *const prs)
 static void parser_skip_long_comment(parser *const prs)
 {
 	parser_print(prs);
+	strings_clear(&prs->code);
+	prs->code = strings_create(AVERAGE_LINE_SIZE);
+
 	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
 	const size_t line = prs->line;							// Номер строки с началом комментария
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
