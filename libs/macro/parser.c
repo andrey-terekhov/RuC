@@ -823,6 +823,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	prs->in = in;
 	parser_comment(prs);
+	parser_print(prs);
+	
+	strings_clear(&prs->code);
+	prs->code = strings_create(AVERAGE_LINE_SIZE);
 
 	char32_t cur = U'\0';
 	parser_preprocess_code(prs, cur, 0);
