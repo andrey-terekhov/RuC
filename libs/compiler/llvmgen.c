@@ -1440,22 +1440,102 @@ static void emit_expression(information *const info, const node *const nd)
 /**
  *	Emit initialization of lvalue
  *
+ *	@param	info			Encoder
+ *	@param	nd				Node in AST
+ *	@param	id				Identifier of target lvalue
+ *	@param	arr_type		Array type of target lvalue
+ *	@param	cur_dimension	Current dimension of slice
+ *	@param	prev_slice		Register of previous slice, if it exists
+ *	@param	is_local		Is array local or global
+ */
+static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type
+	, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
+{
+	const size_t N = expression_list_get_size(nd);
+	const item_t type = array_get_type(info, arr_type);
+
+	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
+	for (size_t i = 0; i < N; i++)
+	{
+		info->answer_const = (item_t)i;
+		info->answer_kind = ACONST;
+		const size_t slice_reg = (size_t)info->register_num;
+		if (is_local)
+		{
+			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
+		}
+
+		info->variable_location = LFREE;
+		const node initializer = expression_list_get_subexpr(nd, i);
+
+		// последнее измерение
+		if (cur_dimension == 0)
+		{
+			emit_expression(info, &initializer);
+
+			if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, slice_reg, type, true, false, is_local);
+			}
+			// константа типа int
+			else if (type_is_integer(info->sx, type))
+			{
+				if (is_local)
+				{
+					to_code_store_const_i32(info, info->answer_const, slice_reg, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != N - 1 ? ", " : "], align 4\n");
+				}
+			}
+			// константа типа double
+			else
+			{
+				if (is_local)
+				{
+					to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
+				}
+			}
+		}
+		else
+		{
+			emit_one_dimension_initialization(info, &initializer, id, arr_type, cur_dimension - 1
+				, (item_t)slice_reg, true);
+		}
+	}
+}
+
+/**
+ *	Emit initialization of lvalue
+ *
  *	@param	info		Encoder
  *	@param	nd			Node in AST
  *	@param	id			Identifier of target lvalue
- *	@param	elem_type	Element type of target lvalue
+ *	@param	arr_type	Array type of target lvalue
  */
-static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t elem_type)
+static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
+		const size_t dimensions = array_get_dim(info, arr_type);
 		const size_t N = expression_list_get_size(nd);
 
 		const size_t index = hash_get_index(&info->arrays, id);
-		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
-		const item_t type = array_get_type(info, elem_type);
+		node list_expression = *nd;
+		for (size_t i = 0; i < dimensions; i++)
+		{
+			hash_set_by_index(&info->arrays, index, 1 + i, (item_t)expression_list_get_size(&list_expression));
+			list_expression = expression_list_get_subexpr(&list_expression, 0);
+		}
+
+		const item_t type = array_get_type(info, arr_type);
 		const item_t is_local = ident_is_local(info->sx, (size_t)id);
 
 		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
@@ -1471,43 +1551,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 			uni_printf(info->sx->io, "] [");
 		}
 
-		// TODO: тут пока инициализация константами, нужно реализовать более общий случай
-		for (size_t i = 0; i < N; i++)
-		{
-			info->variable_location = LFREE;
-			const node initializer = expression_list_get_subexpr(nd, i);
-			emit_expression(info, &initializer);
-			const item_t value_int = info->answer_const;
-			info->answer_const = (item_t)i;
-
-			if (is_local)
-			{
-				to_code_slice(info, id, 0, 0, type, true);
-			}
-
-			if (type_is_integer(info->sx, type))
-			{
-				if (is_local)
-				{
-					to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "i32 %" PRIitem "%s", value_int, i != N - 1 ? ", " : "], align 4\n");
-				}
-			}
-			else
-			{
-				if (is_local)
-				{
-					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
-				}
-			}
-		}
+		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
 }
 
