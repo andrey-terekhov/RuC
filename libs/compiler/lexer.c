@@ -46,7 +46,7 @@ static inline bool recovery_status(const workspace *const ws)
 /**
  *	Emit an error from lexer
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  *	@param	num			Error code
  */
 static void lexer_error(lexer *const lxr, error_t num, ...)
@@ -68,9 +68,9 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
 /**
  *	Scan next character from io
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  *
- *	@return	Read character
+ *	@return	Scanned character
  */
 static inline char32_t scan(lexer *const lxr)
 {
@@ -81,7 +81,7 @@ static inline char32_t scan(lexer *const lxr)
 /**
  *	Peek next character from io
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  *
  *	@return	Peeked character
  */
@@ -96,7 +96,7 @@ static inline char32_t lookahead(lexer *const lxr)
 /**
  *	Skip over a series of whitespace characters
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  */
 static inline void skip_whitespace(lexer *const lxr)
 {
@@ -110,7 +110,7 @@ static inline void skip_whitespace(lexer *const lxr)
 /**
  *	Skip until we find the newline character that terminates the comment
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  */
 static inline void skip_line_comment(lexer *const lxr)
 {
@@ -123,7 +123,7 @@ static inline void skip_line_comment(lexer *const lxr)
 /**
  *	Skip until we find '*' and '/' that terminates the comment
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  */
 static inline void skip_block_comment(lexer *const lxr)
 {
@@ -134,17 +134,19 @@ static inline void skip_block_comment(lexer *const lxr)
 			lexer_error(lxr, unterminated_block_comment);
 			return;
 		}
+
 		scan(lxr);
 	}
+
 	scan(lxr);
 }
 
 /**
- *	Lex identifier or keyword [C99 6.4.1 & 6.4.2]
+ *	Lex identifier or keyword
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer 
  *
- *	@return	keyword number on keyword, @c identifier on identifier
+ *	@return	Keyword token on keyword, @c TK_IDENTIFIER on identifier
  */
 static token_t lex_identifier_or_keyword(lexer *const lxr)
 {
@@ -163,27 +165,27 @@ static token_t lex_identifier_or_keyword(lexer *const lxr)
 }
 
 /**
- *	Lex numeric constant [C99 6.4.4.1 & 6.4.4.2]
+ *	Lex numeric literal
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  *
- *	@return	@c int_constant on integer, @c float_constant on floating point
+ *	@return	@c TK_INT_LITERAL on integer literal, @c TK_FLOAT_LITERAL on floating point literal
  */
-static token_t lex_numeric_constant(lexer *const lxr)
+static token_t lex_numeric_literal(lexer *const lxr)
 {
-	int num_int = 0;
-	double num_double = 0.0;
+	int64_t int_value = 0;
+	double float_value = 0.0;
 	bool is_integer = true;
 	bool is_out_of_range = false;
 
 	while (utf8_is_digit(lxr->character))
 	{
-		num_int = num_int * 10 + (lxr->character - '0');
-		num_double = num_double * 10 + (lxr->character - '0');
+		int_value = int_value * 10 + utf8_to_digit(lxr->character);
+		float_value = float_value * 10 + utf8_to_digit(lxr->character);
 		scan(lxr);
 	}
 
-	if (num_double > (double)INT_MAX)
+	if (float_value > (double)INT_MAX)
 	{
 		is_out_of_range = true;
 		is_integer = false;
@@ -195,7 +197,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		double position_mult = 0.1;
 		while (utf8_is_digit(scan(lxr)))
 		{
-			num_double += (lxr->character - '0') * position_mult;
+			float_value += utf8_to_digit(lxr->character) * position_mult;
 			position_mult *= 0.1;
 		}
 	}
@@ -220,12 +222,12 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
-			return TK_FLOAT_CONST;
+			return TK_FLOAT_LITERAL;
 		}
 
 		while (utf8_is_digit(lxr->character))
 		{
-			power = power * 10 + (lxr->character - '0');
+			power = power * 10 + utf8_to_digit(lxr->character);
 			scan(lxr);
 		}
 
@@ -233,25 +235,26 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		{
 			for (int i = 1; i <= power; i++)
 			{
-				num_int *= 10;
+				int_value *= 10;
 			}
 		}
-		num_double *= pow(10.0, sign * power);
+
+		float_value *= pow(10.0, sign * power);
 	}
 
 	if (is_integer)
 	{
-		lxr->num = num_int;
-		return TK_INT_CONST;
+		lxr->num = int_value;
+		return TK_INT_LITERAL;
 	}
 	else
 	{
-		lxr->num_double = num_double;
+		lxr->num_double = float_value;
 		if (is_out_of_range)
 		{
 			warning(lxr->sx->io, too_long_int);
 		}
-		return TK_FLOAT_CONST;
+		return TK_FLOAT_LITERAL;
 	}
 }
 
@@ -290,20 +293,20 @@ static inline char32_t get_next_string_elem(lexer *const lxr)
 }
 
 /**
- *	Lex character constant [C99 6.4.4.4]
- *	@note Lexes the remainder of a character constant after apostrophe
+ *	Lex character literal
+ *	@note Lexes the remainder of a character literal after apostrophe
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer
  *
- *	@return	@c char_constant
+ *	@return	@c TK_CHAR_LITERAL
  */
-static token_t lex_char_constant(lexer *const lxr)
+static token_t lex_char_literal(lexer *const lxr)
 {
 	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
 		lxr->char_value = 0;
-		return TK_CHAR_CONST;
+		return TK_CHAR_LITERAL;
 	}
 
 	lxr->char_value = get_next_string_elem(lxr);
@@ -316,16 +319,16 @@ static token_t lex_char_constant(lexer *const lxr)
 	{
 		lexer_error(lxr, expected_apost_after_char_const);
 	}
-	return TK_CHAR_CONST;
+	return TK_CHAR_LITERAL;
 }
 
 /**
- *	Lex string literal [C99 6.4.5]
+ *	Lex string literal
  *	@note	Lexes the remainder of a string literal after quote mark
  *
- *	@param	lxr			Lexer structure
+ *	@param	lxr			Lexer 
  *
- *	@return	@c string_literal
+ *	@return	@c TK_STRING_LITERAL
  */
 static token_t lex_string_literal(lexer *const lxr)
 {
@@ -346,11 +349,12 @@ static token_t lex_string_literal(lexer *const lxr)
 		{
 			lexer_error(lxr, missing_terminating_quote_char);
 		}
+
 		skip_whitespace(lxr);
 	}
 
 	lxr->num_string = string_add(lxr->sx, &lxr->lexstr);
-	return TK_STRING;
+	return TK_STRING_LITERAL;
 }
 
 
@@ -367,7 +371,6 @@ lexer lexer_create(const workspace *const ws, syntax *const sx)
 {
 	lexer lxr;
 	lxr.sx = sx;
-	lxr.repr = 0;
 
 	lxr.is_recovery_disabled = recovery_status(ws);
 
@@ -402,8 +405,7 @@ token_t lex(lexer *const lxr)
 		default:
 			if (utf8_is_letter(lxr->character) || lxr->character == '#')
 			{
-				// Keywords [C99 6.4.1]
-				// Identifiers [C99 6.4.2]
+				// Keywords and identifiers
 				return lex_identifier_or_keyword(lxr);
 			}
 			else
@@ -414,21 +416,18 @@ token_t lex(lexer *const lxr)
 				return lex(lxr);
 			}
 
-		// Integer Constants [C99 6.4.4.1]
-		// Floating Constants [C99 6.4.4.2]
+		// Integer and floating literals
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-			return lex_numeric_constant(lxr);
+			return lex_numeric_literal(lxr);
 
-		// Character Constants [C99 6.4.4.4]
-		case '\'':
-			return lex_char_constant(lxr);
+		case '\'':	// Character literals
+			return lex_char_literal(lxr);
 
-		// String Literals [C99 6.4.5]
-		case '\"':
+		case '\"':	// String literals
 			return lex_string_literal(lxr);
 
-		// Punctuators [C99 6.4.6]
+		// Punctuators
 		case '?':
 			scan(lxr);
 			return TK_QUESTION;

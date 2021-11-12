@@ -86,13 +86,6 @@ typedef struct syntax
 	bool was_error;				/**< Set, if was error */
 } syntax;
 
-/** Source location */
-typedef struct location
-{
-	size_t begin;
-	size_t end;
-} location;
-
 /** Scope */
 typedef struct scope
 {

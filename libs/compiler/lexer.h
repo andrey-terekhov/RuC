@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include "errors.h"
 #include "syntax.h"
-#include "tokens.h"
+#include "token.h"
 #include "uniio.h"
 #include "workspace.h"
 
@@ -34,12 +34,6 @@ typedef struct lexer
 	syntax *sx;								/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
-	size_t location;						/**< */
-	size_t repr;							/**< Pointer to representation of the read identifier */
-	char32_t char_value;					/** Value of the read character literal */
-	int num;								/**< Value of the read integer number */
-	double num_double;						/**< Value of the read double number */
-	size_t num_string;						/**< Index of string literal in strings vector */
 
 	vector lexstr;							/**< Representation of the read string literal */
 
