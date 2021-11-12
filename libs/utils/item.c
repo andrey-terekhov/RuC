@@ -273,20 +273,21 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 	}
 
 	const size_t shift = item_get_shift(size);
-	uint64_t mask = item_get_mask(shift);
+	const uint64_t mask = item_get_mask(shift);
 	const uint64_t sign = status == item_int64 || status == item_int32
 							|| status == item_int16 || status == item_int8
 								? (~mask >> 1) & mask  : 0;
 
+	uint64_t temp = mask;
 	for (size_t i = 0; i < size; i++)
 	{
-		stg[i] = (item_t)((value & mask) >> (shift * i));
+		stg[i] = (item_t)((value & temp) >> (shift * i));
 		if (stg[i] & sign)
 		{
 			stg[i] |= ~mask;
 		}
 
-		mask <<= shift;
+		temp <<= shift;
 	}
 
 	return size;
