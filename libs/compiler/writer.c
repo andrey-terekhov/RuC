@@ -2068,7 +2068,7 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			return sprintf(buffer, "int");
 
 		case TYPE_UNDEFINED:
-			return sprintf(buffer, "UNDEFINED");
+			return sprintf(buffer, "undefined type");
 
 		case TYPE_FUNCTION:
 		{
