@@ -576,6 +576,8 @@ static int parser_include(parser *const prs, char32_t cur)
 	size_t temp = prs->position;
 	prs->position = position;
 	int ret = parser_preprocess_file(prs, path, ch);
+	parser_add_char(prs, U'\n');
+	parser_comment(prs);
 
 	// Пропуск символов за путем
 	prs->position = temp;
