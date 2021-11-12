@@ -234,10 +234,8 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
  *
  *	@param	prs			Структура парсера
  *	@param	cur			Текущий символ
- *
- *	@return	Текущий символ
  */
-static char32_t parser_skip_line(parser *const prs, char32_t cur)
+static void parser_skip_line(parser *const prs, char32_t cur)
 {
 	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
@@ -245,8 +243,7 @@ static char32_t parser_skip_line(parser *const prs, char32_t cur)
 		cur = uni_scan_char(prs->in);
 	}
 
-	//uni_unscan_char(prs->in, cur);	// Необходимо, чтобы следующий символ был переносом строки или концом файла
-	return cur;
+	uni_unscan_char(prs->in, cur);	// Необходимо, чтобы следующий символ был переносом строки или концом файла
 }
 
 /**
@@ -323,12 +320,10 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
  *	Пропустить символы до конца комментария ('\n', '\r' или EOF)
  *
  *	@param	prs			Структура парсера
- *
- *	@return	Текущий символ
  */
-static inline char32_t parser_skip_short_comment(parser *const prs)
+static inline void parser_skip_short_comment(parser *const prs)
 {
-	return parser_skip_line(prs, U'/');
+	parser_skip_line(prs, U'/');
 }
 
 /**
@@ -415,10 +410,8 @@ static inline bool parser_check_kw_position(parser *const prs, const bool was_le
  *
  *	@param	prs			Структура парсера
  *	@param	cur			Текущий символ
- *
- *	@return	Текущий символ
  */
-static char32_t parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
+static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 {
 	while (utf8_is_separator(cur) || cur == U'/')
 	{
@@ -428,13 +421,15 @@ static char32_t parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 			switch (next)
 			{
 				case U'/':
-					return parser_skip_short_comment(prs);
+					parser_skip_short_comment(prs);
+					return;
 				case U'*':
 					parser_skip_long_comment(prs);
 					break;
 				default:
 					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
-					return parser_skip_line(prs, cur);
+					parser_skip_line(prs, cur);
+					return;
 			}
 		}
 
@@ -447,7 +442,7 @@ static char32_t parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 		parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
 	}
 
-	return parser_skip_line(prs, cur);
+	parser_skip_line(prs, cur);
 }
 
 /**
@@ -537,7 +532,6 @@ static int parser_include(parser *const prs, char32_t cur)
 					prs->position = position;
 					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 					parser_skip_line(prs, cur);
-					parser_next_line(prs);
 					return prs->was_error ? -1 : 0;
 			}
 		}
@@ -551,7 +545,6 @@ static int parser_include(parser *const prs, char32_t cur)
 		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs, cur);
-		parser_next_line(prs);
 		return prs->was_error ? -1 : 0;
 	}
 
@@ -576,7 +569,6 @@ static int parser_include(parser *const prs, char32_t cur)
 		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs, cur);
-		parser_next_line(prs);
 		return prs->was_error ? -1 : 0;
 	}
 
@@ -587,19 +579,7 @@ static int parser_include(parser *const prs, char32_t cur)
 
 	// Пропуск символов за путем
 	prs->position = temp;
-	cur = parser_find_unexpected_lexeme(prs, uni_scan_char(prs->in));
-	switch (cur)
-	{
-		case U'\r':
-			cur = uni_scan_char(prs->in);
-		case U'\n':
-			parser_add_char(prs, U'\n');
-			parser_print(prs);
-			break;
-		case (char32_t)EOF:
-			parser_print(prs);
-			break;
-	}
+	parser_find_unexpected_lexeme(prs, uni_scan_char(prs->in));
 
 	return ret;
 }
@@ -634,7 +614,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_UNDEF:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_warning(prs, 100);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -642,14 +622,14 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_MACRO:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_warning(prs, 100);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
 			case KW_ENDM:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_error(prs, PARSER_UNEXPECTED_ENDM);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -659,7 +639,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_IF:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_warning(prs, 100);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -668,7 +648,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_ENDIF:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_error(prs, PARSER_UNEXPECTED_ENDIF);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -678,7 +658,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_WHILE:
 				parser_check_kw_position(prs, was_lexeme);
 				parser_macro_warning(prs, 100);
-				cur = parser_skip_line(prs, cur);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
@@ -687,7 +667,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 				if (mode != KW_WHILE)
 				{
 					parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
-					cur = parser_skip_line(prs, cur);
+					parser_skip_line(prs, cur);
 				}
 				was_lexeme = false;
 				was_star = false;
@@ -710,7 +690,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						{
 							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
 						}
-						cur = parser_skip_line(prs, cur);
+						parser_skip_line(prs, cur);
 						break;
 					}
 
@@ -730,7 +710,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 					case U'#':
 						was_star = false;
 						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
-						cur = parser_skip_line(prs, cur);
+						parser_skip_line(prs, cur);
 						break;
 
 					case U'\'':
@@ -739,11 +719,24 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						parser_skip_string(prs, cur);
 						break;
 
+					case U'\r':
+							cur = uni_scan_char(prs->in);
+						case U'\n':
+							was_star = false;
+							was_lexeme = false;
+							parser_add_char(prs, U'\n');
+							parser_print(prs);
+							break;
+						case (char32_t)EOF:
+							parser_print(prs);
+							break;
+
 					case U'/':
 						if (prev == U'/')
 						{
+							was_star = false;
 							strings_remove(&prs->code);	// '/' был записан в буффер
-							cur = parser_skip_short_comment(prs);
+							parser_skip_short_comment(prs);
 						}
 						else
 						{
@@ -779,24 +772,6 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							parser_add_char(prs, cur);
 						}
 						break;
-				}
-
-				if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
-				{
-					switch (cur)
-					{
-						case U'\r':
-							cur = uni_scan_char(prs->in);
-						case U'\n':
-							was_star = false;
-							was_lexeme = false;
-							parser_add_char(prs, U'\n');
-							parser_print(prs);
-							break;
-						case (char32_t)EOF:
-							parser_print(prs);
-							break;
-					}
 				}
 		}
 	}
