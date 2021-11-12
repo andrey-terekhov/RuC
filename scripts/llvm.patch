@@ -1,0 +1,43 @@
+--- test.sh	2021-11-12 18:33:00.053501038 +0300
++++ llvm.sh	2021-11-12 18:33:08.921823652 +0300
+@@ -3,7 +3,8 @@
+ init()
+ {
+ 	exit_code=1
+-	vm_exec=export.txt
++	vm_exec=export.ll
++	llvm_exec=export
+ 
+ 	vm_release=master
+ 	output_time=0.0
+@@ -176,9 +177,9 @@
+ 		compiler_debug=$compiler
+ 	fi
+ 
+-	if [[ -z $ignore ]] ; then
+-		build_vm
+-	fi
++	# if [[ -z $ignore ]] ; then
++	# 	build_vm
++	# fi
+ }
+ 
+ run()
+@@ -259,7 +260,7 @@
+ {
+ 	if [[ $path == $dir_exec/* ]] ; then
+ 		action="execution"
+-		run $interpreter $interpreter_debug $vm_exec
++		run $llvm_exec $llvm_exec
+ 
+ 		case $? in
+ 			0)
+@@ -350,7 +351,7 @@
+ {
+ 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
+ 		action="compiling"
+-		run $compiler $compiler_debug $sources -o $vm_exec
++		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang $vm_exec -o $llvm_exec &>$log
+ 
+ 		case $? in
+ 			0)
