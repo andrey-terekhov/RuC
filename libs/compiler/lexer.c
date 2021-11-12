@@ -74,8 +74,7 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
  */
 static inline char32_t scan(lexer *const lxr)
 {
-	lxr->character = uni_scan_char(lxr->sx->io);
-	return lxr->character;
+	return lxr->character = uni_scan_char(lxr->sx->io);
 }
 
 /**
@@ -121,7 +120,7 @@ static inline void skip_line_comment(lexer *const lxr)
 }
 
 /**
- *	Skip until we find '*' and '/' that terminates the comment
+ *	Skip until we find '*' and '/' that terminate the comment
  *
  *	@param	lxr			Lexer
  */
@@ -146,21 +145,24 @@ static inline void skip_block_comment(lexer *const lxr)
  *
  *	@param	lxr			Lexer 
  *
- *	@return	Keyword token on keyword, @c TK_IDENTIFIER on identifier
+ *	@return	Keyword token on keyword, identifier token on identifier
  */
-static token_t lex_identifier_or_keyword(lexer *const lxr)
+static token lex_identifier_or_keyword(lexer *const lxr)
 {
+	const size_t loc_begin = in_get_position(lxr->sx->io);
 	uni_unscan_char(lxr->sx->io, lxr->character);
+
 	const size_t repr = repr_reserve(lxr->sx, &lxr->character);
+	const size_t loc_end = in_get_position(lxr->sx->io);
+
 	const item_t ref = repr_get_reference(lxr->sx, repr);
 	if (ref >= 0 && repr != ITEM_MAX)
 	{
-		lxr->repr = repr;
-		return TK_IDENTIFIER;
+		return token_identifier((location){ loc_begin, loc_end }, repr);
 	}
 	else
 	{
-		return (token_t)ref;
+		return token_keyword((location){ loc_begin, loc_end }, (token_t)ref);
 	}
 }
 
@@ -169,14 +171,15 @@ static token_t lex_identifier_or_keyword(lexer *const lxr)
  *
  *	@param	lxr			Lexer
  *
- *	@return	@c TK_INT_LITERAL on integer literal, @c TK_FLOAT_LITERAL on floating point literal
+ *	@return	Numeric literal token
  */
-static token_t lex_numeric_literal(lexer *const lxr)
+static token lex_numeric_literal(lexer *const lxr)
 {
 	int64_t int_value = 0;
 	double float_value = 0.0;
 	bool is_integer = true;
 	bool is_out_of_range = false;
+	const size_t loc_begin = in_get_position(lxr->sx->io);
 
 	while (utf8_is_digit(lxr->character))
 	{
@@ -222,7 +225,8 @@ static token_t lex_numeric_literal(lexer *const lxr)
 		if (!utf8_is_digit(lxr->character))
 		{
 			lexer_error(lxr, must_be_digit_after_exp);
-			return TK_FLOAT_LITERAL;
+			const size_t loc_end = in_get_position(lxr->sx->io);
+			return token_float_literal((location){ loc_begin, loc_end }, DBL_MAX);
 		}
 
 		while (utf8_is_digit(lxr->character))
@@ -242,19 +246,19 @@ static token_t lex_numeric_literal(lexer *const lxr)
 		float_value *= pow(10.0, sign * power);
 	}
 
+	const size_t loc_end = in_get_position(lxr->sx->io);
 	if (is_integer)
 	{
-		lxr->num = int_value;
-		return TK_INT_LITERAL;
+		return token_int_literal((location){ loc_begin, loc_end }, int_value);
 	}
 	else
 	{
-		lxr->num_double = float_value;
 		if (is_out_of_range)
 		{
 			warning(lxr->sx->io, too_long_int);
 		}
-		return TK_FLOAT_LITERAL;
+
+		return token_float_literal((location){ loc_begin, loc_end }, float_value);
 	}
 }
 
@@ -298,18 +302,21 @@ static inline char32_t get_next_string_elem(lexer *const lxr)
  *
  *	@param	lxr			Lexer
  *
- *	@return	@c TK_CHAR_LITERAL
+ *	@return	Character literal token
  */
-static token_t lex_char_literal(lexer *const lxr)
+static token lex_char_literal(lexer *const lxr)
 {
+	const size_t loc_begin = in_get_position(lxr->sx->io);
+
 	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character);
-		lxr->char_value = 0;
-		return TK_CHAR_LITERAL;
+
+		const size_t loc_end = in_get_position(lxr->sx->io);
+		return token_char_literal((location){ loc_begin, loc_end }, WCHAR_MAX);
 	}
 
-	lxr->char_value = get_next_string_elem(lxr);
+	const char32_t value = get_next_string_elem(lxr);
 
 	if (scan(lxr) == '\'')
 	{
@@ -319,7 +326,9 @@ static token_t lex_char_literal(lexer *const lxr)
 	{
 		lexer_error(lxr, expected_apost_after_char_const);
 	}
-	return TK_CHAR_LITERAL;
+
+	const size_t loc_end = in_get_position(lxr->sx->io);
+	return token_char_literal((location){ loc_begin, loc_end }, value);
 }
 
 /**
@@ -328,11 +337,13 @@ static token_t lex_char_literal(lexer *const lxr)
  *
  *	@param	lxr			Lexer 
  *
- *	@return	@c TK_STRING_LITERAL
+ *	@return	String literal token
  */
-static token_t lex_string_literal(lexer *const lxr)
+static token lex_string_literal(lexer *const lxr)
 {
+	const size_t loc_begin = in_get_position(lxr->sx->io);
 	vector_resize(&lxr->lexstr, 0);
+
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
@@ -353,8 +364,9 @@ static token_t lex_string_literal(lexer *const lxr)
 		skip_whitespace(lxr);
 	}
 
-	lxr->num_string = string_add(lxr->sx, &lxr->lexstr);
-	return TK_STRING_LITERAL;
+	const size_t loc_end = in_get_position(lxr->sx->io);
+	const size_t index = string_add(lxr->sx, &lxr->lexstr);
+	return token_string_literal((location){ loc_begin, loc_end }, index);
 }
 
 
@@ -373,7 +385,6 @@ lexer lexer_create(const workspace *const ws, syntax *const sx)
 	lxr.sx = sx;
 
 	lxr.is_recovery_disabled = recovery_status(ws);
-
 	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
 
 	scan(&lxr);
@@ -387,20 +398,21 @@ int lexer_clear(lexer *const lxr)
 }
 
 
-token_t lex(lexer *const lxr)
+token lex(lexer *const lxr)
 {
 	if (lxr == NULL)
 	{
-		return TK_EOF;
+		return token_eof();
 	}
 
 	skip_whitespace(lxr);
-	lxr->location = in_get_position(lxr->sx->io);
+	const size_t loc_begin = in_get_position(lxr->sx->io);
+	token_t punctuator_kind;
 
 	switch (lxr->character)
 	{
 		case (char32_t)EOF:
-			return TK_EOF;
+			return token_eof();
 
 		default:
 			if (utf8_is_letter(lxr->character) || lxr->character == '#')
@@ -430,177 +442,211 @@ token_t lex(lexer *const lxr)
 		// Punctuators
 		case '?':
 			scan(lxr);
-			return TK_QUESTION;
+			punctuator_kind = TK_QUESTION;
+			break;
 
 		case '[':
 			scan(lxr);
-			return TK_L_SQUARE;
+			punctuator_kind = TK_L_SQUARE;
+			break;
 
 		case ']':
 			scan(lxr);
-			return TK_R_SQUARE;
+			punctuator_kind = TK_R_SQUARE;
+			break;
 
 		case '(':
 			scan(lxr);
-			return TK_L_PAREN;
+			punctuator_kind = TK_L_PAREN;
+			break;
 
 		case ')':
 			scan(lxr);
-			return TK_R_PAREN;
+			punctuator_kind = TK_R_PAREN;
+			break;
 
 		case '{':
 			scan(lxr);
-			return TK_L_BRACE;
+			punctuator_kind = TK_L_BRACE;
+			break;
 
 		case '}':
 			scan(lxr);
-			return TK_R_BRACE;
+			punctuator_kind = TK_R_BRACE;
+			break;
 
 		case '~':
 			scan(lxr);
-			return TK_TILDE;
+			punctuator_kind = TK_TILDE;
+			break;
 
 		case ':':
 			scan(lxr);
-			return TK_COLON;
+			punctuator_kind = TK_COLON;
+			break;
 
 		case ';':
 			scan(lxr);
-			return TK_SEMICOLON;
+			punctuator_kind = TK_SEMICOLON;
+			break;
 
 		case ',':
 			scan(lxr);
-			return TK_COMMA;
+			punctuator_kind = TK_COMMA;
+			break;
 
 		case '.':
 			if (utf8_is_digit(lookahead(lxr)))
 			{
-				return lex_numeric_constant(lxr);
+				return lex_numeric_literal(lxr);
 			}
 			else
 			{
 				scan(lxr);
-				return TK_PERIOD;
+				punctuator_kind = TK_PERIOD;
+				break;
 			}
 
 		case '*':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return TK_STAR_EQUAL;
+				punctuator_kind = TK_STAR_EQUAL;
 			}
 			else
 			{
-				return TK_STAR;
+				punctuator_kind = TK_STAR;
 			}
+			break;
 
 		case '!':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return TK_EXCLAIM_EQUAL;
+				punctuator_kind = TK_EXCLAIM_EQUAL;
 			}
 			else
 			{
-				return TK_EXCLAIM;
+				punctuator_kind = TK_EXCLAIM;
 			}
+			break;
 
 		case '%':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return TK_PERCENT_EQUAL;
+				punctuator_kind = TK_PERCENT_EQUAL;
 			}
 			else
 			{
-				return TK_PERCENT;
+				punctuator_kind = TK_PERCENT;
 			}
+			break;
 
 		case '^':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return TK_CARET_EQUAL;
+				punctuator_kind = TK_CARET_EQUAL;
 			}
 			else
 			{
-				return TK_CARET;
+				punctuator_kind = TK_CARET;
 			}
+			break;
 
 		case '=':
 			if (scan(lxr) == '=')
 			{
 				scan(lxr);
-				return TK_EQUAL_EQUAL;
+				punctuator_kind = TK_EQUAL_EQUAL;
 			}
 			else
 			{
-				return TK_EQUAL;
+				punctuator_kind = TK_EQUAL;
 			}
+			break;
 
 		case '+':
 			switch (scan(lxr))
 			{
 				case '=':
 					scan(lxr);
-					return TK_PLUS_EQUAL;
+					punctuator_kind = TK_PLUS_EQUAL;
+					break;
 
 				case '+':
 					scan(lxr);
-					return TK_PLUS_PLUS;
+					punctuator_kind = TK_PLUS_PLUS;
+					break;
 
 				default:
-					return TK_PLUS;
+					punctuator_kind = TK_PLUS;
+					break;
 			}
+			break;
 
 		case '|':
 			switch (scan(lxr))
 			{
 				case '=':
 					scan(lxr);
-					return TK_PIPE_EQUAL;
+					punctuator_kind = TK_PIPE_EQUAL;
+					break;
 
 				case '|':
 					scan(lxr);
-					return TK_PIPE_PIPE;
+					punctuator_kind = TK_PIPE_PIPE;
+					break;
 
 				default:
-					return TK_PIPE;
+					punctuator_kind = TK_PIPE;
+					break;
 			}
+			break;
 
 		case '&':
 			switch (scan(lxr))
 			{
 				case '=':
 					scan(lxr);
-					return TK_AMP_EQUAL;
+					punctuator_kind = TK_AMP_EQUAL;
+					break;
 
 				case '&':
 					scan(lxr);
-					return TK_AMP_AMP;
+					punctuator_kind = TK_AMP_AMP;
+					break;
 
 				default:
-					return TK_AMP;
+					punctuator_kind = TK_AMP;
+					break;
 			}
+			break;
 
 		case '-':
 			switch (scan(lxr))
 			{
 				case '=':
 					scan(lxr);
-					return TK_MINUS_EQUAL;
+					punctuator_kind = TK_MINUS_EQUAL;
+					break;
 
 				case '-':
 					scan(lxr);
-					return TK_MINUS_MINUS;
+					punctuator_kind = TK_MINUS_MINUS;
+					break;
 
 				case '>':
 					scan(lxr);
-					return TK_ARROW;
+					punctuator_kind = TK_ARROW;
+					break;
 
 				default:
-					return TK_MINUS;
+					punctuator_kind = TK_MINUS;
+					break;
 			}
+			break;
 
 		case '<':
 			switch (scan(lxr))
@@ -609,20 +655,24 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return TK_LESS_LESS_EQUAL;
+						punctuator_kind = TK_LESS_LESS_EQUAL;
 					}
 					else
 					{
-						return TK_LESS_LESS;
+						punctuator_kind = TK_LESS_LESS;
 					}
+					break;
 
 				case '=':
 					scan(lxr);
-					return TK_LESS_EQUAL;
+					punctuator_kind = TK_LESS_EQUAL;
+					break;
 
 				default:
-					return TK_LESS;
+					punctuator_kind = TK_LESS;
+					break;
 			}
+			break;
 
 		case '>':
 			switch (scan(lxr))
@@ -631,49 +681,58 @@ token_t lex(lexer *const lxr)
 					if (scan(lxr) == '=')
 					{
 						scan(lxr);
-						return TK_GREATER_GREATER_EQUAL;
+						punctuator_kind = TK_GREATER_GREATER_EQUAL;
 					}
 					else
 					{
-						return TK_GREATER_GREATER;
+						punctuator_kind = TK_GREATER_GREATER;
 					}
+					break;
 
 				case '=':
 					scan(lxr);
-					return TK_GREATER_EQUAL;
+					punctuator_kind = TK_GREATER_EQUAL;
+					break;
 
 				default:
-					return TK_GREATER;
+					punctuator_kind = TK_GREATER;
+					break;
 			}
+			break;
 
 		case '/':
 			switch (scan(lxr))
 			{
 				case '=':
 					scan(lxr);
-					return TK_SLASH_EQUAL;
+					punctuator_kind = TK_SLASH_EQUAL;
+					break;
 
-				// Comments [C99 6.4.9]
-				case '/':
+				case '/':	// Line comment
 					skip_line_comment(lxr);
 					return lex(lxr);
 
-				case '*':
+				case '*':	// Block comment
 					skip_block_comment(lxr);
 					return lex(lxr);
 
 				default:
-					return TK_SLASH;
+					punctuator_kind = TK_SLASH;
+					break;
 			}
+			break;
 	}
+
+	const size_t loc_end = in_get_position(lxr->sx->io);
+	return token_punctuator((location){ loc_begin, loc_end }, punctuator_kind);
 }
 
 token_t peek(lexer *const lxr)
 {
 	const size_t position = in_get_position(lxr->sx->io);
 	const char32_t character = lxr->character;
-	const token_t peek_token = lex(lxr);
+	const token peek_token = lex(lxr);
 	lxr->character = character;
 	in_set_position(lxr->sx->io, position);
-	return peek_token;
+	return token_get_kind(&peek_token);
 }

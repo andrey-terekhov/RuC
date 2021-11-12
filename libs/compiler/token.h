@@ -120,7 +120,7 @@ typedef struct location
 	size_t end;
 } location;
 
-/** Token */
+/** Token representation */
 typedef struct token
 {
 	location loc;					/**< Source location */
@@ -136,54 +136,212 @@ typedef struct token
 } token;
 
 
+/**
+ *	Get token location
+ *
+ *	@param	tk			Token
+ *
+ *	@return	Token location
+ */
 inline location token_get_location(const token *const tk)
 {
 	return tk->loc;
 }
 
+/**
+ *	Get token kind
+ *
+ *	@param	tk			Token
+ *
+ *	@return	Token kind
+ */
 inline token_t token_get_kind(const token *const tk)
 {
 	return tk->kind;
 }
 
+/**	Check if token is of @c kind kind */
+inline bool token_is(const token *const tk, const token_t kind)
+{
+	return tk->kind == kind;
+}
+
+/**	Check if token is not of @c kind kind */
+inline bool token_is_not(const token *const tk, const token_t kind)
+{
+	return tk->kind != kind;
+}
+
+
+/**
+ *	Create identifier token
+ *
+ *	@param	loc			Token location
+ *	@param	name		Identifier name
+ *
+ *	@return	Identifier token
+ */
+inline token token_identifier(const location loc, const size_t name)
+{
+	return (token){ .loc = loc, .kind = TK_IDENTIFIER, .data.ident_repr = name };
+}
+
+/**
+ *	Get identifier name from identifier token
+ *
+ *	@param	tk			Identifier token
+ *
+ *	@return	Identifier name
+ */
 inline size_t token_get_ident_name(const token *const tk)
 {
 	assert(tk->kind == TK_IDENTIFIER);
 	return tk->data.ident_repr;
 }
 
+
+/**
+ *	Create character literal token
+ *
+ *	@param	loc			Token location
+ *	@param	value		Literal value
+ *
+ *	@return	Character literal token
+ */
+inline token token_char_literal(const location loc, const char32_t value)
+{
+	return (token){ .loc = loc, .kind = TK_CHAR_LITERAL, .data.char_value = value };
+}
+
+/**
+ *	Get value from character literal token
+ *
+ *	@param	tk			Character literal token
+ *
+ *	@return	Value
+ */
 inline char32_t token_get_char_value(const token *const tk)
 {
 	assert(tk->kind == TK_CHAR_LITERAL);
 	return tk->data.char_value;
 }
 
+
+/**
+ *	Create integer literal token
+ *
+ *	@param	loc			Token location
+ *	@param	value		Literal value
+ *
+ *	@return	Integer literal token
+ */
+inline token token_int_literal(const location loc, const int64_t value)
+{
+	return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
+}
+
+/**
+ *	Get value from integer literal token
+ *
+ *	@param	tk			Integer literal token
+ *
+ *	@return	Value
+ */
 inline int64_t token_get_int_value(const token *const tk)
 {
 	assert(tk->kind == TK_INT_LITERAL);
 	return tk->data.int_value;
 }
 
+
+/**
+ *	Create floating literal token
+ *
+ *	@param	loc			Token location
+ *	@param	value		Literal value
+ *
+ *	@return	Floating literal token
+ */
+inline token token_float_literal(const location loc, const double value)
+{
+	return (token){ .loc = loc, .kind = TK_FLOAT_LITERAL, .data.float_value = value };
+}
+
+/**
+ *	Get value from floating literal token
+ *
+ *	@param	tk			Floating literal token
+ *
+ *	@return	Value
+ */
 inline double token_get_float_value(const token *const tk)
 {
 	assert(tk->kind == TK_FLOAT_LITERAL);
 	return tk->data.float_value;
 }
 
+
+/**
+ *	Create string literal token
+ *
+ *	@param	loc			Token location
+ *	@param	string_num	String index from string table
+ *
+ *	@return	String literal token
+ */
+inline token token_string_literal(const location loc, const size_t string_num)
+{
+	return (token){ .loc = loc, .kind = TK_STRING_LITERAL, .data.string_num = string_num };
+}
+
+/**
+ *	Get string index from string literal token
+ *
+ *	@param	tk			String literal token
+ *
+ *	@return	Value
+ */
 inline size_t token_get_string_num(const token *const tk)
 {
 	assert(tk->kind == TK_STRING_LITERAL);
 	return tk->data.string_num;
 }
 
-inline bool token_is(const token *const tk, const token_t kind)
+
+/**
+ *	Create end-of-file token
+ *
+ *	@return	EOF token
+ */
+inline token token_eof()
 {
-	return tk->kind == kind;
+	return (token){ .loc = { SIZE_MAX, SIZE_MAX }, .kind = TK_EOF };
 }
 
-inline bool token_is_not(const token *const tk, const token_t kind)
+/**
+ *	Create keyword token
+ *
+ *	@param	loc			Token location
+ *	@param	kind		Keyword kind
+ *
+ *	@return	Keyword token
+ */
+inline token token_keyword(const location loc, const token_t kind)
 {
-	return tk->kind != kind;
+	return (token){ .loc = loc, .kind = kind };
+}
+
+/**
+ *	Create punctuator token
+ *
+ *	@param	loc			Token location
+ *	@param	kind		Punctuator kind
+ *
+ *	@return	Punctuator token
+ */
+inline token token_punctuator(const location loc, const token_t kind)
+{
+	return (token){ .loc = loc, .kind = kind };
 }
 
 #ifdef __cplusplus

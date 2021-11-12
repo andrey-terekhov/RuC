@@ -34,7 +34,6 @@ typedef struct lexer
 	syntax *sx;								/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
-
 	vector lexstr;							/**< Representation of the read string literal */
 
 	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
@@ -57,14 +56,14 @@ lexer lexer_create(const workspace *const ws, syntax *const sx);
  *
  *	@return	Lexed token
  */
-token_t lex(lexer *const lxr);
+token lex(lexer *const lxr);
 
 /**
  *	Peek next token from io
  *
  *	@param	lxr		Lexer
  *
- *	@return	Peeked token
+ *	@return	Peeked token kind
  */
 token_t peek(lexer *const lxr);
 

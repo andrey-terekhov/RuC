@@ -131,7 +131,7 @@ static void parser_error(parser *const prs, error_t num, ...)
 static location consume_token(parser *const prs)
 {
 	location prev_loc = token_get_location(&prs->tk);
-	lex(&prs->lxr, &prs->tk);
+	prs->tk = lex(&prs->lxr);
 	return prev_loc;
 }
 
@@ -1098,6 +1098,7 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 {
 	const size_t name = token_get_ident_name(&prs->tk);
 	const size_t id = to_identab(prs, name, 0, type);
+	consume_token(prs);
 
 	prs->flag_empty_bounds = 1;
 	prs->array_dimensions = 0;
@@ -1135,9 +1136,8 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	}
 }
 
-static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number)
+static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number, size_t name)
 {
-	const size_t name = token_get_ident_name(&prs->tk);
 	const size_t old_id = to_identab(prs, name, 0, type);
 	ident_set_displ(prs->sx, old_id, number);
 }
@@ -1159,13 +1159,15 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 
 	do
 	{
-		if (!try_consume_token(prs, TK_IDENTIFIER))
+		if (token_is_not(&prs->tk, TK_IDENTIFIER))
 		{
 			parser_error(prs, wait_ident_after_comma_in_enum);
 			skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
 		}
 
-		const size_t repr = token_get_ident_name(&prs->tk);
+		const size_t name = token_get_ident_name(&prs->tk);
+		consume_token(prs);
+
 		if (token_is(&prs->tk, TK_EQUAL))
 		{
 
@@ -1182,15 +1184,15 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 				parser_error(prs, not_const_int_expr);
 				return TYPE_UNDEFINED;
 			}
-			parse_init_enum_field_declarator(prs, -type, field_value++);
+			parse_init_enum_field_declarator(prs, -type, field_value++, name);
 		}
 		else
 		{
-			parse_init_enum_field_declarator(prs, -type, field_value++);
+			parse_init_enum_field_declarator(prs, -type, field_value++, name);
 		}
 
 		local_modetab[local_md++] = field_value - 1;
-		local_modetab[local_md++] = (item_t)repr;
+		local_modetab[local_md++] = (item_t)name;
 		if (token_is(&prs->tk, TK_R_BRACE))
 		{
 			continue;
@@ -1287,7 +1289,7 @@ static node parse_declaration(parser *const prs)
 			type = type_pointer(prs->sx, group_type);
 		}
 
-		if (try_consume_token(prs, TK_IDENTIFIER))
+		if (token_is(&prs->tk, TK_IDENTIFIER))
 		{
 			parse_init_declarator(prs, &parent, type);
 		}
@@ -1949,10 +1951,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			bool was_ident = false;
 			if (level)
 			{
-				if (try_consume_token(prs, TK_IDENTIFIER))
+				if (token_is(&prs->tk, TK_IDENTIFIER))
 				{
 					was_ident = true;
 					func_add(prs->sx, (item_t)token_get_ident_name(&prs->tk));
+					consume_token(prs);
 				}
 			}
 			else if (token_is(&prs->tk, TK_IDENTIFIER))
@@ -1993,7 +1996,6 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				{
 					if (level)
 					{
-						consume_token(prs);
 						if (!was_ident)
 						{
 							was_ident = true;
@@ -2004,6 +2006,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 							return TYPE_UNDEFINED;
 						}
 						func_add(prs->sx, -((item_t)token_get_ident_name(&prs->tk)));
+						consume_token(prs);
 					}
 					else
 					{
@@ -2067,13 +2070,13 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 }
 
 /**
- *	Parse function body
+ *	Parse function definition
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  *	@param	function_id	Function number
  */
-static void parse_function_body(parser *const prs, node *const parent, const size_t function_id)
+static void parse_function_definition(parser *const prs, node *const parent, const size_t function_id)
 {
 	if (function_id == SIZE_MAX)
 	{
@@ -2156,21 +2159,19 @@ static void parse_function_body(parser *const prs, node *const parent, const siz
 }
 
 /**
- *	Parse function definition [C99 6.9.1]
- *
- *	function-definition:
- *		declarator declaration-list[opt] compound-statement
+ *	Parse function declaration
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
  *	@param	type		Return type of a function
  */
-static void parse_function_definition(parser *const prs, node *const parent, const item_t type)
+static void parse_function_declaration(parser *const prs, node *const parent, const item_t type)
 {
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = token_get_ident_name(&prs->tk);
 
-	consume_token(prs);
+	consume_token(prs);	// TK_IDENTIFIER
+	consume_token(prs);	// TK_L_PAREN
 	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
 
 	if (prs->func_def == 0 && token_is(&prs->tk, TK_L_BRACE))
@@ -2188,7 +2189,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	{
 		if (prs->func_def == 1)
 		{
-			parse_function_body(prs, parent, function_id);
+			parse_function_definition(prs, parent, function_id);
 		}
 		else
 		{
@@ -2230,11 +2231,11 @@ static void parse_external_definition(parser *const prs, node *const root)
 			type = type_pointer(prs->sx, group_type);
 		}
 
-		if (try_consume_token(prs, TK_IDENTIFIER))
+		if (token_is(&prs->tk, TK_IDENTIFIER))
 		{
-			if (token_is(&prs->tk, TK_L_PAREN))
+			if (peek_token(prs) == TK_L_PAREN)
 			{
-				parse_function_definition(prs, root, type);
+				parse_function_declaration(prs, root, type);
 			}
 			else if (type_is_void(group_type))
 			{
