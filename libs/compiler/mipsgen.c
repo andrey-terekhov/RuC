@@ -536,18 +536,9 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 }
 
 
-static int size_of(information *const info, const item_t type)
+static inline int size_of(information *const info, const item_t type)
 {
-	if (type_is_integer(info->sx, type))
-	{
-		return 4;
-	}
-	else if (type_is_floating(type))
-	{
-		return 8;
-	}
-
-	return 0;
+	return type_is_integer(info->sx, type) ? 4 : type_is_floating(type) ? 8 : 0;
 }
 
 
@@ -598,8 +589,8 @@ static void emit_literal_expression(information *const info, const node *const n
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
 	const size_t id = expression_identifier_get_id(nd);
-	const bool is_on_stack = (bool)hash_get(&info->displacements, id, 0);
-	const size_t value_displ = (size_t)hash_get(&info->displacements, id, 1);
+	const bool is_on_stack = hash_get(&info->displacements, id, 0) != 0;
+	const item_t value_displ = hash_get(&info->displacements, id, 1);
 
 	if (is_on_stack)
 	{
@@ -607,7 +598,7 @@ static void emit_identifier_expression(information *const info, const node *cons
 		// TODO: тип float
 		if (info->request_kind == RREG || info->request_kind == RREGF)
 		{
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -(item_t)value_displ, R_SP);
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, info->request_reg, -value_displ, R_SP);
 
 			info->answer_kind = AREG;
 			info->answer_reg = info->request_reg;
@@ -851,7 +842,7 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
 	// Создание буфера для тела функции
-	universal_io* old_io = info->sx->io;
+	universal_io *old_io = info->sx->io;
 	universal_io new_io = io_create();
   	out_set_buffer(&new_io, BUFFER_SIZE);
 	info->sx->io = &new_io;
@@ -885,14 +876,14 @@ static void emit_function_definition(information *const info, const node *const 
 	// Выравнивание смещения на 8
 	// info->max_displ = (info->max_displ + 7) * 8 / 8;
 
-	// Выделение на стеке памяти для функции
-	to_code_2R_I(old_io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
-
-	// Запись буфера с телом функции в старый io
-	char* buffer = out_extract_buffer(info->sx->io);
-	uni_printf(old_io, "%s", buffer);
-	free(buffer);
+	// Извлечение буфера с телом функции в старый io
+	char *buffer = out_extract_buffer(info->sx->io);
 	info->sx->io = old_io;
+
+	// Выделение на стеке памяти для тела функции
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
+	uni_printf(info->sx->io, "%s", buffer);
+	free(buffer);
 
 	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
@@ -1184,6 +1175,5 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	postgen(&info);
 
 	hash_clear(&info.displacements);
-	
 	return ret;
 }
