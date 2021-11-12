@@ -70,6 +70,7 @@ typedef struct information
 	item_t label_false;						/**< Метка перехода при false */
 	item_t label_break;						/**< Метка перехода для break */
 	item_t label_continue;					/**< Метка перехода для continue */
+	item_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -1309,6 +1310,82 @@ static void emit_binary_expression(information *const info, const node *const nd
 }
 
 /**
+ *	Emit ternary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_ternary_expression(information *const info, const node *const nd)
+{
+	const item_t old_label_true = info->label_true;
+	const item_t old_label_false = info->label_false;
+	item_t label_if = info->label_num++;
+	item_t label_else = info->label_num++;
+	const item_t label_end = info->label_num++;
+
+	info->label_true = label_if;
+	info->label_false = label_else;
+
+	info->variable_location = LFREE;
+	const node condition = expression_ternary_get_condition(nd);
+	emit_expression(info, &condition);
+
+	check_type_and_branch(info);
+
+	to_code_label(info, label_if);
+
+	info->variable_location = LFREE;
+	const node LHS = expression_ternary_get_LHS(nd);
+	const bool if_is_ternary = expression_get_class(&LHS) == EXPR_TERNARY;
+	const item_t if_type = expression_get_type(&LHS);
+	emit_expression(info, &LHS);
+
+	const answer_t if_answer = info->answer_kind;
+	const item_t if_reg = info->answer_reg;
+	const item_t if_const = info->answer_const;
+
+	if (if_is_ternary)
+	{
+		label_if = info->label_ternary_end;
+	}
+
+	to_code_unconditional_branch(info, label_end);
+	to_code_label(info, label_else);
+
+	info->variable_location = LFREE;
+	const node RHS = expression_ternary_get_RHS(nd);
+	const bool else_is_ternary = expression_get_class(&RHS) == EXPR_TERNARY;
+	const item_t else_type = expression_get_type(&RHS);
+	emit_expression(info, &RHS);
+
+	const answer_t else_answer = info->answer_kind;
+	const item_t else_reg = info->answer_reg;
+	const item_t else_const = info->answer_const;
+
+	if (else_is_ternary)
+	{
+		label_else = info->label_ternary_end;
+	}
+
+	to_code_unconditional_branch(info, label_end);
+	to_code_label(info, label_end);
+
+	uni_printf(info->sx->io, " %%.%zu = phi ", info->register_num);
+	type_to_io(info, if_type == TYPE_FLOATING || else_type == TYPE_FLOATING ? TYPE_FLOATING : TYPE_INTEGER);
+	uni_printf(info->sx->io, " [ %s%" PRIitem ", %%label%" PRIitem " ]", if_answer == AREG ? "%." : ""
+		, if_answer == AREG ? if_reg : if_const, label_if);
+	uni_printf(info->sx->io, ", [ %s%" PRIitem ", %%label%" PRIitem " ]\n", else_answer == AREG ? "%." : ""
+		, else_answer == AREG ? else_reg : else_const, label_else);
+
+	info->answer_kind = AREG;
+	info->answer_reg = info->register_num++;
+
+	info->label_true = old_label_true;
+	info->label_false = old_label_false;
+	info->label_ternary_end = label_end;
+}
+
+/**
  *	Emit expression
  *
  *	@param	info	Encoder
@@ -1348,6 +1425,10 @@ static void emit_expression(information *const info, const node *const nd)
 
 		case EXPR_BINARY:
 			emit_binary_expression(info, nd);
+			return;
+
+		case EXPR_TERNARY:
+			emit_ternary_expression(info, nd);
 			return;
 
 		default:
@@ -2147,9 +2228,12 @@ static int emit_translation_unit(information *const info, const node *const nd)
 	{
 		uni_printf(info->sx->io, "declare double @llvm.fabs.f64(double)\n");
 	}
-	
-	uni_printf(info->sx->io, "!llvm.linker.options = !{!0}\n");
-	uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
+
+
+	#ifdef _MSC_VER
+		uni_printf(info->sx->io, "!llvm.linker.options = !{!0}\n");
+		uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
+	#endif
 
 	return info->sx->was_error;
 }
