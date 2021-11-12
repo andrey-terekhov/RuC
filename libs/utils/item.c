@@ -25,6 +25,24 @@
 #endif
 
 
+#if ITEM > 32
+	static const item_status CURRENT_STATUS = item_uint64;
+#elif ITEM > 16
+	static const item_status CURRENT_STATUS = item_uint32;
+#elif ITEM > 8
+	static const item_status CURRENT_STATUS = item_uint16;
+#elif ITEM >= 0
+	static const item_status CURRENT_STATUS = item_uint8;
+#elif ITEM >= -8
+	static const item_status CURRENT_STATUS = item_int8;
+#elif ITEM >= -16
+	static const item_status CURRENT_STATUS = item_int16;
+#elif ITEM >= -32
+	static const item_status CURRENT_STATUS = item_int32;
+#else
+	static const item_status CURRENT_STATUS = item_int64;
+#endif
+
 static const item_status DEFAULT_STATUS = item_int32;
 
 
@@ -212,9 +230,7 @@ item_t item_get_max(const item_status status)
 
 size_t item_store_double(const double value, item_t *const stg)
 {
-	int64_t temp = 0;
-	memcpy(&temp, &value, sizeof(double));
-	return item_store_int64(temp, stg);
+	return item_store_double_for_target(CURRENT_STATUS, value, stg);
 }
 
 size_t item_store_double_for_target(const item_status status, const double value, item_t *const stg)
@@ -226,15 +242,7 @@ size_t item_store_double_for_target(const item_status status, const double value
 
 double item_restore_double(const item_t *const stg)
 {
-	const int64_t temp = item_restore_int64(stg);
-	if (temp == LLONG_MAX)
-	{
-		return DBL_MAX;
-	}
-
-	double value;
-	memcpy(&value, &temp, sizeof(double));
-	return value;
+	return item_restore_double_for_target(CURRENT_STATUS, stg);
 }
 
 double item_restore_double_for_target(const item_status status, const item_t *const stg)
@@ -253,23 +261,7 @@ double item_restore_double_for_target(const item_status status, const item_t *co
 
 size_t item_store_int64(const int64_t value, item_t *const stg)
 {
-#if ITEM > 32
-	return item_store_int64_for_target(item_uint64, value, stg);
-#elif ITEM > 16
-	return item_store_int64_for_target(item_uint32, value, stg);
-#elif ITEM > 8
-	return item_store_int64_for_target(item_uint16, value, stg);
-#elif ITEM >= 0
-	return item_store_int64_for_target(item_uint8, value, stg);
-#elif ITEM >= -8
-	return item_store_int64_for_target(item_int8, value, stg);
-#elif ITEM >= -16
-	return item_store_int64_for_target(item_int16, value, stg);
-#elif ITEM >= -32
-	return item_store_int64_for_target(item_int32, value, stg);
-#else
-	return item_store_int64_for_target(item_int64, value, stg);
-#endif
+	return item_store_int64_for_target(CURRENT_STATUS, value, stg);
 }
 
 size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg)
@@ -284,11 +276,16 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 	uint64_t mask = item_get_mask(shift);
 	const uint64_t sign = status == item_int64 || status == item_int32
 							|| status == item_int16 || status == item_int8
-								? ~mask : 0;
+								? (~mask >> 1) & mask  : 0;
 
 	for (size_t i = 0; i < size; i++)
 	{
-		stg[i] = (item_t)(((value & mask) >> (shift * i)) | sign);
+		stg[i] = (item_t)((value & mask) >> (shift * i));
+		if (stg[i] & sign)
+		{
+			stg[i] |= ~mask;
+		}
+
 		mask <<= shift;
 	}
 
@@ -297,23 +294,7 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 
 int64_t item_restore_int64(const item_t *const stg)
 {
-#if ITEM > 32
-	return item_restore_int64_for_target(item_uint64, stg);
-#elif ITEM > 16
-	return item_restore_int64_for_target(item_uint32, stg);
-#elif ITEM > 8
-	return item_restore_int64_for_target(item_uint16, stg);
-#elif ITEM >= 0
-	return item_restore_int64_for_target(item_uint8, stg);
-#elif ITEM >= -8
-	return item_restore_int64_for_target(item_int8, stg);
-#elif ITEM >= -16
-	return item_restore_int64_for_target(item_int16, stg);
-#elif ITEM >= -32
-	return item_restore_int64_for_target(item_int32, stg);
-#else
-	return item_restore_int64_for_target(item_int64, stg);
-#endif
+	return item_restore_int64_for_target(CURRENT_STATUS, stg);
 }
 
 int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg)
