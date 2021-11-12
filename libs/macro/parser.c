@@ -81,8 +81,6 @@ static inline void parser_print(parser *const prs)
 	{
 		uni_printf(prs->out, "%s", strings_get(&prs->code, i));
 	}
-
-	parser_next_line(prs);
 }
 
 /**
@@ -291,6 +289,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 				
 				parser_add_char(prs, U'\n');
 				parser_print(prs);
+				parser_next_line(prs);
 				
 				return;
 			}
@@ -314,6 +313,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	}
 
 	parser_print(prs);
+	parser_next_line(prs);
 }
 
 /**
@@ -333,6 +333,7 @@ static inline void parser_skip_short_comment(parser *const prs)
  */
 static void parser_skip_long_comment(parser *const prs)
 {
+	parser_print(prs);
 	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
 	const size_t line = prs->line;							// Номер строки с началом комментария
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
@@ -353,7 +354,7 @@ static void parser_skip_long_comment(parser *const prs)
 			case U'\r':
 				uni_scan_char(prs->in);
 			case U'\n':
-				parser_print(prs);
+				parser_next_line(prs);
 					break;
 
 			case U'/':
@@ -732,6 +733,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							was_lexeme = false;
 							parser_add_char(prs, U'\n');
 							parser_print(prs);
+							parser_next_line(prs);
 							break;
 						case (char32_t)EOF:
 							parser_print(prs);
