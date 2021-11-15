@@ -156,7 +156,7 @@ static token lex_identifier_or_keyword(lexer *const lxr)
 	const size_t loc_end = in_get_position(lxr->sx->io);
 
 	const item_t ref = repr_get_reference(lxr->sx, repr);
-	if (ref >= 0 && repr != ITEM_MAX)
+	if (ref >= 0)
 	{
 		return token_identifier((location){ loc_begin, loc_end }, repr);
 	}
