@@ -1351,7 +1351,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 	info.max_displ = 0;
 	info.next_register = R_T0;
-	info.request_kind = RNOREQUEST;
+	info.request_kind = RQ_NO_REQUEST;
 	info.label_num = 1;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
