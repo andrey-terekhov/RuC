@@ -705,7 +705,10 @@ static void emit_logic_expression(information *const info, const node *const nd)
 
 	if (left_kind == A_REG && right_kind == A_REG)
 	{
+		info->reverse_logic_command = true;
 
+		to_code_3R(info->sx->io, IC_MIPS_SUB, left_reg, left_reg, right_reg);
+		to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
 	}
 	else if (left_kind == A_REG && right_kind == A_CONST)
 	{
@@ -722,6 +725,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 		to_code_R_L(info->sx->io, get_instruction(info, operation), right_reg, L_ELSE, info->label_else);
 	}
 
+	// над этими действиями надо позже подумать, когда будут делаться сложные выражения
 	info->answer_kind = A_REG;
 	info->answer_reg = result;
 	free_register(info);
