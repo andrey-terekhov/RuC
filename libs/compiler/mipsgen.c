@@ -1059,7 +1059,7 @@ static void emit_printf_statement(information *const info, const node *const nd)
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		info->request_kind = RREG;
+		info->request_kind = RQ_REG;
 		// TODO: хорошо бы определённый регистр тоже через функцию выделять
 		info->request_reg = R_A1;
 
