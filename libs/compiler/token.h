@@ -47,7 +47,7 @@ typedef enum TOKEN
 	TK_FOR,							/**< 'for' keyword */
 	TK_GOTO,						/**< 'goto' keyword */
 	TK_IF,							/**< 'if' keyword */
-	TK_INT,							/**< 'int' keyword	*/
+	TK_INT,							/**< 'int' keyword */
 	TK_LONG,						/**< 'long' keyword */
 	TK_NULL,						/**< 'null' keyword */
 	TK_RETURN,						/**< 'return' keyword */
@@ -60,7 +60,7 @@ typedef enum TOKEN
 	// Identifiers
 	TK_IDENTIFIER,					/**< Identifier */
 
-	// Constants
+	// Literals
 	TK_INT_LITERAL,					/**< Integer literal */
 	TK_FLOAT_LITERAL,				/**< Floating literal */
 	TK_CHAR_LITERAL,				/**< Character literal */
