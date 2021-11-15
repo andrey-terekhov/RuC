@@ -134,6 +134,9 @@ typedef enum INSTRUCTION
 	IC_MIPS_JR,						/**< To execute a branch to an instruction address in a register */
 	IC_MIPS_JAL,					/**< To execute a procedure call within the current 256MB-aligned region */
 	IC_MIPS_J,						/**< To branch within the current 256 MB-aligned region */
+
+	IC_MIPS_BLEZ,					/**< Branch on Less Than or Equal to Zero.
+										To test a GPR then do a PC-relative conditional branch */
 } mips_instruction_t;
 
 typedef enum LABEL
@@ -168,7 +171,9 @@ typedef struct information
 
 	mips_register_t next_register;		/**< Следующий регистр для выделения */
 
-	item_t label_num;						/**< Номер метки */
+	item_t label_num;					/**< Номер метки */
+
+	item_t label_else;					/**< Метка перехода на else */
 } information;
 
 
@@ -226,8 +231,8 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		// 	break;
 		// case BIN_LT:
 		// 	break;
-		// case BIN_GT:
-		// 	break;
+		case BIN_GT:
+			return IC_MIPS_BLEZ;
 		// case BIN_LE:
 		// 	break;
 		// case BIN_GE:
@@ -425,6 +430,10 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_J:
 			uni_printf(io, "j");
 			break;
+
+		case IC_MIPS_BLEZ:
+			uni_printf(io, "blez");
+			break;
 	}
 }
 
@@ -541,6 +550,19 @@ static void to_code_L(universal_io *const io, const mips_instruction_t instructi
 	uni_printf(io, "%" PRIitem "\n", label_num);
 }
 
+// Вид инструкции:	instr	reg, label
+static void to_code_R_L(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t reg , const mips_label_t label, const item_t label_num)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	mips_register_to_io(io, reg);
+	uni_printf(io, ", ");
+	mips_label_to_io(io, label);
+	uni_printf(io, "%" PRIitem "\n", label_num);
+}
+
 // Вид инструкции:	label:
 static void to_code_label(universal_io *const io, const mips_label_t label, const item_t label_num)
 {
@@ -628,6 +650,65 @@ static void emit_identifier_expression(information *const info, const node *cons
 		}
 	}
 	// TODO: регистровые переменные
+}
+
+/**
+ *	Emit non-assignment binary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_logic_expression(information *const info, const node *const nd)
+{
+	const binary_t operation = expression_binary_get_operator(nd);
+	bool was_allocate_reg_left = false;
+
+	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+	{
+		info->request_kind = RQ_REG_CONST;
+		info->request_reg = get_register(info);
+		was_allocate_reg_left = true;
+	}
+	const mips_register_t result = info->request_reg;
+	const node LHS = expression_binary_get_LHS(nd);
+	emit_expression(info, &LHS);
+
+	const answer_t left_kind = info->answer_kind;
+	const item_t left_reg = info->answer_kind == A_REG ? info->answer_reg : info->request_reg;
+	// const item_t left_const = info->answer_const;
+
+	info->request_kind = RQ_REG_CONST;
+	info->request_reg = get_register(info);
+	const node RHS = expression_binary_get_RHS(nd);
+	emit_expression(info, &RHS);
+
+	const answer_t right_kind = info->answer_kind;
+	// const item_t right_reg = info->answer_kind == A_REG ? info->answer_reg : info->request_reg;
+	const item_t right_const = info->answer_const;
+
+	if (left_kind == A_REG && right_kind == A_REG)
+	{
+
+	}
+	else if (left_kind == A_REG && right_kind == A_CONST)
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, left_reg, -right_const);
+		to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
+	}
+	else if (left_kind == A_CONST && right_kind == A_REG)
+	{
+
+	}
+
+	info->answer_kind = A_REG;
+	info->answer_reg = result;
+	free_register(info);
+
+	if (was_allocate_reg_left)
+	{
+		free_register(info);
+		info->request_kind = RQ_NO_REQUEST;
+	}
 }
 
 /**
@@ -813,6 +894,8 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_AND:
 		case BIN_XOR:
 		case BIN_OR:
+			emit_integral_expression(info, nd);
+			return;
 
 		case BIN_LT:
 		case BIN_GT:
@@ -820,7 +903,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_GE:
 		case BIN_EQ:
 		case BIN_NE:
-			emit_integral_expression(info, nd);
+			emit_logic_expression(info, nd);
 			return;
 
 		case BIN_LOG_OR:
@@ -1101,6 +1184,8 @@ static void emit_if_statement(information *const info, const node *const nd)
 	const item_t label_else = info->label_num++;
 	const item_t label_end = info->label_num++;
 
+	info->label_else = label_else;
+
 	info->request_kind = RQ_FREE;
 	const node condition = statement_if_get_condition(nd);
 	emit_expression(info, &condition);
@@ -1343,6 +1428,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.next_register = R_T0;
 	info.request_kind = RQ_NO_REQUEST;
 	info.label_num = 1;
+	info.label_else = 1;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
