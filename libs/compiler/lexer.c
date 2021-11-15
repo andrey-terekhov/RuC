@@ -359,7 +359,7 @@ static token lex_numeric_literal(lexer *const lxr)
 			}
 		}
 
-		float_value *= pow(10.0, sign * power);
+		float_value *= pow(10.0, sign * (double)power);
 	}
 
 	// Формируем результат
