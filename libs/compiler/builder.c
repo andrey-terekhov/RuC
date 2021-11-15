@@ -859,8 +859,8 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 	const item_t operand_type = expression_get_type(operand);
 
 	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
-		? (location){ op_loc.begin, node_get_location(operand).end }
-		: (location){ node_get_location(operand).begin, op_loc.end };
+		? (location){ node_get_location(operand).begin, op_loc.end }
+		: (location){ op_loc.begin, node_get_location(operand).end };
 
 	switch (op_kind)
 	{
