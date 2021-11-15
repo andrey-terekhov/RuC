@@ -68,10 +68,6 @@ typedef enum STATEMENT
 	STMT_CONTINUE,		/**< Continue statement */
 	STMT_BREAK,			/**< Break statement */
 	STMT_RETURN,		/**< Return statement */
-	STMT_PRINTF,		/**< Printf statement */
-	STMT_PRINT,			/**< Print statement */
-	STMT_PRINTID,		/**< Printid statement */
-	STMT_GETID,			/**< Getid statement */
 } statement_t;
 
 /** Declaration class */
@@ -93,11 +89,24 @@ inline node node_broken()
 	return node_load(NULL, SIZE_MAX);
 }
 
+/**
+ *	Get node location
+ *
+ *	@param	nd				Node
+ *
+ *	@return	Node location
+ */
+inline location node_get_location(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
+}
+
 
 /**
  *	Get expression class
  *
- *	@param	nd			Expression
+ *	@param	nd				Expression
  *
  *	@return	Expression class
  */
@@ -106,7 +115,7 @@ expression_t expression_get_class(const node *const nd);
 /**
  *	Get expression type
  *
- *	@param	nd			Expression
+ *	@param	nd				Expression
  *
  *	@return	Expression type
  */
@@ -118,7 +127,7 @@ inline item_t expression_get_type(const node *const nd)
 /**
  *	Check if expression is lvalue
  *
- *	@param	nd			Expression
+ *	@param	nd				Expression
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -127,38 +136,23 @@ inline bool expression_is_lvalue(const node *const nd)
 	return node_get_arg(nd, 1) == LVALUE;
 }
 
-/**
- *	Get expression location
- *
- *	@param	nd			Expression
- *
- *	@return	Expression location
- */
-inline location expression_get_location(const node *const nd)
-{
-	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
-}
-
 
 /**
  *	Create new identifier expression
  *
- *	@param	sx			Syntax structure
- *	@param	type		Value type
- *	@param	ctg			Value category
- *	@param	id			Index in identifiers table
- *	@param	loc			Expression location
+ *	@param	context			Context node
+ *	@param	type			Value type
+ *	@param	id				Index in identifiers table
+ *	@param	loc				Identifier location
  *
  *	@return	Identifier expression
  */
-node expression_identifier(syntax *const sx, const item_t type
-	, const category_t ctg, const size_t id, const location loc);
+node expression_identifier(node *const context, const item_t type, const size_t id, const location loc);
 
 /**
  *	Get index in indentifiers table of identifier expression
  *
- *	@param	nd			Identifier expression
+ *	@param	nd				Identifier expression
  *
  *	@return	Index in identifiers table
  */
@@ -167,11 +161,22 @@ inline size_t expression_identifier_get_id(const node *const nd)
 	return node_get_type(nd) == OP_IDENTIFIER ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
 }
 
+/**
+ *	Create new integer literal expression
+ *
+ *	@param	context			Context node
+ *	@param	type			Value type
+ *	@param	value			Literal value
+ *	@param	loc				Literal location
+ *
+ *	@return	Integer literal expression
+ */
+node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc);
 
 /**
  *	Get integer value of literal expression
  *
- *	@param	nd			Literal expression
+ *	@param	nd				Literal expression
  *
  *	@return	Integer value
  */
@@ -180,10 +185,23 @@ inline int expression_literal_get_integer(const node *const nd)
 	return node_get_type(nd) == OP_LITERAL ? (int)node_get_arg(nd, 2) : INT_MAX;
 }
 
+
+/**
+ *	Create new floating literal expression
+ *
+ *	@param	context			Context node
+ *	@param	type			Value type
+ *	@param	value			Literal value
+ *	@param	loc				Literal location
+ *
+ *	@return	Floating literal expression
+ */
+node expression_floating_literal(node *const context, const item_t type, const double value, const location loc);
+
 /**
  *	Get floating value of literal expression
  *
- *	@param	nd			Literal expression
+ *	@param	nd				Literal expression
  *
  *	@return	Floating value
  */
@@ -195,7 +213,7 @@ inline double expression_literal_get_floating(const node *const nd)
 /**
  *	Get string index of literal expression
  *
- *	@param	nd			Literal expression
+ *	@param	nd				Literal expression
  *
  *	@return	String index
  */
@@ -208,10 +226,10 @@ inline size_t expression_literal_get_string(const node *const nd)
 /**
  *	Create new subscript expression
  *
- *	@param	type		Value type
- *	@param	base		Base expression
- *	@param	index		Index expression
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	base			Base expression
+ *	@param	index			Index expression
+ *	@param	loc				Expression location
  *
  *	@return	Subscript expression
  */
@@ -220,7 +238,7 @@ node expression_subscript(const item_t type, node *const base, node *const index
 /**
  *	Get base expression of subscript expression
  *
- *	@param	nd			Subscript expression
+ *	@param	nd				Subscript expression
  *
  *	@return	Base expression
  */
@@ -232,7 +250,7 @@ inline node expression_subscript_get_base(const node *const nd)
 /**
  *	Get index expression of subscript expression
  *
- *	@param	nd			Subscript expression
+ *	@param	nd				Subscript expression
  *
  *	@return	Index expression
  */
@@ -245,10 +263,10 @@ inline node expression_subscript_get_index(const node *const nd)
 /**
  *	Create new call expression
  *
- *	@param	type		Value type
- *	@param	callee		Called expression
- *	@param	args		Arguments of call
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	callee			Called expression
+ *	@param	args			Arguments of call
+ *	@param	loc				Expression location
  *
  *	@return	Call expression
  */
@@ -257,7 +275,7 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
 /**
  *	Get called expression of call expression
  *
- *	@param	nd			Call expression
+ *	@param	nd				Call expression
  *
  *	@return	Called expression
  */
@@ -269,7 +287,7 @@ inline node expression_call_get_callee(const node *const nd)
 /**
  *	Get arguments amount of call expression
  *
- *	@param	nd			Call expression
+ *	@param	nd				Call expression
  *
  *	@return	Arguments amount
  */
@@ -281,8 +299,8 @@ inline size_t expression_call_get_arguments_amount(const node *const nd)
 /**
  *	Get argument of call expression by index
  *
- *	@param	nd			Call expression
- *	@param	index		Argument index
+ *	@param	nd				Call expression
+ *	@param	index			Argument index
  *
  *	@return	Argument
  */
@@ -295,11 +313,11 @@ inline node expression_call_get_argument(const node *const nd, const size_t inde
 /**
  *	Create new member expression
  *
- *	@param	type		Value type
- *	@param	ctg			Value category
- *	@param	index		Member index
- *	@param	is_arrow	Set if operator is '->'
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	ctg				Value category
+ *	@param	index			Member index
+ *	@param	is_arrow		Set if operator is '->'
+ *	@param	loc				Expression location
  *
  *	@return	Member expression
  */
@@ -309,7 +327,7 @@ node expression_member(const item_t type, const category_t ctg
 /**
  *	Get base expression of member expression
  *
- *	@param	nd			Member expression
+ *	@param	nd				Member expression
  *
  *	@return	Base expression
  */
@@ -321,7 +339,7 @@ inline node expression_member_get_base(const node *const nd)
 /**
  *	Get member index of member expression
  *
- *	@param	nd			Member expression
+ *	@param	nd				Member expression
  *
  *	@return	Member index
  */
@@ -333,7 +351,7 @@ inline size_t expression_member_get_member_index(const node *const nd)
 /**
  *	Check if operator of member expression is '->'
  *
- *	@param	nd			Member expression
+ *	@param	nd				Member expression
  *
  *	@return	@c 1 on true, @c on false
  */
@@ -346,10 +364,10 @@ inline bool expression_member_is_arrow(const node *const nd)
 /**
  *	Create new cast expression
  *
- *	@param	target_type	Value target type
- *	@param	source_type	Source type
- *	@param	expr		Operand
- *	@param	loc			Expression location
+ *	@param	target_type		Value target type
+ *	@param	source_type		Source type
+ *	@param	expr			Operand
+ *	@param	loc				Expression location
  *
  *	@return	Cast expression
  */
@@ -358,7 +376,7 @@ node expression_cast(const item_t target_type, const item_t source_type, node *c
 /**
  *	Get source type of cast expression
  *
- *	@param	nd			Cast expression
+ *	@param	nd				Cast expression
  *
  *	@return	Source type
  */
@@ -370,7 +388,7 @@ inline item_t expression_cast_get_source_type(const node *const nd)
 /**
  *	Get operand of cast expression
  *
- *	@param	nd			Cast expression
+ *	@param	nd				Cast expression
  *
  *	@return	Operand
  */
@@ -383,11 +401,11 @@ inline node expression_cast_get_operand(const node *const nd)
 /**
  *	Create new unary expression
  *
- *	@param	type		Value type
- *	@param	ctg			Value category
- *	@param	expr		Operand
- *	@param	op			Operator kind
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	ctg				Value category
+ *	@param	expr			Operand
+ *	@param	op				Operator kind
+ *	@param	loc				Expression location
  *
  *	@return	Unary expression
  */
@@ -396,7 +414,7 @@ node expression_unary(const item_t type, const category_t ctg, node *const expr,
 /**
  *	Get operator of unary expression
  *
- *	@param	nd			Unary expression
+ *	@param	nd				Unary expression
  *
  *	@return	Operator
  */
@@ -408,7 +426,7 @@ inline unary_t expression_unary_get_operator(const node *const nd)
 /**
  *	Get operand of unary expression
  *
- *	@param	nd			Unary expression
+ *	@param	nd				Unary expression
  *
  *	@return	Operand
  */
@@ -421,11 +439,11 @@ inline node expression_unary_get_operand(const node *const nd)
 /**
  *	Create new binary expression
  *
- *	@param	type		Value type
- *	@param	LHS			Left operand
- *	@param	RHS			Right operand
- *	@param	op			Operator kind
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	LHS				Left operand
+ *	@param	RHS				Right operand
+ *	@param	op				Operator kind
+ *	@param	loc				Expression location
  *
  *	@return	Binary expression
  */
@@ -434,7 +452,7 @@ node expression_binary(const item_t type, node *const LHS, node *const RHS, cons
 /**
  *	Get operator of binary expression
  *
- *	@param	nd			Binary expression
+ *	@param	nd				Binary expression
  *
  *	@return	Operator
  */
@@ -446,7 +464,7 @@ inline binary_t expression_binary_get_operator(const node *const nd)
 /**
  *	Get LHS of binary expression
  *
- *	@param	nd			Binary expression
+ *	@param	nd				Binary expression
  *
  *	@return	LHS of binary expression
  */
@@ -458,7 +476,7 @@ inline node expression_binary_get_LHS(const node *const nd)
 /**
  *	Get RHS of binary expression
  *
- *	@param	nd			Binary expression
+ *	@param	nd				Binary expression
  *
  *	@return	RHS of binary expression
  */
@@ -471,11 +489,11 @@ inline node expression_binary_get_RHS(const node *const nd)
 /**
  *	Create new ternary expression
  *
- *	@param	type		Value type
- *	@param	cond		First operand
- *	@param	LHS			Second operand
- *	@param	RHS			Third operand
- *	@param	loc			Expression location
+ *	@param	type			Value type
+ *	@param	cond			First operand
+ *	@param	LHS				Second operand
+ *	@param	RHS				Third operand
+ *	@param	loc				Expression location
  *
  *	@return	Ternary expression
  */
@@ -484,7 +502,7 @@ node expression_ternary(const item_t type, node *const cond, node *const LHS, no
 /**
  *	Get condition of ternary expression
  *
- *	@param	nd			Ternary expression
+ *	@param	nd				Ternary expression
  *
  *	@return	Condition
  */
@@ -496,7 +514,7 @@ inline node expression_ternary_get_condition(const node *const nd)
 /**
  *	Get LHS of ternary expression
  *
- *	@param	nd			Ternary expression
+ *	@param	nd				Ternary expression
  *
  *	@return	LHS of ternary expression
  */
@@ -508,7 +526,7 @@ inline node expression_ternary_get_LHS(const node *const nd)
 /**
  *	Get RHS of ternary expression
  *
- *	@param	nd			Ternary expression
+ *	@param	nd				Ternary expression
  *
  *	@return	RHS of ternary expression
  */
@@ -521,19 +539,18 @@ inline node expression_ternary_get_RHS(const node *const nd)
 /**
  *	Create new expression list
  *
- *	@param	sx			Syntax structure
- *	@param	exprs		Subexpressions
- *	@param	loc			Expression location
+ *	@param	exprs			Subexpressions
+ *	@param	loc				Expression location
  *
  *	@return	Expression list
  */
-node expression_list(syntax *const sx, node_vector *const exprs, const location loc);
+node expression_list(node_vector *const exprs, const location loc);
 
 /**
  *	Set type of expression list
  *
- *	@param	nd			Expression list
- *	@param	type		Type
+ *	@param	nd				Expression list
+ *	@param	type			Type
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -545,7 +562,7 @@ inline int expression_list_set_type(const node *const nd, const item_t type)
 /**
  *	Get size of expression list
  *
- *	@param	nd			Expression list
+ *	@param	nd				Expression list
  *
  *	@return	Size
  */
@@ -557,8 +574,8 @@ inline size_t expression_list_get_size(const node *const nd)
 /**
  *	Get subexpression of expression list by index
  *
- *	@param	nd			Expression list
- *	@param	index		Subexpression index
+ *	@param	nd				Expression list
+ *	@param	index			Subexpression index
  *
  *	@return	Expression
  */
@@ -571,7 +588,7 @@ inline node expression_list_get_subexpr(const node *const nd, const size_t index
 /**
  *	Get statement class
  *
- *	@param	nd			Statement
+ *	@param	nd				Statement
  *
  *	@return	Statement class
  */
@@ -579,9 +596,20 @@ statement_t statement_get_class(const node *const nd);
 
 
 /**
+ *	Create new labeled statement
+ *
+ *	@param	label			Index in identifiers table
+ *	@param	substmt			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Labeled statement
+ */
+node statement_labeled(const size_t label, node *const substmt, const location loc);
+
+/**
  *	Get label id of labeled statement
  *
- *	@param	nd			Labeled statement
+ *	@param	nd				Labeled statement
  *
  *	@return	Label id
  */
@@ -593,7 +621,7 @@ inline size_t statement_labeled_get_label(const node *const nd)
 /**
  *	Get substatement of labeled statement
  *
- *	@param	nd			Labeled statement
+ *	@param	nd				Labeled statement
  *
  *	@return	Substatement
  */
@@ -604,9 +632,20 @@ inline node statement_labeled_get_substmt(const node *const nd)
 
 
 /**
+ *	Create new case statement
+ *
+ *	@param	expr			Case expression
+ *	@param	substmt			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Case statement
+ */
+node statement_case(node *const expr, node *const substmt, const location loc);
+
+/**
  *	Get expression of case statement
  *
- *	@param	nd			Case statement
+ *	@param	nd				Case statement
  *
  *	@return	Expression
  */
@@ -618,7 +657,7 @@ inline node statement_case_get_expression(const node *const nd)
 /**
  *	Get substatement of case statement
  *
- *	@param	nd			Case statement
+ *	@param	nd				Case statement
  *
  *	@return	Substatement
  */
@@ -629,9 +668,19 @@ inline node statement_case_get_substmt(const node *const nd)
 
 
 /**
+ *	Create new default statement
+ *
+ *	@param	substmt			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Default statement
+ */
+node statement_default(node *const substmt, const location loc);
+
+/**
  *	Get substatement of default statement
  *
- *	@param	nd			Default statement
+ *	@param	nd				Default statement
  *
  *	@return	Substatement
  */
@@ -640,11 +689,21 @@ inline node statement_default_get_substmt(const node *const nd)
 	return node_get_type(nd) == OP_DEFAULT ? node_get_child(nd, 0) : node_broken();
 }
 
+/**
+ *	Create new compound statement
+ *
+ *	@param	context			Context node
+ *	@param	stmts			Substatements
+ *	@param	loc				Statement location
+ *
+ *	@return	Compound statement
+ */
+node statement_compound(node *const context, node_vector *const stmts, const location loc);
 
 /**
  *	Get size of compound statement
  *
- *	@param	nd			Compound statement
+ *	@param	nd				Compound statement
  *
  *	@return	Size
  */
@@ -656,8 +715,8 @@ inline size_t statement_compound_get_size(const node *const nd)
 /**
  *	Get substatement of compound statement by index
  *
- *	@param	nd			Compound statement
- *	@param	index		Substatement index
+ *	@param	nd				Compound statement
+ *	@param	index			Substatement index
  *
  *	@return	Substatement
  */
@@ -668,9 +727,32 @@ inline node statement_compound_get_substmt(const node *const nd, const size_t in
 
 
 /**
+ *	Create new null statement
+ *
+ *	@param	context			Context node
+ *	@param	loc				Statement location
+ *
+ *	@return	Null statement
+ */
+node statement_null(node *const context, const location loc);
+
+
+/**
+ *	Create new if statement
+ *
+ *	@param	cond			Contidion
+ *	@param	then_stmt		Then-substatement
+ *	@param	else_stmt		Else-substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	If statement
+ */
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc);
+
+/**
  *	Check if if statement has else-substatement
  *
- *	@param	nd			If statement
+ *	@param	nd				If statement
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -682,7 +764,7 @@ inline bool statement_if_has_else_substmt(const node *const nd)
 /**
  *	Get condition of if statement
  *
- *	@param	nd			If statement
+ *	@param	nd				If statement
  *
  *	@return	Condition
  */
@@ -694,7 +776,7 @@ inline node statement_if_get_condition(const node *const nd)
 /**
  *	Get then-substatement of if statement
  *
- *	@param	nd			If statement
+ *	@param	nd				If statement
  *
  *	@return	Then-substatement
  */
@@ -706,7 +788,7 @@ inline node statement_if_get_then_substmt(const node *const nd)
 /**
  *	Get else-substatement of if statement
  *
- *	@param	nd			If statement
+ *	@param	nd				If statement
  *
  *	@return	Else-substatement
  */
@@ -717,9 +799,20 @@ inline node statement_if_get_else_substmt(const node *const nd)
 
 
 /**
+ *	Create new switch statement
+ *
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	Switch statement
+ */
+node statement_switch(node *const cond, node *const body, const location loc);
+
+/**
  *	Get condition of switch statement
  *
- *	@param	nd			Switch statement
+ *	@param	nd				Switch statement
  *
  *	@return	Condition
  */
@@ -731,7 +824,7 @@ inline node statement_switch_get_condition(const node *const nd)
 /**
  *	Get substatement of switch statement
  *
- *	@param	nd			Switch statement
+ *	@param	nd				Switch statement
  *
  *	@return	Substatement
  */
@@ -742,9 +835,20 @@ inline node statement_switch_get_body(const node *const nd)
 
 
 /**
+ *	Create new while statement
+ *
+ *	@param	cond			Contidion
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	While statement
+ */
+node statement_while(node *const cond, node *const body, const location loc);
+
+/**
  *	Get condition of while statement
  *
- *	@param	nd			While statement
+ *	@param	nd				While statement
  *
  *	@return	Condition
  */
@@ -756,7 +860,7 @@ inline node statement_while_get_condition(const node *const nd)
 /**
  *	Get substatement of while statement
  *
- *	@param	nd			While statement
+ *	@param	nd				While statement
  *
  *	@return	Substatement
  */
@@ -767,9 +871,20 @@ inline node statement_while_get_body(const node *const nd)
 
 
 /**
+ *	Create new do statement
+ *
+ *	@param	body			Substatement
+ *	@param	cond			Contidion
+ *	@param	loc				Statement location
+ *
+ *	@return	Do statement
+ */
+node statement_do(node *const body, node *const cond, const location loc);
+
+/**
  *	Get condition of do statement
  *
- *	@param	nd			Do statement
+ *	@param	nd				Do statement
  *
  *	@return	Condition
  */
@@ -781,7 +896,7 @@ inline node statement_do_get_condition(const node *const nd)
 /**
  *	Get substatement of do statement
  *
- *	@param	nd			Do statement
+ *	@param	nd				Do statement
  *
  *	@return	Substatement
  */
@@ -792,9 +907,22 @@ inline node statement_do_get_body(const node *const nd)
 
 
 /**
+ *	Create new for statement
+ *
+ *	@param	init			Inition
+ *	@param	cond			Contidion
+ *	@param	incr			Increment
+ *	@param	body			Substatement
+ *	@param	loc				Statement location
+ *
+ *	@return	For statement
+ */
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc);
+
+/**
  *	Check if for statement has inition
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -806,7 +934,7 @@ inline bool statement_for_has_inition(const node *const nd)
 /**
  *	Check if for statement has condition
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -818,7 +946,7 @@ inline bool statement_for_has_condition(const node *const nd)
 /**
  *	Check if for statement has increment
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -830,62 +958,71 @@ inline bool statement_for_has_increment(const node *const nd)
 /**
  *	Get inition of for statement
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	Inition
  */
 inline node statement_for_get_inition(const node *const nd)
 {
-	return statement_for_has_inition(nd) ? node_get_child(nd, 0) : node_broken();
+	return statement_for_has_inition(nd) ? node_get_child(nd, 1) : node_broken();
 }
 
 /**
  *	Get condition of for statement
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	condition
  */
 inline node statement_for_get_condition(const node *const nd)
 {
 	return statement_for_has_condition(nd)
-		? node_get_child(nd, statement_for_has_inition(nd) ? 1 : 0)
+		? node_get_child(nd, statement_for_has_inition(nd) ? 2 : 1)
 		: node_broken();
 }
 
 /**
  *	Get increment of for statement
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	Increment
  */
 inline node statement_for_get_increment(const node *const nd)
 {
 	return statement_for_has_increment(nd)
-		? node_get_child(nd, node_get_amount(nd) - 2)
+		? node_get_child(nd, node_get_amount(nd) - 1)
 		: node_broken();
 }
 
 /**
  *	Get substatement of for statement
  *
- *	@param	nd			For statement
+ *	@param	nd				For statement
  *
  *	@return	Substatement
  */
 inline node statement_for_get_body(const node *const nd)
 {
-	return node_get_type(nd) == OP_FOR
-		? node_get_child(nd, node_get_amount(nd) - 1)
-		: node_broken();
+	return node_get_type(nd) == OP_FOR ? node_get_child(nd, 0) : node_broken();
 }
 
 
 /**
+ *	Create new goto statement
+ *
+ *	@param	context			Context node
+ *	@param	label			Index in identifiers table
+ *	@param	loc				Statement location
+ *
+ *	@return	Goto statement
+ */
+node statement_goto(node *const context, const size_t label, const location loc);
+
+/**
  *	Get label id of goto statement
  *
- *	@param	nd			Goto statement
+ *	@param	nd				Goto statement
  *
  *	@return	Label id
  */
@@ -896,9 +1033,42 @@ inline size_t statement_goto_get_label(const node *const nd)
 
 
 /**
+ *	Create new continue statement
+ *
+ *	@param	context			Context node
+ *	@param	loc				Statement location
+ *
+ *	@return	Continue statement
+ */
+node statement_continue(node *const context, const location loc);
+
+
+/**
+ *	Create new break statement
+ *
+ *	@param	context			Context node
+ *	@param	loc				Statement location
+ *
+ *	@return	Break statement
+ */
+node statement_break(node *const context, const location loc);
+
+
+/**
+ *	Create new return statement
+ *
+ *	@param	context			Context node
+ *	@param	expr			Expression
+ *	@param	loc				Statement location
+ *
+ *	@return	Return statement
+ */
+node statement_return(node *const context, node *const expr, const location loc);
+
+/**
  *	Check if return statement has expression
  *
- *	@param	nd			Return statement
+ *	@param	nd				Return statement
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -910,7 +1080,7 @@ inline bool statement_return_has_expression(const node *const nd)
 /**
  *	Get expression of return statement
  *
- *	@param	nd			Return statement
+ *	@param	nd				Return statement
  *
  *	@return	Expression
  */
@@ -919,47 +1089,36 @@ inline node statement_return_get_expression(const node *const nd)
 	return statement_return_has_expression(nd) ? node_get_child(nd, 0) : node_broken();
 }
 
+
 /**
- *	Get argument count of printf statement
+ *	Get size of declaration statement
  *
- *	@param	nd			Printf statement
+ *	@param	nd				Declaration statement
  *
- *	@return	Argument count
+ *	@return	Size
  */
-inline size_t statement_printf_get_argc(const node *const nd)
+inline size_t statement_declaration_get_size(const node *const nd)
 {
-	return node_get_type(nd) == OP_PRINTF && node_get_amount(nd) > 0 ? node_get_amount(nd) - 1 : 0;
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_amount(nd) : SIZE_MAX;
 }
 
 /**
- *	Get format string of printf statement
+ *	Get declarator of declaration statement
  *
- *	@param	nd			Printf statement
+ *	@param	nd				Declaration statement
  *
- *	@return	Format string
+ *	@return	Declarator
  */
-inline node statement_printf_get_format_str(const node *const nd)
+inline node statement_declaration_get_declarator(const node *const nd, const size_t index)
 {
-	return node_get_type(nd) == OP_PRINTF ? node_get_child(nd, 0) : node_broken();
-}
-
-/**
- *	Get argument of printf statement
- *
- *	@param	nd			Printf statement
- *
- *	@return	Argument
- */
-inline node statement_printf_get_argument(const node *const nd, const size_t index)
-{
-	return statement_printf_get_argc(nd) > index ? node_get_child(nd, 1 + index) : node_broken();
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_child(nd, index) : node_broken();
 }
 
 
 /**
  *	Get declaration class
  *
- *	@param	nd			Declaration
+ *	@param	nd				Declaration
  *
  *	@return	Declaration class
  */
@@ -969,7 +1128,7 @@ declaration_t declaration_get_class(const node *const nd);
 /**
  *	Get variable id in variable declaration
  *
- *	@param	nd			Variable declaration
+ *	@param	nd				Variable declaration
  *
  *	@return	Id
  */
@@ -981,7 +1140,7 @@ inline size_t declaration_variable_get_id(const node *const nd)
 /**
  *	Check if variable declaration has initializer
  *
- *	@param	nd			Variable declaration
+ *	@param	nd				Variable declaration
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -993,7 +1152,7 @@ inline bool declaration_variable_has_initializer(const node *const nd)
 /**
  *	Get initializer of variable declaration
  *
- *	@param	nd			Variable declaration
+ *	@param	nd				Variable declaration
  *
  *	@return	Initializer
  */
@@ -1005,7 +1164,7 @@ inline node declaration_variable_get_initializer(const node *const nd)
 /**
  *	Get amount of dimenstions of variable declaration
  *
- *	@param	nd			Variable declaration
+ *	@param	nd				Variable declaration
  *
  *	@return	Amount of dimenstions
  */
@@ -1019,8 +1178,8 @@ inline size_t declaration_variable_get_dim_amount(const node *const nd)
 /**
  *	Get size-expression of dimenstions of variable declaration by index
  *
- *	@param	nd			Variable declaration
- *	@param	index		Dimension index
+ *	@param	nd				Variable declaration
+ *	@param	index			Dimension index
  *
  *	@return	Size-expression
  */
@@ -1033,7 +1192,7 @@ inline node declaration_variable_get_dim_expr(const node *const nd, const size_t
 /**
  *	Get id of function in function declaration
  *
- *	@param	nd			Function declaration
+ *	@param	nd				Function declaration
  *
  *	@return Function id
  */
@@ -1045,8 +1204,8 @@ inline size_t declaration_function_get_id(const node *const nd)
 /**
  *	Get parameter id in function declaration by index
  *
- *	@param	nd			Function declaration
- *	@param	index		Parameter index
+ *	@param	nd				Function declaration
+ *	@param	index			Parameter index
  *
  *	@return Parameter id
  */
@@ -1055,7 +1214,7 @@ size_t declaration_function_get_param(const node *const nd, const size_t index);
 /**
  *	Get body of function declaration
  *
- *	@param	nd			Function declaration
+ *	@param	nd				Function declaration
  *
  *	@return Function body
  */
@@ -1068,7 +1227,7 @@ inline node declaration_function_get_body(const node *const nd)
 /**
  *	Get number of global declarations in translation unit
  *
- *	@param	nd			Translation unit
+ *	@param	nd				Translation unit
  *
  *	@return	Number of global declarations
  */
@@ -1080,8 +1239,8 @@ inline size_t translation_unit_get_size(const node *const nd)
 /**
  *	Get global declaration of translation unit by index
  *
- *	@param	nd			Translation unit
- *	@param	index		Global declaration index
+ *	@param	nd				Translation unit
+ *	@param	index			Global declaration index
  *
  *	@return	Global declaration
  */

@@ -278,7 +278,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
 	write_type(wrt, expression_get_type(nd));
 	write(wrt, "'");
 
-	write_location(wrt, expression_get_location(nd));
+	write_location(wrt, node_get_location(nd));
 }
 
 /**
@@ -647,6 +647,7 @@ static void write_declaration(writer *const wrt, const node *const nd)
 		return;
 	}
 
+	wrt->indent++;
 	switch (declaration_get_class(nd))
 	{
 		case DECL_VAR:
@@ -661,6 +662,8 @@ static void write_declaration(writer *const wrt, const node *const nd)
 			write_function_declaration(wrt, nd);
 			break;
 	}
+
+	wrt->indent--;
 }
 
 
@@ -672,6 +675,24 @@ static void write_declaration(writer *const wrt, const node *const nd)
  *	  \/_____/     \/_/   \/_/\/_/     \/_/   \/_____/   \/_/  \/_/   \/_____/   \/_/ \/_/     \/_/   \/_____/
  */
 
+
+/**
+ *	Write declaration statement
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_declaration_statement(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "STMT_DECL\n");
+
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = statement_declaration_get_declarator(nd, i);
+		write_declaration(wrt, &decl);
+	}
+}
 
 /**
  *	Write labeled statement
@@ -866,7 +887,7 @@ static void write_for_statement(writer *const wrt, const node *const nd)
  */
 static void write_goto_statement(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "STMT_GOTO\n");
+	write_line(wrt, "STMT_GOTO");
 
 	const size_t label = statement_goto_get_label(nd);
 	const char *const spelling = ident_get_spelling(wrt->sx, label);
@@ -915,69 +936,6 @@ static void write_return_statement(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write printf statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_printf_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINTF\n");
-
-	const node format_str = statement_printf_get_format_str(nd);
-	write_expression(wrt, &format_str);
-
-	const size_t argc = statement_printf_get_argc(nd);
-	for (size_t i = 0; i < argc; i++)
-	{
-		const node argument = statement_printf_get_argument(nd, i);
-		write_expression(wrt, &argument);
-	}
-}
-
-/**
- *	Write print statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_print_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINT\n");
-
-	const node argument = node_get_child(nd, 0);
-	write_expression(wrt, &argument);
-}
-
-/**
- *	Write printid statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_printid_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_PRINTID");
-
-	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id = %zu\n", id);
-}
-
-/**
- *	Write getid statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_getid_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_GETID");
-
-	const size_t id = (size_t)node_get_arg(nd, 0);
-	uni_printf(wrt->io, " id = %zu\n", id);
-}
-
-/**
  *	Write statement
  *
  *	@param	wrt			Writer
@@ -1001,7 +959,7 @@ static void write_statement(writer *const wrt, const node *const nd)
 	switch (class)
 	{
 		case STMT_DECL:
-			write_declaration(wrt, nd);
+			write_declaration_statement(wrt, nd);
 			break;
 
 		case STMT_LABEL:
@@ -1060,19 +1018,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 			write_return_statement(wrt, nd);
 			break;
 
-		case STMT_PRINTF:
-			write_printf_statement(wrt, nd);
-			break;
-		case STMT_PRINT:
-			write_print_statement(wrt, nd);
-			break;
-		case STMT_PRINTID:
-			write_printid_statement(wrt, nd);
-			break;
-		case STMT_GETID:
-			write_getid_statement(wrt, nd);
-			break;
-
 		default:
 			break;
 	}
@@ -1089,7 +1034,7 @@ static void write_statement(writer *const wrt, const node *const nd)
 static void write_translation_unit(writer *const wrt, const node *const nd)
 {
 	write(wrt, "Translation unit\n");
-	wrt->indent = 1;
+	wrt->indent = 0;
 
 	const size_t size = translation_unit_get_size(nd);
 	for (size_t i = 0; i < size; i++)
@@ -2096,81 +2041,94 @@ void write_tree(const char *const path, syntax *const sx)
 }
 
 
-size_t write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
+int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer)
 {
-	if (type_is_null_pointer(type))
+	const type_t type_class = type_get_class(sx, type);
+	switch (type_class)
 	{
-		return sprintf(buffer, "nullptr");
-	}
-	else if (type_is_integer(sx, type))
-	{
-		return sprintf(buffer, "int");
-	}
-	else if (type_is_floating(type))
-	{
-		return sprintf(buffer, "float");
-	}
-	else if (type_is_file(type))
-	{
-		return sprintf(buffer, "FILE");
-	}
-	else if (type_is_void(type))
-	{
-		return sprintf(buffer, "void");
-	}
-	else if (type_is_array(sx, type))
-	{
-		const item_t element_type = type_array_get_element_type(sx, type);
-		size_t index = write_type_spelling(sx, element_type, buffer);
-		index += sprintf(&buffer[index], "[]");
-		return index;
-	}
-	else if (type_is_pointer(sx, type))
-	{
-		const item_t element_type = type_pointer_get_element_type(sx, type);
-		size_t index = write_type_spelling(sx, element_type, buffer);
-		index += sprintf(&buffer[index], "*");
-		return index;
-	}
-	else if (type_is_structure(sx, type))
-	{
-		size_t index = sprintf(buffer, "struct { ");
+		case TYPE_VARARG:
+			return sprintf(buffer, "...");
 
-		const size_t member_amount = type_structure_get_member_amount(sx, type);
-		for (size_t i = 0; i < member_amount; i++)
+		case TYPE_NULL_POINTER:
+			return sprintf(buffer, "nullptr");
+
+		case TYPE_FILE:
+			return sprintf(buffer, "FILE");
+
+		case TYPE_VOID:
+			return sprintf(buffer, "void");
+
+		case TYPE_FLOATING:
+			return sprintf(buffer, "double");
+
+		case TYPE_CHARACTER:
+			return sprintf(buffer, "char");
+
+		case TYPE_INTEGER:
+			return sprintf(buffer, "int");
+
+		case TYPE_UNDEFINED:
+			return sprintf(buffer, "undefined type");
+
+		case TYPE_FUNCTION:
 		{
-			const item_t member_type = type_structure_get_member_type(sx, type, i);
-			const size_t member_repr = type_structure_get_member_name(sx, type, i);
+			int index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
+			index += sprintf(&buffer[index], " (");
 
-			index += write_type_spelling(sx, member_type, &buffer[index]);
-			index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
-		}
-
-		index += sprintf(&buffer[index], "}");
-		return index;
-	}
-	else if (type_is_function(sx, type))
-	{
-		size_t index = write_type_spelling(sx, type_function_get_return_type(sx, type), buffer);
-		index += sprintf(&buffer[index], " (");
-
-		const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
-		for (size_t i = 0; i < parameter_amount; i++)
-		{
-			const item_t parameter_type = type_function_get_parameter_type(sx, type, i);
-
-			index += write_type_spelling(sx, parameter_type, &buffer[index]);
-			if (i != parameter_amount - 1)
+			const size_t parameter_amount = type_function_get_parameter_amount(sx, type);
+			for (size_t i = 0; i < parameter_amount; i++)
 			{
-				index += sprintf(&buffer[index], ", ");
+				const item_t parameter_type = type_function_get_parameter_type(sx, type, i);
+
+				index += write_type_spelling(sx, parameter_type, &buffer[index]);
+				if (i != parameter_amount - 1)
+				{
+					index += sprintf(&buffer[index], ", ");
+				}
 			}
+
+			index += sprintf(&buffer[index], ")");
+			return index;
 		}
 
-		index += sprintf(&buffer[index], ")");
-		return index;
-	}
+		case TYPE_MSG_INFO:
+		case TYPE_STRUCTURE:
+		{
+			int index = sprintf(buffer, "struct { ");
 
-	return 0;
+			const size_t member_amount = type_structure_get_member_amount(sx, type);
+			for (size_t i = 0; i < member_amount; i++)
+			{
+				const item_t member_type = type_structure_get_member_type(sx, type, i);
+				const size_t member_repr = type_structure_get_member_name(sx, type, i);
+
+				index += write_type_spelling(sx, member_type, &buffer[index]);
+				index += sprintf(&buffer[index], " %s; ", repr_get_name(sx, member_repr));
+			}
+
+			index += sprintf(&buffer[index], "}");
+			return index;
+		}
+
+		case TYPE_ARRAY:
+		{
+			const item_t element_type = type_array_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "[]");
+			return index;
+		}
+
+		case TYPE_POINTER:
+		{
+			const item_t element_type = type_pointer_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "*");
+			return index;
+		}
+
+		default:
+			return 0;
+	}
 }
 
 void write_codes(const char *const path, const vector *const memory)
