@@ -15,6 +15,7 @@
  */
 
 #include "utf8.h"
+#include <assert.h>
 
 
 static char32_t char32_from_cp866(const unsigned char symbol)
@@ -830,9 +831,44 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
-int utf8_to_digit(const char32_t symbol)
+/**
+ *	Convert hexadecimal digit to number
+ *
+ *	@param	symbol		UTF-8 symbol
+ *
+ *	@return	Corresponding number
+ */
+uint8_t utf8_to_number(const char32_t symbol)
 {
-	return (int)(symbol - '0');
+	if (utf8_is_digit(symbol))
+	{
+		return (uint8_t)(symbol - '0');
+	}
+
+	switch (symbol)
+	{
+		case 'A': case 'a':
+			return 10;
+
+		case 'B': case 'b':
+			return 11;
+
+		case 'C': case 'c':
+			return 12;
+
+		case 'D': case 'd':
+			return 13;
+
+		case 'E': case 'e':
+			return 14;
+
+		case 'F': case 'f':
+			return 15;
+
+		default:
+			assert("not a number");
+			return 0;
+	}
 }
 
 bool utf8_is_russian(const char32_t symbol)

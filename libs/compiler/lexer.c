@@ -66,46 +66,6 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
 }
 
 /**
- *	Convert hexadecimal digit to number
- *
- *	@param	symbol		UTF-8 symbol
- *
- *	@return	Corresponding number
- */
-static uint8_t hexa_to_int(const char32_t symbol)
-{
-	if (utf8_is_digit(symbol))
-	{
-		return (uint8_t)utf8_to_digit(symbol);
-	}
-
-	switch (symbol)
-	{
-		case 'A': case 'a':
-			return 10;
-
-		case 'B': case 'b':
-			return 11;
-
-		case 'C': case 'c':
-			return 12;
-
-		case 'D': case 'd':
-			return 13;
-
-		case 'E': case 'e':
-			return 14;
-
-		case 'F': case 'f':
-			return 15;
-
-		default:
-			// Unreachable
-			return 0;
-	}
-}
-
-/**
  *	Scan next character from io
  *
  *	@param	lxr			Lexer
@@ -275,7 +235,7 @@ static token lex_numeric_literal(lexer *const lxr)
 
 	while (utf8_is_hexa_digit(lxr->character))
 	{
-		if (hexa_to_int(lxr->character) >= base && !utf8_is_power(lxr->character))
+		if (utf8_to_number(lxr->character) >= base && !utf8_is_power(lxr->character))
 		{
 			// Ошибка - цифра не из той системы
 			lexer_error(lxr, unexpected_digit);
@@ -289,8 +249,8 @@ static token lex_numeric_literal(lexer *const lxr)
 			return token_int_literal((location){ loc_begin, loc_end }, int_value);
 		}
 
-		int_value = int_value * base + hexa_to_int(lxr->character);
-		float_value = float_value * base + hexa_to_int(lxr->character);
+		int_value = int_value * base + utf8_to_number(lxr->character);
+		float_value = float_value * base + utf8_to_number(lxr->character);
 		scan(lxr);
 	}
 
@@ -313,7 +273,7 @@ static token lex_numeric_literal(lexer *const lxr)
 		// Все остальное относится к следюущим токенам
 		while (utf8_is_digit(scan(lxr)))
 		{
-			float_value += utf8_to_digit(lxr->character) * position_mult;
+			float_value += utf8_to_number(lxr->character) * position_mult;
 			position_mult *= 0.1;
 		}
 	}
@@ -347,7 +307,7 @@ static token lex_numeric_literal(lexer *const lxr)
 
 		while (utf8_is_digit(lxr->character))
 		{
-			power = power * 10 + utf8_to_digit(lxr->character);
+			power = power * 10 + utf8_to_number(lxr->character);
 			scan(lxr);
 		}
 
