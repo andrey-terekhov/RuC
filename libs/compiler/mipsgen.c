@@ -143,6 +143,12 @@ typedef enum INSTRUCTION
 										To test a GPR then do a PC-relative conditional branch */
 	IC_MIPS_BGTZ,					/**< Branch on Greater Than Zero.
 										To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BEQ,					/**< Branch on Equal.
+										To compare GPRs then do a PC-relative conditional branch */
+	IC_MIPS_BNE,					/**< Branch on Not Equal.
+										To compare GPRs then do a PC-relative conditional branch */
+
+	IC_MIPS_NOP,					/**< o perform no operation */
 } mips_instruction_t;
 
 typedef enum LABEL
@@ -233,10 +239,10 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		case BIN_OR:
 			return info->answer_kind == A_CONST ? IC_MIPS_ORI : IC_MIPS_OR;
 
-		// case BIN_EQ:
-		// 	break;
-		// case BIN_NE:
-		// 	break;
+		case BIN_EQ:
+			return info->reverse_logic_command ? IC_MIPS_BNE : IC_MIPS_BEQ;
+		case BIN_NE:
+			return info->reverse_logic_command ? IC_MIPS_BEQ : IC_MIPS_BNE;
 		case BIN_GT:
 			return info->reverse_logic_command ? IC_MIPS_BLEZ : IC_MIPS_BGTZ;
 		case BIN_LT:
@@ -247,7 +253,7 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 			return info->reverse_logic_command ? IC_MIPS_BGTZ : IC_MIPS_BLEZ;
 
 		default:
-			return IC_MIPS_ADDI;
+			return IC_MIPS_NOP;
 	}
 }
 
@@ -451,6 +457,16 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_BGTZ:
 			uni_printf(io, "bgtz");
 			break;
+		case IC_MIPS_BEQ:
+			uni_printf(io, "beq");
+			break;
+		case IC_MIPS_BNE:
+			uni_printf(io, "bne");
+			break;
+
+		case IC_MIPS_NOP:
+			uni_printf(io, "nop");
+			break;
 	}
 }
 
@@ -575,6 +591,21 @@ static void to_code_R_L(universal_io *const io, const mips_instruction_t instruc
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
 	mips_register_to_io(io, reg);
+	uni_printf(io, ", ");
+	mips_label_to_io(io, label);
+	uni_printf(io, "%" PRIitem "\n", label_num);
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg, label
+static void to_code_2R_L(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t fst_reg, const mips_register_t snd_reg, const mips_label_t label, const item_t label_num)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	mips_register_to_io(io, fst_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, snd_reg);
 	uni_printf(io, ", ");
 	mips_label_to_io(io, label);
 	uni_printf(io, "%" PRIitem "\n", label_num);
@@ -707,22 +738,50 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	{
 		info->reverse_logic_command = true;
 
-		to_code_3R(info->sx->io, IC_MIPS_SUB, left_reg, left_reg, right_reg);
-		to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
+		if (operation == BIN_EQ || operation == BIN_NE)
+		{
+			to_code_2R_L(info->sx->io, get_instruction(info, operation), left_reg, right_reg
+				, L_ELSE, info->label_else);
+		}
+		else
+		{
+			to_code_3R(info->sx->io, IC_MIPS_SUB, left_reg, left_reg, right_reg);
+			to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
+		}
 	}
 	else if (left_kind == A_REG && right_kind == A_CONST)
 	{
 		info->reverse_logic_command = true;
 
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, left_reg, -right_const);
-		to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
+		if (operation == BIN_EQ || operation == BIN_NE)
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, R_ZERO, right_const);
+			to_code_2R_L(info->sx->io, get_instruction(info, operation), left_reg, right_reg
+				, L_ELSE, info->label_else);
+		}
+		else
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, left_reg, -right_const);
+			to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
+		}
 	}
 	else if (left_kind == A_CONST && right_kind == A_REG)
 	{
 		info->reverse_logic_command = false;
 
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, right_reg, -left_const);
-		to_code_R_L(info->sx->io, get_instruction(info, operation), right_reg, L_ELSE, info->label_else);
+		if (operation == BIN_EQ || operation == BIN_NE)
+		{
+			info->reverse_logic_command = true;
+
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, R_ZERO, left_const);
+			to_code_2R_L(info->sx->io, get_instruction(info, operation), left_reg, right_reg
+				, L_ELSE, info->label_else);
+		}
+		else
+		{
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, right_reg, -left_const);
+			to_code_R_L(info->sx->io, get_instruction(info, operation), right_reg, L_ELSE, info->label_else);
+		}
 	}
 
 	// над этими действиями надо позже подумать, когда будут делаться сложные выражения
