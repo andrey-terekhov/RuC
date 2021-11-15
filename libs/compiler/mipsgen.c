@@ -180,6 +180,8 @@ typedef struct information
 	item_t label_num;					/**< Номер метки */
 
 	item_t label_else;					/**< Метка перехода на else */
+
+	bool reverse_logic_command;			/**< Флаг требования противоположной логической операции команды */
 } information;
 
 
@@ -236,13 +238,13 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		// case BIN_NE:
 		// 	break;
 		case BIN_GT:
-			return IC_MIPS_BLEZ;
+			return info->reverse_logic_command ? IC_MIPS_BLEZ : IC_MIPS_BGTZ;
 		case BIN_LT:
-			return IC_MIPS_BGEZ;
+			return info->reverse_logic_command ? IC_MIPS_BGEZ : IC_MIPS_BLTZ;
 		case BIN_GE:
-			return IC_MIPS_BLTZ;
+			return info->reverse_logic_command ? IC_MIPS_BLTZ : IC_MIPS_BGEZ;
 		case BIN_LE:
-			return IC_MIPS_BGTZ;
+			return info->reverse_logic_command ? IC_MIPS_BGTZ : IC_MIPS_BLEZ;
 
 		default:
 			return IC_MIPS_ADDI;
@@ -690,7 +692,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 
 	const answer_t left_kind = info->answer_kind;
 	const item_t left_reg = info->answer_kind == A_REG ? info->answer_reg : info->request_reg;
-	// const item_t left_const = info->answer_const;
+	const item_t left_const = info->answer_const;
 
 	info->request_kind = RQ_REG_CONST;
 	info->request_reg = get_register(info);
@@ -698,7 +700,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	emit_expression(info, &RHS);
 
 	const answer_t right_kind = info->answer_kind;
-	// const item_t right_reg = info->answer_kind == A_REG ? info->answer_reg : info->request_reg;
+	const item_t right_reg = info->answer_kind == A_REG ? info->answer_reg : info->request_reg;
 	const item_t right_const = info->answer_const;
 
 	if (left_kind == A_REG && right_kind == A_REG)
@@ -707,12 +709,17 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	}
 	else if (left_kind == A_REG && right_kind == A_CONST)
 	{
+		info->reverse_logic_command = true;
+
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, left_reg, -right_const);
 		to_code_R_L(info->sx->io, get_instruction(info, operation), left_reg, L_ELSE, info->label_else);
 	}
 	else if (left_kind == A_CONST && right_kind == A_REG)
 	{
+		info->reverse_logic_command = false;
 
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, right_reg, right_reg, -left_const);
+		to_code_R_L(info->sx->io, get_instruction(info, operation), right_reg, L_ELSE, info->label_else);
 	}
 
 	info->answer_kind = A_REG;
@@ -1444,6 +1451,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.request_kind = RQ_NO_REQUEST;
 	info.label_num = 1;
 	info.label_else = 1;
+	info.reverse_logic_command = false;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
