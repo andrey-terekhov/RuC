@@ -660,7 +660,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		const node identifier = expression_subscript_get_base(&base);
-		const item_t id = expression_identifier_get_id(&identifier);
+		const item_t id = (item_t)expression_identifier_get_id(&identifier);
 		const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
@@ -724,7 +724,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-	const item_t id = expression_identifier_get_id(&base);
+	const item_t id = (item_t)expression_identifier_get_id(&base);
 	const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
@@ -922,9 +922,9 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
+	bool is_array_or_pointer = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
 	size_t id = 0;
-	if (!is_array)
+	if (!is_array_or_pointer)
 	{
 		id = expression_identifier_get_id(&operand);
 	}
@@ -935,7 +935,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 		id = (size_t)info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, id));
+	to_code_load(info, info->register_num, id, operation_type, is_array_or_pointer, ident_is_local(info->sx, id));
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -963,7 +963,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false, ident_is_local(info->sx, id));
+	to_code_store_reg(info, info->register_num, id, operation_type, is_array_or_pointer, false, ident_is_local(info->sx, id));
 	info->register_num++;
 }
 
@@ -1364,18 +1364,18 @@ static void emit_expression(information *const info, const node *const nd)
  *	@param	id			Identifier of target lvalue
  *	@param	elem_type	Element type of target lvalue
  */
-static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t elem_type)
+static void emit_initialization(information *const info, const node *const nd, const size_t id, const item_t elem_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
 	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t N = expression_list_get_size(nd);
 
-		const size_t index = hash_get_index(&info->arrays, id);
+		const size_t index = hash_get_index(&info->arrays, (item_t)id);
 		hash_set_by_index(&info->arrays, index, 1, (item_t)N);
 
 		const item_t type = array_get_type(info, elem_type);
-		const item_t is_local = ident_is_local(info->sx, (size_t)id);
+		const item_t is_local = ident_is_local(info->sx, id);
 
 		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
 		// а неконстантными выражениями глобальный массив может инициализироваться?
@@ -1385,7 +1385,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 		}
 		else
 		{
-			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
+			uni_printf(info->sx->io, "@arr.%zu = global [%zu x ", id, N);
 			type_to_io(info, type);
 			uni_printf(info->sx->io, "] [");
 		}
@@ -1401,7 +1401,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 
 			if (is_local)
 			{
-				to_code_slice(info, id, 0, 0, type, true);
+				to_code_slice(info, (item_t)id, 0, 0, type, true);
 			}
 
 			if (type_is_integer(info->sx, type))
