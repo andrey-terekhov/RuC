@@ -137,6 +137,12 @@ typedef enum INSTRUCTION
 
 	IC_MIPS_BLEZ,					/**< Branch on Less Than or Equal to Zero.
 										To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BLTZ,					/**< Branch on Less Than Zero.
+										To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BGEZ,					/**< Branch on Greater Than or Equal to Zero.
+										To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BGTZ,					/**< Branch on Greater Than Zero.
+										To test a GPR then do a PC-relative conditional branch */
 } mips_instruction_t;
 
 typedef enum LABEL
@@ -229,14 +235,14 @@ static mips_instruction_t get_instruction(information *const info, const item_t 
 		// 	break;
 		// case BIN_NE:
 		// 	break;
-		// case BIN_LT:
-		// 	break;
 		case BIN_GT:
 			return IC_MIPS_BLEZ;
-		// case BIN_LE:
-		// 	break;
-		// case BIN_GE:
-		// 	break;
+		case BIN_LT:
+			return IC_MIPS_BGEZ;
+		case BIN_GE:
+			return IC_MIPS_BLTZ;
+		case BIN_LE:
+			return IC_MIPS_BGTZ;
 
 		default:
 			return IC_MIPS_ADDI;
@@ -433,6 +439,15 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 
 		case IC_MIPS_BLEZ:
 			uni_printf(io, "blez");
+			break;
+		case IC_MIPS_BLTZ:
+			uni_printf(io, "bltz");
+			break;
+		case IC_MIPS_BGEZ:
+			uni_printf(io, "bgez");
+			break;
+		case IC_MIPS_BGTZ:
+			uni_printf(io, "bgtz");
 			break;
 	}
 }
