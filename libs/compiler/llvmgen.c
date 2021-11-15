@@ -338,6 +338,8 @@ static void to_code_store_null(information *const info, const size_t id, const i
 	uni_printf(info->sx->io, " null, ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
+
+	info->answer_kind = ANULL;
 }
 
 static void to_code_try_zext_to(information *const info)
@@ -1222,8 +1224,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 	else
 	{
 		to_code_store_null(info, id, operation_type);
-
-		info->answer_kind = ANULL;
 	}
 }
 
