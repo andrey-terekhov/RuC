@@ -136,7 +136,7 @@ EXPORTED char32_t utf8_to_upper(const char32_t symbol);
  *
  *	@return	Decimal digit
  */
-EXPORTED uint8_t utf8_to_digit(const char32_t symbol);
+EXPORTED int utf8_to_digit(const char32_t symbol);
 
 /**
  *	Checks if сharacter is russian letter

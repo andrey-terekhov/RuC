@@ -830,9 +830,9 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
-uint8_t utf8_to_digit(const char32_t symbol)
+int utf8_to_digit(const char32_t symbol)
 {
-	return (symbol - '0');
+	return (int)(symbol - '0');
 }
 
 bool utf8_is_russian(const char32_t symbol)
