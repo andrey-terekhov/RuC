@@ -66,6 +66,46 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
 }
 
 /**
+ *	Convert hexadecimal digit to number
+ *
+ *	@param	symbol		UTF-8 symbol
+ *
+ *	@return	Corresponding number
+ */
+static uint8_t hexa_to_int(const char32_t symbol)
+{
+	if (utf8_is_digit(symbol))
+	{
+		return (uint8_t)utf8_to_digit(symbol);
+	}
+
+	switch (symbol)
+	{
+		case 'A': case 'a':
+			return 10;
+
+		case 'B': case 'b':
+			return 11;
+
+		case 'C': case 'c':
+			return 12;
+
+		case 'D': case 'd':
+			return 13;
+
+		case 'E': case 'e':
+			return 14;
+
+		case 'F': case 'f':
+			return 15;
+
+		default:
+			// Unreachable
+			return 0;
+	}
+}
+
+/**
  *	Scan next character from io
  *
  *	@param	lxr			Lexer
@@ -175,29 +215,102 @@ static token lex_identifier_or_keyword(lexer *const lxr)
  */
 static token lex_numeric_literal(lexer *const lxr)
 {
-	int64_t int_value = 0;
-	double float_value = 0.0;
-	bool is_integer = true;
-	bool is_out_of_range = false;
 	const size_t loc_begin = in_get_position(lxr->sx->io);
 
-	while (utf8_is_digit(lxr->character))
+	bool was_zero = false;
+	if (lxr->character == '0')
 	{
-		int_value = int_value * 10 + utf8_to_digit(lxr->character);
-		float_value = float_value * 10 + utf8_to_digit(lxr->character);
+		// Отмечаем, что был ведущий ноль
+		was_zero = true;
+	}
+
+	// Считаем, что может быть любое количество ведущих нолей
+	while (lxr->character == '0')
+	{
+		// Пропускаем их
 		scan(lxr);
 	}
 
+	// Основание по умолчанию - 10
+	uint8_t base = 10;
+	bool was_modifier = false;
+
+	// Если был ведущий ноль, то тут может быть модификатор счисления
+	if (was_zero)
+	{
+		switch (lxr->character)
+		{
+			case 'x': case 'X':
+				base = 16;
+				was_modifier = true;
+				scan(lxr);
+				break;
+
+			case 'd': case 'D':
+				was_modifier = true;
+				scan(lxr);
+				break;
+
+			case 'o': case 'O':
+				base = 8;
+				was_modifier = true;
+				scan(lxr);
+				break;
+
+			case 'b': case 'B':
+				base = 2;
+				was_modifier = true;
+				scan(lxr);
+				break;
+
+			default:
+				// Не является спецификатором счисления
+				break;
+		}
+	}
+
+	// Переменные для подсчета значения
+	int64_t int_value = 0;
+	double float_value = 0.0;
+
+	while (utf8_is_hexa_digit(lxr->character))
+	{
+		if (hexa_to_int(lxr->character) >= base && !utf8_is_power(lxr->character))
+		{
+			// Ошибка - цифра не из той системы
+			lexer_error(lxr, unexpected_digit);
+			// Пропустим все цифры и вернем токен
+			while (utf8_is_hexa_digit(lxr->character))
+			{
+				scan(lxr);
+			}
+
+			const size_t loc_end = in_get_position(lxr->sx->io);
+			return token_int_literal((location){ loc_begin, loc_end }, int_value);
+		}
+
+		int_value = int_value * base + hexa_to_int(lxr->character);
+		float_value = float_value * base + hexa_to_int(lxr->character);
+		scan(lxr);
+	}
+
+	bool is_in_range = true;
+	bool is_integer = true;
+
+	// Проверяем, попадаем ли еще в целочисленный диапазон
 	if (float_value > (double)INT_MAX)
 	{
-		is_out_of_range = true;
+		is_in_range = false;
 		is_integer = false;
 	}
 
-	if (lxr->character == '.')
+	// Дробная часть разрешена только для чисел без спецификаторов
+	if (lxr->character == '.' && !was_modifier)
 	{
 		is_integer = false;
 		double position_mult = 0.1;
+		// Читаем только десятичные цифры
+		// Все остальное относится к следюущим токенам
 		while (utf8_is_digit(scan(lxr)))
 		{
 			float_value += utf8_to_digit(lxr->character) * position_mult;
@@ -205,10 +318,11 @@ static token lex_numeric_literal(lexer *const lxr)
 		}
 	}
 
-	if (utf8_is_power(lxr->character))
+	// Экспонента разрешена только для чисел без спецификаторов
+	if (utf8_is_power(lxr->character) && !was_modifier)
 	{
-		int power = 0;
-		int sign = 1;
+		int64_t power = 0;	// Показатель степени
+		int sign = 1;		// Знак степени
 		scan(lxr);
 
 		if (lxr->character == '-')
@@ -224,7 +338,9 @@ static token lex_numeric_literal(lexer *const lxr)
 
 		if (!utf8_is_digit(lxr->character))
 		{
+			// Ошибка - после экспоненты должны быть цифры
 			lexer_error(lxr, must_be_digit_after_exp);
+			// Просто вернем токен
 			const size_t loc_end = in_get_position(lxr->sx->io);
 			return token_float_literal((location){ loc_begin, loc_end }, DBL_MAX);
 		}
@@ -237,7 +353,7 @@ static token lex_numeric_literal(lexer *const lxr)
 
 		if (is_integer)
 		{
-			for (int i = 1; i <= power; i++)
+			for (int64_t i = 0; i < power; i++)
 			{
 				int_value *= 10;
 			}
@@ -246,6 +362,7 @@ static token lex_numeric_literal(lexer *const lxr)
 		float_value *= pow(10.0, sign * power);
 	}
 
+	// Формируем результат
 	const size_t loc_end = in_get_position(lxr->sx->io);
 	if (is_integer)
 	{
@@ -253,8 +370,9 @@ static token lex_numeric_literal(lexer *const lxr)
 	}
 	else
 	{
-		if (is_out_of_range)
+		if (!is_in_range)
 		{
+			// Вышли за пределы целого - конвертируем в double
 			warning(lxr->sx->io, too_long_int);
 		}
 

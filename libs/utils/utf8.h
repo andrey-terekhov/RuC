@@ -136,7 +136,7 @@ EXPORTED char32_t utf8_to_upper(const char32_t symbol);
  *
  *	@return	Decimal digit
  */
-EXPORTED int utf8_to_digit(const char32_t symbol);
+EXPORTED uint8_t utf8_to_digit(const char32_t symbol);
 
 /**
  *	Checks if сharacter is russian letter
@@ -157,13 +157,22 @@ EXPORTED bool utf8_is_russian(const char32_t symbol);
 EXPORTED bool utf8_is_letter(const char32_t symbol);
 
 /**
- *	Checks if сharacter is digit
+ *	Checks if сharacter is decimal digit
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
 EXPORTED bool utf8_is_digit(const char32_t symbol);
+
+/**
+ *	Checks if сharacter is hexadecimal digit
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED bool utf8_is_hexa_digit(const char32_t symbol);
 
 /**
  *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
