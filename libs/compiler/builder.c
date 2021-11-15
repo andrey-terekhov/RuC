@@ -477,17 +477,17 @@ static node build_upb_expression(builder *const bldr, node *const callee, node_v
 
 	const node fst = node_vector_get(args, 0);
 	const item_t fst_type = expression_get_type(&fst);
-	if (!type_is_integer(bldr->sx, fst_type))
+	if (!type_is_array(bldr->sx, fst_type))
 	{
-		semantic_error(bldr, node_get_location(&fst), not_int_in_stanfunc);
+		semantic_error(bldr, node_get_location(&fst), not_array_in_stanfunc);
 		return node_broken();
 	}
 
 	const node snd = node_vector_get(args, 1);
 	const item_t snd_type = expression_get_type(&snd);
-	if (!type_is_array(bldr->sx, snd_type))
+	if (!type_is_integer(bldr->sx, snd_type))
 	{
-		semantic_error(bldr, node_get_location(&snd), not_array_in_stanfunc);
+		semantic_error(bldr, node_get_location(&snd), not_int_in_stanfunc);
 		return node_broken();
 	}
 
