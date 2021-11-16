@@ -992,6 +992,23 @@ static void emit_binary_expression(information *const info, const node *const nd
 			return;
 
 		case BIN_LOG_OR:
+		{
+			const item_t label_then = info->label_num++;
+			const item_t old_label_else = info->label_else;
+
+			info->request_kind = RQ_FREE;
+			info->label_else = label_then;
+			const node LHS = expression_binary_get_LHS(nd);
+			emit_expression(info, &LHS);
+
+			info->request_kind = RQ_FREE;
+			info->label_else = old_label_else;
+			const node RHS = expression_binary_get_RHS(nd);
+			emit_expression(info, &RHS);
+
+			to_code_label(info->sx->io, L_ELSE, label_then);
+		}
+			return;
 		case BIN_LOG_AND:
 			return;
 
