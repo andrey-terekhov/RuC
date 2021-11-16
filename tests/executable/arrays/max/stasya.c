@@ -14,5 +14,5 @@ void main()
 		}
 	}
 	assert(max == 22.01, "max must be 22.01");
-    assert(ind == 1, "ind must be 1");
+    assert(ind == 2, "ind must be 2");
 }
