@@ -13,6 +13,6 @@ void main()
 			ind = i + 1;
 		}
 	}
-	printid(max);
-	printid(ind);
+	assert(max == 22.01, "max must be 22.01");
+    assert(ind == 1, "ind must be 1");
 }
