@@ -1,8 +1,10 @@
 void main()
 {
 	int А = 100;
-	printid(А);
+
+	assert(A == 100, "A must be 100");
 
 	int b = 10;
-	printid(b);
+
+	assert(b == 10, "b must be 10");
 }
