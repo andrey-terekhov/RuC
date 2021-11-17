@@ -2,7 +2,7 @@ void main()
 {
 	int А = 100;
 
-	assert(A == 100, "A must be 100");
+	assert(А == 100, "А must be 100");
 
 	int b = 10;
 
