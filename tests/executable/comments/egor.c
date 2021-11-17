@@ -5,9 +5,13 @@
 void main()
 {
     int r = s(5, 6, 10); 
+
+    assert(r == 1, "r must be 1");
+
     /*
     длинный коментарий 
     */
-    k(1, 0);
-    l(11, 12);
+
+    assert(k(1, 0) == 1, "k(1, 0) must be 1");
+    assert(l(11, 12) == -12, "l(11, 12) must be -12");
 }
