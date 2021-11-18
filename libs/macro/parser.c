@@ -490,7 +490,6 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 
 	in_clear(&in);
 
-	parser_add_char(prs, U'\n');
 	parser_comment(prs);
 
 	return ret;
