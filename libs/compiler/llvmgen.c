@@ -2325,6 +2325,12 @@ static void builin_functions_declaration(information *const info)
 			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
+			// нормально будет реализовано, когда будет работа с char
+			if (i == BI_PRINTF)
+			{
+				continue;
+			}
+
 			uni_printf(info->sx->io, "declare ");
 			type_to_io(info, ret_type);
 			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
