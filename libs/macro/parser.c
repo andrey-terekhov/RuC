@@ -363,11 +363,6 @@ static void parser_skip_long_comment(parser *const prs)
 			case U'/':
 				if (prev == U'*')
 				{
-					if (prs->line != line)
-					{
-						parser_add_char(prs, U'\n');
-						parser_comment(prs);
-					}
 					return;
 				}
 				break;
@@ -763,7 +758,15 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						{
 							was_star = false;
 							strings_remove(&prs->code);	// '/' был записан в буффер
+
+							const size_t line = prs->line;
 							parser_skip_long_comment(prs);
+
+							if (prs->line != line)
+							{
+								parser_add_char(prs, U'\n');
+								parser_comment(prs);
+							}
 						}
 						else
 						{
