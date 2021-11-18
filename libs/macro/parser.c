@@ -420,6 +420,54 @@ static inline bool parser_check_kw_position(parser *const prs, const bool was_le
 }
 
 /**
+ *	Пропустить разделители и комментарии после директивы препроцессора
+ *
+ *	@param	prs			Структура парсера
+ *	@param	cur		Текущий символ
+ *	@param	mode		Условие корректного завершения
+ *						@c 0 начало пути файла
+ *						@c 1 буква
+ *
+ *	@return	@c 0,	если последний символ корректный,
+ *			@c -1,	если встретился неожиданный символ,
+ *			@c -2,	если встретился '\r', '\n', EOF
+ */
+static int parser_find_ident_begining(parser *const prs, char32_t cur, const int mode)
+{
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'*':
+					parser_skip_long_comment(prs, prs->line);
+					break;
+				default:
+					return -1;
+			}
+		}
+
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
+
+	uni_unscan_char(prs->in, cur);	// Дальнейшая обработка начнется с символа начала идентификатора
+
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
+	{
+		return -2;
+	}
+	else if ((mode == 1 && !utf8_is_letter(cur)) || (mode == 0 && cur != U'\"' && cur != U'<'))
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
  *	Пропустить строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
  *
  *	@param	prs			Структура парсера
@@ -490,7 +538,8 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 
 	in_clear(&in);
 
-	parser_comment(prs);
+	parser_add_char(prs, U'\n');
+	parser_comment_to_buffer(prs);
 
 	return ret;
 }
@@ -541,35 +590,13 @@ static int parser_include(parser *const prs, char32_t cur)
 	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
 
 	// Пропуск разделителей и комментариев
-	while (utf8_is_separator(cur) || cur == U'/')
+	if (parser_find_ident_begining(prs, cur, 0))
 	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'*':
-					parser_skip_long_comment(prs, prs->line);
-					break;
-				default:
-					prs->position = position;
-					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-					parser_skip_line(prs, cur);
-					return prs->was_error ? -1 : 0;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF || (cur != U'\"' && cur != U'<'))
-	{
-		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs, cur);
 		return prs->was_error ? -1 : 0;
 	}
+	cur = uni_scan_char(prs->in);	// Необходимо считать символ начала строковой константы
 
 	// ОБработка пути
 	char path[MAX_ARG_SIZE] = "\0";

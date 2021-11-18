@@ -1,7 +1,4 @@
-#include /*
-
-
-*/"temp.c"
+#include "temp.c"
 
 int /* 
 
