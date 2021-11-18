@@ -127,6 +127,20 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
+ *	Сдвинуть код разделителями
+ *
+ *	@param	prs			Структура парсера
+ *	@param	size		Размер сдвига
+ */
+static inline void parser_add_spacers(parser *const prs, const size_t size)
+{
+	for (size_t i = 0; i < size; i ++)
+	{
+		parser_add_char(prs, U' ');
+	}
+}
+
+/**
  *	Добавить комментарий
  *
  *	@param	prs			Структура парсера
@@ -354,8 +368,9 @@ static inline void parser_skip_short_comment(parser *const prs)
  *	@param	prs			Структура парсера
  *	@param	line		Номер строки с началом комментария
  */
-static void parser_skip_long_comment(parser *const prs, const size_t line)
+static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 {
+	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
@@ -380,23 +395,24 @@ static void parser_skip_long_comment(parser *const prs, const size_t line)
 			case U'/':
 				if (prev == U'*')
 				{
-					return;
+					return prs->line == line
+							? prs->position - position
+							: prs->position;
 				}
 				break;
 		}
 	}
 
+	prs->line_position = line_position;
 	prs->line = line;
 	prs->position = position;
 
 	parser_macro_error(prs, PARSER_COMM_NOT_ENDED);
 
-	if (prs->is_recovery_disabled)							// Пропускает начало комментария
-	{
-		prs->line = line;
-		prs->position = position + 2;
-		in_set_position(prs->in, comment_text_position);
-	}
+	// Пропуск начала комментария, если он был не закрыт
+	prs->position += 2;
+	in_set_position(prs->in, comment_text_position);
+	return 2;
 }
 
 
@@ -803,7 +819,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							strings_remove(&prs->code);	// '/' был записан в буффер
 
 							const size_t line = prs->line;
-							parser_skip_long_comment(prs, line);
+							const size_t size = parser_skip_long_comment(prs, line);
 
 							switch (prs->line - line)				// При печати специального комментария
 							{										// используется 2 переноса строки.
@@ -819,7 +835,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 									break;
 							}
 
-							// parser_add_spacers(prs, size);
+							parser_add_spacers(prs, size);
 						}
 						else
 						{
@@ -837,7 +853,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
 
 							prs->position += 2;				// Пропуск лишнего закрытия комментария
-							//parser_add_spacers(prs, 2);
+							parser_add_spacers(prs, 2);
 						}
 						if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 						{
