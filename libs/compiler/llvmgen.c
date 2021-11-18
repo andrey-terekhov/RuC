@@ -78,7 +78,6 @@ typedef struct information
 												@c value[1..MAX] - границы массива */
 
 	bool was_stack_functions;				/**< Истина, если использовались стековые функции */
-	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
 	bool was_file;							/**< Истина, если была работа с файлами */
 	bool was_abs;							/**< Истина, если был вызов abs */
@@ -2394,7 +2393,7 @@ static void runtime(information *const info)
 	uni_printf(info->sx->io, "define void @printid(...) {\n"
 		" ret void\n"
 		"}\n\n");
-	info->was_printf = true;
+	info->was_function[BI_PRINTF] = true;
 }
 
 
@@ -2424,7 +2423,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.request_reg = 0;
 	info.answer_reg = 0;
 	info.was_stack_functions = false;
-	info.was_printf = false;
 	info.was_dynamic = false;
 	info.was_file = false;
 	info.was_abs = false;
