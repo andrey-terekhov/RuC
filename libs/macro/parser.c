@@ -127,7 +127,7 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
- *	Добавить комментарий в буффер кода
+ *	Добавить комментарий
  *
  *	@param	prs			Структура парсера
  */
@@ -835,7 +835,9 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							strings_remove(&prs->code);	// '*' был записан в буффер
 							prs->position -= 2;
 							parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
-							prs->position += 3;				// необходимо пропустить
+
+							prs->position += 2;				// Пропуск лишнего закрытия комментария
+							//parser_add_spacers(prs, 2);
 						}
 						if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 						{
