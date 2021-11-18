@@ -220,8 +220,8 @@ static void ident_init(syntax *const sx)
 	
 	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
-	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
-	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, "."));
+	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, "."));
 	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
 }
 

@@ -131,7 +131,14 @@ static void type_to_io(information *const info, const item_t type)
 	const type_t type_class = type_get_class(info->sx, type);
 	switch (type_class)
 	{
+		case TYPE_VARARG:
+			uni_printf(info->sx->io, "...");
+			break;
+
 		case TYPE_CHARACTER:
+			uni_printf(info->sx->io, "i8");
+			break;
+
 		case TYPE_INTEGER:
 			uni_printf(info->sx->io, "i32");
 			break;
@@ -166,6 +173,25 @@ static void type_to_io(information *const info, const item_t type)
 		{
 			uni_printf(info->sx->io, "%%struct._IO_FILE");
 			info->was_file = true;
+		}
+		break;
+
+		case TYPE_FUNCTION:
+		{
+			type_to_io(info, type_function_get_return_type(info->sx, type));
+			uni_printf(info->sx->io, " (");
+
+			const size_t parameter_amount = type_function_get_parameter_amount(info->sx, type);
+			for (size_t i = 0; i < parameter_amount; i++)
+			{
+				type_to_io(info, type_function_get_parameter_type(info->sx, type, i));
+
+				if (i != parameter_amount - 1)
+				{
+					uni_printf(info->sx->io, ", ");
+				}
+			}
+			uni_printf(info->sx->io, ")");
 		}
 		break;
 
@@ -834,7 +860,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->answer_reg = info->register_num++;
 	}
 	uni_printf(info->sx->io, " call ");
-	type_to_io(info, func_type);
+	type_to_io(info, expression_get_type(&callee));
 	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
 
 	for (size_t i = 0; i < args; i++)
@@ -2206,11 +2232,6 @@ static int emit_translation_unit(information *const info, const node *const nd)
 		uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
 
-	if (info->was_printf)
-	{
-		uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
-	}
-
 	if (info->was_file)
 	{
 		uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
@@ -2314,7 +2335,7 @@ static void builin_functions_declaration(information *const info)
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
-		if (i == BI_ASSERT)
+		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID)
 		{
 			continue;
 		}
@@ -2325,12 +2346,6 @@ static void builin_functions_declaration(information *const info)
 			const item_t ret_type = type_function_get_return_type(info->sx, func_type);
 			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
-			// нормально будет реализовано, когда будет работа с char
-			if (i == BI_PRINTF)
-			{
-				continue;
-			}
-
 			uni_printf(info->sx->io, "declare ");
 			type_to_io(info, ret_type);
 			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
@@ -2338,16 +2353,7 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-
-				// TODO: будет исправлено, когда будет введён тип char
-				if (i == BI_FOPEN)
-				{
-					uni_printf(info->sx->io, "i8*");
-				}
-				else
-				{				
-					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
-				}
+				type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
@@ -2377,6 +2383,17 @@ static void runtime(information *const info)
 		" ret void\n"
 		"}\n"
 		"declare void @exit(i32)\n\n");
+
+	// TODO: тут пока заглушки
+	// print
+	uni_printf(info->sx->io, "define void @print(...) {\n"
+		" ret void\n"
+		"}\n");
+
+	// printid
+	uni_printf(info->sx->io, "define void @printid(...) {\n"
+		" ret void\n"
+		"}\n\n");
 	info->was_printf = true;
 }
 
