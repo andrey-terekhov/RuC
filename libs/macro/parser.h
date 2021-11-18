@@ -36,6 +36,7 @@ typedef struct parser
 	universal_io *in;				/**< Input io structure */
 	universal_io *out;				/**< Output io structure */
 
+	const char *path;				/**< Current file path */
 	size_t line_position;			/**< Сurrent line first character position in file */
 	size_t line;					/**< Сurrent line number in input */
 	size_t position;				/**< Сurrent character number in line */

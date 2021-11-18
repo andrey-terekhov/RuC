@@ -124,7 +124,7 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
  */
 static inline void parser_comment(parser *const prs)
 {
-	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
+	comment cmt = cmt_create(prs->path, prs->line);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
@@ -472,6 +472,8 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
 	}
 
+	new_prs.path = linker_current_path(new_prs.lk);
+
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	int ret = parser_preprocess(&new_prs, &in);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
@@ -500,6 +502,8 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 
 	universal_io in = io_create();
 	in_set_buffer(&in, buffer);
+
+	new_prs.path = prs->path;
 
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	int ret = parser_preprocess(&new_prs, &in);
@@ -813,6 +817,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
+	prs.path = NULL;
 	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
 	prs.position = FST_CHARACTER_INDEX;
@@ -833,6 +838,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
+	prs->path = linker_current_path(prs->lk);
 	parser_comment(prs);
 	parser_print(prs);
 	
