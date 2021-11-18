@@ -56,7 +56,7 @@ static bool utf8_is_line_breaker(const char32_t symbol)
 
 
 /**
- *	Увеличить значение текущей строки и сбросить значение текущего символа
+ *	Увеличить значение текущей строки
  *
  *	@param	prs			Структура парсера
  */
@@ -65,6 +65,15 @@ static inline void parser_next_line(parser *const prs)
 	prs->line_position = in_get_position(prs->in);
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
+}
+
+/**
+ *	Очистить буффер кода
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_clear_code(parser *const prs)
+{
 	strings_clear(&prs->code);
 	prs->code = strings_create(AVERAGE_LINE_SIZE);
 }
@@ -123,6 +132,19 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
  *	@param	prs			Структура парсера
  */
 static inline void parser_comment(parser *const prs)
+{
+	comment cmt = cmt_create(prs->path, prs->line);
+	char buffer[CMT_BUFFER_SIZE];
+	cmt_to_string(&cmt, buffer);
+	uni_printf(prs->out, "%s", buffer);
+}
+
+/**
+ *	Добавить комментарий в буффер кода
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_comment_to_buffer(parser *const prs)
 {
 	comment cmt = cmt_create(prs->path, prs->line);
 	char buffer[CMT_BUFFER_SIZE];
@@ -330,15 +352,10 @@ static inline void parser_skip_short_comment(parser *const prs)
  *	Пропустить символы до конца длинного комментария
  *
  *	@param	prs			Структура парсера
+ *	@param	line		Номер строки с началом комментария
  */
-static void parser_skip_long_comment(parser *const prs)
+static void parser_skip_long_comment(parser *const prs, const size_t line)
 {
-	parser_print(prs);
-	strings_clear(&prs->code);
-	prs->code = strings_create(AVERAGE_LINE_SIZE);
-
-	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
-	const size_t line = prs->line;							// Номер строки с началом комментария
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
@@ -358,7 +375,7 @@ static void parser_skip_long_comment(parser *const prs)
 				uni_scan_char(prs->in);
 			case U'\n':
 				parser_next_line(prs);
-					break;
+				break;
 
 			case U'/':
 				if (prev == U'*')
@@ -369,7 +386,6 @@ static void parser_skip_long_comment(parser *const prs)
 		}
 	}
 
-	prs->line_position = line_position;
 	prs->line = line;
 	prs->position = position;
 
@@ -377,7 +393,6 @@ static void parser_skip_long_comment(parser *const prs)
 
 	if (prs->is_recovery_disabled)							// Пропускает начало комментария
 	{
-		prs->line_position = line_position;
 		prs->line = line;
 		prs->position = position + 2;
 		in_set_position(prs->in, comment_text_position);
@@ -423,7 +438,7 @@ static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 					parser_skip_short_comment(prs);
 					return;
 				case U'*':
-					parser_skip_long_comment(prs);
+					parser_skip_long_comment(prs, prs->line);
 					break;
 				default:
 					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
@@ -535,7 +550,7 @@ static int parser_include(parser *const prs, char32_t cur)
 			switch (next)
 			{
 				case U'*':
-					parser_skip_long_comment(prs);
+					parser_skip_long_comment(prs, prs->line);
 					break;
 				default:
 					prs->position = position;
@@ -733,9 +748,11 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						case U'\n':
 							was_star = false;
 							was_lexeme = false;
+
 							parser_add_char(prs, U'\n');
 							parser_print(prs);
 							parser_next_line(prs);
+							parser_clear_code(prs);
 							break;
 						case (char32_t)EOF:
 							parser_print(prs);
@@ -760,13 +777,23 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							strings_remove(&prs->code);	// '/' был записан в буффер
 
 							const size_t line = prs->line;
-							parser_skip_long_comment(prs);
+							parser_skip_long_comment(prs, line);
 
-							if (prs->line != line)
-							{
-								parser_add_char(prs, U'\n');
-								parser_comment(prs);
+							switch (prs->line - line)				// При печати специального комментария
+							{										// используется 2 переноса строки.
+								case 2:								// Для комментариев меньше четырехстрочных
+									parser_add_char(prs, U'\n');	// специальный комментарий не ставится.
+								case 1:
+									parser_add_char(prs, U'\n');
+								case 0:
+									break;
+								default:
+									parser_add_char(prs, U'\n');
+									parser_comment_to_buffer(prs);
+									break;
 							}
+
+							// parser_add_spacers(prs, size);
 						}
 						else
 						{
