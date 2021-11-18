@@ -28,7 +28,7 @@
  	if [[ $path == $dir_exec/* ]] ; then
  		action="execution"
 -		run $interpreter $interpreter_debug $vm_exec
-+		run $llvm_exec $llvm_exec
++		run $llvm_exec
  
  		case $? in
  			0)
