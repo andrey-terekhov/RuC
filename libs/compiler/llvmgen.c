@@ -78,7 +78,6 @@ typedef struct information
 												@c value[1..MAX] - границы массива */
 
 	bool was_stack_functions;				/**< Истина, если использовались стековые функции */
-	bool was_printf;						/**< Истина, если вызывался printf в исходном коде */
 	bool was_dynamic;						/**< Истина, если в функции были динамические массивы */
 	bool was_file;							/**< Истина, если была работа с файлами */
 	bool was_abs;							/**< Истина, если был вызов abs */
@@ -128,36 +127,75 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (type_is_integer(info->sx, type))
+	const type_t type_class = type_get_class(info->sx, type);
+	switch (type_class)
 	{
-		uni_printf(info->sx->io, "i32");
-	}
-	else if (type_is_floating(type))
-	{
-		uni_printf(info->sx->io, "double");
-	}
-	else if (type_is_void(type))
-	{
-		uni_printf(info->sx->io, "void");
-	}
-	else if (type_is_structure(info->sx, type))
-	{
-		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
-	}
-	else if (type_is_pointer(info->sx, type))
-	{
-		type_to_io(info, type_pointer_get_element_type(info->sx, type));
-		uni_printf(info->sx->io, "*");
-	}
-	else if (type_is_array(info->sx, type))
-	{
-		type_to_io(info, type_array_get_element_type(info->sx, type));
-		uni_printf(info->sx->io, "*");
-	}
-	else if (type_is_file(type))
-	{
-		uni_printf(info->sx->io, "%%struct._IO_FILE");
-		info->was_file = true;
+		case TYPE_VARARG:
+			uni_printf(info->sx->io, "...");
+			break;
+
+		case TYPE_CHARACTER:
+			uni_printf(info->sx->io, "i8");
+			break;
+
+		case TYPE_INTEGER:
+			uni_printf(info->sx->io, "i32");
+			break;
+
+		case TYPE_FLOATING:
+			uni_printf(info->sx->io, "double");
+			break;
+
+		case TYPE_VOID:
+			uni_printf(info->sx->io, "void");
+			break;
+
+		case TYPE_STRUCTURE:
+			uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
+			break;
+
+		case TYPE_POINTER:
+		{
+			type_to_io(info, type_pointer_get_element_type(info->sx, type));
+			uni_printf(info->sx->io, "*");
+		}
+		break;
+
+		case TYPE_ARRAY:
+		{
+			type_to_io(info, type_array_get_element_type(info->sx, type));
+			uni_printf(info->sx->io, "*");
+		}
+		break;
+
+		case TYPE_FILE:
+		{
+			uni_printf(info->sx->io, "%%struct._IO_FILE");
+			info->was_file = true;
+		}
+		break;
+
+		case TYPE_FUNCTION:
+		{
+			type_to_io(info, type_function_get_return_type(info->sx, type));
+			uni_printf(info->sx->io, " (");
+
+			const size_t parameter_amount = type_function_get_parameter_amount(info->sx, type);
+			for (size_t i = 0; i < parameter_amount; i++)
+			{
+				type_to_io(info, type_function_get_parameter_type(info->sx, type, i));
+
+				if (i != parameter_amount - 1)
+				{
+					uni_printf(info->sx->io, ", ");
+				}
+			}
+			uni_printf(info->sx->io, ")");
+		}
+		break;
+
+		default:
+			break;
 	}
 }
 
@@ -2193,11 +2231,6 @@ static int emit_translation_unit(information *const info, const node *const nd)
 		uni_printf(info->sx->io, "declare void @llvm.stackrestore(i8*)\n");
 	}
 
-	if (info->was_printf)
-	{
-		uni_printf(info->sx->io, "declare i32 @printf(i8*, ...)\n");
-	}
-
 	if (info->was_file)
 	{
 		uni_printf(info->sx->io, "%%struct._IO_FILE = type { i32, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, i8*, "
@@ -2301,7 +2334,7 @@ static void builin_functions_declaration(information *const info)
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
-		if (i == BI_ASSERT)
+		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID)
 		{
 			continue;
 		}
@@ -2319,16 +2352,7 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-
-				// TODO: будет исправлено, когда будет введён тип char
-				if (i == BI_FOPEN)
-				{
-					uni_printf(info->sx->io, "i8*");
-				}
-				else
-				{				
-					type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
-				}
+				type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
@@ -2358,7 +2382,18 @@ static void runtime(information *const info)
 		" ret void\n"
 		"}\n"
 		"declare void @exit(i32)\n\n");
-	info->was_printf = true;
+
+	// TODO: тут пока заглушки
+	// print
+	uni_printf(info->sx->io, "define void @print(...) {\n"
+		" ret void\n"
+		"}\n");
+
+	// printid
+	uni_printf(info->sx->io, "define void @printid(...) {\n"
+		" ret void\n"
+		"}\n\n");
+	info->was_function[BI_PRINTF] = true;
 }
 
 
@@ -2388,7 +2423,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.request_reg = 0;
 	info.answer_reg = 0;
 	info.was_stack_functions = false;
-	info.was_printf = false;
 	info.was_dynamic = false;
 	info.was_file = false;
 	info.was_abs = false;
