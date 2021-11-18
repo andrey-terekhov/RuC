@@ -128,36 +128,49 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 
 static void type_to_io(information *const info, const item_t type)
 {
-	if (type_is_integer(info->sx, type))
+	const type_t type_class = type_get_class(info->sx, type);
+	switch (type_class)
 	{
-		uni_printf(info->sx->io, "i32");
-	}
-	else if (type_is_floating(type))
-	{
-		uni_printf(info->sx->io, "double");
-	}
-	else if (type_is_void(type))
-	{
-		uni_printf(info->sx->io, "void");
-	}
-	else if (type_is_structure(info->sx, type))
-	{
-		uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
-	}
-	else if (type_is_pointer(info->sx, type))
-	{
-		type_to_io(info, type_pointer_get_element_type(info->sx, type));
-		uni_printf(info->sx->io, "*");
-	}
-	else if (type_is_array(info->sx, type))
-	{
-		type_to_io(info, type_array_get_element_type(info->sx, type));
-		uni_printf(info->sx->io, "*");
-	}
-	else if (type_is_file(type))
-	{
-		uni_printf(info->sx->io, "%%struct._IO_FILE");
-		info->was_file = true;
+		case TYPE_CHARACTER:
+		case TYPE_INTEGER:
+			uni_printf(info->sx->io, "i32");
+			break;
+
+		case TYPE_FLOATING:
+			uni_printf(info->sx->io, "double");
+			break;
+
+		case TYPE_VOID:
+			uni_printf(info->sx->io, "void");
+			break;
+
+		case TYPE_STRUCTURE:
+			uni_printf(info->sx->io, "%%struct_opt.%" PRIitem, type);
+			break;
+
+		case TYPE_POINTER:
+		{
+			type_to_io(info, type_pointer_get_element_type(info->sx, type));
+			uni_printf(info->sx->io, "*");
+		}
+		break;
+
+		case TYPE_ARRAY:
+		{
+			type_to_io(info, type_array_get_element_type(info->sx, type));
+			uni_printf(info->sx->io, "*");
+		}
+		break;
+
+		case TYPE_FILE:
+		{
+			uni_printf(info->sx->io, "%%struct._IO_FILE");
+			info->was_file = true;
+		}
+		break;
+
+		default:
+			break;
 	}
 }
 
