@@ -629,13 +629,13 @@ static void emit_identifier_expression(information *const info, const node *cons
 static void emit_integral_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
-	bool was_allocate_reg_left = info->request_kind != RQ_REG_CONST && info->request_kind != RQ_REG;
-
+	const bool was_allocate_reg_left = info->request_kind != RQ_REG_CONST && info->request_kind != RQ_REG;
 	if (was_allocate_reg_left)
 	{
 		info->request_kind = RQ_REG_CONST;
 		info->request_reg = get_register(info);
 	}
+
 	const mips_register_t result = info->request_reg;
 	const node LHS = expression_binary_get_LHS(nd);
 	emit_expression(info, &LHS);
@@ -715,14 +715,13 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	// TODO: обработать случай регистровых и глобальных переменных
 	const item_t displ = hash_get(&info->displacements, id, 1);
-	bool was_allocate_reg = false;
-
-	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+	const bool was_allocate_reg = info->request_kind != RQ_REG_CONST && info->request_kind != RQ_REG;
+	if (was_allocate_reg)
 	{
 		info->request_kind = RQ_REG_CONST;
 		info->request_reg = get_register(info);
-		was_allocate_reg = true;
 	}
+
 	const mips_register_t result = info->request_reg;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
