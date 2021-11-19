@@ -138,7 +138,7 @@ EXPORTED char32_t utf8_to_upper(const char32_t symbol);
 EXPORTED uint8_t utf8_to_number(const char32_t symbol);
 
 /**
- *	Checks if сharacter is russian letter
+ *	Check if сharacter is russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *

@@ -845,30 +845,17 @@ uint8_t utf8_to_number(const char32_t symbol)
 		return (uint8_t)(symbol - '0');
 	}
 
-	switch (symbol)
+	if (symbol >= 'A' && symbol <= 'F')
 	{
-		case 'A': case 'a':
-			return 10;
-
-		case 'B': case 'b':
-			return 11;
-
-		case 'C': case 'c':
-			return 12;
-
-		case 'D': case 'd':
-			return 13;
-
-		case 'E': case 'e':
-			return 14;
-
-		case 'F': case 'f':
-			return 15;
-
-		default:
-			assert("not a number");
-			return 0;
+		return (uint8_t)(symbol - 'A' + 10);
 	}
+
+	if (symbol >= 'a' && symbol <= 'f')
+	{
+		return (uint8_t)(symbol - 'a' + 10);
+	}
+
+	return '\0';
 }
 
 bool utf8_is_russian(const char32_t symbol)
