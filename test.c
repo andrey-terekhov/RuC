@@ -1,11 +1,4 @@
-#include "temp.c"
-
-int /* 
-
-*/main()
+int main()
 {
-/*
-
-
-*/	return 0;
+	return 0;
 }
