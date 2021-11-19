@@ -1,7 +1,6 @@
-#define qwertyuioikuhygtrfedswedrfgthjkjhgf print(1)\
-;
-*/
+/*ggggt
+hhy*/ */
 int main()
 {
-	qwertyuioikuhygtrfedswedrfgthjkjhgf return 0;
+	return 0;
 }

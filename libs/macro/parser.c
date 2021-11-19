@@ -139,6 +139,7 @@ static inline void parser_add_spacers(parser *const prs, const size_t size)
 	for (size_t i = 0; i < size; i ++)
 	{
 		parser_add_char(prs, U' ');
+		prs->position--;
 	}
 }
 
@@ -396,7 +397,7 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 
 			case U'/':
 				if (prev == U'*')
-				{
+				{printf("%zu\n", prs->position);
 					return prs->line == line
 							? prs->position - position
 							: prs->position;
@@ -668,6 +669,7 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 
 	// Добавление комментария после прохода файла
 	parser_add_char(prs, U'\n');
+	prs->position--;
 	parser_comment_to_buffer(prs);
 
 	return ret;
@@ -687,6 +689,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
 	// Печать кода и комментария перед макроподстановкой
 	parser_add_char(prs, U'\n');
+	prs->position--;
 	parser_macro_comment(prs);
 	parser_print(prs);
 	parser_clear_code(prs);
@@ -707,6 +710,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 
 	// Печать комментария после макроподстановки
 	parser_add_char(prs, U'\n');
+	prs->position--;
 	parser_comment_to_buffer(prs);
 
 	return 0;
@@ -1046,17 +1050,21 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							{										// используется 2 переноса строки.
 								case 2:								// Для комментариев меньше четырехстрочных
 									parser_add_char(prs, U'\n');	// специальный комментарий не ставится.
+									prs->position--;
 								case 1:
 									parser_add_char(prs, U'\n');
+									prs->position--;
 								case 0:
 									break;
 								default:
 									parser_add_char(prs, U'\n');
+									prs->position--;
 									parser_comment_to_buffer(prs);
 									break;
 							}
 
 							parser_add_spacers(prs, size);
+							printf("%zu\n", prs->position);
 						}
 						else
 						{
