@@ -545,12 +545,12 @@ static inline int size_of(information *const info, const item_t type)
 }
 
 // TODO: в этих двух функциях реализовано распределение регистров. Сейчас оно такое
-static mips_register_t get_register(information *const info)
+static inline mips_register_t get_register(information *const info)
 {
 	return info->next_register++;
 }
 
-static void free_register(information *const info)
+static inline void free_register(information *const info)
 {
 	info->next_register--;
 }
@@ -629,13 +629,12 @@ static void emit_identifier_expression(information *const info, const node *cons
 static void emit_integral_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
-	bool was_allocate_reg_left = false;
+	bool was_allocate_reg_left = info->request_kind != RQ_REG_CONST && info->request_kind != RQ_REG;
 
-	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+	if (was_allocate_reg_left)
 	{
 		info->request_kind = RQ_REG_CONST;
 		info->request_reg = get_register(info);
-		was_allocate_reg_left = true;
 	}
 	const mips_register_t result = info->request_reg;
 	const node LHS = expression_binary_get_LHS(nd);
