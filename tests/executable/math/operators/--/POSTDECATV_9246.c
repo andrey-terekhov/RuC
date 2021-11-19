@@ -4,6 +4,6 @@ int i,j;
 void main()
 {
     b[0]--;
-    print("b -1");
-    printid(b);
+
+    assert(b == -1, "b must be -1");
 }

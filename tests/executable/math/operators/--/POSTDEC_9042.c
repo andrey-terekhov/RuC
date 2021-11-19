@@ -4,6 +4,6 @@ void main()
     int r;
     r = b[2]--; 
     r = r--;
-    print("r 6");
-    printid(r);
+
+    assert(r == 6, "r must be 6");
 }
