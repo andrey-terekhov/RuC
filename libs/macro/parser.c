@@ -690,7 +690,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	// Печать кода и комментария перед макроподстановкой
 	parser_add_char(prs, U'\n');
 	prs->position--;
-	parser_macro_comment(prs);
+	//parser_macro_comment(prs);
 	parser_print(prs);
 	parser_clear_code(prs);
 
@@ -711,7 +711,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	// Печать комментария после макроподстановки
 	parser_add_char(prs, U'\n');
 	prs->position--;
-	parser_comment_to_buffer(prs);
+	//parser_comment_to_buffer(prs);
 
 	return 0;
 }
@@ -987,7 +987,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 					{
 						// Макроподстановка
 						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
-						//parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
 						parser_add_spacers(prs, size);
 					}
 					else
