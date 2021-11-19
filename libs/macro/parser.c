@@ -690,7 +690,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	// Печать кода и комментария перед макроподстановкой
 	parser_add_char(prs, U'\n');
 	prs->position--;
-	//parser_macro_comment(prs);
+	parser_macro_comment(prs);
 	parser_print(prs);
 	parser_clear_code(prs);
 
@@ -703,7 +703,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	new_prs.in = &in;
 
-	parser_preprocess_code(&new_prs, U'\0', 0);
+	//parser_preprocess_code(&new_prs, U'\0', 0);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
 
 	in_clear(&in);
@@ -711,7 +711,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	// Печать комментария после макроподстановки
 	parser_add_char(prs, U'\n');
 	prs->position--;
-	//parser_comment_to_buffer(prs);
+	parser_comment_to_buffer(prs);
 
 	return 0;
 }
