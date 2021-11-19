@@ -415,7 +415,7 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 	// Пропуск начала комментария, если он был не закрыт
 	prs->position += 2;
 	in_set_position(prs->in, comment_text_position);
-	return 2;
+	return prs->position;
 }
 
 
@@ -983,10 +983,10 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						break;
 					}
 
-					if (index != SIZE_MAX && index != 256)
+					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						const size_t size = strlen(storage_last_read(prs->stg));
+						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
 						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
 						parser_add_spacers(prs, size);
 					}
