@@ -217,12 +217,13 @@ static token lex_numeric_literal(lexer *const lxr)
 	}
 
 	// Переменные для подсчета значения
-	int64_t int_value = 0;
+	uint64_t int_value = 0;
 	double float_value = 0.0;
 
 	while (utf8_is_hexa_digit(lxr->character))
 	{
-		if (utf8_to_number(lxr->character) >= base && !utf8_is_power(lxr->character))
+		const uint8_t digit = utf8_to_number(lxr->character);
+		if (digit >= base && !utf8_is_power(lxr->character))
 		{
 			// Ошибка - цифра не из той системы
 			lexer_error(lxr, unexpected_digit);
@@ -236,8 +237,8 @@ static token lex_numeric_literal(lexer *const lxr)
 			return token_int_literal((location){ loc_begin, loc_end }, int_value);
 		}
 
-		int_value = int_value * base + utf8_to_number(lxr->character);
-		float_value = float_value * base + utf8_to_number(lxr->character);
+		int_value = int_value * base + digit;
+		float_value = float_value * base + digit;
 		scan(lxr);
 	}
 
