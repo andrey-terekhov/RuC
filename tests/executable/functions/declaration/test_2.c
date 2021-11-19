@@ -10,7 +10,7 @@ void main()
         j += i;
     };
 
-    // assert(j == 28, "j must be 28");
+    assert(j == 28, "j must be 28");
 
     a <<= 2;
 
@@ -20,7 +20,7 @@ void main()
         a++;
     }
 
-    // assert(j == -8, "j must be -8");
+    assert(j == -8, "j must be -8");
 }
 
 void f()
