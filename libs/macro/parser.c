@@ -983,7 +983,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						break;
 					}
 
-					if (index != SIZE_MAX)
+					if (index != SIZE_MAX && index != 256)
 					{
 						// Макроподстановка
 						const size_t size = strlen(storage_last_read(prs->stg));
