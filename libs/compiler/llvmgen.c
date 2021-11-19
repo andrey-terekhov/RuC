@@ -1402,24 +1402,21 @@ static void emit_initialization(information *const info, const node *const nd, c
 			if (is_local)
 			{
 				to_code_slice(info, (item_t)id, 0, 0, type, true);
-			}
 
-			if (type_is_integer(info->sx, type))
-			{
-				if (is_local)
+				if (type_is_integer(info->sx, type))
 				{
 					to_code_store_const_i32(info, value_int, info->register_num - 1, true, true);
 				}
 				else
 				{
-					uni_printf(info->sx->io, "i32 %" PRIitem "%s", value_int, i != N - 1 ? ", " : "], align 4\n");
+					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
 				}
 			}
 			else
 			{
-				if (is_local)
+				if (type_is_integer(info->sx, type))
 				{
-					to_code_store_const_double(info, info->answer_const_double, info->register_num - 1, true, true);
+					uni_printf(info->sx->io, "i32 %" PRIitem "%s", value_int, i != N - 1 ? ", " : "], align 4\n");
 				}
 				else
 				{
