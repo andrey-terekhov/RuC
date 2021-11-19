@@ -397,7 +397,7 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 
 			case U'/':
 				if (prev == U'*')
-				{printf("%zu\n", prs->position);
+				{
 					return prs->line == line
 							? prs->position - position
 							: prs->position;
@@ -858,7 +858,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		storage_add(prs->stg, id, value);
 	}
 
-	if (prs->line != line + 1)	// Было увеличение строки
+	if (prs->line != line)
 	{
 		parser_comment(prs);
 	}
@@ -1064,7 +1064,6 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							}
 
 							parser_add_spacers(prs, size);
-							printf("%zu\n", prs->position);
 						}
 						else
 						{
