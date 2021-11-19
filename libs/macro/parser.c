@@ -634,7 +634,6 @@ static void parser_find_value(parser *const prs, char32_t *const value, char32_t
 
 	uni_unscan_char(prs->in, cur);
 	value[j] = (char32_t)EOF;
-	//prs->line--;
 }
 
 /**
@@ -783,7 +782,7 @@ static int parser_include(parser *const prs, char32_t cur)
  */
 static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 {
-	const size_t line = prs->line;printf("%zu\n", line);
+	const size_t line = prs->line;
 	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
 
 	// Пропуск разделителей и комментариев
@@ -801,7 +800,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 									: PARSER_UNDEF_NEED_IDENT);
 	}
 	else
-	{printf("%zu\n", prs->line);
+	{
 		cur = uni_scan_char(prs->in);
 		char32_t id[MAX_IDENT_SIZE];
 		id[0] = U'\0';
@@ -811,7 +810,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		// Запись идентификатора
 		const size_t position = parser_find_id(prs, id, cur);	// Позиция начала идентификатора в строке
 		cur = uni_scan_char(prs->in);
-printf("id%zu\n", prs->line);
+
 		// Проверка существования
 		const size_t temp = prs->position;
 		const size_t index = storage_get_index(prs->stg, id);
@@ -824,8 +823,9 @@ printf("id%zu\n", prs->line);
 		else if (mode == KW_SET && index == SIZE_MAX)
 		{
 			prs->position = position;
-			//parser_macro_warning(prs, PARSER_SET_NOT_EXIST_IDENT);
-			prs->position = temp;
+			parser_macro_error(prs, PARSER_SET_NOT_EXIST_IDENT);
+			parser_skip_line(prs);
+			return;
 		}
 		else if (mode == KW_UNDEF)
 		{
@@ -844,7 +844,7 @@ printf("id%zu\n", prs->line);
 
 		// Запись значения
 		parser_find_value(prs, value, cur, mode);
-printf("val %zu\n", prs->line);
+
 		if (mode == KW_SET)
 		{
 			// Для случая #set A A + 1
@@ -857,7 +857,7 @@ printf("val %zu\n", prs->line);
 	if (prs->line != line + 1)	// Было увеличение строки
 	{
 		parser_comment(prs);
-	}printf("%zu\n", prs->line);
+	}
 }
 
 /**
@@ -963,7 +963,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 				{
 					was_lexeme = true;
 				}
-printf("def %zu\n", prs->line);
+
 				if (storage_last_read(prs->stg) != NULL)
 				{
 					was_star = false;

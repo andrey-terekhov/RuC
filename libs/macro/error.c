@@ -116,6 +116,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "#macro требуется идентификатор");
 			break;
 
+		case PARSER_SET_NOT_EXIST_IDENT:
+			sprintf(msg, "переопределение несуществующего идентификатора");
+			break;
+
 		case PARSER_MACRO_NOT_ENDED:
 			sprintf(msg, "отсутствует #endm для этой директивы");
 			break;
@@ -145,9 +149,6 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		
 		case PARSER_DEFINE_EXIST_IDENT:
 			sprintf(msg, "определение существующего идентификатора");
-			break;
-		case PARSER_SET_NOT_EXIST_IDENT:
-			sprintf(msg, "переопределение несуществующего идентификатора");
 			break;
 		case PARSER_UNDEF_NOT_EXIST_IDENT:
 			sprintf(msg, "удаление несуществующего идентификатора");
