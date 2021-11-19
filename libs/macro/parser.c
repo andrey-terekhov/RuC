@@ -987,7 +987,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 					{
 						// Макроподстановка
 						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
-						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						//parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
 						parser_add_spacers(prs, size);
 					}
 					else
