@@ -28,8 +28,8 @@ extern size_t token_get_ident_name(const token *const tk);
 extern token token_char_literal(const location loc, const char32_t value);
 char32_t token_get_char_value(const token *const tk);
 
-extern token token_int_literal(const location loc, const int64_t value);
-extern int64_t token_get_int_value(const token *const tk);
+extern token token_int_literal(const location loc, const uint64_t value);
+extern uint64_t token_get_int_value(const token *const tk);
 
 extern token token_float_literal(const location loc, const double value);
 extern double token_get_float_value(const token *const tk);

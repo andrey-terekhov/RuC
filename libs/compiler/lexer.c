@@ -177,54 +177,41 @@ static token lex_numeric_literal(lexer *const lxr)
 {
 	const size_t loc_begin = in_get_position(lxr->sx->io);
 
-	bool was_zero = false;
-	if (lxr->character == '0')
-	{
-		// Отмечаем, что был ведущий ноль
-		was_zero = true;
-	}
-
-	// Считаем, что может быть любое количество ведущих нолей
-	while (lxr->character == '0')
-	{
-		// Пропускаем их
-		scan(lxr);
-	}
-
 	// Основание по умолчанию - 10
 	uint8_t base = 10;
 	bool was_modifier = false;
 
-	// Если был ведущий ноль, то тут может быть модификатор счисления
-	if (was_zero)
+	// Если есть ведущий ноль, то после него может быть модификатор счисления
+	if (lxr->character == '0')
 	{
+		scan(lxr);
 		switch (lxr->character)
 		{
-			case 'x': case 'X':
+			case 'x':
+			case 'X':
 				base = 16;
 				was_modifier = true;
 				scan(lxr);
 				break;
 
-			case 'd': case 'D':
+			case 'd':
+			case 'D':
 				was_modifier = true;
 				scan(lxr);
 				break;
 
-			case 'o': case 'O':
+			case 'o':
+			case 'O':
 				base = 8;
 				was_modifier = true;
 				scan(lxr);
 				break;
 
-			case 'b': case 'B':
+			case 'b':
+			case 'B':
 				base = 2;
 				was_modifier = true;
 				scan(lxr);
-				break;
-
-			default:
-				// Не является спецификатором счисления
 				break;
 		}
 	}
@@ -391,7 +378,7 @@ static token lex_char_literal(lexer *const lxr)
 		lexer_error(lxr, empty_character);
 
 		const size_t loc_end = in_get_position(lxr->sx->io);
-		return token_char_literal((location){ loc_begin, loc_end }, WCHAR_MAX);
+		return token_char_literal((location){ loc_begin, loc_end }, '\0');
 	}
 
 	const char32_t value = get_next_string_elem(lxr);

@@ -130,7 +130,7 @@ typedef struct token
 	{
 		size_t ident_repr;			/**< Index of representation in representation table */
 		char32_t char_value;		/**< Value of character literal */
-		int64_t int_value;			/**< Value of integer literal */
+		uint64_t int_value;			/**< Value of integer literal */
 		double float_value;			/**< Value of floating literal */
 		size_t string_num;			/**< Index of string literal in strings vector */
 	} data;
@@ -236,7 +236,7 @@ inline char32_t token_get_char_value(const token *const tk)
  *
  *	@return	Integer literal token
  */
-inline token token_int_literal(const location loc, const int64_t value)
+inline token token_int_literal(const location loc, const uint64_t value)
 {
 	return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
 }
@@ -248,7 +248,7 @@ inline token token_int_literal(const location loc, const int64_t value)
  *
  *	@return	Value
  */
-inline int64_t token_get_int_value(const token *const tk)
+inline uint64_t token_get_int_value(const token *const tk)
 {
 	assert(tk->kind == TK_INT_LITERAL);
 	return tk->data.int_value;
