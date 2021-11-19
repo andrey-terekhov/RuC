@@ -5,5 +5,5 @@ void main()
 {
     b[0]--;
 
-    assert(b == -1, "b must be -1");
+    assert(b[0] == -1, "b[0] must be -1");
 }
