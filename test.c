@@ -1,4 +1,7 @@
+#define qwertyuioikuhygtrfedswedrfgthjkjhgf print(1)\
+;
+*/
 int main()
 {
-	return 0;
+	qwertyuioikuhygtrfedswedrfgthjkjhgf return 0;
 }
