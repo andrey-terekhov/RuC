@@ -25,6 +25,8 @@
 
 #define CMT_BUFFER_SIZE			MAX_ARG_SIZE + 128
 #define AVERAGE_LINE_SIZE		256
+#define MAX_IDENT_SIZE			4096
+#define MAX_VALUE_SIZE			4096
 
 const size_t FST_LINE_INDEX = 1;
 const size_t FST_CHARACTER_INDEX = 0;
@@ -56,7 +58,7 @@ static bool utf8_is_line_breaker(const char32_t symbol)
 
 
 /**
- *	Увеличить значение текущей строки и сбросить значение текущего символа
+ *	Увеличить значение текущей строки
  *
  *	@param	prs			Структура парсера
  */
@@ -65,6 +67,15 @@ static inline void parser_next_line(parser *const prs)
 	prs->line_position = in_get_position(prs->in);
 	prs->line++;
 	prs->position = FST_CHARACTER_INDEX;
+}
+
+/**
+ *	Очистить буффер кода
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_clear_code(parser *const prs)
+{
 	strings_clear(&prs->code);
 	prs->code = strings_create(AVERAGE_LINE_SIZE);
 }
@@ -118,13 +129,41 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
- *	Добавить комментарий в буффер кода
+ *	Сдвинуть код разделителями
+ *
+ *	@param	prs			Структура парсера
+ *	@param	size		Размер сдвига
+ */
+static inline void parser_add_spacers(parser *const prs, const size_t size)
+{
+	for (size_t i = 0; i < size; i ++)
+	{
+		parser_add_char(prs, U' ');
+		prs->position--;
+	}
+}
+
+/**
+ *	Добавить комментарий
  *
  *	@param	prs			Структура парсера
  */
 static inline void parser_comment(parser *const prs)
 {
-	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
+	comment cmt = cmt_create(prs->path, prs->line);
+	char buffer[CMT_BUFFER_SIZE];
+	cmt_to_string(&cmt, buffer);
+	uni_printf(prs->out, "%s", buffer);
+}
+
+/**
+ *	Добавить комментарий в буффер кода
+ *
+ *	@param	prs			Структура парсера
+ */
+static inline void parser_comment_to_buffer(parser *const prs)
+{
+	comment cmt = cmt_create(prs->path, prs->line);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
@@ -137,7 +176,7 @@ static inline void parser_comment(parser *const prs)
  */
 static inline void parser_macro_comment(parser *const prs)
 {
-	comment cmt = cmt_create_macro(linker_current_path(prs->lk), prs->line, prs->position);
+	comment cmt = cmt_create_macro(prs->path, prs->line, prs->position);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
@@ -330,15 +369,11 @@ static inline void parser_skip_short_comment(parser *const prs)
  *	Пропустить символы до конца длинного комментария
  *
  *	@param	prs			Структура парсера
+ *	@param	line		Номер строки с началом комментария
  */
-static void parser_skip_long_comment(parser *const prs)
+static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 {
-	parser_print(prs);
-	strings_clear(&prs->code);
-	prs->code = strings_create(AVERAGE_LINE_SIZE);
-
 	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
-	const size_t line = prs->line;							// Номер строки с началом комментария
 	const size_t position = prs->position - 1;				// Позиция начала комментария в строке
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
@@ -358,17 +393,14 @@ static void parser_skip_long_comment(parser *const prs)
 				uni_scan_char(prs->in);
 			case U'\n':
 				parser_next_line(prs);
-					break;
+				break;
 
 			case U'/':
 				if (prev == U'*')
 				{
-					if (prs->line != line)
-					{
-						parser_add_char(prs, U'\n');
-						parser_comment(prs);
-					}
-					return;
+					return prs->line == line
+							? prs->position - position
+							: prs->position;
 				}
 				break;
 		}
@@ -380,13 +412,10 @@ static void parser_skip_long_comment(parser *const prs)
 
 	parser_macro_error(prs, PARSER_COMM_NOT_ENDED);
 
-	if (prs->is_recovery_disabled)							// Пропускает начало комментария
-	{
-		prs->line_position = line_position;
-		prs->line = line;
-		prs->position = position + 2;
-		in_set_position(prs->in, comment_text_position);
-	}
+	// Пропуск начала комментария, если он был не закрыт
+	prs->position += 2;
+	in_set_position(prs->in, comment_text_position);
+	return prs->position;
 }
 
 
@@ -410,6 +439,54 @@ static inline bool parser_check_kw_position(parser *const prs, const bool was_le
 }
 
 /**
+ *	Пропустить разделители и комментарии после директивы препроцессора
+ *
+ *	@param	prs			Структура парсера
+ *	@param	cur		Текущий символ
+ *	@param	mode		Условие корректного завершения
+ *						@c 0 начало пути файла
+ *						@c 1 буква
+ *
+ *	@return	@c 0,	если последний символ корректный,
+ *			@c -1,	если встретился неожиданный символ,
+ *			@c -2,	если встретился '\r', '\n', EOF
+ */
+static int parser_find_ident_begining(parser *const prs, char32_t cur, const int mode)
+{
+	while (utf8_is_separator(cur) || cur == U'/')
+	{
+		if (cur == U'/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case U'*':
+					parser_skip_long_comment(prs, prs->line);
+					break;
+				default:
+					return -1;
+			}
+		}
+
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
+
+	uni_unscan_char(prs->in, cur);	// Дальнейшая обработка начнется с символа начала идентификатора
+
+	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF)
+	{
+		return -2;
+	}
+	else if ((mode == 1 && !utf8_is_letter(cur)) || (mode == 0 && cur != U'\"' && cur != U'<'))
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
  *	Пропустить строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
  *
  *	@param	prs			Структура парсера
@@ -428,7 +505,7 @@ static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 					parser_skip_short_comment(prs);
 					return;
 				case U'*':
-					parser_skip_long_comment(prs);
+					parser_skip_long_comment(prs, prs->line);
 					break;
 				default:
 					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
@@ -472,17 +549,22 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
 	}
 
+	new_prs.path = linker_current_path(new_prs.lk);
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	int ret = parser_preprocess(&new_prs, &in);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
 
 	in_clear(&in);
 
+	// Добавление комментария после прохода файла
 	parser_add_char(prs, U'\n');
-	parser_comment(prs);
+	prs->position--;
+	parser_comment_to_buffer(prs);
 
 	return ret;
 }
+
+static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode);
 
 /**
  *	Preprocess buffer
@@ -494,23 +576,33 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
  */
 static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
+	// Печать кода и комментария перед макроподстановкой
+	parser_add_char(prs, U'\n');
+	prs->position--;
+	parser_macro_comment(prs);
 	parser_print(prs);
+	parser_clear_code(prs);
 
 	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
 
 	universal_io in = io_create();
 	in_set_buffer(&in, buffer);
 
+	new_prs.path = prs->path;
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
-	int ret = parser_preprocess(&new_prs, &in);
+	new_prs.in = &in;
+
+	//parser_preprocess_code(&new_prs, U'\0', 0);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
 
 	in_clear(&in);
 
+	// Печать комментария после макроподстановки
 	parser_add_char(prs, U'\n');
-	parser_macro_comment(prs);
+	prs->position--;
+	parser_comment_to_buffer(prs);
 
-	return ret;
+	return 0;
 }
 
 
@@ -528,35 +620,13 @@ static int parser_include(parser *const prs, char32_t cur)
 	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
 
 	// Пропуск разделителей и комментариев
-	while (utf8_is_separator(cur) || cur == U'/')
+	if (parser_find_ident_begining(prs, cur, 0))
 	{
-		if (cur == U'/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case U'*':
-					parser_skip_long_comment(prs);
-					break;
-				default:
-					prs->position = position;
-					parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-					parser_skip_line(prs, cur);
-					return prs->was_error ? -1 : 0;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
-
-	if (utf8_is_line_breaker(cur) || cur == (char32_t)EOF || (cur != U'\"' && cur != U'<'))
-	{
-		prs->position = position;
 		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 		parser_skip_line(prs, cur);
 		return prs->was_error ? -1 : 0;
 	}
+	cur = uni_scan_char(prs->in);	// Необходимо считать символ начала строковой константы
 
 	// ОБработка пути
 	char path[MAX_ARG_SIZE] = "\0";
@@ -594,7 +664,6 @@ static int parser_include(parser *const prs, char32_t cur)
 	return ret;
 }
 
-
 /**
  *	Разобрать код
  *
@@ -610,6 +679,17 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 	{
 		const char32_t prev = cur;
 		const size_t index = storage_search(prs->stg, prs->in, &cur);
+		if (was_star && prev == U'/' && cur != U'/' && cur != U'*')
+		{
+			strings_remove(&prs->code);	// '/' был записан в буффер
+			strings_remove(&prs->code);	// '*' был записан в буффер
+			prs->position -= 2;
+			parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
+
+			prs->position += 0;				// Пропуск лишнего закрытия комментария
+			parser_add_spacers(prs, 2);
+		}
+
 		switch (index)
 		{
 			case KW_INCLUDE:
@@ -707,7 +787,9 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
+						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
 						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						parser_add_spacers(prs, size);
 					}
 					else
 					{
@@ -734,9 +816,11 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						case U'\n':
 							was_star = false;
 							was_lexeme = false;
+
 							parser_add_char(prs, U'\n');
 							parser_print(prs);
 							parser_next_line(prs);
+							parser_clear_code(prs);
 							break;
 						case (char32_t)EOF:
 							parser_print(prs);
@@ -759,7 +843,28 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						{
 							was_star = false;
 							strings_remove(&prs->code);	// '/' был записан в буффер
-							parser_skip_long_comment(prs);
+
+							const size_t line = prs->line;
+							const size_t size = parser_skip_long_comment(prs, line);
+
+							switch (prs->line - line)				// При печати специального комментария
+							{										// используется 2 переноса строки.
+								case 2:								// Для комментариев меньше четырехстрочных
+									parser_add_char(prs, U'\n');	// специальный комментарий не ставится.
+									prs->position--;
+								case 1:
+									parser_add_char(prs, U'\n');
+									prs->position--;
+								case 0:
+									break;
+								default:
+									parser_add_char(prs, U'\n');
+									prs->position--;
+									parser_comment_to_buffer(prs);
+									break;
+							}
+
+							parser_add_spacers(prs, size);
 						}
 						else
 						{
@@ -769,19 +874,8 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 						break;
 
 					default:
-						if (was_star && prev == U'/')
-						{
-							strings_remove(&prs->code);	// '/' был записан в буффер
-							strings_remove(&prs->code);	// '*' был записан в буффер
-							prs->position -= 2;
-							parser_macro_warning(prs, PARSER_UNEXPECTED_COMM_END);
-							prs->position += 3;				// необходимо пропустить
-						}
-						if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
-						{
-							was_star = false;
-							parser_add_char(prs, cur);
-						}
+						was_star = false;
+						parser_add_char(prs, cur);
 						break;
 				}
 		}
@@ -813,6 +907,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
+	prs.path = NULL;
 	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
 	prs.position = FST_CHARACTER_INDEX;
@@ -833,6 +928,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	prs->in = in;
+	prs->path = linker_current_path(prs->lk);
 	parser_comment(prs);
 	parser_print(prs);
 	

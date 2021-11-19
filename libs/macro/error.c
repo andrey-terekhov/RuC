@@ -99,6 +99,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_INCORRECT_IDENT_NAME:
 			sprintf(msg, "некорректное имя идентификатора");
 			break;
+		case PARSER_BIG_IDENT_NAME:
+			sprintf(msg, "лексема переполнила внутренний буффер");
+			break;
 
 		case PARSER_DEFINE_NEED_IDENT:
 			sprintf(msg, "#define требуется идентификатор");
@@ -111,6 +114,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case PARSER_MACRO_NEED_IDENT:
 			sprintf(msg, "#macro требуется идентификатор");
+			break;
+
+		case PARSER_SET_NOT_EXIST_IDENT:
+			sprintf(msg, "переопределение несуществующего идентификатора");
 			break;
 
 		case PARSER_MACRO_NOT_ENDED:
@@ -142,9 +149,6 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		
 		case PARSER_DEFINE_EXIST_IDENT:
 			sprintf(msg, "определение существующего идентификатора");
-			break;
-		case PARSER_SET_NOT_EXIST_IDENT:
-			sprintf(msg, "переопределение несуществующего идентификатора");
 			break;
 		case PARSER_UNDEF_NOT_EXIST_IDENT:
 			sprintf(msg, "удаление несуществующего идентификатора");
