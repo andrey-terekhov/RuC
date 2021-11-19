@@ -703,7 +703,8 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 			case KW_SET:
 			case KW_UNDEF:
 				parser_check_kw_position(prs, was_lexeme);
-				parser_define(prs, cur, index);
+				parser_macro_warning(prs, 100);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				break;
