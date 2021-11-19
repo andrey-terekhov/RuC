@@ -824,7 +824,7 @@ static void parser_define(parser *const prs, char32_t cur, const keyword_t mode)
 		{
 			prs->position = position;
 			parser_macro_error(prs, PARSER_SET_NOT_EXIST_IDENT);
-			parser_skip_line(prs);
+			parser_skip_line(prs, cur);
 			return;
 		}
 		else if (mode == KW_UNDEF)
