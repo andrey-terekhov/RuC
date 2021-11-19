@@ -219,9 +219,17 @@ static token lex_numeric_literal(lexer *const lxr)
 	// Переменные для подсчета значения
 	uint64_t int_value = 0;
 	double float_value = 0.0;
+	bool is_in_range = true;
+	bool is_integer = true;
 
 	while (utf8_is_hexa_digit(lxr->character))
 	{
+		if (!was_modifier && utf8_is_power(lxr->character))
+		{
+			// Встретили экспоненту - выходим из цикла
+			break;
+		}
+
 		const uint8_t digit = utf8_to_number(lxr->character);
 		if (digit >= base && !utf8_is_power(lxr->character))
 		{
@@ -237,24 +245,36 @@ static token lex_numeric_literal(lexer *const lxr)
 			return token_int_literal((location){ loc_begin, loc_end }, int_value);
 		}
 
-		int_value = int_value * base + digit;
-		float_value = float_value * base + digit;
+		if ((base == 2 && int_value >= 0x8000000000000000)
+			|| (base == 8 && int_value >= 0x2000000000000000)
+			|| (int_value >= 0x1000000000000000))
+		{
+			// Переполнение хранилища - конвертируем в double
+			float_value = (double)int_value;
+			is_in_range = false;
+			is_integer = false;
+		}
+
+		if (is_integer)
+		{
+			int_value = int_value * base + digit;
+		}
+		else
+		{
+			float_value = float_value * base + digit;
+		}
+
 		scan(lxr);
-	}
-
-	bool is_in_range = true;
-	bool is_integer = true;
-
-	// Проверяем, попадаем ли еще в целочисленный диапазон
-	if (float_value > (double)INT_MAX)
-	{
-		is_in_range = false;
-		is_integer = false;
 	}
 
 	// Дробная часть разрешена только для чисел без спецификаторов
 	if (lxr->character == '.' && !was_modifier)
 	{
+		if (is_integer)
+		{
+			float_value = (double)int_value;
+		}
+
 		is_integer = false;
 		double position_mult = 0.1;
 		// Читаем только десятичные цифры
@@ -275,6 +295,11 @@ static token lex_numeric_literal(lexer *const lxr)
 
 		if (lxr->character == '-')
 		{
+			if (is_integer)
+			{
+				float_value = (double)int_value;
+			}
+
 			is_integer = false;
 			scan(lxr);
 			sign = -1;
