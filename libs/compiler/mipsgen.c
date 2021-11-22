@@ -1067,19 +1067,29 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	const size_t argc = statement_printf_get_argc(nd);
 	const node string = statement_printf_get_format_str(nd);
 	const size_t index = expression_literal_get_string(&string);
+	const size_t amount = strings_amount(info->sx);
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		// info->variable_location = LREG;
+		info->request_kind = RQ_REG;
+		// TODO: хорошо бы определённый регистр тоже через функцию выделять
+		info->request_reg = R_A1;
 
 		const node arg = statement_printf_get_argument(nd, i);
 		emit_expression(info, &arg);
+
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\tjal printf\n");
 	}
 
 	// TODO: может можно как-то покрасивее это написать?
-	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
-	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
-	uni_printf(info->sx->io, "\tjal printf\n");
+	if (argc == 0)
+	{
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
+		uni_printf(info->sx->io, "\tjal printf\n");
+	}
 }
 
 /**
@@ -1223,6 +1233,8 @@ static void strings_declaration(information *const info)
 	const size_t amount = strings_amount(info->sx);
 	for (size_t i = 0; i < amount; i++)
 	{
+		item_t args_for_printf = 0; 
+
 		to_code_label(info->sx->io, L_STRING, i);
 		uni_printf(info->sx->io, "\t.ascii \"");
 
@@ -1233,6 +1245,22 @@ static void strings_declaration(information *const info)
 			if (ch == '\n')
 			{
 				uni_printf(info->sx->io, "\\n");
+			}
+			else if (ch == '%')
+			{
+				args_for_printf++;
+				j++;
+
+				uni_printf(info->sx->io, "%c", ch);
+				uni_printf(info->sx->io, "%c", string[j]);
+
+				// Если конец строки
+				if (string[j + 2] == '\0' || string[j + 1] == '\0')
+                    continue;
+
+				uni_printf(info->sx->io, "\\0\"\n");
+				to_code_label(info->sx->io, L_STRING, i + args_for_printf * amount);
+				uni_printf(info->sx->io, "\t.ascii \"");
 			}
 			else
 			{
