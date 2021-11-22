@@ -74,7 +74,8 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
  */
 static inline char32_t scan(lexer *const lxr)
 {
-	return lxr->character = uni_scan_char(lxr->sx->io);
+	lxr->character = uni_scan_char(lxr->sx->io);
+	return lxr->character;
 }
 
 /**
