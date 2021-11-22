@@ -525,5 +525,5 @@ int node_remove(node *const nd)
 
 bool node_is_correct(const node *const nd)
 {
-	return nd != NULL && vector_is_correct(nd->tree);
+	return nd != NULL && vector_is_correct(nd->tree) && nd->index != SIZE_MAX;
 }
