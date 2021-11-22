@@ -706,7 +706,7 @@ static void emit_subscript_expression(information *const info, const node *const
 	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		const node identifier = expression_subscript_get_base(&base);
-		const item_t id = expression_identifier_get_id(&identifier);
+		const item_t id = (item_t)expression_identifier_get_id(&identifier);
 		const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
@@ -771,7 +771,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-	const item_t id = expression_identifier_get_id(&base);
+	const item_t id = (item_t)expression_identifier_get_id(&base);
 	const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
@@ -969,9 +969,9 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
+	bool is_array_or_pointer = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
 	size_t id = 0;
-	if (!is_array)
+	if (!is_array_or_pointer)
 	{
 		id = expression_identifier_get_id(&operand);
 	}
@@ -982,7 +982,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 		id = (size_t)info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, id, operation_type, is_array, ident_is_local(info->sx, id));
+	to_code_load(info, info->register_num, id, operation_type, is_array_or_pointer, ident_is_local(info->sx, id));
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -1010,7 +1010,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, id, operation_type, is_array, false, ident_is_local(info->sx, id));
+	to_code_store_reg(info, info->register_num, id, operation_type, is_array_or_pointer, false, ident_is_local(info->sx, id));
 	info->register_num++;
 }
 
