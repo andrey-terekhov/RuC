@@ -1,12 +1,12 @@
 int main()
 {
    int a = 2;
-   print ("a  2");
-   printid(a);
+
+   assert(a == 2, "a must be 2");
 
    a = a + 5;
-   print ("a  7");
-   printid(a);
+
+   assert(a == 7, "a must be 7");
 
    return 0;
 }
