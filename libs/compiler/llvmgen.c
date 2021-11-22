@@ -1371,7 +1371,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 	to_code_label(info, label_end);
 
 	uni_printf(info->sx->io, " %%.%zu = phi ", info->register_num);
-	type_to_io(info, if_type == TYPE_FLOATING || else_type == TYPE_FLOATING ? TYPE_FLOATING : TYPE_INTEGER);
+	type_to_io(info, type_is_floating(if_type) || type_is_floating(else_type)? TYPE_FLOATING : TYPE_INTEGER);
 	uni_printf(info->sx->io, " [ %s%" PRIitem ", %%label%" PRIitem " ]", if_answer == AREG ? "%." : ""
 		, if_answer == AREG ? if_reg : if_const, label_if);
 	uni_printf(info->sx->io, ", [ %s%" PRIitem ", %%label%" PRIitem " ]\n", else_answer == AREG ? "%." : ""
