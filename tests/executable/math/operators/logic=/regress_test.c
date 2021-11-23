@@ -3,36 +3,36 @@ int main()
    int a = 1, b = 0, c = 1, d = 0;
    
    a &= b;
-   print ("a  0");
-   printid(a);
+
+   assert(a == 0, "a must be 0");
 
    a |= c;
-   print ("a  1");
-   printid(a);
+
+   assert(a == 1, "a must be 1");
 
    a |= c;
-   print ("a  1");
-   printid(a);
+
+   assert(a == 1, "a must be 1");
 
    a ^= c;
-   print ("a  0");
-   printid(a);
+
+   assert(a == 0, "a must be 0");
 
    a &= b;
-   print ("a  0");
-   printid(a);
+
+   assert(a == 0, "a must be 0");
 
    c &= d;
-   print ("c  1");
-   printid(c);
+
+   assert(c == 1, "c must be 1");
 
    b ^= c;
-   print ("b  0");
-   printid(b);
+
+   assert(b == 0, "b must be 0");
 
    b |= c;
-   print ("b  0");
-   printid(b);
+
+   assert(b == 0, "b must be 0");
 
    return 0;
 }
