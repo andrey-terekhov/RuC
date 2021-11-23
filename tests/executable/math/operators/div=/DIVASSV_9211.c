@@ -2,7 +2,8 @@ int main()
 {
 	int a = 2, b = 3;
 	a /= b;
-	print("a 0");
-	printid(a);
+
+	assert(a == 0, "a must be 0");
+
 	return 0;
 }
