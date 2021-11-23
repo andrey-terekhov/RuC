@@ -3,28 +3,41 @@ void main()
     float x[1];
     double y = .01, z;
     x[0] = 3.14;
-    print(x[0] + y); // 3.15
-    print(x[0] - y); // 3.13
-    print(x[0] * y); // 0.0314
-    print(x[0] / y); // 314
-    print("\n");
+
+    assert(x[0] + y == 3.15, "x[0] + y must be 3.15");
+    assert(x[0] - y == 3.13, "x[0] - y must be 3.13");
+    assert(x[0] * y == 0.0314, "x[0] * y must be 0.0314");
+    assert(x[0] / y == 314, "x[0] / y must be 314");
     
     x[0] += y;       // 3.15
-    printid(x);
+
+    assert(x[0] == 3.15, "x[0] must be 3.15");
+
     x[0] -= y;       // 3.14
-    printid(x);
+
+    assert(x[0] == 3.14, "x[0] must be 3.14");
+
     x[0] *= y;       // 0.0314
-    printid(x);
+
+    assert(x[0] == 0.0314, "x[0] must be 0.0314");
+
     x[0] /= y;       // 3/14
-    printid(x);
-    print("\n");
+
+    assert(x[0] == 3.14, "x[0] must be 3.14");
     
     z = x[0] += y;   // 3.15
-    printid(z);
+
+    assert(z == 3.15, "z must be 3.15");
+
     z = x[0] -= y;   // 3.14
-    printid(z);
+
+    assert(z == 3.14, "z must be 3.14");
+
     z = x[0] *= y;   // 0.0314
-    printid(z);
+
+    assert(z == 0.0314, "z must be 0.0314");
+
     z = x[0] /= y;   // 3.14
-    printid(z);
+
+    assert(z == 3.14, "z must be 3.14");
 }
