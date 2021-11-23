@@ -4,18 +4,24 @@ int b;
 void main()
 {
     a = sin(3.14 / 2);
-    printid(a);
+
+    assert(a == 1, "a must be 1");
+
     a = cos(0);
-    printid(a);
+
+    assert(a == 1, "a must be 1");
+
     a = sqrt(1.e2);
-    print("a 10.000000");
-    printid(a);
+
+    assert(a == 10.000000, "a must be 10.000000");
+
     a = abs(-2.72);
-    print("a 2.720000");
-    printid(a);
+
+    assert(a == 2.720000, "a must be 2.720000");
+
     a = abs(-3);
-    print("a 3.000000");
-    printid(a);
+
+    assert(a == 3.000000, "a must be 3.000000");
     /* sin(3.14/2)=1, cos(0)=1, sqrt(1.e2)=10, abs(-2.72)=2.72, abs(-3)=3 */
     
 }
