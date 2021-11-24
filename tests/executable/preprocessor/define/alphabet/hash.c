@@ -4,5 +4,6 @@
 void main()
 {
     int hash = A;
-    printid(hash);
+
+    assert(hash == 65, "hash must be 65");
 } 

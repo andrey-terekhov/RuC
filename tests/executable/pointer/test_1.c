@@ -3,26 +3,36 @@ void main()
     int a = 9, *b, e = 1;
     float c = 3.14, *d;
     b = &a;
-    print(*b); // 9
+
+    assert(*b == 9, "*b must be 9");
+
     (*b)++;
-    print(*b); // 10
+
+    assert(*b == 10, "*b must be 10");
+
     ++*b;
-    print(*b); // 11
+
+    assert(*b == 11, "*b must be 1");
     
     d = &c;
-    print(*d); // 3.14
+
+    assert(*d == 3.14, "*d must be 3.14");
     (*d)++;
-    print(*d); // 4.14
+
+    assert(*d == 4.14, "*d must be 4.14");
     ++*d;
-    print(*d); // 5.14
+
+    assert(*d == 5.14, "*d must be 5.14");
 
     a = ++e + ++e;
-    printid(a);
-    printid(e); // 3
+
+    assert(a == 5, "a must be 5");
+    assert(e == 3, "e must be 3");
     
     a = e++ + ++e;
-    printid(a); // 8
-    printid(e); // 5
+
+    assert(a == 8, "a must be 8");
+    assert(e == 5, "e must be 5");
 }
 
 
