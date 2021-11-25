@@ -16,5 +16,5 @@ void main()
     assert(b == 6, "b must be 6");
     a = a * b + c / a;
 
-    assert(a == 36.666668, "a must be 36.666668");
+    assert(abs(a - 36.666668) < 0.00001, "a must be 36.666668");
 }

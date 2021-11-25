@@ -26,7 +26,7 @@ int main()
       default: j++;
    }
 
-   assert(j == 4, "j must be 4");
+   assert(j == 2, "j must be 2");
 
    return 0;
 }
