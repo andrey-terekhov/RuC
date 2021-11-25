@@ -17,4 +17,6 @@ int main()
             b = a;
     }
     a = b;
+
+    assert(a == 0, "a must be 0");
 }
