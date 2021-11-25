@@ -10,7 +10,7 @@ void MAIN()
 {
     a = &a1;
 
-    assert(*a == 7, "*a must be 7");
+    assert(*a == '7', "*a must be '7'");
 
     f(&a1, b);
 

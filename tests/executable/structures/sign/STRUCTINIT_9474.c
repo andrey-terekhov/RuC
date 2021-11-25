@@ -5,7 +5,7 @@ void main()
     struct somestr  str = {2, 2};
 
     pointstr = &str;
-    
-    print("2 2");
-    print(*pointstr);        
+
+    assert(pointstr->a == 2, "pointstr->a must be 2");
+    assert(pointstr->b == 2, "pointstr->b must be 2");     
 }

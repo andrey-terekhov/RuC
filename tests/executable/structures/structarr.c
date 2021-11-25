@@ -6,5 +6,6 @@ struct{
 void main()
 {
     int r = f[0].c[0][0].a[0] = 11;
-    print(r);
+
+    assert(r == 11, "r must be 11");
 }

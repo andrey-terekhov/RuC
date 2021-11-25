@@ -6,6 +6,6 @@ void main()
 
     pointstr = &str;
     
-    print("1 2");        
-    print(*pointstr);        
+    assert(pointstr->a == 1, "pointstr->a must be 1");
+    assert(pointstr->b == 2, "pointstr->b must be 2");       
 }
