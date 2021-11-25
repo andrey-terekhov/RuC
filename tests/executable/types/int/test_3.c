@@ -4,10 +4,15 @@ void main()
 {
     int c = 4;
     b = 5 + a - c + a;
-    printid(b);       // 5
+
+    assert(b == 5, "b must be 5");
+
     b = a += c;
-    printid(a);       // 6
-    printid(b);       // 6
+
+    assert(a == 6, "a must be 6");
+    assert(b == 6, "b must be 6");
+
     a = a * b + c / 2;
-    printid(a);       // 38
+
+    assert(a == 38, "a must be 38");
 }
