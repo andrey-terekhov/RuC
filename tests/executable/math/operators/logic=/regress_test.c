@@ -24,7 +24,7 @@ int main()
 
    c &= d;
 
-   assert(c == 1, "c must be 1");
+   assert(c == 0, "c must be 0");
 
    b ^= c;
 
