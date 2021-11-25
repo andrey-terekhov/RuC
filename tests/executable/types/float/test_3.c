@@ -3,12 +3,18 @@ float a = 2, b = 3;
 void main()
 {
     int c = 4;
-    printid(c);         // 4
+
+    assert(c == 4, "c must be 4");
+
     b = 5 + a - c + a;
-    printid(b);         // 5
+
+    assert(b == 5, "b must be 5");
+
     b = a += c;
-    printid(a);         // 6
-    printid(b);         // 6
+
+    assert(a == 6, "a must be 6");
+    assert(b == 6, "b must be 6");
     a = a * b + c / a;
-    printid(a);         // 36.666668
+
+    assert(a == 36.666668, "a must be 36.666668");
 }
