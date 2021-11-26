@@ -16,13 +16,13 @@ void main()
     
     d = &c;
 
-    assert(*d == 3.14, "*d must be 3.14");
+    assert(abs(*d - 3.14) < 0.000001, "*d must be 3.14");
     (*d)++;
 
-    assert(*d == 4.14, "*d must be 4.14");
+    assert(abs(*d - 4.14) < 0.000001, "*d must be 4.14");
     ++*d;
 
-    assert(*d == 5.14, "*d must be 5.14");
+    assert(abs(*d - 5.14) < 0.000001, "*d must be 5.14");
 
     a = ++e + ++e;
 

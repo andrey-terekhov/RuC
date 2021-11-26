@@ -3,7 +3,7 @@ void* threadf(void* x)
     int i = 113;
 
     assert(1, "Thread 1 alive!\n");
-    assert(i == 123, "i must be 123");
+    assert(i == 113, "i must be 113");
 
     t_exit();
     return 0;
