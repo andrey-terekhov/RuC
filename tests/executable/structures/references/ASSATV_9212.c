@@ -14,6 +14,6 @@ void main()
     l1 -> y = 6;
     l1 -> x = 7;
     
-    assert(l1->x == 20, "*l1.x must be 7");
-    assert(l1->y == 21, "*l1.y must be 6");         
+    assert(l1->x == 7, "*l1.x must be 7");
+    assert(l1->y == 6, "*l1.y must be 6");         
 }
