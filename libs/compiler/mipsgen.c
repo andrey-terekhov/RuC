@@ -1069,7 +1069,9 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	const size_t index = expression_literal_get_string(&string);
 	const size_t amount = strings_amount(info->sx);
 
-	for (size_t i = 0; i < argc; i++)
+	size_t i;
+
+	for (i = 0; i < argc; i++)
 	{
 		info->request_kind = RQ_REG;
 		// TODO: хорошо бы определённый регистр тоже через функцию выделять
@@ -1083,13 +1085,9 @@ static void emit_printf_statement(information *const info, const node *const nd)
 		uni_printf(info->sx->io, "\tjal printf\n");
 	}
 
-	// TODO: может можно как-то покрасивее это написать?
-	if (argc == 0)
-	{
-		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index);
-		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index);
-		uni_printf(info->sx->io, "\tjal printf\n");
-	}
+	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+	uni_printf(info->sx->io, "\tjal printf\n");
 }
 
 /**
@@ -1253,10 +1251,6 @@ static void strings_declaration(information *const info)
 
 				uni_printf(info->sx->io, "%c", ch);
 				uni_printf(info->sx->io, "%c", string[j]);
-
-				// Если конец строки
-				if (string[j + 2] == '\0' || string[j + 1] == '\0')
-                    continue;
 
 				uni_printf(info->sx->io, "\\0\"\n");
 				to_code_label(info->sx->io, L_STRING, i + args_for_printf * amount);
