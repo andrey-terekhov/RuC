@@ -8,7 +8,7 @@ void MAIN()
 
     c -= d[0];
 
-    assert(c == 8.86, "c must be 8.86");
+    assert(abs(c - 8.86) < 0.000001, "c must be 8.86");
 
     b[0] += 10;
 
@@ -18,6 +18,6 @@ void MAIN()
 
     d[1] -= 0.70;
 
-    assert(d[0] == 3.14, "d[0] must be 3.14");
-    assert(d[1] == 2.02, "d[1] must be 2.02");
+    assert(abs(d[0] - 3.14) < 0.000001, "d[0] must be 3.14");
+    assert(abs(d[1] - 2.02) < 0.000001, "d[1] must be 2.02");
 }
