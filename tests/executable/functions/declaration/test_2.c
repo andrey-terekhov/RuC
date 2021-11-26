@@ -20,7 +20,7 @@ void main()
         a++;
     }
 
-    assert(j == -8, "j must be -8");
+    assert(a == -8, "a must be -8");
 }
 
 void f()
