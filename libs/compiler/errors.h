@@ -69,7 +69,7 @@ typedef enum ERROR
 	no_leftbr_in_for,
 	no_semicolon_in_for,
 	no_rightbr_in_for,
-	no_ident_after_goto,
+	expected_identifier_after_goto,		/**< Expected identifier after 'goto' */
 	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
 	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
@@ -225,6 +225,9 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
+	array_borders_cannot_be_static_dynamic,
+	such_array_is_not_supported,
+	too_many_arguments
 } error_t;
 
 /** Warnings codes */

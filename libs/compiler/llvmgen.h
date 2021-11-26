@@ -1,5 +1,5 @@
 /*
- *	Copyright 2021 Andrey Terekhov, Ilya Andreev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include "syntax.h"
+#include "workspace.h"
 
 
 #ifdef __cplusplus
@@ -24,31 +25,14 @@ extern "C" {
 #endif
 
 /**
- *	Write abstract syntax tree
+ *	Encode to low level virtual machine codes
  *
- *	@param	path			File path
+ *	@param	ws				Compiler workspace
  *	@param	sx				Syntax structure
- */
-void write_tree(const char *const path, syntax *const sx);
-
-/**
- *	Write type spelling
  *
- *	@param	sx				Syntax structure
- *	@param	type			Type
- *	@param	buffer			Buffer
- *
- *	@return	Return printf-like value
+ *	@return	@c 0 on success, @c -1 on failure
  */
-int write_type_spelling(const syntax *const sx, const item_t type, char *const buffer);
-
-/**
- *	Write virtual machine codes
- *
- *	@param	path			File path
- *	@param	memory			Instructions table
- */
-void write_codes(const char *const path, const vector *const memory);
+int encode_to_llvm(const workspace *const ws, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
