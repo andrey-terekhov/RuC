@@ -37,6 +37,6 @@ extern double token_get_float_value(const token *const tk);
 extern token token_string_literal(const location loc, const size_t string_num);
 extern size_t token_get_string_num(const token *const tk);
 
-extern token token_eof(void);
+extern token token_eof();
 extern token token_keyword(const location loc, const token_t kind);
 extern token token_punctuator(const location loc, const token_t kind);
