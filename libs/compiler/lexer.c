@@ -232,7 +232,7 @@ static token lex_numeric_literal(lexer *const lxr)
 		}
 
 		const uint8_t digit = utf8_to_number(lxr->character);
-		if (digit >= base && !utf8_is_power(lxr->character))
+		if (digit >= base)
 		{
 			// Ошибка - цифра не из той системы
 			lexer_error(lxr, unexpected_digit);

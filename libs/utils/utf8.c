@@ -831,13 +831,6 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
-/**
- *	Convert hexadecimal digit to number
- *
- *	@param	symbol		UTF-8 symbol
- *
- *	@return	Corresponding number
- */
 uint8_t utf8_to_number(const char32_t symbol)
 {
 	if (utf8_is_digit(symbol))
@@ -855,7 +848,7 @@ uint8_t utf8_to_number(const char32_t symbol)
 		return (uint8_t)(symbol - 'a' + 10);
 	}
 
-	return '\0';
+	return 0;
 }
 
 bool utf8_is_russian(const char32_t symbol)
