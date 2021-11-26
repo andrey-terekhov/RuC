@@ -688,6 +688,23 @@ static void emit_print_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit upb expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_upb_expression(encoder *const enc, const node *const nd)
+{
+	const node fst = expression_call_get_argument(nd, 1);
+	emit_expression(enc, &fst);
+
+	const node snd = expression_call_get_argument(nd, 0);
+	emit_expression(enc, &snd);
+
+	mem_add(enc, IC_UPB);
+}
+
+/**
  *	Emit call expression
  *
  *	@param	enc			Encoder
@@ -711,6 +728,9 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 			return;
 		case BI_GETID:
 			emit_getid_expression(enc, nd);
+			return;
+		case BI_UPB:
+			emit_upb_expression(enc, nd);
 			return;
 	}
 
