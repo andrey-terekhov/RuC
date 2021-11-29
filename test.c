@@ -1,5 +1,19 @@
-#define /*ggggt
-hhy*/ A
+/*
+
+
+*/                                                                          /*
+
+
+
+
+
+
+
+
+*/;
+
+dfgh/*gvhbjnmkl,
+
 int main()
 {
 	return 0;
