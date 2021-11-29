@@ -41,7 +41,7 @@ const size_t FST_CHARACTER_INDEX = 0;
  */
 static bool utf8_is_separator(const char32_t symbol)
 {
-	return  symbol == U' ' || symbol == U'\t';
+	return  symbol == ' ' || symbol == '\t';
 }
 
 /**
@@ -53,7 +53,7 @@ static bool utf8_is_separator(const char32_t symbol)
  */
 static bool utf8_is_line_breaker(const char32_t symbol)
 {
-	return  symbol == U'\r' || symbol == U'\n';
+	return  symbol == '\r' || symbol == '\n';
 }
 
 
@@ -138,7 +138,7 @@ static inline void parser_add_spacers(parser *const prs, const size_t size)
 {
 	for (size_t i = 0; i < size; i ++)
 	{
-		parser_add_char(prs, U' ');
+		parser_add_char(prs, ' ');
 		prs->position--;
 	}
 }
@@ -150,7 +150,7 @@ static inline void parser_add_spacers(parser *const prs, const size_t size)
  */
 static inline void parser_comment(parser *const prs)
 {
-	comment cmt = cmt_create(prs->path, prs->line);
+	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	uni_printf(prs->out, "%s", buffer);
@@ -163,7 +163,7 @@ static inline void parser_comment(parser *const prs)
  */
 static inline void parser_comment_to_buffer(parser *const prs)
 {
-	comment cmt = cmt_create(prs->path, prs->line);
+	comment cmt = cmt_create(linker_current_path(prs->lk), prs->line);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
@@ -176,7 +176,7 @@ static inline void parser_comment_to_buffer(parser *const prs)
  */
 static inline void parser_macro_comment(parser *const prs)
 {
-	comment cmt = cmt_create_macro(prs->path, prs->line, prs->position);
+	comment cmt = cmt_create_macro(linker_current_path(prs->lk), prs->line, prs->position);
 	char buffer[CMT_BUFFER_SIZE];
 	cmt_to_string(&cmt, buffer);
 	parser_add_string(prs, buffer);
@@ -295,7 +295,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 
 	parser_add_char(prs, ch);					// Вывод символа начала строковой константы
 
-	char32_t prev = U'\0';
+	char32_t prev = '\0';
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
@@ -303,7 +303,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		{
 			parser_add_char(prs, cur);
 
-			if (prev != U'\\')
+			if (prev != '\\')
 			{
 				return;							// Строка считана, выход из функции
 			}
@@ -311,12 +311,12 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		}
 		else if (utf8_is_line_breaker(cur))		// Ошибка из-за наличия переноса строки
 		{
-			if (cur == U'\r')					// Обработка переноса строки
+			if (cur == '\r')					// Обработка переноса строки
 			{
 				uni_scan_char(prs->in);
 			}
 
-			if (prev != U'\\')
+			if (prev != '\\')
 			{
 				prs->position = position;
 				parser_macro_error(prs, PARSER_STRING_NOT_ENDED);
@@ -326,7 +326,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 					parser_add_char(prs, ch);
 				}
 				
-				parser_add_char(prs, U'\n');
+				parser_add_char(prs, '\n');
 				parser_print(prs);
 				parser_next_line(prs);
 				
@@ -348,7 +348,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	if (prs->is_recovery_disabled)				// Добавление "\";" в конец незаконченной строковой константы
 	{
 		parser_add_char(prs, ch);
-		parser_add_char(prs, U';');
+		parser_add_char(prs, ';');
 	}
 
 	parser_print(prs);
@@ -362,7 +362,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
  */
 static inline void parser_skip_short_comment(parser *const prs)
 {
-	parser_skip_line(prs, U'/');
+	parser_skip_line(prs, '/');
 }
 
 /**
@@ -380,7 +380,7 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 	prs->position++;										// '*' был считан снаружи
 
 	char32_t prev;
-	char32_t cur = U'*';
+	char32_t cur = '*';
 	while (cur != (char32_t)EOF)
 	{
 		prev = cur;
@@ -389,14 +389,14 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 
 		switch (cur)
 		{
-			case U'\r':
+			case '\r':
 				uni_scan_char(prs->in);
-			case U'\n':
+			case '\n':
 				parser_next_line(prs);
 				break;
 
-			case U'/':
-				if (prev == U'*')
+			case '/':
+				if (prev == '*')
 				{
 					return prs->line == line
 							? prs->position - position
@@ -453,14 +453,14 @@ static inline bool parser_check_kw_position(parser *const prs, const bool was_le
  */
 static int parser_find_ident_begining(parser *const prs, char32_t cur, const int mode)
 {
-	while (utf8_is_separator(cur) || cur == U'/')
+	while (utf8_is_separator(cur) || cur == '/')
 	{
-		if (cur == U'/')
+		if (cur == '/')
 		{
 			char32_t next = uni_scan_char(prs->in);
 			switch (next)
 			{
-				case U'*':
+				case '*':
 					parser_skip_long_comment(prs, prs->line);
 					break;
 				default:
@@ -478,7 +478,7 @@ static int parser_find_ident_begining(parser *const prs, char32_t cur, const int
 	{
 		return -2;
 	}
-	else if ((mode == 1 && !utf8_is_letter(cur)) || (mode == 0 && cur != U'\"' && cur != U'<'))
+	else if ((mode == 1 && !utf8_is_letter(cur)) || (mode == 0 && cur != '\"' && cur != '<'))
 	{
 		return -1;
 	}
@@ -494,17 +494,17 @@ static int parser_find_ident_begining(parser *const prs, char32_t cur, const int
  */
 static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
 {
-	while (utf8_is_separator(cur) || cur == U'/')
+	while (utf8_is_separator(cur) || cur == '/')
 	{
-		if (cur == U'/')
+		if (cur == '/')
 		{
 			char32_t next = uni_scan_char(prs->in);
 			switch (next)
 			{
-				case U'/':
+				case '/':
 					parser_skip_short_comment(prs);
 					return;
-				case U'*':
+				case '*':
 					parser_skip_long_comment(prs, prs->line);
 					break;
 				default:
@@ -541,7 +541,7 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 {
 	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
 
-	universal_io in = linker_add_header(prs->lk, mode == U'\"'
+	universal_io in = linker_add_header(prs->lk, mode == '\"'
 													? linker_search_internal(prs->lk, path)
 													: linker_search_external(prs->lk, path));
 	if (!in_is_correct(&in))
@@ -549,7 +549,6 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
 	}
 
-	new_prs.path = linker_current_path(new_prs.lk);
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	int ret = parser_preprocess(&new_prs, &in);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
@@ -557,7 +556,7 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 	in_clear(&in);
 
 	// Добавление комментария после прохода файла
-	parser_add_char(prs, U'\n');
+	parser_add_char(prs, '\n');
 	prs->position--;
 	parser_comment_to_buffer(prs);
 
@@ -577,7 +576,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
 	// Печать кода и комментария перед макроподстановкой
-	parser_add_char(prs, U'\n');
+	parser_add_char(prs, '\n');
 	prs->position--;
 	parser_macro_comment(prs);
 	parser_print(prs);
@@ -588,17 +587,16 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	universal_io in = io_create();
 	in_set_buffer(&in, buffer);
 
-	new_prs.path = prs->path;
 	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
 	new_prs.in = &in;
 
-	//parser_preprocess_code(&new_prs, U'\0', 0);
+	//parser_preprocess_code(&new_prs, '\0', 0);
 	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
 
 	in_clear(&in);
 
 	// Печать комментария после макроподстановки
-	parser_add_char(prs, U'\n');
+	parser_add_char(prs, '\n');
 	prs->position--;
 	parser_comment_to_buffer(prs);
 
@@ -630,7 +628,7 @@ static int parser_include(parser *const prs, char32_t cur)
 
 	// ОБработка пути
 	char path[MAX_ARG_SIZE] = "\0";
-	const char32_t ch = cur == U'<' ? U'>' : U'\"';
+	const char32_t ch = cur == '<' ? '>' : '\"';
 	storage_search(prs->stg, prs->in, &cur);
 	prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
 
@@ -679,7 +677,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 	{
 		const char32_t prev = cur;
 		const size_t index = storage_search(prs->stg, prs->in, &cur);
-		if (was_star && prev == U'/' && cur != U'/' && cur != U'*')
+		if (was_star && prev == '/' && cur != '/' && cur != '*')
 		{
 			strings_remove(&prs->code);	// '/' был записан в буффер
 			strings_remove(&prs->code);	// '*' был записан в буффер
@@ -754,11 +752,8 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 				break;
 			case KW_ENDW:
 				parser_check_kw_position(prs, was_lexeme);
-				if (mode != KW_WHILE)
-				{
-					parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
-					parser_skip_line(prs, cur);
-				}
+				parser_macro_error(prs, PARSER_UNEXPECTED_ENDW);
+				parser_skip_line(prs, cur);
 				was_lexeme = false;
 				was_star = false;
 				return;
@@ -799,25 +794,25 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 
 				switch (cur)
 				{
-					case U'#':
+					case '#':
 						was_star = false;
 						parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 						parser_skip_line(prs, cur);
 						break;
 
-					case U'\'':
-					case U'\"':
+					case '\'':
+					case '\"':
 						was_star = false;
 						parser_skip_string(prs, cur);
 						break;
 
-					case U'\r':
+					case '\r':
 							cur = uni_scan_char(prs->in);
-						case U'\n':
+						case '\n':
 							was_star = false;
 							was_lexeme = false;
 
-							parser_add_char(prs, U'\n');
+							parser_add_char(prs, '\n');
 							parser_print(prs);
 							parser_next_line(prs);
 							parser_clear_code(prs);
@@ -826,8 +821,8 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							parser_print(prs);
 							break;
 
-					case U'/':
-						if (prev == U'/')
+					case '/':
+						if (prev == '/')
 						{
 							was_star = false;
 							strings_remove(&prs->code);	// '/' был записан в буффер
@@ -838,8 +833,8 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							parser_add_char(prs, cur);
 						}
 						break;
-					case U'*':
-						if (prev == U'/')
+					case '*':
+						if (prev == '/')
 						{
 							was_star = false;
 							strings_remove(&prs->code);	// '/' был записан в буффер
@@ -850,15 +845,15 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 							switch (prs->line - line)				// При печати специального комментария
 							{										// используется 2 переноса строки.
 								case 2:								// Для комментариев меньше четырехстрочных
-									parser_add_char(prs, U'\n');	// специальный комментарий не ставится.
+									parser_add_char(prs, '\n');	// специальный комментарий не ставится.
 									prs->position--;
 								case 1:
-									parser_add_char(prs, U'\n');
+									parser_add_char(prs, '\n');
 									prs->position--;
 								case 0:
 									break;
 								default:
-									parser_add_char(prs, U'\n');
+									parser_add_char(prs, '\n');
 									prs->position--;
 									parser_comment_to_buffer(prs);
 									break;
@@ -907,7 +902,6 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.in = NULL;
 	prs.out = out;
 
-	prs.path = NULL;
 	prs.line_position = 0;
 	prs.line = FST_LINE_INDEX;
 	prs.position = FST_CHARACTER_INDEX;
@@ -922,19 +916,73 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 
 int parser_preprocess(parser *const prs, universal_io *const in)
 {
-	if (!parser_is_correct(prs)|| !in_is_correct(in))
+	if (!parser_is_correct(prs) || !in_is_correct(in))
 	{
 		return -1;
 	}
 
+	size_t i = 0;
+	item_t value = map_get_by_index(&prs->stg->as, i);
+	while (value != ITEM_MAX)
+	{
+		printf("%zu) %" PRIitem "\n", i, value);
+		value = map_get_by_index(&prs->stg->as, ++i);
+	}
+
+	universal_io *old_in = prs->in;
 	prs->in = in;
-	prs->path = linker_current_path(prs->lk);
-	parser_comment(prs);
 
-	char32_t cur = U'\0';
-	parser_preprocess_code(prs, cur, 0);
+	//parser_comment(prs);
 
-	return !prs->was_error ? 0 : -1;
+	char32_t last = '\0';
+	while (last != (char32_t)EOF)
+	{
+		const size_t index = storage_search(prs->stg, prs->in, &last);
+		switch (index)
+		{
+			case KW_INCLUDE:
+				//uni_unscan_char(prs->in, last);
+				//parser_include(prs, last);
+				break;
+		
+			case KW_DEFINE:
+			case KW_SET:
+			case KW_UNDEF:
+
+			case KW_MACRO:
+			case KW_ENDM:
+
+			case KW_IFDEF:
+			case KW_IFNDEF:
+			case KW_IF:
+			case KW_ELIF:
+			case KW_ELSE:
+			case KW_ENDIF:
+
+			case KW_EVAL:
+
+			case KW_WHILE:
+			case KW_ENDW:
+
+			case SIZE_MAX:
+				uni_printf(prs->out, "%s", storage_last_read(prs->stg) == NULL ? "NULL" : storage_last_read(prs->stg));
+				uni_print_char(prs->out, last);
+				
+				//uni_printf(prs->out, "SIZE_MAX\n");
+				//parser_print(prs);			
+				break;
+
+			default:
+				uni_printf(prs->out, "%s", storage_last_read(prs->stg) == NULL ? "NULL" : storage_last_read(prs->stg));
+				uni_print_char(prs->out, last);
+				//parser_add_char(prs, last);
+				//parser_print(prs);
+				break;
+		}
+	}
+
+	prs->in = old_in;
+	return -1;
 }
 
 
