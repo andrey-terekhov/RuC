@@ -51,7 +51,7 @@ static inline bool recovery_status(const workspace *const ws)
  */
 static void lexer_error(lexer *const lxr, error_t num, ...)
 {
-	if (lxr->is_recovery_disabled && lxr->was_error)
+	if (lxr->is_recovery_disabled && lxr->sx->was_error)
 	{
 		return;
 	}
@@ -59,8 +59,8 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
 	va_list args;
 	va_start(args, num);
 
-	verror(lxr->io, num, args);
-	lxr->was_error = true;
+	verror(lxr->sx->io, num, args);
+	lxr->sx->was_error = true;
 
 	va_end(args);
 }
@@ -74,7 +74,7 @@ static void lexer_error(lexer *const lxr, error_t num, ...)
  */
 static inline char32_t scan(lexer *const lxr)
 {
-	lxr->character = uni_scan_char(lxr->io);
+	lxr->character = uni_scan_char(lxr->sx->io);
 	return lxr->character;
 }
 
@@ -87,9 +87,9 @@ static inline char32_t scan(lexer *const lxr)
  */
 static inline char32_t lookahead(lexer *const lxr)
 {
-	const size_t position = in_get_position(lxr->io);
-	const char32_t result = uni_scan_char(lxr->io);
-	in_set_position(lxr->io, position);
+	const size_t position = in_get_position(lxr->sx->io);
+	const char32_t result = uni_scan_char(lxr->sx->io);
+	in_set_position(lxr->sx->io, position);
 	return result;
 }
 
@@ -258,7 +258,7 @@ static token_t lex_numeric_constant(lexer *const lxr)
 		lxr->num_double = num_double;
 		if (is_out_of_range)
 		{
-			warning(lxr->io, too_long_int);
+			warning(lxr->sx->io, too_long_int);
 		}
 		return TK_FLOAT_CONST;
 	}
@@ -338,27 +338,14 @@ static token_t lex_char_constant(lexer *const lxr)
  */
 static token_t lex_string_literal(lexer *const lxr)
 {
-	size_t length = 0;
-	bool is_string_too_long = false;
+	vector_resize(&lxr->lexstr, 0);
 	while (lxr->character == '\"')
 	{
 		scan(lxr);
-		while (lxr->character != '"' && lxr->character != '\n' && length < MAX_STRING_LENGTH)
+		while (lxr->character != '"' && lxr->character != '\n')
 		{
-			if (!is_string_too_long)
-			{
-				lxr->lexstr[length++] = get_next_string_elem(lxr);
-			}
+			vector_add(&lxr->lexstr, get_next_string_elem(lxr));
 			scan(lxr);
-		}
-		if (length == MAX_STRING_LENGTH)
-		{
-			lexer_error(lxr, string_too_long);
-			is_string_too_long = true;
-			while (lxr->character != '"' && lxr->character != '\n')
-			{
-				scan(lxr);
-			}
 		}
 		if (lxr->character == '"')
 		{
@@ -370,7 +357,8 @@ static token_t lex_string_literal(lexer *const lxr)
 		}
 		skip_whitespace(lxr);
 	}
-	lxr->num = (int)length;
+
+	lxr->num_string = string_add(lxr->sx, &lxr->lexstr);
 	return TK_STRING;
 }
 
@@ -384,19 +372,24 @@ static token_t lex_string_literal(lexer *const lxr)
  */
 
 
-lexer create_lexer(const workspace *const ws, universal_io *const io, syntax *const sx)
+lexer lexer_create(const workspace *const ws, syntax *const sx)
 {
 	lexer lxr;
-	lxr.io = io;
 	lxr.sx = sx;
 	lxr.repr = 0;
 
 	lxr.is_recovery_disabled = recovery_status(ws);
-	lxr.was_error = false;
+
+	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
 
 	scan(&lxr);
 
 	return lxr;
+}
+
+int lexer_clear(lexer *const lxr)
+{
+	return vector_clear(&lxr->lexstr);
 }
 
 
@@ -408,6 +401,8 @@ token_t lex(lexer *const lxr)
 	}
 
 	skip_whitespace(lxr);
+	lxr->location = in_get_position(lxr->sx->io);
+
 	switch (lxr->character)
 	{
 		case (char32_t)EOF:
@@ -685,10 +680,10 @@ token_t lex(lexer *const lxr)
 
 token_t peek(lexer *const lxr)
 {
-	const size_t position = in_get_position(lxr->io);
+	const size_t position = in_get_position(lxr->sx->io);
 	const char32_t character = lxr->character;
 	const token_t peek_token = lex(lxr);
 	lxr->character = character;
-	in_set_position(lxr->io, position);
+	in_set_position(lxr->sx->io, position);
 	return peek_token;
 }
