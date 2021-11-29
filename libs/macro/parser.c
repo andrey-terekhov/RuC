@@ -469,31 +469,10 @@ static size_t parser_skip_separators(parser *const prs, char32_t *const last)
  *	@param	prs			Структура парсера
  *	@param	cur			Текущий символ
  */
-static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
+static void parser_find_unexpected_lexeme(parser *const prs)
 {
-	while (utf8_is_separator(cur) || cur == '/')
-	{
-		if (cur == '/')
-		{
-			char32_t next = uni_scan_char(prs->in);
-			switch (next)
-			{
-				case '/':
-					parser_skip_short_comment(prs);
-					return;
-				case '*':
-					parser_skip_long_comment(prs, prs->line);
-					break;
-				default:
-					parser_macro_warning(prs, PARSER_UNEXPECTED_LEXEME);
-					parser_skip_line(prs, cur);
-					return;
-			}
-		}
-
-		prs->position++;
-		cur = uni_scan_char(prs->in);
-	}
+	char32_t cur = uni_scan_char(prs->in);
+	prs->position += parser_skip_separators(prs, &cur);
 
 	if (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
@@ -516,7 +495,15 @@ static void parser_find_unexpected_lexeme(parser *const prs, char32_t cur)
  */
 static int parser_preprocess_file(parser *const prs, const char *const path, const char32_t mode)
 {
-	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
+	// Сохранение позиции в исходном файле
+	const size_t line_position = prs->line_position;
+	const size_t line = prs->line;
+
+	// Подготовка к парсингу нового файла
+	prs->line = FST_LINE_INDEX;
+	prs->position = FST_CHARACTER_INDEX;
+	prs->line_position = 0;
+	parser_clear_code(prs);
 
 	universal_io in = linker_add_header(prs->lk, mode == '\"'
 													? linker_search_internal(prs->lk, path)
@@ -526,11 +513,13 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
 	}
 
-	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
-	int ret = parser_preprocess(&new_prs, &in);
-	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
+	int ret = parser_preprocess(prs, &in);
 
 	in_clear(&in);
+
+	// Возврат позиционирования в исходном файле
+	prs->line = line;
+	prs->line_position = line_position;
 
 	// Добавление комментария после прохода файла
 	parser_add_char(prs, '\n');
@@ -539,46 +528,6 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 
 	return ret;
 }
-
-//static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode);
-
-/**
- *	Preprocess buffer
- *
- *	@param	prs			Parser structure
- *	@param	buffer		Code for preprocessing
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-/*static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
-{
-	// Печать кода и комментария перед макроподстановкой
-	parser_add_char(prs, '\n');
-	prs->position--;
-	parser_macro_comment(prs);
-	parser_print(prs);
-	parser_clear_code(prs);
-
-	parser new_prs = parser_create(prs->lk, prs->stg, prs->out);
-
-	universal_io in = io_create();
-	in_set_buffer(&in, buffer);
-
-	new_prs.is_recovery_disabled = prs->is_recovery_disabled;
-	new_prs.in = &in;
-
-	//parser_preprocess_code(&new_prs, '\0', 0);
-	prs->was_error = new_prs.was_error ? new_prs.was_error : prs->was_error;
-
-	in_clear(&in);
-
-	// Печать комментария после макроподстановки
-	parser_add_char(prs, '\n');
-	prs->position--;
-	parser_comment_to_buffer(prs);
-
-	return 0;
-}*/
 
 
 /**
@@ -591,6 +540,8 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
  */
 static int parser_include(parser *const prs)
 {
+	parser_print(prs);
+
 	const size_t position = prs->position;
 	prs->position += strlen(storage_last_read(prs->stg));
 
@@ -604,7 +555,7 @@ static int parser_include(parser *const prs)
 	// Обработка пути
 	char path[MAX_ARG_SIZE] = "\0";
 	const char32_t index = storage_search(prs->stg, prs->in, &cur);
-	const char32_t ch = cur == '<' ? '>' : '\"';
+	char32_t ch = cur == '<' ? '>' : '\"';
 	if (index == SIZE_MAX)
 	{
 		if (storage_last_read(prs->stg) != NULL)	// Неопределенный идентификатор
@@ -637,7 +588,12 @@ static int parser_include(parser *const prs)
 		// Запись пути, если он был определен через #define
 		prs->position += strlen(storage_last_read(prs->stg));
 		strcpy(path, storage_get_by_index(prs->stg, index));
+
+		ch = path[0];				// Запись режима поиска файла
+		path[0] = ' ';				// Удаление первой кавычки
 		path[strlen(path)] = '\0';	// Удаление последней кавычки
+
+		uni_unscan_char(prs->in, cur);
 	}
 
 	// Парсинг подключенного файла
@@ -647,7 +603,7 @@ static int parser_include(parser *const prs)
 
 	// Пропуск символов за путем
 	prs->position = temp;
-	parser_find_unexpected_lexeme(prs, uni_scan_char(prs->in));
+	parser_find_unexpected_lexeme(prs);
 
 	return ret;
 }
