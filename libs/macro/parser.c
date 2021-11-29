@@ -370,6 +370,8 @@ static inline void parser_skip_short_comment(parser *const prs)
  *
  *	@param	prs			Структура парсера
  *	@param	line		Номер строки с началом комментария
+ *
+ *	@return	Количество символов, заменяемых на ' '
  */
 static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 {
@@ -418,31 +420,53 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 	return prs->position;
 }
 
-
 /**
- *	Проверить наличие лексем перед директивой препроцессора
+ *	Пропустить разделители и комментарии после директивы препроцессора
  *
  *	@param	prs			Структура парсера
- *	@param	was_lexeme	Флаг, указывающий наличие лексемы
+ *	@param	last		Текущий символ
  *
- *	@return	@c 1 если позиция корректна, @c 0 если позиция некорректна 
+ *	@return	Количество символов, заменяемых на ' '
  */
-static inline bool parser_check_kw_position(parser *const prs, const bool was_lexeme)
+static size_t parser_skip_separators(parser *const prs, char32_t *const last)
 {
-	if (was_lexeme)
+	size_t position = 0;
+	char32_t cur = *last;
+	while (utf8_is_separator(cur) || cur == '/')
 	{
-		parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
-		return false;
+		if (cur == '/')
+		{
+			char32_t next = uni_scan_char(prs->in);
+			switch (next)
+			{
+				case '/':
+					parser_skip_short_comment(prs);
+					break;
+				case '*':
+					const size_t line = prs->line;
+					const size_t size = parser_skip_long_comment(prs, prs->line);
+					position = prs->line == line ? position + size : size;
+				default:
+					uni_unscan_char(prs->in, next);
+					return position;
+			}
+		}
+
+		prs->position++;
+		position++;
+		cur = uni_scan_char(prs->in);
+		*last = cur;
 	}
 
-	return true;
+	return position;
 }
+
 
 /**
  *	Пропустить разделители и комментарии после директивы препроцессора
  *
  *	@param	prs			Структура парсера
- *	@param	cur		Текущий символ
+ *	@param	cur			Текущий символ
  *	@param	mode		Условие корректного завершения
  *						@c 0 начало пути файла
  *						@c 1 буква
@@ -563,7 +587,7 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 	return ret;
 }
 
-static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode);
+//static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode);
 
 /**
  *	Preprocess buffer
@@ -573,7 +597,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
+/*static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
 	// Печать кода и комментария перед макроподстановкой
 	parser_add_char(prs, '\n');
@@ -601,7 +625,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	parser_comment_to_buffer(prs);
 
 	return 0;
-}
+}*/
 
 
 /**
@@ -669,7 +693,7 @@ static int parser_include(parser *const prs, char32_t cur)
  *	@param	cur			Текущий символ
  *	@param	mode		Режим работы функции
  */
-static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode)
+/*static void parser_preprocess_code(parser *const prs, char32_t cur, const keyword_t mode)
 {
 	bool was_star = false;
 	bool was_lexeme = false;
@@ -875,7 +899,7 @@ static void parser_preprocess_code(parser *const prs, char32_t cur, const keywor
 				}
 		}
 	}
-}
+}*/
 
 
 /*
@@ -972,9 +996,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
-						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
-						parser_add_spacers(prs, size);
+						//const size_t size = prs->position + strlen(storage_last_read(prs->stg));
+						//parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						//parser_add_spacers(prs, size);
 					}
 					else
 					{
