@@ -544,7 +544,7 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
 		mem_add(enc, llabs(displ));
 	}
-	else if (expression_get_class(nd) == EXPR_LIST)
+	else if (expression_get_class(nd) == EXPR_INITIALIZER)
 	{
 		mem_add(enc, IC_LI);
 		const size_t reserved = mem_size(enc) + 4;
@@ -552,11 +552,11 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_B);
 		mem_increase(enc, 2);
 
-		const node fst = expression_list_get_subexpr(nd, 0);
-		const size_t size = expression_list_get_size(nd);
+		const node fst = expression_initializer_get_subexpr(nd, 0);
+		const size_t size = expression_initializer_get_size(nd);
 		for (size_t i = 0; i < size; i++)
 		{
-			const node subexpr = expression_list_get_subexpr(nd, i);
+			const node subexpr = expression_initializer_get_subexpr(nd, i);
 			if (expression_get_class(&subexpr) != EXPR_LITERAL)
 			{
 				system_error(wrong_init_in_actparam);
@@ -1070,15 +1070,15 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit expression list
+ *	Emit initializer
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  */
-static void emit_expression_list(encoder *const enc, const node *const nd)
+static void emit_initializer(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const size_t size = expression_list_get_size(nd);
+	const size_t size = expression_initializer_get_size(nd);
 
 	if (type_is_array(enc->sx, type))
 	{
@@ -1088,7 +1088,7 @@ static void emit_expression_list(encoder *const enc, const node *const nd)
 
 	for (size_t i = 0; i < size; i++)
 	{
-		const node subexpr = expression_list_get_subexpr(nd, i);
+		const node subexpr = expression_initializer_get_subexpr(nd, i);
 		emit_expression(enc, &subexpr);
 	}
 }
@@ -1138,8 +1138,8 @@ static void emit_expression(encoder *const enc, const node *const nd)
 			emit_ternary_expression(enc, nd);
 			return;
 
-		case EXPR_LIST:
-			emit_expression_list(enc, nd);
+		case EXPR_INITIALIZER:
+			emit_initializer(enc, nd);
 			return;
 
 		default:
@@ -1198,12 +1198,12 @@ static bool only_strings(const encoder *const enc, const node *const nd)
 		case EXPR_LITERAL:
 			return type_is_string(enc->sx, expression_get_type(nd));
 
-		case EXPR_LIST:
+		case EXPR_INITIALIZER:
 		{
-			const size_t size = expression_list_get_size(nd);
+			const size_t size = expression_initializer_get_size(nd);
 			for (size_t i = 0; i < size; i++)
 			{
-				const node subexpr = expression_list_get_subexpr(nd, i);
+				const node subexpr = expression_initializer_get_subexpr(nd, i);
 				if (!only_strings(enc, &subexpr))
 				{
 					return false;

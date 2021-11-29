@@ -487,20 +487,20 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write expression list
+ *	Write initializer
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
  */
-static void write_expression_list(writer *const wrt, const node *const nd)
+static void write_initializer(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "EXPR_LIST");
+	write_line(wrt, "EXPR_INITIALIZER");
 	write_expression_metadata(wrt, nd);
 
-	const size_t size = expression_list_get_size(nd);
+	const size_t size = expression_initializer_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
-		const node subexpr = expression_list_get_subexpr(nd, i);
+		const node subexpr = expression_initializer_get_subexpr(nd, i);
 		write_expression(wrt, &subexpr);
 	}
 }
@@ -557,8 +557,8 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_ternary_expression(wrt, nd);
 			break;
 
-		case EXPR_LIST:
-			write_expression_list(wrt, nd);
+		case EXPR_INITIALIZER:
+			write_initializer(wrt, nd);
 			break;
 	}
 
