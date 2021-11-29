@@ -1,5 +1,5 @@
 /*
- *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -306,9 +306,6 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 
 			return;
 		}
-
-		default:
-			return;
 	}
 }
 
@@ -377,7 +374,8 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 	item_t member_displ = 0;
 	for (size_t i = 0; i < member_index; i++)
 	{
-		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, struct_type, i));
+		const item_t member_type = type_structure_get_member_type(enc->sx, struct_type, i);
+		member_displ += (item_t)type_size(enc->sx, member_type);
 	}
 
 	if (is_arrow)
@@ -397,11 +395,8 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 		const lvalue value = emit_lvalue(enc, &base);
 		if (value.kind == VARIABLE)
 		{
-			return (lvalue){
-					.kind = VARIABLE,
-					.type = type,
-					.displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ
-				};
+			const item_t displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ;
+			return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
 		}
 		else // if (enc->last_kind == ADDRESS)
 		{
@@ -766,21 +761,21 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 static void emit_member_rvalue(encoder *const enc, const node *const nd)
 {
 	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
-	const item_t type = expression_get_type(nd);
 	const node base = expression_member_get_base(nd);
 	const item_t base_type = expression_get_type(&base);
 	const size_t member_index = expression_member_get_member_index(nd);
 
-	item_t member_displ = 0;
+	size_t member_displ = 0;
 	for (size_t i = 0; i < member_index; i++)
 	{
-		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, base_type, i));
+		const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
+		member_displ += type_size(enc->sx, member_type);
 	}
 
 	emit_expression(enc, &base);
 	mem_add(enc, IC_COPYST);
-	mem_add(enc, member_displ);
-	mem_add(enc, (item_t)type_size(enc->sx, type));
+	mem_add(enc, (item_t)member_displ);
+	mem_add(enc, (item_t)type_size(enc->sx, expression_get_type(nd)));
 	mem_add(enc, (item_t)type_size(enc->sx, base_type));
 }
 
@@ -930,7 +925,7 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 	}
 
 	const instruction_t instruction = binary_to_instruction(operator);
-	if (type_is_floating(expression_get_type(&LHS)) || type_is_floating(expression_get_type(&RHS)))
+	if (type_is_floating(expression_get_type(&LHS)))
 	{
 		mem_add(enc, instruction_to_floating_ver(instruction));
 	}
