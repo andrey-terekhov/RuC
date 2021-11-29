@@ -589,42 +589,55 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-static int parser_include(parser *const prs, char32_t cur)
+static int parser_include(parser *const prs)
 {
 	const size_t position = prs->position;
-	prs->position += strlen(storage_last_read(prs->stg)) + 1;	// Учитывается разделитель после директивы
+	prs->position += strlen(storage_last_read(prs->stg));
+
+	char32_t cur = uni_scan_char(prs->in);
+	prs->position++;
 
 	// Пропуск разделителей и комментариев
-	if (parser_find_ident_begining(prs, cur, 0))
-	{
-		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		parser_skip_line(prs, cur);
-		return prs->was_error ? -1 : 0;
-	}
-	cur = uni_scan_char(prs->in);	// Необходимо считать символ начала строковой константы
+	parser_skip_separators(prs, &cur);
+	uni_unscan_char(prs->in, cur);
 
-	// ОБработка пути
+	// Обработка пути
 	char path[MAX_ARG_SIZE] = "\0";
+	const char32_t index = storage_search(prs->stg, prs->in, &cur);
 	const char32_t ch = cur == '<' ? '>' : '\"';
-	storage_search(prs->stg, prs->in, &cur);
-	prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
-
-	while (cur != ch && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	if (index == SIZE_MAX)
 	{
-		parser_add_char_to_buffer(path, cur);
+		if (storage_last_read(prs->stg) != NULL)	// Неопределенный идентификатор
+		{
+			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
+			parser_skip_line(prs, cur);
+			return prs->was_error ? -1 : 0;
+		}
+
+		// Запись пути в кавычках
+		cur = uni_scan_char(prs->in);
 		prs->position++;
+		while (cur != ch && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+		{
+			parser_add_char_to_buffer(path, cur);
+			cur = uni_scan_char(prs->in);
+			prs->position++;
+		}
 
-		storage_search(prs->stg, prs->in, &cur);
-		prs->position += parser_add_to_buffer(path, storage_last_read(prs->stg));
+		if (cur != ch)
+		{
+			prs->position = position;
+			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
+			parser_skip_line(prs, cur);
+			return prs->was_error ? -1 : 0;
+		}
 	}
-
-	prs->position++;
-	if (cur != ch)
+	else
 	{
-		prs->position = position;
-		parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
-		parser_skip_line(prs, cur);
-		return prs->was_error ? -1 : 0;
+		// Запись пути, если он был определен через #define
+		prs->position += strlen(storage_last_read(prs->stg));
+		strcpy(path, storage_get_by_index(prs->stg, index));
+		path[strlen(path)] = '\0';	// Удаление последней кавычки
 	}
 
 	// Парсинг подключенного файла
@@ -683,18 +696,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		return -1;
 	}
 
-	size_t i = 0;
-	item_t value = map_get_by_index(&prs->stg->as, i);
-	while (value != ITEM_MAX)
-	{
-		printf("%zu) %" PRIitem "\n", i, value);
-		value = map_get_by_index(&prs->stg->as, ++i);
-	}
-
 	universal_io *old_in = prs->in;
 	prs->in = in;
 
-	//parser_comment(prs);
+	parser_comment(prs);
 
 	char32_t cur = '\0';
 	while (cur != (char32_t)EOF)
@@ -703,8 +708,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		switch (index)
 		{
 			case KW_INCLUDE:
-				//uni_unscan_char(prs->in, last);
-				//parser_include(prs, last);
+				uni_unscan_char(prs->in, cur);
+				parser_include(prs);
 				break;
 		
 			case KW_DEFINE:
