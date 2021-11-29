@@ -934,10 +934,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 	//parser_comment(prs);
 
-	char32_t last = '\0';
-	while (last != (char32_t)EOF)
+	char32_t cur = '\0';
+	char32_t prev;
+	while (cur != (char32_t)EOF)
 	{
-		const size_t index = storage_search(prs->stg, prs->in, &last);
+		prev = cur;
+		const size_t index = storage_search(prs->stg, prs->in, &cur);
 		switch (index)
 		{
 			case KW_INCLUDE:
@@ -964,20 +966,65 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_WHILE:
 			case KW_ENDW:
 
-			case SIZE_MAX:
-				uni_printf(prs->out, "%s", storage_last_read(prs->stg) == NULL ? "NULL" : storage_last_read(prs->stg));
-				uni_print_char(prs->out, last);
-				
-				//uni_printf(prs->out, "SIZE_MAX\n");
-				//parser_print(prs);			
-				break;
-
 			default:
-				uni_printf(prs->out, "%s", storage_last_read(prs->stg) == NULL ? "NULL" : storage_last_read(prs->stg));
-				uni_print_char(prs->out, last);
-				//parser_add_char(prs, last);
-				//parser_print(prs);
-				break;
+				if (storage_last_read(prs->stg) != NULL)
+				{
+					if (index != SIZE_MAX)
+					{
+						// Макроподстановка
+						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
+						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						parser_add_spacers(prs, size);
+					}
+					else
+					{
+						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
+						uni_unscan_char(prs->in, cur);	// Символ обработается в следующем шаге цикла
+					}
+				}
+				else
+				{
+					const size_t line = prs->line;
+					const size_t size = parser_skip_separators(prs, &cur);
+
+					switch (prs->line - line)				// При печати специального комментария
+					{										// используется 2 переноса строки.
+						case 2:								// Для случая, когда пропуск меньше 4 строк,
+							parser_add_char(prs, '\n');		// специальный комментарий не ставится.
+						case 1:
+							parser_add_char(prs, '\n');
+						case 0:
+							break;
+						default:
+							parser_add_char(prs, '\n');
+							parser_comment_to_buffer(prs);
+							break;
+					}
+
+					if (cur == '\'' || cur == '\"')
+					{
+						parser_skip_string(prs, cur);
+						break;
+					}
+
+					if (utf8_is_line_breaker(cur))
+					{
+						if (cur == '\r')
+						{
+							uni_scan_char(prs->in);
+						}
+
+						parser_add_char(prs, '\n');
+						parser_print(prs);
+						parser_next_line(prs);
+						parser_clear_code(prs);
+
+						break;
+					}
+
+					parser_add_spacers(prs, size);
+					parser_add_char(prs, cur);
+				}
 		}
 	}
 
