@@ -180,34 +180,6 @@ static inline void parser_macro_comment(parser *const prs)
 	parser_add_string(prs, buffer);
 }
 
-/**
- *	Сохранить считанный код
- *
- *	@param	prs			Структура парсера
- *	@param	str			Строка
- */
-static inline size_t parser_add_to_buffer(char *const buffer, const char *const str)
-{
-	if (str == NULL)
-	{
-		return 0;
-	}
-
-	strcat(buffer, str);
-	return strlen(str);
-}
-
-/**
- *	Сохранить считанный символ
- *
- *	@param	prs			Структура парсера
- *	@param	ch			Символ
- */
-static inline void parser_add_char_to_buffer(char *const buffer, const char32_t ch)
-{
-	utf8_to_string(&buffer[strlen(buffer)], ch);
-}
-
 
 /**
  *	Emit an error from parser
@@ -573,7 +545,7 @@ static int parser_include(parser *const prs)
 		// Запись пути в кавычках
 		do
 		{
-			parser_add_char_to_buffer(path, cur);
+			utf8_to_string(&path[strlen(path)], cur);
 			cur = uni_scan_char(prs->in);
 			prs->position++;
 		} while (cur != ch && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF);
@@ -587,7 +559,7 @@ static int parser_include(parser *const prs)
 		}
 		else
 		{
-			parser_add_char_to_buffer(path, cur);
+			utf8_to_string(&path[strlen(path)], cur);
 		}
 	}
 	else

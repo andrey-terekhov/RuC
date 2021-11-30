@@ -1,4 +1,8 @@
-#include "temp.c"
+/#include /*
+
+
+
+*/"temp.c" /**/hjj
 
 int main()/*
 {
