@@ -351,7 +351,7 @@ static inline void parser_skip_short_comment(parser *const prs)
 static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 {
 	const size_t line_position = prs->line_position;		// Позиция начала строки с началом комментария
-	const size_t position = prs->position;					// Позиция начала комментария в строке
+	const size_t position = prs->position - 2;				// Позиция начала комментария в строке
 	const size_t comment_text_position = in_get_position(prs->in);	// Позиция после символа комментария
 
 	char32_t prev;
