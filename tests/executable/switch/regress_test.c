@@ -16,8 +16,8 @@ int main()
       case 2:
          j++;
    }
-   print ("j  3");
-   printid(j);
+
+   assert(j == 3, "j must be 3");
 
    switch (i) 
    {
@@ -25,8 +25,8 @@ int main()
       case 2: j--; break;
       default: j++;
    }
-   print ("j  4");
-   printid(j);
+
+   assert(j == 2, "j must be 2");
 
    return 0;
 }

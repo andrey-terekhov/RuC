@@ -3,8 +3,9 @@ float b[3] = {0,0,0};
 void main()
 {
     float f = b[1] += 2.;
-    printid(f);
-    print("f 2.0000000000000");
-    printid(b);
-    printid(f);
+    
+    assert(f == 2.0000000000000, "f must be 2.0000000000000");
+    assert(b[0] == 0.0000000000000, "b[0] must be 0.0000000000000");
+    assert(b[1] == 2.0000000000000, "b[1] must be 2.0000000000000");
+    assert(b[2] == 0.0000000000000, "b[2] must be 0.0000000000000");
 }

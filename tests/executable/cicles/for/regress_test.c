@@ -6,54 +6,54 @@ int main()
       i++;
       if (i > 1) break;
    }
-   print ("i  2");
-   printid(i);
+
+   assert(i == 2, "i must be 2");
 
    for (i = 0; ; )
    {
       i++;
       if (i > 2) break;
    }
-   print ("i  3");
-   printid(i);
+
+   assert(i == 3, "i must be 3");
 
    i=0;
    for (; i < 4; )
    {
       i++;
    }
-   print ("i  4");
-   printid(i);
+
+   assert(i == 4, "i must be 4");
 
    i = 0;
    for (; ; i++)
    {
 	   if (i > 4) break;
    }
-   print ("i  5");
-   printid(i);
+
+   assert(i == 5, "i must be 5");
    
    for (i = 0; i < 6; )
 	   i++;
-   print ("i  6");
-   printid(i);
+
+   assert(i == 6, "i must be 6");
 
    i = 0;
    for (; i < 7; i++)
    {
    }
-   print ("i  7");
-   printid(i);
+
+   assert(i == 7, "i must be 7");
 
    for (i = 0; ; i++)
 	   if (i > 7) break;
-   print ("i  8");
-   printid(i);
+
+   assert(i == 8, "i must be 8");
 
    i = 1;
    for (i = 0; i < 9; i++);
-   print ("i  9");
-   printid(i);
+
+   assert(i == 9, "i must be 9");
 
    return 0;
 }

@@ -3,6 +3,6 @@ float j = 1, k;
 void main()
 {
     k = j++;
-    print ("k 1.000000");
-    printid(k);
+
+    assert(k == 1.000000, "k must be 1.000000");
 }

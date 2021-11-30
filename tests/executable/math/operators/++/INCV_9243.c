@@ -2,6 +2,6 @@ int i = 2;
 void main()
 {
   ++i;
-  print("i 3");
-  printid(i);
+
+  assert(i == 3, "i must be 3");
 }

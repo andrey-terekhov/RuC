@@ -3,17 +3,17 @@ int main()
    int a = 1, b = 0, c;
    
    c = (a + b) * a;
-   print ("c  1");
-   printid(c);
+
+   assert(c == 1, "c must be 1");
 
    c = b * (a + b);
-   print ("c  0");
-   printid(c);
+
+   assert(c == 0, "c must be 0");
 
    int d[2] = {4, 2};
    c = d [a + b];
-   print ("c  2");
-   printid(c);
+
+   assert(c == 2, "c must be 2");
 
    return 0;
 }
