@@ -490,13 +490,10 @@ static void parser_find_unexpected_lexeme(parser *const prs)
  *
  *	@param	prs			Parser structure
  *	@param	path		File path
- *	@param	mode		File search mode
- *						@c '\"' internal
- *						@c '>' external
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-static int parser_preprocess_file(parser *const prs, const char *const path, const char32_t mode)
+static int parser_preprocess_file(parser *const prs, char *const path)
 {
 	parser_add_char(prs, '\n');	// Необходимо из-за отсутсвия проверки наличия лексем перед '#'
 	parser_print(prs);
@@ -512,9 +509,10 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 	prs->line_position = 0;
 	parser_clear_code(prs);
 
-	universal_io in = linker_add_header(prs->lk, mode == '\"'
-													? linker_search_internal(prs->lk, path)
-													: linker_search_external(prs->lk, path));
+	path[strlen(path) - 1] = '\0';	// Удаление последней кавычки
+	universal_io in = linker_add_header(prs->lk, path[0] == '\"'
+													? linker_search_internal(prs->lk, &path[1])
+													: linker_search_external(prs->lk, &path[1]));
 	if (!in_is_correct(&in))
 	{
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
@@ -573,14 +571,12 @@ static int parser_include(parser *const prs)
 		}
 
 		// Запись пути в кавычках
-		cur = uni_scan_char(prs->in);
-		prs->position++;
-		while (cur != ch && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+		do
 		{
 			parser_add_char_to_buffer(path, cur);
 			cur = uni_scan_char(prs->in);
 			prs->position++;
-		}
+		} while (cur != ch && !utf8_is_line_breaker(cur) && cur != (char32_t)EOF);
 
 		if (cur != ch)
 		{
@@ -589,6 +585,10 @@ static int parser_include(parser *const prs)
 			parser_skip_line(prs, cur);
 			return prs->was_error ? -1 : 0;
 		}
+		else
+		{
+			parser_add_char_to_buffer(path, cur);
+		}
 	}
 	else
 	{
@@ -596,16 +596,13 @@ static int parser_include(parser *const prs)
 		prs->position += strlen(storage_last_read(prs->stg));
 		strcpy(path, storage_get_by_index(prs->stg, index));
 
-		ch = path[0];					// Запись режима поиска файла
-		path[strlen(path) - 1] = '\0';	// Удаление последней кавычки
-
 		uni_unscan_char(prs->in, cur);
 	}
 
 	// Парсинг подключенного файла
 	size_t temp = prs->position;
 	prs->position = position;
-	int ret = parser_preprocess_file(prs, &path[1], ch);
+	int ret = parser_preprocess_file(prs, path);
 
 	// Пропуск символов за путем
 	prs->position = temp;
