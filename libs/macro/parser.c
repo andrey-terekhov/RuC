@@ -740,7 +740,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	parser_print(prs);
 
 	prs->in = old_in;
-	return -1;
+	return !prs->was_error ? 0 : -1;
 }
 
 
