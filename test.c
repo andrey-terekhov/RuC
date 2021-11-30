@@ -1,6 +1,10 @@
-#define /*ggggt
-hhy*/ A
-int main()
+#include /*
+
+
+
+*/"temp.c" /**/hjj
+
+int main()/*
 {
 	return 0;
 }
