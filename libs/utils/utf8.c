@@ -15,6 +15,7 @@
  */
 
 #include "utf8.h"
+#include <assert.h>
 
 
 static char32_t char32_from_cp866(const unsigned char symbol)
@@ -830,6 +831,26 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
+uint8_t utf8_to_number(const char32_t symbol)
+{
+	if (utf8_is_digit(symbol))
+	{
+		return (uint8_t)(symbol - '0');
+	}
+
+	if (symbol >= 'A' && symbol <= 'F')
+	{
+		return (uint8_t)(symbol - 'A' + 10);
+	}
+
+	if (symbol >= 'a' && symbol <= 'f')
+	{
+		return (uint8_t)(symbol - 'a' + 10);
+	}
+
+	return 0;
+}
+
 bool utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == U'Ё' || symbol == U'ё'
@@ -848,6 +869,13 @@ bool utf8_is_letter(const char32_t symbol)
 bool utf8_is_digit(const char32_t symbol)
 {
 	return symbol >= '0' && symbol <= '9';
+}
+
+bool utf8_is_hexa_digit(const char32_t symbol)
+{
+	return utf8_is_digit(symbol)
+		|| (symbol >= 'A' && symbol <= 'F')
+		|| (symbol >= 'a' && symbol <= 'f');
 }
 
 bool utf8_is_power(const char32_t symbol)

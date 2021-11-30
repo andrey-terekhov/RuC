@@ -18,11 +18,10 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "dll.h"
 
 #ifdef __APPLE__
-	#include <stdint.h>
-
 	typedef uint32_t char32_t;
 #else
 	#include <uchar.h>
@@ -130,7 +129,16 @@ EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
 EXPORTED char32_t utf8_to_upper(const char32_t symbol);
 
 /**
- *	Checks if сharacter is russian letter
+ *	Convert hexadecimal digit to number
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	Corresponding number
+ */
+EXPORTED uint8_t utf8_to_number(const char32_t symbol);
+
+/**
+ *	Check if сharacter is russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
@@ -139,7 +147,7 @@ EXPORTED char32_t utf8_to_upper(const char32_t symbol);
 EXPORTED bool utf8_is_russian(const char32_t symbol);
 
 /**
- *	Checks if сharacter is english or russian letter
+ *	Check if сharacter is english or russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
@@ -148,7 +156,7 @@ EXPORTED bool utf8_is_russian(const char32_t symbol);
 EXPORTED bool utf8_is_letter(const char32_t symbol);
 
 /**
- *	Checks if сharacter is digit
+ *	Check if сharacter is decimal digit
  *
  *	@param	symbol	UTF-8 сharacter
  *
@@ -157,7 +165,16 @@ EXPORTED bool utf8_is_letter(const char32_t symbol);
 EXPORTED bool utf8_is_digit(const char32_t symbol);
 
 /**
- *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
+ *	Check if сharacter is hexadecimal digit
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED bool utf8_is_hexa_digit(const char32_t symbol);
+
+/**
+ *	Check if сharacter is 'E', 'e', 'Е' or 'е'
  *
  *	@param	symbol	UTF-8 сharacter
  *
