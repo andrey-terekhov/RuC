@@ -762,6 +762,8 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 {
 	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
 	const node base = expression_member_get_base(nd);
+	emit_expression(enc, &base);
+	
 	const item_t base_type = expression_get_type(&base);
 	const size_t member_index = expression_member_get_member_index(nd);
 
@@ -772,7 +774,6 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 		member_displ += type_size(enc->sx, member_type);
 	}
 
-	emit_expression(enc, &base);
 	mem_add(enc, IC_COPYST);
 	mem_add(enc, (item_t)member_displ);
 	mem_add(enc, (item_t)type_size(enc->sx, expression_get_type(nd)));
@@ -944,54 +945,30 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 static void emit_assignment_expression(encoder *const enc, const node *const nd)
 {
 	const node LHS = expression_binary_get_LHS(nd);
+	const lvalue value = emit_lvalue(enc, &LHS);
+
 	const node RHS = expression_binary_get_RHS(nd);
-	const lvalue left_value = emit_lvalue(enc, &LHS);
+	emit_expression(enc, &RHS);
 
 	const item_t type = expression_get_type(nd);
 	if (type_is_structure(enc->sx, type))
 	{
-		if (expression_is_lvalue(&RHS))
+		if (value.kind == VARIABLE)
 		{
-			const lvalue right_value = emit_lvalue(enc, &RHS);
-
-			mem_add(enc, left_value.kind == VARIABLE
-				? right_value.kind == VARIABLE
-					? IC_COPY00
-					: IC_COPY01
-				: right_value.kind == VARIABLE
-					? IC_COPY10
-					: IC_COPY11);
-
-			if (left_value.kind == VARIABLE)
-			{
-				mem_add(enc, left_value.displ);
-			}
-
-			if (right_value.kind == VARIABLE)
-			{
-				mem_add(enc, right_value.displ);
-			}
-
-			mem_add(enc, (item_t)type_size(enc->sx, type));
+			mem_add(enc, IC_COPY0ST_ASSIGN);
+			mem_add(enc, value.displ);
 		}
 		else
 		{
-			emit_expression(enc, &RHS);
-			mem_add(enc, left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN);
-			if (left_value.kind == VARIABLE)
-			{
-				mem_add(enc, left_value.displ);
-			}
-
-			mem_add(enc, (item_t)type_size(enc->sx, type));
+			mem_add(enc, IC_COPY1ST_ASSIGN);
 		}
-	}
-	else // оба операнда базового типа или указатели
-	{
-		emit_expression(enc, &RHS);
 
+		mem_add(enc, (item_t)type_size(enc->sx, type));
+	}
+	else // Скалярное присваивание
+	{
 		instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
-		if (left_value.kind == ADDRESS)
+		if (value.kind == ADDRESS)
 		{
 			operator = instruction_to_address_ver(operator);
 		}
@@ -1003,9 +980,9 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 		mem_add(enc, operator);
 
-		if (left_value.kind == VARIABLE)
+		if (value.kind == VARIABLE)
 		{
-			mem_add(enc, left_value.displ);
+			mem_add(enc, value.displ);
 		}
 	}
 }
