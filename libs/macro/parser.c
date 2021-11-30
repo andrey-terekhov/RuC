@@ -125,7 +125,6 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 	utf8_to_string(buffer, cur);
 
 	strings_add(&prs->code, buffer);
-	prs->position++;
 }
 
 /**
@@ -139,7 +138,6 @@ static inline void parser_add_spacers(parser *const prs, const size_t size)
 	for (size_t i = 0; i < size; i ++)
 	{
 		parser_add_char(prs, ' ');
-		prs->position--;
 	}
 }
 
@@ -277,6 +275,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	const size_t position = prs->position;		// Позиция начала строковой константы
 
 	parser_add_char(prs, ch);					// Вывод символа начала строковой константы
+	prs->position++;
 
 	char32_t prev = '\0';
 	char32_t cur = uni_scan_char(prs->in);
@@ -285,6 +284,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		if (cur == ch)
 		{
 			parser_add_char(prs, cur);
+			prs->position++;
 
 			if (prev != '\\')
 			{
@@ -307,6 +307,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 				if (prs->is_recovery_disabled)		// Добавление '\"' в конец незаконченной строковой константы
 				{
 					parser_add_char(prs, ch);
+					prs->position++;
 				}
 				
 				parser_add_char(prs, '\n');
@@ -320,6 +321,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 		else									// Независимо от корректности строки выводит ее в out
 		{
 			parser_add_char(prs, cur);
+			prs->position++;
 		}
 
 		prev = cur;
@@ -332,6 +334,7 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 	{
 		parser_add_char(prs, ch);
 		parser_add_char(prs, ';');
+		prs->position += 2;
 	}
 
 	parser_print(prs);
@@ -496,6 +499,7 @@ static void parser_find_unexpected_lexeme(parser *const prs)
 static int parser_preprocess_file(parser *const prs, const char *const path, const char32_t mode)
 {
 	// Сохранение позиции в исходном файле
+	const size_t old_path = linker_get_index(prs->lk);
 	const size_t line_position = prs->line_position;
 	const size_t line = prs->line;
 
@@ -518,12 +522,13 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
 	in_clear(&in);
 
 	// Возврат позиционирования в исходном файле
+	linker_set_index(prs->lk, old_path);
 	prs->line = line;
 	prs->line_position = line_position;
+	parser_clear_code(prs);
 
 	// Добавление комментария после прохода файла
 	parser_add_char(prs, '\n');
-	prs->position--;
 	parser_comment_to_buffer(prs);
 
 	return ret;
@@ -540,6 +545,7 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
  */
 static int parser_include(parser *const prs)
 {
+	parser_add_char(prs, '\n');	// Необходимо из-за отсутсвия проверки наличия лексем перед '#'
 	parser_print(prs);
 
 	const size_t position = prs->position;
@@ -554,12 +560,13 @@ static int parser_include(parser *const prs)
 
 	// Обработка пути
 	char path[MAX_ARG_SIZE] = "\0";
-	const char32_t index = storage_search(prs->stg, prs->in, &cur);
+	const size_t index = storage_search(prs->stg, prs->in, &cur);
 	char32_t ch = cur == '<' ? '>' : '\"';
 	if (index == SIZE_MAX)
 	{
 		if (storage_last_read(prs->stg) != NULL)	// Неопределенный идентификатор
 		{
+			prs->position = position;
 			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 			parser_skip_line(prs, cur);
 			return prs->was_error ? -1 : 0;
@@ -589,9 +596,8 @@ static int parser_include(parser *const prs)
 		prs->position += strlen(storage_last_read(prs->stg));
 		strcpy(path, storage_get_by_index(prs->stg, index));
 
-		ch = path[0];				// Запись режима поиска файла
-		path[0] = ' ';				// Удаление первой кавычки
-		path[strlen(path)] = '\0';	// Удаление последней кавычки
+		ch = path[0];					// Запись режима поиска файла
+		path[strlen(path) - 1] = '\0';	// Удаление последней кавычки
 
 		uni_unscan_char(prs->in, cur);
 	}
@@ -599,7 +605,7 @@ static int parser_include(parser *const prs)
 	// Парсинг подключенного файла
 	size_t temp = prs->position;
 	prs->position = position;
-	int ret = parser_preprocess_file(prs, path, ch);
+	int ret = parser_preprocess_file(prs, &path[1], ch);
 
 	// Пропуск символов за путем
 	prs->position = temp;
@@ -743,6 +749,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						break;
 					}
 
+					if (cur == (char32_t)EOF)
+					{
+						break;
+					}
+
 					parser_add_spacers(prs, size);
 					if (utf8_is_letter(cur) || cur == '#')
 					{
@@ -751,10 +762,13 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 					else
 					{
 						parser_add_char(prs, cur);
+						prs->position++;
 					}
 				}
 		}
 	}
+
+	parser_print(prs);
 
 	prs->in = old_in;
 	return -1;

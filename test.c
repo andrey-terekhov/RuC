@@ -1,18 +1,4 @@
-/*
-
-
-*/                                                                          /*
-
-
-
-
-
-
-
-
-*/;
-
-dfgh/*gvhbjnmkl,
+#include A
 
 int main()
 {
