@@ -690,7 +690,7 @@ static node parse_initializer(parser *const prs)
 		if (token_is(&prs->tk, TK_R_BRACE))
 		{
 			const location r_loc = consume_token(prs);
-			const node result = build_initializer_list(&prs->bld, &inits, l_loc, r_loc);
+			const node result = build_initializer(&prs->bld, &inits, l_loc, r_loc);
 
 			node_vector_clear(&inits);
 			return result;

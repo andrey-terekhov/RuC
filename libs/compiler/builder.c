@@ -546,9 +546,9 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
-	if (expression_get_class(init) == EXPR_LIST)
+	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
-		const size_t actual_inits = expression_list_get_size(init);
+		const size_t actual_inits = expression_initializer_get_size(init);
 		if (type_is_structure(sx, expected_type))
 		{
 			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
@@ -561,14 +561,14 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 			for (size_t i = 0; i < actual_inits; i++)
 			{
 				const item_t type = type_structure_get_member_type(sx, expected_type, i);
-				node subexpr = expression_list_get_subexpr(init, i);
+				node subexpr = expression_initializer_get_subexpr(init, i);
 				if (!check_assignment_operands(bldr, type, &subexpr))
 				{
 					return false;
 				}
 			}
 
-			expression_list_set_type(init, expected_type);
+			expression_initializer_set_type(init, expected_type);
 			return true;
 		}
 		else if (type_is_array(sx, expected_type))
@@ -576,14 +576,14 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 			const item_t type = type_array_get_element_type(sx, expected_type);
 			for (size_t i = 0; i < actual_inits; i++)
 			{
-				node subexpr = expression_list_get_subexpr(init, i);
+				node subexpr = expression_initializer_get_subexpr(init, i);
 				if (!check_assignment_operands(bldr, type, &subexpr))
 				{
 					return false;
 				}
 			}
 
-			expression_list_set_type(init, expected_type);
+			expression_initializer_set_type(init, expected_type);
 			return true;
 		}
 		else
@@ -1142,7 +1142,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	return node_broken();
 }
 
-node build_initializer_list(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc)
+node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc)
 {
 	const size_t actual_inits = node_vector_size(exprs);
 	if (actual_inits == 0)
@@ -1152,7 +1152,7 @@ node build_initializer_list(builder *const bldr, node_vector *const exprs, const
 	}
 
 	const location loc = { l_loc.begin, r_loc.end };
-	return expression_list(exprs, loc);
+	return expression_initializer(exprs, loc);
 }
 
 
