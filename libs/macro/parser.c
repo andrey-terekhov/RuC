@@ -498,6 +498,9 @@ static void parser_find_unexpected_lexeme(parser *const prs)
  */
 static int parser_preprocess_file(parser *const prs, const char *const path, const char32_t mode)
 {
+	parser_add_char(prs, '\n');	// Необходимо из-за отсутсвия проверки наличия лексем перед '#'
+	parser_print(prs);
+
 	// Сохранение позиции в исходном файле
 	const size_t old_path = linker_get_index(prs->lk);
 	const size_t line_position = prs->line_position;
@@ -545,9 +548,6 @@ static int parser_preprocess_file(parser *const prs, const char *const path, con
  */
 static int parser_include(parser *const prs)
 {
-	parser_add_char(prs, '\n');	// Необходимо из-за отсутсвия проверки наличия лексем перед '#'
-	parser_print(prs);
-
 	const size_t position = prs->position;
 	prs->position += strlen(storage_last_read(prs->stg));
 
