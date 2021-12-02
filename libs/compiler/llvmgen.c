@@ -1759,7 +1759,7 @@ static void emit_function_definition(information *const info, const node *const 
 {
 	const size_t ref_ident = declaration_function_get_id(nd);
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
-	const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+	const item_t ret_type = ref_ident != info->sx->ref_main ? type_function_get_return_type(info->sx, func_type) : TYPE_INTEGER;
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 	info->was_dynamic = false;
 
@@ -1810,6 +1810,10 @@ static void emit_function_definition(information *const info, const node *const 
 			to_code_stack_load(info, -1);
 		}
 		uni_printf(info->sx->io, " ret void\n");
+	}
+	else if (ref_ident == info->sx->ref_main)
+	{
+		uni_printf(info->sx->io, " ret i32 0\n");
 	}
 	uni_printf(info->sx->io, "}\n\n");
 }
