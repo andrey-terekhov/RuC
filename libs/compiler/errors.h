@@ -28,8 +28,7 @@ typedef enum ERROR
 {
 	// Lexer errors
 	bad_character,							/**< Bad character in source */
-	unexpected_digit,						/**< Digit of another base */
-	empty_character,						/**< Empty character literal */
+	empty_character,						/**< Empty character constant */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
 	expected_apost_after_char_const,		/**< Missing terminating ' character */
 	missing_terminating_quote_char,			/**< Missing terminating '"' character */
@@ -226,6 +225,9 @@ typedef enum ERROR
 
 	// Codegen errors
 	tables_cannot_be_compressed,
+	array_borders_cannot_be_static_dynamic,
+	such_array_is_not_supported,
+	too_many_arguments
 } error_t;
 
 /** Warnings codes */

@@ -159,16 +159,6 @@ EXPORTED size_t item_store_double_for_target(const item_status status, const dou
  */
 EXPORTED double item_restore_double(const item_t *const stg);
 
-/**
- *	Restore double value from target item array
- *
- *	@param	status		Item status
- *	@param	stg			Item array
- *
- *	@return	Restored value, @c DBL_MAX on failure
- */
-EXPORTED double item_restore_double_for_target(const item_status status, const item_t *const stg);
-
 
 /**
  *	Store 64-bit value into item array
@@ -199,16 +189,6 @@ EXPORTED size_t item_store_int64_for_target(const item_status status, const int6
  *	@return	Restored value, @c LLONG_MAX on failure
  */
 EXPORTED int64_t item_restore_int64(const item_t *const stg);
-
-/**
- *	Restore 64-bit value from target item array
- *
- *	@param	status		Item status
- *	@param	stg			Item array
- *
- *	@return	Restored value, @c LLONG_MAX on failure
- */
-EXPORTED int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg);
 
 
 /**
