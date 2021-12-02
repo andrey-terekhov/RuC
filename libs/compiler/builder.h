@@ -219,16 +219,16 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS, location op_loc);
 
 /**
- *	Build an initializer
+ *	Build an initializer list
  *
  *	@param	bldr			AST builder
  *	@param	exprs			Vector of expressions
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer
+ *	@return	Initializer list
  */
-node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
+node build_initializer_list(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
 
 
 /**
