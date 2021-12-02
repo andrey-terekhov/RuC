@@ -2413,6 +2413,11 @@ static void runtime(information *const info)
 		" ret void\n"
 		"}\n\n");
 	info->was_function[BI_PRINTF] = true;
+
+	// getid
+	uni_printf(info->sx->io, "define void @getid(...) {\n"
+		" ret void\n"
+		"}\n\n");
 }
 
 
