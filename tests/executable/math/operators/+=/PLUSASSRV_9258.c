@@ -2,6 +2,6 @@ float b;
 void main()
 {
    b += 2;
-   print("b 2.000000");
-   printid(b);
+
+   assert(b == 2.000000, "b must be 2.000000");
 }

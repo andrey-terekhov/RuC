@@ -6,10 +6,10 @@ void main()
     ++c;
     d = ++b[j];
     d = ++c;
-    print("b 2.000000 0.000000 0.000000");
-    printid(b);
-    print("c 2.000000");
-    printid(c);
-    print("d 2.000000");
-    printid(d);
+
+    assert(b[0] == 2.000000, "b[0] must be 2.000000");
+    assert(b[1] == 0.000000, "b[1] must be 0.000000");
+    assert(b[2] == 0.000000, "b[2] must be 0.000000");
+    assert(c == 2.000000, "c must be 2.000000");
+    assert(d == 2.000000, "d must be 2.000000");
  }

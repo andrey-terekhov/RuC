@@ -2,7 +2,8 @@ int main()
 {
 	int a = 2, b = 3;
 	b *= a;
-	print("b 6");
-	printid(b);
+
+	assert(b == 6, "b must be 6");
+
 	return 0;
 }

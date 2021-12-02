@@ -3,8 +3,7 @@ int main()
 	float a = 1, b = 2;
 	if (a != b)
 	{
-		print("a 1");
-		printid(a);
+		assert(a == 1, "a must be 1");
 	}
 	return 0;
 }

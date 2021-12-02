@@ -1,7 +1,10 @@
 void main()
 {
     int y = 4;
-    print("y 4");
+
+    assert(y == 4, "y must be 4");
+
     y = y = abs(-y);
-    printid(y);
+
+    assert(y == 4, "y must be 4");
 }

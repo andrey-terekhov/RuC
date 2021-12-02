@@ -3,12 +3,12 @@ int main()
    int a = 4, b = 3;
    
    a <<= b;
-   print ("a 32");
-   printid(a);
+
+   assert(a == 32, "a must be 32");
 
    a >>= b;
-   print ("a 4");
-   printid(a);
+
+   assert(a == 4, "a must be 4");
 
    return 0;
 }

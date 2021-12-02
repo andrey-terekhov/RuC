@@ -9,8 +9,19 @@ void f()
 
 void main()
 {
-    printid(a);
-    printid(b);
+    assert(a[0] == 1, "a[0] must be 1");
+    assert(a[1] == 2, "a[1] must be 2");
+    assert(a[2] == 3, "a[2] must be 3");
+
+    assert(b[0] == 1.1, "b[0] must be 1.1");
+    assert(b[1] == 2.2, "b[1] must be 2.2");
+    assert(b[2] == 3.3, "b[2] must be 3.3");
+    assert(b[3] == 4.4, "b[3] must be 4.4");
+
     f();
-    printid(b);
+
+    assert(b[0] == 1.1, "b[0] must be 1.1");
+    assert(b[1] == 2.2, "b[1] must be 2.2");
+    assert(b[2] == 3.3, "b[2] must be 3.3");
+    assert(b[3] == 3, "b[3] must be 3");
 }

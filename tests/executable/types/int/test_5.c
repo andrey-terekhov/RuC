@@ -3,7 +3,10 @@ int a = 11, b = 22, c = 0;
 void main()
 {
     int d = 1 < c ? a : c;
-    printid(d);            // 0
+
+    assert(d == 0, "d must be 0");
+
     b = (14 > a ? a + 4 : a - 5 + 10) + (c <= a ? a : c);
-    printid(b);            // 26
+
+    assert(b == 26, "b must be 26");
 }

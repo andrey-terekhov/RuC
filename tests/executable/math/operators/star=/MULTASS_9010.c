@@ -4,6 +4,6 @@ void MAIN()
 {
     float r;
     r = d *= 70;
-    print("d 5040");
-    printid(d);
+
+    assert(d == 5040, "d must be 5040");
 }

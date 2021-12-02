@@ -7,8 +7,7 @@ int main()
       goto lbl;
    }
    
-   print ("i  10");
-   printid (i);  
+   assert(i == 10, "i must be 10"); 
 
    return 0;
 }

@@ -7,8 +7,10 @@ void main()
     --i;
     p = --b[j]; 
     p = --i;
-    print("b 4 3 6");
-    printid(b);
-    print("p 0");
-    printid(p);    
+
+    assert(b[0] == 4, "b[0] must be 4");
+    assert(b[1] == 3, "b[1] must be 3");
+    assert(b[2] == 6, "b[2] must be 6");
+
+    assert(p == 0, "p must be 0");  
 }

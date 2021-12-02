@@ -5,4 +5,6 @@ void main()
 {
     int a;
     a = 4;
+
+    assert(a == 4, "a must be 4");
 }

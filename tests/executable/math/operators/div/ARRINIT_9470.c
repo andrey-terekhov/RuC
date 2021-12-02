@@ -3,10 +3,10 @@ void main(){
   int  m[2] = {6, 2};
 
   r = d % c;
-  print("r 2");
-  printid(r);
+
+  assert(r == 2, "r must be 2");
 
   r = m[0] % m[1];
-  print("r 0");
-  printid(r);
+
+  assert(r == 0, "r must be 0");
 }

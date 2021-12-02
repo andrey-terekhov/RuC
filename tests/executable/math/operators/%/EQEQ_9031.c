@@ -12,6 +12,6 @@ void main()
       if (i == 1) 
          break;
    } while (i != 10);
-   print("i 1");
-   printid(i);
+
+   assert(i == 1, "i must be 1");
 }

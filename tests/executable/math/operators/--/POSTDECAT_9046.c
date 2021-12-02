@@ -4,6 +4,6 @@ int j = 1, k;
 void main()
 {
     k = b[j]--;
-    print("k 5");
-    printid(k);
+
+    assert(k == 5, "k must be 5");
 }

@@ -2,8 +2,7 @@ float r, d;
 void main()
 {
     r = d--;
-    print("d -1.000000");
-    printid(d);
-    print("r 0.000000");
-    printid(r);
+
+    assert(d == -1.000000, "d must be -1.000000");
+    assert(r == 0.000000, "r must be 0.000000");
 }

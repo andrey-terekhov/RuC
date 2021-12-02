@@ -5,23 +5,23 @@ int main()
    float m[2] = {1.5, 2.5};
    float k;
    a += b;
-   print("a  5");
-   printid(a);
+
+   assert(a == 5, "a must be 5");
 
    d[0] += d[1];
    b = d[0];
-   print("b  6");
-   printid(b);
+
+   assert(b == 6, "b must be 6");
 
    m[0] += d[1];
    k = m[0];
-   print("k  3.500000");
-   printid(k);
+
+   assert(k == 3.500000, "k must be 3.500000");
 
    m[0] += m[1];
    k = m[0];
-   print("k  6.000000");
-   printid(k);
+
+   assert(k == 6.000000, "k must be 6.000000");
 
    return 0;
 }

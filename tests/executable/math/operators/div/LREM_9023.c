@@ -13,9 +13,7 @@ void main()
       if (i == 1) 
          break;
    } while (i!=10);
-   
-   print("i 1");
-   printid(i);
-   print("j 11");
-   printid(j);
+
+   assert(i == 1, "i must be 1");
+   assert(j == 11, "j must be 11");
 }

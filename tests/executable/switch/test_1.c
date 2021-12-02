@@ -14,4 +14,6 @@ void main()
             a = 3;
     }
     a = b;
+
+    assert(a == 0, "a must be 0");
 }

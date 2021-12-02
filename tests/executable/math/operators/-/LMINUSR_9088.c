@@ -4,6 +4,6 @@ int j;
 void main()
 {
     e = f[j]---1;
-    print("e -1.000000");
-    printid(e);
+
+    assert(e == -1.000000, "e must be -1.000000");
 }

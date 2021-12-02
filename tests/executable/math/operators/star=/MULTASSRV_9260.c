@@ -2,7 +2,8 @@ int main()
 {
 	float a = 2, b = 3;
 	b *= a;
-	print("b 6.000000");
-	printid(b);
+
+	assert(b == 6.000000, "b must be 6.000000");
+
 	return 0;
 }
