@@ -442,7 +442,6 @@ static size_t parser_skip_separators(parser *const prs, char32_t *const last)
  *	Пропустить строку с текущего символа, выводит ошибку, если попался не разделитель или комментарий
  *
  *	@param	prs			Структура парсера
- *	@param	cur			Текущий символ
  */
 static void parser_find_unexpected_lexeme(parser *const prs)
 {
@@ -512,7 +511,6 @@ static int parser_preprocess_file(parser *const prs, char *const path)
  *	Считать путь к файлу и выполняет его обработку
  *
  *	@param	prs			Структура парсера
- *	@param	cur			Символ после директивы
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -525,17 +523,24 @@ static int parser_include(parser *const prs)
 	prs->position++;
 
 	// Пропуск разделителей и комментариев
-	parser_skip_separators(prs, &cur);
+	prs->position += parser_skip_separators(prs, &cur);
+	if (prs->position == position)
+	{
+		parser_macro_error(prs, 0);
+		parser_skip_line(prs, cur);
+		return prs->was_error ? -1 : 0;
+	}
+	
 	uni_unscan_char(prs->in, cur);
 
 	// Обработка пути
 	char path[MAX_ARG_SIZE] = "\0";
 	const size_t index = storage_search(prs->stg, prs->in, &cur);
-	char32_t ch = cur == '<' ? '>' : '\"';
+	char32_t ch = cur == '<' ? '>' : cur == '\"' ? '\"' : '\0';
 	if (index == SIZE_MAX)
 	{
-		if (storage_last_read(prs->stg) != NULL)	// Неопределенный идентификатор
-		{
+		if (storage_last_read(prs->stg) != NULL || ch == '\0')	// Неопределенный идентификатор
+		{														// или не '<', или не '\"'
 			prs->position = position;
 			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 			parser_skip_line(prs, cur);
@@ -581,6 +586,40 @@ static int parser_include(parser *const prs)
 	parser_find_unexpected_lexeme(prs);
 
 	return ret;
+}
+
+/**
+ *	Считать идентификатор, его значение и добавить в хранилище
+ *
+ *	@param	prs			Структура парсера
+ */
+static void parser_define(parser *const prs, const keyword_t mode)
+{
+	const size_t position = prs->position;
+	const size_t line = prs->line;
+	prs->position += strlen(storage_last_read(prs->stg));
+
+	char32_t cur = uni_scan_char(prs->in);
+	prs->position++;
+
+	// Пропуск разделителей и комментариев
+	prs->position += parser_skip_separators(prs, &cur);
+	if (prs->position == position && prs->line == line
+		&& !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		parser_macro_error(prs, 0);
+		parser_skip_line(prs, cur);
+		return;
+	}
+
+	if (cur == '_' || !utf8_is_letter(cur))
+	{
+		parser_macro_error(prs, 0);
+		parser_skip_line(prs, cur);
+		return;
+	}
+
+	uni_unscan_char(prs->in, cur);
 }
 
 
@@ -644,6 +683,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				break;
 		
 			case KW_DEFINE:
+				uni_unscan_char(prs->in, cur);
+				parser_define(prs);
+				break;
 			case KW_SET:
 			case KW_UNDEF:
 
