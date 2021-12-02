@@ -222,7 +222,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
 	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, "."));
 	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, "."));
-	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, "."));
 }
 
 static item_t type_get(const syntax *const sx, const size_t index)

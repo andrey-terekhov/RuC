@@ -2353,7 +2353,7 @@ static void builin_functions_declaration(information *const info)
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
-		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID)
+		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID || i == BI_GETID)
 		{
 			continue;
 		}
