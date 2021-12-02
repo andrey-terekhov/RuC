@@ -1,5 +1,5 @@
 /*
- *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev, Ilya Andreev
+ *	Copyright 2015 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -84,25 +84,21 @@ static inline int mem_increase(encoder *const enc, const size_t size)
 	return vector_increase(&enc->memory, size);
 }
 
-static inline size_t mem_size(const encoder *const enc)
-{
-	return vector_size(&enc->memory);
-}
-
 static inline size_t mem_add(encoder *const enc, const item_t value)
 {
 	return vector_add(&enc->memory, value);
 }
 
-static inline void mem_add_double(encoder *const enc, const double value)
+static inline size_t mem_add_double(encoder *const enc, const double value)
 {
-	item_t buffer[8];
-	const size_t size = item_store_double_for_target(enc->target, value, buffer);
+	int64_t num64;
+	memcpy(&num64, &value, sizeof(int64_t));
 
-	for (size_t i = 0; i < size; i++)
-	{
-		mem_add(enc, buffer[i]);
-	}
+	const int32_t fst = num64 & 0x00000000ffffffff;
+	const int32_t snd = (num64 & 0xffffffff00000000) >> 32;
+
+	mem_add(enc, fst);
+	return mem_add(enc, snd);
 }
 
 static inline int mem_set(encoder *const enc, const size_t index, const item_t value)
@@ -113,6 +109,11 @@ static inline int mem_set(encoder *const enc, const size_t index, const item_t v
 static inline item_t mem_get(const encoder *const enc, const size_t index)
 {
 	return vector_get(&enc->memory, index);
+}
+
+static inline size_t mem_size(const encoder *const enc)
+{
+	return vector_size(&enc->memory);
 }
 
 static inline size_t mem_reserve(encoder *const enc)
@@ -306,6 +307,9 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 
 			return;
 		}
+
+		default:
+			return;
 	}
 }
 
@@ -374,8 +378,7 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 	item_t member_displ = 0;
 	for (size_t i = 0; i < member_index; i++)
 	{
-		const item_t member_type = type_structure_get_member_type(enc->sx, struct_type, i);
-		member_displ += (item_t)type_size(enc->sx, member_type);
+		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, struct_type, i));
 	}
 
 	if (is_arrow)
@@ -395,8 +398,11 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 		const lvalue value = emit_lvalue(enc, &base);
 		if (value.kind == VARIABLE)
 		{
-			const item_t displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ;
-			return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
+			return (lvalue){
+					.kind = VARIABLE,
+					.type = type,
+					.displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ
+				};
 		}
 		else // if (enc->last_kind == ADDRESS)
 		{
@@ -539,7 +545,7 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_add(enc, displ < 0 ? IC_LOAD : IC_LI);
 		mem_add(enc, llabs(displ));
 	}
-	else if (expression_get_class(nd) == EXPR_INITIALIZER)
+	else if (expression_get_class(nd) == EXPR_LIST)
 	{
 		mem_add(enc, IC_LI);
 		const size_t reserved = mem_size(enc) + 4;
@@ -547,11 +553,11 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_add(enc, IC_B);
 		mem_increase(enc, 2);
 
-		const node fst = expression_initializer_get_subexpr(nd, 0);
-		const size_t size = expression_initializer_get_size(nd);
+		const node fst = expression_list_get_subexpr(nd, 0);
+		const size_t size = expression_list_get_size(nd);
 		for (size_t i = 0; i < size; i++)
 		{
-			const node subexpr = expression_initializer_get_subexpr(nd, i);
+			const node subexpr = expression_list_get_subexpr(nd, i);
 			if (expression_get_class(&subexpr) != EXPR_LITERAL)
 			{
 				system_error(wrong_init_in_actparam);
@@ -683,23 +689,6 @@ static void emit_print_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit upb expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_upb_expression(encoder *const enc, const node *const nd)
-{
-	const node fst = expression_call_get_argument(nd, 1);
-	emit_expression(enc, &fst);
-
-	const node snd = expression_call_get_argument(nd, 0);
-	emit_expression(enc, &snd);
-
-	mem_add(enc, IC_UPB);
-}
-
-/**
  *	Emit call expression
  *
  *	@param	enc			Encoder
@@ -723,9 +712,6 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 			return;
 		case BI_GETID:
 			emit_getid_expression(enc, nd);
-			return;
-		case BI_UPB:
-			emit_upb_expression(enc, nd);
 			return;
 	}
 
@@ -761,22 +747,21 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 static void emit_member_rvalue(encoder *const enc, const node *const nd)
 {
 	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
+	const item_t type = expression_get_type(nd);
 	const node base = expression_member_get_base(nd);
-	emit_expression(enc, &base);
-	
 	const item_t base_type = expression_get_type(&base);
 	const size_t member_index = expression_member_get_member_index(nd);
 
-	size_t member_displ = 0;
+	item_t member_displ = 0;
 	for (size_t i = 0; i < member_index; i++)
 	{
-		const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
-		member_displ += type_size(enc->sx, member_type);
+		member_displ += (item_t)type_size(enc->sx, type_structure_get_member_type(enc->sx, base_type, i));
 	}
 
+	emit_expression(enc, &base);
 	mem_add(enc, IC_COPYST);
-	mem_add(enc, (item_t)member_displ);
-	mem_add(enc, (item_t)type_size(enc->sx, expression_get_type(nd)));
+	mem_add(enc, member_displ);
+	mem_add(enc, (item_t)type_size(enc->sx, type));
 	mem_add(enc, (item_t)type_size(enc->sx, base_type));
 }
 
@@ -926,7 +911,7 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 	}
 
 	const instruction_t instruction = binary_to_instruction(operator);
-	if (type_is_floating(expression_get_type(&LHS)))
+	if (type_is_floating(expression_get_type(&LHS)) || type_is_floating(expression_get_type(&RHS)))
 	{
 		mem_add(enc, instruction_to_floating_ver(instruction));
 	}
@@ -945,30 +930,54 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 static void emit_assignment_expression(encoder *const enc, const node *const nd)
 {
 	const node LHS = expression_binary_get_LHS(nd);
-	const lvalue value = emit_lvalue(enc, &LHS);
-
 	const node RHS = expression_binary_get_RHS(nd);
-	emit_expression(enc, &RHS);
+	const lvalue left_value = emit_lvalue(enc, &LHS);
 
 	const item_t type = expression_get_type(nd);
 	if (type_is_structure(enc->sx, type))
 	{
-		if (value.kind == VARIABLE)
+		if (expression_is_lvalue(&RHS))
 		{
-			mem_add(enc, IC_COPY0ST_ASSIGN);
-			mem_add(enc, value.displ);
+			const lvalue right_value = emit_lvalue(enc, &RHS);
+
+			mem_add(enc, left_value.kind == VARIABLE
+				? right_value.kind == VARIABLE
+					? IC_COPY00
+					: IC_COPY01
+				: right_value.kind == VARIABLE
+					? IC_COPY10
+					: IC_COPY11);
+
+			if (left_value.kind == VARIABLE)
+			{
+				mem_add(enc, left_value.displ);
+			}
+
+			if (right_value.kind == VARIABLE)
+			{
+				mem_add(enc, right_value.displ);
+			}
+
+			mem_add(enc, (item_t)type_size(enc->sx, type));
 		}
 		else
 		{
-			mem_add(enc, IC_COPY1ST_ASSIGN);
-		}
+			emit_expression(enc, &RHS);
+			mem_add(enc, left_value.kind == VARIABLE ? IC_COPY0ST_ASSIGN : IC_COPY1ST_ASSIGN);
+			if (left_value.kind == VARIABLE)
+			{
+				mem_add(enc, left_value.displ);
+			}
 
-		mem_add(enc, (item_t)type_size(enc->sx, type));
+			mem_add(enc, (item_t)type_size(enc->sx, type));
+		}
 	}
-	else // Скалярное присваивание
+	else // оба операнда базового типа или указатели
 	{
+		emit_expression(enc, &RHS);
+
 		instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
-		if (value.kind == ADDRESS)
+		if (left_value.kind == ADDRESS)
 		{
 			operator = instruction_to_address_ver(operator);
 		}
@@ -980,9 +989,9 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 		mem_add(enc, operator);
 
-		if (value.kind == VARIABLE)
+		if (left_value.kind == VARIABLE)
 		{
-			mem_add(enc, value.displ);
+			mem_add(enc, left_value.displ);
 		}
 	}
 }
@@ -1042,15 +1051,15 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit initializer
+ *	Emit expression list
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  */
-static void emit_initializer(encoder *const enc, const node *const nd)
+static void emit_expression_list(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const size_t size = expression_initializer_get_size(nd);
+	const size_t size = expression_list_get_size(nd);
 
 	if (type_is_array(enc->sx, type))
 	{
@@ -1060,7 +1069,7 @@ static void emit_initializer(encoder *const enc, const node *const nd)
 
 	for (size_t i = 0; i < size; i++)
 	{
-		const node subexpr = expression_initializer_get_subexpr(nd, i);
+		const node subexpr = expression_list_get_subexpr(nd, i);
 		emit_expression(enc, &subexpr);
 	}
 }
@@ -1110,8 +1119,8 @@ static void emit_expression(encoder *const enc, const node *const nd)
 			emit_ternary_expression(enc, nd);
 			return;
 
-		case EXPR_INITIALIZER:
-			emit_initializer(enc, nd);
+		case EXPR_LIST:
+			emit_expression_list(enc, nd);
 			return;
 
 		default:
@@ -1170,12 +1179,12 @@ static bool only_strings(const encoder *const enc, const node *const nd)
 		case EXPR_LITERAL:
 			return type_is_string(enc->sx, expression_get_type(nd));
 
-		case EXPR_INITIALIZER:
+		case EXPR_LIST:
 		{
-			const size_t size = expression_initializer_get_size(nd);
+			const size_t size = expression_list_get_size(nd);
 			for (size_t i = 0; i < size; i++)
 			{
-				const node subexpr = expression_initializer_get_subexpr(nd, i);
+				const node subexpr = expression_list_get_subexpr(nd, i);
 				if (!only_strings(enc, &subexpr))
 				{
 					return false;

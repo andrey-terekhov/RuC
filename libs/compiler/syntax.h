@@ -88,6 +88,13 @@ typedef struct syntax
 	bool was_error;				/**< Set, if was error */
 } syntax;
 
+/** Source location */
+typedef struct location
+{
+	size_t begin;
+	size_t end;
+} location;
+
 /** Scope */
 typedef struct scope
 {
@@ -357,7 +364,7 @@ item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const 
  *	Get type class
  *
  *	@param	sx			Syntax structure
- *	@param	type		Type of lvalue, expression or function designator
+ *	@param	type		Type
  *
  *	@return	Type class
  */
@@ -655,6 +662,7 @@ item_t type_array(syntax *const sx, const item_t type);
  *	Create string type
  *
  *	@param	sx			Syntax structure
+ *	@param	type		Element type
  *
  *	@return	String type
  */

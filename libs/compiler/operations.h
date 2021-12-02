@@ -18,7 +18,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "token.h"
+#include "tokens.h"
 
 
 #ifdef __cplusplus
@@ -128,7 +128,7 @@ typedef enum OPERATION
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
-	OP_INITIALIZER,			/**< Initializer node */
+	OP_LIST,
 
 	// Statements
 	OP_LABEL,				/**< Label statement node */
