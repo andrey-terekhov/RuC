@@ -187,8 +187,7 @@ typedef struct information
 
 	item_t label_else;					/**< Метка перехода на else */
 
-	bool reverse_logic_command;			/**< Флаг требования противоположной логической операции команды */
-	bool to_reverse_reverse;			/**< Флаг требования противоположного значения флага reverse_logic_command*/		
+	bool reverse_logic_command;			/**< Флаг требования противоположной логической операции команды */		
 } information;
 
 
@@ -737,7 +736,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 
 	if (left_kind == A_REG && right_kind == A_REG)
 	{
-		info->reverse_logic_command = !info->to_reverse_reverse;
+		info->reverse_logic_command = !info->reverse_logic_command;
 
 		if (operation == BIN_EQ || operation == BIN_NE)
 		{
@@ -752,7 +751,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	}
 	else if (left_kind == A_REG && right_kind == A_CONST)
 	{
-		info->reverse_logic_command = !info->to_reverse_reverse;
+		info->reverse_logic_command = !info->reverse_logic_command;
 
 		if (operation == BIN_EQ || operation == BIN_NE)
 		{
@@ -768,11 +767,9 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	}
 	else if (left_kind == A_CONST && right_kind == A_REG)
 	{
-		info->reverse_logic_command = info->to_reverse_reverse;
-
 		if (operation == BIN_EQ || operation == BIN_NE)
 		{
-			info->reverse_logic_command = !info->to_reverse_reverse;
+			info->reverse_logic_command = !info->reverse_logic_command;
 
 			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, left_reg, R_ZERO, left_const);
 			to_code_2R_L(info->sx->io, get_instruction(info, operation), left_reg, right_reg
@@ -999,12 +996,12 @@ static void emit_binary_expression(information *const info, const node *const nd
 			if (operator == BIN_LOG_OR)
 			{
 				info->label_else = label_then;
-				info->to_reverse_reverse = true;
+				info->reverse_logic_command = true;
 			}
 			else
 			{
 				info->label_else = old_label_else;
-				info->to_reverse_reverse = false;
+				info->reverse_logic_command = false;
 			}
 			info->request_kind = RQ_FREE;
 			const node LHS = expression_binary_get_LHS(nd);
@@ -1012,7 +1009,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 
 			info->request_kind = RQ_FREE;
 			info->label_else = old_label_else;
-			info->to_reverse_reverse = false;
+			info->reverse_logic_command = false;
 			const node RHS = expression_binary_get_RHS(nd);
 			emit_expression(info, &RHS);
 
@@ -1548,7 +1545,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.label_num = 1;
 	info.label_else = 1;
 	info.reverse_logic_command = false;
-	info.to_reverse_reverse = false;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
