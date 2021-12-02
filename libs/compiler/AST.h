@@ -46,7 +46,7 @@ typedef enum EXPRESSION
 	EXPR_UNARY,			/**< Unary expression */
 	EXPR_BINARY,		/**< Binary expression */
 	EXPR_TERNARY,		/**< Ternary expression */
-	EXPR_LIST,			/**< Expression list */
+	EXPR_INITIALIZER,	/**< Initializer */
 } expression_t;
 
 /** Statement class */
@@ -537,51 +537,51 @@ inline node expression_ternary_get_RHS(const node *const nd)
 
 
 /**
- *	Create new expression list
+ *	Create new initializer
  *
  *	@param	exprs			Subexpressions
  *	@param	loc				Expression location
  *
- *	@return	Expression list
+ *	@return	Initializer
  */
-node expression_list(node_vector *const exprs, const location loc);
+node expression_initializer(node_vector *const exprs, const location loc);
 
 /**
- *	Set type of expression list
+ *	Set type of initializer
  *
- *	@param	nd				Expression list
+ *	@param	nd				Initializer
  *	@param	type			Type
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-inline int expression_list_set_type(const node *const nd, const item_t type)
+inline int expression_initializer_set_type(const node *const nd, const item_t type)
 {
-	return node_get_type(nd) == OP_LIST ? node_set_arg(nd, 0, type) : -1;
+	return node_get_type(nd) == OP_INITIALIZER ? node_set_arg(nd, 0, type) : -1;
 }
 
 /**
- *	Get size of expression list
+ *	Get size of initializer
  *
- *	@param	nd				Expression list
+ *	@param	nd				Initializer
  *
  *	@return	Size
  */
-inline size_t expression_list_get_size(const node *const nd)
+inline size_t expression_initializer_get_size(const node *const nd)
 {
-	return node_get_type(nd) == OP_LIST ? node_get_amount(nd) : 0;
+	return node_get_type(nd) == OP_INITIALIZER ? node_get_amount(nd) : 0;
 }
 
 /**
- *	Get subexpression of expression list by index
+ *	Get subexpression of initializer by index
  *
- *	@param	nd				Expression list
+ *	@param	nd				Initializer
  *	@param	index			Subexpression index
  *
  *	@return	Expression
  */
-inline node expression_list_get_subexpr(const node *const nd, const size_t index)
+inline node expression_initializer_get_subexpr(const node *const nd, const size_t index)
 {
-	return node_get_type(nd) == OP_LIST ? node_get_child(nd, index) : node_broken();
+	return node_get_type(nd) == OP_INITIALIZER ? node_get_child(nd, index) : node_broken();
 }
 
 

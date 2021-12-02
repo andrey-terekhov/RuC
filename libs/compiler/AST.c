@@ -53,9 +53,9 @@ extern node expression_ternary_get_condition(const node *const nd);
 extern node expression_ternary_get_LHS(const node *const nd);
 extern node expression_ternary_get_RHS(const node *const nd);
 
-extern int expression_list_set_type(const node *const nd, const item_t type);
-extern size_t expression_list_get_size(const node *const nd);
-extern node expression_list_get_subexpr(const node *const nd, const size_t index);
+extern int expression_initializer_set_type(const node *const nd, const item_t type);
+extern size_t expression_initializer_get_size(const node *const nd);
+extern node expression_initializer_get_subexpr(const node *const nd, const size_t index);
 
 
 extern size_t statement_labeled_get_label(const node *const nd);
@@ -161,8 +161,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_BINARY;
 		case OP_TERNARY:
 			return EXPR_TERNARY;
-		case OP_LIST:
-			return EXPR_LIST;
+		case OP_INITIALIZER:
+			return EXPR_INITIALIZER;
 		default:
 			system_error(node_unexpected);
 			return 0;
@@ -312,10 +312,10 @@ node expression_ternary(const item_t type, node *const cond, node *const LHS, no
 	return nd;
 }
 
-node expression_list(node_vector *const exprs, const location loc)
+node expression_initializer(node_vector *const exprs, const location loc)
 {
 	node fst = node_vector_get(exprs, 0);
-	node nd = node_insert(&fst, OP_LIST, 4);
+	node nd = node_insert(&fst, OP_INITIALIZER, 4);
 
 	node_set_arg(&nd, 0, TYPE_UNDEFINED);			// Тип значения выражения
 	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
