@@ -83,6 +83,7 @@ typedef struct information
 	bool was_abs;							/**< Истина, если был вызов abs */
 	bool was_fabs;							/**< Истина, если был вызов fabs */
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
+	bool is_main;							/**< Истина, если обрабатывается main */
 } information;
 
 
@@ -1769,6 +1770,7 @@ static void emit_function_definition(information *const info, const node *const 
 	if (ref_ident == info->sx->ref_main)
 	{
 		uni_printf(info->sx->io, " @main(");
+		info->is_main = true;
 	}
 	else
 	{
@@ -1814,6 +1816,7 @@ static void emit_function_definition(information *const info, const node *const 
 	else if (ref_ident == info->sx->ref_main)
 	{
 		uni_printf(info->sx->io, " ret i32 0\n");
+		info->is_main = false;
 	}
 	uni_printf(info->sx->io, "}\n\n");
 }
@@ -2091,6 +2094,11 @@ static void emit_return_statement(information *const info, const node *const nd)
 	if (info->was_dynamic)
 	{
 		to_code_stack_load(info, -1);
+	}
+
+	if (info->is_main)
+	{
+		return;
 	}
 
 	if (statement_return_has_expression(nd))
@@ -2438,6 +2446,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_file = false;
 	info.was_abs = false;
 	info.was_fabs = false;
+	info.is_main = false;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;
