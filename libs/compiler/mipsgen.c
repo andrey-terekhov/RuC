@@ -785,6 +785,7 @@ static void emit_logic_expression(information *const info, const node *const nd)
 	// над этими действиями надо позже подумать, когда будут делаться сложные выражения
 	info->answer_kind = A_REG;
 	info->answer_reg = result;
+	info->reverse_logic_command = false;
 	free_register(info);
 
 	if (was_allocate_reg_left)
