@@ -41,7 +41,7 @@ const size_t FST_CHARACTER_INDEX = 0;
  */
 static bool utf8_is_separator(const char32_t symbol)
 {
-	return  symbol == ' ' || symbol == '\t';
+	return symbol == ' ' || symbol == '\t';
 }
 
 /**
@@ -53,7 +53,7 @@ static bool utf8_is_separator(const char32_t symbol)
  */
 static bool utf8_is_line_breaker(const char32_t symbol)
 {
-	return  symbol == '\r' || symbol == '\n';
+	return symbol == '\r' || symbol == '\n';
 }
 
 
@@ -128,10 +128,10 @@ static inline void parser_add_char(parser *const prs, const char32_t cur)
 }
 
 /**
- *	Сдвинуть код разделителями
+ *	Сделать отступ в начале строки
  *
  *	@param	prs			Структура парсера
- *	@param	size		Размер сдвига
+ *	@param	size		Размер отступа
  */
 static inline void parser_add_spacers(parser *const prs, const size_t size)
 {
