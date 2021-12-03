@@ -6,20 +6,20 @@ int main()
    float m[2] = {1.5, 2.5};
 
    c = a - b;
-   print ("c  -1");
-   printid(c);
+
+   assert(c == -1, "c must be -1");
 
    c = d[0] - d[1];
-   print ("c  2");
-   printid(c);
+
+   assert(c == 2, "c must be 2");
 
    k = m[0] - d[1];
-   print ("k  -0.500000");
-   printid(k);
+
+   assert(k == -0.500000, "k must be -0.500000");
 
    k = m[1] - m[0];
-   print ("k  1.000000");
-   printid(k);
+
+   assert(k == 1.000000, "k must be 1.000000");
 
    return 0;
 }

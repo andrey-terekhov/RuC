@@ -28,7 +28,8 @@ typedef enum ERROR
 {
 	// Lexer errors
 	bad_character,							/**< Bad character in source */
-	empty_character,						/**< Empty character constant */
+	unexpected_digit,						/**< Digit of another base */
+	empty_character,						/**< Empty character literal */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
 	expected_apost_after_char_const,		/**< Missing terminating ' character */
 	missing_terminating_quote_char,			/**< Missing terminating '"' character */
@@ -69,7 +70,7 @@ typedef enum ERROR
 	no_leftbr_in_for,
 	no_semicolon_in_for,
 	no_rightbr_in_for,
-	no_ident_after_goto,
+	expected_identifier_after_goto,		/**< Expected identifier after 'goto' */
 	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
 	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,

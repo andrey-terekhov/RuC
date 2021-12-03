@@ -5,27 +5,27 @@ int main()
    float m[2] = {1.5, 2.5};
    float k;
    a *= b;
-   print ("a  6");
-   printid(a);
+
+   assert(a == 6, "a must be 6");
 
    c *= b;
-   print ("c  -3");
-   printid(c);
+
+   assert(c == -3, "c must be -3");
 
    d[0] *= d[1];
    b = d[0];
-   print ("b  8");
-   printid(b);
+
+   assert(b == 8, "b must be 8");
 
    m[0] *= d[1];
    k = m[0];
-   print ("k  3.000000");
-   printid(k);
+
+   assert(k == 3.000000, "k must be 3.000000");
 
    m[0] *= m[1];
    k = m[0];
-   print ("k  7.500000");
-   printid(k);
+
+   assert(k == 7.500000, "k must be 7.500000");
 
    return 0;
 }

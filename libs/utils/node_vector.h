@@ -102,6 +102,18 @@ inline size_t node_vector_size(const node_vector *const vec)
 }
 
 /**
+ *	Check that vector is correct
+ *
+ *	@param	vec				Node vector
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+inline bool node_vector_is_correct(const node_vector *const vec)
+{
+	return vec != NULL && vector_is_correct(vec->tree) && vector_is_correct(&vec->nodes);
+}
+
+/**
  *	Free allocated memory
  *
  *	@param	vec				Node vector

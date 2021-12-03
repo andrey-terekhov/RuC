@@ -9,5 +9,6 @@
 void main()
 {
   int h = h1() + A + Q;
-  printid(h);
+
+  assert(h == 18, "h must be 18");
 }

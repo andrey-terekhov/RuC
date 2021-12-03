@@ -16,9 +16,15 @@ void main()
     struct point p1, p2;
     p1.x = 1; p1.y = 2;
     line1.pt1 = line2.pt2 = p1;
-    print("line1  1  2  0  0");
-    printid(line1);
-    print("line2  0  0  1  2");
-    printid(line2);
+
+    assert(line1.pt1.x == 1, "line1.pt1.x must be 1");
+    assert(line1.pt1.y == 2, "line1.pt1.y must be 2");
+    assert(line1.pt2.x == 0, "line1.pt2.x must be 0");
+    assert(line1.pt2.y == 0, "line1.pt2.y must be 0");
+
+    assert(line2.pt1.x == 0, "line2.pt1.x must be 0");
+    assert(line2.pt1.y == 0, "line2.pt1.y must be 0");
+    assert(line2.pt2.x == 1, "line2.pt2.x must be 1");
+    assert(line2.pt2.y == 2, "line2.pt2.y must be 2");
 }
 

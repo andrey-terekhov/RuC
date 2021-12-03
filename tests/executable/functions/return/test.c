@@ -16,6 +16,8 @@ void main()
 {
     int ans;
     ans = q(3, 4);
-    printid(ans);  // 15
+
+    assert(ans == 15, "ans must be 15");
+
     return;
 }

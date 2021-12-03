@@ -4,6 +4,7 @@ void MAIN()
 {
     float r;
     r=d[1] -= 0.70;
-    print("d 3.140000 2.020000");
-    printid(d);
+
+    assert(d[0] == 3.140000, "d[0] must be 3.140000");
+    assert(r == 2.020000, "r must be 2.020000");
 }

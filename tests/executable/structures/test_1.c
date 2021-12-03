@@ -21,6 +21,10 @@
 	masa[1].vects[0] = b;
 	masa[1].vects[1] = a;	
 	
-    printid(masa);
+	assert(masa[0].vects[0].size == 5, "masa[0].vects[0].size must be 5");
+	assert(masa[0].vects[1].size == 6, "masa[0].vects[1].size must be 6");
+	assert(masa[1].vects[0].size == 6, "masa[1].vects[0].size must be 6");
+	assert(masa[1].vects[1].size == 5, "masa[1].vects[1].size must be 5");
+
 	возврат 0;
 }

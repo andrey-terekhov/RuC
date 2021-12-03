@@ -7,26 +7,25 @@
        i--;
        j--;
    }
-   print ("j  10");
-   printid(j);
+
+   assert(j == 10, "j must be 10");
 
    while (i == 0)
    {
        i--;
        j--;
    }
-   print ("j  9");
-   printid(j);
+
+   assert(j == 9, "j must be 9");
 
    while (j!= 0)
    {
        i++;
        j--;
    }
-   print ("j  0");
-   printid(j);
-   print ("i  8");
-   printid(i);
+
+   assert(j == 0, "j must be 0");
+   assert(i == 8, "i must be 8");
 
    while (j >= 0)
    {
@@ -35,10 +34,9 @@
 	j++;
 	if (i == 1) break;
    }
-   print ("j  4");
-   printid(j);
-   print ("i  1");
-   printid(i);
+
+   assert(j == 4, "j must be 4");
+   assert(i == 1, "i must be 1");
 
    return 0;
 }

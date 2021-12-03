@@ -18,7 +18,8 @@ int main()
   {
      struct A a2;
      a2.inner[4].x = 3;
-     print(a2.inner[4].x * 2);
+
+     assert(a2.inner[4].x * 2 == 6, "a2.inner[4].x * 2 must be 6");
   }
   return 0;
 }

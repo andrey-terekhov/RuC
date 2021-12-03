@@ -14,6 +14,6 @@ void main()
             j = i;
         }
     }
-    printid(j);
-    printid(x);
+    assert(x == 1488, "x must be 1488");
+    assert(j == 2, "j must be 2");
 }

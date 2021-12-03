@@ -6,4 +6,6 @@ void main()
     {
         a += i + j;
     }
+
+    assert(a == 90, "a must be 90");
 }
