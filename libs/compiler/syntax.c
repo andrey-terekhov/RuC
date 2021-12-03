@@ -17,7 +17,7 @@
 #include "syntax.h"
 #include <stdlib.h>
 #include <string.h>
-#include "tokens.h"
+#include "token.h"
 #include "tree.h"
 
 

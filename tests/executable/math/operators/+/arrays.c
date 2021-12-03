@@ -6,5 +6,10 @@ void main()
     {
        c[i] = a[i] + b[i];
     }
-    printid(c);    // 5,7,12,17,20
+
+    assert(c[0] == 5, "c[0] must be 5");
+    assert(c[1] == 7, "c[1] must be 7");
+    assert(c[2] == 12, "c[2] must be 12");
+    assert(c[3] == 17, "c[3] must be 17");
+    assert(c[4] == 20, "c[4] must be 20");
 }

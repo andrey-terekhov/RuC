@@ -5,20 +5,20 @@ int main()
    float k;
    float m[2] = {2.6, 1.3};
    c = a / b;
-   print ("c  0");
-   printid( c);
+
+   assert(c == 0, "c must be 0");
 
    c = d[0] / d[1];
-   print ("c  2");
-   printid(c);
+
+   assert(c == 2, "c must be 2");
 
    k = m[0] / d[1];
-   print ("k  1.300000");
-   printid(k);
+
+   assert(k == 1.300000, "k must be 1.300000");
 
    k = m[0] / m[1];
-   print ("k  2.000000");
-   printid(k);
+
+   assert(k == 2.000000, "k must be 2.000000");
 
    return 0;
 }

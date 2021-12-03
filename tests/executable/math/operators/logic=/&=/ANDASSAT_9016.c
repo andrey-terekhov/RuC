@@ -3,7 +3,8 @@ void MAIN()
 {
     float r;
     r = d[1] &= 70;
-    print("d 72 0");
-    printid(d);
+
+    assert(d[0] == 72, "d[0] must be 72");
+    assert(d[1] == 0, "d[1] must be 0");
 }
 

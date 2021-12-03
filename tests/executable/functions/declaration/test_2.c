@@ -10,6 +10,8 @@ void main()
         j += i;
     };
 
+    assert(j == 28, "j must be 28");
+
     a <<= 2;
 
     while(a > j)
@@ -17,6 +19,8 @@ void main()
         f();
         a++;
     }
+
+    assert(a == -8, "a must be -8");
 }
 
 void f()

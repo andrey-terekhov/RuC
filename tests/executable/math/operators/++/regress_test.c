@@ -6,37 +6,35 @@ void main()
     float k;
    
     c = a * ++b;
-    print ("c  8");
-    printid(c);
+
+    assert(c == 8, "c must be 8");
 
     c = a * b++;
-    print("c  8");
-    printid(c);
-    
-    print("b  5");
-    printid(b);
+
+    assert(c == 8, "c must be 8");
+    assert(b == 5, "b must be 5");
 
     c = d[0]++;
-    print ("c  4");
-    printid(c);
+
+    assert(c == 4, "c must be 4");
     
     c = d[0];
-    print ("c  5");
-    printid(c);
+
+    assert(c == 5, "c must be 5");
 
     k = m[0]--;
-    print ("k  1.500000");
-    printid(k);
+
+    assert(k == 1.500000, "k must be 1.500000");
     
     k = m[0];
-    print ("k  0.500000");
-    printid(k);
+
+    assert(k == 0.500000, "k must be 0.500000");
 
     k = ++m[1];
-    print ("k  3.500000");
-    printid(k);
+
+    assert(k == 3.500000, "k must be 3.500000");
 
     c = --d[1];
-    print ("c  1");
-    printid(c);
+
+    assert(c == 1, "c must be 1");
 }

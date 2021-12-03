@@ -3,7 +3,10 @@ int  b[3], c, d;
 void main()
 {
   d = ++b[1];
-  printid(d);
+
+  assert(d == 1, "d must be 1");
+
   d = ++c;
-  printid(d);
+
+  assert(d == 1, "d must be 1");
 }

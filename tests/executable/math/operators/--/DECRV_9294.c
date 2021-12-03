@@ -3,6 +3,6 @@ float   d;
 void main()
 {
      --d;
-     print("d -1.000000");
-     printid(d);
+
+     assert(d == -1.000000, "d must be -1.000000");
 }

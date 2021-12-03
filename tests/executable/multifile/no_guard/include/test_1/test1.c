@@ -8,5 +8,6 @@
 void main()
 {
   int h = h1() + A;
-  printid(h);
+
+  assert(h == 8, "h must be 8");
 }

@@ -4,17 +4,15 @@ int main()
     int b;
 
     b = round(a);
-    print("a 2.304692654015389");
-    printid(a);
-    print("b 2");
-    printid(b);
 
-    a=-2.304692654015389;
-    print("a -2.304692654015389");
-    printid(a);
+    assert(a == 2.304692654015389, "a must be 2.304692654015389");
+    assert(b == 2, "b must be 2");
+
+    a=-2.304692654015389;   
     b = round(a);
-    print("b -2");
-    printid(b);
+
+    assert(a == -2.304692654015389, "a must be -2.304692654015389");
+    assert(b == -2, "b must be -2");
     
     return 0;
 }
