@@ -255,7 +255,7 @@ double item_restore_double_for_target(const item_status status, const item_t *co
 
 	double value;
 	memcpy(&value, &temp, sizeof(double));
-	return value;
+	return value;	
 }
 
 

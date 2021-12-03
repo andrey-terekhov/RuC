@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -14,36 +14,26 @@
  *	limitations under the License.
  */
 
-#ifdef _MSC_VER
-	#pragma comment(linker, "/STACK:268435456")
-#endif
+#pragma once
 
-#include "compiler.h"
+#include "syntax.h"
 #include "workspace.h"
 
 
-const char *name = "../../../test.c";
-// "../tests/mips/0test.c";
-
-
-int main(int argc, const char *argv[])
-{
-	workspace ws = ws_parse_args(argc, argv);
-	ws_add_flag(&ws, "-LLVM");
-
-	if (argc < 2)
-	{
-		ws_add_file(&ws, name);
-		ws_add_flag(&ws, "-Wno");
-		ws_set_output(&ws, "export.txt");
-	}
-
-#ifdef TESTING_EXIT_CODE
-	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
-#else
-	const int ret = compile(&ws);
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-	ws_clear(&ws);
-	return ret;
-}
+/**
+ *	Encode to low level virtual machine codes
+ *
+ *	@param	ws				Compiler workspace
+ *	@param	sx				Syntax structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int encode_to_llvm(const workspace *const ws, syntax *const sx);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

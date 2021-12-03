@@ -52,6 +52,8 @@ typedef enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_ENUM,
+
+	BEGIN_USER_TYPE = 15,
 } type_t;
 
 
@@ -143,14 +145,22 @@ size_t string_add(syntax *const sx, const vector *const str);
 const char* string_get(const syntax *const sx, const size_t index);
 
 /**
- *	Get string length
+ *    Get length of a string
  *
- *	@param	sx				Syntax structure
- *	@param	index			Index
+ *    @param  sx      Syntax structure
  *
- *	@return	String length, @c 0 on failure
+ *    @return Length of a string
  */
-size_t string_length(const syntax *const sx, const size_t index);
+size_t strings_length(const syntax *const sx, const size_t index);
+
+/**
+ *    Get amount of strings
+ *
+ *    @param  sx      Syntax structure
+ *
+ *    @return Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
 
 
 /**
@@ -308,6 +318,17 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  *	@return	@c 0 on true, @c 0 on false
  */
 bool ident_is_type_specifier(syntax *const sx, const size_t index);
+
+/**
+ *	Check if identifier is local by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	id			Identifier of target lvalue
+ *
+ *	@return @c 1 on true, @c 0 on false
+ */
+bool ident_is_local(const syntax *const sx, const size_t index);
+
 
 
 /**
