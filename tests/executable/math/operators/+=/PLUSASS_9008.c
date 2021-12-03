@@ -4,6 +4,6 @@ void main()
 {
     int c = 4;
     b = a += c;
-    print("b 6");
-    printid(b);
+
+    assert(b == 6, "b must be 6");
 }

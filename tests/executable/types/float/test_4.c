@@ -4,37 +4,68 @@ int i = 0, j = 1;
 void main()
 {
     ++b[i];
-    print(b[0]);        // 4
+
+    assert(b[0] == 4, "b[0] must be 4");
+
     ++c;
-    printid(c);         // 5
+
+    assert(c == 5, "c must be 5");
+
     d = ++b[j];
-    printid(d);         // 4
+
+    assert(d == 4, "d must be 4");
+
     d = ++c;
-    printid(d);         // 6
+
+    assert(d == 6, "d must be 6");
+
     --b[1];
-    print(b[1]);        // 3
+
+    assert(b[1] == 3, "b[1] must be 3");
+
     --i;
-    printid(i);         // -1
+
+    assert(i == -1, "i must be -1");
+
     c = --b[j];
-    printid(c);         // 2
+
+    assert(c == 2, "c must be 2");
+
     i = 1; j = 2;
     c = --d;
-    printid(c);         // 5
+
+    assert(c == 5, "c must be 5");
+
     b[i]++;
-    print(b[1]);        // 3
+
+    assert(b[1] == 3, "b[1] must be 3");
+
     d++;
-    printid(d);         // 6
+
+    assert(d == 6, "d must be 6");
+
     d = b[j]++;
-    printid(d);         // 3
+
+    assert(d == 3, "d must be 3");
+
     c = d++;
-    printid(c);         // 3
+
+    assert(c == 3, "c must be 3");
+
     b[1] += i;
-    print(b[1]);        // 4
+
+    assert(b[1] == 4, "b[1] must be 4");
+
     --d;
-    printid(d);         // 3
+
+    assert(d == 3, "d must be 3");
+
     d = b[j]--;
-    printid(d);         // 4
+
+    assert(d == 4, "d must be 4");
+
     d = c--;
-    printid(d);         // 3
-    printid(c);         // 2
+
+    assert(d == 3, "d must be 3");
+    assert(c == 2, "c must be 2");
 }

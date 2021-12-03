@@ -3,6 +3,6 @@ int j = 1, k;
 void main()
 {
     k = --b[j];
-    print("k 4");
-    printid(k);
+
+    assert(k == 4, "k must be 4");
 }

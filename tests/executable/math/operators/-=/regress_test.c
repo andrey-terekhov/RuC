@@ -6,23 +6,23 @@ int main()
    float k;
 
    a -= b;
-   print ("a  1");
-   printid(a);
+
+   assert(a == 1, "a must be 1");
 
    d[0] -= d[1];
    b = d[0];
-   print ("b  2");
-   printid(b);
+
+   assert(b == 2, "b must be 2");
 
    m[0] -= d[1];
    k = m[0];
-   print ("k  0.500000");
-   printid(k);
+
+   assert(k == 0.500000, "k must be 0.500000");
 
    m[0] -= m[1];
    k = m[0];
-   print ("k  0.400000");
-   printid(k);
+
+   assert(k == 0.400000, "k must be 0.400000");
 
    return 0;
 }

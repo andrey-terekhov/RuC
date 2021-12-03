@@ -3,17 +3,14 @@ void main()
     float xx = 2.3, yy = 2.51;
     int x = round(xx), y = round(yy);
 
-    print("x 2");
-    printid(x);
+    assert(x == 2, "x must be 2");
+    assert(y == 3, "y must be 3");
 
-    print("y 3");
-    printid(y);
-
-    print("x -2");
     x = round(-xx);
-    printid(x);
+
+    assert(x == -2, "x must be -2");
     
-    print("y -3");
     y = round(-yy);
-    printid(y);
+
+    assert(y == -3, "y must be -3");
 }

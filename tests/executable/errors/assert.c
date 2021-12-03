@@ -3,7 +3,7 @@ int main()
     char ch = '1';
     int i = 7;
     
-    assert(ch == '1', "Somthing wrong with char!");
+    assert(ch == '1', "Something wrong with char!");
     
     assert(i, "int i = 7 not true!");
     

@@ -2,6 +2,6 @@ int i, a, j;
 void main()
 {
     a = ( i < 10 && j > -i);
-    print("a 0");
-    printid(a);
+
+    assert(a == 0, "a must be 0");
 }

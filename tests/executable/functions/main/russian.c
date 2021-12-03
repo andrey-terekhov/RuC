@@ -1,5 +1,6 @@
 пусто главная()
 {
     int a = 3;
-    print(++a);
+
+    assert(++a == 4, "a must be 4");
 }
