@@ -60,7 +60,7 @@ typedef struct information
 	size_t request_reg;						/**< Регистр на запрос */
 	location_t variable_location;			/**< Расположение переменной */
 
-	item_t answer_reg;						/**< Регистр с ответом */
+	size_t answer_reg;						/**< Регистр с ответом */
 	item_t answer_const;					/**< Константа с ответом */
 	size_t answer_string;					/**< Индекс строки с ответом */
 	double answer_const_double;				/**< Константа с ответом типа double */
@@ -286,7 +286,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 }
 
 static void to_code_operation_reg_const_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -304,7 +304,7 @@ static void to_code_operation_reg_const_double(information *const info, const it
 }
 
 static void to_code_operation_const_reg_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -362,7 +362,7 @@ static void to_code_store_reg(information *const info, const item_t reg, const s
 }
 
 static inline void to_code_store_const_integer(information *const info, const item_t arg, const size_t id
-	, const bool is_array, const bool is_local, const type_t type)
+	, const bool is_array, const bool is_local, const item_t type)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
