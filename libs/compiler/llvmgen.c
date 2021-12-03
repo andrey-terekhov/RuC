@@ -1218,7 +1218,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &LHS); // OP_SLICE_IDENT or UN_ADDRESS
-		id = (size_t)info->answer_reg;
+		id = info->answer_reg;
 	}
 
 	info->variable_location = LFREE;
@@ -1226,7 +1226,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	emit_expression(info, &RHS);
 
 	to_code_try_zext_to(info);
-	item_t result = info->answer_reg;
+	size_t result = info->answer_reg;
 
 	if (assignment_type != BIN_ASSIGN)
 	{
