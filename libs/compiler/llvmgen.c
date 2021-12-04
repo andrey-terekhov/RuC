@@ -1498,7 +1498,7 @@ static void emit_expression(information *const info, const node *const nd)
 static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type
 	, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
 {
-	const size_t N = expression_list_get_size(nd);
+	const size_t N = expression_initializer_get_size(nd);
 	const item_t type = array_get_type(info, arr_type);
 
 	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
@@ -1513,7 +1513,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 		}
 
 		info->variable_location = LFREE;
-		const node initializer = expression_list_get_subexpr(nd, i);
+		const node initializer = expression_initializer_get_subexpr(nd, i);
 
 		// последнее измерение
 		if (cur_dimension == 0)
@@ -1568,18 +1568,18 @@ static void emit_one_dimension_initialization(information *const info, const nod
 static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type)
 {
 	// TODO: пока реализовано только для одномерных массивов
-	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
+	if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t dimensions = array_get_dim(info, arr_type);
-		const size_t N = expression_list_get_size(nd);
+		const size_t N = expression_initializer_get_size(nd);
 
 		const size_t index = hash_get_index(&info->arrays, id);
 
 		node list_expression = *nd;
 		for (size_t i = 0; i < dimensions; i++)
 		{
-			hash_set_by_index(&info->arrays, index, 1 + i, (item_t)expression_list_get_size(&list_expression));
-			list_expression = expression_list_get_subexpr(&list_expression, 0);
+			hash_set_by_index(&info->arrays, index, 1 + i, (item_t)expression_initializer_get_size(&list_expression));
+			list_expression = expression_initializer_get_subexpr(&list_expression, 0);
 		}
 
 		const item_t type = array_get_type(info, arr_type);
