@@ -144,7 +144,7 @@ static inline void skip_block_comment(lexer *const lxr)
 /**
  *	Lex identifier or keyword
  *
- *	@param	lxr			Lexer 
+ *	@param	lxr			Lexer
  *
  *	@return	Keyword token on keyword, identifier token on identifier
  */
@@ -427,7 +427,7 @@ static token lex_char_literal(lexer *const lxr)
  *	Lex string literal
  *	@note	Lexes the remainder of a string literal after quote mark
  *
- *	@param	lxr			Lexer 
+ *	@param	lxr			Lexer
  *
  *	@return	String literal token
  */
