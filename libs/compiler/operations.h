@@ -94,6 +94,25 @@ typedef enum BINARY
 	BIN_COMMA, 			/**< Comma */
 } binary_t;
 
+/** Binary/ternary operator precedence levels */
+typedef enum PRECEDENCE
+{
+	PREC_UNKNOWN,			/**< Not binary operator */
+	PREC_COMMA,				/**< Comma operator precedence */
+	PREC_ASSIGNMENT,		/**< Assignment operator precedence */
+	PREC_CONDITIONAL,		/**< Conditional operator precedence */
+	PREC_LOGICAL_OR,		/**< Logical OR operator precedence */
+	PREC_LOGICAL_AND,		/**< Logical AND operator precedence */
+	PREC_OR,				/**< Bitwise OR operator precedence */
+	PREC_XOR,				/**< Bitwise XOR operator precedence */
+	PREC_AND,				/**< Bitwise AND operator precedence */
+	PREC_EQUALITY,			/**< Equality operators precedence */
+	PREC_RELATIONAL,		/**< Relational operators precedence */
+	PREC_SHIFT,				/**< Shift operators precedence */
+	PREC_ADDITIVE,			/**< Additive operators precedence */
+	PREC_MULTIPLICATIVE,	/**< Multiplicative operators precedence */
+} precedence_t;
+
 /** AST node kinds */
 typedef enum OPERATION
 {
@@ -125,17 +144,12 @@ typedef enum OPERATION
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN,				/**< Return statement node */
+	OP_DECLSTMT,			/**< Declaration statement */
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
 	OP_DECL_TYPE,			/**< Type declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
-
-	// Built-in functions
-	OP_PRINTID,
-	OP_PRINT,
-	OP_GETID,
-	OP_PRINTF,
 } operation_t;
 
 typedef enum builtin
@@ -196,7 +210,12 @@ typedef enum builtin
 	BI_EXIT					= 162,
 	BI_UPB					= 166,
 
-	BEGIN_USER_FUNC			= 170,
+	BI_PRINTF				= 170,
+	BI_PRINT				= 174,
+	BI_PRINTID				= 178,
+	BI_GETID				= 182,
+
+	BEGIN_USER_FUNC			= 186,
 } builtin_t;
 
 
@@ -217,6 +236,15 @@ unary_t token_to_unary(const token_t token);
  *	@return	Binary operator
  */
 binary_t token_to_binary(const token_t token);
+
+/**
+ *	Get precedence of the specified binary/ternary operator token
+ *
+ *	@param	token		Token
+ *
+ *	@return	Precedence of operator token
+ */
+precedence_t get_operator_precedence(const token_t token);
 
 /**
  *	Check if operator is assignment
