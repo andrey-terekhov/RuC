@@ -1,11 +1,6 @@
-#include /*
-
-
-
-*/"temp.c" /**/hjj
-
-/*
-int main()/*
+#include/**/r/*
+*/'
+int main()
 {
 	return 0;
 }

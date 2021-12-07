@@ -109,9 +109,14 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_SET_NEED_IDENT:
 			sprintf(msg, "#set требуется идентификатор");
 			break;
+
 		case PARSER_UNDEF_NEED_IDENT:
 			sprintf(msg, "#undef требуется идентификатор");
 			break;
+		case PARSER_UNDEF_NOT_EXIST_IDENT:
+			sprintf(msg, "удаление несуществующего идентификатора");
+			break;
+
 		case PARSER_MACRO_NEED_IDENT:
 			sprintf(msg, "#macro требуется идентификатор");
 			break;
@@ -149,9 +154,6 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		
 		case PARSER_DEFINE_EXIST_IDENT:
 			sprintf(msg, "определение существующего идентификатора");
-			break;
-		case PARSER_UNDEF_NOT_EXIST_IDENT:
-			sprintf(msg, "удаление несуществующего идентификатора");
 			break;
 		case PARSER_MACRO_EXIST_IDENT:
 			sprintf(msg, "макроопределение существующего идентификатора");
