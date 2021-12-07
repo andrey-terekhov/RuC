@@ -1494,14 +1494,14 @@ static void emit_expression(information *const info, const node *const nd)
  *	@param	prev_slice		Register of previous slice, if it exists
  *	@param	is_local		Is array local or global
  */
-static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type
-	, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
+static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id
+	, const item_t arr_type, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
 {
-	const size_t N = expression_list_get_size(nd);
+	const size_t size = expression_list_get_size(nd);
 	const item_t type = array_get_type(info, arr_type);
 
 	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
-	for (size_t i = 0; i < N; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		info->answer_const = (item_t)i;
 		info->answer_kind = ACONST;
@@ -1532,7 +1532,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 				}
 				else
 				{
-					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != N - 1 ? ", " : "], align 4\n");
+					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != size - 1 ? ", " : "], align 4\n");
 				}
 			}
 			// константа типа double
@@ -1544,7 +1544,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 				}
 				else
 				{
-					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != N - 1 ? ", " : "], align 4\n");
+					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != size - 1 ? ", " : "], align 4\n");
 				}
 			}
 		}
@@ -1582,7 +1582,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 		}
 
 		const item_t type = array_get_type(info, arr_type);
-		const item_t is_local = ident_is_local(info->sx, (size_t)id);
+		const bool is_local = ident_is_local(info->sx, (size_t)id);
 
 		// TODO: с глобальными массивами хорошо бы как-то покрасивее сделать
 		// а неконстантными выражениями глобальный массив может инициализироваться?
