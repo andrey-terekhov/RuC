@@ -4,6 +4,6 @@ int j;
 void main()
 {
     e = 5 * f[j];
-    print("e 0.000000");
-    printid(e);
+
+    assert(e == 0.000000, "e must be 0.000000");
 }

@@ -7,10 +7,10 @@ void main()
     ++c;
     d = ++b[j];
     d = ++c;
-    print("b 2 0 0");
-    printid(b);
-    print("c 2");
-    printid(c);
-    print("d 2");
-    printid(d);
+
+    assert(b[0] == 2, "b[0] must be 2");
+    assert(b[1] == 0, "b[1] must be 0");
+    assert(b[2] == 0, "b[2] must be 0");
+    assert(c == 2, "c must be 2");
+    assert(d == 2, "d must be 2");
 }

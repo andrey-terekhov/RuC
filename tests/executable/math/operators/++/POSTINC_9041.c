@@ -4,7 +4,6 @@ void main()
   b = 1 || 2 || 3 || 4;
   if (~! + b++)
   {
-    print("b ");
-    printid(b);
+    assert(b == '', "b must be ");
   }
 }

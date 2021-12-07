@@ -60,7 +60,7 @@ typedef struct information
 	size_t request_reg;						/**< Регистр на запрос */
 	location_t variable_location;			/**< Расположение переменной */
 
-	item_t answer_reg;						/**< Регистр с ответом */
+	size_t answer_reg;						/**< Регистр с ответом */
 	item_t answer_const;					/**< Константа с ответом */
 	size_t answer_string;					/**< Индекс строки с ответом */
 	double answer_const_double;				/**< Константа с ответом типа double */
@@ -83,6 +83,7 @@ typedef struct information
 	bool was_abs;							/**< Истина, если был вызов abs */
 	bool was_fabs;							/**< Истина, если был вызов fabs */
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
+	bool is_main;							/**< Истина, если обрабатывается main */
 } information;
 
 
@@ -285,7 +286,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 }
 
 static void to_code_operation_reg_const_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -303,7 +304,7 @@ static void to_code_operation_reg_const_double(information *const info, const it
 }
 
 static void to_code_operation_const_reg_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -361,7 +362,7 @@ static void to_code_store_reg(information *const info, const item_t reg, const s
 }
 
 static inline void to_code_store_const_integer(information *const info, const item_t arg, const size_t id
-	, const bool is_array, const bool is_local, const type_t type)
+	, const bool is_array, const bool is_local, const item_t type)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
@@ -1217,7 +1218,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		info->variable_location = LMEM;
 		emit_expression(info, &LHS); // OP_SLICE_IDENT or UN_ADDRESS
-		id = (size_t)info->answer_reg;
+		id = info->answer_reg;
 	}
 
 	info->variable_location = LFREE;
@@ -1225,7 +1226,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	emit_expression(info, &RHS);
 
 	to_code_try_zext_to(info);
-	item_t result = info->answer_reg;
+	size_t result = info->answer_reg;
 
 	if (assignment_type != BIN_ASSIGN)
 	{
@@ -1759,7 +1760,7 @@ static void emit_function_definition(information *const info, const node *const 
 {
 	const size_t ref_ident = declaration_function_get_id(nd);
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
-	const item_t ret_type = type_function_get_return_type(info->sx, func_type);
+	const item_t ret_type = ref_ident != info->sx->ref_main ? type_function_get_return_type(info->sx, func_type) : TYPE_INTEGER;
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 	info->was_dynamic = false;
 
@@ -1769,6 +1770,7 @@ static void emit_function_definition(information *const info, const node *const 
 	if (ref_ident == info->sx->ref_main)
 	{
 		uni_printf(info->sx->io, " @main(");
+		info->is_main = true;
 	}
 	else
 	{
@@ -1810,6 +1812,11 @@ static void emit_function_definition(information *const info, const node *const 
 			to_code_stack_load(info, -1);
 		}
 		uni_printf(info->sx->io, " ret void\n");
+	}
+	else if (ref_ident == info->sx->ref_main)
+	{
+		uni_printf(info->sx->io, " ret i32 0\n");
+		info->is_main = false;
 	}
 	uni_printf(info->sx->io, "}\n\n");
 }
@@ -2089,6 +2096,11 @@ static void emit_return_statement(information *const info, const node *const nd)
 		to_code_stack_load(info, -1);
 	}
 
+	if (info->is_main)
+	{
+		return;
+	}
+
 	if (statement_return_has_expression(nd))
 	{
 		info->variable_location = LREG;
@@ -2341,7 +2353,7 @@ static void builin_functions_declaration(information *const info)
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		// Пропускаем, так как эта функция не библиотечная, а реализована вручную в кодах llvm
-		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID)
+		if (i == BI_ASSERT || i == BI_PRINT || i == BI_PRINTID || i == BI_GETID)
 		{
 			continue;
 		}
@@ -2401,6 +2413,11 @@ static void runtime(information *const info)
 		" ret void\n"
 		"}\n\n");
 	info->was_function[BI_PRINTF] = true;
+
+	// getid
+	uni_printf(info->sx->io, "define void @getid(...) {\n"
+		" ret void\n"
+		"}\n\n");
 }
 
 
@@ -2434,6 +2451,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_file = false;
 	info.was_abs = false;
 	info.was_fabs = false;
+	info.is_main = false;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;

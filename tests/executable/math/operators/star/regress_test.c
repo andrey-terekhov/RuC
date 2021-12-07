@@ -5,24 +5,24 @@ int main()
    float l;
    float m[2] = {1.5, 2.5};
    k = a * b;
-   print ("k  6");
-   printid(k);
+
+   assert(k == 6, "k must be 6");
 
    k = c * b;
-   print ("k  -3");
-   printid(k);
+
+   assert(k == -3, "k must be -3");
 
    k = d[0] * d[1];
-   print ("k  8");
-   printid(k);
+
+   assert(k == 8, "k must be 8");
 
    l = m[0] * d[1];
-   print ("l  3.000000");
-   printid(l);
+
+   assert(l == 3.000000, "l must be 3.000000");
 
    l = m[0] * 5;
-   print ("l  7.500000");
-   printid(l);
+
+   assert(l == 7.500000, "l must be 7.500000");
 
    return 0;
 }

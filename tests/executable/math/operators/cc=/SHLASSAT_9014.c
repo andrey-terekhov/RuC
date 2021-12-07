@@ -4,8 +4,8 @@ int MAIN()
     int *p = &i;
     i = *p <<= 2;
  
-    print(*p);   
-    print(i);   
+    assert(*p == 32, "*p must be 32");
+    assert(i == 32, "i must be 32"); 
         
     return 0;
 }

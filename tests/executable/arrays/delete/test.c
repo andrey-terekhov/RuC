@@ -37,13 +37,13 @@ int delete (int val)
 
 void main()
 {
-    print(find(5));     // 1
-    print(find(100));   // 9
-    print(find(-2));    // 7
+    assert(find(5) == 1, "find(5) must be 1");
+    assert(find(100) == 9, "find(100) must be 9");
+    assert(find(-2) == 7, "find(-2) must be 7");
 	res = delete(7);
-	printid(res);       // 3
-    res = delete(5);    // 1
-	printid(res);
-	res = delete(100);  // 9
-	printid(res);
+    assert(res == 3, "res must be 3");
+    res = delete(5);
+    assert(res == 1, "res must be 1");
+	res = delete(100);
+    assert(res == 9, "res must be 9");
 }

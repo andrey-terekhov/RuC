@@ -3,6 +3,6 @@ int  b = 2;
 void main()
 {
     --b;
-    print("b 1");
-    printid(b);
+
+    assert(b == 1, "b must be 1");
 }

@@ -1,30 +1,25 @@
-void func3 (int i)
-{
-	printid (i);  
-}
-
-   int main()
+int main()
 {
    int a=32767;
-   print ("a  32767");
-   printid(a);
+
+   assert(a == 32767, "a must be 32767");
 
    a=-32767;
-   print ("a  -32767");
-   printid(a);
+
+   assert(a == -32767, "a must be -32767");
 
    int i=2;
-   print ("i  2");
-   func3 (i);
+
+   assert(i == 2, "i must be 2");
 
    char m2[2] = { 'a', 'b' };
    char c = m2[0];
-   print ("c  a");
-   printid(c);
+
+   assert(c == 'a', "c must be a");
 
    float f = 2.0;
-   print ("f  2.000000");
-   printid(f);
+
+   assert(f == 2.000000, "f must be 2.000000");
 
    return 0;
 }

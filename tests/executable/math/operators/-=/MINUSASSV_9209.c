@@ -3,6 +3,6 @@ int d =  72;
 void MAIN()
 {
     d -= 70;
-    print("d 2");
-    printid(d);
+
+    assert(d == 2, "d must be 2");
 }

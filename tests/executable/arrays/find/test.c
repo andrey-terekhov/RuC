@@ -16,5 +16,5 @@ int find(int val)
 void main()
 {
 	res = find(100);
-	printid(res);
+	assert(res == 9, "res must be 9");
 }

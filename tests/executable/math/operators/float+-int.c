@@ -4,5 +4,6 @@ int a = 3;
 void MAIN()
 {
     b = a + 4 - b;
-    printid(b);    // 3.86
+
+    assert(b == 3.86, "b must be 3.86");
 }
