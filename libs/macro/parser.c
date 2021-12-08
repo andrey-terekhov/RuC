@@ -594,14 +594,12 @@ static int parser_include(parser *const prs)
 	return ret;
 }
 
-
-
 /**
- *	Считать идентификатор и удалить из хранилища
+ *	Считать идентификатор, значение и добавить в хранилище
  *
  *	@param	prs			Структура парсера
  */
-static void parser_undef(parser *const prs)
+static void parser_define(parser *const prs)
 {
 	const size_t line = prs->line;
 	prs->position += strlen(storage_last_read(prs->stg));
@@ -630,6 +628,37 @@ static void parser_undef(parser *const prs)
 	prs->position += strlen(storage_last_read(prs->stg));
 	uni_unscan_char(prs->in, cur);
 	parser_find_unexpected_lexeme(prs);
+
+	switch (prs->line - line)				// При печати специального комментария
+	{										// используется 2 переноса строки.
+		case 2:								// Для случая, когда пропуск меньше 4 строк,
+			parser_add_char(prs, '\n');		// специальный комментарий не ставится.
+		case 1:
+			parser_add_char(prs, '\n');
+		case 0:
+			break;
+		default:
+			parser_add_char(prs, '\n');
+			parser_comment_to_buffer(prs);
+			break;
+	}
+}
+
+/**
+ *	Считать идентификатор и удалить из хранилища
+ *
+ *	@param	prs			Структура парсера
+ */
+static void parser_undef(parser *const prs)
+{
+	const size_t line = prs->line;
+	prs->position += strlen(storage_last_read(prs->stg));
+
+	char32_t cur = uni_scan_char(prs->in);
+	parser_skip_separators(prs, &cur);
+	uni_unscan_char(prs->in, cur);
+
+	
 
 	switch (prs->line - line)				// При печати специального комментария
 	{										// используется 2 переноса строки.
