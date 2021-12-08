@@ -96,33 +96,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "не удается открыть источник файл");
 			break;
 
-		case PARSER_INCORRECT_IDENT_NAME:
-			sprintf(msg, "некорректное имя идентификатора");
+		case PARSER_NEED_IDENT:
+			sprintf(msg, "требуется идентификатор");
 			break;
 		case PARSER_BIG_IDENT_NAME:
 			sprintf(msg, "лексема переполнила внутренний буффер");
 			break;
 
-		case PARSER_DEFINE_NEED_IDENT:
-			sprintf(msg, "#define требуется идентификатор");
-			break;
-		case PARSER_SET_NEED_IDENT:
-			sprintf(msg, "#set требуется идентификатор");
-			break;
-
-		case PARSER_UNDEF_NEED_IDENT:
-			sprintf(msg, "#undef требуется идентификатор");
-			break;
 		case PARSER_UNDEF_NOT_EXIST_IDENT:
 			sprintf(msg, "удаление несуществующего идентификатора");
-			break;
-
-		case PARSER_MACRO_NEED_IDENT:
-			sprintf(msg, "#macro требуется идентификатор");
-			break;
-
-		case PARSER_SET_NOT_EXIST_IDENT:
-			sprintf(msg, "переопределение несуществующего идентификатора");
 			break;
 
 		case PARSER_MACRO_NOT_ENDED:
@@ -145,18 +127,8 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
-		case PARSER_UNEXPECTED_COMM_END:
-			sprintf(msg, "\"*/\" найден вне комментария");
-			break;
 		case PARSER_UNEXPECTED_LEXEME:
 			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
-			break;
-		
-		case PARSER_DEFINE_EXIST_IDENT:
-			sprintf(msg, "определение существующего идентификатора");
-			break;
-		case PARSER_MACRO_EXIST_IDENT:
-			sprintf(msg, "макроопределение существующего идентификатора");
 			break;
 
 		default:

@@ -1,5 +1,5 @@
-#include/**/r/*
-*/'
+#define 
+
 int main()
 {
 	return 0;
