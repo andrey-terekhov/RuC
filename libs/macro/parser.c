@@ -26,8 +26,9 @@
 #define CMT_BUFFER_SIZE			MAX_ARG_SIZE + 128
 #define AVERAGE_LINE_SIZE		256
 #define MAX_IDENT_SIZE			4096
-#define MAX_VALUE_SIZE			4096
 
+
+const size_t AVERAGE_VALUE_SIZE = 4096;
 const size_t FST_LINE_INDEX = 1;
 const size_t FST_CHARACTER_INDEX = 0;
 
@@ -408,7 +409,7 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
  *	@param	prs			Структура парсера
  *	@param	last		Текущий символ
  *
- *	@return	Количество пропущенных символов
+ *	@return	Количество пропущенных символов с начала пропуска, либо с начала последней строки
  */
 static size_t parser_skip_separators(parser *const prs, char32_t *const last)
 {
@@ -479,8 +480,6 @@ static void parser_find_unexpected_lexeme(parser *const prs)
  */
 static size_t parser_find_id(parser *const prs, char32_t *const id)
 {
-	const size_t position = prs->position;	// Позиция начала идентификатора
-
 	char32_t cur = uni_scan_char(prs->in);
 	if (cur == '_' || !utf8_is_letter(cur))
 	{
@@ -500,7 +499,6 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
 		}
 
 		id[i++] = cur;
-		prs->position++;
 		cur = uni_scan_char(prs->in);
 	}
 
@@ -513,69 +511,78 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
  *	Записать идентификатор в буффер
  *
  *	@param	prs			Структура парсера
- *	@param	id			Буффер для записи идентификатора
- *	@param	last		Текущий символ
+ *	@param	val			Буффер для записи идентификатора
  */
-static void parser_find_value(parser *const prs, char32_t *const value, char32_t cur, const keyword_t mode)
+static void parser_find_value(parser *const prs, char32_t *const val)
 {
-	size_t j = 0;
-	char32_t prev = U'\0';
+	size_t i = 0;
+	const size_t line = prs->line;
+	char32_t prev = '\0';
+	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
-		if (prev == U'/')
+		const size_t size = parser_skip_separators(prs, &cur);
+		if (size != 0 || (size != 0 && prs->line != line))
 		{
-			switch (cur)	// Проверка на комментарий
+			if (prev == '\\')
 			{
-				case U'/':
-						j--;
-						//parser_skip_short_comment(prs);
-					break;
-				case U'*':
-						j--;
-						//parser_skip_long_comment(prs);
-					break;
+				val[i++] = '\\';
+				//uni_print_char(val, '\\');
 			}
+
+			prev = '\0';
+			val[i++] = ' ';
+			//uni_print_char(val, ' ');
 		}
 
 		if (utf8_is_line_breaker(cur))
 		{
-			if (cur == U'\r')
-			{
-				cur = uni_scan_char(prs->in);
-			}
-			//was_lexeme = false;
-			parser_next_line(prs);
-
-			if ((mode == KW_SET || mode == KW_DEFINE) && prev != U'\\')	// Выход для #define и #set
+			if (/*mode != KW_MACRO && */prev != U'\\')	// Выход для #define и #set
 			{
 				break;
 			}
 			else if (prev != U'\\')
 			{
-				value[j] = U'\n';
-				j++;
+				val[i++] = '\n';
+				//uni_print_char(val, '\n');
 			}
 
-			if (prev == U'\\')
+			if (cur == U'\r')
 			{
-				j--;
+				cur = uni_scan_char(prs->in);
 			}
+			parser_next_line(prs);
+
+			prev = '\n';
 		}
 		else
 		{
+			if (cur == '#')
+			{
+				parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
+				parser_skip_line(prs, cur);
+				return;
+			}
 
-			value[j] = cur;
-			j++;
+			if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
+			{
+				val[i++] = cur;
+				//uni_print_char(val, cur);
+			}
+		}
+
+		if (prev != '\n')
+		{
+			prs->position++;
 		}
 
 		prev = cur;
-		prs->position++;
 		cur = uni_scan_char(prs->in);
 	}
 
 	uni_unscan_char(prs->in, cur);
-	value[j] = (char32_t)EOF;
-	prs->line--;
+	val[i] = (char32_t)EOF;
+	//uni_print_char(val, (char32_t)EOF);
 }
 
 /**
@@ -717,11 +724,32 @@ static void parser_define(parser *const prs)
 	parser_skip_separators(prs, &cur);
 	uni_unscan_char(prs->in, cur);
 
+	// Получение идентификатора
 	char32_t id[MAX_IDENT_SIZE];
 	id[0] = U'\0';
-	// Запись идентификатора
-	//const size_t position = parser_find_id(prs, id, cur);	// Позиция начала идентификатора
-	//cur = uni_scan_char(prs->in);
+	prs->position += parser_find_id(prs, id);
+
+	storage_remove(prs->stg, id);
+
+	cur = uni_scan_char(prs->in);
+	if (cur == '(')
+	{
+		//parser_find_args(prs);
+	}
+	else if (!utf8_is_separator(cur) && cur != '/'
+		&& !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		parser_macro_error(prs, PARSER_NEED_SEPARATOR);
+		parser_skip_line(prs, cur);
+		return;
+	}
+	uni_unscan_char(prs->in, cur);
+
+	// Получение значения
+	char32_t val[4096];
+	parser_find_value(prs, val);
+
+	storage_add(prs->stg, id, val);
 
 	switch (prs->line - line)				// При печати специального комментария
 	{										// используется 2 переноса строки.
@@ -876,14 +904,16 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			default:
 				if (storage_last_read(prs->stg) != NULL)
 				{
-					/*if (index != SIZE_MAX)
+					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						//const size_t size = prs->position + strlen(storage_last_read(prs->stg));
+						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
+						parser_print(prs);parser_clear_code(prs); uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
 						//parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
 						//parser_add_spacers(prs, size);
+						uni_unscan_char(prs->in, cur);
 					}
-					else*/
+					else
 					{
 						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
 						uni_unscan_char(prs->in, cur);	// Символ обработается в следующем шаге цикла

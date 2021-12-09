@@ -102,6 +102,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case PARSER_BIG_IDENT_NAME:
 			sprintf(msg, "лексема переполнила внутренний буффер");
 			break;
+		case PARSER_NEED_SEPARATOR:
+			sprintf(msg, "требуется разделитель");
+			break;
 
 		case PARSER_UNDEF_NOT_EXIST_IDENT:
 			sprintf(msg, "удаление несуществующего идентификатора");
