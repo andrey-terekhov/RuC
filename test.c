@@ -1,7 +1,8 @@
-3,  /**/"pass"
-#define a 1
+
+#define a печать(1)
 
 int main()
-{#rrr
-	return a;
+{
+	a;
+	return 0;
 }

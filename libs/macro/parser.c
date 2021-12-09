@@ -513,9 +513,9 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
  *	@param	prs			Структура парсера
  *	@param	val			Буффер для записи идентификатора
  */
-static void parser_find_value(parser *const prs, char32_t *const val)
+static void parser_find_value(parser *const prs, universal_io *const val)
 {
-	size_t i = 0;
+	//size_t i = 0;
 	const size_t line = prs->line;
 	char32_t prev = '\0';
 	char32_t cur = uni_scan_char(prs->in);
@@ -526,13 +526,13 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 		{
 			if (prev == '\\')
 			{
-				val[i++] = '\\';
-				//uni_print_char(val, '\\');
+				//val[i++] = '\\';
+				uni_print_char(val, '\\');
 			}
 
 			prev = '\0';
-			val[i++] = ' ';
-			//uni_print_char(val, ' ');
+			//val[i++] = ' ';
+			uni_print_char(val, ' ');
 		}
 
 		if (utf8_is_line_breaker(cur))
@@ -543,8 +543,8 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 			}
 			else if (prev != U'\\')
 			{
-				val[i++] = '\n';
-				//uni_print_char(val, '\n');
+				//val[i++] = '\n';
+				uni_print_char(val, '\n');
 			}
 
 			if (cur == U'\r')
@@ -566,8 +566,8 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 
 			if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
 			{
-				val[i++] = cur;
-				//uni_print_char(val, cur);
+				//val[i++] = cur;
+				uni_print_char(val, cur);
 			}
 		}
 
@@ -582,8 +582,9 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 
 	uni_unscan_char(prs->in, cur);
 	//val[i] = (char32_t)EOF;
-	val[i] = '\0';
+	//val[i] = '\0';
 	//uni_print_char(val, (char32_t)EOF);
+	uni_print_char(val, '\0');
 }
 
 /**
@@ -791,12 +792,13 @@ static void parser_define(parser *const prs)
 	uni_unscan_char(prs->in, cur);
 
 	// Получение значения
-	char32_t val[4096];
-	//universal_io val = io_create();
-	//ut_set_buffer(&val, AVERAGE_LINE_SIZE);
-	parser_find_value(prs, val);
+	//char32_t val[4096];
+	universal_io val = io_create();
+	out_set_buffer(&val, AVERAGE_LINE_SIZE);
+	parser_find_value(prs, &val);
 
-	storage_add(prs->stg, id, val);
+	//storage_add_utf8(prs->stg, id, val);
+	storage_add(prs->stg, id, out_extract_buffer(&val));
 
 	switch (prs->line - line)				// При печати специального комментария
 	{										// используется 2 переноса строки.
@@ -820,7 +822,7 @@ static void parser_define(parser *const prs)
  */
 static void parser_set(parser *const prs)
 {
-	const size_t line = prs->line;
+	/*const size_t line = prs->line;
 	prs->position += strlen(storage_last_read(prs->stg));
 
 	char32_t cur = uni_scan_char(prs->in);
@@ -873,7 +875,7 @@ static void parser_set(parser *const prs)
 			parser_add_char(prs, '\n');
 			parser_comment_to_buffer(prs);
 			break;
-	}
+	}*/
 }
 
 /**
