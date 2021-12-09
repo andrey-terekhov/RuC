@@ -1,10 +1,7 @@
-#include /*
+3,  /**/"pass"
+#define a 1
 
-
-
-*/"temp.c" /**/hjj
-
-int main()/*
-{
-	return 0;
+int main()
+{#rrr
+	return a;
 }
