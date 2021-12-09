@@ -109,10 +109,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "требуется '(");
 			break;
 
-		case PARSER_UNDEF_NOT_EXIST_IDENT:
-			sprintf(msg, "удаление несуществующего идентификатора");
-			break;
-
 		case PARSER_MACRO_NOT_ENDED:
 			sprintf(msg, "отсутствует #endm для этой директивы");
 			break;
@@ -135,6 +131,10 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 
 		case PARSER_UNEXPECTED_LEXEME:
 			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
+			break;
+
+		case PARSER_UNDEF_NOT_EXIST_IDENT:
+			sprintf(msg, "удаление несуществующего идентификатора");
 			break;
 
 		default:

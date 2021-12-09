@@ -712,6 +712,7 @@ static void parser_include(parser *const prs)
 		}
 
 		// Запись пути в кавычках
+		prs->position++;
 		do
 		{
 			utf8_to_string(&path[strlen(path)], cur);
@@ -835,9 +836,7 @@ static void parser_undef(parser *const prs)
 
 	if (index == SIZE_MAX)
 	{
-		parser_macro_error(prs, PARSER_UNDEF_NOT_EXIST_IDENT);
-		parser_skip_line(prs, cur);
-		return;
+		parser_macro_warning(prs, PARSER_UNDEF_NOT_EXIST_IDENT);
 	}
 
 	storage_remove_by_index(prs->stg, index);
