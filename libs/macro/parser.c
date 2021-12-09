@@ -481,7 +481,7 @@ static void parser_find_unexpected_lexeme(parser *const prs)
 static size_t parser_find_id(parser *const prs, char32_t *const id)
 {
 	char32_t cur = uni_scan_char(prs->in);
-	if (cur == '_' || !utf8_is_letter(cur))
+	if (!utf8_is_letter(cur))
 	{
 		parser_macro_error(prs, PARSER_NEED_IDENT);
 		parser_skip_line(prs, cur);
@@ -518,7 +518,6 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
 static void parser_find_value(parser *const prs, universal_io *const val
 								, const keyword_t mode, const size_t id)
 {
-	//size_t i = 0;
 	const size_t line = prs->line;
 	char32_t prev = '\0';
 	char32_t cur = uni_scan_char(prs->in);
@@ -529,24 +528,21 @@ static void parser_find_value(parser *const prs, universal_io *const val
 		{
 			if (prev == '\\')
 			{
-				//val[i++] = '\\';
 				uni_print_char(val, '\\');
 			}
 
 			prev = '\0';
-			//val[i++] = ' ';
 			uni_print_char(val, ' ');
 		}
 
 		if (utf8_is_line_breaker(cur))
 		{
-			if (/*mode != KW_MACRO && */prev != U'\\')	// Выход для #define и #set
+			if (mode != KW_MACRO && prev != U'\\')	// Выход для #define и #set
 			{
 				break;
 			}
 			else if (prev != U'\\')
 			{
-				//val[i++] = '\n';
 				uni_print_char(val, '\n');
 			}
 
@@ -560,7 +556,7 @@ static void parser_find_value(parser *const prs, universal_io *const val
 		}
 		else
 		{
-			if (/*mode != KW_MACRO && */cur == '#')
+			if (mode != KW_MACRO && cur == '#')
 			{
 				parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 				parser_skip_line(prs, cur);
@@ -585,7 +581,6 @@ static void parser_find_value(parser *const prs, universal_io *const val
 			}
 			else if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
 			{
-				//val[i++] = cur;
 				uni_print_char(val, cur);
 			}
 		}
@@ -600,8 +595,6 @@ static void parser_find_value(parser *const prs, universal_io *const val
 	}
 
 	uni_unscan_char(prs->in, cur);
-	//val[i] = (char32_t)EOF;
-	//val[i] = '\0';
 	//uni_print_char(val, (char32_t)EOF);
 	uni_print_char(val, '\0');
 }
@@ -811,12 +804,10 @@ static void parser_define(parser *const prs)
 	uni_unscan_char(prs->in, cur);
 
 	// Получение значения
-	//char32_t val[4096];
 	universal_io val = io_create();
 	out_set_buffer(&val, AVERAGE_LINE_SIZE);
 	parser_find_value(prs, &val, KW_DEFINE, 0);
 
-	//storage_add_utf8(prs->stg, id, val);
 	storage_add(prs->stg, id, out_extract_buffer(&val));
 
 	io_erase(&val);
