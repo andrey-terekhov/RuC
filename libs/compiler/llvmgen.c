@@ -699,7 +699,7 @@ static void emit_literal_expression(information *const info, const node *const n
  *	@param	id				Identifier of target lvalue
  *	@param	cur_dimension	Current dimension of slice
  */
-static void emit_one_dimension_subscript(information *const info, const node *const nd, const item_t id
+static void emit_one_dimension_subscript(information *const info, const node *const nd, const size_t id
 	, const size_t cur_dimension)
 {
 	// TODO: научиться обрабатывать многомерные динамические массивы
@@ -2384,7 +2384,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
