@@ -557,7 +557,7 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 		}
 		else
 		{
-			if (cur == '#')
+			if (/*mode != KW_MACRO && */cur == '#')
 			{
 				parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 				parser_skip_line(prs, cur);
@@ -814,6 +814,69 @@ static void parser_define(parser *const prs)
 }
 
 /**
+ *	Считать идентификатор, значение и добавить в хранилище
+ *
+ *	@param	prs			Структура парсера
+ */
+static void parser_set(parser *const prs)
+{
+	const size_t line = prs->line;
+	prs->position += strlen(storage_last_read(prs->stg));
+
+	char32_t cur = uni_scan_char(prs->in);
+	parser_skip_separators(prs, &cur);
+	uni_unscan_char(prs->in, cur);
+
+	const size_t index = storage_search(prs->stg, prs->in, &cur);
+	if (storage_last_read(prs->stg) == NULL)
+	{
+		parser_macro_error(prs, PARSER_NEED_IDENT);
+		parser_skip_line(prs, cur);
+		return;
+	}
+	else if (index == SIZE_MAX)
+	{
+		parser_macro_error(prs, PARSER_NEED_IDENT);
+		parser_skip_line(prs, cur);
+		return;
+	}
+	else if (storage_get_amount_by_index(prs->stg, index) != 0)
+	{
+		parser_macro_error(prs, PARSER_SET_WITH_ARGS);
+		parser_skip_line(prs, cur);
+		return;
+	}
+	else if (!utf8_is_separator(cur) && cur != '/'
+		&& !utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		parser_macro_error(prs, PARSER_NEED_SEPARATOR);
+		parser_skip_line(prs, cur);
+		return;
+	}
+
+	prs->position += strlen(storage_last_read(prs->stg));
+	uni_unscan_char(prs->in, cur);
+
+	char32_t val[4096];
+	char32_t val_fst[4096];
+	parser_find_value(prs, val_fst);
+
+	switch (prs->line - line)				// При печати специального комментария
+	{										// используется 2 переноса строки.
+		case 2:								// Для случая, когда пропуск меньше 4 строк,
+			parser_add_char(prs, '\n');		// специальный комментарий не ставится.
+		case 1:
+			parser_add_char(prs, '\n');
+		case 0:
+			break;
+		default:
+			parser_add_char(prs, '\n');
+			parser_comment_to_buffer(prs);
+			break;
+	}
+}
+
+/**
  *	Считать идентификатор и удалить из хранилища
  *
  *	@param	prs			Структура парсера
@@ -834,8 +897,7 @@ static void parser_undef(parser *const prs)
 		parser_skip_line(prs, cur);
 		return;
 	}
-
-	if (index == SIZE_MAX)
+	else if (index == SIZE_MAX)
 	{
 		parser_macro_warning(prs, PARSER_UNDEF_NOT_EXIST_IDENT);
 	}
@@ -929,6 +991,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				parser_define(prs);
 				break;
 			case KW_SET:
+				uni_unscan_char(prs->in, cur);
+				parser_set(prs);
+				break;
 			case KW_UNDEF:
 				uni_unscan_char(prs->in, cur);
 				parser_undef(prs);

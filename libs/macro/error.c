@@ -109,6 +109,13 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "требуется '(");
 			break;
 
+		case PARSER_SET_NOT_EXIST_IDENT:
+			sprintf(msg, "переопределение несуществующего идентификатора");
+			break;
+		case PARSER_SET_WITH_ARGS:
+			sprintf(msg, "для #set переопределение с аргументами запрещено");
+			break;
+
 		case PARSER_MACRO_NOT_ENDED:
 			sprintf(msg, "отсутствует #endm для этой директивы");
 			break;
