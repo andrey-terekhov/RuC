@@ -586,6 +586,51 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 }
 
 /**
+ *	Preprocess buffer
+ *
+ *	@param	prs			Parser structure
+ *	@param	buffer		Code for preprocessing
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
+{
+	parser_add_char(prs, '\n');
+	parser_macro_comment(prs);
+	parser_print(prs);
+
+	// Сохранение позиции в исходном файле
+	const size_t old_path = linker_get_index(prs->lk);
+	const size_t line_position = prs->line_position;
+	const size_t line = prs->line;
+
+	// Подготовка к парсингу нового файла
+	prs->line = FST_LINE_INDEX;
+	prs->position = FST_CHARACTER_INDEX;
+	prs->line_position = 0;
+	parser_clear_code(prs);
+
+	universal_io in = io_create();
+	in_set_buffer(&in, buffer);
+
+	int ret = parser_preprocess(prs, &in);
+
+	in_clear(&in);
+
+	// Возврат позиционирования в исходном файле
+	linker_set_index(prs->lk, old_path);
+	prs->line = line;
+	prs->line_position = line_position;
+	parser_clear_code(prs);
+
+	// Добавление комментария после прохода файла
+	parser_add_char(prs, '\n');
+	parser_comment_to_buffer(prs);
+
+	return ret;
+}
+
+/**
  *	Preprocess included file
  *
  *	@param	prs			Parser structure
@@ -747,6 +792,8 @@ static void parser_define(parser *const prs)
 
 	// Получение значения
 	char32_t val[4096];
+	//universal_io val = io_create();
+	//ut_set_buffer(&val, AVERAGE_LINE_SIZE);
 	parser_find_value(prs, val);
 
 	storage_add(prs->stg, id, val);
@@ -863,7 +910,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	universal_io *old_in = prs->in;
 	prs->in = in;
 
-	parser_comment(prs);
+	if (in_is_file(prs->in))
+	{
+		parser_comment(prs);
+	}
 
 	char32_t cur = '\0';
 	while (cur != (char32_t)EOF)
@@ -902,19 +952,37 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_ENDW:
 
 			default:
+				//const char *const last_read = storage_last_read(prs->stg);
 				if (storage_last_read(prs->stg) != NULL)
 				{
 					if (index != SIZE_MAX)
 					{
 						// Макроподстановка
-						const size_t size = prs->position + strlen(storage_last_read(prs->stg));
-						parser_print(prs);parser_clear_code(prs); uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
-						//parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
-						//parser_add_spacers(prs, size);
+						const size_t line = prs->line;
+						size_t size = prs->position + strlen(storage_last_read(prs->stg));
+						//parser_print(prs);parser_clear_code(prs); uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
+						if (cur == '(')
+						{
+							const size_t args_size = 0;//parser_find_args(prs);
+							size = prs->line == line ? size + args_size : args_size;
+						}
+						else if (storage_get_amount_by_index(prs->stg, index) != 0)
+						{
+							parser_macro_error(prs, PARSER_IDENT_NEED_ARGS);
+						}
+
+						parser_preprocess_buffer(prs, storage_get_by_index(prs->stg, index));
+						parser_add_spacers(prs, size);
 						uni_unscan_char(prs->in, cur);
 					}
 					else
 					{
+						if (storage_last_read(prs->stg)[0] == '#')
+						{
+							parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+							prs->position += strlen(storage_last_read(prs->stg));
+						}
+
 						prs->position += parser_add_string(prs, storage_last_read(prs->stg));
 						uni_unscan_char(prs->in, cur);	// Символ обработается в следующем шаге цикла
 					}
