@@ -1005,6 +1005,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 					if (cur == '\'' || cur == '\"')
 					{
+						parser_add_spacers(prs, size);
 						parser_skip_string(prs, cur);
 						break;
 					}
