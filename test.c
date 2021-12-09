@@ -1,5 +1,6 @@
 
-#define a printf(1);printf(1);/*
+#define a print(1);
+#set a a a/*
 
 int main()
 {

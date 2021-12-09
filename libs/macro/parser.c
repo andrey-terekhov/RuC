@@ -573,7 +573,7 @@ static void parser_find_value(parser *const prs, universal_io *const val
 				if (mode == KW_SET && index == id)
 				{
 					uni_printf(val, "%s", storage_get_by_index(prs->stg, index));
-					prs->position += strlen(storage_last_read(prs->stg));
+					prs->position += strlen(storage_last_read(prs->stg)) - 1;
 				}
 				else if (storage_last_read(prs->stg) != NULL)
 				{
@@ -884,7 +884,7 @@ static void parser_set(parser *const prs)
 	out_set_buffer(&val, AVERAGE_LINE_SIZE);
 	parser_find_value(prs, &val, KW_SET, index);
 
-	//storage_set_by_index(prs->stg, index, out_extract_buffer(&val));
+	storage_set_by_index(prs->stg, index, out_extract_buffer(&val));
 
 	io_erase(&val);
 
