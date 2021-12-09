@@ -123,7 +123,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
 	storage stg = storage_create();
-	parser prs = parser_create(&lk, output);
+	parser prs = parser_create(&lk, &stg, output);
 
 	int ret = ws_parse(ws, &stg);
 

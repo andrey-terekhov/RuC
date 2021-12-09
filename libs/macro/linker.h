@@ -101,6 +101,25 @@ size_t linker_search_external(linker *const lk, const char *const file);
  */
 const char* linker_current_path(const linker *const lk);
 
+/**
+ *	Get current path index
+ *
+ *	@param	lk			Linker structure
+ *
+ *	@return	Index of file, @c SIZE_MAX on failure
+ */
+size_t linker_get_index(const linker *const lk);
+
+/**
+ *	Set current path index
+ *
+ *	@param	lk			Linker structure
+ *	@param	index		Index of file
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int linker_set_index(linker *const lk, const size_t index);
+
 
 /**
  *	Get number of linker files

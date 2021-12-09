@@ -17,6 +17,8 @@
 #pragma once
 
 #include "linker.h"
+#include "storage.h"
+#include "strings.h"
 #include "uniio.h"
 #include "error.h"
 
@@ -29,14 +31,19 @@ extern "C" {
 typedef struct parser
 {
 	linker *lk;						/**< Linker structure */
-	//storage *stg;					/**< Storage structure */
+	storage *stg;					/**< Storage structure */
 
-	universal_io *in;				/**< Input io structure */ 
-	universal_io *out;				/**< Output io structure */ 
+	universal_io *in;				/**< Input io structure */
+	universal_io *out;				/**< Output io structure */
 
-	size_t error_line;				/**< Сurrent line number in input */ 
+	const char *path;				/**< Current file path */
+	size_t line_position;			/**< Сurrent line first character position in file */
+	size_t line;					/**< Сurrent line number in input */
+	size_t position;				/**< Сurrent character number in line */
+	strings code;					/**< Сode line */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
+	bool was_error;					/**< Set, if was error */
 } parser;
 
 /**
@@ -48,7 +55,7 @@ typedef struct parser
  *
  *	@return	Parser structure
  */
-parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *const out); 
+parser parser_create(linker *const lk, storage *const stg, universal_io *const out); 
 
 
 /**
@@ -57,7 +64,7 @@ parser parser_create(linker *const lk, /*storage *const stg,*/ universal_io *con
  *	@param	prs		Parser structure
  *	@param	in		Input data
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int parser_preprocess(parser *const prs, universal_io *const in); 
 
@@ -67,17 +74,9 @@ int parser_preprocess(parser *const prs, universal_io *const in);
  *
  *	@param	prs		Parser structure
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	@c 0 on success, @c -1 on failure
  */
 int parser_disable_recovery(parser *const prs);
-
-/**
- *	Emit an error from parser
- *
- *	@param	prs			Parser structure
- *	@param	num			Error code
- */
-void parser_error(parser *const prs, const error_t num); 
 
 
 /**
