@@ -512,8 +512,11 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
  *
  *	@param	prs			Структура парсера
  *	@param	val			Буффер для записи идентификатора
+ *	@param	mode		Режим работы функции
+ *	@param	id			Индекс идентификатора для режима KW_SET
  */
-static void parser_find_value(parser *const prs, universal_io *const val)
+static void parser_find_value(parser *const prs, universal_io *const val
+								, const keyword_t mode, const size_t id)
 {
 	//size_t i = 0;
 	const size_t line = prs->line;
@@ -563,8 +566,24 @@ static void parser_find_value(parser *const prs, universal_io *const val)
 				parser_skip_line(prs, cur);
 				return;
 			}
+			else if (utf8_is_letter(cur))
+			{
+				uni_unscan_char(prs->in, cur);
+				const size_t index = storage_search(prs->stg, prs->in, &cur);
+				if (mode == KW_SET && index == id)
+				{
+					uni_printf(val, "%s", storage_get_by_index(prs->stg, index));
+					prs->position += strlen(storage_last_read(prs->stg));
+				}
+				else if (storage_last_read(prs->stg) != NULL)
+				{
+					uni_printf(val, "%s", storage_last_read(prs->stg));
+					prs->position += strlen(storage_last_read(prs->stg)) - 1;
+				}
 
-			if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
+				uni_unscan_char(prs->in, cur);
+			}
+			else if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
 			{
 				//val[i++] = cur;
 				uni_print_char(val, cur);
@@ -606,7 +625,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	const size_t line_position = prs->line_position;
 	const size_t line = prs->line;
 
-	// Подготовка к парсингу нового файла
+	// Подготовка к парсингу буффера
 	prs->line = FST_LINE_INDEX;
 	prs->position = FST_CHARACTER_INDEX;
 	prs->line_position = 0;
@@ -795,10 +814,12 @@ static void parser_define(parser *const prs)
 	//char32_t val[4096];
 	universal_io val = io_create();
 	out_set_buffer(&val, AVERAGE_LINE_SIZE);
-	parser_find_value(prs, &val);
+	parser_find_value(prs, &val, KW_DEFINE, 0);
 
 	//storage_add_utf8(prs->stg, id, val);
 	storage_add(prs->stg, id, out_extract_buffer(&val));
+
+	io_erase(&val);
 
 	switch (prs->line - line)				// При печати специального комментария
 	{										// используется 2 переноса строки.
@@ -822,7 +843,7 @@ static void parser_define(parser *const prs)
  */
 static void parser_set(parser *const prs)
 {
-	/*const size_t line = prs->line;
+	const size_t line = prs->line;
 	prs->position += strlen(storage_last_read(prs->stg));
 
 	char32_t cur = uni_scan_char(prs->in);
@@ -859,9 +880,13 @@ static void parser_set(parser *const prs)
 	prs->position += strlen(storage_last_read(prs->stg));
 	uni_unscan_char(prs->in, cur);
 
-	char32_t val[4096];
-	char32_t val_fst[4096];
-	parser_find_value(prs, val_fst);
+	universal_io val = io_create();
+	out_set_buffer(&val, AVERAGE_LINE_SIZE);
+	parser_find_value(prs, &val, KW_SET, index);
+
+	//storage_set_by_index(prs->stg, index, out_extract_buffer(&val));
+
+	io_erase(&val);
 
 	switch (prs->line - line)				// При печати специального комментария
 	{										// используется 2 переноса строки.
@@ -875,7 +900,7 @@ static void parser_set(parser *const prs)
 			parser_add_char(prs, '\n');
 			parser_comment_to_buffer(prs);
 			break;
-	}*/
+	}
 }
 
 /**

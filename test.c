@@ -1,8 +1,8 @@
 
-#define a печать(1)
+#define a printf(1);printf(1);/*
 
 int main()
 {
-	a;
+	a
 	return 0;
 }
