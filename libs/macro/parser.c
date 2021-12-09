@@ -688,7 +688,7 @@ static int parser_preprocess_file(parser *const prs, char *const path)
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-static int parser_include(parser *const prs)
+static void parser_include(parser *const prs)
 {
 	const size_t position = prs->position;
 	prs->position += strlen(storage_last_read(prs->stg));
@@ -708,7 +708,7 @@ static int parser_include(parser *const prs)
 			prs->position = position;
 			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 			parser_skip_line(prs, cur);
-			return prs->was_error ? -1 : 0;
+			return;
 		}
 
 		// Запись пути в кавычках
@@ -724,7 +724,7 @@ static int parser_include(parser *const prs)
 			prs->position = position;
 			parser_macro_error(prs, PARSER_INCLUDE_NEED_FILENAME);
 			parser_skip_line(prs, cur);
-			return prs->was_error ? -1 : 0;
+			return;
 		}
 		else
 		{
@@ -746,13 +746,11 @@ static int parser_include(parser *const prs)
 	// Парсинг подключенного файла
 	size_t temp = prs->position;
 	prs->position = position;
-	int ret = parser_preprocess_file(prs, path);
+	parser_preprocess_file(prs, path);
 
 	// Пропуск символов за путем
 	prs->position = temp;
 	parser_find_unexpected_lexeme(prs);
-
-	return ret;
 }
 
 /**
@@ -952,7 +950,6 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case KW_ENDW:
 
 			default:
-				//const char *const last_read = storage_last_read(prs->stg);
 				if (storage_last_read(prs->stg) != NULL)
 				{
 					if (index != SIZE_MAX)
@@ -960,7 +957,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						// Макроподстановка
 						const size_t line = prs->line;
 						size_t size = prs->position + strlen(storage_last_read(prs->stg));
-						//parser_print(prs);parser_clear_code(prs); uni_printf(prs->out, "%s", storage_get_by_index(prs->stg, index));
+
 						if (cur == '(')
 						{
 							const size_t args_size = 0;//parser_find_args(prs);
