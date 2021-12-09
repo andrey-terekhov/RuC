@@ -1547,7 +1547,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 
 		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
-	// TODO: надо реализовать для большего количества измерений
+	// TODO: надо реализовать для большего количества измерений. Там сложность в том, что последнее измерение может иметь различные границы
 	// массив инициализируется строкой
 	else if (expression_get_class(nd) == EXPR_LITERAL && type_is_array(info->sx, expression_get_type(nd)))
 	{
