@@ -692,109 +692,58 @@ static void emit_literal_expression(information *const info, const node *const n
 }
 
 /**
- *	Emit subscript expression
+ *	Emit initialization of lvalue
  *
- *	@param	info	Encoder
- *	@param	nd		Node in AST
+ *	@param	info			Encoder
+ *	@param	nd				Node in AST
+ *	@param	id				Identifier of target lvalue
+ *	@param	cur_dimension	Current dimension of slice
  */
-static void emit_subscript_expression(information *const info, const node *const nd)
+static void emit_one_dimension_subscript(information *const info, const node *const nd, const item_t id
+	, const size_t cur_dimension)
 {
-	// TODO: слева в вырезке может быть не только идентификатор, но и функция, и поле структуры и т.д.
-	const item_t type = expression_get_type(nd);
+	// TODO: научиться обрабатывать многомерные динамические массивы
 	const node base = expression_subscript_get_base(nd);
-	// FIXME: двумерная вырезка, плохое решение, более общее решение будет,
-	// когда будут реализовываться массивы бОльшей размерности
-	if (expression_get_class(&base) == EXPR_SUBSCRIPT)
+	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
+	const bool is_local = ident_is_local(info->sx, id);
+	const item_t arr_type = ident_get_type(info->sx, id);
+	const item_t type = array_get_type(info, arr_type);
+
+	if (cur_dimension != dimensions - 1)
 	{
-		const node identifier = expression_subscript_get_base(&base);
-		const item_t id = (item_t)expression_identifier_get_id(&identifier);
-		const bool is_local = ident_is_local(info->sx, (size_t)id);
-
-		size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
-		const location_t location = info->variable_location;
-
-		info->variable_location = LFREE;
-		const node index = expression_subscript_get_index(&base);
-		emit_expression(info, &index);
-
-		// TODO: пока только для динамических массивов размерности 2
-		if (!hash_get(&info->arrays, id, IS_STATIC) && cur_dimension == 1)
-		{
-			if (info->answer_kind == ACONST)
-			{
-				to_code_operation_const_reg_integer(info, BIN_MUL, info->answer_const
-					, hash_get(&info->arrays, id, 2), TYPE_INTEGER);
-			}
-			else // if (info->answer_kind == AREG)
-			{
-				to_code_operation_reg_reg(info, BIN_MUL, info->answer_reg, hash_get(&info->arrays, id, 2),
-					TYPE_INTEGER);
-			}
-
-			info->answer_kind = AREG;
-			info->answer_reg = info->register_num++;
-		}
-
-		if (cur_dimension != 0 && cur_dimension < MAX_DIMENSIONS)
-		{
-			to_code_slice(info, id, cur_dimension, 0, type, is_local);
-		}
-		else
-		{
-			system_error(such_array_is_not_supported);
-		}
-
-		const item_t prev_slice = info->register_num - 1;
-		info->variable_location = LFREE;
-		const node out_index = expression_subscript_get_index(nd);
-		emit_expression(info, &out_index);
-		cur_dimension--;
-
-		// Проверка, что значение cur_dimension корректное и в пределах допустимого
-		// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-		if (cur_dimension < MAX_DIMENSIONS)
-		{
-			to_code_slice(info, id, cur_dimension, prev_slice, type, is_local);
-		}
-		else
-		{
-			system_error(such_array_is_not_supported);
-		}
-
-		if (location != LMEM)
-		{
-			to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
-			info->register_num++;
-		}
-
-		info->answer_reg = info->register_num - 1;
-		info->answer_kind = AREG;
-		return;
+		emit_one_dimension_subscript(info, &base, id, cur_dimension + 1);
 	}
-
-	const item_t id = (item_t)expression_identifier_get_id(&base);
-	const bool is_local = ident_is_local(info->sx, (size_t)id);
-
-	const size_t cur_dimension = hash_get_amount(&info->arrays, id) - 2;
-	const location_t location = info->variable_location;
 
 	info->variable_location = LFREE;
 	const node index = expression_subscript_get_index(nd);
 	emit_expression(info, &index);
+	to_code_slice(info, id, cur_dimension, info->register_num - 1, type, is_local);
+}
 
-	// Проверка, что значение cur_dimension корректное и в пределах допустимого
-	// cur_dimension не определена пока что для массивов в структурах и массивов-аргументов функций
-	if (cur_dimension < MAX_DIMENSIONS)
+/**
+ *	Emit initialization of lvalue
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_subscript_expression(information *const info, const node *const nd)
+{
+	node base = expression_subscript_get_base(nd);
+	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
-		to_code_slice(info, id, cur_dimension, 0, type, is_local);
+		base = expression_subscript_get_base(&base);
 	}
-	else
-	{
-		system_error(such_array_is_not_supported);
-	}
+
+	const size_t id = expression_identifier_get_id(&base);
+	const location_t location = info->variable_location;
+
+	emit_one_dimension_subscript(info, nd, id, 0);
 
 	if (location != LMEM)
 	{
+		const item_t arr_type = ident_get_type(info->sx, id);
+		const item_t type = array_get_type(info, arr_type);
+
 		to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
 		info->register_num++;
 	}
@@ -1566,7 +1515,6 @@ static void emit_one_dimension_initialization(information *const info, const nod
  */
 static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type)
 {
-	// TODO: пока реализовано только для одномерных массивов
 	if (expression_get_class(nd) == EXPR_LIST && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t dimensions = array_get_dim(info, arr_type);
@@ -2436,6 +2384,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
