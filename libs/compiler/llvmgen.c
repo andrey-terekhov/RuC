@@ -1547,6 +1547,28 @@ static void emit_initialization(information *const info, const node *const nd, c
 
 		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
+	// TODO: надо реализовать для большего количества измерений
+	// массив инициализируется строкой
+	else if (expression_get_class(nd) == EXPR_LITERAL && type_is_array(info->sx, expression_get_type(nd)))
+	{
+		const char *string = string_get(info->sx, expression_literal_get_string(nd));
+		const size_t length = strings_length(info->sx, expression_literal_get_string(nd));
+
+		const size_t index = hash_get_index(&info->arrays, id);
+		hash_set_by_index(&info->arrays, index, 1, (item_t)length);
+
+		const item_t type = array_get_type(info, arr_type);
+		to_code_alloc_array_static(info, index, type, true);
+
+		for (size_t i = 0; i < length; i++)
+		{
+			info->answer_const = (item_t)i;
+			info->answer_kind = ACONST;
+			const size_t slice_reg = (size_t)info->register_num;
+			to_code_slice(info, id, 0, 0, type, true);
+			to_code_store_const_integer(info, string[i], slice_reg, true, true, type);
+		}
+	}
 }
 
 
@@ -2384,6 +2406,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
