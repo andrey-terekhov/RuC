@@ -691,66 +691,66 @@ static void emit_literal_expression(information *const info, const node *const n
 	}
 }
 
-// /**
-//  *	Emit initialization of lvalue
-//  *
-//  *	@param	info			Encoder
-//  *	@param	nd				Node in AST
-//  *	@param	id				Identifier of target lvalue
-//  *	@param	cur_dimension	Current dimension of slice
-//  */
-// static void emit_one_dimension_subscript(information *const info, const node *const nd, const size_t id
-// 	, const size_t cur_dimension)
-// {
-// 	// TODO: научиться обрабатывать многомерные динамические массивы
-// 	const node base = expression_subscript_get_base(nd);
-// 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
-// 	const bool is_local = ident_is_local(info->sx, id);
-// 	const item_t arr_type = ident_get_type(info->sx, id);
-// 	const item_t type = array_get_type(info, arr_type);
+/**
+ *	Emit initialization of lvalue
+ *
+ *	@param	info			Encoder
+ *	@param	nd				Node in AST
+ *	@param	id				Identifier of target lvalue
+ *	@param	cur_dimension	Current dimension of slice
+ */
+static void emit_one_dimension_subscript(information *const info, const node *const nd, const size_t id
+	, const size_t cur_dimension)
+{
+	// TODO: научиться обрабатывать многомерные динамические массивы
+	const node base = expression_subscript_get_base(nd);
+	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
+	const bool is_local = ident_is_local(info->sx, id);
+	const item_t arr_type = ident_get_type(info->sx, id);
+	const item_t type = array_get_type(info, arr_type);
 
-// 	if (cur_dimension != dimensions - 1)
-// 	{
-// 		emit_one_dimension_subscript(info, &base, id, cur_dimension + 1);
-// 	}
+	if (cur_dimension != dimensions - 1)
+	{
+		emit_one_dimension_subscript(info, &base, id, cur_dimension + 1);
+	}
 
-// 	info->variable_location = LFREE;
-// 	const node index = expression_subscript_get_index(nd);
-// 	emit_expression(info, &index);
-// 	to_code_slice(info, id, cur_dimension, info->register_num - 1, type, is_local);
-// }
+	info->variable_location = LFREE;
+	const node index = expression_subscript_get_index(nd);
+	emit_expression(info, &index);
+	to_code_slice(info, id, cur_dimension, info->register_num - 1, type, is_local);
+}
 
-// /**
-//  *	Emit initialization of lvalue
-//  *
-//  *	@param	info		Encoder
-//  *	@param	nd			Node in AST
-//  */
-// static void emit_subscript_expression(information *const info, const node *const nd)
-// {
-// 	node base = expression_subscript_get_base(nd);
-// 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
-// 	{
-// 		base = expression_subscript_get_base(&base);
-// 	}
+/**
+ *	Emit initialization of lvalue
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_subscript_expression(information *const info, const node *const nd)
+{
+	node base = expression_subscript_get_base(nd);
+	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
+	{
+		base = expression_subscript_get_base(&base);
+	}
 
-// 	const size_t id = expression_identifier_get_id(&base);
-// 	const location_t location = info->variable_location;
+	const size_t id = expression_identifier_get_id(&base);
+	const location_t location = info->variable_location;
 
-// 	emit_one_dimension_subscript(info, nd, id, 0);
+	emit_one_dimension_subscript(info, nd, id, 0);
 
-// 	if (location != LMEM)
-// 	{
-// 		const item_t arr_type = ident_get_type(info->sx, id);
-// 		const item_t type = array_get_type(info, arr_type);
+	if (location != LMEM)
+	{
+		const item_t arr_type = ident_get_type(info->sx, id);
+		const item_t type = array_get_type(info, arr_type);
 
-// 		to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
-// 		info->register_num++;
-// 	}
+		to_code_load(info, info->register_num, info->register_num - 1, type, true, true);
+		info->register_num++;
+	}
 
-// 	info->answer_reg = info->register_num - 1;
-// 	info->answer_kind = AREG;
-// }
+	info->answer_reg = info->register_num - 1;
+	info->answer_kind = AREG;
+}
 
 /**
  *	Emit call expression
@@ -1403,7 +1403,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_SUBSCRIPT:
-			// emit_subscript_expression(info, nd);
+			emit_subscript_expression(info, nd);
 			return;
 
 		case EXPR_CALL:
