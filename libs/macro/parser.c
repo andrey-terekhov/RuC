@@ -581,7 +581,8 @@ static void parser_find_value(parser *const prs, char32_t *const val)
 	}
 
 	uni_unscan_char(prs->in, cur);
-	val[i] = (char32_t)EOF;
+	//val[i] = (char32_t)EOF;
+	val[i] = '\0';
 	//uni_print_char(val, (char32_t)EOF);
 }
 
@@ -1023,7 +1024,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 						break;
 					}
 
-					if (cur == (char32_t)EOF)
+					if (cur == (char32_t)EOF || cur == '\0')
 					{
 						break;
 					}
