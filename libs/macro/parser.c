@@ -28,7 +28,7 @@
 #define MAX_IDENT_SIZE			4096
 
 
-const size_t AVERAGE_VALUE_SIZE = 4096;
+const size_t AVERAGE_VALUE_SIZE = 256;
 const size_t FST_LINE_INDEX = 1;
 const size_t FST_CHARACTER_INDEX = 0;
 
@@ -237,6 +237,8 @@ static void parser_macro_warning(parser *const prs, const warning_t num)
 }
 
 
+static size_t parser_skip_separators(parser *const prs, char32_t *const cur);
+
 /**
  *	Считать символы до конца строковой константы
  *
@@ -324,8 +326,13 @@ static void parser_skip_line(parser *const prs, char32_t cur)
 {
 	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
 	{
-		prs->position++;
-		cur = uni_scan_char(prs->in);
+		if (!utf8_is_separator(cur))
+		{
+			cur = uni_scan_char(prs->in);
+			prs->position++;
+		}
+
+		parser_skip_separators(prs, &cur);
 	}
 
 	uni_unscan_char(prs->in, cur);	// Необходимо, чтобы следующий символ был переносом строки или концом файла
@@ -338,7 +345,14 @@ static void parser_skip_line(parser *const prs, char32_t cur)
  */
 static inline void parser_skip_short_comment(parser *const prs)
 {
-	parser_skip_line(prs, '/');
+	char32_t cur = '/';
+	while (!utf8_is_line_breaker(cur) && cur != (char32_t)EOF)
+	{
+		prs->position++;
+		cur = uni_scan_char(prs->in);
+	}
+
+	uni_unscan_char(prs->in, cur);	// Необходимо, чтобы следующий символ был переносом строки или концом файла
 }
 
 /**
@@ -382,9 +396,6 @@ static size_t parser_skip_long_comment(parser *const prs, const size_t line)
 					}
 
 					return prs->position;
-					/*return prs->line == line
-							? prs->position - position + 1
-							: prs->position;*/
 				}
 				break;
 		}
@@ -635,8 +646,11 @@ static int parser_find_value(parser *const prs, universal_io *const val
  */
 static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
-	parser_add_char(prs, '\n');
-	parser_macro_comment(prs);
+	if (!in_is_buffer(prs->in))
+	{
+		parser_add_char(prs, '\n');
+		parser_macro_comment(prs);
+	}
 	parser_print(prs);
 
 	// Сохранение позиции в исходном файле
@@ -664,8 +678,11 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	parser_clear_code(prs);
 
 	// Добавление комментария после прохода файла
-	parser_add_char(prs, '\n');
-	parser_comment_to_buffer(prs);
+	if (!in_is_buffer(prs->in))
+	{
+		parser_add_char(prs, '\n');
+		parser_macro_comment(prs);
+	}
 
 	return ret;
 }
@@ -1126,6 +1143,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 			case KW_WHILE:
 			case KW_ENDW:
+				parser_macro_error(prs, PARSER_UNIDETIFIED_KEYWORD);
+				parser_skip_line(prs, cur);
+				break;
 
 			default:
 				if (storage_last_read(prs->stg) != NULL)

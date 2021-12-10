@@ -1,6 +1,8 @@
-#define B
+#define A 1
+#define B A + 1
+#define C A + B
+
 int main()
 {
-	\B\
-	return 0;
+	return C;
 }
