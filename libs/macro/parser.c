@@ -1082,8 +1082,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		parser_comment(prs);
 	}
 
-	char32_t cur = '\0';
-	while (cur != (char32_t)EOF)
+	char32_t cur = '\n';
+	while (cur != (char32_t)EOF && cur != '\0')
 	{
 		const size_t index = storage_search(prs->stg, prs->in, &cur);
 		switch (index)

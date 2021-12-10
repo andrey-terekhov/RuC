@@ -1,12 +1,6 @@
-#macro A
-#macro B
-print(1);
-
-#endm
-
+#define B
 int main()
 {
-	A
-	B
+	\B\
 	return 0;
 }
