@@ -514,12 +514,16 @@ static size_t parser_find_id(parser *const prs, char32_t *const id)
  *	@param	val			Буффер для записи идентификатора
  *	@param	mode		Режим работы функции
  *	@param	id			Индекс идентификатора для режима KW_SET
+ *
+ *	@return	Количество незакрытых #macro
  */
-static void parser_find_value(parser *const prs, universal_io *const val
+static int parser_find_value(parser *const prs, universal_io *const val
 								, const keyword_t mode, const size_t id)
 {
 	const size_t line = prs->line;
-	char32_t prev = '\0';
+
+	int macro_flag = mode == KW_MACRO ? 1 : 0;	// Необходим для #macro, вложенных в #macro
+	char32_t prev = '\0';	// Необходим для контроля начала строки и слияния двух строк ("\\\n")
 	char32_t cur = uni_scan_char(prs->in);
 	while (cur != (char32_t)EOF)
 	{
@@ -560,10 +564,16 @@ static void parser_find_value(parser *const prs, universal_io *const val
 			{
 				parser_macro_error(prs, PARSER_UNEXPECTED_GRID);
 				parser_skip_line(prs, cur);
-				return;
+				return macro_flag;
 			}
 			else if (utf8_is_letter(cur) || (mode == KW_MACRO && cur == '#'))
 			{
+				if (prev == '\\')
+				{
+					uni_print_char(val, '\\');
+					prev = '\0';
+				}
+
 				uni_unscan_char(prs->in, cur);
 				const size_t index = storage_search(prs->stg, prs->in, &cur);
 				if (mode == KW_SET && index == id)
@@ -573,6 +583,19 @@ static void parser_find_value(parser *const prs, universal_io *const val
 				}
 				else if (storage_last_read(prs->stg) != NULL)
 				{
+					macro_flag = index == KW_MACRO
+									? macro_flag + 1
+									: index == KW_ENDM
+										? macro_flag - 1
+										: macro_flag;
+					if (index == KW_ENDM && macro_flag == 0)	// Выход для #macro
+					{
+						uni_unscan_char(prs->in, cur);
+						prs->position += strlen(storage_last_read(prs->stg));
+						parser_find_unexpected_lexeme(prs);
+						break;
+					}
+
 					uni_printf(val, "%s", storage_last_read(prs->stg));
 					prs->position += strlen(storage_last_read(prs->stg)) - 1;
 				}
@@ -582,10 +605,11 @@ static void parser_find_value(parser *const prs, universal_io *const val
 			else if (cur != '\\')	// '\\' будет добавлен при обработке следующего символа
 			{
 				uni_print_char(val, cur);
+				prev = '\0';	// После печати первого символа на новой строке позиция должна увеличиться
 			}
 		}
 
-		if (prev != '\n')
+		if (prev != '\n')	// Без этого при переносе строки позиция будет сдвинута
 		{
 			prs->position++;
 		}
@@ -594,9 +618,11 @@ static void parser_find_value(parser *const prs, universal_io *const val
 		cur = uni_scan_char(prs->in);
 	}
 
-	uni_unscan_char(prs->in, cur);
+	if (!(mode == KW_MACRO && macro_flag == 0)) uni_unscan_char(prs->in, cur);
 	//uni_print_char(val, (char32_t)EOF);
 	uni_print_char(val, '\0');
+
+	return macro_flag;
 }
 
 /**
@@ -949,6 +975,10 @@ static void parser_undef(parser *const prs)
 static void parser_macro(parser *const prs)
 {
 	const size_t line = prs->line;
+	const size_t position = prs->position;
+	const size_t line_position = prs->line_position;
+	const size_t separator_position = in_get_position(prs->in);
+
 	prs->position += strlen(storage_last_read(prs->stg));
 
 	char32_t cur = uni_scan_char(prs->in);
@@ -964,10 +994,24 @@ static void parser_macro(parser *const prs)
 	// Получение значения
 	universal_io val = io_create();
 	out_set_buffer(&val, AVERAGE_LINE_SIZE);
-	parser_find_value(prs, &val, KW_MACRO, SIZE_MAX);
+	const int ret = parser_find_value(prs, &val, KW_MACRO, SIZE_MAX);
 
-	storage_remove(prs->stg, id);
-	storage_add(prs->stg, id, out_extract_buffer(&val));
+	if (ret == 0)
+	{
+		storage_remove(prs->stg, id);
+		storage_add(prs->stg, id, out_extract_buffer(&val));
+	}
+	else
+	{
+		prs->line = line;
+		prs->position = position;
+		prs->line_position = line_position;
+		parser_macro_error(prs, PARSER_MACRO_NOT_ENDED);
+
+		in_set_position(prs->in, separator_position);
+		uni_scan_char(prs->in);
+		parser_skip_line(prs, cur);
+	}
 
 	io_erase(&val);
 
@@ -1064,7 +1108,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 
 			case KW_MACRO:
 				uni_unscan_char(prs->in, cur);
-				parser_undef(prs);
+				parser_macro(prs);
 				break;
 			case KW_ENDM:
 				parser_macro_error(prs, PARSER_UNEXPECTED_ENDM);

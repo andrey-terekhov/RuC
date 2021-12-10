@@ -1,9 +1,12 @@
+#macro A
+#macro B
+print(1);
 
-#define a print(1);
-#set a a a/*
+#endm
 
 int main()
 {
-	a
+	A
+	B
 	return 0;
 }
