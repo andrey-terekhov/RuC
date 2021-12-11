@@ -522,11 +522,6 @@ static void write_initializer(writer *const wrt, const node *const nd)
  */
 static void write_expression(writer *const wrt, const node *const nd)
 {
-	if (!node_is_correct(nd))
-	{
-		return;
-	}
-
 	wrt->indent++;
 	switch (expression_get_class(nd))
 	{
@@ -568,6 +563,10 @@ static void write_expression(writer *const wrt, const node *const nd)
 
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
+			break;
+
+		case EXPR_INVALID:
+			write(wrt, "EXPR_INVALID\n");
 			break;
 	}
 

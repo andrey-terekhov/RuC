@@ -69,8 +69,7 @@ expression_t expression_get_class(const node *const nd)
 		case OP_INITIALIZER:
 			return EXPR_INITIALIZER;
 		default:
-			system_error(node_unexpected);
-			return 0;
+			return EXPR_INVALID;
 	}
 }
 
