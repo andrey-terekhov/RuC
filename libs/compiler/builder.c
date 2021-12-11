@@ -652,12 +652,12 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 
 node build_null_literal_expression(builder *const bldr, const location loc)
 {
-	return expression_null_literal(&bldr->context, loc);
+	return expression_null_literal(&bldr->context, TYPE_NULL_POINTER, loc);
 }
 
 node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
 {
-	return expression_character_literal(&bldr->context, value, loc);
+	return expression_character_literal(&bldr->context, TYPE_CHARACTER, value, loc);
 }
 
 node build_integer_literal_expression(builder *const bldr, const item_t value, const location loc)
@@ -667,7 +667,7 @@ node build_integer_literal_expression(builder *const bldr, const item_t value, c
 
 node build_floating_literal_expression(builder *const bldr, const double value, const location loc)
 {
-	return expression_floating_literal(&bldr->context, value, loc);
+	return expression_floating_literal(&bldr->context, TYPE_FLOATING, value, loc);
 }
 
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc)

@@ -164,23 +164,25 @@ size_t expression_identifier_get_id(const node *const nd);
  *	Create new null literal expression
  *
  *	@param	context			Context node
+ *	@param	type			Value type
  *	@param	loc				Literal location
  *
  *	@return	Null literal expression
  */
-node expression_null_literal(node *const context, const location loc);
+node expression_null_literal(node *const context, const item_t type, const location loc);
 
 
 /**
  *	Create new character literal expression
  *
  *	@param	context			Context node
+ *	@param	type			Value type
  *	@param	value			Literal value
  *	@param	loc				Literal location
  *
  *	@return	Character literal expression
  */
-node expression_character_literal(node *const context, const char32_t value, const location loc);
+node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc);
 
 /**
  *	Get value of character literal expression
@@ -218,12 +220,13 @@ item_t expression_literal_get_integer(const node *const nd);
  *	Create new floating literal expression
  *
  *	@param	context			Context node
+ *	@param	type			Value type
  *	@param	value			Literal value
  *	@param	loc				Literal location
  *
  *	@return	Floating literal expression
  */
-node expression_floating_literal(node *const context, const double value, const location loc);
+node expression_floating_literal(node *const context, const item_t type, const double value, const location loc);
 
 /**
  *	Get value of floating literal expression

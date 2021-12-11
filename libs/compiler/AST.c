@@ -93,11 +93,11 @@ size_t expression_identifier_get_id(const node *const nd)
 }
 
 
-node expression_null_literal(node *const context, const location loc)
+node expression_null_literal(node *const context, const item_t type, const location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
-	node_add_arg(&nd, TYPE_NULL_POINTER);			// Тип значения выражения
+	node_add_arg(&nd, type);						// Тип значения выражения
 	node_add_arg(&nd, RVALUE);						// Категория значения выражения
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
@@ -106,11 +106,11 @@ node expression_null_literal(node *const context, const location loc)
 }
 
 
-node expression_character_literal(node *const context, const char32_t value, const location loc)
+node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
-	node_add_arg(&nd, TYPE_CHARACTER);				// Тип значения выражения
+	node_add_arg(&nd, type);						// Тип значения выражения
 	node_add_arg(&nd, RVALUE);						// Категория значения выражения
 	node_add_arg(&nd, (item_t)value);				// Значение литерала
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
@@ -146,11 +146,11 @@ item_t expression_literal_get_integer(const node *const nd)
 }
 
 
-node expression_floating_literal(node *const context, const double value, const location loc)
+node expression_floating_literal(node *const context, const item_t type, const double value, const location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
-	node_add_arg(&nd, TYPE_FLOATING);				// Тип значения выражения
+	node_add_arg(&nd, type);						// Тип значения выражения
 	node_add_arg(&nd, RVALUE);						// Категория значения выражения
 	node_add_arg_double(&nd, value);				// Значение литерала
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
