@@ -650,6 +650,11 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 	return expression_identifier(&bldr->context, type, (size_t)identifier, loc);
 }
 
+node build_null_literal_expression(builder *const bldr, const location loc)
+{
+	return expression_null_literal(&bldr->context, loc);
+}
+
 node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
 {
 	return expression_character_literal(&bldr->context, value, loc);
@@ -669,11 +674,6 @@ node build_string_literal_expression(builder *const bldr, const size_t index, co
 {
 	const item_t type = type_string(bldr->sx);
 	return expression_string_literal(&bldr->context, type, index, loc);
-}
-
-node build_null_pointer_literal_expression(builder *const bldr, const location loc)
-{
-	return expression_integer_literal(&bldr->context, TYPE_NULL_POINTER, 0, loc);
 }
 
 node build_subscript_expression(builder *const bldr, node *const base, node *const index
