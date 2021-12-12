@@ -533,6 +533,7 @@ static int parser_find_value(parser *const prs, universal_io *const val
 {
 	const size_t line = prs->line;
 
+	bool fst_separator_flag = true;
 	int macro_flag = mode == KW_MACRO ? 1 : 0;	// Необходим для #macro, вложенных в #macro
 	char32_t prev = '\0';	// Необходим для контроля начала строки и слияния двух строк ("\\\n")
 	char32_t cur = uni_scan_char(prs->in);
@@ -547,8 +548,12 @@ static int parser_find_value(parser *const prs, universal_io *const val
 			}
 
 			prev = '\0';
-			uni_print_char(val, ' ');
+			if (!fst_separator_flag)
+			{
+				uni_print_char(val, ' ');
+			}
 		}
+		fst_separator_flag = false;
 
 		if (utf8_is_line_breaker(cur))
 		{
@@ -893,7 +898,7 @@ static void parser_set(parser *const prs)
 	}
 	else if (index == SIZE_MAX)
 	{
-		parser_macro_error(prs, PARSER_NEED_IDENT);
+		parser_macro_error(prs, PARSER_SET_NOT_EXIST_IDENT);
 		parser_skip_line(prs, cur);
 		return;
 	}
