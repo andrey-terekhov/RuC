@@ -1,7 +1,7 @@
-3,  /**/"pass"
-#define a 1
+#define A/**/"temp.c"
+#include A
 
 int main()
-{#rrr
-	return a;
+{
+	return 0;
 }
