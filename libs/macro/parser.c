@@ -681,7 +681,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	if (!in_is_buffer(prs->in))
 	{
 		parser_add_char(prs, '\n');
-		parser_macro_comment(prs);
+		parser_comment_to_buffer(prs);
 	}
 
 	return ret;
