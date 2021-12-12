@@ -166,13 +166,13 @@ double expression_literal_get_floating(const node *const nd)
 }
 
 
-node expression_string_literal(node *const context, const item_t type, const size_t value, const location loc)
+node expression_string_literal(node *const context, const item_t type, const size_t index, const location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
 	node_add_arg(&nd, type);						// Тип значения выражения
 	node_add_arg(&nd, RVALUE);						// Категория значения выражения
-	node_add_arg(&nd, (item_t)value);				// Значение литерала
+	node_add_arg(&nd, (item_t)index);				// Значение литерала
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
 
