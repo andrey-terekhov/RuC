@@ -8,7 +8,7 @@ int main()
 	assert(A == 1, "define int");
 	assert(B == 3, "define int + int");
 	assert(C == 4, "define ident + ident");
-	assert(D == 0, "define ident - ident - ident");
+	assert(D == 4, "define ident - ident - ident");
 
 	return 0;
 }

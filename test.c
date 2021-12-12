@@ -1,4 +1,4 @@
-#define A "temp.c"
+#define A/**/"temp.c"
 #include A
 
 int main()
