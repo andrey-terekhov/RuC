@@ -46,7 +46,7 @@ typedef enum EXPRESSION
 	EXPR_UNARY,			/**< Unary expression */
 	EXPR_BINARY,		/**< Binary expression */
 	EXPR_TERNARY,		/**< Ternary expression */
-	EXPR_ASSIGNMENT,	/**< Assignment expresion */
+	EXPR_ASSIGNMENT,	/**< Assignment expression */
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
