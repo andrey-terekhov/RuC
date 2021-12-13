@@ -128,7 +128,7 @@ typedef enum OPERATION
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
-	OP_ASSIGNMENT,			/**< Asignment operator node */
+	OP_ASSIGNMENT,			/**< Assignment operator node */
 	OP_INITIALIZER,			/**< Initializer node */
 
 	// Statements
