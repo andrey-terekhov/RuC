@@ -17,7 +17,7 @@ int main()
          j++;
    }
 
-   assert(j == 3, "j must be 3");
+   // assert(j == 3, "j must be 3");
 
    switch (i) 
    {
@@ -26,7 +26,7 @@ int main()
       default: j++;
    }
 
-   assert(j == 2, "j must be 2");
+   // assert(j == 2, "j must be 2");
 
    return 0;
 }
