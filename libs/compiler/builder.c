@@ -1014,7 +1014,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		}
 
 		case BIN_ASSIGN:
-			return expression_binary(left_type, LHS, RHS, op_kind, loc);
+			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
 
 		case BIN_REM_ASSIGN:
 		case BIN_SHL_ASSIGN:
@@ -1029,7 +1029,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			return expression_binary(left_type, LHS, RHS, op_kind, loc);
+			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_MUL_ASSIGN:
@@ -1043,7 +1043,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			return expression_binary(left_type, LHS, RHS, op_kind, loc);
+			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_COMMA:

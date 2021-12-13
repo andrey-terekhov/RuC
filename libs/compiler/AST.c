@@ -66,6 +66,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_BINARY;
 		case OP_TERNARY:
 			return EXPR_TERNARY;
+		case OP_ASSIGNMENT:
+			return EXPR_ASSIGNMENT;
 		case OP_INITIALIZER:
 			return EXPR_INITIALIZER;
 		default:
@@ -402,6 +404,39 @@ node expression_ternary_get_RHS(const node *const nd)
 {
 	assert(node_get_type(nd) == OP_TERNARY);
 	return node_get_child(nd, 2);
+}
+
+
+node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc)
+{
+	node nd = node_insert(LHS, OP_ASSIGNMENT, 5);	// Первый операнд выражения
+	node_set_child(&nd, RHS);						// Второй операнд выражения
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, op);						// Вид бинарного оператора
+	node_set_arg(&nd, 3, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 4, (item_t)loc.end);			// Конечная позиция выражения
+
+	return nd;
+}
+
+binary_t expression_assignment_get_operator(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_ASSIGNMENT);
+	return (binary_t)node_get_arg(nd, 2);
+}
+
+node expression_assignment_get_LHS(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_ASSIGNMENT);
+	return node_get_child(nd, 0);
+}
+
+node expression_assignment_get_RHS(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_ASSIGNMENT);
+	return node_get_child(nd, 1);
 }
 
 

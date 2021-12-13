@@ -496,6 +496,25 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
 }
 
 /**
+ *	Write assignment expression
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_assignment_expression(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "EXPR_ASSIGNMENT with operator ");
+	write_binary_operator(wrt, expression_assignment_get_operator(nd));
+	write_expression_metadata(wrt, nd);
+
+	const node LHS = expression_assignment_get_LHS(nd);
+	write_expression(wrt, &LHS);
+
+	const node RHS = expression_assignment_get_RHS(nd);
+	write_expression(wrt, &RHS);
+}
+
+/**
  *	Write initializer
  *
  *	@param	wrt			Writer
@@ -559,6 +578,10 @@ static void write_expression(writer *const wrt, const node *const nd)
 
 		case EXPR_TERNARY:
 			write_ternary_expression(wrt, nd);
+			break;
+
+		case EXPR_ASSIGNMENT:
+			write_assignment_expression(wrt, nd);
 			break;
 
 		case EXPR_INITIALIZER:

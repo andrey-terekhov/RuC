@@ -46,6 +46,7 @@ typedef enum EXPRESSION
 	EXPR_UNARY,			/**< Unary expression */
 	EXPR_BINARY,		/**< Binary expression */
 	EXPR_TERNARY,		/**< Ternary expression */
+	EXPR_ASSIGNMENT,	/**< Assignment expresion */
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
@@ -517,6 +518,47 @@ node expression_ternary_get_LHS(const node *const nd);
  *	@return	RHS of ternary expression
  */
 node expression_ternary_get_RHS(const node *const nd);
+
+
+/**
+ *	Create new assignment expression
+ *
+ *	@param	type			Value type
+ *	@param	LHS				Left operand
+ *	@param	RHS				Right operand
+ *	@param	op				Operator kind
+ *	@param	loc				Expression location
+ *
+ *	@return	Assignment expression
+ */
+node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc);
+
+/**
+ *	Get operator of assignment expression
+ *
+ *	@param	nd				Assignment expression
+ *
+ *	@return	Operator
+ */
+binary_t expression_assignment_get_operator(const node *const nd);
+
+/**
+ *	Get LHS of assignment expression
+ *
+ *	@param	nd				Assignment expression
+ *
+ *	@return	LHS of assignment expression
+ */
+node expression_assignment_get_LHS(const node *const nd);
+
+/**
+ *	Get RHS of assignment expression
+ *
+ *	@param	nd				Assignment expression
+ *
+ *	@return	RHS of assignment expression
+ */
+node expression_assignment_get_RHS(const node *const nd);
 
 
 /**
