@@ -1360,6 +1360,32 @@ static void emit_while_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit do statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_do_statement(information *const info, const node *const nd)
+{
+	const item_t label_condition = info->label_num++;
+	const item_t label_end = info->label_num++;
+
+	info->label_else = label_end;
+	to_code_label(info->sx->io, L_BEGIN_CYCLE, label_condition);
+
+	info->request_kind = RQ_NO_REQUEST;
+	const node body = statement_do_get_body(nd);
+	emit_statement(info, &body);
+
+	info->request_kind = RQ_FREE;
+	const node condition = statement_do_get_condition(nd);
+	emit_expression(info, &condition);
+
+	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label_condition);
+	to_code_label(info->sx->io, L_ELSE, label_end);
+}
+
+/**
  *	Emit statement
  *
  *	@param	info		Encoder
@@ -1409,7 +1435,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_DO:
-			// emit_do_statement(info, nd);
+			emit_do_statement(info, nd);
 			return;
 
 		case STMT_FOR:
