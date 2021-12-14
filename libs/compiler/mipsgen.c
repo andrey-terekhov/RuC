@@ -159,6 +159,7 @@ typedef enum LABEL
 	L_STRING,						/**< Тип метки -- строка */
 	L_ELSE,							/**< Тип метки -- переход по else */
 	L_END,							/**< Тип метки -- переход в конец конструкции */
+	L_BEGIN_CYCLE,					/**< Тип метки -- переход в начало цикла */
 } mips_label_t;
 
 
@@ -491,6 +492,9 @@ static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 			break;
 		case L_END:
 			uni_printf(io, "END");
+			break;
+		case L_BEGIN_CYCLE:
+			uni_printf(io, "BEGIN_CYCLE");
 			break;
 	}
 }
@@ -1330,6 +1334,32 @@ static void emit_if_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit while statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_while_statement(information *const info, const node *const nd)
+{
+	const item_t label_condition = info->label_num++;
+	const item_t label_end = info->label_num++;
+
+	info->label_else = label_end;
+	to_code_label(info->sx->io, L_BEGIN_CYCLE, label_condition);
+
+	info->request_kind = RQ_FREE;
+	const node condition = statement_while_get_condition(nd);
+	emit_expression(info, &condition);
+
+	info->request_kind = RQ_NO_REQUEST;
+	const node body = statement_while_get_body(nd);
+	emit_statement(info, &body);
+
+	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label_condition);
+	to_code_label(info->sx->io, L_ELSE, label_end);
+}
+
+/**
  *	Emit statement
  *
  *	@param	info		Encoder
@@ -1375,7 +1405,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_WHILE:
-			// emit_while_statement(info, nd);
+			emit_while_statement(info, nd);
 			return;
 
 		case STMT_DO:
