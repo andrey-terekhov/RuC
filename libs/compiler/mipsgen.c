@@ -1295,6 +1295,8 @@ static void emit_printf_statement(information *const info, const node *const nd)
 	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
 	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
 	uni_printf(info->sx->io, "\tjal printf\n");
+
+	info->request_kind = RQ_NO_REQUEST;
 }
 
 /**
@@ -1305,10 +1307,9 @@ static void emit_printf_statement(information *const info, const node *const nd)
  */
 static void emit_if_statement(information *const info, const node *const nd)
 {
-	const item_t label_else = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const item_t label = info->label_num++;
 
-	info->label_else = label_else;
+	info->label_else = label;
 
 	info->request_kind = RQ_FREE;
 	const node condition = statement_if_get_condition(nd);
@@ -1319,17 +1320,17 @@ static void emit_if_statement(information *const info, const node *const nd)
 
 	if (statement_if_has_else_substmt(nd))
 	{
-		to_code_L(info->sx->io, IC_MIPS_J, L_END, label_end);
-		to_code_label(info->sx->io, L_ELSE, label_else);
+		to_code_L(info->sx->io, IC_MIPS_J, L_END, label);
+		to_code_label(info->sx->io, L_ELSE, label);
 
 		const node else_substmt = statement_if_get_else_substmt(nd);
 		emit_statement(info, &else_substmt);
 
-		to_code_label(info->sx->io, L_END, label_end);
+		to_code_label(info->sx->io, L_END, label);
 	}
 	else
 	{
-		to_code_label(info->sx->io, L_ELSE, label_else);
+		to_code_label(info->sx->io, L_ELSE, label);
 	}
 }
 
@@ -1341,11 +1342,10 @@ static void emit_if_statement(information *const info, const node *const nd)
  */
 static void emit_while_statement(information *const info, const node *const nd)
 {
-	const item_t label_condition = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const item_t label = info->label_num++;
 
-	info->label_else = label_end;
-	to_code_label(info->sx->io, L_BEGIN_CYCLE, label_condition);
+	info->label_else = label;
+	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
 
 	info->request_kind = RQ_FREE;
 	const node condition = statement_while_get_condition(nd);
@@ -1355,8 +1355,8 @@ static void emit_while_statement(information *const info, const node *const nd)
 	const node body = statement_while_get_body(nd);
 	emit_statement(info, &body);
 
-	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label_condition);
-	to_code_label(info->sx->io, L_ELSE, label_end);
+	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
+	to_code_label(info->sx->io, L_ELSE, label);
 }
 
 /**
@@ -1367,11 +1367,10 @@ static void emit_while_statement(information *const info, const node *const nd)
  */
 static void emit_do_statement(information *const info, const node *const nd)
 {
-	const item_t label_condition = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const item_t label = info->label_num++;
 
-	info->label_else = label_end;
-	to_code_label(info->sx->io, L_BEGIN_CYCLE, label_condition);
+	info->label_else = label;
+	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
 
 	info->request_kind = RQ_NO_REQUEST;
 	const node body = statement_do_get_body(nd);
@@ -1381,8 +1380,47 @@ static void emit_do_statement(information *const info, const node *const nd)
 	const node condition = statement_do_get_condition(nd);
 	emit_expression(info, &condition);
 
-	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label_condition);
-	to_code_label(info->sx->io, L_ELSE, label_end);
+	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
+	to_code_label(info->sx->io, L_ELSE, label);
+}
+
+/**
+ *	Emit for statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_for_statement(information *const info, const node *const nd)
+{
+	const item_t label = info->label_num++;
+
+	if (statement_for_has_inition(nd))
+	{
+		// TODO: рассмотреть случаи, если тут объявление
+		const node inition = statement_for_get_inition(nd);
+		emit_statement(info, &inition);
+	}
+
+	info->label_else = label;
+	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
+
+	if (statement_for_has_condition(nd))
+	{
+		const node condition = statement_for_get_condition(nd);
+		emit_expression(info, &condition);
+	}
+
+	const node body = statement_for_get_body(nd);
+	emit_statement(info, &body);
+
+	if (statement_for_has_increment(nd))
+	{
+		const node increment = statement_for_get_increment(nd);
+		emit_expression(info, &increment);
+	}
+
+	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
+	to_code_label(info->sx->io, L_ELSE, label);
 }
 
 /**
@@ -1439,7 +1477,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_FOR:
-			// emit_for_statement(info, nd);
+			emit_for_statement(info, nd);
 			return;
 
 		case STMT_GOTO:
