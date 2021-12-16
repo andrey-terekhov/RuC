@@ -196,6 +196,32 @@ static void emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
 
 
+// TODO: это есть в кодогенераторе llvm, не хотелось бы копипастить
+static item_t array_get_type(information *const info, const item_t array_type)
+{
+	item_t type = array_type;
+	while (type_is_array(info->sx, type))
+	{
+		type = type_array_get_element_type(info->sx, type);
+	}
+
+	return type;
+}
+
+static size_t array_get_dim(information *const info, const item_t array_type)
+{
+	size_t i = 0;
+	item_t type = array_type;
+	while (type_is_array(info->sx, type))
+	{
+		type = type_array_get_element_type(info->sx, type);
+		i++;
+	}
+
+	return i;
+}
+
+
 static mips_instruction_t get_instruction(information *const info, const item_t operation_type)
 {
 	switch (operation_type)
@@ -622,11 +648,6 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 	uni_printf(io, "%" PRIitem ":\n", label_num);
 }
 
-
-static inline int size_of(information *const info, const item_t type)
-{
-	return type_is_integer(info->sx, type) ? 4 : type_is_floating(type) ? 8 : 0;
-}
 
 // TODO: в этих двух функциях реализовано распределение регистров. Сейчас оно такое
 static inline mips_register_t get_register(information *const info)
@@ -1112,7 +1133,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
-	info->max_displ += size_of(info, type);
+	info->max_displ += type_size(info->sx, type) * 4;
 	const size_t value_displ = info->max_displ;
 	// TODO: в глобальных переменных регистр gp
 	const mips_register_t value_reg = R_SP;
@@ -1141,6 +1162,18 @@ static void emit_variable_declaration(information *const info, const node *const
 			free_register(info);
 			info->request_kind = RQ_NO_REQUEST;
 		}
+	}
+	else
+	{
+		const size_t dimensions = array_get_dim(info, type);
+		const item_t element_type = array_get_type(info, type);
+		const item_t usual = 1; // предстоит выяснить, что это такое
+
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
+		uni_printf(info->sx->io, "\tjal DEFARR\n");
 	}
 }
 
