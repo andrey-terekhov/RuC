@@ -160,6 +160,7 @@ typedef enum LABEL
 	L_ELSE,							/**< Тип метки -- переход по else */
 	L_END,							/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,					/**< Тип метки -- переход в начало цикла */
+	L_USER_LABEL,					/**< Тип метки -- метка, заданная пользователем */
 } mips_label_t;
 
 
@@ -521,6 +522,9 @@ static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 			break;
 		case L_BEGIN_CYCLE:
 			uni_printf(io, "BEGIN_CYCLE");
+			break;
+		case L_USER_LABEL:
+			uni_printf(io, "USER_LABEL");
 			break;
 	}
 }
@@ -1281,6 +1285,21 @@ static void emit_declaration(information *const info, const node *const nd)
 
 
 /**
+ *	Emit labeled statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_labeled_statement(information *const info, const node *const nd)
+{
+	const item_t label = (item_t)statement_labeled_get_label(nd);
+	to_code_label(info->sx->io, L_USER_LABEL, label);
+
+	const node substmt = statement_labeled_get_substmt(nd);
+	emit_statement(info, &substmt);
+}
+
+/**
  *	Emit compound statement
  *
  *	@param	info		Encoder
@@ -1480,7 +1499,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_LABEL:
-			// emit_labeled_statement(info, nd);
+			emit_labeled_statement(info, nd);
 			return;
 
 		case STMT_CASE:
@@ -1523,7 +1542,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_GOTO:
-			// to_code_unconditional_branch(info, (item_t)statement_goto_get_label(nd));
+			to_code_L(info->sx->io, IC_MIPS_J, L_USER_LABEL, (item_t)statement_goto_get_label(nd));
 			return;
 
 		case STMT_CONTINUE:
