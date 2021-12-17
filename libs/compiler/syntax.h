@@ -323,12 +323,11 @@ bool ident_is_type_specifier(syntax *const sx, const size_t index);
  *	Check if identifier is local by index
  *
  *	@param	sx			Syntax structure
- *	@param	id			Identifier of target lvalue
+ *	@param	index		Index of record in identifiers table
  *
  *	@return @c 1 on true, @c 0 on false
  */
 bool ident_is_local(const syntax *const sx, const size_t index);
-
 
 
 /**
@@ -655,7 +654,6 @@ item_t type_array(syntax *const sx, const item_t type);
  *	Create string type
  *
  *	@param	sx			Syntax structure
- *	@param	type		Element type
  *
  *	@return	String type
  */
