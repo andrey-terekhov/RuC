@@ -1376,6 +1376,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 static void emit_while_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	info->label_else = label;
 	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
@@ -1390,6 +1391,8 @@ static void emit_while_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1401,6 +1404,7 @@ static void emit_while_statement(information *const info, const node *const nd)
 static void emit_do_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	info->label_else = label;
 	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
@@ -1415,6 +1419,8 @@ static void emit_do_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1426,6 +1432,7 @@ static void emit_do_statement(information *const info, const node *const nd)
 static void emit_for_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	if (statement_for_has_inition(nd))
 	{
@@ -1454,6 +1461,8 @@ static void emit_for_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1518,11 +1527,11 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_CONTINUE:
-			// to_code_unconditional_branch(info, info->label_continue);
+			to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, info->label_else);
 			return;
 
 		case STMT_BREAK:
-			// to_code_unconditional_branch(info, info->label_break);
+			to_code_L(info->sx->io, IC_MIPS_J, L_ELSE, info->label_else);
 			return;
 
 		case STMT_RETURN:
