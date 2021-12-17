@@ -730,7 +730,52 @@ static void emit_identifier_expression(information *const info, const node *cons
 }
 
 /**
- *	Emit non-assignment binary expression
+ *	Emit increment/decrement expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_inc_dec_expression(information *const info, const node *const nd)
+{
+
+}
+
+/**
+ *	Emit unary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_unary_expression(information *const info, const node *const nd)
+{
+	const unary_t operator = expression_unary_get_operator(nd);
+	// const node operand = expression_unary_get_operand(nd);
+
+	switch (operator)
+	{
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		case UN_PREINC:
+		case UN_PREDEC:
+			emit_inc_dec_expression(info, nd);
+			return;
+
+		case UN_MINUS:
+		case UN_NOT:
+		case UN_LOGNOT:
+		case UN_ADDRESS:
+		case UN_INDIRECTION:
+		case UN_ABS:
+			break;
+
+		default:
+			// TODO: оставшиеся унарные операторы
+			return;
+	}
+}
+
+/**
+ *	Emit logic binary expression
  *
  *	@param	info	Encoder
  *	@param	nd		Node in AST
@@ -1088,7 +1133,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_UNARY:
-			// emit_unary_expression(info, nd);
+			emit_unary_expression(info, nd);
 			return;
 
 		case EXPR_BINARY:
