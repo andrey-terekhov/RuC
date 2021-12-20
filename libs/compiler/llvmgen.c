@@ -623,6 +623,11 @@ static void emit_cast_expression(information *const info, const node *const nd)
  */
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
+	if (node_get_type(nd) != OP_IDENTIFIER)
+	{
+		return;
+	}
+
 	item_t type = expression_get_type(nd);
 	const size_t id = expression_identifier_get_id(nd);
 	const bool is_local = ident_is_local(info->sx, id);
@@ -1519,6 +1524,11 @@ static void emit_initialization(information *const info, const node *const nd, c
 {
 	if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_array(info->sx, expression_get_type(nd)))
 	{
+		if (node_get_type(nd) != OP_IDENTIFIER)
+		{
+			return;
+		}
+
 		const size_t dimensions = array_get_dim(info, arr_type);
 		const size_t N = expression_initializer_get_size(nd);
 
