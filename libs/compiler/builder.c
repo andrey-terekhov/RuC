@@ -241,6 +241,53 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 	}
 }
 
+static node fold_ternary_expression(builder *const bldr, const item_t type
+	, node *const cond, node *const LHS, node *const RHS, location loc)
+{
+	if (expression_get_class(cond) != EXPR_LITERAL)
+	{
+		return expression_ternary(type, cond, LHS, RHS, loc);
+	}
+
+	const item_t cond_type = expression_get_type(cond);
+	if (type_is_null_pointer(cond_type))
+	{
+		node_remove(cond);
+		node_remove(LHS);
+		return *RHS;
+	}
+	else if (type_is_integer(bldr->sx, cond_type))
+	{
+		const item_t value = expression_literal_get_integer(cond);
+		node_remove(cond);
+		if (value != 0)
+		{
+			node_remove(RHS);
+			return *LHS;
+		}
+		else
+		{
+			node_remove(LHS);
+			return *RHS;
+		}
+	}
+	else // if (type_is_double(cond_type)
+	{
+		const double value = expression_literal_get_floating(cond);
+		node_remove(cond);
+		if (value != 0)
+		{
+			node_remove(RHS);
+			return *LHS;
+		}
+		else
+		{
+			node_remove(LHS);
+			return *RHS;
+		}
+	}
+}
+
 
 static size_t evaluate_args(builder *const bldr, const node *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
@@ -603,14 +650,9 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 	return expression_identifier(&bldr->context, type, (size_t)identifier, loc);
 }
 
-node build_null_literal_expression(builder *const bldr, const location loc)
-{
-	return expression_null_literal(&bldr->context, TYPE_NULL_POINTER, loc);
-}
-
 node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
 {
-	return expression_character_literal(&bldr->context, TYPE_CHARACTER, value, loc);
+	return expression_integer_literal(&bldr->context, TYPE_CHARACTER, value, loc);
 }
 
 node build_integer_literal_expression(builder *const bldr, const item_t value, const location loc)
@@ -625,7 +667,13 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
 
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc)
 {
-	return expression_string_literal(&bldr->context, type_string(bldr->sx), index, loc);
+	const item_t type = type_string(bldr->sx);
+	return expression_integer_literal(&bldr->context, type, (item_t)index, loc);
+}
+
+node build_null_pointer_literal_expression(builder *const bldr, const location loc)
+{
+	return expression_integer_literal(&bldr->context, TYPE_NULL_POINTER, 0, loc);
 }
 
 node build_subscript_expression(builder *const bldr, node *const base, node *const index
@@ -845,7 +893,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 			}
 
 			const item_t type = type_pointer(bldr->sx, operand_type);
-			return expression_unary(type, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bldr, type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_INDIRECTION:
@@ -857,7 +905,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 			}
 
 			const item_t type = type_pointer_get_element_type(bldr->sx, operand_type);
-			return expression_unary(type, LVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bldr, type, LVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ABS:
@@ -1014,7 +1062,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		}
 
 		case BIN_ASSIGN:
-			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, left_type, LHS, RHS, op_kind, loc);
 
 		case BIN_REM_ASSIGN:
 		case BIN_SHL_ASSIGN:
@@ -1029,7 +1077,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_MUL_ASSIGN:
@@ -1043,11 +1091,11 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			return expression_assignment(left_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, left_type, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_COMMA:
-			return expression_binary(right_type, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, right_type, LHS, RHS, op_kind, loc);
 
 		default:
 			// Unknown binary operator
@@ -1076,18 +1124,18 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	if (type_is_arithmetic(bldr->sx, LHS_type) && type_is_arithmetic(bldr->sx, RHS_type))
 	{
 		const item_t type = usual_arithmetic_conversions(LHS, RHS);
-		return expression_ternary(type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(bldr, type, cond, LHS, RHS, loc);
 	}
 
 	if (type_is_pointer(bldr->sx, LHS_type) && type_is_null_pointer(RHS_type))
 	{
-		return expression_ternary(LHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(bldr, LHS_type, cond, LHS, RHS, loc);
 	}
 
 	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bldr->sx, RHS_type))
 		|| (LHS_type == RHS_type))
 	{
-		return expression_ternary(RHS_type, cond, LHS, RHS, loc);
+		return fold_ternary_expression(bldr, RHS_type, cond, LHS, RHS, loc);
 	}
 
 	semantic_error(bldr, op_loc, typecheck_cond_incompatible_operands);

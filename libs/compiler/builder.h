@@ -73,16 +73,6 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc);
 
 /**
- *	Build a null literal expression
- *
- *	@param	bldr			AST builder
- *	@param	loc				Source location
- *
- *	@return Null literal expression node
- */
-node build_null_literal_expression(builder *const bldr, const location loc);
-
-/**
  *	Build a character literal expression
  *
  *	@param	bldr			AST builder
@@ -125,6 +115,16 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
  *	@return	String literal expression node
  */
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc);
+
+/**
+ *	Build a null pointer literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	loc				Source location
+ *
+ *	@return Null pointer literal expression node
+ */
+node build_null_pointer_literal_expression(builder *const bldr, const location loc);
 
 /**
  *	Build a subscript expression
