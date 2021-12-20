@@ -37,7 +37,7 @@
  	if [[ -z $ignore || $path != $dir_error/* ]] ; then
  		action="compiling"
 -		run $compiler $compiler_debug $sources -o $vm_exec
-+		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang $vm_exec -o $llvm_exec &>$log
++		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang++ $vm_exec -o $llvm_exec &>$log
 # +		clang -c $sources -O0 -emit-llvm -S -o $vm_exec && clang $vm_exec -o $llvm_exec &>$log
  
  		case $? in
