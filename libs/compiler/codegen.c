@@ -474,18 +474,10 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 		}
 
 		case TYPE_CHARACTER:
-		{
-			const char32_t value = expression_literal_get_character(nd);
-
-			mem_add(enc, IC_LI);
-			mem_add(enc, value);
-			return;
-		}
-
 		case TYPE_INTEGER:
 		case TYPE_ENUM:
 		{
-			const item_t value = expression_literal_get_integer(nd);
+			const int value = expression_literal_get_integer(nd);
 
 			mem_add(enc, IC_LI);
 			mem_add(enc, value);
@@ -945,6 +937,57 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit assignment expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_assignment_expression(encoder *const enc, const node *const nd)
+{
+	const node LHS = expression_binary_get_LHS(nd);
+	const lvalue value = emit_lvalue(enc, &LHS);
+
+	const node RHS = expression_binary_get_RHS(nd);
+	emit_expression(enc, &RHS);
+
+	const item_t type = expression_get_type(nd);
+	if (type_is_structure(enc->sx, type))
+	{
+		if (value.kind == VARIABLE)
+		{
+			mem_add(enc, IC_COPY0ST_ASSIGN);
+			mem_add(enc, value.displ);
+		}
+		else
+		{
+			mem_add(enc, IC_COPY1ST_ASSIGN);
+		}
+
+		mem_add(enc, (item_t)type_size(enc->sx, type));
+	}
+	else // Скалярное присваивание
+	{
+		instruction_t operator = binary_to_instruction(expression_binary_get_operator(nd));
+		if (value.kind == ADDRESS)
+		{
+			operator = instruction_to_address_ver(operator);
+		}
+
+		if (type_is_floating(type))
+		{
+			operator = instruction_to_floating_ver(operator);
+		}
+
+		mem_add(enc, operator);
+
+		if (value.kind == VARIABLE)
+		{
+			mem_add(enc, value.displ);
+		}
+	}
+}
+
+/**
  *	Emit binary expression
  *
  *	@param	enc			Encoder
@@ -952,7 +995,12 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
  */
 static void emit_binary_expression(encoder *const enc, const node *const nd)
 {
-	if (expression_binary_get_operator(nd) == BIN_COMMA)
+	const binary_t operator = expression_binary_get_operator(nd);
+	if (operation_is_assignment(operator))
+	{
+		emit_assignment_expression(enc, nd);
+	}
+	else if (operator == BIN_COMMA)
 	{
 		const node LHS = expression_binary_get_LHS(nd);
 		emit_void_expression(enc, &LHS);
@@ -991,58 +1039,6 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 	emit_expression(enc, &RHS);
 
 	mem_set(enc, addr, (item_t)mem_size(enc));
-}
-
-/**
- *	Emit assignment expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_assignment_expression(encoder *const enc, const node *const nd)
-{
-	const node LHS = expression_assignment_get_LHS(nd);
-	const lvalue value = emit_lvalue(enc, &LHS);
-
-	const node RHS = expression_assignment_get_RHS(nd);
-	emit_expression(enc, &RHS);
-
-	const item_t type = expression_get_type(nd);
-	if (type_is_structure(enc->sx, type))
-	{
-		if (value.kind == VARIABLE)
-		{
-			mem_add(enc, IC_COPY0ST_ASSIGN);
-			mem_add(enc, value.displ);
-		}
-		else
-		{
-			mem_add(enc, IC_COPY1ST_ASSIGN);
-		}
-
-		mem_add(enc, (item_t)type_size(enc->sx, type));
-	}
-	else // Скалярное присваивание
-	{
-		const binary_t operator = expression_assignment_get_operator(nd);
-		instruction_t instruction = binary_to_instruction(operator);
-		if (value.kind == ADDRESS)
-		{
-			instruction = instruction_to_address_ver(instruction);
-		}
-
-		if (type_is_floating(type))
-		{
-			instruction = instruction_to_floating_ver(instruction);
-		}
-
-		mem_add(enc, instruction);
-
-		if (value.kind == VARIABLE)
-		{
-			mem_add(enc, value.displ);
-		}
-	}
 }
 
 /**
@@ -1112,10 +1108,6 @@ static void emit_expression(encoder *const enc, const node *const nd)
 
 		case EXPR_TERNARY:
 			emit_ternary_expression(enc, nd);
-			return;
-
-		case EXPR_ASSIGNMENT:
-			emit_assignment_expression(enc, nd);
 			return;
 
 		case EXPR_INITIALIZER:

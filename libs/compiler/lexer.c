@@ -144,7 +144,7 @@ static inline void skip_block_comment(lexer *const lxr)
 /**
  *	Lex identifier or keyword
  *
- *	@param	lxr			Lexer
+ *	@param	lxr			Lexer 
  *
  *	@return	Keyword token on keyword, identifier token on identifier
  */
@@ -427,7 +427,7 @@ static token lex_char_literal(lexer *const lxr)
  *	Lex string literal
  *	@note	Lexes the remainder of a string literal after quote mark
  *
- *	@param	lxr			Lexer
+ *	@param	lxr			Lexer 
  *
  *	@return	String literal token
  */
@@ -497,329 +497,326 @@ token lex(lexer *const lxr)
 		return token_eof();
 	}
 
-	while (true)
+	skip_whitespace(lxr);
+	const size_t loc_begin = in_get_position(lxr->sx->io);
+	token_t punctuator_kind;
+
+	switch (lxr->character)
 	{
-		skip_whitespace(lxr);
-		const size_t loc_begin = in_get_position(lxr->sx->io);
-		token_t punctuator_kind;
+		case (char32_t)EOF:
+			return token_eof();
 
-		switch (lxr->character)
-		{
-			case (char32_t)EOF:
-				return token_eof();
+		default:
+			if (utf8_is_letter(lxr->character) || lxr->character == '#')
+			{
+				// Keywords and identifiers
+				return lex_identifier_or_keyword(lxr);
+			}
+			else
+			{
+				lexer_error(lxr, bad_character, lxr->character);
+				// Pretending the character didn't exist
+				scan(lxr);
+				return lex(lxr);
+			}
 
-			default:
-				if (utf8_is_letter(lxr->character) || lxr->character == '#')
-				{
-					// Keywords and identifiers
-					return lex_identifier_or_keyword(lxr);
-				}
-				else
-				{
-					lexer_error(lxr, bad_character, lxr->character);
-					// Pretending the character didn't exist
-					scan(lxr);
-					return lex(lxr);
-				}
+		// Integer and floating literals
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			return lex_numeric_literal(lxr);
 
-				// Integer and floating literals
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9':
+		case '\'':	// Character literals
+			return lex_char_literal(lxr);
+
+		case '\"':	// String literals
+			return lex_string_literal(lxr);
+
+		// Punctuators
+		case '?':
+			scan(lxr);
+			punctuator_kind = TK_QUESTION;
+			break;
+
+		case '[':
+			scan(lxr);
+			punctuator_kind = TK_L_SQUARE;
+			break;
+
+		case ']':
+			scan(lxr);
+			punctuator_kind = TK_R_SQUARE;
+			break;
+
+		case '(':
+			scan(lxr);
+			punctuator_kind = TK_L_PAREN;
+			break;
+
+		case ')':
+			scan(lxr);
+			punctuator_kind = TK_R_PAREN;
+			break;
+
+		case '{':
+			scan(lxr);
+			punctuator_kind = TK_L_BRACE;
+			break;
+
+		case '}':
+			scan(lxr);
+			punctuator_kind = TK_R_BRACE;
+			break;
+
+		case '~':
+			scan(lxr);
+			punctuator_kind = TK_TILDE;
+			break;
+
+		case ':':
+			scan(lxr);
+			punctuator_kind = TK_COLON;
+			break;
+
+		case ';':
+			scan(lxr);
+			punctuator_kind = TK_SEMICOLON;
+			break;
+
+		case ',':
+			scan(lxr);
+			punctuator_kind = TK_COMMA;
+			break;
+
+		case '.':
+			if (utf8_is_digit(lookahead(lxr)))
+			{
 				return lex_numeric_literal(lxr);
-
-			case '\'':	// Character literals
-				return lex_char_literal(lxr);
-
-			case '\"':	// String literals
-				return lex_string_literal(lxr);
-
-				// Punctuators
-			case '?':
+			}
+			else
+			{
 				scan(lxr);
-				punctuator_kind = TK_QUESTION;
+				punctuator_kind = TK_PERIOD;
 				break;
+			}
 
-			case '[':
+		case '*':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_L_SQUARE;
-				break;
+				punctuator_kind = TK_STAR_EQUAL;
+			}
+			else
+			{
+				punctuator_kind = TK_STAR;
+			}
+			break;
 
-			case ']':
+		case '!':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_R_SQUARE;
-				break;
+				punctuator_kind = TK_EXCLAIM_EQUAL;
+			}
+			else
+			{
+				punctuator_kind = TK_EXCLAIM;
+			}
+			break;
 
-			case '(':
+		case '%':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_L_PAREN;
-				break;
+				punctuator_kind = TK_PERCENT_EQUAL;
+			}
+			else
+			{
+				punctuator_kind = TK_PERCENT;
+			}
+			break;
 
-			case ')':
+		case '^':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_R_PAREN;
-				break;
+				punctuator_kind = TK_CARET_EQUAL;
+			}
+			else
+			{
+				punctuator_kind = TK_CARET;
+			}
+			break;
 
-			case '{':
+		case '=':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_L_BRACE;
-				break;
+				punctuator_kind = TK_EQUAL_EQUAL;
+			}
+			else
+			{
+				punctuator_kind = TK_EQUAL;
+			}
+			break;
 
-			case '}':
-				scan(lxr);
-				punctuator_kind = TK_R_BRACE;
-				break;
-
-			case '~':
-				scan(lxr);
-				punctuator_kind = TK_TILDE;
-				break;
-
-			case ':':
-				scan(lxr);
-				punctuator_kind = TK_COLON;
-				break;
-
-			case ';':
-				scan(lxr);
-				punctuator_kind = TK_SEMICOLON;
-				break;
-
-			case ',':
-				scan(lxr);
-				punctuator_kind = TK_COMMA;
-				break;
-
-			case '.':
-				if (utf8_is_digit(lookahead(lxr)))
-				{
-					return lex_numeric_literal(lxr);
-				}
-				else
-				{
+		case '+':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-					punctuator_kind = TK_PERIOD;
+					punctuator_kind = TK_PLUS_EQUAL;
 					break;
-				}
 
-			case '*':
-				if (scan(lxr) == '=')
-				{
+				case '+':
 					scan(lxr);
-					punctuator_kind = TK_STAR_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_STAR;
-				}
-				break;
+					punctuator_kind = TK_PLUS_PLUS;
+					break;
 
-			case '!':
-				if (scan(lxr) == '=')
-				{
+				default:
+					punctuator_kind = TK_PLUS;
+					break;
+			}
+			break;
+
+		case '|':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-					punctuator_kind = TK_EXCLAIM_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_EXCLAIM;
-				}
-				break;
+					punctuator_kind = TK_PIPE_EQUAL;
+					break;
 
-			case '%':
-				if (scan(lxr) == '=')
-				{
+				case '|':
 					scan(lxr);
-					punctuator_kind = TK_PERCENT_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_PERCENT;
-				}
-				break;
+					punctuator_kind = TK_PIPE_PIPE;
+					break;
 
-			case '^':
-				if (scan(lxr) == '=')
-				{
+				default:
+					punctuator_kind = TK_PIPE;
+					break;
+			}
+			break;
+
+		case '&':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-					punctuator_kind = TK_CARET_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_CARET;
-				}
-				break;
+					punctuator_kind = TK_AMP_EQUAL;
+					break;
 
-			case '=':
-				if (scan(lxr) == '=')
-				{
+				case '&':
 					scan(lxr);
-					punctuator_kind = TK_EQUAL_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_EQUAL;
-				}
-				break;
+					punctuator_kind = TK_AMP_AMP;
+					break;
 
-			case '+':
-				switch (scan(lxr))
-				{
-					case '=':
+				default:
+					punctuator_kind = TK_AMP;
+					break;
+			}
+			break;
+
+		case '-':
+			switch (scan(lxr))
+			{
+				case '=':
+					scan(lxr);
+					punctuator_kind = TK_MINUS_EQUAL;
+					break;
+
+				case '-':
+					scan(lxr);
+					punctuator_kind = TK_MINUS_MINUS;
+					break;
+
+				case '>':
+					scan(lxr);
+					punctuator_kind = TK_ARROW;
+					break;
+
+				default:
+					punctuator_kind = TK_MINUS;
+					break;
+			}
+			break;
+
+		case '<':
+			switch (scan(lxr))
+			{
+				case '<':
+					if (scan(lxr) == '=')
+					{
 						scan(lxr);
-						punctuator_kind = TK_PLUS_EQUAL;
-						break;
+						punctuator_kind = TK_LESS_LESS_EQUAL;
+					}
+					else
+					{
+						punctuator_kind = TK_LESS_LESS;
+					}
+					break;
 
-					case '+':
+				case '=':
+					scan(lxr);
+					punctuator_kind = TK_LESS_EQUAL;
+					break;
+
+				default:
+					punctuator_kind = TK_LESS;
+					break;
+			}
+			break;
+
+		case '>':
+			switch (scan(lxr))
+			{
+				case '>':
+					if (scan(lxr) == '=')
+					{
 						scan(lxr);
-						punctuator_kind = TK_PLUS_PLUS;
-						break;
+						punctuator_kind = TK_GREATER_GREATER_EQUAL;
+					}
+					else
+					{
+						punctuator_kind = TK_GREATER_GREATER;
+					}
+					break;
 
-					default:
-						punctuator_kind = TK_PLUS;
-						break;
-				}
-				break;
+				case '=':
+					scan(lxr);
+					punctuator_kind = TK_GREATER_EQUAL;
+					break;
 
-			case '|':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_PIPE_EQUAL;
-						break;
+				default:
+					punctuator_kind = TK_GREATER;
+					break;
+			}
+			break;
 
-					case '|':
-						scan(lxr);
-						punctuator_kind = TK_PIPE_PIPE;
-						break;
+		case '/':
+			switch (scan(lxr))
+			{
+				case '=':
+					scan(lxr);
+					punctuator_kind = TK_SLASH_EQUAL;
+					break;
 
-					default:
-						punctuator_kind = TK_PIPE;
-						break;
-				}
-				break;
+				case '/':	// Line comment
+					skip_line_comment(lxr);
+					return lex(lxr);
 
-			case '&':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_AMP_EQUAL;
-						break;
+				case '*':	// Block comment
+					skip_block_comment(lxr);
+					return lex(lxr);
 
-					case '&':
-						scan(lxr);
-						punctuator_kind = TK_AMP_AMP;
-						break;
-
-					default:
-						punctuator_kind = TK_AMP;
-						break;
-				}
-				break;
-
-			case '-':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_MINUS_EQUAL;
-						break;
-
-					case '-':
-						scan(lxr);
-						punctuator_kind = TK_MINUS_MINUS;
-						break;
-
-					case '>':
-						scan(lxr);
-						punctuator_kind = TK_ARROW;
-						break;
-
-					default:
-						punctuator_kind = TK_MINUS;
-						break;
-				}
-				break;
-
-			case '<':
-				switch (scan(lxr))
-				{
-					case '<':
-						if (scan(lxr) == '=')
-						{
-							scan(lxr);
-							punctuator_kind = TK_LESS_LESS_EQUAL;
-						}
-						else
-						{
-							punctuator_kind = TK_LESS_LESS;
-						}
-						break;
-
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_LESS_EQUAL;
-						break;
-
-					default:
-						punctuator_kind = TK_LESS;
-						break;
-				}
-				break;
-
-			case '>':
-				switch (scan(lxr))
-				{
-					case '>':
-						if (scan(lxr) == '=')
-						{
-							scan(lxr);
-							punctuator_kind = TK_GREATER_GREATER_EQUAL;
-						}
-						else
-						{
-							punctuator_kind = TK_GREATER_GREATER;
-						}
-						break;
-
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_GREATER_EQUAL;
-						break;
-
-					default:
-						punctuator_kind = TK_GREATER;
-						break;
-				}
-				break;
-
-			case '/':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_SLASH_EQUAL;
-						break;
-
-					case '/':	// Line comment
-						skip_line_comment(lxr);
-						continue;
-
-					case '*':	// Block comment
-						skip_block_comment(lxr);
-						continue;
-
-					default:
-						punctuator_kind = TK_SLASH;
-						break;
-				}
-				break;
-		}
-
-		const size_t loc_end = in_get_position(lxr->sx->io);
-		return token_punctuator((location){ loc_begin, loc_end }, punctuator_kind);
+				default:
+					punctuator_kind = TK_SLASH;
+					break;
+			}
+			break;
 	}
+
+	const size_t loc_end = in_get_position(lxr->sx->io);
+	return token_punctuator((location){ loc_begin, loc_end }, punctuator_kind);
 }
 
 token_t peek(lexer *const lxr)

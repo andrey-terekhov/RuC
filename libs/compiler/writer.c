@@ -309,34 +309,25 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 	write_line(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
-	switch (type_get_class(wrt->sx, type))
+	if (type_is_integer(wrt->sx, type))
 	{
-		case TYPE_NULL_POINTER:
-			write(wrt, "NULL");
-			break;
-
-		case TYPE_CHARACTER:
-			uni_printf(wrt->io, "%c", expression_literal_get_character(nd));
-			break;
-
-		case TYPE_INTEGER:
-			uni_printf(wrt->io, "%" PRIitem, expression_literal_get_integer(nd));
-			break;
-
-		case TYPE_FLOATING:
-			uni_printf(wrt->io, "%f", expression_literal_get_floating(nd));
-			break;
-
-		case TYPE_ARRAY:
-		{
-			const size_t string_num = expression_literal_get_string(nd);
-			const char *const string = string_get(wrt->sx, string_num);
-			uni_printf(wrt->io, "\"%s\"", string);
-		}
-		break;
-
-		default:
-			break;
+		const int value = expression_literal_get_integer(nd);
+		uni_printf(wrt->io, "%i", value);
+	}
+	else if (type_is_floating(type))
+	{
+		const double value = expression_literal_get_floating(nd);
+		uni_printf(wrt->io, "%f", value);
+	}
+	else if (type_is_string(wrt->sx, type))
+	{
+		const size_t string_num = expression_literal_get_string(nd);
+		const char *const string = string_get(wrt->sx, string_num);
+		uni_printf(wrt->io, "\"%s\"", string);
+	}
+	else // if (type_is_null_pointer(type))
+	{
+		write(wrt, "NULL");
 	}
 
 	write_expression_metadata(wrt, nd);
@@ -496,25 +487,6 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write assignment expression
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_assignment_expression(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "EXPR_ASSIGNMENT with operator ");
-	write_binary_operator(wrt, expression_assignment_get_operator(nd));
-	write_expression_metadata(wrt, nd);
-
-	const node LHS = expression_assignment_get_LHS(nd);
-	write_expression(wrt, &LHS);
-
-	const node RHS = expression_assignment_get_RHS(nd);
-	write_expression(wrt, &RHS);
-}
-
-/**
  *	Write initializer
  *
  *	@param	wrt			Writer
@@ -541,6 +513,11 @@ static void write_initializer(writer *const wrt, const node *const nd)
  */
 static void write_expression(writer *const wrt, const node *const nd)
 {
+	if (!node_is_correct(nd))
+	{
+		return;
+	}
+
 	wrt->indent++;
 	switch (expression_get_class(nd))
 	{
@@ -580,16 +557,8 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_ternary_expression(wrt, nd);
 			break;
 
-		case EXPR_ASSIGNMENT:
-			write_assignment_expression(wrt, nd);
-			break;
-
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
-			break;
-
-		case EXPR_INVALID:
-			write(wrt, "EXPR_INVALID\n");
 			break;
 	}
 
