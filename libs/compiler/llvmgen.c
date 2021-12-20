@@ -1524,11 +1524,6 @@ static void emit_initialization(information *const info, const node *const nd, c
 {
 	if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_array(info->sx, expression_get_type(nd)))
 	{
-		if (node_get_type(nd) != OP_IDENTIFIER)
-		{
-			return;
-		}
-
 		const size_t dimensions = array_get_dim(info, arr_type);
 		const size_t N = expression_initializer_get_size(nd);
 
