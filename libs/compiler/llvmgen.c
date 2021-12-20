@@ -623,11 +623,6 @@ static void emit_cast_expression(information *const info, const node *const nd)
  */
 static void emit_identifier_expression(information *const info, const node *const nd)
 {
-	if (node_get_type(nd) != OP_IDENTIFIER)
-	{
-		return;
-	}
-
 	item_t type = expression_get_type(nd);
 	const size_t id = expression_identifier_get_id(nd);
 	const bool is_local = ident_is_local(info->sx, id);
