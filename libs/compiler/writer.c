@@ -2089,6 +2089,9 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 		case TYPE_VOID:
 			return sprintf(buffer, "void");
 
+		case TYPE_BOOLEAN:
+			return sprintf(buffer, "bool");
+
 		case TYPE_FLOATING:
 			return sprintf(buffer, "double");
 
