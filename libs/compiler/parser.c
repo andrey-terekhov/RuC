@@ -337,10 +337,13 @@ static node parse_primary_expression(parser *const prs)
 		}
 
 		case TK_NULL:
-		{
-			const location loc = consume_token(prs);
-			return build_null_literal_expression(&prs->bld, loc);
-		}
+			return build_null_literal_expression(&prs->bld, consume_token(prs));
+
+		case TK_TRUE:
+			return build_boolean_literal_expression(&prs->bld, true, consume_token(prs));
+
+		case TK_FALSE:
+			return build_boolean_literal_expression(&prs->bld, false, consume_token(prs));
 
 		case TK_L_PAREN:
 		{
@@ -760,6 +763,7 @@ static node parse_condition(parser *const prs)
  *
  *	type-specifier:
  *		'void'
+ *		'bool'
  *		'char'
  *		'short'
  *		'int'
@@ -767,8 +771,8 @@ static node parse_condition(parser *const prs)
  *		'float'
  *		'double'
  *		struct-or-union-specifier
- *		enum-specifier [TODO]
- *		typedef-name [TODO]
+ *		enum-specifier
+ *		typedef-name
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -782,6 +786,10 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_VOID:
 			consume_token(prs);
 			return TYPE_VOID;
+
+		case TK_BOOL:
+			consume_token(prs);
+			return TYPE_BOOLEAN;
 
 		case TK_CHAR:
 			consume_token(prs);

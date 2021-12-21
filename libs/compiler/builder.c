@@ -608,6 +608,11 @@ node build_null_literal_expression(builder *const bldr, const location loc)
 	return expression_null_literal(&bldr->context, TYPE_NULL_POINTER, loc);
 }
 
+node build_boolean_literal_expression(builder *const bldr, const bool value, const location loc)
+{
+	return expression_boolean_literal(&bldr->context, TYPE_BOOLEAN, value, loc);
+}
+
 node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
 {
 	return expression_character_literal(&bldr->context, TYPE_CHARACTER, value, loc);

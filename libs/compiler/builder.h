@@ -83,6 +83,17 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 node build_null_literal_expression(builder *const bldr, const location loc);
 
 /**
+ *	Build a boolean literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *
+ *	@return	Boolean literal expression node
+ */
+node build_boolean_literal_expression(builder *const bldr, const bool value, const location loc);
+
+/**
  *	Build a character literal expression
  *
  *	@param	bldr			AST builder
