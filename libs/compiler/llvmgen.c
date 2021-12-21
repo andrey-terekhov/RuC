@@ -1121,17 +1121,11 @@ static void emit_unary_expression(information *const info, const node *const nd)
 static void emit_integral_expression(information *const info, const node *const nd, const answer_t kind)
 {
 	const binary_t operation = expression_binary_get_operator(nd);
-	item_t operation_type = expression_get_type(nd);
 
 	info->variable_location = LFREE;
 	const node LHS = expression_binary_get_LHS(nd);
-	const item_t answer_type = expression_get_type(&LHS);
+	const item_t operation_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
-
-	if (kind == ALOGIC)
-	{
-		operation_type = answer_type;
-	}
 
 	to_code_try_zext_to(info);
 
