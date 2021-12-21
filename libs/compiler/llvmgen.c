@@ -1130,7 +1130,7 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	if (kind == ALOGIC)
 	{
-		operation_type = type_get_class(info->sx, answer_type);
+		operation_type = answer_type;
 	}
 
 	to_code_try_zext_to(info);
