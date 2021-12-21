@@ -636,9 +636,18 @@ static void emit_identifier_expression(information *const info, const node *cons
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
-	to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
-		, is_addr_to_val, is_addr_to_val || is_local);
-	info->answer_reg = info->register_num++;
+	if (type_is_array(info->sx, type))
+	{
+		info->answer_const = 0;
+		to_code_slice(info, id, 0, 0, array_get_type(info, type), is_local);
+		info->answer_reg = info->register_num;
+	}
+	else
+	{
+		to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
+			, is_addr_to_val, is_addr_to_val || is_local);
+		info->answer_reg = info->register_num++;
+	}
 	info->answer_kind = AREG;
 }
 
