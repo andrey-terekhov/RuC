@@ -491,6 +491,11 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds ", info->register_num);
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 
+	if (dimensions == SIZE_MAX)
+	{
+		return;
+	}
+
 	if (hash_get(&info->arrays, id, IS_STATIC))
 	{
 		for (size_t i = dimensions - cur_dimension; i <= dimensions; i++)
@@ -627,14 +632,17 @@ static void emit_identifier_expression(information *const info, const node *cons
 		type = type_pointer_get_element_type(info->sx, type);
 	}
 
+	printf("here\n");
 	if (type_is_array(info->sx, type))
 	{
+		printf("here1\n");
 		info->answer_const = 0;
 		to_code_slice(info, id, 0, 0, array_get_type(info, type), is_local);
 		info->answer_reg = info->register_num;
 	}
 	else
 	{
+		printf("here2\n");
 		to_code_load(info, info->register_num, is_addr_to_val ? info->register_num - 1 : id, type
 			, is_addr_to_val, is_addr_to_val || is_local);
 		info->answer_reg = info->register_num++;
