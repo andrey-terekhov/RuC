@@ -77,6 +77,9 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
+	repr_add_keyword(reprtab, U"bool", U"булево", TK_BOOL);
+	repr_add_keyword(reprtab, U"true", U"истина", TK_TRUE);
+	repr_add_keyword(reprtab, U"false", U"ложь", TK_FALSE);
 }
 
 
