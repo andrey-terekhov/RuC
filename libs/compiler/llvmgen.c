@@ -635,8 +635,9 @@ static void emit_identifier_expression(information *const info, const node *cons
 	if (type_is_array(info->sx, type))
 	{
 		info->answer_const = 0;
+		info->answer_kind = ACONST;
 		to_code_slice(info, id, 0, 0, array_get_type(info, type), is_local);
-		info->answer_reg = info->register_num;
+		info->answer_reg = info->register_num - 1;
 	}
 	else
 	{
