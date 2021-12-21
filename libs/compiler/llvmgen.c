@@ -93,15 +93,6 @@ static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
 
 
-// TODO: такая функция есть в builder, хотелось бы не дублировать
-static inline item_t usual_arithmetic_conversions(information *const info
-	, const item_t left_type, const item_t right_type)
-{
-	return type_is_integer(info->sx, left_type) && type_is_integer(info->sx, right_type)
-		? type_get_class(info->sx, left_type) == TYPE_CHARACTER && type_get_class(info->sx, left_type) == TYPE_CHARACTER
-		? TYPE_CHARACTER : TYPE_INTEGER : TYPE_FLOATING;
-}
-
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -1080,17 +1071,11 @@ static void emit_unary_expression(information *const info, const node *const nd)
 static void emit_integral_expression(information *const info, const node *const nd, const answer_t kind)
 {
 	const binary_t operation = expression_binary_get_operator(nd);
-	item_t operation_type = expression_get_type(nd);
 
 	info->variable_location = LFREE;
 	const node LHS = expression_binary_get_LHS(nd);
-	const item_t answer_type = expression_get_type(&LHS);
+	const item_t operation_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
-
-	if (kind == ALOGIC)
-	{
-		operation_type = usual_arithmetic_conversions(info, answer_type, expression_get_type(nd));
-	}
 
 	to_code_try_zext_to(info);
 
