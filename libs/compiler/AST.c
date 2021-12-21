@@ -108,6 +108,26 @@ node expression_null_literal(node *const context, const item_t type, const locat
 }
 
 
+node expression_boolean_literal(node *const context, const item_t type, const bool value, const location loc)
+{
+	node nd = node_create(context, OP_LITERAL);
+
+	node_add_arg(&nd, type);						// Тип значения выражения
+	node_add_arg(&nd, RVALUE);						// Категория значения выражения
+	node_add_arg(&nd, value ? 1 : 0);				// Значение литерала
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция выражения
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция выражения
+
+	return nd;
+}
+
+bool expression_literal_get_boolean(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_LITERAL);
+	return node_get_arg(nd, 2) != 0;
+}
+
+
 node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
