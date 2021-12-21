@@ -315,6 +315,10 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 			write(wrt, "NULL");
 			break;
 
+		case TYPE_BOOLEAN:
+			uni_printf(wrt->io, expression_literal_get_boolean(nd) ? "true" : "false");
+			break;
+
 		case TYPE_CHARACTER:
 			uni_printf(wrt->io, "%c", expression_literal_get_character(nd));
 			break;
