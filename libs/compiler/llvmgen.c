@@ -92,15 +92,6 @@ static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
 
 
-// TODO: такая функция есть в builder, хотелось бы не дублировать
-static inline item_t usual_arithmetic_conversions(information *const info
-	, const item_t left_type, const item_t right_type)
-{
-	return type_is_integer(info->sx, left_type) && type_is_integer(info->sx, right_type)
-		? type_get_class(info->sx, left_type) == TYPE_CHARACTER && type_get_class(info->sx, left_type) == TYPE_CHARACTER
-		? TYPE_CHARACTER : TYPE_INTEGER : TYPE_FLOATING;
-}
-
 static item_t array_get_type(information *const info, const item_t array_type)
 {
 	item_t type = array_type;
@@ -285,7 +276,7 @@ static void to_code_operation_reg_reg(information *const info, const item_t oper
 }
 
 static void to_code_operation_reg_const_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -303,7 +294,7 @@ static void to_code_operation_reg_const_double(information *const info, const it
 }
 
 static void to_code_operation_const_reg_integer(information *const info, const item_t operation
-	, const item_t fst, const item_t snd, const type_t type)
+	, const item_t fst, const item_t snd, const item_t type)
 {
 	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
 	operation_to_io(info, operation, TYPE_INTEGER);
@@ -361,7 +352,7 @@ static void to_code_store_reg(information *const info, const item_t reg, const s
 }
 
 static inline void to_code_store_const_integer(information *const info, const item_t arg, const size_t id
-	, const bool is_array, const bool is_local, const type_t type)
+	, const bool is_array, const bool is_local, const item_t type)
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
@@ -1139,7 +1130,7 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	if (kind == ALOGIC)
 	{
-		operation_type = usual_arithmetic_conversions(info, answer_type, expression_get_type(nd));
+		operation_type = type_get_class(info->sx, answer_type);
 	}
 
 	to_code_try_zext_to(info);
