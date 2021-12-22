@@ -283,8 +283,7 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
  *
  *	primary-expression:
  *		identifier
- *		constant
- *		string-literal
+ *		literal
  *		'NULL'
  *		'(' expression ')'
  *
