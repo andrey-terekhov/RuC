@@ -1,7 +1,6 @@
 void main()
 {
-  char b;
+  bool b;
   b = 1 || 2 || 3 || 4;
-  if (!b)
-  assert(b == '#', "b must be '#'");
+  assert(b, "b must be true");
 }
