@@ -77,6 +77,9 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
+	repr_add_keyword(reprtab, U"bool", U"булево", TK_BOOL);
+	repr_add_keyword(reprtab, U"true", U"истина", TK_TRUE);
+	repr_add_keyword(reprtab, U"false", U"ложь", TK_FALSE);
 }
 
 
@@ -169,7 +172,7 @@ static void builtin_add(syntax *const sx, const char32_t *const eng, const char3
 
 static void ident_init(syntax *const sx)
 {
-	builtin_add(sx, U"assert", U"проверить", type_function(sx, TYPE_VOID, "is"));
+	builtin_add(sx, U"assert", U"проверить", type_function(sx, TYPE_VOID, "bs"));
 
 	builtin_add(sx, U"asin", U"асин", type_function(sx, TYPE_FLOATING, "f"));
 	builtin_add(sx, U"cos", U"кос", type_function(sx, TYPE_FLOATING, "f"));
@@ -562,6 +565,11 @@ size_t type_size(const syntax *const sx, const item_t type)
 	}
 }
 
+bool type_is_boolean(const item_t type)
+{
+	return type == TYPE_BOOLEAN;
+}
+
 bool type_is_integer(const syntax *const sx, const item_t type)
 {
 	return type == TYPE_CHARACTER || type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
@@ -619,7 +627,7 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
+	return type_is_boolean(type) || type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)
@@ -715,6 +723,7 @@ item_t get_enum_field_type(const syntax *const sx, const item_t type)
  *	args = list of characters each for one argument
  *		v -> void
  *		V -> void*
+ *		b -> bool
  *		s -> char[]
  *		S -> char[]*
  *		i -> int
@@ -745,6 +754,9 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
 					break;
 				case 'V':
 					local_modetab[3 + i] = type_pointer(sx, TYPE_VOID);
+					break;
+				case 'b':
+					local_modetab[3 + i] = TYPE_BOOLEAN;
 					break;
 				case 's':
 					local_modetab[3 + i] = type_string(sx);
