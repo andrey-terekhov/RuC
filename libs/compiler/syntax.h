@@ -354,6 +354,15 @@ type_t type_get_class(const syntax *const sx, const item_t type);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
+ *	Check if type is boolean
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_boolean(const item_t type);
+
+/**
  *	Check if type is integer
  *
  *	@param	sx			Syntax structure
@@ -718,8 +727,6 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
  *	Enter block scope
  *
  *	@param	sx			Syntax structure
- *	@param	displ		Variable to save previous stack displacement
- *	@param	lg			Variable to save previous value of lg
  *
  *	@return	Scope
  */

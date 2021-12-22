@@ -75,7 +75,7 @@ static node fold_unary_expression(builder *const bldr, const item_t type, const 
 	{
 		// Это может быть только UN_LOGNOT
 		node_remove(expr);
-		return build_integer_literal_expression(bldr, true, loc);
+		return build_boolean_literal_expression(bldr, true, loc);
 	}
 	else if (type_is_integer(bldr->sx, type))
 	{
@@ -89,7 +89,7 @@ static node fold_unary_expression(builder *const bldr, const item_t type, const 
 			case UN_NOT:
 				return build_integer_literal_expression(bldr, ~value, loc);
 			case UN_LOGNOT:
-				return build_integer_literal_expression(bldr, value == 0 ? 1 : 0, loc);
+				return build_boolean_literal_expression(bldr, value == 0, loc);
 			case UN_ABS:
 				return build_integer_literal_expression(bldr, value >= 0 ? value : -value, loc);
 			default:
@@ -155,17 +155,17 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 				case BIN_SHR:
 					return build_integer_literal_expression(bldr, left_value >> right_value, loc);
 				case BIN_LT:
-					return build_integer_literal_expression(bldr, left_value < right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value < right_value, loc);
 				case BIN_GT:
-					return build_integer_literal_expression(bldr, left_value > right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value > right_value, loc);
 				case BIN_LE:
-					return build_integer_literal_expression(bldr, left_value <= right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value <= right_value, loc);
 				case BIN_GE:
-					return build_integer_literal_expression(bldr, left_value >= right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value >= right_value, loc);
 				case BIN_EQ:
-					return build_integer_literal_expression(bldr, left_value == right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value == right_value, loc);
 				case BIN_NE:
-					return build_integer_literal_expression(bldr, left_value != right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value != right_value, loc);
 				case BIN_AND:
 					return build_integer_literal_expression(bldr, left_value & right_value, loc);
 				case BIN_XOR:
@@ -173,9 +173,9 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 				case BIN_OR:
 					return build_integer_literal_expression(bldr, left_value | right_value, loc);
 				case BIN_LOG_AND:
-					return build_integer_literal_expression(bldr, left_value && right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value && right_value, loc);
 				case BIN_LOG_OR:
-					return build_integer_literal_expression(bldr, left_value || right_value, loc);
+					return build_boolean_literal_expression(bldr, left_value || right_value, loc);
 				default:
 					return node_broken();
 			}
@@ -897,7 +897,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 				return node_broken();
 			}
 
-			return fold_unary_expression(bldr, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bldr, TYPE_BOOLEAN, RVALUE, operand, op_kind, loc);
 		}
 
 		default:
@@ -978,7 +978,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			}
 
 			usual_arithmetic_conversions(LHS, RHS);
-			return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_EQ:
@@ -992,14 +992,14 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
 			{
 				usual_arithmetic_conversions(LHS, RHS);
-				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
 
 			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
 				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type))
 				|| left_type == right_type)
 			{
-				return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
 
 			semantic_error(bldr, op_loc, typecheck_binary_expr);
@@ -1015,7 +1015,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			return fold_binary_expression(bldr, TYPE_INTEGER, LHS, RHS, op_kind, loc);
+			return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_ASSIGN:
