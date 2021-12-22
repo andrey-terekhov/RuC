@@ -1133,7 +1133,6 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	if (try_consume_token(prs, TK_EQUAL))
 	{
 		node_set_arg(&nd, 2, true);
-		node_copy(&prs->bld.context, &nd);
 
 		node initializer = parse_initializer(prs);
 		if (!node_is_correct(&initializer))
@@ -1143,6 +1142,10 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		}
 
 		check_assignment_operands(&prs->bld, type, &initializer);
+
+		node temp = node_add_child(&nd, OP_NOP);
+		node_swap(&initializer, &temp);
+		node_remove(&temp);
 	}
 }
 
@@ -1330,6 +1333,7 @@ static bool is_declaration_specifier(parser *const prs)
 	switch (token_get_kind(&prs->tk))
 	{
 		case TK_VOID:
+		case TK_BOOL:
 		case TK_CHAR:
 		case TK_INT:
 		case TK_LONG:
