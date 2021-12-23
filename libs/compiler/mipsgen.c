@@ -812,6 +812,33 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			return;
 
 		case UN_MINUS:
+		{
+			bool was_allocate_reg = false;
+
+			if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+			{
+				info->request_kind = RQ_REG_CONST;
+				info->request_reg = get_register(info);
+				was_allocate_reg = true;
+			}
+			const mips_register_t result = info->request_reg;
+			const node operand = expression_unary_get_operand(nd);
+			emit_expression(info, &operand);
+
+			to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
+
+			info->answer_kind = A_REG;
+			info->answer_reg = result;
+			free_register(info);
+
+			if (was_allocate_reg)
+			{
+				free_register(info);
+				info->request_kind = RQ_NO_REQUEST;
+			}
+		}
+		break;
+
 		case UN_NOT:
 		case UN_LOGNOT:
 		case UN_ADDRESS:
