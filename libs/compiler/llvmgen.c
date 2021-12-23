@@ -1571,6 +1571,26 @@ static void emit_initialization(information *const info, const node *const nd, c
 			to_code_store_const_integer(info, string[i], slice_reg, true, true, type);
 		}
 	}
+	else if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_structure(info->sx, expression_get_type(nd)))
+	{
+		const size_t N = expression_initializer_get_size(nd);
+
+		for (size_t i = 0; i < N; i++)
+		{
+			const node initializer = expression_initializer_get_subexpr(nd, i);
+			emit_expression(info, &initializer);
+
+			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+			"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
+			, "var", id, i);
+
+			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
+				, expression_get_type(&initializer));
+
+			info->register_num++;
+		}
+
+	}
 }
 
 
@@ -1606,6 +1626,14 @@ static void emit_variable_declaration(information *const info, const node *const
 		{
 			info->variable_location = LFREE;
 			info->request_reg = id;
+
+			if (type_is_structure(info->sx, type))
+			{
+				const node initializer = declaration_variable_get_initializer(nd);
+				emit_initialization(info, &initializer, id, type);
+
+				return;
+			}
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
@@ -2273,7 +2301,7 @@ static void architecture(const workspace *const ws, syntax *const sx)
 static void structs_declaration(information *const info)
 {
 	const size_t types = vector_size(&info->sx->types);
-	for (size_t i = BEGIN_USER_TYPE; i < types; i++)
+	for (size_t i = 0; i < types; i++)
 	{
 		if (type_is_structure(info->sx, (item_t)i))
 		{
