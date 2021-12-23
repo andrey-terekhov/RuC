@@ -175,6 +175,7 @@ typedef struct information
 
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
+	item_t answer_displ;				/**< Смемещние с ответом */
 	answer_t answer_kind;				/**< Вид ответа */
 
 	size_t max_displ;					/**< Максимальное смещение */
@@ -724,6 +725,7 @@ static void emit_identifier_expression(information *const info, const node *cons
 
 			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
+			info->answer_displ = value_displ;
 		}
 	}
 	// TODO: регистровые переменные
@@ -737,7 +739,56 @@ static void emit_identifier_expression(information *const info, const node *cons
  */
 static void emit_inc_dec_expression(information *const info, const node *const nd)
 {
+	const unary_t operation = expression_unary_get_operator(nd);
+	bool was_allocate_reg = false;
 
+	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+	{
+		info->request_kind = RQ_REG_CONST;
+		info->request_reg = get_register(info);
+		was_allocate_reg = true;
+	}
+	const mips_register_t result = info->request_reg;
+	const node identifier = expression_unary_get_operand(nd);
+	emit_expression(info, &identifier);
+
+	const item_t reg = info->request_reg;
+
+	switch (operation)
+	{
+		case UN_PREDEC:
+		case UN_POSTDEC:
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, -1);
+			break;
+		case UN_PREINC:
+		case UN_POSTINC:
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, 1);
+			break;
+
+		default:
+			break;
+	}
+
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -info->answer_displ, R_SP);
+
+	if (operation == UN_POSTDEC)
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, 1);
+	}
+	else if (operation == UN_POSTINC)
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, -1);
+	}
+
+	info->answer_kind = A_REG;
+	info->answer_reg = result;
+	free_register(info);
+
+	if (was_allocate_reg)
+	{
+		free_register(info);
+		info->request_kind = RQ_NO_REQUEST;
+	}
 }
 
 /**
