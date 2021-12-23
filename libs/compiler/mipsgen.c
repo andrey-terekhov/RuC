@@ -846,6 +846,14 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		break;
 
 		case UN_LOGNOT:
+		{
+			info->request_kind = RQ_FREE;
+			info->reverse_logic_command = !info->reverse_logic_command;
+			const node operand = expression_unary_get_operand(nd);
+			emit_expression(info, &operand);
+		}
+		break;
+
 		case UN_ADDRESS:
 		case UN_INDIRECTION:
 		case UN_ABS:
