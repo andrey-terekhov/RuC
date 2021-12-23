@@ -752,17 +752,15 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 	const node identifier = expression_unary_get_operand(nd);
 	emit_expression(info, &identifier);
 
-	const item_t reg = info->request_reg;
-
 	switch (operation)
 	{
 		case UN_PREDEC:
 		case UN_POSTDEC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, -1);
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
 			break;
 		case UN_PREINC:
 		case UN_POSTINC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, 1);
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
 			break;
 
 		default:
@@ -773,11 +771,11 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	if (operation == UN_POSTDEC)
 	{
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, 1);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
 	}
 	else if (operation == UN_POSTINC)
 	{
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, reg, R_ZERO, -1);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
 	}
 
 	info->answer_kind = A_REG;
@@ -812,6 +810,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			return;
 
 		case UN_MINUS:
+		case UN_NOT:
 		{
 			bool was_allocate_reg = false;
 
@@ -825,7 +824,14 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			const node operand = expression_unary_get_operand(nd);
 			emit_expression(info, &operand);
 
-			to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
+			if (operator == UN_MINUS)
+			{
+				to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
+			}
+			else
+			{
+				to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
+			}
 
 			info->answer_kind = A_REG;
 			info->answer_reg = result;
@@ -839,7 +845,6 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		}
 		break;
 
-		case UN_NOT:
 		case UN_LOGNOT:
 		case UN_ADDRESS:
 		case UN_INDIRECTION:
