@@ -576,7 +576,6 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 			op_loc = consume_token(prs);
 		}
 
-		// FIXME: случай 'a > 0 ? p : { 5, 0 };
 		node RHS = token_is(&prs->tk, TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
 
 		const precedence_t this_prec = next_token_prec;
@@ -591,7 +590,6 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 
 		if (is_binary)
 		{
-			// Отказ от node_copy, так как node_broken все равно нужно скопировать
 			const binary_t op_kind = token_to_binary(op_token_kind);
 			*LHS = build_binary_expression(&prs->bld, LHS, &RHS, op_kind, op_loc);
 		}

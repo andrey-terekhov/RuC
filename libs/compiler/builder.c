@@ -1062,6 +1062,12 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 		return node_broken();
 	}
 
+	if (expression_get_class(RHS) == EXPR_INITIALIZER)
+	{
+		semantic_error(bldr, node_get_location(RHS), expected_expression);
+		return node_broken();
+	}
+
 	const item_t cond_type = expression_get_type(cond);
 	if (!type_is_scalar(bldr->sx, cond_type))
 	{
