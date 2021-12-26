@@ -283,8 +283,7 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
  *
  *	primary-expression:
  *		identifier
- *		constant
- *		string-literal
+ *		literal
  *		'NULL'
  *		'(' expression ')'
  *
@@ -337,10 +336,13 @@ static node parse_primary_expression(parser *const prs)
 		}
 
 		case TK_NULL:
-		{
-			const location loc = consume_token(prs);
-			return build_null_literal_expression(&prs->bld, loc);
-		}
+			return build_null_literal_expression(&prs->bld, consume_token(prs));
+
+		case TK_TRUE:
+			return build_boolean_literal_expression(&prs->bld, true, consume_token(prs));
+
+		case TK_FALSE:
+			return build_boolean_literal_expression(&prs->bld, false, consume_token(prs));
 
 		case TK_L_PAREN:
 		{
@@ -758,6 +760,7 @@ static node parse_condition(parser *const prs)
  *
  *	type-specifier:
  *		'void'
+ *		'bool'
  *		'char'
  *		'short'
  *		'int'
@@ -765,8 +768,8 @@ static node parse_condition(parser *const prs)
  *		'float'
  *		'double'
  *		struct-or-union-specifier
- *		enum-specifier [TODO]
- *		typedef-name [TODO]
+ *		enum-specifier
+ *		typedef-name
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -780,6 +783,10 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_VOID:
 			consume_token(prs);
 			return TYPE_VOID;
+
+		case TK_BOOL:
+			consume_token(prs);
+			return TYPE_BOOLEAN;
 
 		case TK_CHAR:
 			consume_token(prs);
@@ -1123,7 +1130,6 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 	if (try_consume_token(prs, TK_EQUAL))
 	{
 		node_set_arg(&nd, 2, true);
-		node_copy(&prs->bld.context, &nd);
 
 		node initializer = parse_initializer(prs);
 		if (!node_is_correct(&initializer))
@@ -1133,6 +1139,10 @@ static void parse_init_declarator(parser *const prs, node *const parent, item_t 
 		}
 
 		check_assignment_operands(&prs->bld, type, &initializer);
+
+		node temp = node_add_child(&nd, OP_NOP);
+		node_swap(&initializer, &temp);
+		node_remove(&temp);
 	}
 }
 
@@ -1320,6 +1330,7 @@ static bool is_declaration_specifier(parser *const prs)
 	switch (token_get_kind(&prs->tk))
 	{
 		case TK_VOID:
+		case TK_BOOL:
 		case TK_CHAR:
 		case TK_INT:
 		case TK_LONG:

@@ -1,10 +1,10 @@
 struct oper {char code; int prio;};
 struct oper operations [6] = { { '*' , 8}, {'/', 8 }, {'+', 7}, {'-',7} };
-bool digit (char c)
+int digit (char c)
 {
 	return c<='9' && c>='0' ;
 }
-bool letter (char c)
+int letter (char c)
 {
 	return c<= 'z' && c>= 'a' ;
 }

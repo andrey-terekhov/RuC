@@ -174,6 +174,28 @@ node expression_null_literal(node *const context, const item_t type, const locat
 
 
 /**
+ *	Create new boolean literal expression
+ *
+ *	@param	context			Context node
+ *	@param	type			Value type
+ *	@param	value			Literal value
+ *	@param	loc				Literal location
+ *
+ *	@return	Boolean literal expression
+ */
+node expression_boolean_literal(node *const context, const item_t type, const bool value, const location loc);
+
+/**
+ *	Get value of boolean literal expression
+ *
+ *	@param	nd				Literal expression
+ *
+ *	@return	Boolean value
+ */
+bool expression_literal_get_boolean(const node *const nd);
+
+
+/**
  *	Create new character literal expression
  *
  *	@param	context			Context node

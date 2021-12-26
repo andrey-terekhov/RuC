@@ -1,9 +1,8 @@
 void main()
 {
-	int a, b;
-	bool c;
+    int a, b, c;
     c = a && b || c;
     c = a || b && c;
 
-    assert(!c, "c must be false");
+    assert(c == 0, "c must be 0");
 }

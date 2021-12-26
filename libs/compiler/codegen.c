@@ -473,6 +473,15 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 			return;
 		}
 
+		case TYPE_BOOLEAN:
+		{
+			const bool value = expression_literal_get_boolean(nd);
+
+			mem_add(enc, IC_LI);
+			mem_add(enc, value ? 1 : 0);
+			return;
+		}
+
 		case TYPE_CHARACTER:
 		{
 			const char32_t value = expression_literal_get_character(nd);
@@ -789,6 +798,27 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit cast expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_cast_expression(encoder *const enc, const node *const nd)
+{
+	const node subexpr = expression_cast_get_operand(nd);
+	emit_expression(enc, &subexpr);
+
+	const item_t target_type = expression_get_type(nd);
+	const item_t source_type = expression_get_type(&subexpr);
+
+	// Необходимо только преобразование 'int' -> 'float'
+	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
+	{
+		mem_add(enc, IC_WIDEN);
+	}
+}
+
+/**
  *	Emit increment expression
  *
  *	@param	enc			Encoder
@@ -819,27 +849,6 @@ static void emit_increment_expression(encoder *const enc, const node *const nd)
 	if (value.kind == VARIABLE)
 	{
 		mem_add(enc, value.displ);
-	}
-}
-
-/**
- *	Emit cast expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_cast_expression(encoder *const enc, const node *const nd)
-{
-	const node subexpr = expression_cast_get_operand(nd);
-	emit_expression(enc, &subexpr);
-
-	const item_t target_type = expression_get_type(nd);
-	const item_t source_type = expression_get_type(&subexpr);
-
-	// Необходимо только преобразование 'int' -> 'float'
-	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
-	{
-		mem_add(enc, IC_WIDEN);
 	}
 }
 
