@@ -1685,7 +1685,20 @@ static void emit_variable_declaration(information *const info, const node *const
 		{
 			uni_printf(info->sx->io, "common global ");
 			type_to_io(info, type);
-			uni_printf(info->sx->io, " %s, align 4\n", type_is_integer(info->sx, type) ? "0" : "0.0");
+
+			if (type_is_integer(info->sx, type))
+			{
+				uni_printf(info->sx->io, " 0");
+			}
+			else if (type_is_floating(type))
+			{
+				uni_printf(info->sx->io, " 0.0");
+			}
+			else if (type_is_structure(info->sx, type))
+			{
+				uni_printf(info->sx->io, " zeroinitializer");
+			}
+			uni_printf(info->sx->io, ", align 4\n");
 		}
 	}
 	else // массив
