@@ -1286,12 +1286,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 			const node LHS = expression_binary_get_LHS(nd);
 			emit_expression(info, &LHS);
 
-			// TODO: сделать обработку других ответов
-			// постараться использовать функцию check_type_and_branch
-			if (info->answer_kind == ALOGIC)
-			{
-				to_code_conditional_branch(info);
-			}
+			check_type_and_branch(info);
 
 			to_code_label(info, label_next);
 			info->label_true = old_label_true;
