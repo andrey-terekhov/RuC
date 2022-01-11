@@ -371,7 +371,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	for (size_t i = 0; i < argc; i++)
 	{
 		const node argument = node_vector_get(args, i);
-		if (expression_get_class(&argument) != EXPR_IDENTIFIER)
+		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
 			semantic_error(bldr, node_get_location(&argument), no_ident_in_printid);
 			return node_broken();
@@ -394,7 +394,7 @@ static node build_getid_expression(builder *const bldr, node *const callee, node
 	for (size_t i = 0; i < argc; i++)
 	{
 		const node argument = node_vector_get(args, i);
-		if (expression_get_class(&argument) != EXPR_IDENTIFIER)
+		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
 			semantic_error(bldr, node_get_location(&argument), no_ident_in_getid);
 			return node_broken();
