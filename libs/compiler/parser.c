@@ -570,12 +570,14 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		{
 			middle = parse_expression(prs);
 
-			if (token_is_not(&prs->tk, TK_COLON))
+			if (token_is(&prs->tk, TK_COLON))
+			{
+				op_loc = consume_token(prs);
+			}
+			else
 			{
 				parser_error(prs, expected_colon_in_conditional, op_loc);
 			}
-
-			op_loc = consume_token(prs);
 		}
 
 		node RHS = token_is(&prs->tk, TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
