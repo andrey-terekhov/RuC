@@ -733,7 +733,7 @@ static node parse_condition(parser *const prs)
 	node condition = parse_expression(prs);
 	if (!node_is_correct(&condition))
 	{
-		skip_until(prs, TK_SEMICOLON);
+		skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
 		return node_broken();
 	}
 
