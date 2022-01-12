@@ -32,17 +32,34 @@ typedef enum ERROR
 	empty_character_literal,				/**< Empty character literal */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
 	missing_terminating_apost_char,			/**< Missing terminating ' character */
-	missing_terminating_quote_char,			/**< Missing terminating '"' character */
+	missing_terminating_quote_char,			/**< Missing terminating " character */
 	unterminated_block_comment,				/**< Unterminated block comment */
+
+	// Parser errors
+	expected_r_paren,						/**< Expected ')' */
+	expected_r_square,						/**< Expected ']' */
+	expected_r_brace,						/**< Expected '}' */
+	expected_identifier_in_member_expr,		/**< Expected identifier in member expression */
+	expected_colon_in_conditional_expr,		/**< Expected ':' in conditional expression */
+	empty_initializer,						/**< Empty initializer */
+	expected_l_paren_in_condition,			/**< Expected '(' in condition */
+	case_not_in_switch,						/**< 'case' statement not in switch statement */
+	default_not_in_switch,					/**< 'default' statement not in switch statement */
+	expected_colon_after_case,				/**< Expected ':' after 'case' */
+	expected_colon_after_default,			/**< Expected ':' after 'default' */
+	expected_semi_after_expr,				/**< Expected ';' after expression */
+	expected_semi_after_stmt,				/**< Expected ';' after statement */
+	expected_while,							/**< Expected 'while' in do/while loop */
+	expected_paren_after_for,				/**< Expected '(' after 'for' */
+	expected_semi_in_for,					/**< Expected ';' in for */
+	expected_identifier_after_goto,			/**< Expected identifier after 'goto' */
+	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
 
 	// Expression errors
 	undeclared_var_use,						/**< Use of undeclared identifier */
-	expected_r_paren,						/**< Expected ')' */
 	typecheck_subscript_value,				/**< Subscripted value is not an array */
 	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
-	expected_r_square,						/**< Expected ']' */
-	expected_r_brace,						/**< Expected '}' */
-	expected_identifier,					/**< Expected identifier */
 	typecheck_call_not_function,			/**< Called object type is not a function */
 	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
 	typecheck_member_reference_struct,		/**< Member reference base type is not a structure */
@@ -55,24 +72,12 @@ typedef enum ERROR
 	typecheck_indirection_requires_pointer,	/**< Indirection requires pointer operand */
 	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
 	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
-	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
 	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
 	typecheck_statement_requires_scalar,	/**< Condition must be of scalar type */
+	expected_constant_expression,			/**< Expected constant expression */
 
 	// Statement errors
-	expected_semi_after_stmt,			/**< Expected ';' after statement */
-	case_not_in_switch,					/**< 'case' statement not in switch statement */
 	float_in_switch,
-	expected_colon_after_case,			/**< Expected ':' after 'case' */
-	default_not_in_switch,				/**< 'default' statement not in switch statement */
-	expected_colon_after_default,		/**< Expected ':' after 'default' */
-	expected_while,						/**< Expected 'while' in do/while loop */
-	expected_paren_after_for,			/**< Expected '(' after 'for' */
-	no_semicolon_in_for,
-	no_rightbr_in_for,
-	expected_identifier_after_goto,		/**< Expected identifier after 'goto' */
-	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
-	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
 	no_ret_in_func,
 	bad_type_in_ret,
 	notvoidret_in_void_func,
@@ -109,7 +114,6 @@ typedef enum ERROR
 	wrong_addr,
 	no_colon_in_cond_expr,
 	int_op_for_float,
-	not_const_expr,
 	not_const_int_expr,
 	assmnt_float_to_int,
 	redefinition_of_main,

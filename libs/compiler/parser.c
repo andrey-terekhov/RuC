@@ -480,7 +480,7 @@ static node parse_postfix_expression(parser *const prs)
 				}
 				else
 				{
-					parser_error(prs, expected_identifier);
+					parser_error(prs, expected_identifier_in_member_expr);
 					operand = node_broken();
 				}
 
@@ -575,7 +575,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 			}
 			else
 			{
-				parser_error(prs, expected_colon_in_conditional, op_loc);
+				parser_error(prs, expected_colon_in_conditional_expr, op_loc);
 			}
 		}
 
@@ -656,12 +656,8 @@ static node parse_constant_expression(parser *const prs)
 {
 	node LHS = parse_unary_expression(prs);
 	LHS = parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
-	if (expression_get_class(&LHS) != EXPR_LITERAL)
-	{
-		parser_error(prs, not_const_expr);
-	}
 
-	return LHS;
+	return build_constant_expression(&prs->bld, &LHS);
 }
 
 /**
@@ -683,7 +679,7 @@ static node parse_initializer(parser *const prs)
 
 		if (try_consume_token(prs, TK_R_BRACE))
 		{
-			parser_error(prs, empty_init);
+			parser_error(prs, empty_initializer);
 			return node_broken();
 		}
 
@@ -723,6 +719,7 @@ static node parse_condition(parser *const prs)
 {
 	if (token_is_not(&prs->tk, TK_L_PAREN))
 	{
+		parser_error(prs, expected_l_paren_in_condition);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
@@ -1489,7 +1486,7 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 
 	if (token_is_not(&prs->tk, TK_R_BRACE))
 	{
-		parser_error(prs, expected_end, l_loc);
+		parser_error(prs, expected_r_brace, l_loc);
 		node_vector_clear(&stmts);
 		return node_broken();
 	}
@@ -1519,7 +1516,7 @@ static node parse_expression_statement(parser *const prs)
 		return node_broken();
 	}
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_expr);
 	return expr;
 }
 
@@ -1674,7 +1671,7 @@ static node parse_for_statement(parser *const prs)
 
 			if (!try_consume_token(prs, TK_SEMICOLON))
 			{
-				parser_error(prs, no_semicolon_in_for);
+				parser_error(prs, expected_semi_in_for);
 				skip_until(prs, TK_SEMICOLON);
 				return node_broken();
 			}
@@ -1694,7 +1691,7 @@ static node parse_for_statement(parser *const prs)
 
 		if (!try_consume_token(prs, TK_SEMICOLON))
 		{
-			parser_error(prs, no_semicolon_in_for);
+			parser_error(prs, expected_semi_in_for);
 			skip_until(prs, TK_SEMICOLON);
 			return node_broken();
 		}

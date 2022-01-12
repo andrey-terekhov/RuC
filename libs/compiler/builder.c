@@ -1107,6 +1107,16 @@ node build_initializer(builder *const bldr, node_vector *const exprs, const loca
 	return expression_initializer(exprs, loc);
 }
 
+node build_constant_expression(builder *const bldr, node *const expr)
+{
+	if (expression_get_class(expr) != EXPR_LITERAL)
+	{
+		semantic_error(bldr, node_get_location(expr), expected_constant_expression);
+	}
+
+	return *expr;
+}
+
 
 node build_labeled_statement(builder *const bldr, const size_t name, node *const substmt, const location id_loc)
 {

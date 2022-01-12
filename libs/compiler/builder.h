@@ -241,6 +241,16 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
  */
 node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
 
+/**
+ *	Build a constant expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	expr			Expression
+ *
+ *	@return	Constant expression
+ */
+node build_constant_expression(builder *const bldr, node *const expr);
+
 
 /**
  *	Build a labeled statement

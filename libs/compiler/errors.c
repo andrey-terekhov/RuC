@@ -53,23 +53,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "символьный литерал не заканчивается символом '");
 			break;
 		case missing_terminating_quote_char:
-			sprintf(msg, "строка не заканчивается символом \"");
+			sprintf(msg, "строковый литерал не заканчивается символом \"");
 			break;
 		case unterminated_block_comment:
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 
-		case undeclared_var_use:
-			sprintf(msg, "использование не объявленной переменной");
-			break;
+		// Parser errors
 		case expected_r_paren:
 			sprintf(msg, "ожидалась ')'");
-			break;
-		case typecheck_subscript_value:
-			sprintf(msg, "попытка вырезки элемента не из массива");
-			break;
-		case typecheck_subscript_not_integer:
-			sprintf(msg, "индекс элемента массива должен иметь тип ЦЕЛ");
 			break;
 		case expected_r_square:
 			sprintf(msg, "ожидалась ']'");
@@ -77,8 +69,65 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_r_brace:
 			sprintf(msg, "ожидалась '}'");
 			break;
-		case expected_identifier:
-			sprintf(msg, "ожидался идентификатор");
+		case expected_identifier_in_member_expr:
+			sprintf(msg, "ожидался идентификатор в выражении выборки");
+			break;
+		case expected_colon_in_conditional_expr:
+			sprintf(msg, "ожидалось ':' в условном операторе");
+			break;
+		case empty_initializer:
+			sprintf(msg, "пустой инициализатор");
+			break;
+		case expected_l_paren_in_condition:
+			sprintf(msg, "ожидалась '(' в условии");
+			break;
+		case case_not_in_switch:
+			sprintf(msg, "метка 'случай' не в операторе 'выбор'");
+			break;
+		case default_not_in_switch:
+			sprintf(msg, "метка 'умолчание' не в операторе 'выбор'");
+			break;
+		case expected_colon_after_case:
+			sprintf(msg, "ожидалось ':' после выражения метки 'случай'");
+			break;
+		case expected_colon_after_default:
+			sprintf(msg, "ожидалось ':' после метки 'умолчание'");
+			break;
+		case expected_semi_after_expr:
+			sprintf(msg, "ожидалась ';' после выражения");
+			break;
+		case expected_semi_after_stmt:
+			sprintf(msg, "ожидалась ';' после оператора");
+			break;
+		case expected_while:
+			sprintf(msg, "ожидалось 'пока' в операторе 'цикл'");
+			break;
+		case expected_paren_after_for:
+			sprintf(msg, "ожидалась '(' после 'для'");
+			break;
+		case expected_semi_in_for:
+			sprintf(msg, "ожидалась ';' в условии оператора 'для'");
+			break;
+		case expected_identifier_after_goto:
+			sprintf(msg, "ожидался идентификатор в операторе 'переход'");
+			break;
+		case continue_not_in_loop:
+			sprintf(msg, "оператор 'продолжить' не в цикле");
+			break;
+		case break_not_in_loop_or_switch:
+			sprintf(msg, "оператор 'выход' не в цикле и не в операторе 'выбор'");
+			break;
+
+
+		// Expression errors
+		case undeclared_var_use:
+			sprintf(msg, "использование не объявленного идентификатора");
+			break;
+		case typecheck_subscript_value:
+			sprintf(msg, "попытка вырезки элемента не из массива");
+			break;
+		case typecheck_subscript_not_integer:
+			sprintf(msg, "индекс элемента массива должен иметь тип ЦЕЛ");
 			break;
 		case typecheck_call_not_function:
 			sprintf(msg, "попытка вызова не функции");
@@ -112,9 +161,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case typecheck_binary_expr:
 			sprintf(msg, "неверные типы аргументов в бинарном выражении");
-			break;
-		case expected_colon_in_conditional:
-			sprintf(msg, "ожидалось ':' в условном операторе");
 			break;
 		case typecheck_cond_incompatible_operands:
 			sprintf(msg, "несовместимые типы условного оператора");
@@ -158,15 +204,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case func_decl_req_params: // need_test
 			sprintf(msg, "вообще-то я думал, что это предописание функции (нет "
 				"идентификаторов-параметров), а тут тело функции");
-			break;
-		case expected_while: // test_exist
-			sprintf(msg, "ждем ПОКА в операторе ЦИКЛ");
-			break;
-		case expected_paren_after_for: // test_exist
-			sprintf(msg, "ожидалась '(' после 'for'");
-			break;
-		case expected_semi_after_stmt: // test_exist
-			sprintf(msg, "нет ; после оператора");
 			break;
 		case expected_end: // test_exist
 			sprintf(msg, "нет } в конце блока");
@@ -216,14 +253,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_colon_in_cond_expr: // test_exist
 			sprintf(msg, "нет : в условном выражении");
 			break;
-		case expected_colon_after_case: // test_exist
-			sprintf(msg, "после выражения в выборе нет :");
-			break;
 		case int_op_for_float:	// test_exist
 			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
-			break;
-		case not_const_expr:
-			sprintf(msg, "должно быть константное выражение");
 			break;
 		case not_const_int_expr:
 			sprintf(msg, "должно быть константное выражение типа int");
@@ -317,15 +348,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case float_in_condition:	// need_test
 			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
-			break;
-		case case_not_in_switch: // need_test
-			sprintf(msg, "метка СЛУЧАЙ не в операторе ВЫБОР");
-			break;
-		case break_not_in_loop_or_switch: // need_test
-			sprintf(msg, "оператор ВЫХОД не в цикле и не в операторе ВЫБОР");
-			break;
-		case continue_not_in_loop:	// need_test
-			sprintf(msg, "оператор ПРОДОЛЖИТЬ не в цикле");
 			break;
 		case expected_expression:	// need_test
 			sprintf(msg, "ожидалось выражение");
@@ -559,12 +581,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case not_array_in_stanfunc:	// need_test
 			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
-			break;
-		case default_not_in_switch:
-			sprintf(msg, "метка УМОЛЧАНИЕ не в операторе ВЫБОР");
-			break;
-		case expected_colon_after_default:
-			sprintf(msg, "после метки УМОЛЧАНИЕ нет :");
 			break;
 		case empty_struct:
 			sprintf(msg, "структура должна иметь поля");
