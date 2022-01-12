@@ -36,7 +36,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
-		// Lexer errors
+		// Lexing errors
 		case bad_character:
 			sprintf(msg, "плохой символ");
 			break;
@@ -59,7 +59,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "блочный комментарий не окончен");
 			break;
 
-		// Parser errors
+		// Syntax errors
 		case expected_r_paren:
 			sprintf(msg, "ожидалась ')'");
 			break;
@@ -118,43 +118,42 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "оператор 'выход' не в цикле и не в операторе 'выбор'");
 			break;
 
-
-		// Expression errors
-		case undeclared_var_use:
+		// Semantics errors
+		case undeclared_identifier_use:
 			sprintf(msg, "использование не объявленного идентификатора");
 			break;
-		case typecheck_subscript_value:
-			sprintf(msg, "попытка вырезки элемента не из массива");
+		case subscripted_expr_not_array:
+			sprintf(msg, "вырезка элемента не из массива");
 			break;
-		case typecheck_subscript_not_integer:
-			sprintf(msg, "индекс элемента массива должен иметь тип ЦЕЛ");
+		case array_subscript_not_integer:
+			sprintf(msg, "индекс элемента массива должен иметь целочисленный тип");
 			break;
-		case typecheck_call_not_function:
-			sprintf(msg, "попытка вызова не функции");
+		case called_expr_not_function:
+			sprintf(msg, "вызываемое выражение должно иметь функциональный тип");
 			break;
-		case typecheck_convert_incompatible:
-			sprintf(msg, "неправильный тип аргумента");
+		case wrong_argument_amount:
+			sprintf(msg, "неверное число аргументов в вызове");
 			break;
-		case typecheck_member_reference_struct:
+		case member_reference_not_struct:
 			sprintf(msg, "оператор '.' применяется не к структуре");
 			break;
-		case typecheck_member_reference_arrow:		
+		case member_reference_not_struct_pointer:
 			sprintf(msg, "оператор '->' применяется не к указателю на структуру");
 			break;
-		case typecheck_member_reference_ivar:
+		case no_such_member:
 			sprintf(msg, "нет такого поля в структуре");
 			break;
-		case typecheck_illegal_increment:
-			sprintf(msg, "++ и -- применимы только к переменным и элементам массива");
+		case illegal_increment_type:
+			sprintf(msg, "операнд инкремента или декремента должен иметь арифметический тип");
 			break;
-		case typecheck_expression_not_lvalue:		
+		case unassignable_expression:
 			sprintf(msg, "в это выражение нельзя присваивать");
 			break;
-		case typecheck_invalid_lvalue_addrof:
-			sprintf(msg, "операция получения адреса & применима только к переменным");
+		case cannot_take_rvalue_address:
+			sprintf(msg, "операция получения адреса & применима только к lvalue");
 			break;
-		case typecheck_indirection_requires_pointer:
-			sprintf(msg, "операция * применяется не к указателю");
+		case indirection_requires_pointer:
+			sprintf(msg, "операнд косвенного обращения '*' должен иметь тип указатель");
 			break;
 		case typecheck_unary_expr:
 			sprintf(msg, "неверный тип аргумента в унарном выражении");
@@ -162,13 +161,95 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case typecheck_binary_expr:
 			sprintf(msg, "неверные типы аргументов в бинарном выражении");
 			break;
-		case typecheck_cond_incompatible_operands:
-			sprintf(msg, "несовместимые типы условного оператора");
-			break;
-		case typecheck_statement_requires_scalar:
+		case condition_must_be_scalar:
 			sprintf(msg, "условие должно иметь скалярный тип");
 			break;
+		case too_many_printf_args:
+			sprintf(msg, "максимально в 'printf' можно выводить %zu значений", va_arg(args, size_t));
+			break;
+		case expected_format_specifier:
+			sprintf(msg, "ожидался спецификатор типа после '%%'");
+			break;
+		case unknown_format_specifier:
+		{
+			size_t index = (size_t)sprintf(msg, "неизвестный спецификатор %%");
+			const char32_t bad_printf_specifier = va_arg(args, char32_t);
+			index += utf8_to_string(&msg[index], bad_printf_specifier);
+		}
+		break;
+		case printf_fst_not_string:
+			sprintf(msg, "первым аргументом вызова 'printf' должен быть форматный строковый литерал");
+			break;
+		case wrong_printf_argument_amount:
+			sprintf(msg, "количество аргументов вызова 'printf' не соответствует количеству спецификаторов");
+			break;
+		case wrong_printf_argument_type:
+		{
+			size_t index = (size_t)sprintf(msg, "тип аргумента вызова 'printf' не соответствует спецификатору: %%");
+			const char32_t bad_printf_specifier = va_arg(args, char32_t);
+			index += utf8_to_string(&msg[index], bad_printf_specifier);
+			switch (bad_printf_specifier)
+			{
+				case 'i':
+				case U'ц':
+					sprintf(&msg[index], " ожидает целое число");
+					break;
+				case 'c':
+				case U'л':
+					sprintf(&msg[index], " ожидает литеру");
+					break;
+				case 'f':
+				case U'в':
+					sprintf(&msg[index], " ожидает вещественное число");
+					break;
+				case U'с':
+				case 's':
+					sprintf(&msg[index], " ожидает строку");
+					break;
+				default:
+					sprintf(&msg[index], " -- неизвестный спецификатор");
+					break;
+			}
+		}
+		break;
+		case pointer_in_print:
+			sprintf(msg, "указатель не может быть операндом для печати");
+			break;
+		case expected_identifier_in_printid:
+			sprintf(msg, "ожидался идентификатор в вызове 'printid'");
+			break;
+		case expected_identifier_in_getid:
+			sprintf(msg, "ожидался идентификатор в вызове 'getid'");
+			break;
+		case upb_fst_not_array:
+			sprintf(msg, "первый аргумент вызова 'upb' должен иметь тип массив");
+			break;
+		case upb_snd_not_integer:
+			sprintf(msg, "второй аргумент вызова 'upb' должен иметь целочисленный тип");
+			break;
+		case expected_constant_expression:
+			sprintf(msg, "ожидалось константное выражение");
+			break;
+		case incompatible_cond_operands:
+			sprintf(msg, "несовместимые типы операндов условного оператора");
+			break;
+		case label_redefinition:
+			sprintf(msg, "переопределение метки %s", va_arg(args, char *));
+			break;
+		case case_expr_not_integer:
+			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
+			break;
+		case switch_expr_not_integer:
+			sprintf(msg, "выражение оператора 'выбор' должно иметь целочисленный тип");
+			break;
+		case void_func_valued_return:
+			sprintf(msg, "функция не должна возвращать значение");
+			break;
+		case nonvoid_func_void_return:
+			sprintf(msg, "функция должна возвращать значение");
+			break;
 
+		// Environment errors
 		case no_main_in_program: // test_exist
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
@@ -180,6 +261,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		// Other errors
 		case after_type_must_be_ident: // test_exist
 			sprintf(msg, "после символа типа должен быть идентификатор или * идентификатор");
 			break;
@@ -241,9 +323,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case float_instead_int:	// test_exist
 			sprintf(msg, "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ");
 			break;
-		case wrong_number_of_params: // test_exist
-			sprintf(msg, "неправильное количество фактических параметров");
-			break;
 		case wait_rightbr_in_primary: // test_exist
 			sprintf(msg, "не хватает ) в первичном выражении");
 			break;
@@ -265,21 +344,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case redefinition_of_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
 			break;
-		case no_leftbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет (");
-			break;
-		case no_rightbr_in_printid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
-			break;
-		case no_ident_in_printid: // need_test
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
-			break;
-		case no_rightbr_in_getid: // test_exist
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет )");
-			break;
-		case no_ident_in_getid: // need_test
-			sprintf(msg, "в команде ПЕЧАТЬИД или ЧИТАТЬИД нет идентификатора");
-			break;
 		case init_int_by_float:	// test_exist
 			sprintf(msg, "целая или литерная переменная инициализируется значением типа ВЕЩ");
 			break;
@@ -291,24 +355,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case param_setmotor_not_int:	// need_test
 			sprintf(msg, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми");
-			break;
-		case no_leftbr_in_stand_func: // need_test
-			sprintf(msg, "в вызове стандартной функции нет (");
-			break;
-		case no_rightbr_in_stand_func: // test_exist
-			sprintf(msg, "в вызове стандартной функции нет )");
-			break;
-		case bad_param_in_stand_func:	// test_exist
-			sprintf(msg, "параметры стандартных функций могут быть только целыми и вещественными");
-			break;
-		case no_ret_in_func: // test_exist
-			sprintf(msg, "в функции, возвращающей непустое значение, нет оператора ВОЗВРАТ со значением");
-			break;
-		case bad_type_in_ret: // test_exist
-			sprintf(msg, "в функции, возвращающей целое или литерное значение, оператор ВОЗВРАТ со значением ВЕЩ");
-			break;
-		case notvoidret_in_void_func: // test_exist
-			sprintf(msg, "в функции, возвращающей пустое значение, оператор ВОЗВРАТ со значением");
 			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
@@ -362,17 +408,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "в строке %zu переход на неописанную метку %s", hash, buffer);
 		}
 		break;
-		case repeated_label: // test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "повторное описание метки %s", buffer);
-		}
-		break;
 		case operand_is_pointer:	// need_test
 			sprintf(msg, "операнд бинарной формулы не может быть указателем");
-			break;
-		case pointer_in_print: // test_exist
-			sprintf(msg, "указатели нельзя печатать");
 			break;
 		case wrong_struct:	// test_exist
 			sprintf(msg, "неправильное описание структуры");
@@ -462,87 +499,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case param_threads_not_int:	// test_exist
 			sprintf(msg, "процедуры, управляющие параллельными нитями, могут иметь только целые параметры");
 			break;
-		case wrong_arg_in_send:	// test_exist
-			sprintf(msg, "неправильный тип аргумента в процедуре t_msg_send, должен иметь тип msg_info");
-			break;
-		case wrong_arg_in_create:	// test_exist
-			sprintf(msg, "неправильный тип аргумента в процедуре t_create, должен иметь тип void*(void*)");
-			break;
-
-		case no_leftbr_in_printf: // test_exist
-			sprintf(msg, "не хватает открывающей скобки в printf/печатьф");
-			break;
-		case no_rightbr_in_printf:	// test_exist
-			sprintf(msg, "не хватает закрывающей скобки в printf/печатьф");
-			break;
-		case wrong_first_printf_param: // test_exist
-			sprintf(msg, "первым параметром в printf/печатьф должна быть константная форматная строка");
-			break;
-		case wrong_printf_param_type: // test_exist
-		{
-			size_t index = sprintf(msg, "тип параметра printf/печатьф не соответствует спецификатору: %%");
-			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
-			index += utf8_to_string(&msg[index], bad_printf_placeholder);
-			switch (bad_printf_placeholder)
-			{
-				case 'i':
-				case U'ц': // 1094
-					index += sprintf(&msg[index], " ожидает целое число");
-					break;
-
-				case 'c':
-					index += sprintf(&msg[index], " (англ.) ожидает литеру");
-					break;
-				case U'л': // 1083
-					index += sprintf(&msg[index], " ожидает литеру");
-					break;
-
-				case 'f':
-				case U'в': // 1074
-					index += sprintf(&msg[index], " ожидает вещественное число");
-					break;
-
-				case U'с': // 1089
-					index += sprintf(&msg[index], " (рус.) ожидает строку");
-					break;
-				case 's':
-					index += sprintf(&msg[index], " ожидает строку");
-					break;
-				default:
-					index += sprintf(&msg[index], " -- неизвестный спецификатор");
-					break;
-			}
-		}
-		break;
-		case wrong_printf_param_number: // test_exist
-			sprintf(msg, "количество параметров printf/печатьф не соответствует количеству спецификаторов");
-			break;
-		case printf_no_format_placeholder: // test_exist
-			sprintf(msg, "в printf/печатьф нет спецификатора типа после '%%'");
-			break;
-		case printf_unknown_format_placeholder: // test_exist
-		{
-			size_t index = sprintf(msg, "в printf/печатьф неизвестный спецификатор типа %%");
-			const char32_t bad_printf_placeholder = va_arg(args, char32_t);
-			index += utf8_to_string(&msg[index], bad_printf_placeholder);
-		}
-		break;
-		case too_many_printf_args: // test_exist
-		{
-			const size_t MAX_PRINTF_ARGS = va_arg(args, size_t);
-			sprintf(msg, "максимально в printf/печатьф можно выводить %zu значений", MAX_PRINTF_ARGS);
-		}
-		break;
-
-		case no_mult_in_cast: // need_test
-			sprintf(msg, "нет * в cast (приведении)");
-			break;
-		case no_rightbr_in_cast: // need_test
-			sprintf(msg, "нет ) в cast (приведении)");
-			break;
-		case not_pointer_in_cast:	// need_test
-			sprintf(msg, "cast (приведение) может быть применено только к указателю");
-			break;
 		case empty_bound_without_init:	// test_exist
 			sprintf(msg, "в описании массива границы не указаны, а инициализации нет");
 			break;
@@ -557,30 +513,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case no_comma_or_end:	// need_test
 			sprintf(msg, "в инициализаторе ожидали , или }");
-			break;
-		case no_comma_in_act_params_stanfunc: // need_test
-			sprintf(msg, "в операции над строками после параметра нет , ");
-			break;
-		case not_string_in_stanfunc:	// test_exist
-			sprintf(msg, "в операции над строками параметр не строка");
-			break;
-		case not_int_in_stanfunc:	// test_exist
-			sprintf(msg, "в этой операции этот параметр должен иметь тип ЦЕЛ");
-			break;
-		case not_float_in_stanfunc:	// need_test
-			sprintf(msg, "в этой операции этот параметр должен иметь тип ВЕЩ");
-			break;
-		case not_point_string_in_stanfunc:	// need_test
-			sprintf(msg, "в этой операции над строками первый параметр должен быть указателем на строку");
-			break;
-		case not_rowofint_in_stanfunc:	// test_exist
-			sprintf(msg, "в этой операции этот параметр должен иметь тип массив целых");
-			break;
-		case not_rowoffloat_in_stanfunc:	// need_test
-			sprintf(msg, "в этой операции этот параметр должен иметь тип массив вещ");
-			break;
-		case not_array_in_stanfunc:	// need_test
-			sprintf(msg, "в этой операции этот параметр должен иметь тип массив");
 			break;
 		case empty_struct:
 			sprintf(msg, "структура должна иметь поля");

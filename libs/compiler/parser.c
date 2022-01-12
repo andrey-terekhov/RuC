@@ -2156,7 +2156,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 	if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
 	{
-		parser_error(prs, no_ret_in_func);
+		parser_error(prs, nonvoid_func_void_return);
 	}
 
 	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
