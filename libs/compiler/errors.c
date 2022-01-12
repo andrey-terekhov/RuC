@@ -36,29 +36,25 @@ static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
+		// Lexer errors
 		case bad_character:
-		{
-			const char32_t bad_char = va_arg(args, char32_t);
-			sprintf(msg, "плохой символ = %i", bad_char);
-		}
-		break;
-
-		case empty_character:
-			sprintf(msg, "пустая символьная константа");
+			sprintf(msg, "плохой символ");
 			break;
-
+		case digit_of_another_base:
+			sprintf(msg, "цифра из другой системы счисления");
+			break;
+		case empty_character_literal:
+			sprintf(msg, "пустой символьный литерал");
+			break;
 		case unknown_escape_sequence:	//test_exist
-			sprintf(msg, "неизвестный служебный символ");
+			sprintf(msg, "неизвестная escape-последовательность");
 			break;
-
-		case expected_apost_after_char_const: // need_test
-			sprintf(msg, "символьная константа не заканчивается символом '");
+		case missing_terminating_apost_char: // need_test
+			sprintf(msg, "символьный литерал не заканчивается символом '");
 			break;
-
 		case missing_terminating_quote_char:
 			sprintf(msg, "строка не заканчивается символом \"");
 			break;
-
 		case unterminated_block_comment:
 			sprintf(msg, "блочный комментарий не окончен");
 			break;

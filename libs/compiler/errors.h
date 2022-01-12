@@ -27,11 +27,11 @@ extern "C" {
 typedef enum ERROR
 {
 	// Lexer errors
-	bad_character,							/**< Bad character in source */
-	unexpected_digit,						/**< Digit of another base */
-	empty_character,						/**< Empty character literal */
+	bad_character,							/**< Bad character */
+	digit_of_another_base,					/**< Digit of another base */
+	empty_character_literal,				/**< Empty character literal */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
-	expected_apost_after_char_const,		/**< Missing terminating ' character */
+	missing_terminating_apost_char,			/**< Missing terminating ' character */
 	missing_terminating_quote_char,			/**< Missing terminating '"' character */
 	unterminated_block_comment,				/**< Unterminated block comment */
 
