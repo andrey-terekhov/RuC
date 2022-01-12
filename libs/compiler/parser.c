@@ -227,7 +227,6 @@ static void skip_until(parser *const prs, const uint8_t tokens)
 			case TK_SEMICOLON:
 				if (has_token_set(tokens, token_get_kind(&prs->tk)))
 				{
-					consume_token(prs);
 					return;
 				}
 
@@ -734,6 +733,7 @@ static node parse_condition(parser *const prs)
 	if (!node_is_correct(&condition))
 	{
 		skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+		try_consume_token(prs, TK_R_PAREN);
 		return node_broken();
 	}
 
@@ -980,6 +980,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 			{
 				parser_error(prs, wait_right_sq_br);
 				skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+				try_consume_token(prs, TK_R_SQUARE);
 			}
 		}
 		type = type_array(prs->sx, type);
@@ -1647,14 +1648,13 @@ static node parse_for_statement(parser *const prs)
 
 	if (token_is_not(&prs->tk, TK_L_PAREN))
 	{
-		parser_error(prs, no_leftbr_in_for);
+		parser_error(prs, expected_paren_after_for);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
 
 	const location l_loc = consume_token(prs);
 
-	// TODO: протестировать восстановление после ошибок
 	node init;
 	const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
 	if (has_init)
@@ -1975,6 +1975,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				parser_error(prs, ident_in_declarator);
 				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+				try_consume_token(prs, TK_R_PAREN);
 				return TYPE_UNDEFINED;
 			}
 
@@ -1998,6 +1999,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 					{
 						parser_error(prs, wait_right_sq_br);
 						skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+						try_consume_token(prs, TK_R_SQUARE);
 					}
 				}
 			}
@@ -2057,6 +2059,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				if (try_consume_token(prs, TK_L_BRACE))
 				{
 					skip_until(prs, TK_R_BRACE);
+					try_consume_token(prs, TK_R_BRACE);
 				}
 				return TYPE_UNDEFINED;
 			}
@@ -2095,6 +2098,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	{
 		// skip whole function body
 		skip_until(prs, TK_R_BRACE);
+		try_consume_token(prs, TK_R_BRACE);
 		return;
 	}
 
@@ -2112,6 +2116,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
 			skip_until(prs, TK_R_BRACE);
+			try_consume_token(prs, TK_R_BRACE);
 			return;
 		}
 		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
@@ -2208,6 +2213,7 @@ static void parse_function_declaration(parser *const prs, node *const parent, co
 		{
 			parser_error(prs, func_decl_req_params);
 			skip_until(prs, TK_R_BRACE);
+			try_consume_token(prs, TK_R_BRACE);
 		}
 	}
 	else if (prs->func_def == 1)

@@ -166,6 +166,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_while: // test_exist
 			sprintf(msg, "ждем ПОКА в операторе ЦИКЛ");
 			break;
+		case expected_paren_after_for: // test_exist
+			sprintf(msg, "ожидалась '(' после 'for'");
+			break;
 		case expected_semi_after_stmt: // test_exist
 			sprintf(msg, "нет ; после оператора");
 			break;

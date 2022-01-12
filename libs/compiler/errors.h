@@ -67,7 +67,7 @@ typedef enum ERROR
 	default_not_in_switch,				/**< 'default' statement not in switch statement */
 	expected_colon_after_default,		/**< Expected ':' after 'default' */
 	expected_while,						/**< Expected 'while' in do/while loop */
-	no_leftbr_in_for,
+	expected_paren_after_for,			/**< Expected '(' after 'for' */
 	no_semicolon_in_for,
 	no_rightbr_in_for,
 	expected_identifier_after_goto,		/**< Expected identifier after 'goto' */
