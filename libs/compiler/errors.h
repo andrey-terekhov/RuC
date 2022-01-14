@@ -26,56 +26,71 @@ extern "C" {
 /** Errors codes */
 typedef enum ERROR
 {
-	// Lexer errors
-	bad_character,							/**< Bad character in source */
-	unexpected_digit,						/**< Digit of another base */
-	empty_character,						/**< Empty character literal */
+	// Lexing errors
+	bad_character,							/**< Bad character */
+	digit_of_another_base,					/**< Digit of another base */
+	empty_character_literal,				/**< Empty character literal */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
-	expected_apost_after_char_const,		/**< Missing terminating ' character */
-	missing_terminating_quote_char,			/**< Missing terminating '"' character */
+	missing_terminating_apost_char,			/**< Missing terminating ' character */
+	missing_terminating_quote_char,			/**< Missing terminating " character */
 	unterminated_block_comment,				/**< Unterminated block comment */
 
-	// Expression errors
-	undeclared_var_use,						/**< Use of undeclared identifier */
+	// Syntax errors
 	expected_r_paren,						/**< Expected ')' */
-	typecheck_subscript_value,				/**< Subscripted value is not an array */
-	typecheck_subscript_not_integer,		/**< Array subscript is not an integer */
 	expected_r_square,						/**< Expected ']' */
 	expected_r_brace,						/**< Expected '}' */
-	expected_identifier,					/**< Expected identifier */
-	typecheck_call_not_function,			/**< Called object type is not a function */
-	typecheck_convert_incompatible,			/**< Passing type to parameter of incompatible type */
-	typecheck_member_reference_struct,		/**< Member reference base type is not a structure */
-	typecheck_member_reference_arrow,		/**< Member reference type is not a pointer */
-	typecheck_member_reference_ivar,		/**< Struct does not have a member named that */
-	no_member,								/**< No member named that */
-	typecheck_illegal_increment,			/**< Cannot increment/decrement value of that type */
-	typecheck_expression_not_lvalue,		/**< Expression is not assignable */
-	typecheck_invalid_lvalue_addrof,		/**< Cannot take the address of an rvalue */
-	typecheck_indirection_requires_pointer,	/**< Indirection requires pointer operand */
+	expected_identifier_in_member_expr,		/**< Expected identifier in member expression */
+	expected_colon_in_conditional_expr,		/**< Expected ':' in conditional expression */
+	empty_initializer,						/**< Empty initializer */
+	expected_l_paren_in_condition,			/**< Expected '(' in condition */
+	case_not_in_switch,						/**< 'case' statement not in switch statement */
+	default_not_in_switch,					/**< 'default' statement not in switch statement */
+	expected_colon_after_case,				/**< Expected ':' after 'case' */
+	expected_colon_after_default,			/**< Expected ':' after 'default' */
+	expected_semi_after_expr,				/**< Expected ';' after expression */
+	expected_semi_after_stmt,				/**< Expected ';' after statement */
+	expected_while,							/**< Expected 'while' in do/while loop */
+	expected_paren_after_for,				/**< Expected '(' after 'for' */
+	expected_semi_in_for,					/**< Expected ';' in for */
+	expected_identifier_after_goto,			/**< Expected identifier after 'goto' */
+	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
+
+	// Semantics errors
+	undeclared_identifier_use,				/**< Use of undeclared identifier */
+	subscripted_expr_not_array,				/**< Subscripted expression is not an array */
+	array_subscript_not_integer,			/**< Array subscript is not an integer */
+	called_expr_not_function,				/**< Called expression is not a function */
+	wrong_argument_amount,					/**< Wrong argument amount in call expression */
+	member_reference_not_struct,			/**< Member reference base type is not a structure */
+	member_reference_not_struct_pointer,	/**< Member reference type is not a structure pointer */
+	no_such_member,							/**< No such member */
+	illegal_increment_type,					/**< Cannot increment/decrement value of that type */
+	unassignable_expression,				/**< Expression is not assignable */
+	cannot_take_rvalue_address,				/**< Cannot take the address of an rvalue */
+	indirection_requires_pointer,			/**< Indirection requires pointer operand */
 	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
 	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
-	expected_colon_in_conditional,			/**< Expected ':' in condtional expression */
-	typecheck_cond_incompatible_operands,	/**< Incompatible operand types */
-	typecheck_statement_requires_scalar,	/**< Condition must be of scalar type */
-
-	// Statement errors
-	expected_semi_after_stmt,			/**< Expected ';' after statement */
-	case_not_in_switch,					/**< 'case' statement not in switch statement */
-	float_in_switch,
-	expected_colon_after_case,			/**< Expected ':' after 'case' */
-	default_not_in_switch,				/**< 'default' statement not in switch statement */
-	expected_colon_after_default,		/**< Expected ':' after 'default' */
-	expected_while,						/**< Expected 'while' in do/while loop */
-	no_leftbr_in_for,
-	no_semicolon_in_for,
-	no_rightbr_in_for,
-	expected_identifier_after_goto,		/**< Expected identifier after 'goto' */
-	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
-	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
-	no_ret_in_func,
+	condition_must_be_scalar,				/**< Condition must be of scalar type */
+	too_many_printf_args,					/**< Too many printf arguments */
+	expected_format_specifier,				/**< Expected format specifier */
+	unknown_format_specifier,				/**< Unknown format specifier */
+	printf_fst_not_string,					/**< First argument of 'printf' call is not a string literal */
+	wrong_printf_argument_amount,			/**< Wrong argument amount in 'printf' call */
+	wrong_printf_argument_type,				/**< Wrong argument type in 'printf' call */
+	pointer_in_print,						/**< Pointer in print */
+	expected_identifier_in_printid,			/**< Expected identifier in printid */
+	expected_identifier_in_getid,			/**< Expected identifier in getid */
+	upb_fst_not_array,						/**< First argument of 'upb' call is not an array */
+	upb_snd_not_integer,					/**< Secon argument of 'upb' call is not an integer */
+	expected_constant_expression,			/**< Expected constant expression */
+	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
+	label_redefinition,						/**< Label redefinition */
+	case_expr_not_integer,					/**< Case expression is not an integer */
+	switch_expr_not_integer,				/**< Switch expression is not an integer */
+	void_func_valued_return,				/**< Void function should not return a value */
+	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
-	notvoidret_in_void_func,
 
 	// Environment errors
 	no_main_in_program,						/**< Undefined main */
@@ -103,28 +118,17 @@ typedef enum ERROR
 	call_not_from_function,
 	no_comma_in_act_params,
 	float_instead_int,
-	wrong_number_of_params,
 	wait_rightbr_in_primary,
 	unassignable_inc,
 	wrong_addr,
 	no_colon_in_cond_expr,
 	int_op_for_float,
-	not_const_expr,
 	not_const_int_expr,
 	assmnt_float_to_int,
 	redefinition_of_main,
-	no_leftbr_in_printid,
-	no_rightbr_in_printid,
-	no_ident_in_printid,
-	no_leftbr_in_getid,
-	no_rightbr_in_getid,
-	no_ident_in_getid,
 	init_int_by_float,
 	no_comma_in_setmotor,
 	param_setmotor_not_int,
-	no_leftbr_in_stand_func,
-	no_rightbr_in_stand_func,
-	bad_param_in_stand_func,
 	expected_end,
 	aster_before_func,
 	aster_not_for_pointer,
@@ -144,9 +148,7 @@ typedef enum ERROR
 	wrong_operand,
 	must_be_digit_after_exp,
 	label_not_declared,
-	repeated_label,
 	operand_is_pointer,
-	pointer_in_print,
 	wrong_struct,
 	after_dot_must_be_ident,
 	get_field_not_from_struct_pointer,
@@ -176,38 +178,13 @@ typedef enum ERROR
 	init_not_struct,
 	param_threads_not_int,
 
-	wrong_arg_in_send = 341,
-	wrong_arg_in_create,
-
-	no_leftbr_in_printf,
-	no_rightbr_in_printf,
-	wrong_first_printf_param,
-	wrong_printf_param_type,
-	wrong_printf_param_number,
-	printf_no_format_placeholder,
-	printf_unknown_format_placeholder,
-	too_many_printf_args,
-
-	no_mult_in_cast,
-	no_rightbr_in_cast,
-	not_pointer_in_cast,
 	empty_bound_without_init,
 	begin_with_notarray,
 	string_and_notstring,
 	wrong_init_in_actparam,
 	no_comma_or_end,
 
-	not_string_in_stanfunc = 362,
-	not_int_in_stanfunc,
-	no_comma_in_act_params_stanfunc,
-	not_point_string_in_stanfunc,
-
 	struct_init_must_start_from_BEGIN,
-	not_rowofint_in_stanfunc,
-	not_rowoffloat_in_stanfunc,
-
-	not_float_in_stanfunc,
-	not_array_in_stanfunc,
 
 	// Tree parsing errors
 	tree_expression_not_block,

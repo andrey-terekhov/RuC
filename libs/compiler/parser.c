@@ -227,7 +227,6 @@ static void skip_until(parser *const prs, const uint8_t tokens)
 			case TK_SEMICOLON:
 				if (has_token_set(tokens, token_get_kind(&prs->tk)))
 				{
-					consume_token(prs);
 					return;
 				}
 
@@ -481,7 +480,7 @@ static node parse_postfix_expression(parser *const prs)
 				}
 				else
 				{
-					parser_error(prs, expected_identifier);
+					parser_error(prs, expected_identifier_in_member_expr);
 					operand = node_broken();
 				}
 
@@ -570,12 +569,14 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		{
 			middle = parse_expression(prs);
 
-			if (token_is_not(&prs->tk, TK_COLON))
+			if (token_is(&prs->tk, TK_COLON))
 			{
-				parser_error(prs, expected_colon_in_conditional, op_loc);
+				op_loc = consume_token(prs);
 			}
-
-			op_loc = consume_token(prs);
+			else
+			{
+				parser_error(prs, expected_colon_in_conditional_expr, op_loc);
+			}
 		}
 
 		node RHS = token_is(&prs->tk, TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
@@ -655,12 +656,8 @@ static node parse_constant_expression(parser *const prs)
 {
 	node LHS = parse_unary_expression(prs);
 	LHS = parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
-	if (expression_get_class(&LHS) != EXPR_LITERAL)
-	{
-		parser_error(prs, not_const_expr);
-	}
 
-	return LHS;
+	return build_constant_expression(&prs->bld, &LHS);
 }
 
 /**
@@ -682,7 +679,7 @@ static node parse_initializer(parser *const prs)
 
 		if (try_consume_token(prs, TK_R_BRACE))
 		{
-			parser_error(prs, empty_init);
+			parser_error(prs, empty_initializer);
 			return node_broken();
 		}
 
@@ -722,6 +719,7 @@ static node parse_condition(parser *const prs)
 {
 	if (token_is_not(&prs->tk, TK_L_PAREN))
 	{
+		parser_error(prs, expected_l_paren_in_condition);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
@@ -731,7 +729,8 @@ static node parse_condition(parser *const prs)
 	node condition = parse_expression(prs);
 	if (!node_is_correct(&condition))
 	{
-		skip_until(prs, TK_SEMICOLON);
+		skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+		try_consume_token(prs, TK_R_PAREN);
 		return node_broken();
 	}
 
@@ -978,6 +977,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
 			{
 				parser_error(prs, wait_right_sq_br);
 				skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+				try_consume_token(prs, TK_R_SQUARE);
 			}
 		}
 		type = type_array(prs->sx, type);
@@ -1486,7 +1486,7 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 
 	if (token_is_not(&prs->tk, TK_R_BRACE))
 	{
-		parser_error(prs, expected_end, l_loc);
+		parser_error(prs, expected_r_brace, l_loc);
 		node_vector_clear(&stmts);
 		return node_broken();
 	}
@@ -1516,7 +1516,7 @@ static node parse_expression_statement(parser *const prs)
 		return node_broken();
 	}
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_expr);
 	return expr;
 }
 
@@ -1645,14 +1645,13 @@ static node parse_for_statement(parser *const prs)
 
 	if (token_is_not(&prs->tk, TK_L_PAREN))
 	{
-		parser_error(prs, no_leftbr_in_for);
+		parser_error(prs, expected_paren_after_for);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
 
 	const location l_loc = consume_token(prs);
 
-	// TODO: протестировать восстановление после ошибок
 	node init;
 	const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
 	if (has_init)
@@ -1672,7 +1671,7 @@ static node parse_for_statement(parser *const prs)
 
 			if (!try_consume_token(prs, TK_SEMICOLON))
 			{
-				parser_error(prs, no_semicolon_in_for);
+				parser_error(prs, expected_semi_in_for);
 				skip_until(prs, TK_SEMICOLON);
 				return node_broken();
 			}
@@ -1692,7 +1691,7 @@ static node parse_for_statement(parser *const prs)
 
 		if (!try_consume_token(prs, TK_SEMICOLON))
 		{
-			parser_error(prs, no_semicolon_in_for);
+			parser_error(prs, expected_semi_in_for);
 			skip_until(prs, TK_SEMICOLON);
 			return node_broken();
 		}
@@ -1973,6 +1972,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				parser_error(prs, ident_in_declarator);
 				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+				try_consume_token(prs, TK_R_PAREN);
 				return TYPE_UNDEFINED;
 			}
 
@@ -1996,6 +1996,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 					{
 						parser_error(prs, wait_right_sq_br);
 						skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+						try_consume_token(prs, TK_R_SQUARE);
 					}
 				}
 			}
@@ -2055,6 +2056,7 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				if (try_consume_token(prs, TK_L_BRACE))
 				{
 					skip_until(prs, TK_R_BRACE);
+					try_consume_token(prs, TK_R_BRACE);
 				}
 				return TYPE_UNDEFINED;
 			}
@@ -2093,6 +2095,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	{
 		// skip whole function body
 		skip_until(prs, TK_R_BRACE);
+		try_consume_token(prs, TK_R_BRACE);
 		return;
 	}
 
@@ -2110,6 +2113,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
 			skip_until(prs, TK_R_BRACE);
+			try_consume_token(prs, TK_R_BRACE);
 			return;
 		}
 		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
@@ -2152,7 +2156,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 	if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
 	{
-		parser_error(prs, no_ret_in_func);
+		parser_error(prs, nonvoid_func_void_return);
 	}
 
 	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
@@ -2206,6 +2210,7 @@ static void parse_function_declaration(parser *const prs, node *const parent, co
 		{
 			parser_error(prs, func_decl_req_params);
 			skip_until(prs, TK_R_BRACE);
+			try_consume_token(prs, TK_R_BRACE);
 		}
 	}
 	else if (prs->func_def == 1)

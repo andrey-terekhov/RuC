@@ -235,7 +235,7 @@ static token lex_numeric_literal(lexer *const lxr)
 		if (digit >= base)
 		{
 			// Ошибка - цифра не из той системы
-			lexer_error(lxr, unexpected_digit);
+			lexer_error(lxr, digit_of_another_base);
 			// Пропустим все цифры и вернем токен
 			while (utf8_is_hexa_digit(lxr->character))
 			{
@@ -402,7 +402,7 @@ static token lex_char_literal(lexer *const lxr)
 
 	if (scan(lxr) == '\'')
 	{
-		lexer_error(lxr, empty_character);
+		lexer_error(lxr, empty_character_literal);
 
 		const size_t loc_end = in_get_position(lxr->sx->io);
 		return token_char_literal((location){ loc_begin, loc_end }, '\0');
@@ -416,7 +416,7 @@ static token lex_char_literal(lexer *const lxr)
 	}
 	else
 	{
-		lexer_error(lxr, expected_apost_after_char_const);
+		lexer_error(lxr, missing_terminating_apost_char);
 	}
 
 	const size_t loc_end = in_get_position(lxr->sx->io);
@@ -516,7 +516,7 @@ token lex(lexer *const lxr)
 				}
 				else
 				{
-					lexer_error(lxr, bad_character, lxr->character);
+					lexer_error(lxr, bad_character);
 					// Pretending the character didn't exist
 					scan(lxr);
 					return lex(lxr);
