@@ -434,23 +434,6 @@ static node build_upb_expression(builder *const bldr, node *const callee, node_v
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
-// Временная штука, пока что нужна только для меток
-static size_t to_identab(builder *const bldr, const size_t repr, const item_t type, const item_t mode, const location loc)
-{
-	const size_t ret = ident_add(bldr->sx, repr, type, mode, 3);
-
-	if (ret == SIZE_MAX)
-	{
-		semantic_error(bldr, loc, redefinition_of_main);
-	}
-	else if (ret == SIZE_MAX - 1)
-	{
-		semantic_error(bldr, loc, repeated_decl, repr_get_name(bldr->sx, repr));
-	}
-
-	return ret;
-}
-
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -465,17 +448,11 @@ builder builder_create(syntax *const sx)
 {
 	builder bldr;
 	bldr.sx = sx;
-	bldr.labels = vector_create(MAX_LABELS);
 
 	node root = node_get_root(&bldr.sx->tree);
 	node_copy(&bldr.context, &root);
 
 	return bldr;
-}
-
-void builder_clear(builder *const bldr)
-{
-	vector_clear(&bldr->labels);
 }
 
 
@@ -1118,44 +1095,6 @@ node build_constant_expression(builder *const bldr, node *const expr)
 }
 
 
-node build_labeled_statement(builder *const bldr, const size_t name, node *const substmt, const location id_loc)
-{
-	if (!node_is_correct(substmt))
-	{
-		return node_broken();
-	}
-
-	const location loc = { id_loc.begin, node_get_location(substmt).end };
-	for (size_t i = 0; i < vector_size(&bldr->labels); i += 2)
-	{
-		if (name == (size_t)ident_get_repr(bldr->sx, (size_t)vector_get(&bldr->labels, i)))
-		{
-			const size_t id = (size_t)vector_get(&bldr->labels, i);
-
-			if (vector_get(&bldr->labels, i + 1) < 0)
-			{
-				semantic_error(bldr, id_loc, label_redefinition, repr_get_name(bldr->sx, name));
-			}
-			else
-			{
-				vector_set(&bldr->labels, i + 1, -1);	// TODO: здесь должен быть номер строки
-			}
-
-			ident_set_type(bldr->sx, (size_t)id, 1);
-			return statement_labeled(id, substmt, loc);
-		}
-	}
-
-	// Это определение метки, если она встретилась до переходов на нее
-	const size_t id = to_identab(bldr, name, 1, 0, id_loc);
-	vector_add(&bldr->labels, (item_t)id);
-	vector_add(&bldr->labels, -1);	// TODO: здесь должен быть номер строки
-
-	ident_set_type(bldr->sx, id, 1);
-
-	return statement_labeled(id, substmt, loc);
-}
-
 node build_case_statement(builder *const bldr, node *const expr, node *const substmt, const location case_loc)
 {
 	if (!node_is_correct(expr) || !node_is_correct(substmt))
@@ -1295,35 +1234,6 @@ node build_for_statement(builder *const bldr, node *const init
 
 	const location loc = { for_loc.begin, node_get_location(body).end };
 	return statement_for(init, cond, incr, body, loc);
-}
-
-node build_goto_statement(builder *const bldr, const size_t name, const location goto_loc, const location id_loc)
-{
-	const location loc = { goto_loc.begin, id_loc.end };
-
-	for (size_t i = 0; i < vector_size(&bldr->labels); i += 2)
-	{
-		if (name == (size_t)ident_get_repr(bldr->sx, (size_t)vector_get(&bldr->labels, i)))
-		{
-			const size_t id = (size_t)vector_get(&bldr->labels, i);
-			if (vector_get(&bldr->labels, id + 1) >= 0) // Перехода на метку еще не было
-			{
-				vector_add(&bldr->labels, (item_t)id);
-				vector_add(&bldr->labels, 1);	// TODO: здесь должен быть номер строки
-			}
-
-			return statement_goto(&bldr->context, id, loc);
-		}
-	}
-
-	// Первый раз встретился переход на метку, которой не было,
-	// в этом случае ссылка на identtab, стоящая после TGoto,
-	// будет отрицательной
-	const size_t id = to_identab(bldr, name, 1, 0, id_loc);
-	vector_add(&bldr->labels, (item_t)id);
-	vector_add(&bldr->labels, 1);	// TODO: здесь должен быть номер строки
-
-	return statement_goto(&bldr->context, id, loc);
 }
 
 node build_continue_statement(builder *const bldr, const location continue_loc)
