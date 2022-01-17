@@ -73,6 +73,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"default", U"умолчание", TK_DEFAULT);
 	repr_add_keyword(reprtab, U"break", U"выход", TK_BREAK);
 	repr_add_keyword(reprtab, U"continue", U"продолжить", TK_CONTINUE);
+	repr_add_keyword(reprtab, U"goto", U"переход", TK_GOTO);
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);

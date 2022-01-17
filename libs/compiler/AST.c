@@ -505,6 +505,8 @@ statement_t statement_get_class(const node *const nd)
 	{
 		case OP_DECLSTMT:
 			return STMT_DECL;
+		case OP_LABEL:
+			return STMT_LABEL;
 		case OP_CASE:
 			return STMT_CASE;
 		case OP_DEFAULT:
@@ -523,6 +525,8 @@ statement_t statement_get_class(const node *const nd)
 			return STMT_DO;
 		case OP_FOR:
 			return STMT_FOR;
+		case OP_GOTO:
+			return STMT_GOTO;
 		case OP_CONTINUE:
 			return STMT_CONTINUE;
 		case OP_BREAK:
@@ -532,6 +536,30 @@ statement_t statement_get_class(const node *const nd)
 		default:
 			return STMT_EXPR;
 	}
+}
+
+
+node statement_labeled(const size_t label, node *const substmt, const location loc)
+{
+	node nd = node_insert(substmt, OP_LABEL, 3);
+
+	node_set_arg(&nd, 0, (item_t)label);			// ID метки
+	node_set_arg(&nd, 1, (item_t)loc.begin);		// Начальная позиция оператора
+	node_set_arg(&nd, 2, (item_t)loc.end);			// Конечная позиция оператора
+
+	return nd;
+}
+
+size_t statement_labeled_get_label(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_LABEL);
+	return (size_t)node_get_arg(nd, 0);
+}
+
+node statement_labeled_get_substmt(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_LABEL);
+	return node_get_child(nd, 0);
 }
 
 
@@ -810,6 +838,24 @@ node statement_for_get_body(const node *const nd)
 {
 	assert(node_get_type(nd) == OP_FOR);
 	return node_get_child(nd, 0);
+}
+
+
+node statement_goto(node *const context, const size_t label, const location loc)
+{
+	node nd = node_create(context, OP_GOTO);
+
+	node_add_arg(&nd, (item_t)label);				// ID метки
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
+
+	return nd;
+}
+
+size_t statement_goto_get_label(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_GOTO);
+	return (size_t)llabs(node_get_arg(nd, 0));
 }
 
 

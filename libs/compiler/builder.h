@@ -34,6 +34,7 @@ typedef struct builder
 	syntax *sx;				/**< Syntax structure */
 
 	node context;			/**< Context for creating new nodes */
+	vector labels;			/**< Labels table */
 
 	item_t func_type;		/**< Type of current parsed function */
 } builder;
@@ -414,6 +415,13 @@ node build_break_statement(builder *const bldr, const location break_loc);
  *	@return	Return statement
  */
 node build_return_statement(builder *const bldr, node *const expr, const location return_loc);
+
+/**
+ *	Free allocated memory
+ *
+ *	@param	bldr			AST builder
+ */
+void builder_clear(builder *const bldr);
 
 #ifdef __cplusplus
 } /* extern "C" */

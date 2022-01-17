@@ -52,6 +52,7 @@ typedef enum ERROR
 	expected_while,							/**< Expected 'while' in do/while loop */
 	expected_paren_after_for,				/**< Expected '(' after 'for' */
 	expected_semi_in_for,					/**< Expected ';' in for */
+	expected_identifier_after_goto,			/**< Expected identifier after 'goto' */
 	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
 	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
 
@@ -83,6 +84,7 @@ typedef enum ERROR
 	upb_operand_not_array,					/**< Operand of 'upb' is not an array */
 	expected_constant_expression,			/**< Expected constant expression */
 	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
+	label_redefinition,						/**< Label redefinition */
 	case_expr_not_integer,					/**< Case expression is not an integer */
 	switch_expr_not_integer,				/**< Switch expression is not an integer */
 	void_func_valued_return,				/**< Void function should not return a value */

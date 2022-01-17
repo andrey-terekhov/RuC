@@ -95,6 +95,7 @@ static inline parser parser_create(const workspace *const ws, syntax *const sx)
  */
 static inline void parser_clear(parser *const prs)
 {
+	builder_clear(&prs->bld);
 	lexer_clear(&prs->lxr);
 }
 
@@ -1360,6 +1361,27 @@ static bool is_declaration_specifier(parser *const prs)
 }
 
 /**
+ *	Parse labeled statement
+ *
+ *	labeled-statement:
+ *		identifier ':' statement
+ *
+ *	@param	prs			Parser
+ *
+ *	@return	Labeled statement
+ */
+static node parse_labeled_statement(parser *const prs)
+{
+	const size_t name = token_get_ident_name(&prs->tk);
+	const location id_loc = consume_token(prs);
+	consume_token(prs);	// Уже проверили, что тут стоит ':'
+
+	node substmt = parse_statement(prs);
+
+	return build_labeled_statement(&prs->bld, name, &substmt, id_loc);
+}
+
+/**
  *	Parse case statement
  *
  *	labeled-statement:
@@ -1706,6 +1728,34 @@ static node parse_for_statement(parser *const prs)
 }
 
 /**
+ *	Parse goto statement
+ *
+ *	jump-statement:
+ *		'goto' identifier ';'
+ *
+ *	@param	prs			Parser
+ *
+ *	@return	Goto statement
+ */
+static node parse_goto_statement(parser *const prs)
+{
+	const location goto_loc = consume_token(prs);
+
+	if (token_is_not(&prs->tk, TK_IDENTIFIER))
+	{
+		parser_error(prs, expected_identifier_after_goto);
+		skip_until(prs, TK_SEMICOLON);
+		return node_broken();
+	}
+
+	const size_t name = token_get_ident_name(&prs->tk);
+	const location id_loc = consume_token(prs);
+	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+
+	return build_goto_statement(&prs->bld, name, goto_loc, id_loc);
+}
+
+/**
  *	Parse continue statement
  *
  *	jump-statement:
@@ -1829,6 +1879,9 @@ static node parse_statement(parser *const prs)
 		case TK_FOR:
 			return parse_for_statement(prs);
 
+		case TK_GOTO:
+			return parse_goto_statement(prs);
+
 		case TK_CONTINUE:
 			return parse_continue_statement(prs);
 
@@ -1837,6 +1890,12 @@ static node parse_statement(parser *const prs)
 
 		case TK_RETURN:
 			return parse_return_statement(prs);
+
+		case TK_IDENTIFIER:
+			if (peek_token(prs) == TK_COLON)
+			{
+				return parse_labeled_statement(prs);
+			}
 
 		default:
 			return parse_expression_statement(prs);
@@ -2045,6 +2104,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
 	const size_t param_number = type_function_get_parameter_amount(prs->sx, prs->bld.func_type);
 
+	vector_resize(&prs->bld.labels, 0);
 	prs->was_return = 0;
 
 	const item_t prev = ident_get_prev(prs->sx, function_id);
@@ -2102,6 +2162,16 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
 	node_set_arg(&nd, 1, max_displ);
+
+	for (size_t i = 0; i < vector_size(&prs->bld.labels); i += 2)
+	{
+		const size_t repr = (size_t)ident_get_repr(prs->sx, (size_t)vector_get(&prs->bld.labels, i));
+		const size_t line_number = (size_t)llabs(vector_get(&prs->bld.labels, i + 1));
+		if (!ident_get_type(prs->sx, (size_t)vector_get(&prs->bld.labels, i)))
+		{
+			parser_error(prs, label_not_declared, line_number, repr_get_name(prs->sx, repr));
+		}
+	}
 }
 
 /**

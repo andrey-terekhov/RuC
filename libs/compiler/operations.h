@@ -134,6 +134,7 @@ typedef enum OPERATION
 	OP_INITIALIZER,			/**< Initializer node */
 
 	// Statements
+	OP_LABEL,				/**< Label statement node */
 	OP_CASE,				/**< Case statement node */
 	OP_DEFAULT,				/**< Default statement node */
 	OP_BLOCK,				/**< Compound statement node */
@@ -142,6 +143,7 @@ typedef enum OPERATION
 	OP_WHILE,				/**< While statement node */
 	OP_DO,					/**< Do statement node */
 	OP_FOR,					/**< For statement node */
+	OP_GOTO,				/**< Goto statement node */
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN,				/**< Return statement node */
