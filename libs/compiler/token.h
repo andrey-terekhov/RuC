@@ -47,7 +47,6 @@ typedef enum TOKEN
 	TK_FILE,						/**< 'file' keyword */
 	TK_FLOAT,						/**< 'float' keyword */
 	TK_FOR,							/**< 'for' keyword */
-	TK_GOTO,						/**< 'goto' keyword */
 	TK_IF,							/**< 'if' keyword */
 	TK_INT,							/**< 'int' keyword */
 	TK_LONG,						/**< 'long' keyword */

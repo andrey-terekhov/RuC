@@ -1437,35 +1437,6 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit labeled statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_labeled_statement(encoder *const enc, const node *const nd)
-{
-	const size_t label_id = statement_labeled_get_label(nd);
-	item_t addr = ident_get_displ(enc->sx, label_id);
-
-	if (addr < 0)
-	{
-		// Были переходы на метку
-		while (addr != 0)
-		{
-			// Проставить ссылку на метку во всех ранних переходах
-			const item_t ref = mem_get(enc, (size_t)(-addr));
-			mem_set(enc, (size_t)(-addr), (item_t)mem_size(enc));
-			addr = ref;
-		}
-	}
-
-	ident_set_displ(enc->sx, label_id, (item_t)mem_size(enc));
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	emit_statement(enc, &substmt);
-}
-
-/**
  *	Emit case statement
  *
  *	@param	enc			Encoder
@@ -1696,34 +1667,6 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit goto statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_goto_statement(encoder *const enc, const node *const nd)
-{
-	mem_add(enc, IC_B);
-
-	const size_t id = statement_goto_get_label(nd);
-	const item_t addr = ident_get_displ(enc->sx, id);
-
-	if (addr > 0)
-	{
-		// Метка уже описана
-		mem_add(enc, addr);
-	}
-	else // if (addr == 0)
-	{
-		// Метка еще не описана
-		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
-
-		// Ставим адрес предыдущего перехода
-		mem_add(enc, addr);
-	}
-}
-
-/**
  *	Emit continue statement
  *
  *	@param	enc			Encoder
@@ -1783,9 +1726,6 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			emit_declaration_statement(enc, nd);
 			return;
 
-		case STMT_LABEL:
-			emit_labeled_statement(enc, nd);
-			return;
 		case STMT_CASE:
 			emit_case_statement(enc, nd);
 			return;
@@ -1820,9 +1760,6 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			emit_for_statement(enc, nd);
 			return;
 
-		case STMT_GOTO:
-			emit_goto_statement(enc, nd);
-			return;
 		case STMT_CONTINUE:
 			emit_continue_statement(enc);
 			return;
