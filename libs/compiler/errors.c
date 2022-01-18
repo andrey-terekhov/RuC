@@ -221,11 +221,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_identifier_in_getid:
 			sprintf(msg, "ожидался идентификатор в вызове 'getid'");
 			break;
-		case upb_fst_not_array:
-			sprintf(msg, "первый аргумент вызова 'upb' должен иметь тип массив");
-			break;
-		case upb_snd_not_integer:
-			sprintf(msg, "второй аргумент вызова 'upb' должен иметь целочисленный тип");
+		case upb_operand_not_array:
+			sprintf(msg, "операнд 'upb' должен иметь тип массив");
 			break;
 		case expected_constant_expression:
 			sprintf(msg, "ожидалось константное выражение");
