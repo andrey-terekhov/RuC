@@ -63,6 +63,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 
 		// Syntax errors
+		case extraneous_bracket_before_semi:
+			sprintf(msg, "лишняя скобка перед ';'");
+			break;
 		case expected_r_paren:
 			sprintf(msg, "ожидалась ')'");
 			break;

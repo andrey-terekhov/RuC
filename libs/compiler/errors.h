@@ -37,6 +37,7 @@ typedef enum ERROR
 	unterminated_block_comment,				/**< Unterminated block comment */
 
 	// Syntax errors
+	extraneous_bracket_before_semi,			/**< Extraneous bracket before ';' */
 	expected_r_paren,						/**< Expected ')' */
 	expected_r_square,						/**< Expected ']' */
 	expected_r_brace,						/**< Expected '}' */
