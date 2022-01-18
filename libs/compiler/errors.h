@@ -29,6 +29,7 @@ typedef enum ERROR
 	// Lexing errors
 	bad_character,							/**< Bad character */
 	digit_of_another_base,					/**< Digit of another base */
+	exponent_has_no_digits,					/**< Exponent has no digits */
 	empty_character_literal,				/**< Empty character literal */
 	unknown_escape_sequence,				/**< Unknown escape sequence */
 	missing_terminating_apost_char,			/**< Missing terminating ' character */
@@ -143,7 +144,6 @@ typedef enum ERROR
 	diff_formal_param_type_and_actual,
 	expected_expression,
 	wrong_operand,
-	must_be_digit_after_exp,
 	operand_is_pointer,
 	wrong_struct,
 	after_dot_must_be_ident,
