@@ -57,7 +57,6 @@ typedef enum TOKEN
 	TK_SWITCH,						/**< 'switch' keyword */
 	TK_TRUE,						/**< 'true' keyword */
 	TK_TYPEDEF,						/**< 'typedef' keyword */
-	TK_UPB,							/**< 'upb' keyword */
 	TK_VOID,						/**< 'void' keyword */
 	TK_WHILE,						/**< 'while' keyword */
 

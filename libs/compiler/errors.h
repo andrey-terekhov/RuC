@@ -81,7 +81,8 @@ typedef enum ERROR
 	pointer_in_print,						/**< Pointer in print */
 	expected_identifier_in_printid,			/**< Expected identifier in printid */
 	expected_identifier_in_getid,			/**< Expected identifier in getid */
-	upb_operand_not_array,					/**< Operand of 'upb' is not an array */
+	upb_fst_not_array,						/**< First argument of 'upb' call is not an array */
+	upb_snd_not_integer,					/**< Secon argument of 'upb' call is not an integer */
 	expected_constant_expression,			/**< Expected constant expression */
 	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
 	label_redefinition,						/**< Label redefinition */
