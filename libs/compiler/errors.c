@@ -43,6 +43,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case digit_of_another_base:
 			sprintf(msg, "цифра из другой системы счисления");
 			break;
+		case exponent_has_no_digits:
+			sprintf(msg, "после экспоненты должна быть цифра");
+			break;
 		case empty_character_literal:
 			sprintf(msg, "пустой символьный литерал");
 			break;
@@ -337,9 +340,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case init_int_by_float:	// test_exist
 			sprintf(msg, "целая или литерная переменная инициализируется значением типа ВЕЩ");
-			break;
-		case must_be_digit_after_exp:	// test_exist
-			sprintf(msg, "должна быть цифра после e");
 			break;
 		case no_comma_in_setmotor: // need_test
 			sprintf(msg, "в команде управления роботом после первого параметра нет ,");

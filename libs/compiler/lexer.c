@@ -313,8 +313,14 @@ static token lex_numeric_literal(lexer *const lxr)
 		if (!utf8_is_digit(lxr->character))
 		{
 			// Ошибка - после экспоненты должны быть цифры
-			lexer_error(lxr, must_be_digit_after_exp);
-			// Просто вернем токен
+			lexer_error(lxr, exponent_has_no_digits);
+			// Пропустим все лишнее
+			while (utf8_is_letter(lxr->character) || utf8_is_digit(lxr->character)
+				|| lxr->character == '+' || lxr->character == '-')
+			{
+				scan(lxr);
+			}
+
 			const size_t loc_end = in_get_position(lxr->sx->io);
 			return token_float_literal((location){ loc_begin, loc_end }, DBL_MAX);
 		}
@@ -403,6 +409,7 @@ static token lex_char_literal(lexer *const lxr)
 	if (scan(lxr) == '\'')
 	{
 		lexer_error(lxr, empty_character_literal);
+		scan(lxr);
 
 		const size_t loc_end = in_get_position(lxr->sx->io);
 		return token_char_literal((location){ loc_begin, loc_end }, '\0');
