@@ -91,6 +91,7 @@ typedef enum ERROR
 	void_func_valued_return,				/**< Void function should not return a value */
 	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
+	wrong_init,
 
 	// Environment errors
 	no_main_in_program,						/**< Undefined main */
@@ -123,16 +124,13 @@ typedef enum ERROR
 	two_idents_for_1_declarer,
 	function_has_no_body,
 	wrong_struct,
-	wrong_init,								///<------------------------------------------------------------------------
-
 	pnt_before_array,
 	array_size_must_be_int,
 	no_semicolon_in_struct,
 	no_comma_in_enum,
 	wait_ident_after_semicolon_in_struct,
 	wait_ident_after_comma_in_enum,
-	empty_init,								///<------------------------------------------------------------------------
-
+	empty_init,
 	ident_not_type,
 	not_decl,
 
