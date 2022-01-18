@@ -77,6 +77,7 @@ static inline void repr_init(map *const reprtab)
 	repr_add_keyword(reprtab, U"return", U"возврат", TK_RETURN);
 	repr_add_keyword(reprtab, U"null", U"ничто", TK_NULL);
 	repr_add_keyword(reprtab, U"abs", U"абс", TK_ABS);
+	repr_add_keyword(reprtab, U"upb", U"кол_во", TK_UPB);
 	repr_add_keyword(reprtab, U"bool", U"булево", TK_BOOL);
 	repr_add_keyword(reprtab, U"true", U"истина", TK_TRUE);
 	repr_add_keyword(reprtab, U"false", U"ложь", TK_FALSE);
@@ -221,7 +222,6 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
-	builtin_add(sx, U"upb", U"кол_во", type_function(sx, TYPE_INTEGER, NULL));
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
 	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
 	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));

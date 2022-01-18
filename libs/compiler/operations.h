@@ -45,6 +45,8 @@ typedef enum UNARY
 	UN_LOGNOT,			/**< '!' operator */
 	// Abs operator
 	UN_ABS,				/**< 'abs' operator */
+	// Upb operator
+	UN_UPB,				/**< 'upb' operator */
 } unary_t;
 
 /** Binary operator kinds */
@@ -209,14 +211,13 @@ typedef enum builtin
 	BI_FCLOSE				= 158,
 
 	BI_EXIT					= 162,
-	BI_UPB					= 166,
 
-	BI_PRINTF				= 170,
-	BI_PRINT				= 174,
-	BI_PRINTID				= 178,
-	BI_GETID				= 182,
+	BI_PRINTF				= 166,
+	BI_PRINT				= 170,
+	BI_PRINTID				= 174,
+	BI_GETID				= 178,
 
-	BEGIN_USER_FUNC			= 186,
+	BEGIN_USER_FUNC			= 182,
 } builtin_t;
 
 

@@ -405,35 +405,6 @@ static node build_getid_expression(builder *const bldr, node *const callee, node
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-static node build_upb_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
-{
-	const size_t argc = node_vector_size(args);
-	if (argc != 2)
-	{
-		semantic_error(bldr, r_loc, wrong_argument_amount);
-		return node_broken();
-	}
-
-	const node fst = node_vector_get(args, 0);
-	const item_t fst_type = expression_get_type(&fst);
-	if (!type_is_array(bldr->sx, fst_type))
-	{
-		semantic_error(bldr, node_get_location(&fst), upb_fst_not_array);
-		return node_broken();
-	}
-
-	const node snd = node_vector_get(args, 1);
-	const item_t snd_type = expression_get_type(&snd);
-	if (!type_is_integer(bldr->sx, snd_type))
-	{
-		semantic_error(bldr, node_get_location(&snd), upb_snd_not_integer);
-		return node_broken();
-	}
-
-	const location loc = { node_get_location(callee).begin, r_loc.end };
-	return expression_call(TYPE_INTEGER, callee, args, loc);
-}
-
 // Временная штука, пока что нужна только для меток
 static size_t to_identab(builder *const bldr, const size_t repr, const item_t type, const item_t mode, const location loc)
 {
@@ -669,8 +640,6 @@ node build_call_expression(builder *const bldr, node *const callee
 	{
 		switch (expression_identifier_get_id(callee))
 		{
-			case BI_UPB:
-				return build_upb_expression(bldr, callee, args, r_loc);
 			case BI_PRINTF:
 				return build_printf_expression(bldr, callee, args, r_loc);
 			case BI_PRINT:
@@ -887,6 +856,17 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 			}
 
 			return fold_unary_expression(bldr, TYPE_BOOLEAN, RVALUE, operand, op_kind, loc);
+		}
+
+		case UN_UPB:
+		{
+			if (!type_is_array(bldr->sx, operand_type))
+			{
+				semantic_error(bldr, op_loc, upb_operand_not_array, operand_type);
+				return node_broken();
+			}
+
+			return fold_unary_expression(bldr, TYPE_INTEGER, RVALUE, operand, op_kind, loc);
 		}
 
 		default:

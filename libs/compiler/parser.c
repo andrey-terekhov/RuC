@@ -536,6 +536,7 @@ static node parse_unary_expression(parser *const prs)
 		case TK_TILDE:
 		case TK_EXCLAIM:
 		case TK_ABS:
+		case TK_UPB:
 		{
 			const unary_t operator = token_to_unary(token_get_kind(&prs->tk));
 			const location op_loc = consume_token(prs);
