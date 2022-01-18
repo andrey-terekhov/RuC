@@ -108,9 +108,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_semi_in_for:
 			sprintf(msg, "ожидалась ';' в условии оператора 'для'");
 			break;
-		case expected_identifier_after_goto:
-			sprintf(msg, "ожидался идентификатор в операторе 'переход'");
-			break;
 		case continue_not_in_loop:
 			sprintf(msg, "оператор 'продолжить' не в цикле");
 			break;
@@ -229,9 +226,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case incompatible_cond_operands:
 			sprintf(msg, "несовместимые типы операндов условного оператора");
-			break;
-		case label_redefinition:
-			sprintf(msg, "переопределение метки %s", va_arg(args, char *));
 			break;
 		case case_expr_not_integer:
 			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
@@ -398,13 +392,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case wrong_operand:	// need_test
 			sprintf(msg, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
 			break;
-		case label_not_declared:	// need_test
-		{
-			const size_t hash = va_arg(args, size_t);
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "в строке %zu переход на неописанную метку %s", hash, buffer);
-		}
-		break;
 		case operand_is_pointer:	// need_test
 			sprintf(msg, "операнд бинарной формулы не может быть указателем");
 			break;
