@@ -31,7 +31,6 @@ unary_t token_to_unary(const token_t token)
 		case TK_TILDE:			return UN_NOT;
 		case TK_EXCLAIM:		return UN_LOGNOT;
 		case TK_ABS:			return UN_ABS;
-		case TK_UPB:			return UN_UPB;
 
 		default:
 			system_error(node_unexpected);

@@ -141,9 +141,6 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 		case UN_ABS:
 			write(wrt, "'abs'");
 			break;
-		case UN_UPB:
-			write(wrt, "'upb'");
-			break;
 	}
 }
 
