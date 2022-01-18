@@ -53,8 +53,8 @@ typedef enum ERROR
 	expected_semi_after_expr,				/**< Expected ';' after expression */
 	expected_semi_after_stmt,				/**< Expected ';' after statement */
 	expected_while,							/**< Expected 'while' in do/while loop */
-	expected_paren_after_for,				/**< Expected '(' after 'for' */
-	expected_semi_in_for,					/**< Expected ';' in for */
+	expected_l_paren_after_for,				/**< Expected '(' after 'for' */
+	expected_semi_in_for_specifier,			/**< Expected ';' in 'for' statement specifier */
 	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
 	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
 

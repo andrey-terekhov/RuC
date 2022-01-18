@@ -49,10 +49,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case empty_character_literal:
 			sprintf(msg, "пустой символьный литерал");
 			break;
-		case unknown_escape_sequence:	//test_exist
+		case unknown_escape_sequence:
 			sprintf(msg, "неизвестная escape-последовательность");
 			break;
-		case missing_terminating_apost_char: // need_test
+		case missing_terminating_apost_char:
 			sprintf(msg, "символьный литерал не заканчивается символом '");
 			break;
 		case missing_terminating_quote_char:
@@ -111,11 +111,11 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_while:
 			sprintf(msg, "ожидалось 'пока' в операторе 'цикл'");
 			break;
-		case expected_paren_after_for:
+		case expected_l_paren_after_for:
 			sprintf(msg, "ожидалась '(' после 'для'");
 			break;
-		case expected_semi_in_for:
-			sprintf(msg, "ожидалась ';' в условии оператора 'для'");
+		case expected_semi_in_for_specifier:
+			sprintf(msg, "ожидалась ';' в спецификаторе оператора 'для'");
 			break;
 		case continue_not_in_loop:
 			sprintf(msg, "оператор 'продолжить' не в цикле");
