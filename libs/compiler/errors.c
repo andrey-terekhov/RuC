@@ -253,13 +253,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_main_in_program: // test_exist
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
-
 		case predef_but_notdef: // need_test
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "функция %s была предопределена, но не описана", buffer);
-		}
-		break;
+			sprintf(msg, "функция %s была предопределена, но не описана", va_arg(args, char *));
+			break;
 
 		// Other errors
 		case after_type_must_be_ident: // test_exist
@@ -288,17 +284,11 @@ static void get_error(const error_t num, char *const msg, va_list args)
 				"идентификаторов-параметров), а тут тело функции");
 			break;
 		case repeated_decl:	// test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "повторное описание идентификатора %s", buffer);
-		}
-		break;
+			sprintf(msg, "повторное описание идентификатора %s", va_arg(args, char *));
+			break;
 		case ident_is_not_declared: // test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "не описан идентификатор %s", buffer);
-		}
-		break;
+			sprintf(msg, "не описан идентификатор %s", va_arg(args, char *));
+			break;
 		case not_const_int_expr:
 			sprintf(msg, "должно быть константное выражение типа int");
 			break;
