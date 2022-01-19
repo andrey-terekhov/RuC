@@ -338,8 +338,8 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 
 static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
-	const size_t argc = node_vector_size(args);
-	if (args == NULL || argc == 0)
+	size_t argc;
+	if (args == NULL || (argc = node_vector_size(args)) == 0)
 	{
 		semantic_error(bldr, r_loc, expected_expression);
 		return node_broken();
@@ -1010,6 +1010,12 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 {
 	if (!node_is_correct(cond) || !node_is_correct(LHS) || !node_is_correct(RHS))
 	{
+		return node_broken();
+	}
+
+	if (expression_get_class(LHS) == EXPR_INITIALIZER)
+	{
+		semantic_error(bldr, node_get_location(LHS), expected_expression);
 		return node_broken();
 	}
 

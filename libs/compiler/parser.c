@@ -83,6 +83,9 @@ static inline parser parser_create(const workspace *const ws, syntax *const sx)
 	prs.bld = builder_create(sx);
 	prs.lxr = lexer_create(ws, sx);
 
+	prs.is_in_loop = false;
+	prs.is_in_switch = false;
+
 	consume_token(&prs);
 
 	return prs;
@@ -175,10 +178,24 @@ static bool try_consume_token(parser *const prs, const token_t expected)
  */
 static void expect_and_consume(parser *const prs, const token_t expected, const error_t err)
 {
-	if (!try_consume_token(prs, expected))
+	if (try_consume_token(prs, expected))
 	{
-		parser_error(prs, err);
+		return;
 	}
+
+	if (expected == TK_SEMICOLON && peek_token(prs) == TK_SEMICOLON)
+	{
+		const token_t curr_token = token_get_kind(&prs->tk);
+		if (curr_token == TK_R_PAREN || curr_token == TK_R_SQUARE)
+		{
+			parser_error(prs, extraneous_bracket_before_semi);
+			consume_token(prs);	// ')' or ']'
+			consume_token(prs);	// ';'
+			return;
+		}
+	}
+
+	parser_error(prs, err);
 }
 
 /** Check if the set of tokens has token in it */
@@ -567,7 +584,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 		node middle = node_broken();
 		if (!is_binary)
 		{
-			middle = parse_expression(prs);
+			middle = parse_initializer(prs);
 
 			if (token_is(&prs->tk, TK_COLON))
 			{
@@ -1624,7 +1641,7 @@ static node parse_for_statement(parser *const prs)
 
 	if (token_is_not(&prs->tk, TK_L_PAREN))
 	{
-		parser_error(prs, expected_paren_after_for);
+		parser_error(prs, expected_l_paren_after_for);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
@@ -1650,7 +1667,7 @@ static node parse_for_statement(parser *const prs)
 
 			if (!try_consume_token(prs, TK_SEMICOLON))
 			{
-				parser_error(prs, expected_semi_in_for);
+				parser_error(prs, expected_semi_in_for_specifier);
 				skip_until(prs, TK_SEMICOLON);
 				return node_broken();
 			}
@@ -1670,7 +1687,7 @@ static node parse_for_statement(parser *const prs)
 
 		if (!try_consume_token(prs, TK_SEMICOLON))
 		{
-			parser_error(prs, expected_semi_in_for);
+			parser_error(prs, expected_semi_in_for_specifier);
 			skip_until(prs, TK_SEMICOLON);
 			return node_broken();
 		}

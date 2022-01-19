@@ -49,10 +49,10 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case empty_character_literal:
 			sprintf(msg, "пустой символьный литерал");
 			break;
-		case unknown_escape_sequence:	//test_exist
+		case unknown_escape_sequence:
 			sprintf(msg, "неизвестная escape-последовательность");
 			break;
-		case missing_terminating_apost_char: // need_test
+		case missing_terminating_apost_char:
 			sprintf(msg, "символьный литерал не заканчивается символом '");
 			break;
 		case missing_terminating_quote_char:
@@ -63,6 +63,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 
 		// Syntax errors
+		case extraneous_bracket_before_semi:
+			sprintf(msg, "лишняя скобка перед ';'");
+			break;
 		case expected_r_paren:
 			sprintf(msg, "ожидалась ')'");
 			break;
@@ -71,6 +74,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case expected_r_brace:
 			sprintf(msg, "ожидалась '}'");
+			break;
+		case expected_expression:
+			sprintf(msg, "ожидалось выражение");
 			break;
 		case expected_identifier_in_member_expr:
 			sprintf(msg, "ожидался идентификатор в выражении выборки");
@@ -105,11 +111,11 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case expected_while:
 			sprintf(msg, "ожидалось 'пока' в операторе 'цикл'");
 			break;
-		case expected_paren_after_for:
+		case expected_l_paren_after_for:
 			sprintf(msg, "ожидалась '(' после 'для'");
 			break;
-		case expected_semi_in_for:
-			sprintf(msg, "ожидалась ';' в условии оператора 'для'");
+		case expected_semi_in_for_specifier:
+			sprintf(msg, "ожидалась ';' в спецификаторе оператора 'для'");
 			break;
 		case continue_not_in_loop:
 			sprintf(msg, "оператор 'продолжить' не в цикле");
@@ -247,13 +253,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_main_in_program: // test_exist
 			sprintf(msg, "в каждой программе должна быть ГЛАВНАЯ функция");
 			break;
-
 		case predef_but_notdef: // need_test
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "функция %s была предопределена, но не описана", buffer);
-		}
-		break;
+			sprintf(msg, "функция %s была предопределена, но не описана", va_arg(args, char *));
+			break;
 
 		// Other errors
 		case after_type_must_be_ident: // test_exist
@@ -281,71 +283,17 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "вообще-то я думал, что это предописание функции (нет "
 				"идентификаторов-параметров), а тут тело функции");
 			break;
-		case expected_end: // test_exist
-			sprintf(msg, "нет } в конце блока");
-			break;
-		case cond_must_be_in_brkts: // test_exist
-			sprintf(msg, "условие должно быть в ()");
-			break;
 		case repeated_decl:	// test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "повторное описание идентификатора %s", buffer);
-		}
-		break;
-		case arr_init_must_start_from_BEGIN: // test_exist
-			sprintf(msg, "инициализация массива должна начинаться со {");
-			break;
-		case struct_init_must_start_from_BEGIN: // need_test
-			sprintf(msg, "инициализация структуры должна начинаться со {");
-			break;
-		case no_comma_in_init_list: // need_test
-			sprintf(msg, "между элементами инициализации массива или структуры должна быть ,");
+			sprintf(msg, "повторное описание идентификатора %s", va_arg(args, char *));
 			break;
 		case ident_is_not_declared: // test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "не описан идентификатор %s", buffer);
-		}
-		break;
-		case no_rightsqbr_in_slice: // test_exist
-			sprintf(msg, "не хватает ] в вырезке элемента массива");
-			break;
-		case no_comma_in_act_params: // test_exist
-			sprintf(msg, "после фактического параметра должна быть ,");
-			break;
-		case float_instead_int:	// test_exist
-			sprintf(msg, "формальный параметр имеет тип ЦЕЛ, а фактический - ВЕЩ");
-			break;
-		case wait_rightbr_in_primary: // test_exist
-			sprintf(msg, "не хватает ) в первичном выражении");
-			break;
-		case wrong_addr:	// test_exist
-			sprintf(msg, "операция получения адреса & применима только к переменным");
-			break;
-		case no_colon_in_cond_expr: // test_exist
-			sprintf(msg, "нет : в условном выражении");
-			break;
-		case int_op_for_float:	// test_exist
-			sprintf(msg, "операция, применимая только к целым, применена к вещественному аргументу");
+			sprintf(msg, "не описан идентификатор %s", va_arg(args, char *));
 			break;
 		case not_const_int_expr:
 			sprintf(msg, "должно быть константное выражение типа int");
 			break;
-		case assmnt_float_to_int:	// test_exist
-			sprintf(msg, "нельзя присваивать целому вещественное значение");
-			break;
 		case redefinition_of_main:	// test_exist
 			sprintf(msg, "в программе может быть только 1 идентификатор ГЛАВНАЯ");
-			break;
-		case init_int_by_float:	// test_exist
-			sprintf(msg, "целая или литерная переменная инициализируется значением типа ВЕЩ");
-			break;
-		case no_comma_in_setmotor: // need_test
-			sprintf(msg, "в команде управления роботом после первого параметра нет ,");
-			break;
-		case param_setmotor_not_int:	// need_test
-			sprintf(msg, "в командах МОТОР, УСТНАПРЯЖЕНИЕ, ЦИФРДАТЧИК и АНАЛОГДАТЧИК параметры должны быть целыми");
 			break;
 		case aster_before_func:	// need_test
 			sprintf(msg, "* перед описанием функции");
@@ -380,66 +328,11 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case function_has_no_body: // need_test
 			sprintf(msg, "есть параметры определения функции, но нет блока, являющегося ее телом");
 			break;
-		case diff_formal_param_type_and_actual:	// need_test
-			sprintf(msg, "типы формального и фактического параметров различаются");
-			break;
-		case float_in_condition:	// need_test
-			sprintf(msg, "условие должно иметь тип ЦЕЛ или ЛИТЕРА");
-			break;
-		case expected_expression:	// need_test
-			sprintf(msg, "ожидалось выражение");
-			break;
-		case wrong_operand:	// need_test
-			sprintf(msg, "операнд операции может иметь только тип ЦЕЛ, ЛИТ или ВЕЩ");
-			break;
-		case operand_is_pointer:	// need_test
-			sprintf(msg, "операнд бинарной формулы не может быть указателем");
-			break;
 		case wrong_struct:	// test_exist
 			sprintf(msg, "неправильное описание структуры");
 			break;
-		case after_dot_must_be_ident: // test_exist
-			sprintf(msg, "после . или -> должен быть идентификатор-имя поля структуры");
-			break;
-		case get_field_not_from_struct_pointer:	// need_test
-			sprintf(msg, "применять операцию -> можно только к указателю на структуру");
-			break;
-
-		case error_in_initialization:	// test_exist
-			sprintf(msg, "несоответствие типов при инициализации переменной");
-			break;
-		case error_in_equal_with_enum:
-			sprintf(msg, "несоответствие типов при присваивании в перечисление");
-			break;
-		case type_missmatch:	// need_test
-			sprintf(msg, "несоответствие типов");
-			break;
-		case array_assigment:	//test_exist
-			sprintf(msg, "присваивание в массив запрещено");
-			break;
-		case wrong_struct_ass:	// need_test
-			sprintf(msg, "для структур и указателей допустима только операция присваивания =");
-			break;
 		case wrong_init:	//test_exist
 			sprintf(msg, "переменные такого типа нельзя инициализировать");
-			break;
-		case no_field:	// test_exist
-		{
-			const char *const buffer = va_arg(args, char *);
-			sprintf(msg, "нет такого поля %s в структуре", buffer);
-		}
-		break;
-		case slice_from_func:	// need_test
-			sprintf(msg, "вырезка элемента из массива, выданного функцией, а функции не могут выдавать массивы");
-			break;
-		case wait_end: // need_test
-			sprintf(msg, "в инициализации структуры здесь ожидалась правая фигурная скобка }");
-			break;
-		case act_param_not_ident:	// test_exist
-			sprintf(msg, "фактическим параметром-функцией может быть только идентификатор");
-			break;
-		case unassignable:	// need_test
-			sprintf(msg, "в левой части присваивания стоит что-то, чему нельзя присваивать");
 			break;
 		case pnt_before_array:	// test_exist
 			sprintf(msg, "в РуСи не бывает указателей на массивы");
@@ -459,9 +352,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case wait_ident_after_comma_in_enum:
 			sprintf(msg, "в перечислении должен быть идентификатор поля");
 			break;
-		case no_equal_with_enum:
-			sprintf(msg, "в перечислении запрещены все операторы присвоения кроме =");
-			break;
 		case empty_init:	// test_exist
 			sprintf(msg, "в РуСи можно определять границы массива по инициализации только по младшему измерению");
 			break;
@@ -471,32 +361,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case not_decl:	// test_exist
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный пользователем)");
 			break;
-		case print_without_br: // test_exist
-			sprintf(msg, "операнд оператора печати должен быть в круглых скобках ()");
-			break;
-		case select_not_from_struct:	// test_exist
-			sprintf(msg, "выборка поля . не из структуры");
-			break;
-		case init_not_struct:	// test_exist
-			sprintf(msg, "в РуСи только структуре можно присвоить или передать параметром запись {,,,}");
-			break;
-		case param_threads_not_int:	// test_exist
-			sprintf(msg, "процедуры, управляющие параллельными нитями, могут иметь только целые параметры");
-			break;
 		case empty_bound_without_init:	// test_exist
 			sprintf(msg, "в описании массива границы не указаны, а инициализации нет");
-			break;
-		case begin_with_notarray:	// need_test
-			sprintf(msg, "инициализация, начинающаяся с {, должна соответствовать массиву или структуре");
-			break;
-		case string_and_notstring:	// need_test
-			sprintf(msg, "если в инициализаторе встретилась строка, то и дальше должны быть только строки");
-			break;
-		case wrong_init_in_actparam:	//test_exist
-			sprintf(msg, "в инициализаторе-фактическом параметре функции могут быть только константы");
-			break;
-		case no_comma_or_end:	// need_test
-			sprintf(msg, "в инициализаторе ожидали , или }");
 			break;
 		case empty_struct:
 			sprintf(msg, "структура должна иметь поля");
@@ -505,78 +371,17 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "перечисление должно иметь поля");
 			break;
 
-		case tree_expression_not_block:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "в выражении встретился оператор вне блока, tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case tree_expression_unknown:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "неизвестное выражение, tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case tree_expression_operator:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "оператор в выражении, tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case tree_expression_no_texprend:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "отсутствует TExprend, tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case tree_no_tend:
-			sprintf(msg, "отсутствует внешний TEnd дерева");
-			break;
-		case tree_unexpected:
-		{
-			const item_t unexp = va_arg(args, item_t);
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "получен %" PRIitem ", ожидался tree[%zu] = %" PRIitem, unexp, i, elem);
-		}
-		break;
-
-		case node_cannot_add_child:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "невозможно добавить потомка к tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case node_cannot_set_type:
-		{
-			const item_t type = va_arg(args, item_t);
-			const size_t i = va_arg(args, size_t);
-			sprintf(msg, "невозможно установить тип %" PRIitem " в tree[%zu]", type, i);
-		}
-		break;
-		case node_cannot_add_arg:
-		{
-			const item_t arg = va_arg(args, item_t);
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "невозможно добавить аргумент %" PRIitem " для tree[%zu] = %" PRIitem, arg, i, elem);
-		}
-		break;
+		// Tree testing errors
 		case node_unexpected:
-		{
-			const int type = va_arg(args, int);
-			sprintf(msg, "недопустимый узел верхнего уровня %i", type);
+			sprintf(msg, "недопустимый узел верхнего уровня %i", va_arg(args, int));
+			break;
 
-		}
-		break;
-
+		// Codegen errors
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
+			break;
+		case wrong_init_in_actparam:
+			sprintf(msg, "в инициализаторе-фактическом параметре функции могут быть только константы");
 			break;
 
 		default:
@@ -587,30 +392,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 
 static void get_warning(const warning_t num, char *const msg, va_list args)
 {
+	(void)args;
 	switch (num)
 	{
 		case too_long_int:
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
-
 		case variable_deviation:
 			sprintf(msg, "cравнение вещественных без учета погрешности");
 			break;
-
-		case tree_operator_unknown:
-		{
-			const size_t i = va_arg(args, size_t);
-			const item_t elem = va_arg(args, item_t);
-			sprintf(msg, "неизвестный оператор, tree[%zu] = %" PRIitem, i, elem);
-		}
-		break;
-		case node_argc:
-		{
-			const size_t i = va_arg(args, size_t);
-			const char *elem = va_arg(args, char *);
-			sprintf(msg, "несоответствие количества аргументов, tree[%zu] = %s", i, elem);
-		}
-		break;
 	}
 }
 
