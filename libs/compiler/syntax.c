@@ -242,7 +242,7 @@ static item_t type_get(const syntax *const sx, const size_t index)
  */
 
 
-syntax sx_create(universal_io *const io)
+syntax sx_create(const workspace *const ws, universal_io *const io)
 {
 	syntax sx;
 	sx.io = io;
@@ -274,17 +274,23 @@ syntax sx_create(universal_io *const io)
 	sx.displ = -3;
 	sx.lg = -1;
 
-	sx.was_error = false;
+	sx.rprt = reporter_create(ws);
 
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
+	if (reporter_get_errors_number(&sx->rprt))
+	{
+		return false;
+	}
+	
+	bool was_error = false;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		sx->was_error = true;
+		was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -292,11 +298,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			sx->was_error = true;
+			was_error = true;
 		}
 	}
 
-	return !sx->was_error;
+	return !was_error;
 }
 
 int sx_clear(syntax *const sx)

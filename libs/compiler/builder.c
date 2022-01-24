@@ -36,13 +36,7 @@ static void semantic_error(builder *const bldr, const location loc, error_t num,
 	va_list args;
 	va_start(args, num);
 
-	const size_t prev_loc = in_get_position(bldr->sx->io);
-	in_set_position(bldr->sx->io, loc.begin);
-
-	verror(bldr->sx->io, num, args);
-	bldr->sx->was_error = true;
-
-	in_set_position(bldr->sx->io, prev_loc);
+	report_error(&bldr->sx->rprt, bldr->sx->io, loc, num, args);
 
 	va_end(args);
 }

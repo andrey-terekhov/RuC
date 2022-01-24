@@ -256,6 +256,22 @@ static void enc_clear(encoder *const enc)
 	vector_clear(&enc->representations);
 }
 
+/**
+ *	Emit an error from encoder
+ *
+ *	@param	enc			Encoder
+ *	@param	num			Error code
+ */
+static void encoder_error(encoder *const enc, const location loc, error_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	report_error(&enc->sx->rprt, enc->sx->io, loc, num, args);
+
+	va_end(args);
+}
+
 
 /*
  *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
@@ -571,8 +587,7 @@ static void emit_argument(encoder *const enc, const node *const nd)
 			const node subexpr = expression_initializer_get_subexpr(nd, i);
 			if (expression_get_class(&subexpr) != EXPR_LITERAL)
 			{
-				system_error(wrong_init_in_actparam);
-				enc->sx->was_error = true;
+				encoder_error(enc, node_get_location(&subexpr), wrong_init_in_actparam);
 			}
 
 			if (type_is_integer(enc->sx, expression_get_type(&fst)))
@@ -1826,7 +1841,7 @@ int encode_to_vm(const workspace *const ws, syntax *const sx)
 	write_codes(DEFAULT_CODES, &enc.memory);
 #endif
 
-	int ret = enc.sx->was_error || enc_export(&enc);
+	int ret = enc_export(&enc);
 
 	enc_clear(&enc);
 	return ret;
