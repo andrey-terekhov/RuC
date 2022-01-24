@@ -26,7 +26,7 @@
  *	@param	lxr			Lexer
  *	@param	num			Error code
  */
-static void lexer_error(lexer *const lxr, error_t num, ...)
+static void lexer_error(lexer *const lxr, err_t num, ...)
 {
 	const size_t position = in_get_position(lxr->sx->io);
 	const location loc = { position, position + 1 };

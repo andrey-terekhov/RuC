@@ -106,7 +106,7 @@ static inline void parser_clear(parser *const prs)
  *	@param	prs			Parser
  *	@param	num			Error code
  */
-static void parser_error(parser *const prs, error_t num, ...)
+static void parser_error(parser *const prs, err_t num, ...)
 {
 	const location loc = token_get_location(&prs->tk);
 
@@ -171,7 +171,7 @@ static bool try_consume_token(parser *const prs, const token_t expected)
  *	@param	expected	Expected token kind
  *	@param	err			Error to emit
  */
-static void expect_and_consume(parser *const prs, const token_t expected, const error_t err)
+static void expect_and_consume(parser *const prs, const token_t expected, const err_t err)
 {
 	if (try_consume_token(prs, expected))
 	{
