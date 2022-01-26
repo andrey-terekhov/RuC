@@ -842,7 +842,7 @@ node statement_return(node *const context, node *const expr, const location loc)
 	node_add_arg(&nd, 0);							// Содержит ли выражение
 	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция оператора
 	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция оператора
-	
+
 	if (node_is_correct(expr))
 	{
 		node_set_arg(&nd, 0, 1);
@@ -890,8 +890,7 @@ declaration_t declaration_get_class(const node *const nd)
 		case OP_FUNC_DEF:
 			return DECL_FUNC;
 		default:
-			system_error(node_unexpected);
-			return 0;
+			return DECL_INVALID;
 	}
 }
 

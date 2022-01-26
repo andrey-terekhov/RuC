@@ -31,7 +31,7 @@
 #define MAX_MSG_SIZE MAX_TAG_SIZE * 4
 #define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
-
+#include <stdlib.h>
 static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
@@ -125,7 +125,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 
 		// Semantics errors
-		case undeclared_identifier_use:
+		case use_of_undeclared_identifier:
 			sprintf(msg, "использование не объявленного идентификатора");
 			break;
 		case subscripted_expr_not_array:
@@ -149,20 +149,29 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case no_such_member:
 			sprintf(msg, "нет такого поля в структуре");
 			break;
-		case illegal_increment_type:
-			sprintf(msg, "операнд инкремента или декремента должен иметь арифметический тип");
-			break;
 		case unassignable_expression:
 			sprintf(msg, "в это выражение нельзя присваивать");
 			break;
-		case cannot_take_rvalue_address:
-			sprintf(msg, "операция получения адреса & применима только к lvalue");
+		case increment_operand_not_arithmetic:
+			sprintf(msg, "операнд инкремента или декремента должен иметь арифметический тип");
 			break;
-		case indirection_requires_pointer:
+		case addrof_operand_not_lvalue:
+			sprintf(msg, "операция получения адреса '&' применима только к lvalue");
+			break;
+		case indirection_operand_not_pointer:
 			sprintf(msg, "операнд косвенного обращения '*' должен иметь тип указатель");
 			break;
-		case typecheck_unary_expr:
-			sprintf(msg, "неверный тип аргумента в унарном выражении");
+		case unary_operand_not_arithmetic:
+			sprintf(msg, "операнд этого унарного оператора должен иметь арифметический тип");
+			break;
+		case unnot_operand_not_integer:
+			sprintf(msg, "операнд оператора '~' должен иметь целочисленный тип");
+			break;
+		case lognot_operand_not_scalar:
+			sprintf(msg, "операнд оператора '!' должен иметь скалярный тип");
+			break;
+		case upb_operand_not_array:
+			sprintf(msg, "операнд 'upb' должен иметь тип массив");
 			break;
 		case typecheck_binary_expr:
 			sprintf(msg, "неверные типы аргументов в бинарном выражении");
@@ -170,6 +179,26 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case condition_must_be_scalar:
 			sprintf(msg, "условие должно иметь скалярный тип");
 			break;
+		case expected_constant_expression:
+			sprintf(msg, "ожидалось константное выражение");
+			break;
+		case incompatible_cond_operands:
+			sprintf(msg, "несовместимые типы операндов условного оператора");
+			break;
+		case case_expr_not_integer:
+			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
+			break;
+		case switch_expr_not_integer:
+			sprintf(msg, "выражение оператора 'выбор' должно иметь целочисленный тип");
+			break;
+		case void_func_valued_return:
+			sprintf(msg, "функция не должна возвращать значение");
+			break;
+		case nonvoid_func_void_return:
+			sprintf(msg, "функция должна возвращать значение");
+			break;
+
+		// Builtin errors
 		case too_many_printf_args:
 			sprintf(msg, "максимально в 'printf' можно выводить %zu значений", va_arg(args, size_t));
 			break;
@@ -226,27 +255,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			break;
 		case expected_identifier_in_getid:
 			sprintf(msg, "ожидался идентификатор в вызове 'getid'");
-			break;
-		case upb_operand_not_array:
-			sprintf(msg, "операнд 'upb' должен иметь тип массив");
-			break;
-		case expected_constant_expression:
-			sprintf(msg, "ожидалось константное выражение");
-			break;
-		case incompatible_cond_operands:
-			sprintf(msg, "несовместимые типы операндов условного оператора");
-			break;
-		case case_expr_not_integer:
-			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
-			break;
-		case switch_expr_not_integer:
-			sprintf(msg, "выражение оператора 'выбор' должно иметь целочисленный тип");
-			break;
-		case void_func_valued_return:
-			sprintf(msg, "функция не должна возвращать значение");
-			break;
-		case nonvoid_func_void_return:
-			sprintf(msg, "функция должна возвращать значение");
 			break;
 
 		// Environment errors

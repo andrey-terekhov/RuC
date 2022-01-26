@@ -699,6 +699,10 @@ static void write_declaration(writer *const wrt, const node *const nd)
 		case DECL_FUNC:
 			write_function_declaration(wrt, nd);
 			break;
+
+		case DECL_INVALID:
+			write(wrt, "DECL_INVALID\n");
+			break;
 	}
 
 	wrt->indent--;

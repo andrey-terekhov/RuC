@@ -59,7 +59,7 @@ typedef enum ERROR
 	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
 
 	// Semantics errors
-	undeclared_identifier_use,				/**< Use of undeclared identifier */
+	use_of_undeclared_identifier,			/**< Use of undeclared identifier */
 	subscripted_expr_not_array,				/**< Subscripted expression is not an array */
 	array_subscript_not_integer,			/**< Array subscript is not an integer */
 	called_expr_not_function,				/**< Called expression is not a function */
@@ -67,23 +67,16 @@ typedef enum ERROR
 	member_reference_not_struct,			/**< Member reference base type is not a structure */
 	member_reference_not_struct_pointer,	/**< Member reference type is not a structure pointer */
 	no_such_member,							/**< No such member */
-	illegal_increment_type,					/**< Cannot increment/decrement value of that type */
 	unassignable_expression,				/**< Expression is not assignable */
-	cannot_take_rvalue_address,				/**< Cannot take the address of an rvalue */
-	indirection_requires_pointer,			/**< Indirection requires pointer operand */
-	typecheck_unary_expr,					/**< Invalid argument type to unary expression */
-	typecheck_binary_expr,					/**< Invalid argument type to binary expression */
-	condition_must_be_scalar,				/**< Condition must be of scalar type */
-	too_many_printf_args,					/**< Too many printf arguments */
-	expected_format_specifier,				/**< Expected format specifier */
-	unknown_format_specifier,				/**< Unknown format specifier */
-	printf_fst_not_string,					/**< First argument of 'printf' call is not a string literal */
-	wrong_printf_argument_amount,			/**< Wrong argument amount in 'printf' call */
-	wrong_printf_argument_type,				/**< Wrong argument type in 'printf' call */
-	pointer_in_print,						/**< Pointer in print */
-	expected_identifier_in_printid,			/**< Expected identifier in printid */
-	expected_identifier_in_getid,			/**< Expected identifier in getid */
+	increment_operand_not_arithmetic,		/**< Operand of increment/decrement must be of arithmetic type */
+	addrof_operand_not_lvalue,				/**< Cannot take the address of an rvalue */
+	indirection_operand_not_pointer,		/**< Indirection operand is not a pointer */
+	unary_operand_not_arithmetic,			/**< Operand of this unary operator must be of arithemtic type */
+	unnot_operand_not_integer,				/**< Operand of '~' is not an integer */
+	lognot_operand_not_scalar,				/**< Operand of '!' must be of scalar type */
 	upb_operand_not_array,					/**< Operand of 'upb' is not an array */
+	typecheck_binary_expr,					/**< Invalid argument types to binary expression */
+	condition_must_be_scalar,				/**< Condition must be of scalar type */
 	expected_constant_expression,			/**< Expected constant expression */
 	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
 	case_expr_not_integer,					/**< Case expression is not an integer */
@@ -92,6 +85,17 @@ typedef enum ERROR
 	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
 	wrong_init,
+
+	// Builtin errors
+	too_many_printf_args,					/**< Too many printf arguments */
+	expected_format_specifier,				/**< Expected format specifier */
+	unknown_format_specifier,				/**< Unknown format specifier */
+	printf_fst_not_string,					/**< First argument of 'printf' call is not a string literal */
+	wrong_printf_argument_amount,			/**< Wrong argument amount in 'printf' call */
+	wrong_printf_argument_type,				/**< Wrong argument type in 'printf' call */
+	pointer_in_print,						/**< Pointer in print */
+	expected_identifier_in_printid,			/**< Expected identifier in 'printid' call */
+	expected_identifier_in_getid,			/**< Expected identifier in 'getid' call */
 
 	// Environment errors
 	no_main_in_program,						/**< Undefined main */
