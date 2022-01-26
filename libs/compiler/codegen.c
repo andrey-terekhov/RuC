@@ -473,6 +473,15 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 			return;
 		}
 
+		case TYPE_BOOLEAN:
+		{
+			const bool value = expression_literal_get_boolean(nd);
+
+			mem_add(enc, IC_LI);
+			mem_add(enc, value ? 1 : 0);
+			return;
+		}
+
 		case TYPE_CHARACTER:
 		{
 			const char32_t value = expression_literal_get_character(nd);
@@ -691,23 +700,6 @@ static void emit_print_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit upb expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_upb_expression(encoder *const enc, const node *const nd)
-{
-	const node fst = expression_call_get_argument(nd, 1);
-	emit_expression(enc, &fst);
-
-	const node snd = expression_call_get_argument(nd, 0);
-	emit_expression(enc, &snd);
-
-	mem_add(enc, IC_UPB);
-}
-
-/**
  *	Emit call expression
  *
  *	@param	enc			Encoder
@@ -731,9 +723,6 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 			return;
 		case BI_GETID:
 			emit_getid_expression(enc, nd);
-			return;
-		case BI_UPB:
-			emit_upb_expression(enc, nd);
 			return;
 	}
 
@@ -789,6 +778,27 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit cast expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_cast_expression(encoder *const enc, const node *const nd)
+{
+	const node subexpr = expression_cast_get_operand(nd);
+	emit_expression(enc, &subexpr);
+
+	const item_t target_type = expression_get_type(nd);
+	const item_t source_type = expression_get_type(&subexpr);
+
+	// Необходимо только преобразование 'int' -> 'float'
+	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
+	{
+		mem_add(enc, IC_WIDEN);
+	}
+}
+
+/**
  *	Emit increment expression
  *
  *	@param	enc			Encoder
@@ -819,27 +829,6 @@ static void emit_increment_expression(encoder *const enc, const node *const nd)
 	if (value.kind == VARIABLE)
 	{
 		mem_add(enc, value.displ);
-	}
-}
-
-/**
- *	Emit cast expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_cast_expression(encoder *const enc, const node *const nd)
-{
-	const node subexpr = expression_cast_get_operand(nd);
-	emit_expression(enc, &subexpr);
-
-	const item_t target_type = expression_get_type(nd);
-	const item_t source_type = expression_get_type(&subexpr);
-
-	// Необходимо только преобразование 'int' -> 'float'
-	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
-	{
-		mem_add(enc, IC_WIDEN);
 	}
 }
 
@@ -901,6 +890,16 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 			emit_expression(enc, &operand);
 			mem_add(enc, type_is_integer(enc->sx, type) ? IC_ABSI : IC_ABS);
 			return;
+
+		case UN_UPB:
+		{
+			mem_add(enc, IC_LI);
+			mem_add(enc, 0);
+
+			emit_expression(enc, &operand);
+			mem_add(enc, IC_UPB);
+			return;
+		}
 	}
 }
 
@@ -1438,35 +1437,6 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit labeled statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_labeled_statement(encoder *const enc, const node *const nd)
-{
-	const size_t label_id = statement_labeled_get_label(nd);
-	item_t addr = ident_get_displ(enc->sx, label_id);
-
-	if (addr < 0)
-	{
-		// Были переходы на метку
-		while (addr != 0)
-		{
-			// Проставить ссылку на метку во всех ранних переходах
-			const item_t ref = mem_get(enc, (size_t)(-addr));
-			mem_set(enc, (size_t)(-addr), (item_t)mem_size(enc));
-			addr = ref;
-		}
-	}
-
-	ident_set_displ(enc->sx, label_id, (item_t)mem_size(enc));
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	emit_statement(enc, &substmt);
-}
-
-/**
  *	Emit case statement
  *
  *	@param	enc			Encoder
@@ -1697,34 +1667,6 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit goto statement
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_goto_statement(encoder *const enc, const node *const nd)
-{
-	mem_add(enc, IC_B);
-
-	const size_t id = statement_goto_get_label(nd);
-	const item_t addr = ident_get_displ(enc->sx, id);
-
-	if (addr > 0)
-	{
-		// Метка уже описана
-		mem_add(enc, addr);
-	}
-	else // if (addr == 0)
-	{
-		// Метка еще не описана
-		ident_set_displ(enc->sx, id, -(item_t)mem_size(enc));
-
-		// Ставим адрес предыдущего перехода
-		mem_add(enc, addr);
-	}
-}
-
-/**
  *	Emit continue statement
  *
  *	@param	enc			Encoder
@@ -1784,12 +1726,10 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			emit_declaration_statement(enc, nd);
 			return;
 
-		case STMT_LABEL:
-			emit_labeled_statement(enc, nd);
-			return;
 		case STMT_CASE:
 			emit_case_statement(enc, nd);
 			return;
+
 		case STMT_DEFAULT:
 			emit_default_statement(enc, nd);
 			return;
@@ -1801,12 +1741,14 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_EXPR:
 			emit_void_expression(enc, nd);
 			return;
+
 		case STMT_NULL:
 			return;
 
 		case STMT_IF:
 			emit_if_statement(enc, nd);
 			return;
+
 		case STMT_SWITCH:
 			emit_switch_statement(enc, nd);
 			return;
@@ -1814,22 +1756,23 @@ static void emit_statement(encoder *const enc, const node *const nd)
 		case STMT_WHILE:
 			emit_while_statement(enc, nd);
 			return;
+
 		case STMT_DO:
 			emit_do_statement(enc, nd);
 			return;
+
 		case STMT_FOR:
 			emit_for_statement(enc, nd);
 			return;
 
-		case STMT_GOTO:
-			emit_goto_statement(enc, nd);
-			return;
 		case STMT_CONTINUE:
 			emit_continue_statement(enc);
 			return;
+
 		case STMT_BREAK:
 			emit_break_statement(enc);
 			return;
+
 		case STMT_RETURN:
 			emit_return_statement(enc, nd);
 			return;

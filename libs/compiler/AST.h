@@ -55,7 +55,6 @@ typedef enum EXPRESSION
 typedef enum STATEMENT
 {
 	STMT_DECL,			/**< Declaration statement */
-	STMT_LABEL,			/**< Labeled statement */
 	STMT_CASE,			/**< Case statement */
 	STMT_DEFAULT,		/**< Default statement */
 	STMT_COMPOUND,		/**< Compound statement */
@@ -66,7 +65,6 @@ typedef enum STATEMENT
 	STMT_WHILE,			/**< While statement */
 	STMT_DO,			/**< Do statement */
 	STMT_FOR,			/**< For statement */
-	STMT_GOTO,			/**< Goto statement */
 	STMT_CONTINUE,		/**< Continue statement */
 	STMT_BREAK,			/**< Break statement */
 	STMT_RETURN,		/**< Return statement */
@@ -171,6 +169,28 @@ size_t expression_identifier_get_id(const node *const nd);
  *	@return	Null literal expression
  */
 node expression_null_literal(node *const context, const item_t type, const location loc);
+
+
+/**
+ *	Create new boolean literal expression
+ *
+ *	@param	context			Context node
+ *	@param	type			Value type
+ *	@param	value			Literal value
+ *	@param	loc				Literal location
+ *
+ *	@return	Boolean literal expression
+ */
+node expression_boolean_literal(node *const context, const item_t type, const bool value, const location loc);
+
+/**
+ *	Get value of boolean literal expression
+ *
+ *	@param	nd				Literal expression
+ *
+ *	@return	Boolean value
+ */
+bool expression_literal_get_boolean(const node *const nd);
 
 
 /**
@@ -610,36 +630,6 @@ statement_t statement_get_class(const node *const nd);
 
 
 /**
- *	Create new labeled statement
- *
- *	@param	label			Index in identifiers table
- *	@param	substmt			Substatement
- *	@param	loc				Statement location
- *
- *	@return	Labeled statement
- */
-node statement_labeled(const size_t label, node *const substmt, const location loc);
-
-/**
- *	Get label id of labeled statement
- *
- *	@param	nd				Labeled statement
- *
- *	@return	Label id
- */
-size_t statement_labeled_get_label(const node *const nd);
-
-/**
- *	Get substatement of labeled statement
- *
- *	@param	nd				Labeled statement
- *
- *	@return	Substatement
- */
-node statement_labeled_get_substmt(const node *const nd);
-
-
-/**
  *	Create new case statement
  *
  *	@param	expr			Case expression
@@ -945,27 +935,6 @@ node statement_for_get_increment(const node *const nd);
  *	@return	Substatement
  */
 node statement_for_get_body(const node *const nd);
-
-
-/**
- *	Create new goto statement
- *
- *	@param	context			Context node
- *	@param	label			Index in identifiers table
- *	@param	loc				Statement location
- *
- *	@return	Goto statement
- */
-node statement_goto(node *const context, const size_t label, const location loc);
-
-/**
- *	Get label id of goto statement
- *
- *	@param	nd				Goto statement
- *
- *	@return	Label id
- */
-size_t statement_goto_get_label(const node *const nd);
 
 
 /**

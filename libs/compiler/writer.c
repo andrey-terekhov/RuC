@@ -141,6 +141,9 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 		case UN_ABS:
 			write(wrt, "'abs'");
 			break;
+		case UN_UPB:
+			write(wrt, "'upb'");
+			break;
 	}
 }
 
@@ -313,6 +316,10 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 	{
 		case TYPE_NULL_POINTER:
 			write(wrt, "NULL");
+			break;
+
+		case TYPE_BOOLEAN:
+			uni_printf(wrt->io, expression_literal_get_boolean(nd) ? "true" : "false");
 			break;
 
 		case TYPE_CHARACTER:
@@ -726,24 +733,6 @@ static void write_declaration_statement(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write labeled statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_labeled_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_LABEL");
-
-	const size_t label = statement_labeled_get_label(nd);
-	const char *const spelling = ident_get_spelling(wrt->sx, label);
-	uni_printf(wrt->io, " declaring label named \'%s\' with id %zu\n", spelling, label);
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	write_statement(wrt, &substmt);
-}
-
-/**
  *	Write case statement
  *
  *	@param	wrt			Writer
@@ -911,21 +900,6 @@ static void write_for_statement(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write goto statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_goto_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_GOTO");
-
-	const size_t label = statement_goto_get_label(nd);
-	const char *const spelling = ident_get_spelling(wrt->sx, label);
-	uni_printf(wrt->io, " label named \'%s\' with id %zu\n", spelling, label);
-}
-
-/**
  *	Write continue statement
  *
  *	@param	wrt			Writer
@@ -993,10 +967,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 			write_declaration_statement(wrt, nd);
 			break;
 
-		case STMT_LABEL:
-			write_labeled_statement(wrt, nd);
-			break;
-
 		case STMT_CASE:
 			write_case_statement(wrt, nd);
 			break;
@@ -1031,10 +1001,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 
 		case STMT_FOR:
 			write_for_statement(wrt, nd);
-			break;
-
-		case STMT_GOTO:
-			write_goto_statement(wrt, nd);
 			break;
 
 		case STMT_CONTINUE:
@@ -2088,6 +2054,9 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 
 		case TYPE_VOID:
 			return sprintf(buffer, "void");
+
+		case TYPE_BOOLEAN:
+			return sprintf(buffer, "bool");
 
 		case TYPE_FLOATING:
 			return sprintf(buffer, "double");
