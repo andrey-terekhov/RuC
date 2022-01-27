@@ -802,7 +802,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
 		case TK_CHAR:
 			consume_token(prs);
 			return TYPE_CHARACTER;
-			
+
 		case TK_INT:
 		case TK_LONG:
 			consume_token(prs);
@@ -1197,6 +1197,10 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 			node_copy(&prs->bld.context, parent);
 
 			node expr = parse_constant_expression(prs);
+			if (!node_is_correct(&expr))
+			{
+				continue;
+			}
 			const item_t type_expr = expression_get_type(&expr);
 			field_value = expression_literal_get_integer(&expr);
 			node_remove(&expr);

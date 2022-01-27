@@ -76,6 +76,7 @@ typedef enum DECLARATION
 	DECL_VAR,			/**< Variable declaration */
 	DECL_FUNC,			/**< Function declaration */
 	DECL_TYPE,			/**< Type declaration */
+	DECL_INVALID,		/**< Invalid declaration */
 } declaration_t;
 
 
