@@ -1295,6 +1295,8 @@ static void emit_binary_expression(information *const info, const node *const nd
 			const node RHS = expression_binary_get_RHS(nd);
 			emit_expression(info, &RHS);
 
+			check_type_and_branch(info);
+
 			// if (info->answer_kind == AREG)
 			// {			
 			// 	to_code_operation_reg_const_integer(info, BIN_NE, info->answer_reg, 0, TYPE_INTEGER);
@@ -1308,7 +1310,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 			// uni_printf(info->sx->io, ", [ %%.%" PRIitem ", %%label%" PRIitem " ]\n", info->register_num, label_next);
 			// info->answer_reg = info->register_num++;
 
-			// info->answer_kind = ALOGIC;
+			info->answer_kind = ALOGIC;
 			return;
 		}
 
