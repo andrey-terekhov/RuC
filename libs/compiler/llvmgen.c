@@ -683,7 +683,7 @@ static void emit_literal_expression(information *const info, const node *const n
 }
 
 /**
- *	Emit initialization of lvalue
+ *	Emit one dimension subscript expression
  *
  *	@param	info			Encoder
  *	@param	nd				Node in AST
@@ -712,7 +712,7 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 }
 
 /**
- *	Emit initialization of lvalue
+ *	Emit subscript expression
  *
  *	@param	info		Encoder
  *	@param	nd			Node in AST
