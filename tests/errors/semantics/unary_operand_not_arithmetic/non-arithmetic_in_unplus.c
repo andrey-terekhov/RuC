@@ -1,4 +1,4 @@
-// Operand of this unary operator must be of arithemtic type
+// Operand of this unary operator must be of arithmetic type
 void main()
 {
 	+"str";

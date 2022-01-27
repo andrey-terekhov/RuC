@@ -1,6 +1,6 @@
 // Invalid argument types to binary expression
-void MAIN()
+void main()
 {
 	float i = 5.7;
-    i <<= 2;
+	i <<= 2;
 }
