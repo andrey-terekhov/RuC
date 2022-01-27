@@ -1,14 +1,14 @@
 int main()
 {
    int i = 0, j = 10;
-   int k;
+   bool k;
 
    assert(j == 10, "j must be 10");
    assert(i == 0, "i must be 0");
 
    k = (10 >= 9);
 
-   assert(k == 1, "k must be 1");
+   assert(k, "k must be true");
 
    {
       int l = 11 * 3 - j;

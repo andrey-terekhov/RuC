@@ -1,6 +1,7 @@
 int main()
 {
    int a = 1, b = 0, c;
+   bool d;
    
    c = a & b;
 
@@ -18,13 +19,13 @@ int main()
 
    assert(c == 0, "c must be 0");
 
-   c = (a ^ a) || (a | b);
+   d = (a ^ a) || (a | b);
 
-   assert(c == 1, "c must be 1");
+   assert(d, "d must be true");
 
-   c = (a ^ a) && (a | b);
+   d = (a ^ a) && (a | b);
 
-   assert(c == 0, "c must be 0");
+   assert(!d, "d must be false");
 
    return 0;
 }

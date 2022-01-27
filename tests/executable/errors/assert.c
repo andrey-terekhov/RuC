@@ -5,7 +5,7 @@ int main()
     
     assert(ch == '1', "Something wrong with char!");
     
-    assert(i, "int i = 7 not true!");
+    assert(i == 7, "int i = 7 not true!");
     
     assert(1 < 0, "Should be fail!");
 
