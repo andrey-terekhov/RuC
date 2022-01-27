@@ -21,9 +21,6 @@
 #define MAX_PRINTF_ARGS 20
 
 
-static const size_t MAX_LABELS = 10000;
-
-
 /**
  *	Emit a semantic error
  *
@@ -509,7 +506,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	{
 		return true;
 	}
-	
+
 	if (expected_type == actual_type)
 	{
 		return true;
@@ -525,7 +522,7 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 
 	if (identifier == ITEM_MAX)
 	{
-		semantic_error(bldr, loc, undeclared_identifier_use, repr_get_name(bldr->sx, name));
+		semantic_error(bldr, loc, use_of_undeclared_identifier, repr_get_name(bldr->sx, name));
 		return node_broken();
 	}
 
@@ -698,7 +695,7 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 		{
 			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
-			
+
 			return expression_member(type, category, i, is_arrow, base, loc);
 		}
 	}
@@ -761,15 +758,15 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		case UN_PREINC:
 		case UN_PREDEC:
 		{
-			if (!type_is_arithmetic(bldr->sx, operand_type))
-			{
-				semantic_error(bldr, op_loc, illegal_increment_type, op_kind);
-				return node_broken();
-			}
-
 			if (!expression_is_lvalue(operand))
 			{
 				semantic_error(bldr, op_loc, unassignable_expression);
+				return node_broken();
+			}
+
+			if (!type_is_arithmetic(bldr->sx, operand_type))
+			{
+				semantic_error(bldr, op_loc, increment_operand_not_arithmetic, op_kind);
 				return node_broken();
 			}
 
@@ -780,7 +777,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		{
 			if (!expression_is_lvalue(operand))
 			{
-				semantic_error(bldr, op_loc, cannot_take_rvalue_address);
+				semantic_error(bldr, op_loc, addrof_operand_not_lvalue);
 				return node_broken();
 			}
 
@@ -792,7 +789,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		{
 			if (!type_is_pointer(bldr->sx, operand_type))
 			{
-				semantic_error(bldr, op_loc, indirection_requires_pointer);
+				semantic_error(bldr, op_loc, indirection_operand_not_pointer);
 				return node_broken();
 			}
 
@@ -806,7 +803,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		{
 			if (!type_is_arithmetic(bldr->sx, operand_type))
 			{
-				semantic_error(bldr, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bldr, op_loc, unary_operand_not_arithmetic, operand_type);
 				return node_broken();
 			}
 
@@ -817,7 +814,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		{
 			if (!type_is_integer(bldr->sx, operand_type))
 			{
-				semantic_error(bldr, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bldr, op_loc, unnot_operand_not_integer, operand_type);
 				return node_broken();
 			}
 
@@ -828,7 +825,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		{
 			if (!type_is_scalar(bldr->sx, operand_type))
 			{
-				semantic_error(bldr, op_loc, typecheck_unary_expr, operand_type);
+				semantic_error(bldr, op_loc, lognot_operand_not_scalar, operand_type);
 				return node_broken();
 			}
 
@@ -1075,6 +1072,7 @@ node build_constant_expression(builder *const bldr, node *const expr)
 	if (expression_get_class(expr) != EXPR_LITERAL)
 	{
 		semantic_error(bldr, node_get_location(expr), expected_constant_expression);
+		return node_broken();
 	}
 
 	return *expr;

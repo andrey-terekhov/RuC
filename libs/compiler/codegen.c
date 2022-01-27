@@ -1407,6 +1407,10 @@ static void emit_declaration(encoder *const enc, const node *const nd)
 		case DECL_FUNC:
 			emit_function_definition(enc, nd);
 			return;
+
+		default:
+			// Unreachable
+			return;
 	}
 }
 
