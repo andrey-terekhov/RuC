@@ -83,7 +83,6 @@ instruction_t unary_to_instruction(const unary_t operator)
 		case UN_PREDEC:					return IC_PRE_DEC;
 		case UN_ADDRESS:				return IC_LA;
 		case UN_INDIRECTION:			return IC_LOAD;
-		case UN_PLUS:					return IC_NOP;
 		case UN_MINUS:					return IC_UNMINUS;
 		case UN_NOT:					return IC_NOT;
 		case UN_LOGNOT:					return IC_LOG_NOT;

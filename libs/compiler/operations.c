@@ -26,7 +26,6 @@ unary_t token_to_unary(const token_t token)
 		case TK_MINUS_MINUS:	return UN_PREDEC;
 		case TK_AMP:			return UN_ADDRESS;
 		case TK_STAR:			return UN_INDIRECTION;
-		case TK_PLUS:			return UN_PLUS;
 		case TK_MINUS:			return UN_MINUS;
 		case TK_TILDE:			return UN_NOT;
 		case TK_EXCLAIM:		return UN_LOGNOT;

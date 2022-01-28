@@ -530,7 +530,7 @@ static node parse_postfix_expression(parser *const prs)
  *		unary-operator unary-expression
  *
  *	unary-operator: one of
- *		'&', '*', '+', '-', '~', '!', 'abs'
+ *		'&', '*', '-', '~', '!', 'abs'
  *
  *	@param	prs			Parser
  *
@@ -547,7 +547,6 @@ static node parse_unary_expression(parser *const prs)
 		case TK_MINUS_MINUS:
 		case TK_AMP:
 		case TK_STAR:
-		case TK_PLUS:
 		case TK_MINUS:
 		case TK_TILDE:
 		case TK_EXCLAIM:
