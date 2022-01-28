@@ -105,7 +105,7 @@ size_t hash_add(hash *const hs, const item_t key, const size_t amount)
 		index = (item_t)vector_size(hs);
 		vector_set(hs, prev, index);
 		vector_increase(hs, 3 + amount);	// New elements set by zero
-		vector_set(hs, (size_t)index + 2, amount);
+		vector_set(hs, (size_t)index + 2, (item_t)amount);
 	}
 
 	vector_set(hs, (size_t)index + 1, key);
