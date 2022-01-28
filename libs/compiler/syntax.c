@@ -222,9 +222,9 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
-	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
-	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
-	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, "."));
+	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, "."));
+	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, "."));
 }
 
 static item_t type_get(const syntax *const sx, const size_t index)
@@ -492,6 +492,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 bool ident_is_type_specifier(syntax *const sx, const size_t index)
 {
 	return ident_get_displ(sx, index) >= 1000;
+}
+
+bool ident_is_local(const syntax *const sx, const size_t index)
+{
+	return ident_get_displ(sx, index) > 0;
 }
 
 
@@ -892,4 +897,15 @@ item_t scope_func_exit(syntax *const sx, const item_t displ)
 	sx->displ = displ;
 
 	return sx->max_displ;
+}
+
+
+size_t strings_amount(const syntax *const sx)
+{
+	return strings_size(&sx->string_literals);
+}
+
+size_t strings_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
 }

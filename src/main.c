@@ -22,13 +22,14 @@
 #include "workspace.h"
 
 
-const char *name = "../../../test.c";
+const char *name = "../tests/executable/output/printf/string_rus.c";
 // "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
 {
 	workspace ws = ws_parse_args(argc, argv);
+	ws_add_flag(&ws, "-LLVM");
 
 	if (argc < 2)
 	{

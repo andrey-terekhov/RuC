@@ -7,18 +7,22 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v1
+      - shell: bash
+        run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -f
   Windows-Server-2019:
     name: Windows Server 2019
     runs-on: windows-2019
     steps:
       - name: Check out repository code
         uses: actions/checkout@v1
+      - shell: bash
+        run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -f
   macOS-Catalina-10-15:
     name: macOS Catalina 10.15
     runs-on: macos-10.15
@@ -27,13 +31,15 @@ jobs:
         run: brew install coreutils
       - name: Check out repository code
         uses: actions/checkout@v1
+      - run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -f
   Ubuntu-20-04:
     name: Ubuntu 20.04
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v1
+      - run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -f

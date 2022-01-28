@@ -183,8 +183,8 @@ build()
 
 run()
 {
-	exec=$1
-	exec_debug=$2
+	exec=`realpath $1`
+	exec_debug=`realpath $2`
 	shift
 	shift
 
