@@ -242,12 +242,12 @@ static inline size_t length(const char *const line, const size_t size, const siz
 
 static void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
-	size_t cur = sprintf(buffer, "%s\n", msg);
+	size_t cur = (size_t)sprintf(buffer, "%s\n", msg);
 
 	size_t size = 0;
 	while (line[size] != '\0' && line[size] != '\n')
 	{
-		cur += sprintf(&buffer[cur], "%c", line[size]);
+		cur += (size_t)sprintf(&buffer[cur], "%c", line[size]);
 		size++;
 	}
 
