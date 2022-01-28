@@ -882,10 +882,6 @@ static void emit_unary_expression(encoder *const enc, const node *const nd)
 		case UN_INDIRECTION:
 			return;
 
-		case UN_PLUS:
-			emit_expression(enc, &operand);
-			return;
-
 		case UN_MINUS:
 			emit_expression(enc, &operand);
 			mem_add(enc, type_is_integer(enc->sx, type) ? IC_UNMINUS : IC_UNMINUS_R);
