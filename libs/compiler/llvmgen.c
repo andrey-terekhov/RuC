@@ -1220,11 +1220,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 static void emit_binary_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
-	if (operation_is_assignment(operator))
-	{
-		emit_assignment_expression(info, nd);
-		return;
-	}
 
 	switch (operator)
 	{
@@ -1409,6 +1404,10 @@ static void emit_expression(information *const info, const node *const nd)
 
 		case EXPR_TERNARY:
 			emit_ternary_expression(info, nd);
+			return;
+
+		case EXPR_ASSIGNMENT:
+			emit_assignment_expression(info, nd);
 			return;
 
 		default:
