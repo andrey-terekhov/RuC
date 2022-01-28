@@ -236,7 +236,7 @@ static item_t map_get_by_hash(const map *const as, const size_t hash)
 	const size_t index = map_get_index_by_hash(as, hash);
 	if (index == SIZE_MAX)
 	{
-		return SIZE_MAX;
+		return ITEM_MAX;
 	}
 
 	return as->values[index].value;
