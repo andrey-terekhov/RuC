@@ -7,12 +7,12 @@ void MAIN()
 
 	if (p1)
 	{
-		assert(0, "p1 != NULL");
+		assert(false, "p1 != NULL");
 	}
 
 	if (!p2)
 	{
-		assert(0, "p2 == NULL");
+		assert(false, "p2 == NULL");
 	}
 
 	if (!p1 && p2 && (p2 != NULL) && (p1 == NULL))
@@ -21,6 +21,6 @@ void MAIN()
 	}
 	else
 	{
-		assert(0, "wrong pointer comparison");
+		assert(false, "wrong pointer comparison");
 	}
 }

@@ -98,7 +98,7 @@ inline node node_vector_get(const node_vector *const vec, const size_t index)
  */
 inline size_t node_vector_size(const node_vector *const vec)
 {
-	return vector_size(&vec->nodes);
+	return vec == NULL ? 0 : vector_size(&vec->nodes);
 }
 
 /**

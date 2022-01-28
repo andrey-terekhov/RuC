@@ -141,6 +141,9 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 		case UN_ABS:
 			write(wrt, "'abs'");
 			break;
+		case UN_UPB:
+			write(wrt, "'upb'");
+			break;
 	}
 }
 
@@ -309,25 +312,38 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 	write_line(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
-	if (type_is_integer(wrt->sx, type))
+	switch (type_get_class(wrt->sx, type))
 	{
-		const int value = expression_literal_get_integer(nd);
-		uni_printf(wrt->io, "%i", value);
-	}
-	else if (type_is_floating(type))
-	{
-		const double value = expression_literal_get_floating(nd);
-		uni_printf(wrt->io, "%f", value);
-	}
-	else if (type_is_string(wrt->sx, type))
-	{
-		const size_t string_num = expression_literal_get_string(nd);
-		const char *const string = string_get(wrt->sx, string_num);
-		uni_printf(wrt->io, "\"%s\"", string);
-	}
-	else // if (type_is_null_pointer(type))
-	{
-		write(wrt, "NULL");
+		case TYPE_NULL_POINTER:
+			write(wrt, "NULL");
+			break;
+
+		case TYPE_BOOLEAN:
+			uni_printf(wrt->io, expression_literal_get_boolean(nd) ? "true" : "false");
+			break;
+
+		case TYPE_CHARACTER:
+			uni_printf(wrt->io, "%c", expression_literal_get_character(nd));
+			break;
+
+		case TYPE_INTEGER:
+			uni_printf(wrt->io, "%" PRIitem, expression_literal_get_integer(nd));
+			break;
+
+		case TYPE_FLOATING:
+			uni_printf(wrt->io, "%f", expression_literal_get_floating(nd));
+			break;
+
+		case TYPE_ARRAY:
+		{
+			const size_t string_num = expression_literal_get_string(nd);
+			const char *const string = string_get(wrt->sx, string_num);
+			uni_printf(wrt->io, "\"%s\"", string);
+		}
+		break;
+
+		default:
+			break;
 	}
 
 	write_expression_metadata(wrt, nd);
@@ -487,6 +503,25 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
 }
 
 /**
+ *	Write assignment expression
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_assignment_expression(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "EXPR_ASSIGNMENT with operator ");
+	write_binary_operator(wrt, expression_assignment_get_operator(nd));
+	write_expression_metadata(wrt, nd);
+
+	const node LHS = expression_assignment_get_LHS(nd);
+	write_expression(wrt, &LHS);
+
+	const node RHS = expression_assignment_get_RHS(nd);
+	write_expression(wrt, &RHS);
+}
+
+/**
  *	Write initializer
  *
  *	@param	wrt			Writer
@@ -513,11 +548,6 @@ static void write_initializer(writer *const wrt, const node *const nd)
  */
 static void write_expression(writer *const wrt, const node *const nd)
 {
-	if (!node_is_correct(nd))
-	{
-		return;
-	}
-
 	wrt->indent++;
 	switch (expression_get_class(nd))
 	{
@@ -557,8 +587,16 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_ternary_expression(wrt, nd);
 			break;
 
+		case EXPR_ASSIGNMENT:
+			write_assignment_expression(wrt, nd);
+			break;
+
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
+			break;
+
+		case EXPR_INVALID:
+			write(wrt, "EXPR_INVALID\n");
 			break;
 	}
 
@@ -661,6 +699,10 @@ static void write_declaration(writer *const wrt, const node *const nd)
 		case DECL_FUNC:
 			write_function_declaration(wrt, nd);
 			break;
+
+		case DECL_INVALID:
+			write(wrt, "DECL_INVALID\n");
+			break;
 	}
 
 	wrt->indent--;
@@ -692,24 +734,6 @@ static void write_declaration_statement(writer *const wrt, const node *const nd)
 		const node decl = statement_declaration_get_declarator(nd, i);
 		write_declaration(wrt, &decl);
 	}
-}
-
-/**
- *	Write labeled statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_labeled_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_LABEL");
-
-	const size_t label = statement_labeled_get_label(nd);
-	const char *const spelling = ident_get_spelling(wrt->sx, label);
-	uni_printf(wrt->io, " declaring label named \'%s\' with id %zu\n", spelling, label);
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	write_statement(wrt, &substmt);
 }
 
 /**
@@ -880,21 +904,6 @@ static void write_for_statement(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write goto statement
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_goto_statement(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "STMT_GOTO");
-
-	const size_t label = statement_goto_get_label(nd);
-	const char *const spelling = ident_get_spelling(wrt->sx, label);
-	uni_printf(wrt->io, " label named \'%s\' with id %zu\n", spelling, label);
-}
-
-/**
  *	Write continue statement
  *
  *	@param	wrt			Writer
@@ -962,10 +971,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 			write_declaration_statement(wrt, nd);
 			break;
 
-		case STMT_LABEL:
-			write_labeled_statement(wrt, nd);
-			break;
-
 		case STMT_CASE:
 			write_case_statement(wrt, nd);
 			break;
@@ -1000,10 +1005,6 @@ static void write_statement(writer *const wrt, const node *const nd)
 
 		case STMT_FOR:
 			write_for_statement(wrt, nd);
-			break;
-
-		case STMT_GOTO:
-			write_goto_statement(wrt, nd);
 			break;
 
 		case STMT_CONTINUE:
@@ -2057,6 +2058,9 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 
 		case TYPE_VOID:
 			return sprintf(buffer, "void");
+
+		case TYPE_BOOLEAN:
+			return sprintf(buffer, "bool");
 
 		case TYPE_FLOATING:
 			return sprintf(buffer, "double");

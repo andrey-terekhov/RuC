@@ -33,6 +33,7 @@ typedef enum TOKEN
 
 	// Keywords
 	TK_ABS,							/**< 'abs' keyword */
+	TK_BOOL,						/**< 'bool' keyword */
 	TK_BREAK,						/**< 'break' keyword */
 	TK_CASE,						/**< 'case' keyword */
 	TK_CHAR,						/**< 'char' keyword */
@@ -42,10 +43,10 @@ typedef enum TOKEN
 	TK_DOUBLE,						/**< 'double' keyword */
 	TK_ELSE,						/**< 'else' keyword */
 	TK_ENUM,						/**< 'enum' keyword */
+	TK_FALSE,						/**< 'false' keyword */
 	TK_FILE,						/**< 'file' keyword */
 	TK_FLOAT,						/**< 'float' keyword */
 	TK_FOR,							/**< 'for' keyword */
-	TK_GOTO,						/**< 'goto' keyword */
 	TK_IF,							/**< 'if' keyword */
 	TK_INT,							/**< 'int' keyword */
 	TK_LONG,						/**< 'long' keyword */
@@ -53,7 +54,9 @@ typedef enum TOKEN
 	TK_RETURN,						/**< 'return' keyword */
 	TK_STRUCT,						/**< 'struct' keyword */
 	TK_SWITCH,						/**< 'switch' keyword */
+	TK_TRUE,						/**< 'true' keyword */
 	TK_TYPEDEF,						/**< 'typedef' keyword */
+	TK_UPB,							/**< 'upb' keyword */
 	TK_VOID,						/**< 'void' keyword */
 	TK_WHILE,						/**< 'while' keyword */
 

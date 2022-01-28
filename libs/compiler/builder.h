@@ -34,7 +34,6 @@ typedef struct builder
 	syntax *sx;				/**< Syntax structure */
 
 	node context;			/**< Context for creating new nodes */
-	vector labels;			/**< Labels table */
 
 	item_t func_type;		/**< Type of current parsed function */
 } builder;
@@ -71,6 +70,27 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
  *	@return	Identifier expression node
  */
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc);
+
+/**
+ *	Build a null literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	loc				Source location
+ *
+ *	@return Null literal expression node
+ */
+node build_null_literal_expression(builder *const bldr, const location loc);
+
+/**
+ *	Build a boolean literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	value			Literal value
+ *	@param	loc				Source location
+ *
+ *	@return	Boolean literal expression node
+ */
+node build_boolean_literal_expression(builder *const bldr, const bool value, const location loc);
 
 /**
  *	Build a character literal expression
@@ -115,16 +135,6 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
  *	@return	String literal expression node
  */
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc);
-
-/**
- *	Build a null pointer literal expression
- *
- *	@param	bldr			AST builder
- *	@param	loc				Source location
- *
- *	@return Null pointer literal expression node
- */
-node build_null_pointer_literal_expression(builder *const bldr, const location loc);
 
 /**
  *	Build a subscript expression
@@ -230,18 +240,16 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
  */
 node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
 
-
 /**
- *	Build a labeled statement
+ *	Build a constant expression
  *
  *	@param	bldr			AST builder
- *	@param	name			Index in representations table
- *	@param	substmt			Substatement
- *	@param	id_loc			Identifier location
+ *	@param	expr			Expression
  *
- *	@return	Labeled statement
+ *	@return	Constant expression
  */
-node build_labeled_statement(builder *const bldr, const size_t name, node *const substmt, const location id_loc);
+node build_constant_expression(builder *const bldr, node *const expr);
+
 
 /**
  *	Build a case statement
@@ -354,18 +362,6 @@ node build_for_statement(builder *const bldr, node *const init
 	, node *const cond, node *const incr, node *const body, const location for_loc);
 
 /**
- *	Build a goto statement
- *
- *	@param	bldr			AST builder
- *	@param	name			Index in representations table
- *	@param	goto_loc		Keyword location
- *	@param	id_loc			Identifier location	
- *
- *	@return	Goto statement
- */
-node build_goto_statement(builder *const bldr, const size_t name, const location goto_loc, const location id_loc);
-
-/**
  *	Build a continue statement
  *
  *	@param	bldr			AST builder
@@ -394,13 +390,6 @@ node build_break_statement(builder *const bldr, const location break_loc);
  *	@return	Return statement
  */
 node build_return_statement(builder *const bldr, node *const expr, const location return_loc);
-
-/**
- *	Free allocated memory
- *
- *	@param	bldr			AST builder
- */
-void builder_clear(builder *const bldr);
 
 #ifdef __cplusplus
 } /* extern "C" */

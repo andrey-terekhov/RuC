@@ -1,7 +1,8 @@
-int i, a, j;
+int i, j;
+bool a;
 void main()
 {
     a = ( i < 10 && j > -i);
 
-    assert(a == 0, "a must be 0");
+    assert(!a, "a must be false");
 }
