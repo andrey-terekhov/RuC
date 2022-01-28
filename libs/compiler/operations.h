@@ -39,7 +39,6 @@ typedef enum UNARY
 	UN_ADDRESS,			/**< '&' operator */
 	UN_INDIRECTION,		/**< '*' operator */
 	// Unary arithmetic
-	UN_PLUS,			/**< '+' operator */
 	UN_MINUS,			/**< '-' operator */
 	UN_NOT,				/**< '~' operator */
 	UN_LOGNOT,			/**< '!' operator */

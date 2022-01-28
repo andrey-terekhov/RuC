@@ -798,7 +798,6 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		}
 
 		case UN_ABS:
-		case UN_PLUS:
 		case UN_MINUS:
 		{
 			if (!type_is_arithmetic(bldr->sx, operand_type))
