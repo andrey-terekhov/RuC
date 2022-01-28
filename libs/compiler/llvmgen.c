@@ -126,6 +126,10 @@ static void type_to_io(information *const info, const item_t type)
 			uni_printf(info->sx->io, "...");
 			break;
 
+		case TYPE_BOOLEAN:
+			uni_printf(info->sx->io, "i1");
+			break;
+
 		case TYPE_CHARACTER:
 			uni_printf(info->sx->io, "i8");
 			break;
@@ -378,18 +382,6 @@ static void to_code_store_null(information *const info, const size_t id, const i
 	uni_printf(info->sx->io, " null, ");
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
-}
-
-static void to_code_try_zext_to(information *const info)
-{
-	if (info->answer_kind != ALOGIC)
-	{
-		return;
-	}
-
-	uni_printf(info->sx->io, " %%.%zu = zext i1 %%.%zu to i32\n", info->register_num, info->answer_reg);
-	info->answer_kind = AREG;
-	info->answer_reg = info->register_num++;
 }
 
 static inline void to_code_label(information *const info, const item_t label_num)
@@ -796,11 +788,10 @@ static void emit_call_expression(information *const info, const node *const nd)
 		const node argument = expression_call_get_argument(nd, i);
 		arguments_value_type[i] = expression_get_type(&argument);
 		emit_expression(info, &argument);
-		to_code_try_zext_to(info);
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
 
-		if (info->answer_kind == AREG)
+		if (info->answer_kind == AREG || info->answer_kind == ALOGIC)
 		{
 			arguments[i] = info->answer_reg;
 		}
@@ -850,7 +841,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 
 		type_to_io(info, arguments_value_type[i]);
-		if (arguments_type[i] == AREG)
+		if (arguments_type[i] == AREG || arguments_type[i] == ALOGIC)
 		{
 			uni_printf(info->sx->io, " %%.%" PRIitem, arguments[i]);
 		}
@@ -1000,8 +991,6 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			info->variable_location = LREG;
 			emit_expression(info, &operand);
 
-			to_code_try_zext_to(info);
-
 			if (operator == UN_MINUS && type_is_integer(info->sx, operation_type))
 			{
 				to_code_operation_const_reg_integer(info, BIN_SUB, 0, info->answer_reg, operation_type);
@@ -1094,8 +1083,6 @@ static void emit_integral_expression(information *const info, const node *const 
 	const item_t operation_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
 
-	to_code_try_zext_to(info);
-
 	// TODO: спрятать эти переменные в одну структуру и возвращать ее из emit_expr
 	const answer_t left_kind = info->answer_kind;
 	const size_t left_reg = info->answer_reg;
@@ -1105,8 +1092,6 @@ static void emit_integral_expression(information *const info, const node *const 
 	info->variable_location = LFREE;
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
-
-	to_code_try_zext_to(info);
 
 	const answer_t right_kind = info->answer_kind;
 	const size_t right_reg = info->answer_reg;
@@ -1176,7 +1161,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 	const node RHS = expression_binary_get_RHS(nd);
 	emit_expression(info, &RHS);
 
-	to_code_try_zext_to(info);
 	size_t result = info->answer_reg;
 
 	if (assignment_type != BIN_ASSIGN)
@@ -2372,20 +2356,19 @@ static void runtime(information *const info)
 {
 	// assert
 	uni_printf(info->sx->io, "@.str = private unnamed_addr constant [3 x i8] c\"%%s\\00\", align 1\n"
-		"define void @assert(i32, i8*) {\n"
-		" %%3 = alloca i32, align 4\n"
+		"define void @assert(i1, i8*) {\n"
+		" %%3 = alloca i1, align 4\n"
 		" %%4 = alloca i8*, align 8\n"
-		" store i32 %%0, i32* %%3, align 4\n"
+		" store i1 %%0, i1* %%3, align 4\n"
 		" store i8* %%1, i8** %%4, align 8\n"
-		" %%5 = load i32, i32* %%3, align 4\n"
-		" %%6 = icmp ne i32 %%5, 0\n"
-		" br i1 %%6, label %%10, label %%7\n"
-		" ; <label>:7:                                      ; preds = %%2\n"
-		" %%8 = load i8*, i8** %%4, align 8\n"
-		" %%9 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i32 0, i32 0), i8* %%8)\n"
+		" %%5 = load i1, i1* %%3, align 4\n"
+		" br i1 %%5, label %%9, label %%6\n"
+		" ; <label>:6:                                      ; preds = %%2\n"
+		" %%7 = load i8*, i8** %%4, align 8\n"
+		" %%8 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.str, i32 0, i32 0), i8* %%7)\n"
 		" call void @exit(i32 1)\n"
 		" unreachable\n"
-		"; <label>:10:                                     ; preds = %%2\n"
+		"; <label>:9:                                     ; preds = %%2\n"
 		" ret void\n"
 		"}\n"
 		"declare void @exit(i32)\n\n");
