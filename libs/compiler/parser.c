@@ -71,17 +71,16 @@ static node parse_statement(parser *const prs);
 /**
  *	Create parser
  *
- *	@param	ws			Compiler workspace
  *	@param	sx			Syntax structure
  *
  *	@return	Parser
  */
-static inline parser parser_create(const workspace *const ws, syntax *const sx)
+static inline parser parser_create(syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
 	prs.bld = builder_create(sx);
-	prs.lxr = lexer_create(ws, sx);
+	prs.lxr = lexer_create(sx);
 
 	prs.is_in_loop = false;
 	prs.is_in_switch = false;
@@ -109,16 +108,12 @@ static inline void parser_clear(parser *const prs)
  */
 static void parser_error(parser *const prs, error_t num, ...)
 {
-	if (prs->lxr.is_recovery_disabled && prs->sx->was_error)
-	{
-		return;
-	}
+	const location loc = token_get_location(&prs->tk);
 
 	va_list args;
 	va_start(args, num);
 
-	verror(prs->sx->io, num, args);
-	prs->sx->was_error = true;
+	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
 
 	va_end(args);
 }
@@ -2250,14 +2245,14 @@ static void parse_translation_unit(parser *const prs, node *const root)
  */
 
 
-int parse(const workspace *const ws, syntax *const sx)
+int parse(syntax *const sx)
 {
-	if (!ws_is_correct(ws) || sx == NULL)
+	if (sx == NULL)
 	{
 		return -1;
 	}
 
-	parser prs = parser_create(ws, sx);
+	parser prs = parser_create(sx);
 	node root = node_get_root(&sx->tree);
 
 	parse_translation_unit(&prs, &root);
