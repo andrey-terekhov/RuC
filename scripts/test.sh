@@ -202,7 +202,7 @@ run()
 			if [[ $ret == 0 ]] ; then
 				mv $buf $vm_exec
 			else
-				build_type="(Debug)"
+				build_type=" (Debug)"
 			fi
 		elif [[ $ret == $exit_code ]] ; then
 			mv $log $buf
@@ -213,7 +213,7 @@ run()
 			if [[ $ret == $exit_code ]] ; then
 				mv $buf $log
 			else
-				build_type="(Debug)"
+				build_type=" (Debug)"
 			fi
 		fi
 	fi
@@ -225,7 +225,7 @@ message_success()
 {
 	if [[ -z $debug ]] ; then
 		if [[ -z $silence ]] ; then
-			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path $build_type"
+			echo -e "\x1B[1;32m $action success \x1B[1;39m: $path$build_type"
 			sleep $output_time
 		fi
 	fi
@@ -234,7 +234,7 @@ message_success()
 message_warning()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;33m $action warning \x1B[1;39m: $path $build_type"
+		echo -e "\x1B[1;33m $action warning \x1B[1;39m: $path$build_type"
 		sleep $output_time
 	fi
 }
@@ -242,7 +242,7 @@ message_warning()
 message_timeout()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $path $build_type"
+		echo -e "\x1B[1;34m $action timeout \x1B[1;39m: $path$build_type"
 		sleep $output_time
 	fi
 }
@@ -250,7 +250,7 @@ message_timeout()
 message_failure()
 {
 	if [[ -z $silence ]] ; then
-		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $path $build_type"
+		echo -e "\x1B[1;31m $action failure \x1B[1;39m: $path$build_type"
 		sleep $output_time
 	fi
 }
@@ -469,3 +469,4 @@ main()
 }
 
 main $@
+
