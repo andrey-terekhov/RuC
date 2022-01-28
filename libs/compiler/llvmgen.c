@@ -1862,22 +1862,6 @@ static void emit_declaration(information *const info, const node *const nd, cons
 
 
 /**
- *	Emit labeled statement
- *
- *	@param	info		Encoder
- *	@param	nd			Node in AST
- */
-static void emit_labeled_statement(information *const info, const node *const nd)
-{
-	const item_t label = -(item_t)statement_labeled_get_label(nd);
-	to_code_unconditional_branch(info, label);
-	to_code_label(info, label);
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	emit_statement(info, &substmt);
-}
-
-/**
  *	Emit compound statement
  *
  *	@param	info		Encoder
@@ -2172,10 +2156,6 @@ static void emit_statement(information *const info, const node *const nd)
 			emit_declaration_statement(info, nd);
 			return;
 
-		case STMT_LABEL:
-			emit_labeled_statement(info, nd);
-			return;
-
 		case STMT_CASE:
 			// TODO: case statement emission
 			// emit_case_statement(info, nd);
@@ -2216,10 +2196,6 @@ static void emit_statement(information *const info, const node *const nd)
 
 		case STMT_FOR:
 			emit_for_statement(info, nd);
-			return;
-
-		case STMT_GOTO:
-			to_code_unconditional_branch(info, (item_t)statement_goto_get_label(nd));
 			return;
 
 		case STMT_CONTINUE:
