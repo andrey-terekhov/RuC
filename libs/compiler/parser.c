@@ -910,7 +910,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 	switch (token_get_kind(&prs->tk))
 	{
 		case TK_L_BRACE:
-			return parse_struct_declaration_list(prs, parent, 0);
+			return parse_struct_declaration_list(prs, parent, SIZE_MAX);
 
 		case TK_IDENTIFIER:
 		{
@@ -1043,10 +1043,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t displ = 0;
 
 	node nd;
-
-	nd = node_add_child(parent, OP_DECL_TYPE);
-	node_add_arg(&nd, 0);
-	node_add_arg(&nd, 0);
+	bool created = false;
 
 	do
 	{
@@ -1061,6 +1058,14 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		if (try_consume_token(prs, TK_STAR))
 		{
 			type = type_pointer(prs->sx, element_type);
+		}
+
+		if (!created)
+		{
+			nd = node_add_child(parent, OP_DECL_TYPE);
+			node_add_arg(&nd, 0);
+			node_add_arg(&nd, SIZE_MAX);
+			created = true;
 		}
 
 		if (token_is(&prs->tk, TK_IDENTIFIER))
@@ -1099,10 +1104,11 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[2] = (item_t)fields * 2;
 
 	const item_t result = type_add(prs->sx, local_modetab, local_md);
-	node_set_arg(&nd, 0, result);
 
-	if (repr != 0)
+	if (created)
 	{
+		node_set_arg(&nd, 0, result);
+
 		const size_t id = to_identab(prs, repr, 1000, result);
 		node_set_arg(&nd, 1, id);
 	}
