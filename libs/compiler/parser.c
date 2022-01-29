@@ -929,7 +929,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 				prs->was_type_def = true;
 
-				return ident_get_type(prs->sx, id);
+				return ident_get_type(prs->sx, (size_t)id);
 			}
 			else // if (parser->next_token != l_brace)
 			{
