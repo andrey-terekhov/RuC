@@ -1070,7 +1070,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 
 		if (token_is(&prs->tk, TK_IDENTIFIER))
 		{
-			const size_t repr = token_get_ident_name(&prs->tk);
+			const size_t inner_repr = token_get_ident_name(&prs->tk);
 			consume_token(prs);
 
 			if (token_is(&prs->tk, TK_L_SQUARE))
@@ -1086,7 +1086,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			}
 
 			local_modetab[local_md++] = type;
-			local_modetab[local_md++] = (item_t)repr;
+			local_modetab[local_md++] = (item_t)inner_repr;
 			fields++;
 			displ += type_size(prs->sx, type);
 		}
