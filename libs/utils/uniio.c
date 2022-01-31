@@ -232,7 +232,7 @@ static inline size_t io_get_path(FILE *const file, char *const buffer)
  */
 
 
-universal_io io_create()
+universal_io io_create(void)
 {
 	universal_io io;
 

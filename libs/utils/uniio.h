@@ -81,7 +81,7 @@ struct universal_io
  *
  *	@return	Universal io structure
  */
-EXPORTED universal_io io_create();
+EXPORTED universal_io io_create(void);
 
 
 /**
