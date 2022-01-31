@@ -1020,6 +1020,24 @@ declaration_t declaration_get_class(const node *const nd);
 
 
 /**
+ *  Get type that declaration defines
+ *
+ *  @param  nd              Type declaration
+ *
+ *  @return Declaration type
+ */
+item_t declaration_type_get_type(const node *const nd);
+
+/**
+ *  Get type id in type declaration
+ *
+ *  @param  nd              Type declaration
+ *
+ *  @return Id
+ */
+size_t declaration_type_get_id(const node *const nd);
+
+/**
  *	Get variable id in variable declaration
  *
  *	@param	nd				Variable declaration

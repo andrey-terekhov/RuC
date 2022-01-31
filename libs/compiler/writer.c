@@ -643,8 +643,29 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
  */
 static void write_type_declaration(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "DECL_TYPE\n");
-	(void)nd;
+	const char *spelling = NULL;
+	item_t type = ITEM_MAX;
+
+	write_line(wrt, "DECL_TYPE");
+
+	const size_t ident = declaration_type_get_id(nd);
+	if (ident != SIZE_MAX)
+	{
+		type = ident_get_type(wrt->sx, ident);
+		spelling = ident_get_spelling(wrt->sx, ident);
+	}
+
+	if (spelling == NULL)
+	{
+		spelling = "<unnamed>";
+	}
+
+	uni_printf(wrt->io, " declaring type named \'%s\' with id %zu: '", spelling, ident);
+	if (type != ITEM_MAX)
+	{
+		write_type(wrt, type);
+	}
+	write(wrt, "'\n");
 }
 
 /**
