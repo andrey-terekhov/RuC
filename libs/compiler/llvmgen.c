@@ -53,7 +53,7 @@ typedef struct information
 	syntax *sx;								/**< Структура syntax с таблицами */
 
 	size_t register_num;					/**< Номер регистра */
-	item_t label_num;						/**< Номер метки */
+	size_t label_num;						/**< Номер метки */
 	item_t init_num;						/**< Счётчик для инициализации */
 	item_t block_num;						/**< Номер блока */
 
@@ -67,11 +67,11 @@ typedef struct information
 	bool answer_const_bool;					/**< Константа с ответом типа bool */
 	answer_t answer_kind;					/**< Вид ответа */
 
-	item_t label_true;						/**< Метка перехода при true */
-	item_t label_false;						/**< Метка перехода при false */
-	item_t label_break;						/**< Метка перехода для break */
-	item_t label_continue;					/**< Метка перехода для continue */
-	item_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
+	size_t label_true;						/**< Метка перехода при true */
+	size_t label_false;						/**< Метка перехода при false */
+	size_t label_break;						/**< Метка перехода для break */
+	size_t label_continue;					/**< Метка перехода для continue */
+	size_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -402,14 +402,14 @@ static void to_code_store_null(information *const info, const size_t id, const i
 	uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
 }
 
-static inline void to_code_label(information *const info, const item_t label_num)
+static inline void to_code_label(information *const info, const size_t label_num)
 {
-	uni_printf(info->sx->io, " label%" PRIitem ":\n", label_num);
+	uni_printf(info->sx->io, " label%zu:\n", label_num);
 }
 
-static inline void to_code_unconditional_branch(information *const info, const item_t label_num)
+static inline void to_code_unconditional_branch(information *const info, const size_t label_num)
 {
-	uni_printf(info->sx->io, " br label %%label%" PRIitem "\n", label_num);
+	uni_printf(info->sx->io, " br label %%label%zu\n", label_num);
 }
 
 static inline void to_code_conditional_branch(information *const info)
@@ -1302,9 +1302,9 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
 		{
-			const item_t label_next = info->label_num++;
-			const item_t old_label_true = info->label_true;
-			const item_t old_label_false = info->label_false;
+			const size_t label_next = info->label_num++;
+			const size_t old_label_true = info->label_true;
+			const size_t old_label_false = info->label_false;
 
 			if (operator == BIN_LOG_OR)
 			{
@@ -1347,11 +1347,11 @@ static void emit_binary_expression(information *const info, const node *const nd
  */
 static void emit_ternary_expression(information *const info, const node *const nd)
 {
-	const item_t old_label_true = info->label_true;
-	const item_t old_label_false = info->label_false;
-	item_t label_then = info->label_num++;
-	item_t label_else = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const size_t old_label_true = info->label_true;
+	const size_t old_label_false = info->label_false;
+	size_t label_then = info->label_num++;
+	size_t label_else = info->label_num++;
+	const size_t label_end = info->label_num++;
 
 	info->label_true = label_then;
 	info->label_false = label_else;
@@ -1400,9 +1400,9 @@ static void emit_ternary_expression(information *const info, const node *const n
 
 	uni_printf(info->sx->io, " %%.%zu = phi ", info->register_num);
 	type_to_io(info, expression_get_type(nd));
-	uni_printf(info->sx->io, " [ %s%" PRIitem ", %%label%" PRIitem " ]", then_answer == AREG ? "%." : ""
+	uni_printf(info->sx->io, " [ %s%" PRIitem ", %%label%zu ]", then_answer == AREG ? "%." : ""
 		, then_answer == AREG ? then_reg : then_const, label_then);
-	uni_printf(info->sx->io, ", [ %s%" PRIitem ", %%label%" PRIitem " ]\n", else_answer == AREG ? "%." : ""
+	uni_printf(info->sx->io, ", [ %s%" PRIitem ", %%label%zu ]\n", else_answer == AREG ? "%." : ""
 		, else_answer == AREG ? else_reg : else_const, label_else);
 
 	info->answer_kind = AREG;
@@ -1936,11 +1936,11 @@ static void emit_compound_statement(information *const info, const node *const n
  */
 static void emit_if_statement(information *const info, const node *const nd)
 {
-	const item_t old_label_true = info->label_true;
-	const item_t old_label_false = info->label_false;
-	const item_t label_if = info->label_num++;
-	const item_t label_else = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const size_t old_label_true = info->label_true;
+	const size_t old_label_false = info->label_false;
+	const size_t label_if = info->label_num++;
+	const size_t label_else = info->label_num++;
+	const size_t label_end = info->label_num++;
 
 	info->label_true = label_if;
 	info->label_false = label_else;
@@ -1980,13 +1980,13 @@ static void emit_if_statement(information *const info, const node *const nd)
  */
 static void emit_while_statement(information *const info, const node *const nd)
 {
-	const item_t old_label_true = info->label_true;
-	const item_t old_label_false = info->label_false;
-	const item_t old_label_break = info->label_break;
-	const item_t old_label_continue = info->label_continue;
-	const item_t label_condition = info->label_num++;
-	const item_t label_body = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const size_t old_label_true = info->label_true;
+	const size_t old_label_false = info->label_false;
+	const size_t old_label_break = info->label_break;
+	const size_t old_label_continue = info->label_continue;
+	const size_t label_condition = info->label_num++;
+	const size_t label_body = info->label_num++;
+	const size_t label_end = info->label_num++;
 
 	info->label_true = label_body;
 	info->label_false = label_end;
@@ -2024,12 +2024,12 @@ static void emit_while_statement(information *const info, const node *const nd)
  */
 static void emit_do_statement(information *const info, const node *const nd)
 {
-	const item_t old_label_true = info->label_true;
-	const item_t old_label_false = info->label_false;
-	const item_t old_label_break = info->label_break;
-	const item_t old_label_continue = info->label_continue;
-	const item_t label_loop = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const size_t old_label_true = info->label_true;
+	const size_t old_label_false = info->label_false;
+	const size_t old_label_break = info->label_break;
+	const size_t old_label_continue = info->label_continue;
+	const size_t label_loop = info->label_num++;
+	const size_t label_end = info->label_num++;
 
 	info->label_true = label_loop;
 	info->label_false = label_end;
@@ -2065,14 +2065,14 @@ static void emit_do_statement(information *const info, const node *const nd)
 static void emit_for_statement(information *const info, const node *const nd)
 {
 	// TODO: проверялось, только если в for присутствуют все блоки: инициализация, условие, модификация
-	const item_t old_label_true = info->label_true;
-	const item_t old_label_false = info->label_false;
-	const item_t old_label_break = info->label_break;
-	const item_t old_label_continue = info->label_continue;
-	const item_t label_condition = info->label_num++;
-	const item_t label_body = info->label_num++;
-	const item_t label_incr = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const size_t old_label_true = info->label_true;
+	const size_t old_label_false = info->label_false;
+	const size_t old_label_break = info->label_break;
+	const size_t old_label_continue = info->label_continue;
+	const size_t label_condition = info->label_num++;
+	const size_t label_body = info->label_num++;
+	const size_t label_incr = info->label_num++;
+	const size_t label_end = info->label_num++;
 
 	info->label_true = label_body;
 	info->label_false = label_end;
