@@ -293,6 +293,16 @@ static void to_code_operation_reg_const_integer(information *const info, const b
 	uni_printf(info->sx->io, " %%.%zu, %" PRIitem "\n", fst, snd);
 }
 
+static void to_code_operation_reg_const_bool(information *const info, const binary_t operation
+	, const size_t fst, const bool snd, const item_t type)
+{
+	uni_printf(info->sx->io, " %%.%zu = ", info->register_num);
+	operation_to_io(info, operation, TYPE_INTEGER);
+	uni_printf(info->sx->io, " ");
+	type_to_io(info, type);
+	uni_printf(info->sx->io, " %%.%zu, %s\n", fst, snd ? "true" : "false");
+}
+
 static void to_code_operation_reg_const_double(information *const info, const binary_t operation
 	, const size_t fst, const double snd)
 {
@@ -1048,6 +1058,13 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			info->label_false = temp;
 
 			emit_expression(info, &operand);
+
+			if (info->answer_kind == AREG)
+			{
+				to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
+				info->answer_reg = info->register_num++;
+			}
+
 			return;
 		}
 
