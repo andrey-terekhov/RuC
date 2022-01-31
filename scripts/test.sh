@@ -12,7 +12,7 @@ init()
 	dir_install=./install
 	dir_test=../tests
 	dir_error=../tests/errors
-	dir_exec=../tests/executable
+	dir_exec=../tests/codegen/executable
 
 	subdir_error=errors
 	subdir_warning=warnings
