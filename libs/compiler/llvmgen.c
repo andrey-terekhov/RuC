@@ -414,7 +414,7 @@ static inline void to_code_unconditional_branch(information *const info, const s
 
 static inline void to_code_conditional_branch(information *const info)
 {
-	uni_printf(info->sx->io, " br i1 %%.%zu, label %%label%" PRIitem ", label %%label%" PRIitem "\n"
+	uni_printf(info->sx->io, " br i1 %%.%zu, label %%label%zu, label %%label%zu\n"
 		, info->answer_reg, info->label_true, info->label_false);
 }
 
@@ -1616,7 +1616,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 
 			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-			"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
+			"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
 			, "var", id, i);
 
 			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
