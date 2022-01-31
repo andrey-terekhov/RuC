@@ -64,6 +64,7 @@ typedef struct information
 	item_t answer_const;					/**< Константа с ответом */
 	size_t answer_string;					/**< Индекс строки с ответом */
 	double answer_const_double;				/**< Константа с ответом типа double */
+	bool answer_const_bool;					/**< Константа с ответом типа bool */
 	answer_t answer_kind;					/**< Вид ответа */
 
 	item_t label_true;						/**< Метка перехода при true */
@@ -685,6 +686,12 @@ static void emit_literal_expression(information *const info, const node *const n
 			info->answer_const_double = num;
 		}
 	}
+	else if (type_is_boolean(type))
+	{
+		// TODO: сделать сохранение значения типа bool
+		info->answer_const_bool = expression_literal_get_boolean(nd);
+		info->answer_kind = ACONST;
+	}
 	else // nullptr
 	{
 		info->answer_kind = ANULL;
@@ -762,6 +769,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 {
 	item_t arguments[MAX_FUNCTION_ARGS];
 	double arguments_double[MAX_FUNCTION_ARGS];
+	bool arguments_bool[MAX_FUNCTION_ARGS];
 	answer_t arguments_type[MAX_FUNCTION_ARGS];
 	item_t arguments_value_type[MAX_FUNCTION_ARGS];
 
@@ -802,6 +810,10 @@ static void emit_call_expression(information *const info, const node *const nd)
 		else if (type_is_integer(info->sx, arguments_value_type[i])) // ACONST
 		{
 			arguments[i] = info->answer_const;
+		}
+		else if (type_is_boolean(arguments_value_type[i]))
+		{
+			arguments_bool[i] = info->answer_const_bool;
 		}
 		else // double
 		{
@@ -859,6 +871,17 @@ static void emit_call_expression(information *const info, const node *const nd)
 		else if (type_is_integer(info->sx, arguments_value_type[i])) // ACONST
 		{
 			uni_printf(info->sx->io, " %" PRIitem, arguments[i]);
+		}
+		else if (type_is_boolean(arguments_value_type[i]))
+		{
+			if (arguments_bool[i])
+			{
+				uni_printf(info->sx->io, " true");
+			}
+			else
+			{
+				uni_printf(info->sx->io, " false");
+			}
 		}
 		else // double
 		{
@@ -1415,17 +1438,6 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 	}
 }
-
-// /**
-//  *	Emit bool expression
-//  *
-//  *	@param	info	Encoder
-//  *	@param	nd		Node in AST
-//  */
-// static void emit_bool_expression(information *const info, const node *const nd)
-// {
-
-// }
 
 /**
  *	Emit initialization of lvalue
