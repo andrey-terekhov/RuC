@@ -248,7 +248,7 @@ precedence_t get_operator_precedence(const token_t token);
 /**
  *	Check if operator is assignment
  *
- *	@param	operator	Operator
+ *	@param	op			Operator
  *
  *	@return	@c 1 on true, @c 0 on false
  */

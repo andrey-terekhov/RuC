@@ -102,7 +102,7 @@ static void write_type(writer *const wrt, const item_t type)
  *	Write unary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
 static void write_unary_operator(writer *const wrt, const unary_t op)
 {
@@ -148,7 +148,7 @@ static void write_unary_operator(writer *const wrt, const unary_t op)
  *	Write binary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
 static void write_binary_operator(writer *const wrt, const binary_t op)
 {
