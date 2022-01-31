@@ -568,16 +568,40 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 }
 
 
-static void check_type_and_branch(information *const info)
+static void check_type_and_branch(information *const info, const item_t type)
 {
 	switch (info->answer_kind)
 	{
 		case ACONST:
-			to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
-			break;
+		{
+			if (type_is_integer(info->sx, type))
+			{
+				to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
+			}
+			else if (type_is_boolean(type))
+			{
+				to_code_unconditional_branch(info, info->answer_const_bool ? info->label_true : info->label_false);
+			}
+			else if (type_is_floating(type))
+			{
+				to_code_unconditional_branch(info, info->answer_const_double ? info->label_true : info->label_false);
+			}
+		}
+		break;
 		case AREG:
 		{
-			to_code_operation_reg_const_integer(info, BIN_NE, info->answer_reg, 0, TYPE_INTEGER);
+			if (type_is_integer(info->sx, type))
+			{
+				to_code_operation_reg_const_integer(info, BIN_NE, info->answer_reg, 0, TYPE_INTEGER);
+			}
+			else if (type_is_boolean(type))
+			{
+				to_code_operation_reg_const_bool(info, BIN_NE, info->answer_reg, false, TYPE_BOOLEAN);
+			}
+			else if (type_is_floating(type))
+			{
+				to_code_operation_reg_const_double(info, BIN_NE, info->answer_reg, 0);
+			}
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
@@ -1318,7 +1342,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 			const node LHS = expression_binary_get_LHS(nd);
 			emit_expression(info, &LHS);
 
-			check_type_and_branch(info);
+			check_type_and_branch(info, expression_get_type(&LHS));
 
 			to_code_label(info, label_next);
 			info->label_true = old_label_true;
@@ -1327,7 +1351,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 			const node RHS = expression_binary_get_RHS(nd);
 			emit_expression(info, &RHS);
 
-			check_type_and_branch(info);
+			check_type_and_branch(info, expression_get_type(&RHS));
 
 			info->answer_kind = ALOGIC;
 			return;
@@ -1360,7 +1384,7 @@ static void emit_ternary_expression(information *const info, const node *const n
 	const node condition = expression_ternary_get_condition(nd);
 	emit_expression(info, &condition);
 
-	check_type_and_branch(info);
+	check_type_and_branch(info, expression_get_type(&condition));
 
 	to_code_label(info, label_then);
 
@@ -1949,7 +1973,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 	const node condition = statement_if_get_condition(nd);
 	emit_expression(info, &condition);
 
-	check_type_and_branch(info);
+	check_type_and_branch(info, expression_get_type(&condition));
 
 	to_code_label(info, label_if);
 
@@ -2000,7 +2024,7 @@ static void emit_while_statement(information *const info, const node *const nd)
 	const node condition = statement_while_get_condition(nd);
 	emit_expression(info, &condition);
 
-	check_type_and_branch(info);
+	check_type_and_branch(info, expression_get_type(&condition));
 
 	to_code_label(info, label_body);
 
@@ -2046,7 +2070,7 @@ static void emit_do_statement(information *const info, const node *const nd)
 	const node condition = statement_do_get_condition(nd);
 	emit_expression(info, &condition);
 
-	check_type_and_branch(info);
+	check_type_and_branch(info, expression_get_type(&condition));
 
 	to_code_label(info, label_end);
 
@@ -2093,8 +2117,8 @@ static void emit_for_statement(information *const info, const node *const nd)
 	{
 		const node condition = statement_for_get_condition(nd);
 		emit_expression(info, &condition);
+		check_type_and_branch(info, expression_get_type(&condition));
 	}
-	check_type_and_branch(info);
 
 	to_code_label(info, label_incr);
 	if (statement_for_has_increment(nd))
