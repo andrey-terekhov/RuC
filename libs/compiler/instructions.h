@@ -273,7 +273,7 @@ instruction_t builtin_to_instruction(const builtin_t func);
 /**
  *	Convert unary operator to corresponding instruction
  *
- *	@param	op 				Unary operator
+ *	@param	op				Unary operator
  *
  *	@return	Instruction
  */
@@ -282,7 +282,7 @@ instruction_t unary_to_instruction(const unary_t op);
 /**
  *	Convert binary operator to corresponding instruction
  *
- *	@param	operator		Binary operator
+ *	@param	op				Binary operator
  *
  *	@return	Instruction
  */
