@@ -126,9 +126,6 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 		case UN_INDIRECTION:
 			write(wrt, "'*'");
 			break;
-		case UN_PLUS:
-			write(wrt, "'+'");
-			break;
 		case UN_MINUS:
 			write(wrt, "'-'");
 			break;
