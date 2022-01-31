@@ -919,8 +919,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 			if (token_is(&prs->tk, TK_L_BRACE))
 			{
-				const item_t type = parse_struct_declaration_list(prs, parent,
-					repr);
+				const item_t type = parse_struct_declaration_list(prs, parent, repr);
 				if (type == ITEM_MAX)
 				{
 					return TYPE_UNDEFINED;
