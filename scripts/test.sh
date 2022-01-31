@@ -332,7 +332,8 @@ execution()
 
 check_warnings()
 {
-	if [[ $path == */$subdir_warning/* ]] ; then
+	# в unsorted проверяется только наличие ошибки
+	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* ]] ; then
 		message_success
 		let success++
 	else
@@ -343,15 +344,35 @@ check_warnings()
 		fi
 
 		if [[ $flag > 1 ]] ; then
-			message_warning
-			let warning++
+			# проверка на наличие одной ошибки
+			if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+				|| $path == $dir_syntax/* ]] ; then
+				message_failure
+				let failure++
+			fi
+
+			# проверка на наличие нескольких ошибки
+			if [[ $path == $dir_multiple_errors/* ]] ; then
+				message_success
+				let success++
+			fi
 
 			if ! [[ -z $debug ]] ; then
 				cat $log
 			fi
 		else
-			message_success
-			let success++
+			# проверка на наличие одной ошибки
+			if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+				|| $path == $dir_syntax/* ]] ; then
+				message_success
+				let success++
+			fi
+
+			# проверка на наличие нескольких ошибки
+			if [[ $path == $dir_multiple_errors/* ]] ; then
+				message_failure
+				let failure++
+			fi
 		fi
 	fi
 }
