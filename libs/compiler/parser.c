@@ -1024,6 +1024,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
+ *	@param	repr		Structure identifier index in representations table
  *
  *	@return	Index of types table, @c type_undefined on failure
  */
