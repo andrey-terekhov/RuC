@@ -647,7 +647,7 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
 static void write_type_declaration(writer *const wrt, const node *const nd)
 {
 	const char *spelling = NULL;
-	item_t      type = ITEM_MAX;
+	item_t type = ITEM_MAX;
 
 	write_line(wrt, "DECL_TYPE");
 
@@ -665,7 +665,9 @@ static void write_type_declaration(writer *const wrt, const node *const nd)
 
 	uni_printf(wrt->io, " declaring type named \'%s\' with id %zu: '", spelling, ident);
 	if (type != ITEM_MAX)
+	{
 		write_type(wrt, type);
+	}
 	write(wrt, "'\n");
 }
 
