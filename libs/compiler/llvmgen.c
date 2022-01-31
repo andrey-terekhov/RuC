@@ -1219,7 +1219,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 		info->answer_kind = AREG;
 	}
 
-	if (info->answer_kind == AREG || info->answer_kind == AMEM)
+	if (info->answer_kind == AREG || info->answer_kind == AMEM || info->answer_kind == ALOGIC)
 	{
 		to_code_store_reg(info, result, id, operation_type, is_complex
 			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
@@ -1234,6 +1234,10 @@ static void emit_assignment_expression(information *const info, const node *cons
 	else if (type_is_floating(operation_type))
 	{
 		to_code_store_const_double(info, info->answer_const_double, id, is_complex, ident_is_local(info->sx, id));
+	}
+	else if (type_is_floating(operation_type))
+	{
+		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, ident_is_local(info->sx, id));
 	}
 	else
 	{
@@ -2073,7 +2077,6 @@ static void emit_for_statement(information *const info, const node *const nd)
 		const node condition = statement_for_get_condition(nd);
 		emit_expression(info, &condition);
 	}
-	// TODO: проверить разные типы условий: const, reg
 	check_type_and_branch(info);
 
 	to_code_label(info, label_incr);
