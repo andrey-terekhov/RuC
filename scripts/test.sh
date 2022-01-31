@@ -332,8 +332,9 @@ execution()
 
 check_warnings()
 {
-	# в unsorted проверяется только наличие ошибки
-	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* ]] ; then
+	# в unsorted проверяется только наличие ошибки. multiple_errors и preprocessor здесь временно
+	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* || $dir_multiple_errors/* || 
+		$path == $dir_preprocessor/* ]] ; then
 		message_success
 		let success++
 	else
@@ -345,34 +346,32 @@ check_warnings()
 
 		if [[ $flag > 1 ]] ; then
 			# проверка на наличие одной ошибки
-			if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
-				|| $path == $dir_syntax/* ]] ; then
+			if [[ $path == $dir_lexing/* || $path == $dir_semantics/* || $path == $dir_syntax/* ]] ; then
 				message_failure
 				let failure++
 			fi
 
-			# проверка на наличие нескольких ошибки
-			if [[ $path == $dir_multiple_errors/* ]] ; then
-				message_success
-				let success++
-			fi
+			# # проверка на наличие нескольких ошибки. временно убрано
+			# if [[ $path == $dir_multiple_errors/* ]] ; then
+			# 	message_success
+			# 	let success++
+			# fi
 
 			if ! [[ -z $debug ]] ; then
 				cat $log
 			fi
 		else
 			# проверка на наличие одной ошибки
-			if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
-				|| $path == $dir_syntax/* ]] ; then
+			if [[ $path == $dir_lexing/* || $path == $dir_semantics/* || $path == $dir_syntax/* ]] ; then
 				message_success
 				let success++
 			fi
 
-			# проверка на наличие нескольких ошибки
-			if [[ $path == $dir_multiple_errors/* ]] ; then
-				message_failure
-				let failure++
-			fi
+			# # проверка на наличие нескольких ошибки. временно убрано
+			# if [[ $path == $dir_multiple_errors/* ]] ; then
+			# 	message_failure
+			# 	let failure++
+			# fi
 		fi
 	fi
 }
