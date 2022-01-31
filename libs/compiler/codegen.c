@@ -262,7 +262,7 @@ static void enc_clear(encoder *const enc)
  *	@param	enc			Encoder
  *	@param	num			Error code
  */
-static void encoder_error(encoder *const enc, const location loc, error_t num, ...)
+static void encoder_error(encoder *const enc, const location loc, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

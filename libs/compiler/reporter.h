@@ -60,7 +60,7 @@ size_t reporter_get_errors_number(reporter *const rprt);
  *	@param	num			Error code
  *	@param	args		Variable list
  */
-void report_error(reporter *const rprt, universal_io *const io, const location loc, const error_t num, va_list args);
+void report_error(reporter *const rprt, universal_io *const io, const location loc, const err_t num, va_list args);
 
 /**
  *	Report a warning
