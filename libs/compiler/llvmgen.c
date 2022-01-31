@@ -1416,6 +1416,17 @@ static void emit_expression(information *const info, const node *const nd)
 	}
 }
 
+// /**
+//  *	Emit bool expression
+//  *
+//  *	@param	info	Encoder
+//  *	@param	nd		Node in AST
+//  */
+// static void emit_bool_expression(information *const info, const node *const nd)
+// {
+
+// }
+
 /**
  *	Emit initialization of lvalue
  *
