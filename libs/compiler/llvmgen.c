@@ -369,6 +369,13 @@ static inline void to_code_store_const_integer(information *const info, const it
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
+static inline void to_code_store_const_bool(information *const info, const bool arg, const size_t id
+	, const bool is_array, const bool is_local)
+{
+	uni_printf(info->sx->io, " store i1 %s, i1* %s%s.%zu, align 4\n"
+		, arg ? "true" : "false", is_local ? "%" : "@", is_array ? "" : "var", id);
+}
+
 static inline void to_code_store_const_double(information *const info, const double arg, const size_t id
 	, const bool is_array, const bool is_local)
 {
@@ -688,9 +695,18 @@ static void emit_literal_expression(information *const info, const node *const n
 	}
 	else if (type_is_boolean(type))
 	{
-		// TODO: сделать сохранение значения типа bool
-		info->answer_const_bool = expression_literal_get_boolean(nd);
-		info->answer_kind = ACONST;
+		const bool num = expression_literal_get_boolean(nd);
+		if (info->variable_location == LMEM)
+		{
+			to_code_store_const_bool(info, num, info->request_reg, false
+				, ident_is_local(info->sx, info->request_reg));
+			info->answer_kind = AREG;
+		}
+		else
+		{
+			info->answer_kind = ACONST;
+			info->answer_const_bool = num;
+		}
 	}
 	else // nullptr
 	{
@@ -874,14 +890,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 		else if (type_is_boolean(arguments_value_type[i]))
 		{
-			if (arguments_bool[i])
-			{
-				uni_printf(info->sx->io, " true");
-			}
-			else
-			{
-				uni_printf(info->sx->io, " false");
-			}
+			uni_printf(info->sx->io, " %s", arguments_bool[i] ? "true" : "false");
 		}
 		else // double
 		{
@@ -1648,6 +1657,10 @@ static void emit_variable_declaration(information *const info, const node *const
 				if (type_is_integer(info->sx, type))
 				{
 					to_code_store_const_integer(info, info->answer_const, info->request_reg, false, is_local, type);
+				}
+				else if (type_is_boolean(type))  
+				{
+					to_code_store_const_bool(info, info->answer_const_bool, info->request_reg, false, is_local);
 				}
 				else
 				{
