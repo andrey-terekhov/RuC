@@ -897,7 +897,7 @@ declaration_t declaration_get_class(const node *const nd)
 item_t declaration_type_get_type(const node *const nd)
 {
 	assert(node_get_type(nd) == OP_DECL_TYPE);
-	return (size_t)node_get_arg(nd, 0);
+	return node_get_arg(nd, 0);
 }
 
 size_t declaration_type_get_id(const node *const nd)
