@@ -1053,7 +1053,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 
 		case UN_LOGNOT:
 		{
-			const item_t temp = info->label_true;
+			const size_t temp = info->label_true;
 			info->label_true =  info->label_false;
 			info->label_false = temp;
 
