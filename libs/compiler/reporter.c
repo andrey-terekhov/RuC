@@ -66,7 +66,7 @@ size_t reporter_get_errors_number(reporter *const rprt)
 	return rprt->errors;
 }
 
-void report_error(reporter *const rprt, universal_io *const io, const location loc, const error_t num, va_list args)
+void report_error(reporter *const rprt, universal_io *const io, const location loc, const err_t num, va_list args)
 {
 	if (rprt->is_recovery_disabled && rprt->errors != 0)
 	{

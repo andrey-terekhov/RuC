@@ -102,11 +102,11 @@ static void write_type(writer *const wrt, const item_t type)
  *	Write unary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
-static void write_unary_operator(writer *const wrt, const unary_t operator)
+static void write_unary_operator(writer *const wrt, const unary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case UN_POSTINC:
 			write(wrt, "'postfix ++'");
@@ -148,11 +148,11 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
  *	Write binary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
-static void write_binary_operator(writer *const wrt, const binary_t operator)
+static void write_binary_operator(writer *const wrt, const binary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case BIN_MUL:
 			write(wrt, "'*'");

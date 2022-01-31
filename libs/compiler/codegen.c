@@ -262,7 +262,7 @@ static void enc_clear(encoder *const enc)
  *	@param	enc			Encoder
  *	@param	num			Error code
  */
-static void encoder_error(encoder *const enc, const location loc, error_t num, ...)
+static void encoder_error(encoder *const enc, const location loc, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -824,8 +824,8 @@ static void emit_increment_expression(encoder *const enc, const node *const nd)
 	const node operand = expression_unary_get_operand(nd);
 	const lvalue value = emit_lvalue(enc, &operand);
 
-	const unary_t operator = expression_unary_get_operator(nd);
-	instruction_t instruction = unary_to_instruction(operator);
+	const unary_t op = expression_unary_get_operator(nd);
+	instruction_t instruction = unary_to_instruction(op);
 
 	if (value.kind == ADDRESS)
 	{
@@ -856,9 +856,9 @@ static void emit_increment_expression(encoder *const enc, const node *const nd)
 static void emit_unary_expression(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const unary_t operator = expression_unary_get_operator(nd);
+	const unary_t op = expression_unary_get_operator(nd);
 	const node operand = expression_unary_get_operand(nd);
-	switch (operator)
+	switch (op)
 	{
 		case UN_POSTINC:
 		case UN_POSTDEC:
@@ -926,12 +926,12 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 	emit_expression(enc, &LHS);
 
 	size_t addr = SIZE_MAX;
-	const binary_t operator = expression_binary_get_operator(nd);
-	const bool is_logical = operator == BIN_LOG_AND || operator == BIN_LOG_OR;
+	const binary_t op = expression_binary_get_operator(nd);
+	const bool is_logical = op == BIN_LOG_AND || op == BIN_LOG_OR;
 	if (is_logical)
 	{
 		mem_add(enc, IC_DUPLICATE);
-		mem_add(enc, operator == BIN_LOG_AND ? IC_BE0 : IC_BNE0);
+		mem_add(enc, op == BIN_LOG_AND ? IC_BE0 : IC_BNE0);
 		addr = mem_reserve(enc);
 	}
 
@@ -943,7 +943,7 @@ static void emit_integral_expression(encoder *const enc, const node *const nd)
 		mem_set(enc, addr, (item_t)mem_size(enc) + 1);
 	}
 
-	const instruction_t instruction = binary_to_instruction(operator);
+	const instruction_t instruction = binary_to_instruction(op);
 	if (type_is_floating(expression_get_type(&LHS)))
 	{
 		mem_add(enc, instruction_to_floating_ver(instruction));
@@ -1034,8 +1034,8 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 	}
 	else // Скалярное присваивание
 	{
-		const binary_t operator = expression_assignment_get_operator(nd);
-		instruction_t instruction = binary_to_instruction(operator);
+		const binary_t op = expression_assignment_get_operator(nd);
+		instruction_t instruction = binary_to_instruction(op);
 		if (value.kind == ADDRESS)
 		{
 			instruction = instruction_to_address_ver(instruction);

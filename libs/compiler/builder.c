@@ -28,7 +28,7 @@
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantic_error(builder *const bldr, const location loc, error_t num, ...)
+static void semantic_error(builder *const bldr, const location loc, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

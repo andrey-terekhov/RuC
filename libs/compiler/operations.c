@@ -145,9 +145,9 @@ precedence_t get_operator_precedence(const token_t token)
 	}
 }
 
-bool operation_is_assignment(const binary_t operator)
+bool operation_is_assignment(const binary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case BIN_ASSIGN:
 		case BIN_ADD_ASSIGN:
