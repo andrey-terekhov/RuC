@@ -16,7 +16,7 @@
 
 #include "AST.h"
 
-extern node node_broken();
+extern node node_broken(void);
 extern location node_get_location(const node *const nd);
 
 extern item_t expression_get_type(const node *const nd);
@@ -894,6 +894,7 @@ declaration_t declaration_get_class(const node *const nd)
 	}
 }
 
+
 item_t declaration_type_get_type(const node *const nd)
 {
 	assert(node_get_type(nd) == OP_DECL_TYPE);
@@ -905,6 +906,7 @@ size_t declaration_type_get_id(const node *const nd)
 	assert(node_get_type(nd) == OP_DECL_TYPE);
 	return (size_t)node_get_arg(nd, 1);
 }
+
 
 size_t declaration_variable_get_id(const node *const nd)
 {

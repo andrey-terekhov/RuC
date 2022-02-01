@@ -85,7 +85,7 @@ typedef enum DECLARATION
  *
  *	@return	Broken node
  */
-inline node node_broken()
+inline node node_broken(void)
 {
 	return node_load(NULL, SIZE_MAX);
 }
@@ -1036,6 +1036,7 @@ item_t declaration_type_get_type(const node *const nd);
  *  @return Id
  */
 size_t declaration_type_get_id(const node *const nd);
+
 
 /**
  *	Get variable id in variable declaration
