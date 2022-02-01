@@ -16,6 +16,7 @@
 
 #include "token.h"
 
+
 /*
  *   __     __   __     ______   ______     ______     ______   ______     ______     ______
  *  /\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -45,6 +46,7 @@ bool token_is_not(const token *const tk, const token_t kind)
 	return tk->kind != kind;
 }
 
+
 token token_identifier(const location loc, const size_t name)
 {
 	return (token){ .loc = loc, .kind = TK_IDENTIFIER, .data.ident_repr = name };
@@ -55,6 +57,7 @@ size_t token_get_ident_name(const token *const tk)
 	assert(tk->kind == TK_IDENTIFIER);
 	return tk->data.ident_repr;
 }
+
 
 token token_char_literal(const location loc, const char32_t value)
 {
@@ -67,6 +70,7 @@ char32_t token_get_char_value(const token *const tk)
 	return tk->data.char_value;
 }
 
+
 token token_int_literal(const location loc, const uint64_t value)
 {
 	return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
@@ -77,6 +81,7 @@ uint64_t token_get_int_value(const token *const tk)
 	assert(tk->kind == TK_INT_LITERAL);
 	return tk->data.int_value;
 }
+
 
 token token_float_literal(const location loc, const double value)
 {
@@ -89,6 +94,7 @@ double token_get_float_value(const token *const tk)
 	return tk->data.float_value;
 }
 
+
 token token_string_literal(const location loc, const size_t string_num)
 {
 	return (token){ .loc = loc, .kind = TK_STRING_LITERAL, .data.string_num = string_num };
@@ -100,7 +106,8 @@ size_t token_get_string_num(const token *const tk)
 	return tk->data.string_num;
 }
 
-token token_eof()
+
+token token_eof(void)
 {
 	return (token){ .loc = { SIZE_MAX, SIZE_MAX }, .kind = TK_EOF };
 }

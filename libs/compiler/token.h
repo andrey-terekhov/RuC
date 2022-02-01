@@ -73,12 +73,12 @@ typedef enum TOKEN
 	TK_L_SQUARE,					/**< '[' punctuator */
 	TK_L_PAREN,						/**< '(' punctuator */
 	TK_L_BRACE,						/**< '{' punctuator */
-	TK_R_SQUARE		= 0b00000001,	/**< ']' punctuator */
-	TK_R_PAREN		= 0b00000010,	/**< ')' punctuator */
-	TK_R_BRACE		= 0b00000100,	/**< '}' punctuator */
-	TK_COMMA		= 0b00001000,	/**< ',' punctuator */
-	TK_COLON		= 0b00010000,	/**< ':' punctuator */
-	TK_SEMICOLON	= 0b00100000,	/**< ';' punctuator */
+	TK_R_SQUARE		= 0x01,			/**< ']' punctuator */
+	TK_R_PAREN		= 0x02,			/**< ')' punctuator */
+	TK_R_BRACE		= 0x04,			/**< '}' punctuator */
+	TK_COMMA		= 0x08,			/**< ',' punctuator */
+	TK_COLON		= 0x10,			/**< ':' punctuator */
+	TK_SEMICOLON	= 0x20,			/**< ';' punctuator */
 	TK_QUESTION 	= TK_L_BRACE+1,	/**< '?' punctuator */
 	TK_TILDE,						/**< '~' punctuator */
 	TK_PERIOD,						/**< '.' punctuator */
@@ -148,6 +148,7 @@ typedef struct token
  *	@return	Token location
  */
 location token_get_location(const token *const tk);
+
 /**
  *	Get token kind
  *
@@ -163,6 +164,7 @@ bool token_is(const token *const tk, const token_t kind);
 /**	Check if token is not of @c kind kind */
 bool token_is_not(const token *const tk, const token_t kind);
 
+
 /**
  *	Create identifier token
  *
@@ -172,6 +174,7 @@ bool token_is_not(const token *const tk, const token_t kind);
  *	@return	Identifier token
  */
 token token_identifier(const location loc, const size_t name);
+
 /**
  *	Get identifier name from identifier token
  *
@@ -180,6 +183,7 @@ token token_identifier(const location loc, const size_t name);
  *	@return	Identifier name
  */
 size_t token_get_ident_name(const token *const tk);
+
 
 /**
  *	Create character literal token
@@ -220,6 +224,7 @@ token token_int_literal(const location loc, const uint64_t value);
  */
 uint64_t token_get_int_value(const token *const tk);
 
+
 /**
  *	Create floating literal token
  *
@@ -238,6 +243,7 @@ token token_float_literal(const location loc, const double value);
  *	@return	Value
  */
 double token_get_float_value(const token *const tk);
+
 
 /**
  *	Create string literal token
@@ -258,12 +264,13 @@ token token_string_literal(const location loc, const size_t string_num);
  */
 size_t token_get_string_num(const token *const tk);
 
+
 /**
  *	Create end-of-file token
  *
  *	@return	EOF token
  */
-token token_eof();
+token token_eof(void);
 
 /**
  *	Create keyword token
