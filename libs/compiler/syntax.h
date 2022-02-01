@@ -97,8 +97,8 @@ typedef struct scope
 /**
  *	Create Syntax structure
  *
- *	@param	ws			Compiler workspace
- *	@param	io			Universal io structure
+ *	@param	ws				Compiler workspace
+ *	@param	io				Universal io structure
  *
  *	@return	Syntax structure
  */
@@ -107,16 +107,17 @@ syntax sx_create(const workspace *const ws, universal_io *const io);
 /**
  *	Check if syntax structure is correct
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
+ *	@param	check_predef	Set if needed to check function definitions
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool sx_is_correct(syntax *const sx);
+bool sx_is_correct(syntax *const sx, const bool check_predef);
 
 /**
  *	Free allocated memory
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */

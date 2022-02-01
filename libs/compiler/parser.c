@@ -2273,5 +2273,6 @@ int parse(syntax *const sx)
 #endif
 
 	parser_clear(&prs);
-	return !sx_is_correct(sx);
+	// Временное решение - парсер не проверяет таблицы
+	return sx->rprt.errors == 0 ? 0 : -1;
 }
