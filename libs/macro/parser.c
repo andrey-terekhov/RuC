@@ -212,7 +212,7 @@ static void parser_macro_error(parser *const prs, const error_t num)
 }
 
 /**
- *	Emit an warning from parser
+ *	Emit a warning from parser
  *
  *	@param	prs			Parser structure
  *	@param	num			Error code
