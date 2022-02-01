@@ -1806,6 +1806,23 @@ static void postgen(information *const info)
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -4, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
 
+	// char *runtime = "runtime.s";
+	// FILE *file = fopen(runtime, "r+");
+	// if (runtime != NULL)
+	// {
+	// 	printf("here1\n");
+	// 	printf("%i\n", fgetc(file));
+	// 	// char string[1024];
+	// 	// while (fgets(string, sizeof(string), file) != NULL)
+	// 	// {
+	// 	// 	printf("here2\n");
+	// 	// 	printf("%s", string);
+	// 	// 	// uni_printf(info->sx->io, string);
+	// 	// }
+	// }
+
+	// fclose(file);
+
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
 	// TODO: тут ещё часть вывод таблицы типов должен быть (вроде это для написанных самими функции типа printid)
