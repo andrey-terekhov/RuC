@@ -1295,7 +1295,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
-			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, info->request_reg, -(item_t)value_displ, value_reg);
 
 			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
