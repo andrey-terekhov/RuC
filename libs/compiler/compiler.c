@@ -72,6 +72,12 @@ static int compile_from_io(const workspace *const ws, universal_io *const io, co
 
 	if (!ret)
 	{
+		// Проверка таблиц только для VM, если не было других ошибок
+		ret = !sx_is_correct(&sx, enc == &encode_to_vm);
+	}
+
+	if (!ret)
+	{
 		ret = enc(ws, &sx);
 	}
 
