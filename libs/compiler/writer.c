@@ -309,25 +309,34 @@ static void write_literal_expression(writer *const wrt, const node *const nd)
 	write_line(wrt, "EXPR_LITERAL with value ");
 
 	const item_t type = expression_get_type(nd);
-	if (type_is_integer(wrt->sx, type))
+	switch (type_get_class(wrt->sx, type))
 	{
-		const int value = expression_literal_get_integer(nd);
-		uni_printf(wrt->io, "%i", value);
-	}
-	else if (type_is_floating(type))
-	{
-		const double value = expression_literal_get_floating(nd);
-		uni_printf(wrt->io, "%f", value);
-	}
-	else if (type_is_string(wrt->sx, type))
-	{
-		const size_t string_num = expression_literal_get_string(nd);
-		const char *const string = string_get(wrt->sx, string_num);
-		uni_printf(wrt->io, "\"%s\"", string);
-	}
-	else // if (type_is_null_pointer(type))
-	{
-		write(wrt, "NULL");
+		case TYPE_NULL_POINTER:
+			write(wrt, "NULL");
+			break;
+
+		case TYPE_CHARACTER:
+			uni_printf(wrt->io, "%c", expression_literal_get_character(nd));
+			break;
+
+		case TYPE_INTEGER:
+			uni_printf(wrt->io, "%" PRIitem, expression_literal_get_integer(nd));
+			break;
+
+		case TYPE_FLOATING:
+			uni_printf(wrt->io, "%f", expression_literal_get_floating(nd));
+			break;
+
+		case TYPE_ARRAY:
+		{
+			const size_t string_num = expression_literal_get_string(nd);
+			const char *const string = string_get(wrt->sx, string_num);
+			uni_printf(wrt->io, "\"%s\"", string);
+		}
+		break;
+
+		default:
+			break;
 	}
 
 	write_expression_metadata(wrt, nd);
@@ -487,20 +496,20 @@ static void write_ternary_expression(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write expression list
+ *	Write initializer
  *
  *	@param	wrt			Writer
  *	@param	nd			Node in AST
  */
-static void write_expression_list(writer *const wrt, const node *const nd)
+static void write_initializer(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "EXPR_LIST");
+	write_line(wrt, "EXPR_INITIALIZER");
 	write_expression_metadata(wrt, nd);
 
-	const size_t size = expression_list_get_size(nd);
+	const size_t size = expression_initializer_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
-		const node subexpr = expression_list_get_subexpr(nd, i);
+		const node subexpr = expression_initializer_get_subexpr(nd, i);
 		write_expression(wrt, &subexpr);
 	}
 }
@@ -513,11 +522,6 @@ static void write_expression_list(writer *const wrt, const node *const nd)
  */
 static void write_expression(writer *const wrt, const node *const nd)
 {
-	if (!node_is_correct(nd))
-	{
-		return;
-	}
-
 	wrt->indent++;
 	switch (expression_get_class(nd))
 	{
@@ -557,8 +561,12 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_ternary_expression(wrt, nd);
 			break;
 
-		case EXPR_LIST:
-			write_expression_list(wrt, nd);
+		case EXPR_INITIALIZER:
+			write_initializer(wrt, nd);
+			break;
+
+		case EXPR_INVALID:
+			write(wrt, "EXPR_INVALID\n");
 			break;
 	}
 
@@ -2068,7 +2076,7 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			return sprintf(buffer, "int");
 
 		case TYPE_UNDEFINED:
-			return sprintf(buffer, "UNDEFINED");
+			return sprintf(buffer, "undefined type");
 
 		case TYPE_FUNCTION:
 		{

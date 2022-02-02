@@ -73,6 +73,16 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc);
 
 /**
+ *	Build a null literal expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	loc				Source location
+ *
+ *	@return Null literal expression node
+ */
+node build_null_literal_expression(builder *const bldr, const location loc);
+
+/**
  *	Build a character literal expression
  *
  *	@param	bldr			AST builder
@@ -115,16 +125,6 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
  *	@return	String literal expression node
  */
 node build_string_literal_expression(builder *const bldr, const size_t index, const location loc);
-
-/**
- *	Build a null pointer literal expression
- *
- *	@param	bldr			AST builder
- *	@param	loc				Source location
- *
- *	@return Null pointer literal expression node
- */
-node build_null_pointer_literal_expression(builder *const bldr, const location loc);
 
 /**
  *	Build a subscript expression
@@ -219,16 +219,16 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS, location op_loc);
 
 /**
- *	Build an initializer list
+ *	Build an initializer
  *
  *	@param	bldr			AST builder
  *	@param	exprs			Vector of expressions
  *	@param	l_loc			Left brace location
  *	@param	r_loc			Right brace location
  *
- *	@return	Initializer list
+ *	@return	Initializer
  */
-node build_initializer_list(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
+node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
 
 
 /**

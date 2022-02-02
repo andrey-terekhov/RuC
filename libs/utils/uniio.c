@@ -265,7 +265,7 @@ int in_set_file(universal_io *const io, const char *const path)
 		return -1;
 	}
 
-	io->in_file = fopen(path, "r+t");
+	io->in_file = fopen(path, "r+b");
 	if (io->in_file == NULL)
 	{
 		return -1;
@@ -430,7 +430,7 @@ int out_set_file(universal_io *const io, const char *const path)
 		return -1;
 	}
 
-	io->out_file = fopen(path, "w+t");
+	io->out_file = fopen(path, "w+b");
 	if (io->out_file == NULL)
 	{
 		return -1;
