@@ -66,10 +66,7 @@ static bool utf8_is_line_breaker(const char32_t symbol)
  */
 static inline void parser_set_position(parser *const prs, const size_t position)
 {
-	//if (!in_is_buffer(prs->in))
-	{
-		prs->position = position;
-	}
+	prs->position = position;
 }
 
 /**
@@ -94,10 +91,7 @@ static inline void parser_set_line(parser *const prs, const size_t line)
  */
 static inline void parser_set_line_position(parser *const prs, const size_t position)
 {
-	//if (!in_is_buffer(prs->in))
-	{
-		prs->line_position = position;
-	}
+	prs->line_position = position;
 }
 
 /**
@@ -726,7 +720,6 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	const size_t line_position = prs->line_position;
 
 	// Подготовка к парсингу буффера
-	//prs->line = FST_LINE_INDEX;
 	prs->position = FST_CHARACTER_INDEX;
 	prs->line_position = 0;
 	parser_clear_code(prs);
