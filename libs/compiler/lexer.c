@@ -142,11 +142,7 @@ static inline void skip_block_comment(lexer *const lxr)
 /**
  *	Lex identifier or keyword [C99 6.4.1 & 6.4.2]
  *
-<<<<<<< HEAD
  *	@param	lxr			Lexer structure
-=======
- *	@param	lxr			Lexer
->>>>>>> llvm2
  *
  *	@return	keyword number on keyword, @c identifier on identifier
  */
@@ -327,11 +323,7 @@ static token_t lex_char_constant(lexer *const lxr)
  *	Lex string literal [C99 6.4.5]
  *	@note	Lexes the remainder of a string literal after quote mark
  *
-<<<<<<< HEAD
  *	@param	lxr			Lexer structure
-=======
- *	@param	lxr			Lexer
->>>>>>> llvm2
  *
  *	@return	@c string_literal
  */
@@ -399,7 +391,6 @@ token_t lex(lexer *const lxr)
 		return TK_EOF;
 	}
 
-<<<<<<< HEAD
 	skip_whitespace(lxr);
 	lxr->location = in_get_position(lxr->sx->io);
 
@@ -492,238 +483,101 @@ token_t lex(lexer *const lxr)
 				scan(lxr);
 				return TK_PERIOD;
 			}
-=======
-	while (true)
-	{
-		skip_whitespace(lxr);
-		const size_t loc_begin = in_get_position(lxr->sx->io);
-		token_t punctuator_kind;
 
-		switch (lxr->character)
-		{
-			case (char32_t)EOF:
-				return token_eof();
-
-			default:
-				if (utf8_is_letter(lxr->character) || lxr->character == '#')
-				{
-					// Keywords and identifiers
-					return lex_identifier_or_keyword(lxr);
-				}
-				else
-				{
-					lexer_error(lxr, bad_character, lxr->character);
-					// Pretending the character didn't exist
-					scan(lxr);
-					return lex(lxr);
-				}
-
-				// Integer and floating literals
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9':
-				return lex_numeric_literal(lxr);
-
-			case '\'':	// Character literals
-				return lex_char_literal(lxr);
-
-			case '\"':	// String literals
-				return lex_string_literal(lxr);
-
-				// Punctuators
-			case '?':
+		case '*':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-				punctuator_kind = TK_QUESTION;
-				break;
-
-			case '[':
-				scan(lxr);
-				punctuator_kind = TK_L_SQUARE;
-				break;
-
-			case ']':
-				scan(lxr);
-				punctuator_kind = TK_R_SQUARE;
-				break;
-
-			case '(':
-				scan(lxr);
-				punctuator_kind = TK_L_PAREN;
-				break;
-
-			case ')':
-				scan(lxr);
-				punctuator_kind = TK_R_PAREN;
-				break;
-
-			case '{':
-				scan(lxr);
-				punctuator_kind = TK_L_BRACE;
-				break;
->>>>>>> llvm2
-
-			case '}':
-				scan(lxr);
-<<<<<<< HEAD
 				return TK_STAR_EQUAL;
 			}
 			else
 			{
 				return TK_STAR;
 			}
-=======
-				punctuator_kind = TK_R_BRACE;
-				break;
->>>>>>> llvm2
 
-			case '~':
+		case '!':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-<<<<<<< HEAD
 				return TK_EXCLAIM_EQUAL;
 			}
 			else
 			{
 				return TK_EXCLAIM;
 			}
-=======
-				punctuator_kind = TK_TILDE;
-				break;
->>>>>>> llvm2
 
-			case ':':
+		case '%':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-<<<<<<< HEAD
 				return TK_PERCENT_EQUAL;
 			}
 			else
 			{
 				return TK_PERCENT;
 			}
-=======
-				punctuator_kind = TK_COLON;
-				break;
->>>>>>> llvm2
 
-			case ';':
+		case '^':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-<<<<<<< HEAD
 				return TK_CARET_EQUAL;
 			}
 			else
 			{
 				return TK_CARET;
 			}
-=======
-				punctuator_kind = TK_SEMICOLON;
-				break;
->>>>>>> llvm2
 
-			case ',':
+		case '=':
+			if (scan(lxr) == '=')
+			{
 				scan(lxr);
-<<<<<<< HEAD
 				return TK_EQUAL_EQUAL;
 			}
 			else
 			{
 				return TK_EQUAL;
 			}
-=======
-				punctuator_kind = TK_COMMA;
-				break;
->>>>>>> llvm2
 
-			case '.':
-				if (utf8_is_digit(lookahead(lxr)))
-				{
-					return lex_numeric_literal(lxr);
-				}
-				else
-				{
+		case '+':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_PLUS_EQUAL;
-=======
-					punctuator_kind = TK_PERIOD;
-					break;
-				}
->>>>>>> llvm2
 
-			case '*':
-				if (scan(lxr) == '=')
-				{
+				case '+':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_PLUS_PLUS;
 
 				default:
 					return TK_PLUS;
 			}
-=======
-					punctuator_kind = TK_STAR_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_STAR;
-				}
-				break;
->>>>>>> llvm2
 
-			case '!':
-				if (scan(lxr) == '=')
-				{
+		case '|':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_PIPE_EQUAL;
-=======
-					punctuator_kind = TK_EXCLAIM_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_EXCLAIM;
-				}
-				break;
->>>>>>> llvm2
 
-			case '%':
-				if (scan(lxr) == '=')
-				{
+				case '|':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_PIPE_PIPE;
 
 				default:
 					return TK_PIPE;
 			}
-=======
-					punctuator_kind = TK_PERCENT_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_PERCENT;
-				}
-				break;
->>>>>>> llvm2
 
-			case '^':
-				if (scan(lxr) == '=')
-				{
+		case '&':
+			switch (scan(lxr))
+			{
+				case '=':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_AMP_EQUAL;
-=======
-					punctuator_kind = TK_CARET_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_CARET;
-				}
-				break;
->>>>>>> llvm2
 
-			case '=':
-				if (scan(lxr) == '=')
-				{
+				case '&':
 					scan(lxr);
-<<<<<<< HEAD
 					return TK_AMP_AMP;
 
 				default:
@@ -748,60 +602,14 @@ token_t lex(lexer *const lxr)
 				default:
 					return TK_MINUS;
 			}
-=======
-					punctuator_kind = TK_EQUAL_EQUAL;
-				}
-				else
-				{
-					punctuator_kind = TK_EQUAL;
-				}
-				break;
 
-			case '+':
-				switch (scan(lxr))
-				{
-					case '=':
+		case '<':
+			switch (scan(lxr))
+			{
+				case '<':
+					if (scan(lxr) == '=')
+					{
 						scan(lxr);
-						punctuator_kind = TK_PLUS_EQUAL;
-						break;
-
-					case '+':
-						scan(lxr);
-						punctuator_kind = TK_PLUS_PLUS;
-						break;
-
-					default:
-						punctuator_kind = TK_PLUS;
-						break;
-				}
-				break;
-
-			case '|':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_PIPE_EQUAL;
-						break;
-
-					case '|':
-						scan(lxr);
-						punctuator_kind = TK_PIPE_PIPE;
-						break;
->>>>>>> llvm2
-
-					default:
-						punctuator_kind = TK_PIPE;
-						break;
-				}
-				break;
-
-			case '&':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-<<<<<<< HEAD
 						return TK_LESS_LESS_EQUAL;
 					}
 					else
@@ -816,28 +624,14 @@ token_t lex(lexer *const lxr)
 				default:
 					return TK_LESS;
 			}
-=======
-						punctuator_kind = TK_AMP_EQUAL;
-						break;
 
-					case '&':
+		case '>':
+			switch (scan(lxr))
+			{
+				case '>':
+					if (scan(lxr) == '=')
+					{
 						scan(lxr);
-						punctuator_kind = TK_AMP_AMP;
-						break;
-
-					default:
-						punctuator_kind = TK_AMP;
-						break;
-				}
-				break;
->>>>>>> llvm2
-
-			case '-':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-<<<<<<< HEAD
 						return TK_GREATER_GREATER_EQUAL;
 					}
 					else
@@ -872,104 +666,6 @@ token_t lex(lexer *const lxr)
 				default:
 					return TK_SLASH;
 			}
-=======
-						punctuator_kind = TK_MINUS_EQUAL;
-						break;
-
-					case '-':
-						scan(lxr);
-						punctuator_kind = TK_MINUS_MINUS;
-						break;
-
-					case '>':
-						scan(lxr);
-						punctuator_kind = TK_ARROW;
-						break;
-
-					default:
-						punctuator_kind = TK_MINUS;
-						break;
-				}
-				break;
-
-			case '<':
-				switch (scan(lxr))
-				{
-					case '<':
-						if (scan(lxr) == '=')
-						{
-							scan(lxr);
-							punctuator_kind = TK_LESS_LESS_EQUAL;
-						}
-						else
-						{
-							punctuator_kind = TK_LESS_LESS;
-						}
-						break;
-
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_LESS_EQUAL;
-						break;
-
-					default:
-						punctuator_kind = TK_LESS;
-						break;
-				}
-				break;
-
-			case '>':
-				switch (scan(lxr))
-				{
-					case '>':
-						if (scan(lxr) == '=')
-						{
-							scan(lxr);
-							punctuator_kind = TK_GREATER_GREATER_EQUAL;
-						}
-						else
-						{
-							punctuator_kind = TK_GREATER_GREATER;
-						}
-						break;
-
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_GREATER_EQUAL;
-						break;
-
-					default:
-						punctuator_kind = TK_GREATER;
-						break;
-				}
-				break;
-
-			case '/':
-				switch (scan(lxr))
-				{
-					case '=':
-						scan(lxr);
-						punctuator_kind = TK_SLASH_EQUAL;
-						break;
-
-					case '/':	// Line comment
-						skip_line_comment(lxr);
-						continue;
-
-					case '*':	// Block comment
-						skip_block_comment(lxr);
-						continue;
-
-					default:
-						punctuator_kind = TK_SLASH;
-						break;
-				}
-				break;
-		}
-
-		const size_t loc_end = in_get_position(lxr->sx->io);
-		return token_punctuator((location){ loc_begin, loc_end }, punctuator_kind);
->>>>>>> llvm2
 	}
 }
 

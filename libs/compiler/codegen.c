@@ -480,18 +480,10 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 		}
 
 		case TYPE_CHARACTER:
-		{
-			const char32_t value = expression_literal_get_character(nd);
-
-			mem_add(enc, IC_LI);
-			mem_add(enc, value);
-			return;
-		}
-
 		case TYPE_INTEGER:
 		case TYPE_ENUM:
 		{
-			const item_t value = expression_literal_get_integer(nd);
+			const int value = expression_literal_get_integer(nd);
 
 			mem_add(enc, IC_LI);
 			mem_add(enc, value);

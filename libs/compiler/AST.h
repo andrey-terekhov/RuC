@@ -30,8 +30,8 @@ extern "C" {
 /** Value category */
 typedef enum CATEGORY
 {
-	LVALUE,					/**< An expression that designates an object */
-	RVALUE,					/**< An expression detached from any specific storage */
+	LVALUE,				/**< An expression that designates an object */
+	RVALUE,				/**< An expression detached from any specific storage */
 } category_t;
 
 /** Expression class */
@@ -46,12 +46,7 @@ typedef enum EXPRESSION
 	EXPR_UNARY,			/**< Unary expression */
 	EXPR_BINARY,		/**< Binary expression */
 	EXPR_TERNARY,		/**< Ternary expression */
-<<<<<<< HEAD
 	EXPR_LIST,			/**< Expression list */
-=======
-	EXPR_INITIALIZER,	/**< Initializer */
-	EXPR_INVALID,		/**< Invalid expression */
->>>>>>> llvm2
 } expression_t;
 
 /** Statement class */
@@ -161,42 +156,10 @@ node expression_identifier(node *const context, const item_t type, const size_t 
  *
  *	@return	Index in identifiers table
  */
-size_t expression_identifier_get_id(const node *const nd);
-
-
-/**
- *	Create new null literal expression
- *
- *	@param	context			Context node
- *	@param	type			Value type
- *	@param	loc				Literal location
- *
- *	@return	Null literal expression
- */
-node expression_null_literal(node *const context, const item_t type, const location loc);
-
-
-/**
- *	Create new character literal expression
- *
- *	@param	context			Context node
- *	@param	type			Value type
- *	@param	value			Literal value
- *	@param	loc				Literal location
- *
- *	@return	Character literal expression
- */
-node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc);
-
-/**
- *	Get value of character literal expression
- *
- *	@param	nd				Literal expression
- *
- *	@return	Character value
- */
-char32_t expression_literal_get_character(const node *const nd);
-
+inline size_t expression_identifier_get_id(const node *const nd)
+{
+	return node_get_type(nd) == OP_IDENTIFIER ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
+}
 
 /**
  *	Create new integer literal expression
@@ -211,13 +174,16 @@ char32_t expression_literal_get_character(const node *const nd);
 node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc);
 
 /**
- *	Get value of integer literal expression
+ *	Get integer value of literal expression
  *
  *	@param	nd				Literal expression
  *
  *	@return	Integer value
  */
-item_t expression_literal_get_integer(const node *const nd);
+inline int expression_literal_get_integer(const node *const nd)
+{
+	return node_get_type(nd) == OP_LITERAL ? (int)node_get_arg(nd, 2) : INT_MAX;
+}
 
 
 /**
@@ -233,26 +199,16 @@ item_t expression_literal_get_integer(const node *const nd);
 node expression_floating_literal(node *const context, const item_t type, const double value, const location loc);
 
 /**
- *	Get value of floating literal expression
+ *	Get floating value of literal expression
  *
  *	@param	nd				Literal expression
  *
  *	@return	Floating value
  */
-double expression_literal_get_floating(const node *const nd);
-
-
-/**
- *	Create new string literal expression
- *
- *	@param	context			Context node
- *	@param	type			Value type
- *	@param	index			String index
- *	@param	loc				Literal location
- *
- *	@return	String literal expression
- */
-node expression_string_literal(node *const context, const item_t type, const size_t index, const location loc);
+inline double expression_literal_get_floating(const node *const nd)
+{
+	return node_get_type(nd) == OP_LITERAL ? node_get_arg_double(nd, 2) : DBL_MAX;
+}
 
 /**
  *	Get string index of literal expression
@@ -261,7 +217,10 @@ node expression_string_literal(node *const context, const item_t type, const siz
  *
  *	@return	String index
  */
-size_t expression_literal_get_string(const node *const nd);
+inline size_t expression_literal_get_string(const node *const nd)
+{
+	return node_get_type(nd) == OP_LITERAL ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
+}
 
 
 /**
@@ -283,7 +242,10 @@ node expression_subscript(const item_t type, node *const base, node *const index
  *
  *	@return	Base expression
  */
-node expression_subscript_get_base(const node *const nd);
+inline node expression_subscript_get_base(const node *const nd)
+{
+	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get index expression of subscript expression
@@ -292,7 +254,10 @@ node expression_subscript_get_base(const node *const nd);
  *
  *	@return	Index expression
  */
-node expression_subscript_get_index(const node *const nd);
+inline node expression_subscript_get_index(const node *const nd)
+{
+	return node_get_type(nd) == OP_SLICE ? node_get_child(nd, 1) : node_broken();
+}
 
 
 /**
@@ -314,7 +279,10 @@ node expression_call(const item_t type, node *const callee, node_vector *const a
  *
  *	@return	Called expression
  */
-node expression_call_get_callee(const node *const nd);
+inline node expression_call_get_callee(const node *const nd)
+{
+	return node_get_type(nd) == OP_CALL ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get arguments amount of call expression
@@ -323,7 +291,10 @@ node expression_call_get_callee(const node *const nd);
  *
  *	@return	Arguments amount
  */
-size_t expression_call_get_arguments_amount(const node *const nd);
+inline size_t expression_call_get_arguments_amount(const node *const nd)
+{
+	return node_get_type(nd) == OP_CALL ? node_get_amount(nd) - 1 : SIZE_MAX;
+}
 
 /**
  *	Get argument of call expression by index
@@ -333,7 +304,10 @@ size_t expression_call_get_arguments_amount(const node *const nd);
  *
  *	@return	Argument
  */
-node expression_call_get_argument(const node *const nd, const size_t index);
+inline node expression_call_get_argument(const node *const nd, const size_t index)
+{
+	return node_get_type(nd) == OP_CALL ? node_get_child(nd, 1 + index) : node_broken();
+}
 
 
 /**
@@ -357,7 +331,10 @@ node expression_member(const item_t type, const category_t ctg
  *
  *	@return	Base expression
  */
-node expression_member_get_base(const node *const nd);
+inline node expression_member_get_base(const node *const nd)
+{
+	return node_get_type(nd) == OP_SELECT ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get member index of member expression
@@ -366,7 +343,10 @@ node expression_member_get_base(const node *const nd);
  *
  *	@return	Member index
  */
-size_t expression_member_get_member_index(const node *const nd);
+inline size_t expression_member_get_member_index(const node *const nd)
+{
+	return node_get_type(nd) == OP_SELECT ? (size_t)node_get_arg(nd, 2) : SIZE_MAX;
+}
 
 /**
  *	Check if operator of member expression is '->'
@@ -375,7 +355,10 @@ size_t expression_member_get_member_index(const node *const nd);
  *
  *	@return	@c 1 on true, @c on false
  */
-bool expression_member_is_arrow(const node *const nd);
+inline bool expression_member_is_arrow(const node *const nd)
+{
+	return node_get_type(nd) == OP_SELECT ? node_get_arg(nd, 3) != 0: false;
+}
 
 
 /**
@@ -397,7 +380,10 @@ node expression_cast(const item_t target_type, const item_t source_type, node *c
  *
  *	@return	Source type
  */
-item_t expression_cast_get_source_type(const node *const nd);
+inline item_t expression_cast_get_source_type(const node *const nd)
+{
+	return node_get_type(nd) == OP_CAST ? node_get_arg(nd, 2) : ITEM_MAX;
+}
 
 /**
  *	Get operand of cast expression
@@ -406,7 +392,10 @@ item_t expression_cast_get_source_type(const node *const nd);
  *
  *	@return	Operand
  */
-node expression_cast_get_operand(const node *const nd);
+inline node expression_cast_get_operand(const node *const nd)
+{
+	return node_get_type(nd) == OP_CAST ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -429,7 +418,10 @@ node expression_unary(const item_t type, const category_t ctg, node *const expr,
  *
  *	@return	Operator
  */
-unary_t expression_unary_get_operator(const node *const nd);
+inline unary_t expression_unary_get_operator(const node *const nd)
+{
+	return node_get_type(nd) == OP_UNARY ? (unary_t)node_get_arg(nd, 2) : INT_MAX;
+}
 
 /**
  *	Get operand of unary expression
@@ -438,7 +430,10 @@ unary_t expression_unary_get_operator(const node *const nd);
  *
  *	@return	Operand
  */
-node expression_unary_get_operand(const node *const nd);
+inline node expression_unary_get_operand(const node *const nd)
+{
+	return node_get_type(nd) == OP_UNARY ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -461,7 +456,10 @@ node expression_binary(const item_t type, node *const LHS, node *const RHS, cons
  *
  *	@return	Operator
  */
-binary_t expression_binary_get_operator(const node *const nd);
+inline binary_t expression_binary_get_operator(const node *const nd)
+{
+	return node_get_type(nd) == OP_BINARY ? (binary_t)node_get_arg(nd, 2) : INT_MAX;
+}
 
 /**
  *	Get LHS of binary expression
@@ -470,7 +468,10 @@ binary_t expression_binary_get_operator(const node *const nd);
  *
  *	@return	LHS of binary expression
  */
-node expression_binary_get_LHS(const node *const nd);
+inline node expression_binary_get_LHS(const node *const nd)
+{
+	return node_get_type(nd) == OP_BINARY ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get RHS of binary expression
@@ -479,7 +480,10 @@ node expression_binary_get_LHS(const node *const nd);
  *
  *	@return	RHS of binary expression
  */
-node expression_binary_get_RHS(const node *const nd);
+inline node expression_binary_get_RHS(const node *const nd)
+{
+	return node_get_type(nd) == OP_BINARY ? node_get_child(nd, 1) : node_broken();
+}
 
 
 /**
@@ -502,7 +506,10 @@ node expression_ternary(const item_t type, node *const cond, node *const LHS, no
  *
  *	@return	Condition
  */
-node expression_ternary_get_condition(const node *const nd);
+inline node expression_ternary_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get LHS of ternary expression
@@ -511,7 +518,10 @@ node expression_ternary_get_condition(const node *const nd);
  *
  *	@return	LHS of ternary expression
  */
-node expression_ternary_get_LHS(const node *const nd);
+inline node expression_ternary_get_LHS(const node *const nd)
+{
+	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 1) : node_broken();
+}
 
 /**
  *	Get RHS of ternary expression
@@ -520,7 +530,10 @@ node expression_ternary_get_LHS(const node *const nd);
  *
  *	@return	RHS of ternary expression
  */
-node expression_ternary_get_RHS(const node *const nd);
+inline node expression_ternary_get_RHS(const node *const nd)
+{
+	return node_get_type(nd) == OP_TERNARY ? node_get_child(nd, 2) : node_broken();
+}
 
 
 /**
@@ -538,15 +551,13 @@ node expression_list(node_vector *const exprs, const location loc);
  *
  *	@param	nd				Expression list
  *	@param	type			Type
+ *
+ *	@return	@c 0 on success, @c -1 on failure
  */
-<<<<<<< HEAD
 inline int expression_list_set_type(const node *const nd, const item_t type)
 {
 	return node_get_type(nd) == OP_LIST ? node_set_arg(nd, 0, type) : -1;
 }
-=======
-void expression_initializer_set_type(const node *const nd, const item_t type);
->>>>>>> llvm2
 
 /**
  *	Get size of expression list
@@ -555,14 +566,10 @@ void expression_initializer_set_type(const node *const nd, const item_t type);
  *
  *	@return	Size
  */
-<<<<<<< HEAD
 inline size_t expression_list_get_size(const node *const nd)
 {
 	return node_get_type(nd) == OP_LIST ? node_get_amount(nd) : 0;
 }
-=======
-size_t expression_initializer_get_size(const node *const nd);
->>>>>>> llvm2
 
 /**
  *	Get subexpression of expression list by index
@@ -572,14 +579,10 @@ size_t expression_initializer_get_size(const node *const nd);
  *
  *	@return	Expression
  */
-<<<<<<< HEAD
 inline node expression_list_get_subexpr(const node *const nd, const size_t index)
 {
 	return node_get_type(nd) == OP_LIST ? node_get_child(nd, index) : node_broken();
 }
-=======
-node expression_initializer_get_subexpr(const node *const nd, const size_t index);
->>>>>>> llvm2
 
 
 /**
@@ -610,7 +613,10 @@ node statement_labeled(const size_t label, node *const substmt, const location l
  *
  *	@return	Label id
  */
-size_t statement_labeled_get_label(const node *const nd);
+inline size_t statement_labeled_get_label(const node *const nd)
+{
+	return node_get_type(nd) == OP_LABEL ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
 
 /**
  *	Get substatement of labeled statement
@@ -619,7 +625,10 @@ size_t statement_labeled_get_label(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_labeled_get_substmt(const node *const nd);
+inline node statement_labeled_get_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_LABEL ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -640,7 +649,10 @@ node statement_case(node *const expr, node *const substmt, const location loc);
  *
  *	@return	Expression
  */
-node statement_case_get_expression(const node *const nd);
+inline node statement_case_get_expression(const node *const nd)
+{
+	return node_get_type(nd) == OP_CASE ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get substatement of case statement
@@ -649,7 +661,10 @@ node statement_case_get_expression(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_case_get_substmt(const node *const nd);
+inline node statement_case_get_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_CASE ? node_get_child(nd, 1) : node_broken();
+}
 
 
 /**
@@ -669,8 +684,10 @@ node statement_default(node *const substmt, const location loc);
  *
  *	@return	Substatement
  */
-node statement_default_get_substmt(const node *const nd);
-
+inline node statement_default_get_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_DEFAULT ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Create new compound statement
@@ -690,7 +707,10 @@ node statement_compound(node *const context, node_vector *const stmts, const loc
  *
  *	@return	Size
  */
-size_t statement_compound_get_size(const node *const nd);
+inline size_t statement_compound_get_size(const node *const nd)
+{
+	return node_get_type(nd) == OP_BLOCK ? node_get_amount(nd) : SIZE_MAX;
+}
 
 /**
  *	Get substatement of compound statement by index
@@ -700,7 +720,10 @@ size_t statement_compound_get_size(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_compound_get_substmt(const node *const nd, const size_t index);
+inline node statement_compound_get_substmt(const node *const nd, const size_t index)
+{
+	return node_get_type(nd) == OP_BLOCK ? node_get_child(nd, index) : node_broken();
+}
 
 
 /**
@@ -733,7 +756,10 @@ node statement_if(node *const cond, node *const then_stmt, node *const else_stmt
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool statement_if_has_else_substmt(const node *const nd);
+inline bool statement_if_has_else_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_IF ? node_get_arg(nd, 0) != 0 : false;
+}
 
 /**
  *	Get condition of if statement
@@ -742,7 +768,10 @@ bool statement_if_has_else_substmt(const node *const nd);
  *
  *	@return	Condition
  */
-node statement_if_get_condition(const node *const nd);
+inline node statement_if_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_IF ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get then-substatement of if statement
@@ -751,7 +780,10 @@ node statement_if_get_condition(const node *const nd);
  *
  *	@return	Then-substatement
  */
-node statement_if_get_then_substmt(const node *const nd);
+inline node statement_if_get_then_substmt(const node *const nd)
+{
+	return node_get_type(nd) == OP_IF ? node_get_child(nd, 1) : node_broken();
+}
 
 /**
  *	Get else-substatement of if statement
@@ -760,7 +792,10 @@ node statement_if_get_then_substmt(const node *const nd);
  *
  *	@return	Else-substatement
  */
-node statement_if_get_else_substmt(const node *const nd);
+inline node statement_if_get_else_substmt(const node *const nd)
+{
+	return statement_if_has_else_substmt(nd) ? node_get_child(nd, 2) : node_broken();
+}
 
 
 /**
@@ -781,7 +816,10 @@ node statement_switch(node *const cond, node *const body, const location loc);
  *
  *	@return	Condition
  */
-node statement_switch_get_condition(const node *const nd);
+inline node statement_switch_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_SWITCH ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get substatement of switch statement
@@ -790,7 +828,10 @@ node statement_switch_get_condition(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_switch_get_body(const node *const nd);
+inline node statement_switch_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_SWITCH ? node_get_child(nd, 1) : node_broken();
+}
 
 
 /**
@@ -811,7 +852,10 @@ node statement_while(node *const cond, node *const body, const location loc);
  *
  *	@return	Condition
  */
-node statement_while_get_condition(const node *const nd);
+inline node statement_while_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_WHILE ? node_get_child(nd, 0) : node_broken();
+}
 
 /**
  *	Get substatement of while statement
@@ -820,7 +864,10 @@ node statement_while_get_condition(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_while_get_body(const node *const nd);
+inline node statement_while_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_WHILE ? node_get_child(nd, 1) : node_broken();
+}
 
 
 /**
@@ -841,7 +888,10 @@ node statement_do(node *const body, node *const cond, const location loc);
  *
  *	@return	Condition
  */
-node statement_do_get_condition(const node *const nd);
+inline node statement_do_get_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_DO ? node_get_child(nd, 1) : node_broken();
+}
 
 /**
  *	Get substatement of do statement
@@ -850,7 +900,10 @@ node statement_do_get_condition(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_do_get_body(const node *const nd);
+inline node statement_do_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_DO ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -873,7 +926,10 @@ node statement_for(node *const init, node *const cond, node *const incr, node *c
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool statement_for_has_inition(const node *const nd);
+inline bool statement_for_has_inition(const node *const nd)
+{
+	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 0) != 0 : false;
+}
 
 /**
  *	Check if for statement has condition
@@ -882,7 +938,10 @@ bool statement_for_has_inition(const node *const nd);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool statement_for_has_condition(const node *const nd);
+inline bool statement_for_has_condition(const node *const nd)
+{
+	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 1) != 0 : false;
+}
 
 /**
  *	Check if for statement has increment
@@ -891,7 +950,10 @@ bool statement_for_has_condition(const node *const nd);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool statement_for_has_increment(const node *const nd);
+inline bool statement_for_has_increment(const node *const nd)
+{
+	return node_get_type(nd) == OP_FOR ? node_get_arg(nd, 2) != 0 : false;
+}
 
 /**
  *	Get inition of for statement
@@ -900,7 +962,10 @@ bool statement_for_has_increment(const node *const nd);
  *
  *	@return	Inition
  */
-node statement_for_get_inition(const node *const nd);
+inline node statement_for_get_inition(const node *const nd)
+{
+	return statement_for_has_inition(nd) ? node_get_child(nd, 1) : node_broken();
+}
 
 /**
  *	Get condition of for statement
@@ -909,7 +974,12 @@ node statement_for_get_inition(const node *const nd);
  *
  *	@return	condition
  */
-node statement_for_get_condition(const node *const nd);
+inline node statement_for_get_condition(const node *const nd)
+{
+	return statement_for_has_condition(nd)
+		? node_get_child(nd, statement_for_has_inition(nd) ? 2 : 1)
+		: node_broken();
+}
 
 /**
  *	Get increment of for statement
@@ -918,7 +988,12 @@ node statement_for_get_condition(const node *const nd);
  *
  *	@return	Increment
  */
-node statement_for_get_increment(const node *const nd);
+inline node statement_for_get_increment(const node *const nd)
+{
+	return statement_for_has_increment(nd)
+		? node_get_child(nd, node_get_amount(nd) - 1)
+		: node_broken();
+}
 
 /**
  *	Get substatement of for statement
@@ -927,7 +1002,10 @@ node statement_for_get_increment(const node *const nd);
  *
  *	@return	Substatement
  */
-node statement_for_get_body(const node *const nd);
+inline node statement_for_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_FOR ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -948,7 +1026,10 @@ node statement_goto(node *const context, const size_t label, const location loc)
  *
  *	@return	Label id
  */
-size_t statement_goto_get_label(const node *const nd);
+inline size_t statement_goto_get_label(const node *const nd)
+{
+	return node_get_type(nd) == OP_GOTO ? (size_t)llabs(node_get_arg(nd, 0)) : SIZE_MAX;
+}
 
 
 /**
@@ -991,7 +1072,10 @@ node statement_return(node *const context, node *const expr, const location loc)
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool statement_return_has_expression(const node *const nd);
+inline bool statement_return_has_expression(const node *const nd)
+{
+	return node_get_type(nd) == OP_RETURN ? node_get_amount(nd) != 0 : false;
+}
 
 /**
  *	Get expression of return statement
@@ -1000,7 +1084,10 @@ bool statement_return_has_expression(const node *const nd);
  *
  *	@return	Expression
  */
-node statement_return_get_expression(const node *const nd);
+inline node statement_return_get_expression(const node *const nd)
+{
+	return statement_return_has_expression(nd) ? node_get_child(nd, 0) : node_broken();
+}
 
 
 /**
@@ -1010,7 +1097,10 @@ node statement_return_get_expression(const node *const nd);
  *
  *	@return	Size
  */
-size_t statement_declaration_get_size(const node *const nd);
+inline size_t statement_declaration_get_size(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_amount(nd) : SIZE_MAX;
+}
 
 /**
  *	Get declarator of declaration statement
@@ -1019,7 +1109,10 @@ size_t statement_declaration_get_size(const node *const nd);
  *
  *	@return	Declarator
  */
-node statement_declaration_get_declarator(const node *const nd, const size_t index);
+inline node statement_declaration_get_declarator(const node *const nd, const size_t index)
+{
+	return node_get_type(nd) == OP_DECLSTMT ? node_get_child(nd, index) : node_broken();
+}
 
 
 /**
@@ -1039,7 +1132,10 @@ declaration_t declaration_get_class(const node *const nd);
  *
  *	@return	Id
  */
-size_t declaration_variable_get_id(const node *const nd);
+inline size_t declaration_variable_get_id(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
 
 /**
  *	Check if variable declaration has initializer
@@ -1048,7 +1144,10 @@ size_t declaration_variable_get_id(const node *const nd);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool declaration_variable_has_initializer(const node *const nd);
+inline bool declaration_variable_has_initializer(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR ? node_get_arg(nd, 2) != 0 : false;
+}
 
 /**
  *	Get initializer of variable declaration
@@ -1057,7 +1156,10 @@ bool declaration_variable_has_initializer(const node *const nd);
  *
  *	@return	Initializer
  */
-node declaration_variable_get_initializer(const node *const nd);
+inline node declaration_variable_get_initializer(const node *const nd)
+{
+	return declaration_variable_has_initializer(nd) ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
+}
 
 /**
  *	Get amount of dimenstions of variable declaration
@@ -1066,7 +1168,12 @@ node declaration_variable_get_initializer(const node *const nd);
  *
  *	@return	Amount of dimenstions
  */
-size_t declaration_variable_get_dim_amount(const node *const nd);
+inline size_t declaration_variable_get_dim_amount(const node *const nd)
+{
+	return node_get_type(nd) == OP_DECL_VAR
+		? node_get_amount(nd) - (declaration_variable_has_initializer(nd) ? 1 : 0)
+		: 0;
+}
 
 /**
  *	Get size-expression of dimenstions of variable declaration by index
@@ -1076,7 +1183,10 @@ size_t declaration_variable_get_dim_amount(const node *const nd);
  *
  *	@return	Size-expression
  */
-node declaration_variable_get_dim_expr(const node *const nd, const size_t index);
+inline node declaration_variable_get_dim_expr(const node *const nd, const size_t index)
+{
+	return declaration_variable_get_dim_amount(nd) > index ? node_get_child(nd, index) : node_broken();
+}
 
 
 /**
@@ -1086,7 +1196,10 @@ node declaration_variable_get_dim_expr(const node *const nd, const size_t index)
  *
  *	@return Function id
  */
-size_t declaration_function_get_id(const node *const nd);
+inline size_t declaration_function_get_id(const node *const nd)
+{
+	return node_get_type(nd) == OP_FUNC_DEF ? (size_t)node_get_arg(nd, 0) : SIZE_MAX;
+}
 
 /**
  *	Get parameter id in function declaration by index
@@ -1105,7 +1218,10 @@ size_t declaration_function_get_param(const node *const nd, const size_t index);
  *
  *	@return Function body
  */
-node declaration_function_get_body(const node *const nd);
+inline node declaration_function_get_body(const node *const nd)
+{
+	return node_get_type(nd) == OP_FUNC_DEF ? node_get_child(nd, node_get_amount(nd) - 1) : node_broken();
+}
 
 
 /**
@@ -1115,7 +1231,10 @@ node declaration_function_get_body(const node *const nd);
  *
  *	@return	Number of global declarations
  */
-size_t translation_unit_get_size(const node *const nd);
+inline size_t translation_unit_get_size(const node *const nd)
+{
+	return node_get_type(nd) == ITEM_MAX && node_is_correct(nd) ? node_get_amount(nd) : SIZE_MAX;
+}
 
 /**
  *	Get global declaration of translation unit by index
@@ -1125,7 +1244,10 @@ size_t translation_unit_get_size(const node *const nd);
  *
  *	@return	Global declaration
  */
-node translation_unit_get_declaration(const node *const nd, const size_t index);
+inline node translation_unit_get_declaration(const node *const nd, const size_t index)
+{
+	return node_get_type(nd) == ITEM_MAX && node_is_correct(nd) ? node_get_child(nd, index) : node_broken();
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

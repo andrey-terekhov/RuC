@@ -162,15 +162,9 @@ size_t strings_length(const syntax *const sx, const size_t index);
 
 /**
  *    Get amount of strings
-<<<<<<< HEAD
  *
  *    @param  sx      Syntax structure
  *
-=======
- *
- *    @param  sx      Syntax structure
- *
->>>>>>> llvm2
  *    @return Amount of strings
  */
 size_t strings_amount(const syntax *const sx);
@@ -336,20 +330,13 @@ bool ident_is_type_specifier(syntax *const sx, const size_t index);
  *	Check if identifier is local by index
  *
  *	@param	sx			Syntax structure
-<<<<<<< HEAD
  *	@param	id			Identifier of target lvalue
-=======
- *	@param	index		Index of record in identifiers table
->>>>>>> llvm2
  *
  *	@return @c 1 on true, @c 0 on false
  */
 bool ident_is_local(const syntax *const sx, const size_t index);
 
-<<<<<<< HEAD
 
-=======
->>>>>>> llvm2
 
 /**
  *	Add a new record to types table
