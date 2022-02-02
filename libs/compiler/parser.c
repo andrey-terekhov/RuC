@@ -1057,8 +1057,8 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		if (!created)
 		{
 			nd = node_add_child(parent, OP_DECL_TYPE);
-			node_add_arg(&nd, 0);
-			node_add_arg(&nd, SIZE_MAX);
+			node_add_arg(&nd, TYPE_UNDEFINED);
+			node_add_arg(&nd, ITEM_MAX);
 			created = true;
 		}
 
@@ -1104,7 +1104,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		node_set_arg(&nd, 0, result);
 
 		const size_t id = to_identab(prs, repr, 1000, result);
-		node_set_arg(&nd, 1, id);
+		node_set_arg(&nd, 1, (item_t)id);
 	}
 
 	return result;
