@@ -1058,7 +1058,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 		{
 			nd = node_add_child(parent, OP_DECL_TYPE);
 			node_add_arg(&nd, TYPE_UNDEFINED);
-			node_add_arg(&nd, (item_t)SIZE_MAX);
+			node_add_arg(&nd, ITEM_MAX);
 			created = true;
 		}
 
