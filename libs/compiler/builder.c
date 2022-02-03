@@ -28,18 +28,12 @@
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantic_error(builder *const bldr, const location loc, error_t num, ...)
+static void semantic_error(builder *const bldr, const location loc, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
 
-	const size_t prev_loc = in_get_position(bldr->sx->io);
-	in_set_position(bldr->sx->io, loc.begin);
-
-	verror(bldr->sx->io, num, args);
-	bldr->sx->was_error = true;
-
-	in_set_position(bldr->sx->io, prev_loc);
+	report_error(&bldr->sx->rprt, bldr->sx->io, loc, num, args);
 
 	va_end(args);
 }
@@ -798,7 +792,6 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 		}
 
 		case UN_ABS:
-		case UN_PLUS:
 		case UN_MINUS:
 		{
 			if (!type_is_arithmetic(bldr->sx, operand_type))

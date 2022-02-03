@@ -51,7 +51,7 @@ typedef struct parser
 
 
 static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
-static item_t parse_struct_declaration_list(parser *const prs, node *const parent);
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent, const size_t repr);
 static item_t parse_enum_specifier(parser *const prs, node *const parent);
 static location consume_token(parser *const prs);
 static node parse_expression(parser *const prs);
@@ -71,17 +71,16 @@ static node parse_statement(parser *const prs);
 /**
  *	Create parser
  *
- *	@param	ws			Compiler workspace
  *	@param	sx			Syntax structure
  *
  *	@return	Parser
  */
-static inline parser parser_create(const workspace *const ws, syntax *const sx)
+static inline parser parser_create(syntax *const sx)
 {
 	parser prs;
 	prs.sx = sx;
 	prs.bld = builder_create(sx);
-	prs.lxr = lexer_create(ws, sx);
+	prs.lxr = lexer_create(sx);
 
 	prs.is_in_loop = false;
 	prs.is_in_switch = false;
@@ -107,18 +106,14 @@ static inline void parser_clear(parser *const prs)
  *	@param	prs			Parser
  *	@param	num			Error code
  */
-static void parser_error(parser *const prs, error_t num, ...)
+static void parser_error(parser *const prs, err_t num, ...)
 {
-	if (prs->lxr.is_recovery_disabled && prs->sx->was_error)
-	{
-		return;
-	}
+	const location loc = token_get_location(&prs->tk);
 
 	va_list args;
 	va_start(args, num);
 
-	verror(prs->sx->io, num, args);
-	prs->sx->was_error = true;
+	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
 
 	va_end(args);
 }
@@ -176,7 +171,7 @@ static bool try_consume_token(parser *const prs, const token_t expected)
  *	@param	expected	Expected token kind
  *	@param	err			Error to emit
  */
-static void expect_and_consume(parser *const prs, const token_t expected, const error_t err)
+static void expect_and_consume(parser *const prs, const token_t expected, const err_t err)
 {
 	if (try_consume_token(prs, expected))
 	{
@@ -530,7 +525,7 @@ static node parse_postfix_expression(parser *const prs)
  *		unary-operator unary-expression
  *
  *	unary-operator: one of
- *		'&', '*', '+', '-', '~', '!', 'abs'
+ *		'&', '*', '-', '~', '!', 'abs'
  *
  *	@param	prs			Parser
  *
@@ -547,7 +542,6 @@ static node parse_unary_expression(parser *const prs)
 		case TK_MINUS_MINUS:
 		case TK_AMP:
 		case TK_STAR:
-		case TK_PLUS:
 		case TK_MINUS:
 		case TK_TILDE:
 		case TK_EXCLAIM:
@@ -910,7 +904,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 	switch (token_get_kind(&prs->tk))
 	{
 		case TK_L_BRACE:
-			return parse_struct_declaration_list(prs, parent);
+			return parse_struct_declaration_list(prs, parent, SIZE_MAX);
 
 		case TK_IDENTIFIER:
 		{
@@ -919,11 +913,16 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
 
 			if (token_is(&prs->tk, TK_L_BRACE))
 			{
-				const item_t type = parse_struct_declaration_list(prs, parent);
-				const size_t id = to_identab(prs, repr, 1000, type);
+				const item_t type = parse_struct_declaration_list(prs, parent, repr);
+				if (type == ITEM_MAX)
+				{
+					return TYPE_UNDEFINED;
+				}
+				const item_t id = repr_get_reference(prs->sx, repr);
+
 				prs->was_type_def = true;
 
-				return ident_get_type(prs->sx, id);
+				return ident_get_type(prs->sx, (size_t)id);
 			}
 			else // if (parser->next_token != l_brace)
 			{
@@ -1019,10 +1018,11 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
+ *	@param	repr		Structure identifier index in representations table
  *
  *	@return	Index of types table, @c type_undefined on failure
  */
-static item_t parse_struct_declaration_list(parser *const prs, node *const parent)
+static item_t parse_struct_declaration_list(parser *const prs, node *const parent, const size_t repr)
 {
 	consume_token(prs);
 	if (try_consume_token(prs, TK_R_BRACE))
@@ -1037,7 +1037,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	size_t displ = 0;
 
 	node nd;
-	bool was_array = false;
+	bool created = false;
 
 	do
 	{
@@ -1054,20 +1054,21 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			type = type_pointer(prs->sx, element_type);
 		}
 
+		if (!created)
+		{
+			nd = node_add_child(parent, OP_DECL_TYPE);
+			node_add_arg(&nd, TYPE_UNDEFINED);
+			node_add_arg(&nd, ITEM_MAX);
+			created = true;
+		}
+
 		if (token_is(&prs->tk, TK_IDENTIFIER))
 		{
-			const size_t repr = token_get_ident_name(&prs->tk);
+			const size_t inner_repr = token_get_ident_name(&prs->tk);
 			consume_token(prs);
 
 			if (token_is(&prs->tk, TK_L_SQUARE))
 			{
-				if (!was_array)
-				{
-					nd = node_add_child(parent, OP_DECL_TYPE);
-					node_add_arg(&nd, 0);
-					was_array = true;
-				}
-
 				node decl = node_add_child(&nd, OP_DECL_VAR);
 				node_add_arg(&decl, 0);
 				node_add_arg(&decl, 0);
@@ -1079,7 +1080,7 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 			}
 
 			local_modetab[local_md++] = type;
-			local_modetab[local_md++] = (item_t)repr;
+			local_modetab[local_md++] = (item_t)inner_repr;
 			fields++;
 			displ += type_size(prs->sx, type);
 		}
@@ -1097,9 +1098,13 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	local_modetab[2] = (item_t)fields * 2;
 
 	const item_t result = type_add(prs->sx, local_modetab, local_md);
-	if (was_array)
+
+	if (created)
 	{
 		node_set_arg(&nd, 0, result);
+
+		const size_t id = to_identab(prs, repr, 1000, result);
+		node_set_arg(&nd, 1, (item_t)id);
 	}
 
 	return result;
@@ -2251,14 +2256,14 @@ static void parse_translation_unit(parser *const prs, node *const root)
  */
 
 
-int parse(const workspace *const ws, syntax *const sx)
+int parse(syntax *const sx)
 {
-	if (!ws_is_correct(ws) || sx == NULL)
+	if (sx == NULL)
 	{
 		return -1;
 	}
 
-	parser prs = parser_create(ws, sx);
+	parser prs = parser_create(sx);
 	node root = node_get_root(&sx->tree);
 
 	parse_translation_unit(&prs, &root);
@@ -2268,5 +2273,6 @@ int parse(const workspace *const ws, syntax *const sx)
 #endif
 
 	parser_clear(&prs);
-	return !sx_is_correct(sx);
+	// Временное решение - парсер не проверяет таблицы
+	return sx->rprt.errors == 0 ? 0 : -1;
 }

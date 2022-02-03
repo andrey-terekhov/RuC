@@ -35,19 +35,16 @@ typedef struct lexer
 
 	char32_t character;						/**< Current character */
 	vector lexstr;							/**< Representation of the read string literal */
-
-	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
 } lexer;
 
 /**
  *	Create lexer structure
  *
- *	@param	ws		Compiler workspace
  *	@param	sx		Syntax structure
  *
  *	@return	Lexer
  */
-lexer lexer_create(const workspace *const ws, syntax *const sx);
+lexer lexer_create(syntax *const sx);
 
 /**
  *	Lex next token from io

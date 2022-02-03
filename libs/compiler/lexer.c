@@ -21,46 +21,20 @@
 
 
 /**
- *	Check if error recovery disabled
- *
- *	@param	ws			Compiler workspace
- *
- *	@return	Recovery status
- */
-static inline bool recovery_status(const workspace *const ws)
-{
-	for (size_t i = 0; ; i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-		if (flag == NULL)
-		{
-			return false;
-		}
-		else if (strcmp(flag, "-Wno") == 0)
-		{
-			return true;
-		}
-	}
-}
-
-/**
  *	Emit an error from lexer
  *
  *	@param	lxr			Lexer
  *	@param	num			Error code
  */
-static void lexer_error(lexer *const lxr, error_t num, ...)
+static void lexer_error(lexer *const lxr, err_t num, ...)
 {
-	if (lxr->is_recovery_disabled && lxr->sx->was_error)
-	{
-		return;
-	}
+	const size_t position = in_get_position(lxr->sx->io);
+	const location loc = { position, position + 1 };
 
 	va_list args;
 	va_start(args, num);
 
-	verror(lxr->sx->io, num, args);
-	lxr->sx->was_error = true;
+	report_error(&lxr->sx->rprt, lxr->sx->io, loc, num, args);
 
 	va_end(args);
 }
@@ -478,12 +452,11 @@ static token lex_string_literal(lexer *const lxr)
  */
 
 
-lexer lexer_create(const workspace *const ws, syntax *const sx)
+lexer lexer_create(syntax *const sx)
 {
 	lexer lxr;
 	lxr.sx = sx;
 
-	lxr.is_recovery_disabled = recovery_status(ws);
 	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
 
 	scan(&lxr);

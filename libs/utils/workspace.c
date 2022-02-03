@@ -205,7 +205,7 @@ workspace ws_parse_args(const int argc, const char *const *const argv)
 }
 
 
-workspace ws_create()
+workspace ws_create(void)
 {
 	workspace ws;
 

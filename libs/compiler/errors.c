@@ -31,8 +31,8 @@
 #define MAX_MSG_SIZE MAX_TAG_SIZE * 4
 #define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
-#include <stdlib.h>
-static void get_error(const error_t num, char *const msg, va_list args)
+
+static void get_error(const err_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -462,7 +462,7 @@ static void output(const universal_io *const io, const char *const msg, const lo
  */
 
 
-void error(const universal_io *const io, error_t num, ...)
+void error(const universal_io *const io, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -483,7 +483,7 @@ void warning(const universal_io *const io, warning_t num, ...)
 }
 
 
-void verror(const universal_io *const io, const error_t num, va_list args)
+void verror(const universal_io *const io, const err_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
@@ -498,7 +498,7 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args)
 }
 
 
-void system_error(error_t num, ...)
+void system_error(err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

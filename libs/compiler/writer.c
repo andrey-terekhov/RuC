@@ -102,11 +102,11 @@ static void write_type(writer *const wrt, const item_t type)
  *	Write unary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
-static void write_unary_operator(writer *const wrt, const unary_t operator)
+static void write_unary_operator(writer *const wrt, const unary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case UN_POSTINC:
 			write(wrt, "'postfix ++'");
@@ -125,9 +125,6 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
 			break;
 		case UN_INDIRECTION:
 			write(wrt, "'*'");
-			break;
-		case UN_PLUS:
-			write(wrt, "'+'");
 			break;
 		case UN_MINUS:
 			write(wrt, "'-'");
@@ -151,11 +148,11 @@ static void write_unary_operator(writer *const wrt, const unary_t operator)
  *	Write binary operator spelling
  *
  *	@param	wrt			Writer
- *	@param	operator	Operator
+ *	@param	op			Operator
  */
-static void write_binary_operator(writer *const wrt, const binary_t operator)
+static void write_binary_operator(writer *const wrt, const binary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case BIN_MUL:
 			write(wrt, "'*'");
@@ -646,8 +643,29 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
  */
 static void write_type_declaration(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "DECL_TYPE\n");
-	(void)nd;
+	const char *spelling = NULL;
+	item_t type = ITEM_MAX;
+
+	write_line(wrt, "DECL_TYPE");
+
+	const size_t ident = declaration_type_get_id(nd);
+	if (ident != SIZE_MAX)
+	{
+		type = ident_get_type(wrt->sx, ident);
+		spelling = ident_get_spelling(wrt->sx, ident);
+	}
+
+	if (spelling == NULL)
+	{
+		spelling = "<unnamed>";
+	}
+
+	uni_printf(wrt->io, " declaring type named \'%s\' with id %zu: '", spelling, ident);
+	if (type != ITEM_MAX)
+	{
+		write_type(wrt, type);
+	}
+	write(wrt, "'\n");
 }
 
 /**
