@@ -2325,7 +2325,7 @@ static int emit_translation_unit(information *const info, const node *const nd)
 		uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
 	#endif
 
-	return info->sx->was_error;
+	return info->sx->rprt.errors != 0;
 }
 
 static void architecture(const workspace *const ws, syntax *const sx)

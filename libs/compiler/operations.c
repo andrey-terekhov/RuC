@@ -26,7 +26,6 @@ unary_t token_to_unary(const token_t token)
 		case TK_MINUS_MINUS:	return UN_PREDEC;
 		case TK_AMP:			return UN_ADDRESS;
 		case TK_STAR:			return UN_INDIRECTION;
-		case TK_PLUS:			return UN_PLUS;
 		case TK_MINUS:			return UN_MINUS;
 		case TK_TILDE:			return UN_NOT;
 		case TK_EXCLAIM:		return UN_LOGNOT;
@@ -146,9 +145,9 @@ precedence_t get_operator_precedence(const token_t token)
 	}
 }
 
-bool operation_is_assignment(const binary_t operator)
+bool operation_is_assignment(const binary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case BIN_ASSIGN:
 		case BIN_ADD_ASSIGN:

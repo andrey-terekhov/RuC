@@ -17,7 +17,7 @@
 #include "node_vector.h"
 
 
-extern node_vector node_vector_create();
+extern node_vector node_vector_create(void);
 extern size_t node_vector_add(node_vector *const vec, const node *const nd);
 extern int node_vector_set(node_vector *const vec, const size_t index, const node *const nd);
 extern node node_vector_get(const node_vector *const vec, const size_t index);

@@ -61,7 +61,7 @@ static inline size_t item_get_size(const item_status status)
 							? 4
 							: 8;
 
-	if (abs(ITEM) <= 32 / size)
+	if ((size_t)abs(ITEM) <= 32 / size)
 	{
 		size = (size_t)pow(2, ceil(log2(abs(ITEM))));
 	}
@@ -281,8 +281,8 @@ size_t item_store_int64_for_target(const item_status status, const int64_t value
 	uint64_t temp = mask;
 	for (size_t i = 0; i < size; i++)
 	{
-		stg[i] = (item_t)((value & temp) >> (shift * i));
-		if (stg[i] & sign)
+		stg[i] = (item_t)(((uint64_t)value & temp) >> (shift * i));
+		if ((uint64_t)stg[i] & sign)
 		{
 			stg[i] |= ~mask;
 		}
@@ -312,7 +312,7 @@ int64_t item_restore_int64_for_target(const item_status status, const item_t *co
 	int64_t value = 0;
 	for (size_t i = 0; i < size; i++)
 	{
-		value |= ((int64_t)stg[i] & mask) << (shift * i);
+		value |= ((uint64_t)stg[i] & mask) << (shift * i);
 	}
 
 	return value;

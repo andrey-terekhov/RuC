@@ -68,8 +68,30 @@ static int compile_from_io(const workspace *const ws, universal_io *const io, co
 		return -1;
 	}
 
-	syntax sx = sx_create(io);
-	int ret = parse(ws, &sx);
+	syntax sx = sx_create(ws, io);
+	int ret = parse(&sx);
+
+	bool check_predef = true;
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+
+		if (flag == NULL)
+		{
+			break;
+		}
+
+		if (strcmp(flag, "-c") == 0)
+		{
+			check_predef = false;
+			break;
+		}
+	}
+
+	if (!ret)
+	{
+		ret = !sx_is_correct(&sx, check_predef);
+	}
 
 	if (!ret)
 	{

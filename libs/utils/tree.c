@@ -244,16 +244,16 @@ node node_add_child(const node *const nd, const item_t type)
 	vector_increase(nd->tree, 2);
 
 	const size_t amount = node_get_amount(nd);
-	ref_set_amount(nd, amount + 1);
+	ref_set_amount(nd, (item_t)(amount + 1));
 
 	if (amount == 0)
 	{
-		ref_set_children(nd, child.index);
+		ref_set_children(nd, (item_t)child.index);
 	}
 	else
 	{
 		node prev = node_get_child(nd, amount - 1);
-		ref_set_next(&prev, child.index);
+		ref_set_next(&prev, (item_t)child.index);
 	}
 
 	return child;
@@ -305,7 +305,7 @@ int node_add_arg_double(const node *const nd, const double arg)
 	}
 	
 	vector_add_double(nd->tree, arg);
-	ref_set_argc(nd, (item_t)node_get_argc(nd) + DOUBLE_SIZE);
+	ref_set_argc(nd, (item_t)(node_get_argc(nd) + DOUBLE_SIZE));
 
 	return 0;
 }
@@ -323,7 +323,7 @@ int node_add_arg_int64(const node *const nd, const int64_t arg)
 	}
 	
 	vector_add_int64(nd->tree, arg);
-	ref_set_argc(nd, (item_t)node_get_argc(nd) + INT64_SIZE);
+	ref_set_argc(nd, (item_t)(node_get_argc(nd) + INT64_SIZE));
 
 	return 0;
 }
@@ -411,8 +411,8 @@ node node_insert(const node *const nd, const item_t type, const size_t argc)
 	vector_add(nd->tree, vector_get(nd->tree, ref_get_next(nd)));
 	vector_add(nd->tree, type);
 	node child = { nd->tree, vector_add(nd->tree, 1) };
-	vector_add(nd->tree, nd->index);
-	vector_add(nd->tree, argc);
+	vector_add(nd->tree, (item_t)nd->index);
+	vector_add(nd->tree, (item_t)argc);
 	vector_increase(nd->tree, argc);
 
 	vector_set(nd->tree, reference, (item_t)child.index);
