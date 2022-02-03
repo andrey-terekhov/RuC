@@ -690,61 +690,80 @@ static void emit_identifier_expression(information *const info, const node *cons
  */
 static void emit_literal_expression(information *const info, const node *const nd)
 {
-	const item_t type = expression_get_type(nd);
+	switch (type_get_class(info->sx, expression_get_type(nd)))
+	{
+		case TYPE_NULL_POINTER:
+		{
+			info->answer_kind = ANULL;
+			return;
+		}
 
-	if (type_is_string(info->sx, type))
-	{
-		info->answer_string = expression_literal_get_string(nd);
-		info->answer_kind = ASTR;
-	}
-	else if (type_is_integer(info->sx, type))
-	{
-		const item_t num = expression_literal_get_integer(nd);
-		if (info->variable_location == LMEM)
+		case TYPE_BOOLEAN:
 		{
-			to_code_store_const_integer(info, num, info->request_reg, false
-				, ident_is_local(info->sx, info->request_reg), type);
-			info->answer_kind = AREG;
+			const bool num = expression_literal_get_boolean(nd);
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const_bool(info, num, info->request_reg, false
+					, ident_is_local(info->sx, info->request_reg));
+				info->answer_kind = AREG;
+			}
+			else
+			{
+				info->answer_kind = ACONST;
+				info->answer_const_bool = num;
+			}
+			return;
 		}
-		else
+
+		case TYPE_INTEGER:
 		{
-			info->answer_kind = ACONST;
-			info->answer_const = num;
+			const item_t num = expression_literal_get_integer(nd);
+			const item_t type = expression_get_type(nd);
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const_integer(info, num, info->request_reg, false
+					, ident_is_local(info->sx, info->request_reg), type);
+				info->answer_kind = AREG;
+			}
+			else
+			{
+				info->answer_kind = ACONST;
+				info->answer_const = num;
+			}
+			return;
 		}
-	}
-	else if (type_is_floating(type))
-	{
-		const double num = expression_literal_get_floating(nd);
-		if (info->variable_location == LMEM)
+
+		case TYPE_FLOATING:
 		{
-			to_code_store_const_double(info, num, info->request_reg, false
-				, ident_is_local(info->sx, info->request_reg));
-			info->answer_kind = AREG;
+			const double num = expression_literal_get_floating(nd);
+			if (info->variable_location == LMEM)
+			{
+				to_code_store_const_double(info, num, info->request_reg, false
+					, ident_is_local(info->sx, info->request_reg));
+				info->answer_kind = AREG;
+			}
+			else
+			{
+				info->answer_kind = ACONST;
+				info->answer_const_double = num;
+			}
+			return;
 		}
-		else
+
+		case TYPE_ARRAY:
 		{
-			info->answer_kind = ACONST;
-			info->answer_const_double = num;
+			// Это может быть только строка
+			info->answer_string = expression_literal_get_string(nd);
+			info->answer_kind = ASTR;
+			return;
 		}
-	}
-	else if (type_is_boolean(type))
-	{
-		const bool num = expression_literal_get_boolean(nd);
-		if (info->variable_location == LMEM)
-		{
-			to_code_store_const_bool(info, num, info->request_reg, false
-				, ident_is_local(info->sx, info->request_reg));
-			info->answer_kind = AREG;
-		}
-		else
-		{
-			info->answer_kind = ACONST;
-			info->answer_const_bool = num;
-		}
-	}
-	else // nullptr
-	{
-		info->answer_kind = ANULL;
+
+		// позже будет реализовано
+		case TYPE_CHARACTER:
+		case TYPE_ENUM:
+		default:
+			// Таких литералов не бывает
+			return;
 	}
 }
 
