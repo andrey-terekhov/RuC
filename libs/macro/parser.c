@@ -238,10 +238,10 @@ static inline void parser_macro_comment_to_buffer(parser *const prs)
 
 
 /**
- *	Emit an error from parser
+ *	Создать сообщение об ошибке
  *
- *	@param	prs			Parser structure
- *	@param	num			Error code
+ *	@param	prs			Структура парсера
+ *	@param	num			Код ошибки
  */
 static void parser_macro_error(parser *const prs, const error_t num)
 {
@@ -267,10 +267,10 @@ static void parser_macro_error(parser *const prs, const error_t num)
 }
 
 /**
- *	Emit a warning from parser
+ *	Создать предупреждение
  *
- *	@param	prs			Parser structure
- *	@param	num			Error code
+ *	@param	prs			Структура парсера
+ *	@param	num			Код предупреждения
  */
 static void parser_macro_warning(parser *const prs, const warning_t num)
 {
@@ -339,11 +339,11 @@ static void parser_skip_string(parser *const prs, const char32_t ch)
 					parser_add_char(prs, ch);
 					parser_set_position(prs, prs->position + 1);
 				}
-				
+
 				parser_add_char(prs, '\n');
 				parser_print(prs);
 				parser_next_line(prs);
-				
+
 				return;
 			}
 			strings_remove(&prs->code);
@@ -697,14 +697,12 @@ static int parser_find_value(parser *const prs, universal_io *const val
 }
 
 /**
- *	Preprocess buffer
+ *	Обработка кода из буффера
  *
- *	@param	prs			Parser structure
- *	@param	buffer		Code for preprocessing
- *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@param	prs			Структура парсера
+ *	@param	buffer		Буффер с кодом
  */
-static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
+static void parser_preprocess_buffer(parser *const prs, const char *const buffer)
 {
 	if (!in_is_buffer(prs->in))
 	{
@@ -727,7 +725,7 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 	universal_io in = io_create();
 	in_set_buffer(&in, buffer);
 
-	int ret = parser_preprocess(prs, &in);
+	parser_preprocess(prs, &in);
 
 	in_clear(&in);
 
@@ -740,19 +738,15 @@ static int parser_preprocess_buffer(parser *const prs, const char *const buffer)
 
 	// Добавление комментария после прохода буффера
 	parser_comment_to_buffer(prs, 3);	// Необходимо напечатать перенос строки и комментарий
-
-	return ret;
 }
 
 /**
- *	Preprocess included file
+ *	Обработка подключенного файла
  *
- *	@param	prs			Parser structure
- *	@param	path		File path
- *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@param	prs			Структура парсера
+ *	@param	path		Путь к файлу
  */
-static int parser_preprocess_file(parser *const prs, char *const path)
+static void parser_preprocess_file(parser *const prs, char *const path)
 {
 	parser_add_char(prs, '\n');	// Необходимо из-за отсутсвия проверки наличия лексем перед '#'
 	parser_print(prs);
@@ -778,7 +772,7 @@ static int parser_preprocess_file(parser *const prs, char *const path)
 		parser_macro_error(prs, PARSER_INCLUDE_INCORRECT_FILENAME);
 	}
 
-	int ret = parser_preprocess(prs, &in);
+	parser_preprocess(prs, &in);
 
 	in_clear(&in);
 
@@ -795,22 +789,18 @@ static int parser_preprocess_file(parser *const prs, char *const path)
 	{
 		parser_add_char(prs, '\n');
 		parser_macro_comment_to_buffer(prs);
-	} 
+	}
 	else
 	{
 		parser_comment_to_buffer(prs, 3);
 	}
-
-	return ret;
 }
 
 
 /**
- *	Считать путь к файлу и выполняет его обработку
+ *	Считать путь к файлу и выполнить его обработку
  *
  *	@param	prs			Структура парсера
- *
- *	@return	@c 0 on success, @c -1 on failure
  */
 static void parser_include(parser *const prs)
 {
