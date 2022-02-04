@@ -283,7 +283,7 @@ bool sx_is_correct(syntax *const sx, const bool check_predef)
 {
 	if (reporter_get_errors_number(&sx->rprt))
 	{
-		return false;
+		return true;
 	}
 
 	if (!check_predef)
