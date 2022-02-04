@@ -281,11 +281,11 @@ syntax sx_create(const workspace *const ws, universal_io *const io)
 
 bool sx_is_correct(syntax *const sx, const bool check_predef)
 {
-	if (reporter_get_errors_number(&sx->rprt))
+	if (reporter_get_errors_number(&sx->rprt) || !check_predef)
 	{
-		return false;
+		return true;
 	}
-	
+
 	bool was_error = false;
 	if (sx->ref_main == 0)
 	{
@@ -293,15 +293,12 @@ bool sx_is_correct(syntax *const sx, const bool check_predef)
 		was_error = true;
 	}
 
-	if (check_predef)
+	for (size_t i = 0; i < vector_size(&sx->predef); i++)
 	{
-		for (size_t i = 0; i < vector_size(&sx->predef); i++)
+		if (vector_get(&sx->predef, i))
 		{
-			if (vector_get(&sx->predef, i))
-			{
-				system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-				was_error = true;
-			}
+			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
+			was_error = true;
 		}
 	}
 
