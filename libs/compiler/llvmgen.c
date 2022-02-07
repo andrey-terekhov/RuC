@@ -1003,9 +1003,9 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_array_or_pointer = expression_get_class(&operand) == EXPR_SUBSCRIPT || expression_get_class(&operand) == EXPR_UNARY;
+	bool is_complex = node_get_type(nd) != OP_IDENTIFIER;
 	size_t id = 0;
-	if (!is_array_or_pointer)
+	if (!is_complex)
 	{
 		id = expression_identifier_get_id(&operand);
 	}
@@ -1016,7 +1016,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 		id = (size_t)info->answer_reg;
 	}
 
-	to_code_load(info, info->register_num, id, operation_type, is_array_or_pointer, ident_is_local(info->sx, id));
+	to_code_load(info, info->register_num, id, operation_type, is_complex, ident_is_local(info->sx, id));
 	info->answer_kind = AREG;
 	info->answer_reg = info->register_num++;
 
@@ -1044,7 +1044,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 			break;
 	}
 
-	to_code_store_reg(info, info->register_num, id, operation_type, is_array_or_pointer, false, ident_is_local(info->sx, id));
+	to_code_store_reg(info, info->register_num, id, operation_type, is_complex, false, ident_is_local(info->sx, id));
 	info->register_num++;
 }
 
@@ -1237,7 +1237,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_assignment_get_LHS(nd);
 	size_t id = 0;
-	bool is_complex = expression_get_class(&LHS) == EXPR_SUBSCRIPT || expression_get_class(&LHS) == EXPR_MEMBER;
+	bool is_complex = node_get_type(nd) != OP_IDENTIFIER;
 	if (!is_complex)
 	{
 		id = expression_identifier_get_id(&LHS);
