@@ -1235,7 +1235,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	const item_t operation_type = expression_get_type(nd);
 
 	// TODO: вообще тут может быть и вырезка из структуры
-	const node LHS = expression_binary_get_LHS(nd);
+	const node LHS = expression_assignment_get_LHS(nd);
 	size_t id = 0;
 	bool is_complex = expression_get_class(&LHS) == EXPR_SUBSCRIPT || expression_get_class(&LHS) == EXPR_MEMBER;
 	if (!is_complex)
@@ -1250,7 +1250,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	info->variable_location = LFREE;
-	const node RHS = expression_binary_get_RHS(nd);
+	const node RHS = expression_assignment_get_RHS(nd);
 	emit_expression(info, &RHS);
 
 	size_t result = info->answer_reg;
