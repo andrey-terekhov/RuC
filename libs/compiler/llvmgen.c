@@ -1231,7 +1231,7 @@ static void emit_integral_expression(information *const info, const node *const 
  */
 static void emit_assignment_expression(information *const info, const node *const nd)
 {
-	const binary_t assignment_type = expression_binary_get_operator(nd);
+	const binary_t assignment_type = expression_assignment_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
 	// TODO: вообще тут может быть и вырезка из структуры
