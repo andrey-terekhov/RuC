@@ -700,52 +700,53 @@ static void emit_literal_expression(information *const info, const node *const n
 
 		case TYPE_BOOLEAN:
 		{
-			const bool num = expression_literal_get_boolean(nd);
+			const bool value = expression_literal_get_boolean(nd);
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const_bool(info, num, info->request_reg, false
+				to_code_store_const_bool(info, value, info->request_reg, false
 					, ident_is_local(info->sx, info->request_reg));
 				info->answer_kind = AREG;
 			}
 			else
 			{
 				info->answer_kind = ACONST;
-				info->answer_const_bool = num;
+				info->answer_const_bool = value;
 			}
 			return;
 		}
 
+		case TYPE_CHARACTER:
 		case TYPE_INTEGER:
 		{
-			const item_t num = expression_literal_get_integer(nd);
+			const item_t value = expression_literal_get_integer(nd);
 			const item_t type = expression_get_type(nd);
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const_integer(info, num, info->request_reg, false
+				to_code_store_const_integer(info, value, info->request_reg, false
 					, ident_is_local(info->sx, info->request_reg), type);
 				info->answer_kind = AREG;
 			}
 			else
 			{
 				info->answer_kind = ACONST;
-				info->answer_const = num;
+				info->answer_const = value;
 			}
 			return;
 		}
 
 		case TYPE_FLOATING:
 		{
-			const double num = expression_literal_get_floating(nd);
+			const double value = expression_literal_get_floating(nd);
 			if (info->variable_location == LMEM)
 			{
-				to_code_store_const_double(info, num, info->request_reg, false
+				to_code_store_const_double(info, value, info->request_reg, false
 					, ident_is_local(info->sx, info->request_reg));
 				info->answer_kind = AREG;
 			}
 			else
 			{
 				info->answer_kind = ACONST;
-				info->answer_const_double = num;
+				info->answer_const_double = value;
 			}
 			return;
 		}
@@ -759,7 +760,6 @@ static void emit_literal_expression(information *const info, const node *const n
 		}
 
 		// позже будет реализовано
-		case TYPE_CHARACTER:
 		case TYPE_ENUM:
 		default:
 			// Таких литералов не бывает
