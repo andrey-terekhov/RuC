@@ -1526,7 +1526,7 @@ static void emit_expression(information *const info, const node *const nd)
 static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id
 	, const item_t arr_type, const size_t cur_dimension, const item_t prev_slice, const bool is_local)
 {
-	const size_t size = expression_initializer_get_size(nd);
+	const size_t size = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 	const item_t type = array_get_type(info, arr_type);
 
 	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
@@ -1598,7 +1598,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 	if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t dimensions = array_get_dim(info, arr_type);
-		const size_t N = expression_initializer_get_size(nd);
+		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 
 		const size_t index = hash_get_index(&info->arrays, id);
 
@@ -1651,7 +1651,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 	}
 	else if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_structure(info->sx, expression_get_type(nd)))
 	{
-		const size_t N = expression_initializer_get_size(nd);
+		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 
 		for (size_t i = 0; i < N; i++)
 		{
