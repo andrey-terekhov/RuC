@@ -1608,7 +1608,8 @@ static void emit_initialization(information *const info, const node *const nd, c
 			hash_set_by_index(&info->arrays, index, 1 + i
 				, node_get_type(&list_expression) == OP_INITIALIZER 
 				? (item_t)expression_initializer_get_size(&list_expression) : ITEM_MAX);
-			list_expression = expression_initializer_get_subexpr(&list_expression, 0);
+			list_expression = node_get_type(&list_expression) == OP_INITIALIZER 
+				? expression_initializer_get_subexpr(&list_expression, 0) : node_broken();
 		}
 
 		const item_t type = array_get_type(info, arr_type);
