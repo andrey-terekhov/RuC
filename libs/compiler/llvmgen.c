@@ -1530,7 +1530,7 @@ static void emit_one_dimension_initialization(information *const info, const nod
 	const item_t type = array_get_type(info, arr_type);
 
 	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
-	for (size_t i = 0; i < size; i++)
+	for (size_t i = 0; i < size && size != SIZE_MAX; i++)
 	{
 		info->answer_const = (item_t)i;
 		info->answer_kind = ACONST;
@@ -1653,7 +1653,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 	{
 		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 
-		for (size_t i = 0; i < N; i++)
+		for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 		{
 			const node initializer = expression_initializer_get_subexpr(nd, i);
 			emit_expression(info, &initializer);
