@@ -779,7 +779,7 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 	, const size_t cur_dimension)
 {
 	// TODO: научиться обрабатывать многомерные динамические массивы
-	const node base = expression_subscript_get_base(nd);
+	const node base = node_get_type(nd) == OP_SLICE ? expression_subscript_get_base(nd) : node_broken();
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 	const bool is_local = ident_is_local(info->sx, id);
 	const item_t arr_type = ident_get_type(info->sx, id);
@@ -804,10 +804,10 @@ static void emit_one_dimension_subscript(information *const info, const node *co
  */
 static void emit_subscript_expression(information *const info, const node *const nd)
 {
-	node base = expression_subscript_get_base(nd);
+	node base = node_get_type(nd) == OP_SLICE ? expression_subscript_get_base(nd) : node_broken();
 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
-		base = expression_subscript_get_base(&base);
+		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
 	}
 
 	const size_t id = expression_identifier_get_id(&base);
