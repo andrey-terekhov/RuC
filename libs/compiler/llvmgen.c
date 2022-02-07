@@ -1003,7 +1003,7 @@ static void emit_inc_dec_expression(information *const info, const node *const n
 
 	// TODO: вообще тут может быть и поле структуры
 	const node operand = expression_unary_get_operand(nd);
-	bool is_complex = node_get_type(nd) != OP_IDENTIFIER;
+	bool is_complex = node_get_type(&operand) != OP_IDENTIFIER;
 	size_t id = 0;
 	if (!is_complex)
 	{
@@ -1237,7 +1237,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_assignment_get_LHS(nd);
 	size_t id = 0;
-	bool is_complex = node_get_type(nd) != OP_IDENTIFIER;
+	bool is_complex = node_get_type(&LHS) != OP_IDENTIFIER;
 	if (!is_complex)
 	{
 		id = expression_identifier_get_id(&LHS);
