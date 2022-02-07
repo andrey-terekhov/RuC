@@ -1605,7 +1605,9 @@ static void emit_initialization(information *const info, const node *const nd, c
 		node list_expression = *nd;
 		for (size_t i = 0; i < dimensions; i++)
 		{
-			hash_set_by_index(&info->arrays, index, 1 + i, (item_t)expression_initializer_get_size(&list_expression));
+			hash_set_by_index(&info->arrays, index, 1 + i
+				, node_get_type(&list_expression) == OP_INITIALIZER 
+				? (item_t)expression_initializer_get_size(&list_expression) : ITEM_MAX);
 			list_expression = expression_initializer_get_subexpr(&list_expression, 0);
 		}
 
