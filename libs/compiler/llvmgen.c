@@ -967,7 +967,7 @@ static void emit_member_expression(information *const info, const node *const nd
 	const node base = expression_member_get_base(nd);
 
 	item_t type = expression_get_type(&base);
-	const size_t id = expression_identifier_get_id(&base);
+	const size_t id = node_get_type(&base) == OP_IDENTIFIER ? expression_identifier_get_id(&base) : SIZE_MAX;
 
 	const bool is_pointer = type_is_pointer(info->sx, type);
 	if (type_is_pointer(info->sx, type))
