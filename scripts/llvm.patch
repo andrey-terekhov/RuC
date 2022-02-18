@@ -45,7 +45,7 @@
 +		$path == $dir_preprocessor/* || $path == */$subdir_no_llvm/* ]] ; then
 		message_success
 		let success++
-@@ -381,10 +383,10 @@
+@@ -381,38 +383,38 @@
  {
 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
 -		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
@@ -61,7 +61,27 @@
 +					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
 					message_failure
 					let failure++
-@@ -413,5 +415,5 @@
+				else
+					if [[ $build_type == "(Debug)" ]] ; then
+						build_type=""
+
+						message_failure
+						let failure++
+					else
+						message_success
+
+						if [[ -z $ignore ]] ; then
+							execution
+						else
+							let success++
+						fi
+					fi
+				fi
+				;;
+			124|142)
+				message_timeout
+				let timeout++
+				;;
 			$exit_code)
 				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
 -					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
