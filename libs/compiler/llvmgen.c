@@ -1917,6 +1917,7 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, " ret i32 0\n");
 		info->is_main = false;
 	}
+	uni_printf(info->sx->io, " unreachable\n");
 	uni_printf(info->sx->io, "}\n\n");
 }
 
