@@ -790,10 +790,11 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 		emit_one_dimension_subscript(info, &base, id, cur_dimension + 1);
 	}
 
+	const size_t slice_reg = info->register_num - 1;
 	info->variable_location = LFREE;
 	const node index = node_get_type(nd) == OP_SLICE ? expression_subscript_get_index(nd) : node_broken();
 	emit_expression(info, &index);
-	to_code_slice(info, id, cur_dimension, info->register_num - 1, type, is_local);
+	to_code_slice(info, id, cur_dimension, slice_reg, type, is_local);
 }
 
 /**
