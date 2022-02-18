@@ -39,7 +39,13 @@
  
  		case $? in
  			0)
-@@ -381,7 +383,7 @@
+@@ -336,4 +338,4 @@
+	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* || $dir_multiple_errors/* || 
+-		$path == $dir_preprocessor/* ]] ; then
++		$path == $dir_preprocessor/* || $path == */$subdir_no_llvm/* ]] ; then
+		message_success
+		let success++
+@@ -381,10 +383,10 @@
  {
 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
 -		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
@@ -48,5 +54,17 @@
 -		run $compiler $compiler_debug $sources -o $vm_exec
 +		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang++ $vm_exec -o $llvm_exec &>$log
  
- 		case $? in
- 			0)
+		case $? in
+			0)
+				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+-					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
++					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
+					message_failure
+					let failure++
+@@ -413,5 +415,5 @@
+			$exit_code)
+				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+-					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
++					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
+					if [[ $build_type == "(Debug)" ]] ; then
+						build_type=""
