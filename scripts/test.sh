@@ -3,8 +3,7 @@
 init()
 {
 	exit_code=1
-	vm_exec=export.ll
-	llvm_exec=export
+	vm_exec=export.txt
 
 	vm_release=master
 	output_time=0.0
@@ -23,7 +22,6 @@ init()
 	subdir_error=errors
 	subdir_warning=warnings
 	subdir_include=include
-	subdir_no_llvm=no-llvm
 
 	while ! [[ -z $1 ]]
 	do
@@ -188,9 +186,9 @@ build()
 		compiler_debug=$compiler
 	fi
 
-	# if [[ -z $ignore ]] ; then
-	# 	build_vm
-	# fi
+	if [[ -z $ignore ]] ; then
+		build_vm
+	fi
 }
 
 run()
@@ -271,7 +269,7 @@ execution()
 {
 	if [[ $path == $dir_exec/* ]] ; then
 		action="execution"
-		run $llvm_exec $llvm_exec
+		run $interpreter $interpreter_debug $vm_exec
 
 		case $? in
 			0)
@@ -336,7 +334,7 @@ check_warnings()
 {
 	# в unsorted проверяется только наличие ошибки. multiple_errors и preprocessor здесь временно
 	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* || $dir_multiple_errors/* || 
-		$path == $dir_preprocessor/* || $path == */$subdir_no_llvm/* ]] ; then
+		$path == $dir_preprocessor/* ]] ; then
 		message_success
 		let success++
 	else
@@ -381,14 +379,14 @@ check_warnings()
 compiling()
 {
 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
-		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* || $path != */$subdir_no_llvm/* ]] ; then
+		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang++ $vm_exec -o $llvm_exec &>$log
+		run $compiler $compiler_debug $sources -o $vm_exec
 
 		case $? in
 			0)
 				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
-					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -414,7 +412,7 @@ compiling()
 				;;
 			$exit_code)
 				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
-					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
 					if [[ $build_type == "(Debug)" ]] ; then
 						build_type=""
 
