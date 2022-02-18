@@ -10,7 +10,14 @@
  
  	vm_release=master
  	output_time=0.0
-@@ -186,9 +187,9 @@
+@@ -22,5 +23,6 @@
+	subdir_error=errors
+	subdir_warning=warnings
+	subdir_include=include
++	subdir_no_llvm=no-llvm
+
+	while ! [[ -z $1 ]]
+@@ -186,9 +188,9 @@
  		compiler_debug=$compiler
  	fi
  
@@ -23,7 +30,7 @@
  }
  
  run()
-@@ -270,7 +271,7 @@
+@@ -270,7 +272,7 @@
  {
  	if [[ $path == $dir_exec/* ]] ; then
  		action="execution"
@@ -32,10 +39,11 @@
  
  		case $? in
  			0)
-@@ -381,7 +382,7 @@
+@@ -381,7 +383,7 @@
  {
 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
-		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
+-		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
++		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* || $path != */$subdir_no_llvm/*]] ; then
 		action="compiling"
 -		run $compiler $compiler_debug $sources -o $vm_exec
 +		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang++ $vm_exec -o $llvm_exec &>$log
