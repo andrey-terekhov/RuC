@@ -898,8 +898,17 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->answer_reg = info->register_num++;
 	}
 	uni_printf(info->sx->io, " call ");
-	type_to_io(info, expression_get_type(&callee));
-	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
+
+	if (func_ref == BI_ROUND)
+	{
+		type_to_io(info, TYPE_FLOATING);
+		uni_printf(info->sx->io, " @llvm.round.f64(");
+	}
+	else
+	{
+		type_to_io(info, expression_get_type(&callee));
+		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
+	}
 
 	for (size_t i = 0; i < args; i++)
 	{
@@ -952,6 +961,12 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 	}
 	uni_printf(info->sx->io, ")\n");
+
+	if (func_ref == BI_ROUND)
+	{
+		uni_printf(info->sx->io, " %%.%zu = fptosi double %%.%zu to i32\n", info->register_num, info->answer_reg);
+		info->answer_reg = info->register_num++;
+	}
 }
 
 /**
@@ -2440,8 +2455,16 @@ static void builin_functions_declaration(information *const info)
 			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
 			uni_printf(info->sx->io, "declare ");
-			type_to_io(info, ret_type);
-			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+			if (i == BI_ROUND)
+			{
+				type_to_io(info, TYPE_FLOATING);
+				uni_printf(info->sx->io, " @llvm.round.f64(");
+			}
+			else
+			{
+				type_to_io(info, ret_type);
+				uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+			}
 
 			for (size_t j = 0; j < parameters; j++)
 			{
