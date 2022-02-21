@@ -1771,7 +1771,7 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				to_code_store_const_bool(info, false, id, false, is_local);
 			}
-			else
+			else if (type_is_floating(type))  
 			{
 				to_code_store_const_double(info, 0.0, id, false, is_local);
 			}
