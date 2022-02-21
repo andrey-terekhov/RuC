@@ -967,6 +967,11 @@ static void emit_call_expression(information *const info, const node *const nd)
 		uni_printf(info->sx->io, " %%.%zu = fptosi double %%.%zu to i32\n", info->register_num, info->answer_reg);
 		info->answer_reg = info->register_num++;
 	}
+	if (func_ref == BI_FGETC)
+	{
+		uni_printf(info->sx->io, " %%.%zu = trunc i32 %%.%zu to i8\n", info->register_num, info->answer_reg);
+		info->answer_reg = info->register_num++;
+	}
 }
 
 /**
