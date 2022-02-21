@@ -1765,15 +1765,15 @@ static void emit_variable_declaration(information *const info, const node *const
 		{
 			if (type_is_integer(info->sx, type))
 			{
-				to_code_store_const_integer(info, 0, info->request_reg, false, is_local, type);
+				to_code_store_const_integer(info, 0, id, false, is_local, type);
 			}
 			else if (type_is_boolean(type))  
 			{
-				to_code_store_const_bool(info, false, info->request_reg, false, is_local);
+				to_code_store_const_bool(info, false, id, false, is_local);
 			}
 			else
 			{
-				to_code_store_const_double(info, 0.0, info->request_reg, false, is_local);
+				to_code_store_const_double(info, 0.0, id, false, is_local);
 			}
 		}
 	}
