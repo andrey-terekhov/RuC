@@ -1759,6 +1759,10 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				to_code_store_reg(info, info->answer_reg, id, type, false, false, is_local);
 			}
+			else if (info->answer_kind == AMEM) // указатель
+			{
+				to_code_store_reg(info, info->answer_reg, id, type, false, true, is_local);
+			}
 
 		}
 		else
