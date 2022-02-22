@@ -336,7 +336,7 @@ static void to_code_operation_reg_null(information *const info, const binary_t o
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%.%zu, null\n", fst);
+	uni_printf(info->sx->io, " %%.%zu, null\n", fst);
 }
 
 static void to_code_operation_null_reg(information *const info, const binary_t operation
@@ -346,7 +346,7 @@ static void to_code_operation_null_reg(information *const info, const binary_t o
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* null, %%.%zu\n", snd);
+	uni_printf(info->sx->io, " null, %%.%zu\n", snd);
 }
 
 static void to_code_load(information *const info, const size_t result, const size_t id, const item_t type
@@ -601,6 +601,10 @@ static void check_type_and_branch(information *const info, const item_t type)
 			else if (type_is_floating(type))
 			{
 				to_code_operation_reg_const_double(info, BIN_NE, info->answer_reg, 0);
+			}
+			else if (type_is_pointer(info->sx, type))
+			{
+				to_code_operation_reg_null(info, BIN_NE, info->answer_reg, type);
 			}
 			info->answer_reg = info->register_num++;
 		}
@@ -1308,6 +1312,10 @@ static void emit_assignment_expression(information *const info, const node *cons
 		info->answer_kind = AREG;
 		info->answer_reg = result;
 	}
+	else if (info->answer_kind == ANULL)
+	{
+		to_code_store_null(info, id, operation_type);
+	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
 		to_code_store_const_integer(info, info->answer_const, id, is_complex, ident_is_local(info->sx, id), operation_type);
@@ -1319,12 +1327,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 	else if (type_is_floating(operation_type))
 	{
 		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, ident_is_local(info->sx, id));
-	}
-	else
-	{
-		to_code_store_null(info, id, operation_type);
-
-		info->answer_kind = ANULL;
 	}
 }
 
@@ -1762,6 +1764,10 @@ static void emit_variable_declaration(information *const info, const node *const
 			else if (info->answer_kind == AMEM) // указатель
 			{
 				to_code_store_reg(info, info->answer_reg, id, type, false, true, is_local);
+			}
+			else if (info->answer_kind == ANULL)
+			{
+				to_code_store_null(info, id, type);
 			}
 
 		}
@@ -2557,6 +2563,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
