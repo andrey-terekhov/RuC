@@ -1129,7 +1129,14 @@ static void emit_unary_expression(information *const info, const node *const nd)
 
 			if (info->answer_kind == AREG)
 			{
-				to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
+				if (type_is_pointer(info->sx, expression_get_type(&operand)))
+				{
+					to_code_operation_reg_null(info, BIN_NE, info->answer_reg, expression_get_type(&operand));
+				}
+				else
+				{
+					to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
+				}
 				info->answer_reg = info->register_num++;
 			}
 
