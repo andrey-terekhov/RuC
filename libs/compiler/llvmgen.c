@@ -813,7 +813,6 @@ static void emit_subscript_expression(information *const info, const node *const
 
 	if (expression_get_class(&base) == EXPR_LITERAL) // вырезка из строки
 	{
-		node base = expression_subscript_get_base(nd);
 		emit_expression(info, &base);
 
 		const char *string = string_get(info->sx, info->answer_string);
