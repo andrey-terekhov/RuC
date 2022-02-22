@@ -364,7 +364,7 @@ static void to_code_store_reg(information *const info, const size_t reg, const s
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, " %%%s.%zu, ", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %s%s.%zu, ", ident_is_local(info->sx, reg) ? "%" : "@", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
@@ -1339,7 +1339,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (info->answer_kind == AREG || info->answer_kind == AMEM || info->answer_kind == ALOGIC)
 	{
-		printf("here\n");
 		to_code_store_reg(info, result, id, operation_type, is_complex
 			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
 
