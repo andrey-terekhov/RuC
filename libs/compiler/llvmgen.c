@@ -829,7 +829,7 @@ static void emit_subscript_expression(information *const info, const node *const
 			}
 			else
 			{
-				info->answer_const = ITEM_MAX;
+				info->answer_const = -1;
 			}
 		}
 
