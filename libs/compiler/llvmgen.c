@@ -1339,6 +1339,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	if (info->answer_kind == AREG || info->answer_kind == AMEM || info->answer_kind == ALOGIC)
 	{
+		printf("here\n");
 		to_code_store_reg(info, result, id, operation_type, is_complex
 			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
 
@@ -1861,6 +1862,10 @@ static void emit_variable_declaration(information *const info, const node *const
 			else if (type_is_structure(info->sx, type))
 			{
 				uni_printf(info->sx->io, " zeroinitializer");
+			}
+			else if (type_is_pointer(info->sx, type))
+			{
+				uni_printf(info->sx->io, " null");
 			}
 			uni_printf(info->sx->io, ", align 4\n");
 		}
