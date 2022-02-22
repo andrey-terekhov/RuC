@@ -810,6 +810,33 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 static void emit_subscript_expression(information *const info, const node *const nd)
 {
 	node base = node_get_type(nd) == OP_SLICE ? expression_subscript_get_base(nd) : node_broken();
+
+	if (expression_get_class(&base) == EXPR_LITERAL) // вырезка из строки
+	{
+		node base = expression_subscript_get_base(nd);
+		emit_expression(info, &base);
+
+		const char *string = string_get(info->sx, info->answer_string);
+		const size_t length = strings_length(info->sx, info->answer_string);
+
+		const node index = expression_subscript_get_index(nd);
+		emit_expression(info, &index);
+
+		if (info->answer_kind == ACONST)
+		{
+			if (info->answer_const >= 0 && info->answer_const < (item_t)length)
+			{
+				info->answer_const = string[info->answer_const];
+			}
+			else
+			{
+				info->answer_const = ITEM_MAX;
+			}
+		}
+
+		return;
+	}
+
 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
