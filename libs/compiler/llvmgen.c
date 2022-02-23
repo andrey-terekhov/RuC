@@ -45,6 +45,7 @@ typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
+	LNOLOG,								/**< Любой ответ кроме логического */
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
@@ -1307,7 +1308,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 		id = info->answer_reg;
 	}
 
-	info->variable_location = LFREE;
+	info->variable_location = LNOLOG;
 	const node RHS = expression_assignment_get_RHS(nd);
 	emit_expression(info, &RHS);
 
