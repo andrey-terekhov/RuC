@@ -73,6 +73,7 @@ typedef struct information
 	size_t label_break;						/**< Метка перехода для break */
 	size_t label_continue;					/**< Метка перехода для continue */
 	size_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
+	size_t label_phi_previous;				/**< Метка перехода последнего использования phi */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -1438,6 +1439,27 @@ static void emit_binary_expression(information *const info, const node *const nd
 			info->variable_location = is_logic ? LFREE : LNOLOG;
 			emit_expression(info, &LHS);
 
+			if (!is_logic)
+			{
+				info->label_true = old_label_true;
+				info->label_false = old_label_false;
+
+				if (operator == BIN_LOG_OR)
+				{
+					info->label_false = label_next;
+
+					if (!is_logic)
+					{
+						info->label_true = old_label_false;
+					}
+				}
+				else // (operator == OP_LOG_AND)
+				{
+					info->label_true = label_next;
+				}
+			}
+
+			info->variable_location = LFREE;
 			check_type_and_branch(info, expression_get_type(&LHS));
 
 			to_code_label(info, label_next);
@@ -1454,9 +1476,11 @@ static void emit_binary_expression(information *const info, const node *const nd
 			if (!is_logic)
 			{
 				to_code_label(info, info->label_false);
-				uni_printf(info->sx->io, " %%.%zu = phi i1 [ %s, %%0 ], [ %%.%zu, %%label%zu ]\n", info->register_num
-					, operator == BIN_LOG_OR ? "true" : "false", info->register_num - 1, label_next);
+				uni_printf(info->sx->io, " %%.%zu = phi i1 [ %s, %%%s%zu ], [ %%.%zu, %%label%zu ]\n", info->register_num
+					, operator == BIN_LOG_OR ? "true" : "false", info->label_phi_previous == 0 ? "" : "label"
+					, info->label_phi_previous, info->register_num - 1, label_next);
 
+				info->label_phi_previous = info->label_false;
 				info->answer_reg = info->register_num;
 				info->answer_kind = AREG;
 				info->register_num++;
@@ -2652,6 +2676,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_abs = false;
 	info.was_fabs = false;
 	info.is_main = false;
+	info.label_phi_previous = 0;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;
