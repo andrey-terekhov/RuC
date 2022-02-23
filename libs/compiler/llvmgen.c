@@ -610,7 +610,14 @@ static void check_type_and_branch(information *const info, const item_t type)
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
-			to_code_conditional_branch(info);
+			if (info->variable_location == LNOLOG)
+			{
+				to_code_unconditional_branch(info, info->label_false);
+			}
+			else
+			{
+				to_code_conditional_branch(info);
+			}
 			break;
 		default:
 			break;
@@ -1402,6 +1409,13 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
 		{
+			const bool is_logic = info->variable_location != LNOLOG;
+			if (!is_logic)
+			{
+				info->label_true = info->label_num++;
+				info->label_false = info->label_num++;
+			}
+
 			const size_t label_next = info->label_num++;
 			const size_t old_label_true = info->label_true;
 			const size_t old_label_false = info->label_false;
@@ -1409,6 +1423,11 @@ static void emit_binary_expression(information *const info, const node *const nd
 			if (operator == BIN_LOG_OR)
 			{
 				info->label_false = label_next;
+
+				if (!is_logic)
+				{
+					info->label_true = old_label_false;
+				}
 			}
 			else // (operator == OP_LOG_AND)
 			{
@@ -1416,6 +1435,7 @@ static void emit_binary_expression(information *const info, const node *const nd
 			}
 
 			const node LHS = expression_binary_get_LHS(nd);
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			emit_expression(info, &LHS);
 
 			check_type_and_branch(info, expression_get_type(&LHS));
@@ -1425,11 +1445,26 @@ static void emit_binary_expression(information *const info, const node *const nd
 			info->label_false = old_label_false;
 
 			const node RHS = expression_binary_get_RHS(nd);
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			emit_expression(info, &RHS);
 
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			check_type_and_branch(info, expression_get_type(&RHS));
 
-			info->answer_kind = ALOGIC;
+			if (!is_logic)
+			{
+				to_code_label(info, info->label_false);
+				uni_printf(info->sx->io, " %%.%zu = phi i1 [ %s, %%0 ], [ %%.%zu, %%label%zu ]\n", info->register_num
+					, operator == BIN_LOG_OR ? "true" : "false", info->register_num - 1, label_next);
+
+				info->answer_reg = info->register_num;
+				info->answer_kind = AREG;
+				info->register_num++;
+			}
+			else
+			{
+				info->answer_kind = ALOGIC;
+			}
 			return;
 		}
 
