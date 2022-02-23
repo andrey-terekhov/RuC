@@ -1918,6 +1918,10 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				uni_printf(info->sx->io, " 0.0");
 			}
+			else if (type_is_boolean(type))  
+			{
+				uni_printf(info->sx->io, " false");
+			}
 			else if (type_is_structure(info->sx, type))
 			{
 				uni_printf(info->sx->io, " zeroinitializer");
