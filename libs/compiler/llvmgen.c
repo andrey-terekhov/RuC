@@ -94,6 +94,8 @@ static void emit_statement(information *const info, const node *const nd);
 static void emit_compound_statement(information *const info, const node *const nd, const bool is_function_body);
 static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
+static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id
+	, const item_t arr_type, const size_t cur_dimension, const item_t prev_slice, const bool is_local);
 
 
 static item_t array_get_type(information *const info, const item_t array_type)
@@ -622,6 +624,32 @@ static void check_type_and_branch(information *const info, const item_t type)
 			break;
 		default:
 			break;
+	}
+}
+
+
+static void global_initialization(information *const info)
+{
+	const node root = node_get_root(&info->sx->tree);
+
+	const size_t size = translation_unit_get_size(&root);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = translation_unit_get_declaration(&root, i);
+
+		if (declaration_get_class(&decl) == DECL_VAR)
+		{
+			const size_t id = declaration_variable_get_id(&decl);
+			const bool has_init = declaration_variable_has_initializer(&decl);
+			const item_t type = ident_get_type(info->sx, id);
+
+			if (type_is_array(info->sx, type) && has_init)
+			{
+				const size_t dimensions = array_get_dim(info, type);
+				const node initializer = declaration_variable_get_initializer(&decl);
+				emit_one_dimension_initialization(info, &initializer, id, type, dimensions - 1, 0, false);
+			}
+		}
 	}
 }
 
@@ -1651,10 +1679,8 @@ static void emit_one_dimension_initialization(information *const info, const nod
 		info->answer_const = (item_t)i;
 		info->answer_kind = ACONST;
 		const size_t slice_reg = (size_t)info->register_num;
-		if (is_local)
-		{
-			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
-		}
+
+		to_code_slice(info, id, cur_dimension, prev_slice, type, is_local);
 
 		info->variable_location = LFREE;
 		const node initializer = expression_initializer_get_subexpr(nd, i);
@@ -1671,26 +1697,12 @@ static void emit_one_dimension_initialization(information *const info, const nod
 			// константа типа int
 			else if (type_is_integer(info->sx, type))
 			{
-				if (is_local)
-				{
-					to_code_store_const_integer(info, info->answer_const, slice_reg, true, true, type);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != size - 1 ? ", " : "], align 4\n");
-				}
+				to_code_store_const_integer(info, info->answer_const, slice_reg, true, true, type);
 			}
 			// константа типа double
 			else
 			{
-				if (is_local)
-				{
-					to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != size - 1 ? ", " : "], align 4\n");
-				}
+				to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
 			}
 		}
 		else
@@ -1736,15 +1748,12 @@ static void emit_initialization(information *const info, const node *const nd, c
 		if (is_local)
 		{
 			to_code_alloc_array_static(info, index, type, true);
+			emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 		}
 		else
 		{
-			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
-			type_to_io(info, type);
-			uni_printf(info->sx->io, "] [");
+			to_code_alloc_array_static(info, index, type, false);
 		}
-
-		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
 	// TODO: надо реализовать для большего количества измерений. Там сложность в том, что последнее измерение может иметь различные границы
 	// массив инициализируется строкой
@@ -2045,6 +2054,11 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, " %%%zu, ", i);
 		type_to_io(info, param_type);
 		uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
+	}
+
+	if (ref_ident == info->sx->ref_main)
+	{
+		global_initialization(info);
 	}
 
 	const node body = declaration_function_get_body(nd);
