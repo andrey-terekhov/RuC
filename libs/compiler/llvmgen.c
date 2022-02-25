@@ -873,6 +873,12 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
+	if (expression_get_class(&base) == EXPR_MEMBER) // массив в структуре
+	{
+		return;
+	}
+
+
 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
@@ -1057,16 +1063,26 @@ static void emit_member_expression(information *const info, const node *const nd
 	item_t type = expression_get_type(&base);
 	const size_t id = node_get_type(&base) == OP_IDENTIFIER ? expression_identifier_get_id(&base) : SIZE_MAX;
 
-	const bool is_pointer = type_is_pointer(info->sx, type);
+	bool is_complex = false;
 	if (type_is_pointer(info->sx, type))
 	{
 		to_code_load(info, info->register_num++, id, type, false, ident_is_local(info->sx, id));
 		type = type_pointer_get_element_type(info->sx, type);
+		is_complex = true;
+	}
+
+	if (expression_get_class(&base) == EXPR_SUBSCRIPT) // структура в массиве
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_subscript_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
 	}
 
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
 		"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
+		, is_complex ? "" : "var", is_complex ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -2544,7 +2560,18 @@ static void structs_declaration(information *const info)
 			for (size_t j = 0; j < fields; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-				type_to_io(info, type_structure_get_member_type(info->sx, (item_t)i, j));
+				const item_t type_structure_field = type_structure_get_member_type(info->sx, (item_t)i, j);
+
+				if (type_is_array(info->sx, type_structure_field))
+				{
+					// const size_t dimensions = array_get_dim(info, type_structure_field);
+					// const item_t element_type = array_get_type(info, type_structure_field);
+					uni_printf(info->sx->io, "here");
+				}
+				else
+				{
+					type_to_io(info, type_structure_field);
+				}
 			}
 
 			uni_printf(info->sx->io, " }\n");
