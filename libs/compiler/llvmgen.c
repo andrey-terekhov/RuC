@@ -1364,7 +1364,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	const node RHS = expression_assignment_get_RHS(nd);
 	if (expression_get_class(&RHS) == EXPR_INITIALIZER)
 	{
-		info->request_reg = operation_type;
+		info->request_reg = (size_t)operation_type;
 	}
 	emit_expression(info, &RHS);
 
