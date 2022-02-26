@@ -2747,7 +2747,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
