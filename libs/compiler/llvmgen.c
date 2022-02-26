@@ -1842,16 +1842,30 @@ static void emit_initialization(information *const info, const node *const nd, c
 		for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 		{
 			const node initializer = expression_initializer_get_subexpr(nd, i);
-			emit_expression(info, &initializer);
+			const item_t type = expression_get_type(&initializer);
 
+			const size_t member_reg = (size_t)info->register_num;
 			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
 			"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
 			, id, i);
-
-			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
-				, expression_get_type(&initializer));
-
 			info->register_num++;
+
+			emit_expression(info, &initializer);
+
+			if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, member_reg, type, true, false, true);
+			}
+			// константа типа int
+			else if (type_is_integer(info->sx, type))
+			{
+				to_code_store_const_integer(info, info->answer_const, member_reg, true, true, type);
+			}
+			// константа типа double
+			else
+			{
+				to_code_store_const_double(info, info->answer_const_double, member_reg, true, true);
+			}
 		}
 
 	}
