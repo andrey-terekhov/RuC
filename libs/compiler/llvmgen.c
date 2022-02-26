@@ -1362,7 +1362,16 @@ static void emit_assignment_expression(information *const info, const node *cons
 
 	info->variable_location = LNOLOG;
 	const node RHS = expression_assignment_get_RHS(nd);
+	if (expression_get_class(&RHS) == EXPR_INITIALIZER)
+	{
+		info->request_reg = operation_type;
+	}
 	emit_expression(info, &RHS);
+
+	if (expression_get_class(&RHS) == EXPR_INITIALIZER)
+	{
+		return;
+	}
 
 	size_t result = info->answer_reg;
 
@@ -1617,6 +1626,38 @@ static void emit_ternary_expression(information *const info, const node *const n
 }
 
 /**
+ *	Emit initializer expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_initializer_expression(information *const info, const node *const nd)
+{
+	if (type_is_structure(info->sx, expression_get_type(nd)))
+	{
+		const size_t size = expression_initializer_get_size(nd);
+		const size_t structure_type = info->request_reg;
+		const size_t slice_reg = info->register_num - 1;
+
+		for (size_t i = 0; i < size; i++)
+		{
+			info->variable_location = LFREE;
+			const node initializer = expression_initializer_get_subexpr(nd, i);
+			emit_expression(info, &initializer);
+
+			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+			"%%struct_opt.%" PRIitem "* %%.%" PRIitem ", i32 0, i32 %zu\n", info->register_num
+				, structure_type, structure_type, slice_reg, i);
+
+			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
+				, expression_get_type(&initializer));
+
+			info->register_num++;
+		}
+	}
+}
+
+/**
  *	Emit expression
  *
  *	@param	info	Encoder
@@ -1666,6 +1707,10 @@ static void emit_expression(information *const info, const node *const nd)
 			emit_assignment_expression(info, nd);
 			return;
 
+		case EXPR_INITIALIZER:
+			emit_initializer_expression(info, nd);
+			return;
+
 		default:
 			// TODO: генерация оставшихся выражений
 			return;
@@ -1689,7 +1734,6 @@ static void emit_one_dimension_initialization(information *const info, const nod
 	const size_t size = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 	const item_t type = array_get_type(info, arr_type);
 
-	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 	for (size_t i = 0; i < size && size != SIZE_MAX; i++)
 	{
 		info->answer_const = (item_t)i;
@@ -1801,8 +1845,8 @@ static void emit_initialization(information *const info, const node *const nd, c
 			emit_expression(info, &initializer);
 
 			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-			"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
-			, "var", id, i);
+			"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
+			, id, i);
 
 			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
 				, expression_get_type(&initializer));
@@ -2703,6 +2747,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
