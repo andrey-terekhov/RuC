@@ -477,7 +477,7 @@ item_t ident_get_displ(const syntax *const sx, const size_t index)
 
 const char *ident_get_spelling(const syntax *const sx, const size_t index)
 {
-	return repr_get_name(sx, (size_t)abs(ident_get_repr(sx, index)));
+	return repr_get_name(sx, (size_t)abs((int)ident_get_repr(sx, index)));
 }
 
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
