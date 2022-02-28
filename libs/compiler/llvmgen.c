@@ -24,12 +24,12 @@
 
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
+#define MAX_CASES 4096
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
 static const size_t IS_STATIC = 0;
 static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;		// Из-за OP_SLICE
-static const size_t MAX_CASES = 4096;
 
 
 typedef enum ANSWER
@@ -2838,6 +2838,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
