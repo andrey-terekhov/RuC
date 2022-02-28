@@ -29,6 +29,7 @@
 static const size_t HASH_TABLE_SIZE = 1024;
 static const size_t IS_STATIC = 0;
 static const size_t MAX_DIMENSIONS = SIZE_MAX - 2;		// Из-за OP_SLICE
+static const size_t MAX_CASES = 4096;
 
 
 typedef enum ANSWER
@@ -74,6 +75,7 @@ typedef struct information
 	size_t label_continue;					/**< Метка перехода для continue */
 	size_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
 	size_t label_phi_previous;				/**< Метка перехода последнего использования phi */
+	size_t label_switch;					/**< Метка для switch */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -2200,11 +2202,22 @@ static void emit_compound_statement(information *const info, const node *const n
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
 		emit_statement(info, &substmt);
-	}
 
-	if (!is_function_body)
-	{
-		to_code_stack_load(info, block_num);
+		if (statement_get_class(&substmt) == STMT_CASE && i == size - 1)
+		{
+			if (!is_function_body)
+			{
+				to_code_stack_load(info, block_num);
+			}
+			to_code_unconditional_branch(info, info->label_switch);
+		}
+		else if (i == size - 1)
+		{
+			if (!is_function_body)
+			{
+				to_code_stack_load(info, block_num);
+			}
+		}
 	}
 }
 
@@ -2446,6 +2459,72 @@ static void emit_return_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit case statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_case_statement(information *const info, const node *const nd)
+{
+	to_code_unconditional_branch(info, info->label_switch);
+	to_code_label(info, info->label_switch);
+	info->label_switch--;
+
+	const node substmt = statement_case_get_substmt(nd);
+	emit_statement(info, &substmt);
+
+	// to_code_unconditional_branch(info, info->label_switch);
+}
+
+/**
+ *	Emit switch statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_switch_statement(information *const info, const node *const nd)
+{
+	item_t case_values[MAX_CASES];
+
+	const node condition = statement_switch_get_condition(nd);
+	emit_expression(info, &condition);
+
+	const node body = statement_switch_get_body(nd);
+	size_t case_num = 0;
+	if (statement_get_class(&body) == STMT_COMPOUND)
+	{
+		const size_t size = statement_compound_get_size(&body);
+		for (size_t i = 0; i < size; i++)
+		{
+			const node substmt = statement_compound_get_substmt(&body, i);
+
+			if (statement_get_class(&substmt) == STMT_CASE)
+			{
+				const node expr = statement_case_get_expression(&substmt);
+				emit_expression(info, &expr);
+
+				case_values[case_num] = info->answer_const;
+				case_num++;
+			}
+			
+		}
+	}
+
+	uni_printf(info->sx->io, " switch ");
+	type_to_io(info, expression_get_type(&condition));
+	uni_printf(info->sx->io, " %%.%zu, label %%label%zu [\n", info->answer_reg, info->label_switch - case_num);
+	for (size_t i = 0; i < case_num; i++)
+	{
+		uni_printf(info->sx->io, "  i32 %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
+	}
+	uni_printf(info->sx->io, " ]\n");
+
+	info->label_break = info->label_switch - case_num;
+	emit_statement(info, &body);
+	to_code_label(info, info->label_break);
+}
+
+/**
  *	Emit translation unit
  *
  *	@param	info		Encoder
@@ -2476,8 +2555,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_CASE:
-			// TODO: case statement emission
-			// emit_case_statement(info, nd);
+			emit_case_statement(info, nd);
 			return;
 
 		case STMT_DEFAULT:
@@ -2501,8 +2579,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_SWITCH:
-			// TODO: switch statement emission
-			// emit_switch_statement(info, nd);
+			emit_switch_statement(info, nd);
 			return;
 
 		case STMT_WHILE:
@@ -2761,11 +2838,13 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.label_switch = 0;
 	info.init_num = 1;
 	info.block_num = 1;
 	info.variable_location = LREG;
