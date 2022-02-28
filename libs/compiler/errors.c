@@ -388,8 +388,17 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
 			break;
+
 		case wrong_init_in_actparam:
 			sprintf(msg, "в инициализаторе-фактическом параметре функции могут быть только константы");
+		case array_borders_cannot_be_static_dynamic:
+			sprintf(msg, "массив не может иметь статические и динамические границы");
+			break;
+		case such_array_is_not_supported:
+			sprintf(msg, "такие массивы пока не поддерживаются в кодогенераторе");
+			break;
+		case too_many_arguments:
+			sprintf(msg, "слишком много аргументов у функции, допустимое количество до 128");
 			break;
 
 		default:
