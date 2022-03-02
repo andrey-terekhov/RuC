@@ -370,7 +370,7 @@ static void to_code_store_reg(information *const info, const size_t reg, const s
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, " %s%s.%zu, ", ident_is_local(info->sx, reg) ? "%" : "@", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %s%s.%zu, ", /*ident_is_local(info->sx, reg)*/true ? "%" : "@", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
@@ -2856,6 +2856,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	// write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
