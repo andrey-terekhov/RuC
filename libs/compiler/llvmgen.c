@@ -1415,15 +1415,15 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
 	{
-		to_code_store_const_integer(info, info->answer_const, id, is_complex, ident_is_local(info->sx, id), operation_type);
+		to_code_store_const_integer(info, info->answer_const, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true, operation_type);
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_complex, ident_is_local(info->sx, id));
+		to_code_store_const_double(info, info->answer_const_double, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
 	else if (type_is_floating(operation_type))
 	{
-		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, ident_is_local(info->sx, id));
+		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
 }
 
