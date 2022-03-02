@@ -1404,7 +1404,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	if (info->answer_kind == AREG || info->answer_kind == AMEM || info->answer_kind == ALOGIC)
 	{
 		to_code_store_reg(info, result, id, operation_type, is_complex
-			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
+			, info->answer_kind == AMEM, !is_complex ? ident_is_local(info->sx, id) : true);
 
 		info->answer_kind = AREG;
 		info->answer_reg = result;
