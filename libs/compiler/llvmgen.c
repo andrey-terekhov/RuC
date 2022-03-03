@@ -1082,9 +1082,18 @@ static void emit_member_expression(information *const info, const node *const nd
 		info->variable_location = loc;
 	}
 
+		if (expression_get_class(&base) == EXPR_MEMBER) // структура в структуре
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_member_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
+	}
+
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-		"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_complex ? "" : "var", is_complex ? info->register_num - 1 : id, place);
+		"%%struct_opt.%" PRIitem "* %s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
+		, is_complex ? "%" : (ident_is_local(info->sx, id) ? "%var" : "@var"), is_complex ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -2856,7 +2865,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	// write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
