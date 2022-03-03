@@ -1893,7 +1893,12 @@ static void emit_initialization(information *const info, const node *const nd, c
 				to_code_store_const_double(info, info->answer_const_double, member_reg, true, true);
 			}
 		}
-
+	}
+	else if (expression_get_class(nd) == EXPR_CALL && type_is_structure(info->sx, expression_get_type(nd)))
+	{
+		info->variable_location = LFREE;
+		emit_expression(info, nd);
+		to_code_store_reg(info, info->answer_reg, id, arr_type, false, false, true);
 	}
 }
 
