@@ -1656,8 +1656,8 @@ static void emit_initializer_expression(information *const info, const node *con
 			const node initializer = expression_initializer_get_subexpr(nd, i);
 			emit_expression(info, &initializer);
 
-			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-			"%%struct_opt.%" PRIitem "* %%.%" PRIitem ", i32 0, i32 %zu\n", info->register_num
+			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%zu, " 
+			"%%struct_opt.%zu* %%.%zu, i32 0, i32 %zu\n", info->register_num
 				, structure_type, structure_type, slice_reg, i);
 
 			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
