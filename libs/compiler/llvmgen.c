@@ -1082,13 +1082,28 @@ static void emit_member_expression(information *const info, const node *const nd
 		info->variable_location = loc;
 	}
 
-		if (expression_get_class(&base) == EXPR_MEMBER) // структура в структуре
+	if (expression_get_class(&base) == EXPR_MEMBER) // структура в структуре
 	{
 		const location_t loc = info->variable_location;
 		info->variable_location = LMEM;
 		emit_member_expression(info, &base);
 		is_complex = true;
 		info->variable_location = loc;
+	}
+
+	if (expression_get_class(&base) == EXPR_CALL) // возврат структуры из функции
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_call_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
+
+		uni_printf(info->sx->io, " %%.%zu = extractvalue %%struct_opt.%" PRIitem " %%.%zu, %" PRIitem "\n"
+			, info->register_num, type, info->register_num - 1, place);
+
+		info->answer_reg = info->register_num++;
+		return;
 	}
 
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
