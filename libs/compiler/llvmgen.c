@@ -1898,7 +1898,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 	{
 		info->variable_location = LFREE;
 		emit_expression(info, nd);
-		to_code_store_reg(info, info->answer_reg, id, arr_type, false, false, true);
+		to_code_store_reg(info, info->answer_reg, (size_t)id, arr_type, false, false, true);
 	}
 }
 
