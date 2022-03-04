@@ -1,0 +1,42 @@
+--- test.sh	2022-02-28 19:18:46.488161200 +0300
++++ llvm.sh	2022-02-28 19:23:37.950288100 +0300
+@@ -3,7 +3,8 @@
+ init()
+ {
+ 	exit_code=1
+-	vm_exec=export.txt
++	vm_exec=export.ll
++	llvm_exec=export
+ 
+ 	vm_release=master
+ 	output_time=0.0
+@@ -175,10 +176,6 @@
+ 	else
+ 		compiler_debug=$compiler
+ 	fi
+-
+-	if [[ -z $ignore ]] ; then
+-		build_vm
+-	fi
+ }
+ 
+ run()
+@@ -259,7 +256,8 @@
+ {
+ 	if [[ $path == $dir_exec/* ]] ; then
+ 		action="execution"
+-		run $interpreter $interpreter_debug $vm_exec
++		clang-11 ../../uemu/executing_uemu.c -o app ../../uemu/libuemu_v7.so &>$log
++		./app $llvm_exec &>$log
+ 
+ 		case $? in
+ 			0)
+@@ -350,7 +348,7 @@
+ {
+ 	if [[ -z $ignore || $path != $dir_error/* ]] ; then
+ 		action="compiling"
+-		run $compiler $compiler_debug $sources -o $vm_exec
++		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang-11 --target=mipsel-linux-gnu -static $vm_exec -lm -o $llvm_exec &>$log
+ 
+ 		case $? in
+ 			0)
