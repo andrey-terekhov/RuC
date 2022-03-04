@@ -14,7 +14,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
-if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+if(MSVC)
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
 	add_compile_options(/W4 /WX /wd4204 /wd4221 /wd5105 /utf-8
 						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
@@ -37,6 +37,12 @@ endif()
 
 # Disable asserts for Release build
 add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
+
+
+# Import testing exit code
+if(DEFINED TESTING_EXIT_CODE)
+	add_compile_definitions(TESTING_EXIT_CODE=${TESTING_EXIT_CODE})
+endif()
 
 
 # Add libraries
