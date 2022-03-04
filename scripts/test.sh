@@ -167,6 +167,7 @@ build_vm()
 	cd ../..
 	if [[ $OSTYPE == "msys" ]] ; then
 		interpreter=./ruc-vm/build/Release/ruc-vm
+		ls ./ruc-vm/build/Release
 	else
 		interpreter=./ruc-vm/build/ruc-vm
 	fi
