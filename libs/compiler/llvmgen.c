@@ -24,6 +24,7 @@
 
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
+#define MAX_CASES 4096
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
@@ -45,6 +46,7 @@ typedef enum LOCATION
 {
 	LREG,								/**< Переменная находится в регистре */
 	LMEM,								/**< Переменная находится в памяти */
+	LNOLOG,								/**< Любой ответ кроме логического */
 	LFREE,								/**< Свободный запрос значения */
 } location_t;
 
@@ -72,6 +74,8 @@ typedef struct information
 	size_t label_break;						/**< Метка перехода для break */
 	size_t label_continue;					/**< Метка перехода для continue */
 	size_t label_ternary_end;				/**< Метка перехода в конец тернарного выражения */
+	size_t label_phi_previous;				/**< Метка перехода последнего использования phi */
+	size_t label_switch;					/**< Метка для switch */
 
 	hash arrays;							/**< Хеш таблица с информацией о массивах:
 												@с key		 - смещение массива
@@ -92,6 +96,8 @@ static void emit_statement(information *const info, const node *const nd);
 static void emit_compound_statement(information *const info, const node *const nd, const bool is_function_body);
 static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
+static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id
+	, const item_t arr_type, const size_t cur_dimension, const item_t prev_slice, const bool is_local);
 
 
 static item_t array_get_type(information *const info, const item_t array_type)
@@ -336,7 +342,7 @@ static void to_code_operation_reg_null(information *const info, const binary_t o
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* %%.%zu, null\n", fst);
+	uni_printf(info->sx->io, " %%.%zu, null\n", fst);
 }
 
 static void to_code_operation_null_reg(information *const info, const binary_t operation
@@ -346,7 +352,7 @@ static void to_code_operation_null_reg(information *const info, const binary_t o
 	operation_to_io(info, operation, TYPE_INTEGER);
 	uni_printf(info->sx->io, " ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, "* null, %%.%zu\n", snd);
+	uni_printf(info->sx->io, " null, %%.%zu\n", snd);
 }
 
 static void to_code_load(information *const info, const size_t result, const size_t id, const item_t type
@@ -364,7 +370,7 @@ static void to_code_store_reg(information *const info, const size_t reg, const s
 {
 	uni_printf(info->sx->io, " store ");
 	type_to_io(info, type);
-	uni_printf(info->sx->io, " %%%s.%zu, ", is_pointer ? "var" : "", reg);
+	uni_printf(info->sx->io, " %s%s.%zu, ", /*ident_is_local(info->sx, reg)*/true ? "%" : "@", is_pointer ? "var" : "", reg);
 	type_to_io(info, type);
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
@@ -602,13 +608,50 @@ static void check_type_and_branch(information *const info, const item_t type)
 			{
 				to_code_operation_reg_const_double(info, BIN_NE, info->answer_reg, 0);
 			}
+			else if (type_is_pointer(info->sx, type))
+			{
+				to_code_operation_reg_null(info, BIN_NE, info->answer_reg, type);
+			}
 			info->answer_reg = info->register_num++;
 		}
 		case ALOGIC:
-			to_code_conditional_branch(info);
+			if (info->variable_location == LNOLOG)
+			{
+				to_code_unconditional_branch(info, info->label_false);
+			}
+			else
+			{
+				to_code_conditional_branch(info);
+			}
 			break;
 		default:
 			break;
+	}
+}
+
+
+static void global_initialization(information *const info)
+{
+	const node root = node_get_root(&info->sx->tree);
+
+	const size_t size = translation_unit_get_size(&root);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = translation_unit_get_declaration(&root, i);
+
+		if (declaration_get_class(&decl) == DECL_VAR)
+		{
+			const size_t id = declaration_variable_get_id(&decl);
+			const bool has_init = declaration_variable_has_initializer(&decl);
+			const item_t type = ident_get_type(info->sx, id);
+
+			if (type_is_array(info->sx, type) && has_init)
+			{
+				const size_t dimensions = array_get_dim(info, type);
+				const node initializer = declaration_variable_get_initializer(&decl);
+				emit_one_dimension_initialization(info, &initializer, id, type, dimensions - 1, 0, false);
+			}
+		}
 	}
 }
 
@@ -790,10 +833,11 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 		emit_one_dimension_subscript(info, &base, id, cur_dimension + 1);
 	}
 
+	const size_t slice_reg = info->register_num - 1;
 	info->variable_location = LFREE;
 	const node index = node_get_type(nd) == OP_SLICE ? expression_subscript_get_index(nd) : node_broken();
 	emit_expression(info, &index);
-	to_code_slice(info, id, cur_dimension, info->register_num - 1, type, is_local);
+	to_code_slice(info, id, cur_dimension, slice_reg, type, is_local);
 }
 
 /**
@@ -805,6 +849,38 @@ static void emit_one_dimension_subscript(information *const info, const node *co
 static void emit_subscript_expression(information *const info, const node *const nd)
 {
 	node base = node_get_type(nd) == OP_SLICE ? expression_subscript_get_base(nd) : node_broken();
+
+	if (expression_get_class(&base) == EXPR_LITERAL) // вырезка из строки
+	{
+		emit_expression(info, &base);
+
+		const char *string = string_get(info->sx, info->answer_string);
+		const size_t length = strings_length(info->sx, info->answer_string);
+
+		const node index = expression_subscript_get_index(nd);
+		emit_expression(info, &index);
+
+		if (info->answer_kind == ACONST)
+		{
+			if (info->answer_const >= 0 && info->answer_const < (item_t)length)
+			{
+				info->answer_const = string[info->answer_const];
+			}
+			else
+			{
+				info->answer_const = ITEM_MAX;
+			}
+		}
+
+		return;
+	}
+
+	if (expression_get_class(&base) == EXPR_MEMBER) // массив в структуре
+	{
+		return;
+	}
+
+
 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
 		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
@@ -897,8 +973,17 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->answer_reg = info->register_num++;
 	}
 	uni_printf(info->sx->io, " call ");
-	type_to_io(info, expression_get_type(&callee));
-	uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
+
+	if (func_ref == BI_ROUND)
+	{
+		type_to_io(info, TYPE_FLOATING);
+		uni_printf(info->sx->io, " @llvm.round.f64(");
+	}
+	else
+	{
+		type_to_io(info, expression_get_type(&callee));
+		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
+	}
 
 	for (size_t i = 0; i < args; i++)
 	{
@@ -951,6 +1036,17 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 	}
 	uni_printf(info->sx->io, ")\n");
+
+	if (func_ref == BI_ROUND)
+	{
+		uni_printf(info->sx->io, " %%.%zu = fptosi double %%.%zu to i32\n", info->register_num, info->answer_reg);
+		info->answer_reg = info->register_num++;
+	}
+	if (func_ref == BI_FGETC)
+	{
+		uni_printf(info->sx->io, " %%.%zu = trunc i32 %%.%zu to i8\n", info->register_num, info->answer_reg);
+		info->answer_reg = info->register_num++;
+	}
 }
 
 /**
@@ -969,16 +1065,50 @@ static void emit_member_expression(information *const info, const node *const nd
 	item_t type = expression_get_type(&base);
 	const size_t id = node_get_type(&base) == OP_IDENTIFIER ? expression_identifier_get_id(&base) : SIZE_MAX;
 
-	const bool is_pointer = type_is_pointer(info->sx, type);
+	bool is_complex = false;
 	if (type_is_pointer(info->sx, type))
 	{
 		to_code_load(info, info->register_num++, id, type, false, ident_is_local(info->sx, id));
 		type = type_pointer_get_element_type(info->sx, type);
+		is_complex = true;
+	}
+
+	if (expression_get_class(&base) == EXPR_SUBSCRIPT) // структура в массиве
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_subscript_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
+	}
+
+	if (expression_get_class(&base) == EXPR_MEMBER) // структура в структуре
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_member_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
+	}
+
+	if (expression_get_class(&base) == EXPR_CALL) // возврат структуры из функции
+	{
+		const location_t loc = info->variable_location;
+		info->variable_location = LMEM;
+		emit_call_expression(info, &base);
+		is_complex = true;
+		info->variable_location = loc;
+
+		uni_printf(info->sx->io, " %%.%zu = extractvalue %%struct_opt.%" PRIitem " %%.%zu, %" PRIitem "\n"
+			, info->register_num, type, info->register_num - 1, place);
+
+		info->answer_reg = info->register_num++;
+		return;
 	}
 
 	uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-		"%%struct_opt.%" PRIitem "* %%%s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
-		, is_pointer ? "" : "var", is_pointer ? info->register_num - 1 : id, place);
+		"%%struct_opt.%" PRIitem "* %s.%zu, i32 0, i32 %" PRIitem "\n", info->register_num, type, type
+		, is_complex ? "%" : (ident_is_local(info->sx, id) ? "%var" : "@var"), is_complex ? info->register_num - 1 : id, place);
 
 	if (info->variable_location != LMEM)
 	{
@@ -1104,7 +1234,14 @@ static void emit_unary_expression(information *const info, const node *const nd)
 
 			if (info->answer_kind == AREG)
 			{
-				to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
+				if (type_is_pointer(info->sx, expression_get_type(&operand)))
+				{
+					to_code_operation_reg_null(info, BIN_NE, info->answer_reg, expression_get_type(&operand));
+				}
+				else
+				{
+					to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
+				}
 				info->answer_reg = info->register_num++;
 			}
 
@@ -1249,9 +1386,18 @@ static void emit_assignment_expression(information *const info, const node *cons
 		id = info->answer_reg;
 	}
 
-	info->variable_location = LFREE;
+	info->variable_location = LNOLOG;
 	const node RHS = expression_assignment_get_RHS(nd);
+	if (expression_get_class(&RHS) == EXPR_INITIALIZER)
+	{
+		info->request_reg = (size_t)operation_type;
+	}
 	emit_expression(info, &RHS);
+
+	if (expression_get_class(&RHS) == EXPR_INITIALIZER)
+	{
+		return;
+	}
 
 	size_t result = info->answer_reg;
 
@@ -1282,28 +1428,26 @@ static void emit_assignment_expression(information *const info, const node *cons
 	if (info->answer_kind == AREG || info->answer_kind == AMEM || info->answer_kind == ALOGIC)
 	{
 		to_code_store_reg(info, result, id, operation_type, is_complex
-			, info->answer_kind == AMEM, ident_is_local(info->sx, id));
+			, info->answer_kind == AMEM, !is_complex ? ident_is_local(info->sx, id) : true);
 
 		info->answer_kind = AREG;
 		info->answer_reg = result;
 	}
-	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
-	{
-		to_code_store_const_integer(info, info->answer_const, id, is_complex, ident_is_local(info->sx, id), operation_type);
-	}
-	else if (type_is_floating(operation_type))
-	{
-		to_code_store_const_double(info, info->answer_const_double, id, is_complex, ident_is_local(info->sx, id));
-	}
-	else if (type_is_floating(operation_type))
-	{
-		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, ident_is_local(info->sx, id));
-	}
-	else
+	else if (info->answer_kind == ANULL)
 	{
 		to_code_store_null(info, id, operation_type);
-
-		info->answer_kind = ANULL;
+	}
+	else if (type_is_integer(info->sx, operation_type)) // ACONST и операция =
+	{
+		to_code_store_const_integer(info, info->answer_const, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true, operation_type);
+	}
+	else if (type_is_floating(operation_type))
+	{
+		to_code_store_const_double(info, info->answer_const_double, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
+	}
+	else if (type_is_floating(operation_type))
+	{
+		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
 }
 
@@ -1345,6 +1489,13 @@ static void emit_binary_expression(information *const info, const node *const nd
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
 		{
+			const bool is_logic = info->variable_location != LNOLOG;
+			if (!is_logic)
+			{
+				info->label_true = info->label_num++;
+				info->label_false = info->label_num++;
+			}
+
 			const size_t label_next = info->label_num++;
 			const size_t old_label_true = info->label_true;
 			const size_t old_label_false = info->label_false;
@@ -1352,6 +1503,11 @@ static void emit_binary_expression(information *const info, const node *const nd
 			if (operator == BIN_LOG_OR)
 			{
 				info->label_false = label_next;
+
+				if (!is_logic)
+				{
+					info->label_true = old_label_false;
+				}
 			}
 			else // (operator == OP_LOG_AND)
 			{
@@ -1359,8 +1515,30 @@ static void emit_binary_expression(information *const info, const node *const nd
 			}
 
 			const node LHS = expression_binary_get_LHS(nd);
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			emit_expression(info, &LHS);
 
+			if (!is_logic)
+			{
+				info->label_true = old_label_true;
+				info->label_false = old_label_false;
+
+				if (operator == BIN_LOG_OR)
+				{
+					info->label_false = label_next;
+
+					if (!is_logic)
+					{
+						info->label_true = old_label_false;
+					}
+				}
+				else // (operator == OP_LOG_AND)
+				{
+					info->label_true = label_next;
+				}
+			}
+
+			info->variable_location = LFREE;
 			check_type_and_branch(info, expression_get_type(&LHS));
 
 			to_code_label(info, label_next);
@@ -1368,11 +1546,28 @@ static void emit_binary_expression(information *const info, const node *const nd
 			info->label_false = old_label_false;
 
 			const node RHS = expression_binary_get_RHS(nd);
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			emit_expression(info, &RHS);
 
+			info->variable_location = is_logic ? LFREE : LNOLOG;
 			check_type_and_branch(info, expression_get_type(&RHS));
 
-			info->answer_kind = ALOGIC;
+			if (!is_logic)
+			{
+				to_code_label(info, info->label_false);
+				uni_printf(info->sx->io, " %%.%zu = phi i1 [ %s, %%%s%zu ], [ %%.%zu, %%label%zu ]\n", info->register_num
+					, operator == BIN_LOG_OR ? "true" : "false", info->label_phi_previous == 0 ? "" : "label"
+					, info->label_phi_previous, info->register_num - 1, label_next);
+
+				info->label_phi_previous = info->label_false;
+				info->answer_reg = info->register_num;
+				info->answer_kind = AREG;
+				info->register_num++;
+			}
+			else
+			{
+				info->answer_kind = ALOGIC;
+			}
 			return;
 		}
 
@@ -1457,6 +1652,38 @@ static void emit_ternary_expression(information *const info, const node *const n
 }
 
 /**
+ *	Emit initializer expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_initializer_expression(information *const info, const node *const nd)
+{
+	if (type_is_structure(info->sx, expression_get_type(nd)))
+	{
+		const size_t size = expression_initializer_get_size(nd);
+		const size_t structure_type = info->request_reg;
+		const size_t slice_reg = info->register_num - 1;
+
+		for (size_t i = 0; i < size; i++)
+		{
+			info->variable_location = LFREE;
+			const node initializer = expression_initializer_get_subexpr(nd, i);
+			emit_expression(info, &initializer);
+
+			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%zu, " 
+			"%%struct_opt.%zu* %%.%zu, i32 0, i32 %zu\n", info->register_num
+				, structure_type, structure_type, slice_reg, i);
+
+			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
+				, expression_get_type(&initializer));
+
+			info->register_num++;
+		}
+	}
+}
+
+/**
  *	Emit expression
  *
  *	@param	info	Encoder
@@ -1506,6 +1733,10 @@ static void emit_expression(information *const info, const node *const nd)
 			emit_assignment_expression(info, nd);
 			return;
 
+		case EXPR_INITIALIZER:
+			emit_initializer_expression(info, nd);
+			return;
+
 		default:
 			// TODO: генерация оставшихся выражений
 			return;
@@ -1529,16 +1760,13 @@ static void emit_one_dimension_initialization(information *const info, const nod
 	const size_t size = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 	const item_t type = array_get_type(info, arr_type);
 
-	// TODO: тут пока инициализация константами, нужно реализовать более общий случай
 	for (size_t i = 0; i < size && size != SIZE_MAX; i++)
 	{
 		info->answer_const = (item_t)i;
 		info->answer_kind = ACONST;
 		const size_t slice_reg = (size_t)info->register_num;
-		if (is_local)
-		{
-			to_code_slice(info, id, cur_dimension, prev_slice, type, true);
-		}
+
+		to_code_slice(info, id, cur_dimension, prev_slice, type, is_local);
 
 		info->variable_location = LFREE;
 		const node initializer = expression_initializer_get_subexpr(nd, i);
@@ -1555,26 +1783,12 @@ static void emit_one_dimension_initialization(information *const info, const nod
 			// константа типа int
 			else if (type_is_integer(info->sx, type))
 			{
-				if (is_local)
-				{
-					to_code_store_const_integer(info, info->answer_const, slice_reg, true, true, type);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "i32 %" PRIitem "%s", info->answer_const, i != size - 1 ? ", " : "], align 4\n");
-				}
+				to_code_store_const_integer(info, info->answer_const, slice_reg, true, true, type);
 			}
 			// константа типа double
 			else
 			{
-				if (is_local)
-				{
-					to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "double %f%s", info->answer_const_double, i != size - 1 ? ", " : "], align 4\n");
-				}
+				to_code_store_const_double(info, info->answer_const_double, slice_reg, true, true);
 			}
 		}
 		else
@@ -1598,8 +1812,6 @@ static void emit_initialization(information *const info, const node *const nd, c
 	if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_array(info->sx, expression_get_type(nd)))
 	{
 		const size_t dimensions = array_get_dim(info, arr_type);
-		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
-
 		const size_t index = hash_get_index(&info->arrays, id);
 
 		node list_expression = *nd;
@@ -1620,15 +1832,12 @@ static void emit_initialization(information *const info, const node *const nd, c
 		if (is_local)
 		{
 			to_code_alloc_array_static(info, index, type, true);
+			emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 		}
 		else
 		{
-			uni_printf(info->sx->io, "@arr.%" PRIitem " = global [%zu x ", id, N);
-			type_to_io(info, type);
-			uni_printf(info->sx->io, "] [");
+			to_code_alloc_array_static(info, index, type, false);
 		}
-
-		emit_one_dimension_initialization(info, nd, id, arr_type, dimensions - 1, 0, is_local);
 	}
 	// TODO: надо реализовать для большего количества измерений. Там сложность в том, что последнее измерение может иметь различные границы
 	// массив инициализируется строкой
@@ -1659,18 +1868,37 @@ static void emit_initialization(information *const info, const node *const nd, c
 		for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 		{
 			const node initializer = expression_initializer_get_subexpr(nd, i);
+			const item_t type = expression_get_type(&initializer);
+
+			const size_t member_reg = (size_t)info->register_num;
+			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+			"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
+			, id, i);
+			info->register_num++;
+
 			emit_expression(info, &initializer);
 
-			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-			"%%struct_opt.%" PRIitem "* %%%s.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
-			, "var", id, i);
-
-			to_code_store_const_integer(info, info->answer_const, info->register_num, true, true
-				, expression_get_type(&initializer));
-
-			info->register_num++;
+			if (info->answer_kind == AREG)
+			{
+				to_code_store_reg(info, info->answer_reg, member_reg, type, true, false, true);
+			}
+			// константа типа int
+			else if (type_is_integer(info->sx, type))
+			{
+				to_code_store_const_integer(info, info->answer_const, member_reg, true, true, type);
+			}
+			// константа типа double
+			else
+			{
+				to_code_store_const_double(info, info->answer_const_double, member_reg, true, true);
+			}
 		}
-
+	}
+	else if (expression_get_class(nd) == EXPR_CALL && type_is_structure(info->sx, expression_get_type(nd)))
+	{
+		info->variable_location = LFREE;
+		emit_expression(info, nd);
+		to_code_store_reg(info, info->answer_reg, (size_t)id, arr_type, false, false, true);
 	}
 }
 
@@ -1738,7 +1966,30 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				to_code_store_reg(info, info->answer_reg, id, type, false, false, is_local);
 			}
+			else if (info->answer_kind == AMEM) // указатель
+			{
+				to_code_store_reg(info, info->answer_reg, id, type, false, true, is_local);
+			}
+			else if (info->answer_kind == ANULL)
+			{
+				to_code_store_null(info, id, type);
+			}
 
+		}
+		else
+		{
+			if (type_is_integer(info->sx, type))
+			{
+				to_code_store_const_integer(info, 0, id, false, is_local, type);
+			}
+			else if (type_is_boolean(type))  
+			{
+				to_code_store_const_bool(info, false, id, false, is_local);
+			}
+			else if (type_is_floating(type))  
+			{
+				to_code_store_const_double(info, 0.0, id, false, is_local);
+			}
 		}
 	}
 	else if (!type_is_array(info->sx, type) && !is_local) // глобальные переменные
@@ -1779,9 +2030,17 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				uni_printf(info->sx->io, " 0.0");
 			}
+			else if (type_is_boolean(type))  
+			{
+				uni_printf(info->sx->io, " false");
+			}
 			else if (type_is_structure(info->sx, type))
 			{
 				uni_printf(info->sx->io, " zeroinitializer");
+			}
+			else if (type_is_pointer(info->sx, type))
+			{
+				uni_printf(info->sx->io, " null");
 			}
 			uni_printf(info->sx->io, ", align 4\n");
 		}
@@ -1900,6 +2159,11 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
 	}
 
+	if (ref_ident == info->sx->ref_main)
+	{
+		global_initialization(info);
+	}
+
 	const node body = declaration_function_get_body(nd);
 	emit_compound_statement(info, &body, true);
 
@@ -1916,6 +2180,7 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, " ret i32 0\n");
 		info->is_main = false;
 	}
+	uni_printf(info->sx->io, " unreachable\n");
 	uni_printf(info->sx->io, "}\n\n");
 }
 
@@ -1966,11 +2231,23 @@ static void emit_compound_statement(information *const info, const node *const n
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
 		emit_statement(info, &substmt);
-	}
 
-	if (!is_function_body)
-	{
-		to_code_stack_load(info, block_num);
+		if ((statement_get_class(&substmt) == STMT_CASE || statement_get_class(&substmt) == STMT_DEFAULT)
+			&& i == size - 1)
+		{
+			if (!is_function_body)
+			{
+				to_code_stack_load(info, block_num);
+			}
+			to_code_unconditional_branch(info, info->label_switch);
+		}
+		else if (i == size - 1)
+		{
+			if (!is_function_body)
+			{
+				to_code_stack_load(info, block_num);
+			}
+		}
 	}
 }
 
@@ -2212,6 +2489,90 @@ static void emit_return_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit case statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_default_statement(information *const info, const node *const nd)
+{
+	to_code_unconditional_branch(info, info->label_switch);
+	to_code_label(info, info->label_switch);
+	info->label_switch--;
+
+	const node substmt = statement_default_get_substmt(nd);
+	emit_statement(info, &substmt);
+}
+
+/**
+ *	Emit case statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_case_statement(information *const info, const node *const nd)
+{
+	to_code_unconditional_branch(info, info->label_switch);
+	to_code_label(info, info->label_switch);
+	info->label_switch--;
+
+	const node substmt = statement_case_get_substmt(nd);
+	emit_statement(info, &substmt);
+}
+
+/**
+ *	Emit switch statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_switch_statement(information *const info, const node *const nd)
+{
+	item_t case_values[MAX_CASES];
+
+	const node condition = statement_switch_get_condition(nd);
+	emit_expression(info, &condition);
+
+	const node body = statement_switch_get_body(nd);
+	size_t case_num = 0;
+	int has_default = 0;
+	if (statement_get_class(&body) == STMT_COMPOUND)
+	{
+		const size_t size = statement_compound_get_size(&body);
+		for (size_t i = 0; i < size; i++)
+		{
+			const node substmt = statement_compound_get_substmt(&body, i);
+
+			if (statement_get_class(&substmt) == STMT_CASE)
+			{
+				const node expr = statement_case_get_expression(&substmt);
+				emit_expression(info, &expr);
+
+				case_values[case_num] = info->answer_const;
+				case_num++;
+			}
+			else if (statement_get_class(&substmt) == STMT_DEFAULT)
+			{
+				has_default = 1;
+			}	
+		}
+	}
+
+	uni_printf(info->sx->io, " switch ");
+	type_to_io(info, expression_get_type(&condition));
+	uni_printf(info->sx->io, " %%.%zu, label %%label%zu [\n", info->answer_reg, info->label_switch - case_num - has_default);
+	for (size_t i = 0; i < case_num; i++)
+	{
+		uni_printf(info->sx->io, "  i32 %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
+	}
+	uni_printf(info->sx->io, " ]\n");
+
+	info->label_break = info->label_switch - case_num - has_default;
+	emit_statement(info, &body);
+	to_code_label(info, info->label_break);
+}
+
+/**
  *	Emit translation unit
  *
  *	@param	info		Encoder
@@ -2242,13 +2603,11 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_CASE:
-			// TODO: case statement emission
-			// emit_case_statement(info, nd);
+			emit_case_statement(info, nd);
 			return;
 
 		case STMT_DEFAULT:
-			// TODO: default statement emission
-			// emit_default_statement(info, nd);
+			emit_default_statement(info, nd);
 			return;
 
 		case STMT_COMPOUND:
@@ -2267,8 +2626,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_SWITCH:
-			// TODO: switch statement emission
-			// emit_switch_statement(info, nd);
+			emit_switch_statement(info, nd);
 			return;
 
 		case STMT_WHILE:
@@ -2384,7 +2742,18 @@ static void structs_declaration(information *const info)
 			for (size_t j = 0; j < fields; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-				type_to_io(info, type_structure_get_member_type(info->sx, (item_t)i, j));
+				const item_t type_structure_field = type_structure_get_member_type(info->sx, (item_t)i, j);
+
+				if (type_is_array(info->sx, type_structure_field))
+				{
+					// const size_t dimensions = array_get_dim(info, type_structure_field);
+					// const item_t element_type = array_get_type(info, type_structure_field);
+					uni_printf(info->sx->io, "here");
+				}
+				else
+				{
+					type_to_io(info, type_structure_field);
+				}
 			}
 
 			uni_printf(info->sx->io, " }\n");
@@ -2438,8 +2807,16 @@ static void builin_functions_declaration(information *const info)
 			const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
 			uni_printf(info->sx->io, "declare ");
-			type_to_io(info, ret_type);
-			uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+			if (i == BI_ROUND)
+			{
+				type_to_io(info, TYPE_FLOATING);
+				uni_printf(info->sx->io, " @llvm.round.f64(");
+			}
+			else
+			{
+				type_to_io(info, ret_type);
+				uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+			}
 
 			for (size_t j = 0; j < parameters; j++)
 			{
@@ -2513,6 +2890,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.sx = sx;
 	info.register_num = 1;
 	info.label_num = 1;
+	info.label_switch = 0;
 	info.init_num = 1;
 	info.block_num = 1;
 	info.variable_location = LREG;
@@ -2524,6 +2902,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_abs = false;
 	info.was_fabs = false;
 	info.is_main = false;
+	info.label_phi_previous = 0;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
 		info.was_function[i] = false;
