@@ -75,8 +75,6 @@ jobs:
     name: macOS
     runs-on: macos-latest
     steps:
-      - name: Set up environment
-        run: brew install coreutils
       - name: GitHub repository checkout
         uses: actions/checkout@v2
         with:
