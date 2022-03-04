@@ -1,0 +1,15 @@
+image: ubuntu
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+
+stages:
+  - virtual
+
+virtual:
+  stage: virtual
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake git
+  script:
+    - ./scripts/test.sh
