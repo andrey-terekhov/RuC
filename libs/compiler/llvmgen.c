@@ -1865,7 +1865,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 	{
 		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 
-		if (ident_is_local(info->sx, id))
+		if (ident_is_local(info->sx, (size_t)id))
 		{
 			for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 			{
