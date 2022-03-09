@@ -193,8 +193,8 @@ build()
 
 run()
 {
-	exec=$1
-	exec_debug=$2
+	exec=`realpath $1`
+	exec_debug=`realpath $2`
 	shift
 	shift
 
@@ -381,7 +381,7 @@ compiling()
 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
 		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -o $vm_exec
+		run $compiler $compiler_debug $sources -o $vm_exec -VM
 
 		case $? in
 			0)

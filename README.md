@@ -1,4 +1,4 @@
-[![Virtual](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml/badge.svg)](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml)
+[![Virtual](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml/badge.svg)](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml) [![LLVM](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml/badge.svg)](https://github.com/andrey-terekhov/RuC/actions/workflows/virtual.yml)
 # ![Logo](https://raw.githubusercontent.com/Victor-Y-Fadeev/RuC-WPF/master/RuC.WPF/Images/Repository.png) Russian C
 
 Этот репозиторий содержит компилятор языка RuC.

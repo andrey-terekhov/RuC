@@ -1,0 +1,48 @@
+name: Test on LLVM
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  windows:
+    name: Windows Server 2019
+    runs-on: windows-2019
+    steps:
+      - name: GitHub repository checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run script
+        shell: bash
+        run: |
+          patch ./scripts/test.sh < ./scripts/llvm.patch
+          ./scripts/test.sh
+
+  ubuntu:
+    name: Ubuntu 20.04
+    runs-on: ubuntu-20.04
+    steps:
+      - name: GitHub repository checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run script
+        run: |
+          patch ./scripts/test.sh < ./scripts/llvm.patch
+          ./scripts/test.sh
+
+  macos:
+    name: macOS Big Sur 11
+    runs-on: macos-11
+    steps:
+      - name: GitHub repository checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up environment
+        run: brew install coreutils
+      - name: Run script
+        run: |
+          patch ./scripts/test.sh < ./scripts/llvm.patch
+          ./scripts/test.sh
