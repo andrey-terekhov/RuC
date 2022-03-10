@@ -19,10 +19,10 @@ llvm-intel:
   stage: llvm
   before_script:
     - apt-get update
-    - apt-get install -y build-essential cmake clang++-11 gcc-mipsel-linux-gnu
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu
   script:
     - patch ./scripts/test.sh < ./scripts/llvm.patch
-    - ./scripts/test.sh
+    - ./scripts/test.sh -d
 
 llvm-baikal:
   stage: llvm
