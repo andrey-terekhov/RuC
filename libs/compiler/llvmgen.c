@@ -1865,33 +1865,66 @@ static void emit_initialization(information *const info, const node *const nd, c
 	{
 		const size_t N = node_get_type(nd) == OP_INITIALIZER ? expression_initializer_get_size(nd) : SIZE_MAX;
 
-		for (size_t i = 0; i < N && N != SIZE_MAX; i++)
+		if (ident_is_local(info->sx, (size_t)id))
 		{
-			const node initializer = expression_initializer_get_subexpr(nd, i);
-			const item_t type = expression_get_type(&initializer);
-
-			const size_t member_reg = (size_t)info->register_num;
-			uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-			"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
-			, id, i);
-			info->register_num++;
-
-			emit_expression(info, &initializer);
-
-			if (info->answer_kind == AREG)
+			for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 			{
-				to_code_store_reg(info, info->answer_reg, member_reg, type, true, false, true);
+				const node initializer = expression_initializer_get_subexpr(nd, i);
+				const item_t type = expression_get_type(&initializer);
+
+				const size_t member_reg = (size_t)info->register_num;
+				uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
+				"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
+				, id, i);
+				info->register_num++;
+
+				emit_expression(info, &initializer);
+
+				if (info->answer_kind == AREG)
+				{
+					to_code_store_reg(info, info->answer_reg, member_reg, type, true, false, true);
+				}
+				// константа типа int
+				else if (type_is_integer(info->sx, type))
+				{
+					to_code_store_const_integer(info, info->answer_const, member_reg, true, true, type);
+				}
+				// константа типа double
+				else
+				{
+					to_code_store_const_double(info, info->answer_const_double, member_reg, true, true);
+				}
 			}
-			// константа типа int
-			else if (type_is_integer(info->sx, type))
+		}
+		else
+		{
+			uni_printf(info->sx->io, "global %%struct_opt.%" PRIitem " { ", arr_type);
+
+			for (size_t i = 0; i < N && N != SIZE_MAX; i++)
 			{
-				to_code_store_const_integer(info, info->answer_const, member_reg, true, true, type);
+				const node initializer = expression_initializer_get_subexpr(nd, i);
+				const item_t type = expression_get_type(&initializer);
+
+				emit_expression(info, &initializer);
+
+				if (i != 0)
+				{
+					uni_printf(info->sx->io, ", ");
+				}
+
+				// константа типа int
+				if (type_is_integer(info->sx, type))
+				{
+					uni_printf(info->sx->io, "i32 %" PRIitem, info->answer_const);
+				}
+				// константа типа double
+				else
+				{
+					uni_printf(info->sx->io, "double %f", info->answer_const_double);
+				}
 			}
-			// константа типа double
-			else
-			{
-				to_code_store_const_double(info, info->answer_const_double, member_reg, true, true);
-			}
+
+			uni_printf(info->sx->io, " }, align 4\n");
 		}
 	}
 	else if (expression_get_class(nd) == EXPR_CALL && type_is_structure(info->sx, expression_get_type(nd)))
@@ -1999,6 +2032,14 @@ static void emit_variable_declaration(information *const info, const node *const
 		if (declaration_variable_has_initializer(nd))
 		{
 			info->variable_location = LFREE;
+
+			if (type_is_structure(info->sx, type))
+			{
+				const node initializer = declaration_variable_get_initializer(nd);
+				emit_initialization(info, &initializer, id, type);
+
+				return;
+			}
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
@@ -2563,12 +2604,17 @@ static void emit_switch_statement(information *const info, const node *const nd)
 	uni_printf(info->sx->io, " %%.%zu, label %%label%zu [\n", info->answer_reg, info->label_switch - case_num - has_default);
 	for (size_t i = 0; i < case_num; i++)
 	{
-		uni_printf(info->sx->io, "  i32 %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
+		uni_printf(info->sx->io, "  ");
+		type_to_io(info, expression_get_type(&condition));
+		uni_printf(info->sx->io, " %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
 	}
 	uni_printf(info->sx->io, " ]\n");
 
 	info->label_break = info->label_switch - case_num - has_default;
-	emit_statement(info, &body);
+	if (statement_get_class(&body) == STMT_COMPOUND)
+	{
+		emit_compound_statement(info, &body, true);
+	}
 	to_code_label(info, info->label_break);
 }
 
