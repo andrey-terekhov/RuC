@@ -2604,12 +2604,17 @@ static void emit_switch_statement(information *const info, const node *const nd)
 	uni_printf(info->sx->io, " %%.%zu, label %%label%zu [\n", info->answer_reg, info->label_switch - case_num - has_default);
 	for (size_t i = 0; i < case_num; i++)
 	{
-		uni_printf(info->sx->io, "  i32 %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
+		uni_printf(info->sx->io, "  ");
+		type_to_io(info, expression_get_type(&condition));
+		uni_printf(info->sx->io, " %" PRIitem ", label %%label%zu\n", case_values[i], info->label_switch - i);
 	}
 	uni_printf(info->sx->io, " ]\n");
 
 	info->label_break = info->label_switch - case_num - has_default;
-	emit_statement(info, &body);
+	if (statement_get_class(&body) == STMT_COMPOUND)
+	{
+		emit_compound_statement(info, &body, true);
+	}
 	to_code_label(info, info->label_break);
 }
 
