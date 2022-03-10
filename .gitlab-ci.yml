@@ -23,7 +23,7 @@ llvm-intel:
   script:
     - ln -s /usr/bin/clang++-11 /usr/bin/clang++
     - patch ./scripts/test.sh < ./scripts/llvm.patch
-    - ./scripts/test.sh -d
+    - ./scripts/test.sh
 
 llvm-baikal:
   stage: llvm
