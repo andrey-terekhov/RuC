@@ -2033,6 +2033,20 @@ static void emit_variable_declaration(information *const info, const node *const
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
 
+			if (type_get_class(info->sx, type) == TYPE_INTEGER 
+				&& type_get_class(info->sx, expression_get_type(&initializer)) == TYPE_CHARACTER)
+			{
+				to_code_char_to_int(info, info->answer_reg);
+				info->answer_reg = info->register_num - 1;
+			}
+
+			if (type_get_class(info->sx, type) == TYPE_CHARACTER 
+				&& type_get_class(info->sx, expression_get_type(&initializer)) == TYPE_INTEGER)
+			{
+				to_code_int_to_char(info, info->answer_reg);
+				info->answer_reg = info->register_num - 1;
+			}
+
 			if (info->answer_kind == ACONST)
 			{
 				if (type_is_integer(info->sx, type))
