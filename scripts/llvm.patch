@@ -1,36 +1,36 @@
---- test.sh	2021-11-12 18:33:00.053501038 +0300
-+++ llvm.sh	2021-11-12 18:33:08.921823652 +0300
-@@ -3,7 +3,8 @@
+--- test.sh	2022-03-09 20:27:49.294015500 +0300
++++ llvm.sh	2022-03-09 20:27:27.610584200 +0300
+@@ -3,7 +3,9 @@
  init()
  {
  	exit_code=1
 -	vm_exec=export.txt
 +	vm_exec=export.ll
 +	llvm_exec=export
++
  
  	vm_release=master
  	output_time=0.0
-@@ -22,5 +23,6 @@
-	subdir_error=errors
-	subdir_warning=warnings
-	subdir_include=include
+@@ -22,6 +24,7 @@
+ 	subdir_error=errors
+ 	subdir_warning=warnings
+ 	subdir_include=include
 +	subdir_no_llvm=no-llvm
-
-	while ! [[ -z $1 ]]
-@@ -186,9 +188,9 @@
+ 
+ 	while ! [[ -z $1 ]]
+ 	do
+@@ -185,10 +188,6 @@
+ 	else
  		compiler_debug=$compiler
  	fi
- 
+-
 -	if [[ -z $ignore ]] ; then
 -		build_vm
 -	fi
-+	# if [[ -z $ignore ]] ; then
-+	# 	build_vm
-+	# fi
  }
  
  run()
-@@ -270,7 +272,7 @@
+@@ -269,7 +268,7 @@
  {
  	if [[ $path == $dir_exec/* ]] ; then
  		action="execution"
@@ -39,52 +39,15 @@
  
  		case $? in
  			0)
-@@ -336,4 +338,4 @@
-	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* || $dir_multiple_errors/* || 
--		$path == $dir_preprocessor/* ]] ; then
-+		$path == $dir_preprocessor/* || $path == */$subdir_no_llvm/* ]] ; then
-		message_success
-		let success++
-@@ -381,38 +383,38 @@
+@@ -379,9 +378,9 @@
+ compiling()
  {
-	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
+ 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
 -		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
-+		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* || $path != */$subdir_no_llvm/* ]] ; then
-		action="compiling"
--		run $compiler $compiler_debug $sources -o $vm_exec
++		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] && [[ $path != */$subdir_no_llvm/* ]] ; then
+ 		action="compiling"
+-		run $compiler $compiler_debug $sources -o $vm_exec -VM
 +		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang++ $vm_exec -o $llvm_exec &>$log
  
-		case $? in
-			0)
-				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
--					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
-+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
-					message_failure
-					let failure++
-				else
-					if [[ $build_type == "(Debug)" ]] ; then
-						build_type=""
-
-						message_failure
-						let failure++
-					else
-						message_success
-
-						if [[ -z $ignore ]] ; then
-							execution
-						else
-							let success++
-						fi
-					fi
-				fi
-				;;
-			124|142)
-				message_timeout
-				let timeout++
-				;;
-			$exit_code)
-				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
--					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
-+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* || $path == */$subdir_no_llvm/* ]] ; then
-					if [[ $build_type == "(Debug)" ]] ; then
-						build_type=""
+ 		case $? in
+ 			0)

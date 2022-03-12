@@ -1873,9 +1873,9 @@ static void emit_initialization(information *const info, const node *const nd, c
 				const item_t type = expression_get_type(&initializer);
 
 				const size_t member_reg = (size_t)info->register_num;
-				uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem ", " 
-				"%%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n", info->register_num, arr_type, arr_type
-				, id, i);
+				uni_printf(info->sx->io, " %%.%zu = getelementptr inbounds %%struct_opt.%" PRIitem
+					", %%struct_opt.%" PRIitem "* %%var.%" PRIitem ", i32 0, i32 %zu\n"
+					, info->register_num, arr_type, arr_type, id, i);
 				info->register_num++;
 
 				emit_expression(info, &initializer);
