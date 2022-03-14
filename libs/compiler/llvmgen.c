@@ -1257,9 +1257,17 @@ static void emit_unary_expression(information *const info, const node *const nd)
 
 		case UN_ADDRESS:
 		{
-			// TODO: тут тоже не только идентификатор может быть
-			info->answer_reg = expression_identifier_get_id(&operand);
 			info->answer_kind = AMEM;
+
+			bool is_complex = node_get_type(&operand) != OP_IDENTIFIER;
+			if (!is_complex)
+			{
+				info->answer_reg = expression_identifier_get_id(&operand);
+			}
+			else 
+			{
+				emit_expression(info, &operand);
+			}
 			return;
 		}
 
@@ -2993,6 +3001,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
