@@ -160,6 +160,7 @@ typedef enum LABEL
 	L_ELSE,							/**< Тип метки -- переход по else */
 	L_END,							/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,					/**< Тип метки -- переход в начало цикла */
+	L_USER_LABEL,					/**< Тип метки -- метка, заданная пользователем */
 } mips_label_t;
 
 
@@ -174,6 +175,7 @@ typedef struct information
 
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
+	item_t answer_displ;				/**< Смемещние с ответом */
 	answer_t answer_kind;				/**< Вид ответа */
 
 	size_t max_displ;					/**< Максимальное смещение */
@@ -194,6 +196,32 @@ typedef struct information
 
 static void emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
+
+
+// TODO: это есть в кодогенераторе llvm, не хотелось бы копипастить
+static item_t array_get_type(information *const info, const item_t array_type)
+{
+	item_t type = array_type;
+	while (type_is_array(info->sx, type))
+	{
+		type = type_array_get_element_type(info->sx, type);
+	}
+
+	return type;
+}
+
+static size_t array_get_dim(information *const info, const item_t array_type)
+{
+	size_t i = 0;
+	item_t type = array_type;
+	while (type_is_array(info->sx, type))
+	{
+		type = type_array_get_element_type(info->sx, type);
+		i++;
+	}
+
+	return i;
+}
 
 
 static mips_instruction_t get_instruction(information *const info, const item_t operation_type)
@@ -496,6 +524,9 @@ static void mips_label_to_io(universal_io *const io, const mips_label_t label)
 		case L_BEGIN_CYCLE:
 			uni_printf(io, "BEGIN_CYCLE");
 			break;
+		case L_USER_LABEL:
+			uni_printf(io, "USER_LABEL");
+			break;
 	}
 }
 
@@ -623,11 +654,6 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
 }
 
 
-static inline int size_of(information *const info, const item_t type)
-{
-	return type_is_integer(info->sx, type) ? 4 : type_is_floating(type) ? 8 : 0;
-}
-
 // TODO: в этих двух функциях реализовано распределение регистров. Сейчас оно такое
 static inline mips_register_t get_register(information *const info)
 {
@@ -699,13 +725,148 @@ static void emit_identifier_expression(information *const info, const node *cons
 
 			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
+			info->answer_displ = value_displ;
 		}
 	}
 	// TODO: регистровые переменные
 }
 
 /**
- *	Emit non-assignment binary expression
+ *	Emit increment/decrement expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_inc_dec_expression(information *const info, const node *const nd)
+{
+	const unary_t operation = expression_unary_get_operator(nd);
+	bool was_allocate_reg = false;
+
+	if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+	{
+		info->request_kind = RQ_REG_CONST;
+		info->request_reg = get_register(info);
+		was_allocate_reg = true;
+	}
+	const mips_register_t result = info->request_reg;
+	const node identifier = expression_unary_get_operand(nd);
+	emit_expression(info, &identifier);
+
+	switch (operation)
+	{
+		case UN_PREDEC:
+		case UN_POSTDEC:
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
+			break;
+		case UN_PREINC:
+		case UN_POSTINC:
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
+			break;
+
+		default:
+			break;
+	}
+
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -info->answer_displ, R_SP);
+
+	if (operation == UN_POSTDEC)
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
+	}
+	else if (operation == UN_POSTINC)
+	{
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
+	}
+
+	info->answer_kind = A_REG;
+	info->answer_reg = result;
+	free_register(info);
+
+	if (was_allocate_reg)
+	{
+		free_register(info);
+		info->request_kind = RQ_NO_REQUEST;
+	}
+}
+
+/**
+ *	Emit unary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_unary_expression(information *const info, const node *const nd)
+{
+	const unary_t operator = expression_unary_get_operator(nd);
+	// const node operand = expression_unary_get_operand(nd);
+
+	switch (operator)
+	{
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		case UN_PREINC:
+		case UN_PREDEC:
+			emit_inc_dec_expression(info, nd);
+			return;
+
+		case UN_MINUS:
+		case UN_NOT:
+		{
+			bool was_allocate_reg = false;
+
+			if (!(info->request_kind == RQ_REG_CONST || info->request_kind == RQ_REG))
+			{
+				info->request_kind = RQ_REG_CONST;
+				info->request_reg = get_register(info);
+				was_allocate_reg = true;
+			}
+			const mips_register_t result = info->request_reg;
+			const node operand = expression_unary_get_operand(nd);
+			emit_expression(info, &operand);
+
+			if (operator == UN_MINUS)
+			{
+				to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
+			}
+			else
+			{
+				to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
+			}
+
+			info->answer_kind = A_REG;
+			info->answer_reg = result;
+			free_register(info);
+
+			if (was_allocate_reg)
+			{
+				free_register(info);
+				info->request_kind = RQ_NO_REQUEST;
+			}
+		}
+		break;
+
+		case UN_LOGNOT:
+		{
+			info->request_kind = RQ_FREE;
+			info->reverse_logic_command = !info->reverse_logic_command;
+			const node operand = expression_unary_get_operand(nd);
+			emit_expression(info, &operand);
+		}
+		break;
+
+		case UN_ADDRESS:
+		case UN_INDIRECTION:
+		case UN_ABS:
+			break;
+
+		default:
+			// TODO: оставшиеся унарные операторы
+			return;
+	}
+}
+
+/**
+ *	Emit logic binary expression
  *
  *	@param	info	Encoder
  *	@param	nd		Node in AST
@@ -1063,7 +1224,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_UNARY:
-			// emit_unary_expression(info, nd);
+			emit_unary_expression(info, nd);
 			return;
 
 		case EXPR_BINARY:
@@ -1112,7 +1273,7 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
-	info->max_displ += size_of(info, type);
+	info->max_displ += type_size(info->sx, type) * 4;
 	const size_t value_displ = info->max_displ;
 	// TODO: в глобальных переменных регистр gp
 	const mips_register_t value_reg = R_SP;
@@ -1134,13 +1295,25 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
-			to_code_2R_I(info->sx->io, IC_MIPS_SW, info->request_reg, value_reg, -(item_t)value_displ);
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, info->request_reg, -(item_t)value_displ, value_reg);
 
 			info->answer_kind = A_REG;
 			info->answer_reg = info->request_reg;
 			free_register(info);
 			info->request_kind = RQ_NO_REQUEST;
 		}
+	}
+	else
+	{
+		const size_t dimensions = array_get_dim(info, type);
+		const item_t element_type = array_get_type(info, type);
+		const item_t usual = 1; // предстоит выяснить, что это такое
+
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ);
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
+		uni_printf(info->sx->io, "\tjal DEFARR\n");
 	}
 }
 
@@ -1248,6 +1421,21 @@ static void emit_declaration(information *const info, const node *const nd)
 
 
 /**
+ *	Emit labeled statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_labeled_statement(information *const info, const node *const nd)
+{
+	const item_t label = (item_t)statement_labeled_get_label(nd);
+	to_code_label(info->sx->io, L_USER_LABEL, label);
+
+	const node substmt = statement_labeled_get_substmt(nd);
+	emit_statement(info, &substmt);
+}
+
+/**
  *	Emit compound statement
  *
  *	@param	info		Encoder
@@ -1343,6 +1531,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 static void emit_while_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	info->label_else = label;
 	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
@@ -1357,6 +1546,8 @@ static void emit_while_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1368,6 +1559,7 @@ static void emit_while_statement(information *const info, const node *const nd)
 static void emit_do_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	info->label_else = label;
 	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
@@ -1382,6 +1574,8 @@ static void emit_do_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1393,6 +1587,7 @@ static void emit_do_statement(information *const info, const node *const nd)
 static void emit_for_statement(information *const info, const node *const nd)
 {
 	const item_t label = info->label_num++;
+	const item_t old_label = info->label_else;
 
 	if (statement_for_has_inition(nd))
 	{
@@ -1421,6 +1616,8 @@ static void emit_for_statement(information *const info, const node *const nd)
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
+
+	info->label_else = old_label;
 }
 
 /**
@@ -1438,7 +1635,7 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_LABEL:
-			// emit_labeled_statement(info, nd);
+			emit_labeled_statement(info, nd);
 			return;
 
 		case STMT_CASE:
@@ -1481,15 +1678,15 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_GOTO:
-			// to_code_unconditional_branch(info, (item_t)statement_goto_get_label(nd));
+			to_code_L(info->sx->io, IC_MIPS_J, L_USER_LABEL, (item_t)statement_goto_get_label(nd));
 			return;
 
 		case STMT_CONTINUE:
-			// to_code_unconditional_branch(info, info->label_continue);
+			to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, info->label_else);
 			return;
 
 		case STMT_BREAK:
-			// to_code_unconditional_branch(info, info->label_break);
+			to_code_L(info->sx->io, IC_MIPS_J, L_ELSE, info->label_else);
 			return;
 
 		case STMT_RETURN:
@@ -1608,6 +1805,23 @@ static void postgen(information *const info)
 	to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, info->main_label);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -4, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
+
+	// char *runtime = "runtime.s";
+	// FILE *file = fopen(runtime, "r+");
+	// if (runtime != NULL)
+	// {
+	// 	printf("here1\n");
+	// 	printf("%i\n", fgetc(file));
+	// 	// char string[1024];
+	// 	// while (fgets(string, sizeof(string), file) != NULL)
+	// 	// {
+	// 	// 	printf("here2\n");
+	// 	// 	printf("%s", string);
+	// 	// 	// uni_printf(info->sx->io, string);
+	// 	// }
+	// }
+
+	// fclose(file);
 
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
