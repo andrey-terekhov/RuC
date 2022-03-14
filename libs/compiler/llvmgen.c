@@ -2307,7 +2307,6 @@ static void emit_function_definition(information *const info, const node *const 
 			uni_printf(info->sx->io, "* %%var.%zu, align 4\n", id);
 
 			const size_t dimensions = array_get_dim(info, param_type);
-			const item_t element_type = array_get_type(info, param_type);
 			const size_t index = hash_add(&info->arrays, id, 1 + dimensions);
 			hash_set_by_index(&info->arrays, index, IS_STATIC, 0);
 		}
