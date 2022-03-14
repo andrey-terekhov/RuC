@@ -1421,21 +1421,6 @@ static void emit_declaration(information *const info, const node *const nd)
 
 
 /**
- *	Emit labeled statement
- *
- *	@param	info		Encoder
- *	@param	nd			Node in AST
- */
-static void emit_labeled_statement(information *const info, const node *const nd)
-{
-	const item_t label = (item_t)statement_labeled_get_label(nd);
-	to_code_label(info->sx->io, L_USER_LABEL, label);
-
-	const node substmt = statement_labeled_get_substmt(nd);
-	emit_statement(info, &substmt);
-}
-
-/**
  *	Emit compound statement
  *
  *	@param	info		Encoder
@@ -1451,41 +1436,41 @@ static void emit_compound_statement(information *const info, const node *const n
 	}
 }
 
-/**
- *	Emit printf statement
- *
- *	@param	info		Encoder
- *	@param	nd			Node in AST
- */
-static void emit_printf_statement(information *const info, const node *const nd)
-{
-	const size_t argc = statement_printf_get_argc(nd);
-	const node string = statement_printf_get_format_str(nd);
-	const size_t index = expression_literal_get_string(&string);
-	const size_t amount = strings_amount(info->sx);
+// /**
+//  *	Emit printf statement
+//  *
+//  *	@param	info		Encoder
+//  *	@param	nd			Node in AST
+//  */
+// static void emit_printf_statement(information *const info, const node *const nd)
+// {
+// 	const size_t argc = statement_printf_get_argc(nd);
+// 	const node string = statement_printf_get_format_str(nd);
+// 	const size_t index = expression_literal_get_string(&string);
+// 	const size_t amount = strings_amount(info->sx);
 
-	size_t i;
+// 	size_t i;
 
-	for (i = 0; i < argc; i++)
-	{
-		info->request_kind = RQ_REG;
-		// TODO: хорошо бы определённый регистр тоже через функцию выделять
-		info->request_reg = R_A1;
+// 	for (i = 0; i < argc; i++)
+// 	{
+// 		info->request_kind = RQ_REG;
+// 		// TODO: хорошо бы определённый регистр тоже через функцию выделять
+// 		info->request_reg = R_A1;
 
-		const node arg = statement_printf_get_argument(nd, i);
-		emit_expression(info, &arg);
+// 		const node arg = statement_printf_get_argument(nd, i);
+// 		emit_expression(info, &arg);
 
-		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
-		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
-		uni_printf(info->sx->io, "\tjal printf\n");
-	}
+// 		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+// 		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+// 		uni_printf(info->sx->io, "\tjal printf\n");
+// 	}
 
-	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
-	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
-	uni_printf(info->sx->io, "\tjal printf\n");
+// 	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+// 	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+// 	uni_printf(info->sx->io, "\tjal printf\n");
 
-	info->request_kind = RQ_NO_REQUEST;
-}
+// 	info->request_kind = RQ_NO_REQUEST;
+// }
 
 /**
  *	Emit if statement
@@ -1634,10 +1619,6 @@ static void emit_statement(information *const info, const node *const nd)
 			emit_declaration(info, nd);
 			return;
 
-		case STMT_LABEL:
-			emit_labeled_statement(info, nd);
-			return;
-
 		case STMT_CASE:
 			// emit_case_statement(info, nd);
 			return;
@@ -1677,10 +1658,6 @@ static void emit_statement(information *const info, const node *const nd)
 			emit_for_statement(info, nd);
 			return;
 
-		case STMT_GOTO:
-			to_code_L(info->sx->io, IC_MIPS_J, L_USER_LABEL, (item_t)statement_goto_get_label(nd));
-			return;
-
 		case STMT_CONTINUE:
 			to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, info->label_else);
 			return;
@@ -1693,9 +1670,9 @@ static void emit_statement(information *const info, const node *const nd)
 			// emit_return_statement(info, nd);
 			return;
 
-		case STMT_PRINTF:
-			emit_printf_statement(info, nd);
-			return;
+		// case STMT_PRINTF:
+		// 	emit_printf_statement(info, nd);
+		// 	return;
 
 		// Printid и Getid, которые будут сделаны парсере
 		default:
@@ -1718,7 +1695,7 @@ static int emit_translation_unit(information *const info, const node *const nd)
 		emit_declaration(info, &decl);
 	}
 
-	return info->sx->was_error;
+	return info->sx->rprt.errors != 0;
 }
 
 
