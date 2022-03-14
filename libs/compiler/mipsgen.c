@@ -687,7 +687,7 @@ static void emit_literal_expression(information *const info, const node *const n
 
 	if (type_is_integer(info->sx, type))
 	{
-		const int num = expression_literal_get_integer(nd);
+		const int num = (int)expression_literal_get_integer(nd);
 
 		if (info->request_kind == RQ_REG)
 		{
