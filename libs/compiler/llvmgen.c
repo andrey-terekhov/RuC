@@ -994,7 +994,21 @@ static void emit_call_expression(information *const info, const node *const nd)
 	else
 	{
 		type_to_io(info, expression_get_type(&callee));
-		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, func_ref));
+		uni_printf(info->sx->io, " @");
+		const char *str = ident_get_spelling(info->sx, func_ref);
+		size_t len = strlen(str);
+		for (size_t i = 0; i < len; i++)
+		{
+			if (str[i] > 0)
+			{
+				uni_printf(info->sx->io, "%c", str[i]);
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+			}
+		}
+		uni_printf(info->sx->io, "(");
 	}
 
 	for (size_t i = 0; i < args; i++)
@@ -1266,6 +1280,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			}
 			else 
 			{
+				info->variable_location = LMEM;
 				emit_expression(info, &operand);
 			}
 			return;
@@ -2242,7 +2257,21 @@ static void emit_function_definition(information *const info, const node *const 
 	}
 	else
 	{
-		uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, ref_ident));
+		uni_printf(info->sx->io, " @");
+		const char *str = ident_get_spelling(info->sx, ref_ident);
+		size_t len = strlen(str);
+		for (size_t i = 0; i < len; i++)
+		{
+			if (str[i] > 0)
+			{
+				uni_printf(info->sx->io, "%c", str[i]);
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+			}
+		}
+		uni_printf(info->sx->io, "(");
 	}
 
 	for (size_t i = 0; i < parameters; i++)
@@ -3001,7 +3030,6 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
-	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
