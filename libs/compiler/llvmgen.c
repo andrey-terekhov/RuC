@@ -892,16 +892,29 @@ static void emit_subscript_expression(information *const info, const node *const
 		return;
 	}
 
-
+	size_t subscript_num = 0;
 	while (expression_get_class(&base) == EXPR_SUBSCRIPT)
 	{
+		subscript_num++;
 		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
 	}
 
 	const size_t id = expression_identifier_get_id(&base);
-	const location_t location = info->variable_location;
+	location_t location = info->variable_location;
+	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 
-	emit_one_dimension_subscript(info, nd, id, 0);
+	emit_one_dimension_subscript(info, nd, id, dimensions - subscript_num - 1);
+
+	if (dimensions - subscript_num - 1 != 0)
+	{
+		const item_t arr_type = ident_get_type(info->sx, id);
+		const item_t type = array_get_type(info, arr_type);
+		const bool is_local = ident_is_local(info->sx, id);
+		info->answer_kind = ACONST;
+		info->answer_const = 0;
+		to_code_slice(info, id, 0, info->register_num - 1, type, is_local);
+		location = LMEM;
+	}
 
 	if (location != LMEM)
 	{
