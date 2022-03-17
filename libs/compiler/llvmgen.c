@@ -98,6 +98,7 @@ static void emit_expression(information *const info, const node *const nd);
 static void emit_declaration(information *const info, const node *const nd, const bool is_local);
 static void emit_one_dimension_initialization(information *const info, const node *const nd, const item_t id
 	, const item_t arr_type, const size_t cur_dimension, const item_t prev_slice, const bool is_local);
+static void emit_initialization(information *const info, const node *const nd, const item_t id, const item_t arr_type);
 
 
 static item_t array_get_type(information *const info, const item_t array_type)
@@ -1764,6 +1765,20 @@ static void emit_initializer_expression(information *const info, const node *con
 
 			info->register_num++;
 		}
+	}
+	// пока только для одномерных массивов
+	else if (type_is_array(info->sx, expression_get_type(nd)))
+	{
+		const size_t index = hash_add(&info->arrays, -(info->register_num), 1 + 1);
+		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
+		hash_set_by_index(&info->arrays, index, 1, expression_initializer_get_size(nd));
+
+		const size_t answer = info->register_num;
+
+		emit_initialization(info, nd, hash_get_key(&info->arrays, index), expression_get_type(nd));
+
+		info->answer_kind = AREG;
+		info->answer_reg = answer;
 	}
 }
 
