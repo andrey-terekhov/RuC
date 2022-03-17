@@ -1769,7 +1769,7 @@ static void emit_initializer_expression(information *const info, const node *con
 	// пока только для одномерных массивов
 	else if (type_is_array(info->sx, expression_get_type(nd)))
 	{
-		const size_t index = hash_add(&info->arrays, -(info->register_num), 1 + 1);
+		const size_t index = hash_add(&info->arrays, -(item_t)(info->register_num), 1 + 1);
 		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 		hash_set_by_index(&info->arrays, index, 1, expression_initializer_get_size(nd));
 
