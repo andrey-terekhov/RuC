@@ -726,7 +726,8 @@ static void emit_identifier_expression(information *const info, const node *cons
 	{
 		info->answer_const = 0;
 		info->answer_kind = ACONST;
-		to_code_slice(info, id, 0, 0, array_get_type(info, type), is_local);
+		const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
+		to_code_slice(info, id, dimensions - 1, 0, array_get_type(info, type), is_local);
 		info->answer_reg = info->register_num - 1;
 	}
 	else
@@ -1044,6 +1045,17 @@ static void emit_call_expression(information *const info, const node *const nd)
 				, index);
 
 			continue;
+		}
+		
+		if (type_is_array(info->sx, arguments_value_type[i]))
+		{
+			size_t dim = array_get_dim(info, arguments_value_type[i]);
+
+			while (dim > 1)
+			{
+				arguments_value_type[i] = type_array_get_element_type(info->sx, arguments_value_type[i]);
+				dim--;
+			}
 		}
 
 		type_to_io(info, arguments_value_type[i]);
