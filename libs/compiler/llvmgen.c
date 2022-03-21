@@ -187,7 +187,16 @@ static void type_to_io(information *const info, const item_t type)
 			const size_t parameter_amount = type_function_get_parameter_amount(info->sx, type);
 			for (size_t i = 0; i < parameter_amount; i++)
 			{
-				type_to_io(info, type_function_get_parameter_type(info->sx, type, i));
+				item_t type_parameter = type_function_get_parameter_type(info->sx, type, i);
+				if (type_is_pointer(info->sx, type_parameter))
+				{
+					if (type_is_array(info->sx, type_pointer_get_element_type(info->sx, type_parameter)))
+					{
+						type_parameter = type_pointer_get_element_type(info->sx, type_parameter);
+					}
+				}
+
+				type_to_io(info, type_parameter);
 
 				if (i != parameter_amount - 1)
 				{
@@ -1006,6 +1015,11 @@ static void emit_call_expression(information *const info, const node *const nd)
 		type_to_io(info, TYPE_FLOATING);
 		uni_printf(info->sx->io, " @llvm.round.f64(");
 	}
+	else if (func_ref == BI_STRCPY)
+	{
+		uni_printf(info->sx->io, "i8*");
+		uni_printf(info->sx->io, " @strcpy(");
+	}
 	else
 	{
 		type_to_io(info, expression_get_type(&callee));
@@ -1055,6 +1069,14 @@ static void emit_call_expression(information *const info, const node *const nd)
 			{
 				arguments_value_type[i] = type_array_get_element_type(info->sx, arguments_value_type[i]);
 				dim--;
+			}
+		}
+
+		if (type_is_pointer(info->sx, arguments_value_type[i]))
+		{
+			if (type_is_array(info->sx, type_pointer_get_element_type(info->sx, arguments_value_type[i])))
+			{
+				arguments_value_type[i] = type_pointer_get_element_type(info->sx, arguments_value_type[i]);
 			}
 		}
 
@@ -1302,6 +1324,12 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			bool is_complex = node_get_type(&operand) != OP_IDENTIFIER;
 			if (!is_complex)
 			{
+				if (type_is_array(info->sx, expression_get_type(&operand)))
+				{
+					emit_expression(info, &operand);
+
+					return;
+				}
 				info->answer_reg = expression_identifier_get_id(&operand);
 			}
 			else 
@@ -1958,7 +1986,7 @@ static void emit_initialization(information *const info, const node *const nd, c
 		const size_t length = strings_length(info->sx, expression_literal_get_string(nd));
 
 		const size_t index = hash_get_index(&info->arrays, id);
-		hash_set_by_index(&info->arrays, index, 1, (item_t)length);
+		hash_set_by_index(&info->arrays, index, 1, (item_t)length + 1);
 
 		const item_t type = array_get_type(info, arr_type);
 		to_code_alloc_array_static(info, index, type, true);
@@ -1971,6 +1999,12 @@ static void emit_initialization(information *const info, const node *const nd, c
 			to_code_slice(info, id, 0, 0, type, true);
 			to_code_store_const_integer(info, string[i], slice_reg, true, true, type);
 		}
+
+		info->answer_const = (item_t)length;
+		info->answer_kind = ACONST;
+		const size_t slice_reg = (size_t)info->register_num;
+		to_code_slice(info, id, 0, 0, type, true);
+		to_code_store_const_integer(info, 0, slice_reg, true, true, type);
 	}
 	else if (expression_get_class(nd) == EXPR_INITIALIZER && type_is_structure(info->sx, expression_get_type(nd)))
 	{
@@ -3010,6 +3044,10 @@ static void builin_functions_declaration(information *const info)
 				type_to_io(info, TYPE_FLOATING);
 				uni_printf(info->sx->io, " @llvm.round.f64(");
 			}
+			else if (i == BI_STRCPY)
+			{
+				uni_printf(info->sx->io, "i8* @strcpy(");
+			}
 			else
 			{
 				type_to_io(info, ret_type);
@@ -3019,7 +3057,16 @@ static void builin_functions_declaration(information *const info)
 			for (size_t j = 0; j < parameters; j++)
 			{
 				uni_printf(info->sx->io, j == 0 ? "" : ", ");
-				type_to_io(info, type_function_get_parameter_type(info->sx, func_type, j));
+
+				item_t type_parameter = type_function_get_parameter_type(info->sx, func_type, j);
+				if (type_is_pointer(info->sx, type_parameter))
+				{
+					if (type_is_array(info->sx, type_pointer_get_element_type(info->sx, type_parameter)))
+					{
+						type_parameter = type_pointer_get_element_type(info->sx, type_parameter);
+					}
+				}
+				type_to_io(info, type_parameter);
 			}
 			uni_printf(info->sx->io, ")\n");
 		}
