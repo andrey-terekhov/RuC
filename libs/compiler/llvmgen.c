@@ -573,6 +573,18 @@ static void to_code_slice(information *const info, const item_t id, const size_t
 	info->register_num++;
 }
 
+static void to_code_int_to_char(information *const info, const size_t reg)
+{
+	uni_printf(info->sx->io, " %%.%zu = trunc i32 %%.%zu to i8\n", info->register_num, reg);
+	info->register_num++;
+}
+
+static void to_code_char_to_int(information *const info, const size_t reg)
+{
+	uni_printf(info->sx->io, " %%.%zu = zext i8 %%.%zu to i32\n", info->register_num, reg);
+	info->register_num++;
+}
+
 
 static void check_type_and_branch(information *const info, const item_t type)
 {
@@ -1042,11 +1054,6 @@ static void emit_call_expression(information *const info, const node *const nd)
 		uni_printf(info->sx->io, " %%.%zu = fptosi double %%.%zu to i32\n", info->register_num, info->answer_reg);
 		info->answer_reg = info->register_num++;
 	}
-	if (func_ref == BI_FGETC)
-	{
-		uni_printf(info->sx->io, " %%.%zu = trunc i32 %%.%zu to i8\n", info->register_num, info->answer_reg);
-		info->answer_reg = info->register_num++;
-	}
 }
 
 /**
@@ -1309,12 +1316,12 @@ static void emit_integral_expression(information *const info, const node *const 
 
 	info->variable_location = LFREE;
 	const node LHS = expression_binary_get_LHS(nd);
-	const item_t operation_type = expression_get_type(&LHS);
+	item_t operation_type = expression_get_type(&LHS);
 	emit_expression(info, &LHS);
 
 	// TODO: спрятать эти переменные в одну структуру и возвращать ее из emit_expr
 	const answer_t left_kind = info->answer_kind;
-	const size_t left_reg = info->answer_reg;
+	size_t left_reg = info->answer_reg;
 	const item_t left_const = info->answer_const;
 	const double left_const_double = info->answer_const_double;
 
@@ -1323,9 +1330,24 @@ static void emit_integral_expression(information *const info, const node *const 
 	emit_expression(info, &RHS);
 
 	const answer_t right_kind = info->answer_kind;
-	const size_t right_reg = info->answer_reg;
+	size_t right_reg = info->answer_reg;
 	const item_t right_const = info->answer_const;
 	const double right_const_double = info->answer_const_double;
+
+	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_CHARACTER 
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER && kind == AREG)
+	{
+		to_code_char_to_int(info, left_reg);
+		left_reg = info->register_num - 1;
+		operation_type = TYPE_INTEGER;
+	}
+	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_INTEGER 
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER && kind == AREG)
+	{
+		to_code_char_to_int(info, right_reg);
+		right_reg = info->register_num - 1;
+		operation_type = TYPE_INTEGER;
+	}
 
 	if (left_kind == AREG && right_kind == AREG)
 	{
@@ -1356,6 +1378,16 @@ static void emit_integral_expression(information *const info, const node *const 
 		to_code_operation_null_reg(info, operation, right_reg, operation_type);
 	}
 
+	if (operation_type == TYPE_CHARACTER && kind == AREG)
+	{
+		info->register_num++;
+		to_code_char_to_int(info, info->register_num - 1);
+		info->answer_reg = info->register_num - 1;
+		info->answer_kind = kind;
+
+		return;
+	}
+
 	info->answer_reg = info->register_num++;
 	info->answer_kind = kind;
 }
@@ -1369,7 +1401,7 @@ static void emit_integral_expression(information *const info, const node *const 
 static void emit_assignment_expression(information *const info, const node *const nd)
 {
 	const binary_t assignment_type = expression_assignment_get_operator(nd);
-	const item_t operation_type = expression_get_type(nd);
+	item_t operation_type = expression_get_type(nd);
 
 	// TODO: вообще тут может быть и вырезка из структуры
 	const node LHS = expression_assignment_get_LHS(nd);
@@ -1400,6 +1432,22 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	size_t result = info->answer_reg;
+
+	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_INTEGER 
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER)
+	{
+		to_code_char_to_int(info, result);
+		result = info->register_num - 1;
+		operation_type = TYPE_INTEGER;
+	}
+
+	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_CHARACTER 
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER)
+	{
+		to_code_int_to_char(info, result);
+		result = info->register_num - 1;
+		operation_type = TYPE_CHARACTER;
+	}
 
 	if (assignment_type != BIN_ASSIGN)
 	{
@@ -1979,6 +2027,20 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			const node initializer = declaration_variable_get_initializer(nd);
 			emit_expression(info, &initializer);
+
+			if (type_get_class(info->sx, type) == TYPE_INTEGER 
+				&& type_get_class(info->sx, expression_get_type(&initializer)) == TYPE_CHARACTER)
+			{
+				to_code_char_to_int(info, info->answer_reg);
+				info->answer_reg = info->register_num - 1;
+			}
+
+			if (type_get_class(info->sx, type) == TYPE_CHARACTER 
+				&& type_get_class(info->sx, expression_get_type(&initializer)) == TYPE_INTEGER)
+			{
+				to_code_int_to_char(info, info->answer_reg);
+				info->answer_reg = info->register_num - 1;
+			}
 
 			if (info->answer_kind == ACONST)
 			{
