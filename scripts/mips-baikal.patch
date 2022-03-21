@@ -1,0 +1,54 @@
+--- test.sh	2022-02-28 16:58:51.575954800 +0300
++++ mips.sh	2022-02-28 18:11:51.552437300 +0300
+@@ -3,7 +3,9 @@
+ init()
+ {
+ 	exit_code=1
+-	vm_exec=export.txt
++	vm_exec=export.s
++	mips_exec=export
++
+ 
+ 	vm_release=master
+ 	output_time=0.0
+@@ -22,6 +24,7 @@
+ 	subdir_error=errors
+ 	subdir_warning=warnings
+ 	subdir_include=include
++	subdir_no_mips=no-mips
+ 
+ 	while ! [[ -z $1 ]]
+ 	do
+@@ -185,10 +188,6 @@
+ 	else
+ 		compiler_debug=$compiler
+ 	fi
+-
+-	if [[ -z $ignore ]] ; then
+-		build_vm
+-	fi
+ }
+ 
+ run()
+@@ -269,7 +268,8 @@
+ {
+ 	if [[ $path == $dir_exec/* ]] ; then
+ 		action="execution"
+-		run $interpreter $interpreter_debug $vm_exec
++		sshpass -p "" scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -oKexAlgorithms=+diffie-hellman-group1-sha1 -q $mips_exec root@baikal.softcom.su:/root/app &>$log
++		sshpass -p "" ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -oKexAlgorithms=+diffie-hellman-group1-sha1 -q root@baikal.softcom.su "/root/app" &>$log
+ 
+ 		case $? in
+ 			0)
+@@ -379,9 +379,9 @@
+ compiling()
+ {
+ 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
+-		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
++		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] && [[ $path != */$subdir_no_mips/* ]] ; then
+ 		action="compiling"
+-		run $compiler $compiler_debug $sources -o $vm_exec -VM
++		run $compiler $compiler_debug $sources -MIPS -o $vm_exec && clang-11 --target=mipsel-linux-gnu -static $vm_exec -lm -o $mips_exec &>$log
+ 
+ 		case $? in
+ 			0)
