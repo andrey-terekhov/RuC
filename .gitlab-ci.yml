@@ -25,6 +25,17 @@ llvm-intel:
     - patch ./scripts/test.sh < ./scripts/llvm.patch
     - ./scripts/test.sh
 
+llvm-uemu:
+  stage: llvm
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu git
+    - rm -rf ../uemu
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.softcom.su/ruc/uemu ../uemu
+  script:
+    - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
+    - ./scripts/test.sh -d
+
 llvm-baikal:
   stage: llvm
   before_script:
@@ -32,14 +43,4 @@ llvm-baikal:
     - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu sshpass
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-baikal.patch
-    - ./scripts/test.sh -d
-
-llvm-uemu:
-  stage: llvm
-  before_script:
-    - apt-get update
-    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu git
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.softcom.su/ruc/uemu ../uemu
-  script:
-    - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
     - ./scripts/test.sh -d
