@@ -1375,6 +1375,31 @@ static void emit_unary_expression(information *const info, const node *const nd)
 		}
 		break;
 
+		case UN_UPB:
+		{
+			bool is_complex = node_get_type(&operand) != OP_IDENTIFIER;
+			if (!is_complex)
+			{
+				const item_t id = expression_identifier_get_id(&operand);
+				const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
+				
+				if (hash_get(&info->arrays, id, IS_STATIC))
+				{
+					size_t upb = 1;
+
+					for (size_t i = 1; i <= dimensions; i++)
+					{
+						upb *= hash_get(&info->arrays, id, i);
+					}
+
+					uni_printf(info->sx->io, " %%.%zu = add nsw i32 0, %zu\n", info->register_num, upb);
+					info->answer_kind = AREG;
+					info->answer_reg = info->register_num++;
+				}
+			}
+		}
+		break;
+
 		default:
 			// TODO: оставшиеся унарные операторы
 			return;
