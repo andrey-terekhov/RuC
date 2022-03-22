@@ -1396,6 +1396,20 @@ static void emit_unary_expression(information *const info, const node *const nd)
 					info->answer_kind = AREG;
 					info->answer_reg = info->register_num++;
 				}
+				else
+				{
+					size_t upb_reg = (size_t)hash_get(&info->arrays, id, 1);
+
+					for (size_t i = 2; i <= dimensions; i++)
+					{
+						uni_printf(info->sx->io, " %%.%zu = mul nsw i32 %%.%zu, %%.%zu\n"
+							, info->register_num, upb_reg, (size_t)hash_get(&info->arrays, id, i));
+						upb_reg = info->register_num++;
+					}
+
+					info->answer_kind = AREG;
+					info->answer_reg = upb_reg;
+				}
 			}
 		}
 		break;
