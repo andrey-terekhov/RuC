@@ -1389,7 +1389,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 
 					for (size_t i = 1; i <= dimensions; i++)
 					{
-						upb *= hash_get(&info->arrays, id, i);
+						upb *= (size_t)hash_get(&info->arrays, id, i);
 					}
 
 					uni_printf(info->sx->io, " %%.%zu = add nsw i32 0, %zu\n", info->register_num, upb);
