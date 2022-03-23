@@ -1735,6 +1735,16 @@ static void emit_binary_expression(information *const info, const node *const nd
 			return;
 		}
 
+		case BIN_COMMA:
+		{
+			const node LHS = expression_binary_get_LHS(nd);
+			emit_expression(info, &LHS);
+
+			const node RHS = expression_binary_get_RHS(nd);
+			emit_expression(info, &RHS);
+		}
+		break;
+
 		default:
 			// TODO: оставшиеся бинарные операторы
 			return;
@@ -2680,6 +2690,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 
 	if (statement_for_has_condition(nd))
 	{
+		info->variable_location = LFREE;
 		const node condition = statement_for_get_condition(nd);
 		emit_expression(info, &condition);
 		check_type_and_branch(info, expression_get_type(&condition));
