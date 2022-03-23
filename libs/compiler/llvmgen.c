@@ -143,6 +143,7 @@ static void type_to_io(information *const info, const item_t type)
 			break;
 
 		case TYPE_INTEGER:
+		case TYPE_ENUM:
 			uni_printf(info->sx->io, "i32");
 			break;
 
@@ -783,6 +784,7 @@ static void emit_literal_expression(information *const info, const node *const n
 
 		case TYPE_CHARACTER:
 		case TYPE_INTEGER:
+		case TYPE_ENUM:
 		{
 			const item_t value = expression_literal_get_integer(nd);
 			const item_t type = expression_get_type(nd);
@@ -825,8 +827,6 @@ static void emit_literal_expression(information *const info, const node *const n
 			return;
 		}
 
-		// позже будет реализовано
-		case TYPE_ENUM:
 		default:
 			// Таких литералов не бывает
 			return;
