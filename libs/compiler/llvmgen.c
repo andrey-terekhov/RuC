@@ -1015,11 +1015,6 @@ static void emit_call_expression(information *const info, const node *const nd)
 		type_to_io(info, TYPE_FLOATING);
 		uni_printf(info->sx->io, " @llvm.round.f64(");
 	}
-	else if (func_ref == BI_STRCPY)
-	{
-		uni_printf(info->sx->io, "i8*");
-		uni_printf(info->sx->io, " @strcpy(");
-	}
 	else
 	{
 		type_to_io(info, expression_get_type(&callee));
@@ -3093,10 +3088,6 @@ static void builin_functions_declaration(information *const info)
 			{
 				type_to_io(info, TYPE_FLOATING);
 				uni_printf(info->sx->io, " @llvm.round.f64(");
-			}
-			else if (i == BI_STRCPY)
-			{
-				uni_printf(info->sx->io, "i8* @strcpy(");
 			}
 			else
 			{
