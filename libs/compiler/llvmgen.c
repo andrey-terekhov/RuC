@@ -2680,15 +2680,19 @@ static void emit_for_statement(information *const info, const node *const nd)
 		emit_statement(info, &inition);
 	}
 
-	to_code_unconditional_branch(info, label_condition);
-	to_code_label(info, label_condition);
-
 	if (statement_for_has_condition(nd))
 	{
+		to_code_unconditional_branch(info, label_condition);
+		to_code_label(info, label_condition);
+
 		info->variable_location = LFREE;
 		const node condition = statement_for_get_condition(nd);
 		emit_expression(info, &condition);
 		check_type_and_branch(info, expression_get_type(&condition));
+	}
+	else
+	{
+		to_code_unconditional_branch(info, label_incr);
 	}
 
 	to_code_label(info, label_incr);
@@ -2698,7 +2702,14 @@ static void emit_for_statement(information *const info, const node *const nd)
 		emit_expression(info, &increment);
 	}
 
-	to_code_unconditional_branch(info, label_condition);
+	if (statement_for_has_condition(nd))
+	{
+		to_code_unconditional_branch(info, label_condition);
+	}
+	else
+	{
+		to_code_unconditional_branch(info, label_body);
+	}
 	to_code_label(info, label_body);
 
 	const node body = statement_for_get_body(nd);
