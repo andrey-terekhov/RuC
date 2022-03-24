@@ -204,7 +204,7 @@ static void type_to_io(information *const info, const item_t type)
 					uni_printf(info->sx->io, ", ");
 				}
 			}
-			uni_printf(info->sx->io, ")");
+			uni_printf(info->sx->io, ")*");
 		}
 		break;
 
