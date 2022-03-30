@@ -89,6 +89,7 @@ typedef struct information
 	bool was_fabs;							/**< Истина, если был вызов fabs */
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 	bool is_main;							/**< Истина, если обрабатывается main */
+	bool is_call;							/**< Истина, если обрабатывается вызов функции */
 } information;
 
 
@@ -205,6 +206,11 @@ static void type_to_io(information *const info, const item_t type)
 				}
 			}
 			uni_printf(info->sx->io, ")");
+
+			if (!info->is_call)
+			{
+				uni_printf(info->sx->io, ")*");
+			}
 		}
 		break;
 
@@ -1017,7 +1023,9 @@ static void emit_call_expression(information *const info, const node *const nd)
 	}
 	else
 	{
+		info->is_call = true;
 		type_to_io(info, expression_get_type(&callee));
+		info->is_call = false;
 		uni_printf(info->sx->io, " @");
 		const char *str = ident_get_spelling(info->sx, func_ref);
 		size_t len = strlen(str);
@@ -3182,6 +3190,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	{
 		return -1;
 	}
+	write_tree("tree.txt", sx);
 
 	information info;
 	info.sx = sx;
@@ -3199,6 +3208,7 @@ int encode_to_llvm(const workspace *const ws, syntax *const sx)
 	info.was_abs = false;
 	info.was_fabs = false;
 	info.is_main = false;
+	info.is_call = false;
 	info.label_phi_previous = 0;
 	for (size_t i = 0; i < BEGIN_USER_FUNC; i++)
 	{
