@@ -90,6 +90,8 @@ typedef struct information
 	bool was_function[BEGIN_USER_FUNC];		/**< Массив флагов библиотечных функций из builtin_t */
 	bool is_main;							/**< Истина, если обрабатывается main */
 	bool is_call;							/**< Истина, если обрабатывается вызов функции */
+
+	size_t func_ref;						/**< id функции */
 } information;
 
 
@@ -209,7 +211,7 @@ static void type_to_io(information *const info, const item_t type)
 
 			if (!info->is_call)
 			{
-				uni_printf(info->sx->io, ")*");
+				uni_printf(info->sx->io, "*");
 			}
 		}
 		break;
@@ -379,6 +381,25 @@ static void to_code_load(information *const info, const size_t result, const siz
 	type_to_io(info, type);
 	uni_printf(info->sx->io, ", ");
 	type_to_io(info, type);
+	if (type_get_class(info->sx, type) == TYPE_FUNCTION && !is_local)
+	{
+		uni_printf(info->sx->io, "* @");
+		const char *str = ident_get_spelling(info->sx, info->func_ref);
+		size_t len = strlen(str);
+		for (size_t i = 0; i < len; i++)
+		{
+			if (str[i] > 0)
+			{
+				uni_printf(info->sx->io, "%c", str[i]);
+			}
+			else
+			{
+				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+			}
+		}
+		uni_printf(info->sx->io, ", align 4\n");
+		return;
+	}
 	uni_printf(info->sx->io, "* %s%s.%zu, align 4\n", is_local ? "%" : "@", is_array ? "" : "var", id);
 }
 
@@ -730,6 +751,11 @@ static void emit_identifier_expression(information *const info, const node *cons
 	const bool is_local = ident_is_local(info->sx, id);
 	const bool is_addr_to_val = info->variable_location == LMEM;
 
+	if (type_is_function(info->sx, type))
+	{
+		info->func_ref = id;
+	}
+
 	if (is_addr_to_val)
 	{
 		to_code_load(info, info->register_num, id, type, false, is_local);
@@ -977,6 +1003,13 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->was_function[func_ref] = true;
 	}
 
+	size_t func_reg = 0;
+	if (!ident_is_local(info->sx, func_ref))
+	{
+		to_code_load(info, info->register_num, func_ref, expression_get_type(&callee), false, true);
+		func_reg = info->register_num++;
+	}
+
 	for (size_t i = 0; i < args; i++)
 	{
 		info->variable_location = LFREE;
@@ -1026,19 +1059,26 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->is_call = true;
 		type_to_io(info, expression_get_type(&callee));
 		info->is_call = false;
-		uni_printf(info->sx->io, " @");
-		const char *str = ident_get_spelling(info->sx, func_ref);
-		size_t len = strlen(str);
-		for (size_t i = 0; i < len; i++)
+		if (ident_is_local(info->sx, func_ref))
 		{
-			if (str[i] > 0)
+			uni_printf(info->sx->io, " @");
+			const char *str = ident_get_spelling(info->sx, func_ref);
+			size_t len = strlen(str);
+			for (size_t i = 0; i < len; i++)
 			{
-				uni_printf(info->sx->io, "%c", str[i]);
+				if (str[i] > 0)
+				{
+					uni_printf(info->sx->io, "%c", str[i]);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+				}
 			}
-			else
-			{
-				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
-			}
+		}
+		else
+		{
+			uni_printf(info->sx->io, " %%.%zu", func_reg);
 		}
 		uni_printf(info->sx->io, "(");
 	}
