@@ -202,6 +202,11 @@ static void type_to_io(information *const info, const item_t type)
 
 				type_to_io(info, type_parameter);
 
+				if (type_is_function(info->sx, type_parameter))
+				{
+					uni_printf(info->sx->io, "*");
+				}
+
 				if (i != parameter_amount - 1)
 				{
 					uni_printf(info->sx->io, ", ");
@@ -1015,7 +1020,10 @@ static void emit_call_expression(information *const info, const node *const nd)
 		info->variable_location = LFREE;
 		const node argument = expression_call_get_argument(nd, i);
 		arguments_value_type[i] = expression_get_type(&argument);
-		emit_expression(info, &argument);
+		if (!type_is_function(info->sx, arguments_value_type[i]))
+		{
+			emit_expression(info, &argument);
+		}
 		// TODO: сделать параметры других типов (логическое)
 		arguments_type[i] = info->answer_kind;
 
@@ -1124,7 +1132,27 @@ static void emit_call_expression(information *const info, const node *const nd)
 		}
 
 		type_to_io(info, arguments_value_type[i]);
-		if (arguments_type[i] == AREG || arguments_type[i] == ALOGIC)
+		if (type_is_function(info->sx, arguments_value_type[i]))
+		{
+			const node argument = expression_call_get_argument(nd, i);
+			const size_t id = expression_identifier_get_id(&argument);
+
+			uni_printf(info->sx->io, " @");
+			const char *str = ident_get_spelling(info->sx, id);
+			size_t len = strlen(str);
+			for (size_t i = 0; i < len; i++)
+			{
+				if (str[i] > 0)
+				{
+					uni_printf(info->sx->io, "%c", str[i]);
+				}
+				else
+				{
+					uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+				}
+			}
+		}
+		else if (arguments_type[i] == AREG || arguments_type[i] == ALOGIC)
 		{
 			uni_printf(info->sx->io, " %%.%" PRIitem, arguments[i]);
 		}
