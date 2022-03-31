@@ -1522,14 +1522,14 @@ static void emit_integral_expression(information *const info, const node *const 
 	const double right_const_double = info->answer_const_double;
 
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_CHARACTER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER && kind == AREG)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER)
 	{
 		to_code_char_to_int(info, left_reg);
 		left_reg = info->register_num - 1;
 		operation_type = TYPE_INTEGER;
 	}
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_INTEGER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER && kind == AREG)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER)
 	{
 		to_code_char_to_int(info, right_reg);
 		right_reg = info->register_num - 1;
