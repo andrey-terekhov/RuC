@@ -1140,15 +1140,15 @@ static void emit_call_expression(information *const info, const node *const nd)
 			uni_printf(info->sx->io, " @");
 			const char *str = ident_get_spelling(info->sx, id);
 			size_t len = strlen(str);
-			for (size_t i = 0; i < len; i++)
+			for (size_t j = 0; j < len; j++)
 			{
-				if (str[i] > 0)
+				if (str[j] > 0)
 				{
-					uni_printf(info->sx->io, "%c", str[i]);
+					uni_printf(info->sx->io, "%c", str[j]);
 				}
 				else
 				{
-					uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+					uni_printf(info->sx->io, "%c",  'A' + (abs(str[j]) % ('z' - 'A')));
 				}
 			}
 		}
