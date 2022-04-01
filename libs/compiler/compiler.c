@@ -184,7 +184,7 @@ status_t compile_to_vm(workspace *const ws)
 		make_executable(ws_get_output(ws));
 	}
 
-	return sts;
+	return sts == sts_codegen_error ? sts_virtul_error : sts;
 }
 
 status_t compile_to_llvm(workspace *const ws)
@@ -194,7 +194,8 @@ status_t compile_to_llvm(workspace *const ws)
 		ws_set_output(ws, DEFAULT_LLVM);
 	}
 
-	return compile_from_ws(ws, &encode_to_llvm);
+	const status_t sts = compile_from_ws(ws, &encode_to_llvm);
+	return sts == sts_codegen_error ? sts_llvm_error : sts;
 }
 
 
