@@ -279,9 +279,9 @@ syntax sx_create(const workspace *const ws, universal_io *const io)
 	return sx;
 }
 
-bool sx_is_correct(syntax *const sx, const bool check_predef)
+bool sx_is_correct(syntax *const sx)
 {
-	if (reporter_get_errors_number(&sx->rprt) || !check_predef)
+	if (reporter_get_errors_number(&sx->rprt))
 	{
 		return true;
 	}

@@ -58,6 +58,23 @@ static inline void make_executable(const char *const path)
 #endif
 }
 
+/** Skip linker stage */
+static inline bool skip_linker(const workspace *const ws)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+		if (flag == NULL)
+		{
+			return false;
+		}
+		else if (strcmp(flag, "-c") == 0)
+		{
+			return true;
+		}
+	}
+}
+
 
 static status_t compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
@@ -72,26 +89,9 @@ static status_t compile_from_io(const workspace *const ws, universal_io *const i
 	int ret = parse(&sx);
 	status_t sts = sts_parse_error;
 
-	bool check_predef = true;
-	for (size_t i = 0; ; i++)
+	if (!ret && !skip_linker(ws))
 	{
-		const char *flag = ws_get_flag(ws, i);
-
-		if (flag == NULL)
-		{
-			break;
-		}
-
-		if (strcmp(flag, "-c") == 0)
-		{
-			check_predef = false;
-			break;
-		}
-	}
-
-	if (!ret)
-	{
-		ret = !sx_is_correct(&sx, check_predef);
+		ret = !sx_is_correct(&sx);
 		sts = sts_link_error;
 	}
 
