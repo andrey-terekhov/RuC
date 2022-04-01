@@ -27,6 +27,23 @@
 extern "C" {
 #endif
 
+/** Status codes */
+typedef enum STATUS
+{
+	sts_success = 0,			/**< Success code */
+	sts_system_error,			/**< System error code */
+	sts_test_error = 64,		/**< Reserved testing system code */
+	sts_macro_error,			/**< Preprocessor error code */
+	sts_parse_error,			/**< Parser error code */
+	sts_link_error,				/**< Linker error code */
+	sts_optimize_error,			/**< Optimization error code */
+	sts_codegen_error,			/**< Default code generator error code */
+	sts_virtul_error,			/**< Virtual Machine generator error code */
+	sts_llvm_error,				/**< LLVM generator error code */
+	sts_mips_error,				/**< MIPS generator error code */
+} status_t;
+
+
 /**
  *	Compile code from workspace
  *
@@ -34,7 +51,7 @@ extern "C" {
  *
  *	@return	Status code
  */
-EXPORTED int compile(workspace *const ws);
+EXPORTED status_t compile(workspace *const ws);
 
 /**
  *	Compile RuC virtual machine code from workspace
@@ -43,7 +60,7 @@ EXPORTED int compile(workspace *const ws);
  *
  *	@return	Status code
  */
-EXPORTED int compile_to_vm(workspace *const ws);
+EXPORTED status_t compile_to_vm(workspace *const ws);
 
 /**
  *	Compile LLVM code from workspace
@@ -52,7 +69,7 @@ EXPORTED int compile_to_vm(workspace *const ws);
  *
  *	@return	Status code
  */
-EXPORTED int compile_to_llvm(workspace *const ws);
+EXPORTED status_t compile_to_llvm(workspace *const ws);
 
 
 /**
