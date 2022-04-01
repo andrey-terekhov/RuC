@@ -27,6 +27,19 @@
 extern "C" {
 #endif
 
+/** Status codes */
+typedef enum STATUS
+{
+	sts_system_error = 1,	    /**< System error code */
+    sts_test_error = 64,        /**< Reserved testing system code */
+	sts_macro_error,		    /**< Preprocessor error code */
+	sts_parser_error,		    /**< Parser error code */
+	sts_virtul_error,		    /**< Virtual Machine generator error code */
+	sts_llvm_error,			    /**< LLVM generator error code */
+	sts_mips_error,			    /**< MIPS generator error code */
+} status_t;
+
+
 /**
  *	Compile code from workspace
  *
