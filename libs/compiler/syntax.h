@@ -110,11 +110,10 @@ syntax sx_create(const workspace *const ws, universal_io *const io);
  *	Check if syntax structure is correct
  *
  *	@param	sx				Syntax structure
- *	@param	check_predef	Set if needed to check function definitions
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool sx_is_correct(syntax *const sx, const bool check_predef);
+bool sx_is_correct(syntax *const sx);
 
 /**
  *	Free allocated memory
@@ -147,20 +146,20 @@ size_t string_add(syntax *const sx, const vector *const str);
 const char* string_get(const syntax *const sx, const size_t index);
 
 /**
- *    Get length of a string
+ *	Get length of a string
  *
- *    @param  sx      Syntax structure
+ *	@param  sx	  Syntax structure
  *
- *    @return Length of a string
+ *	@return Length of a string
  */
 size_t strings_length(const syntax *const sx, const size_t index);
 
 /**
- *    Get amount of strings
+ *	Get amount of strings
  *
- *    @param  sx      Syntax structure
+ *	@param  sx	  Syntax structure
  *
- *    @return Amount of strings
+ *	@return Amount of strings
  */
 size_t strings_amount(const syntax *const sx);
 
