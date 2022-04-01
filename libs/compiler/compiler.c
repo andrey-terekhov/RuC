@@ -70,6 +70,7 @@ static status_t compile_from_io(const workspace *const ws, universal_io *const i
 
 	syntax sx = sx_create(ws, io);
 	int ret = parse(&sx);
+	status_t sts = sts_parse_error;
 
 	bool check_predef = true;
 	for (size_t i = 0; ; i++)
@@ -91,16 +92,18 @@ static status_t compile_from_io(const workspace *const ws, universal_io *const i
 	if (!ret)
 	{
 		ret = !sx_is_correct(&sx, check_predef);
+		sts = sts_link_error;
 	}
 
 	if (!ret)
 	{
 		ret = enc(ws, &sx);
+		sts = sts_codegen_error;
 	}
 
 	sx_clear(&sx);
 	io_erase(io);
-	return ret;
+	return ret ? sts : sts_success;
 }
 
 static status_t compile_from_ws(workspace *const ws, const encoder enc)
@@ -133,12 +136,12 @@ static status_t compile_from_ws(workspace *const ws, const encoder enc)
 #endif
 
 	out_set_file(&io, ws_get_output(ws));
-	const status_t ret = compile_from_io(ws, &io, enc);
+	const status_t sts = compile_from_io(ws, &io, enc);
 
 #ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
-	return ret;
+	return sts;
 }
 
 
@@ -175,13 +178,13 @@ status_t compile_to_vm(workspace *const ws)
 		ws_set_output(ws, DEFAULT_VM);
 	}
 
-	const status_t ret = compile_from_ws(ws, &encode_to_vm);
-	if (!ret)
+	const status_t sts = compile_from_ws(ws, &encode_to_vm);
+	if (sts == sts_success)
 	{
 		make_executable(ws_get_output(ws));
 	}
 
-	return ret;
+	return sts;
 }
 
 status_t compile_to_llvm(workspace *const ws)
@@ -199,7 +202,7 @@ status_t compile_to_llvm(workspace *const ws)
 int auto_compile(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	const status_t ret = compile(&ws);
+	const int ret = compile(&ws);
 	ws_clear(&ws);
 	return ret;
 }
@@ -207,7 +210,7 @@ int auto_compile(const int argc, const char *const *const argv)
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	const status_t ret = compile_to_vm(&ws);
+	const int ret = compile_to_vm(&ws);
 	ws_clear(&ws);
 	return ret;
 }
@@ -231,7 +234,7 @@ int no_macro_compile_to_vm(const char *const path)
 	ws_set_output(&ws, DEFAULT_VM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	const status_t ret = compile_from_io(&ws, &io, &encode_to_vm);
+	const int ret = compile_from_io(&ws, &io, &encode_to_vm);
 	if (!ret)
 	{
 		make_executable(ws_get_output(&ws));
@@ -251,7 +254,7 @@ int no_macro_compile_to_llvm(const char *const path)
 	ws_set_output(&ws, DEFAULT_LLVM);
 	out_set_file(&io, ws_get_output(&ws));
 
-	const status_t ret = compile_from_io(&ws, &io, &encode_to_llvm);
+	const int ret = compile_from_io(&ws, &io, &encode_to_llvm);
 	ws_clear(&ws);
 	return ret;
 }
