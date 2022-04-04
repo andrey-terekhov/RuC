@@ -17,10 +17,12 @@
 #pragma once
 
 #include <inttypes.h>
+#include <float.h>
 #include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include "dll.h"
-#include "workspace.h"
 
 
 #ifndef ITEM
@@ -69,10 +71,16 @@
 	#define PRIitem PRIi64
 #endif
 
+#define DOUBLE_SIZE (sizeof(double) / sizeof(ITEM_TYPE))
+#define INT64_SIZE (sizeof(int64_t) / sizeof(ITEM_TYPE))
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Structure for parsing start arguments of program */
+typedef struct workspace workspace;
 
 /** Item type for output tables */
 typedef enum ITEM_STATUS
@@ -120,6 +128,89 @@ EXPORTED item_t item_get_min(const item_status status);
  */
 EXPORTED item_t item_get_max(const item_status status);
 
+
+/**
+ *	Store double value into item array
+ *
+ *	@param	value		Double variable
+ *	@param	stg			Item array
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t item_store_double(const double value, item_t *const stg);
+
+/**
+ *	Store double value into target item array
+ *
+ *	@param	status		Item status
+ *	@param	value		Double variable
+ *	@param	stg			Item array
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t item_store_double_for_target(const item_status status, const double value, item_t *const stg);
+
+/**
+ *	Restore double value from item array
+ *
+ *	@param	stg			Item array
+ *
+ *	@return	Restored value, @c DBL_MAX on failure
+ */
+EXPORTED double item_restore_double(const item_t *const stg);
+
+/**
+ *	Restore double value from target item array
+ *
+ *	@param	status		Item status
+ *	@param	stg			Item array
+ *
+ *	@return	Restored value, @c DBL_MAX on failure
+ */
+EXPORTED double item_restore_double_for_target(const item_status status, const item_t *const stg);
+
+
+/**
+ *	Store 64-bit value into item array
+ *
+ *	@param	value		64-bit variable
+ *	@param	stg			Item array
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t item_store_int64(const int64_t value, item_t *const stg);
+
+/**
+ *	Store 64-bit value into target item array
+ *
+ *	@param	status		Item status
+ *	@param	value		64-bit variable
+ *	@param	stg			Item array
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t item_store_int64_for_target(const item_status status, const int64_t value, item_t *const stg);
+
+/**
+ *	Restore 64-bit value from item array
+ *
+ *	@param	stg			Item array
+ *
+ *	@return	Restored value, @c LLONG_MAX on failure
+ */
+EXPORTED int64_t item_restore_int64(const item_t *const stg);
+
+/**
+ *	Restore 64-bit value from target item array
+ *
+ *	@param	status		Item status
+ *	@param	stg			Item array
+ *
+ *	@return	Restored value, @c LLONG_MAX on failure
+ */
+EXPORTED int64_t item_restore_int64_for_target(const item_status status, const item_t *const stg);
+
+
 /**
  *	Check that variable is not out of range
  *
@@ -128,7 +219,7 @@ EXPORTED item_t item_get_max(const item_status status);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int item_check_var(const item_status status, const item_t var);
+EXPORTED bool item_check_var(const item_status status, const item_t var);
 
 #ifdef __cplusplus
 } /* extern "C" */

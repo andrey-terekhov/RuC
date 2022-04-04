@@ -17,14 +17,15 @@
 #pragma once
 
 #include <limits.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "dll.h"
+#include "strings.h"
 
 
 #define MAX_PATHS 128
-#define MAX_FLAGS 32
-#define MAX_ARG_SIZE 256
+#define MAX_ARG_SIZE 1024
 
 
 #ifdef __cplusplus
@@ -34,17 +35,12 @@ extern "C" {
 /** Structure for parsing start arguments of program */
 typedef struct workspace
 {
-	char files[MAX_PATHS][MAX_ARG_SIZE];	/**< Files list */
-	size_t files_num;						/**< Number of files */
+	strings files;					/**< Files list */
+	strings dirs;					/**< Directories list */
+	strings flags;					/**< Flags list */
 
-	char dirs[MAX_PATHS][MAX_ARG_SIZE];		/**< Directories list */
-	size_t dirs_num;						/**< Number of directories */
-
-	char flags[MAX_FLAGS][MAX_ARG_SIZE];	/**< Flags list */
-	size_t flags_num;						/**< Number of flags */
-
-	char output[MAX_ARG_SIZE];				/**< Output file name */
-	int was_error;							/**< @c 0 if no errors */
+	char output[MAX_ARG_SIZE];		/**< Output file name */
+	bool was_error;					/**< @c 0 if no errors */
 } workspace;
 
 
@@ -64,7 +60,7 @@ EXPORTED workspace ws_parse_args(const int argc, const char *const *const argv);
  *
  *	@return	Workspace structure
  */
-EXPORTED workspace ws_create();
+EXPORTED workspace ws_create(void);
 
 
 /**
@@ -151,7 +147,7 @@ EXPORTED int ws_set_output(workspace *const ws, const char *const path);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int ws_is_correct(const workspace *const ws);
+EXPORTED bool ws_is_correct(const workspace *const ws);
 
 
 /**
@@ -223,7 +219,7 @@ EXPORTED const char *ws_get_output(const workspace *const ws);
 
 
 /**
- *	Clear workspase structure
+ *	Free allocated memory
  *
  *	@param	ws			Workspace structure
  *

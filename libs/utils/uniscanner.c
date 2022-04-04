@@ -55,3 +55,8 @@ char32_t uni_scan_char(universal_io *const io)
 
 	return utf8_convert(buffer);
 }
+
+int uni_unscan_char(universal_io *const io, const char32_t wchar)
+{
+	return in_set_position(io, in_get_position(io) - utf8_size(wchar));
+}

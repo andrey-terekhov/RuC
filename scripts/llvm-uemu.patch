@@ -1,0 +1,82 @@
+--- test.sh	2022-04-01 17:47:11.615209900 +0300
++++ llvm.sh	2022-04-01 17:49:55.186151400 +0300
+@@ -3,7 +3,9 @@
+ init()
+ {
+ 	exit_code=64
+-	vm_exec=export.txt
++	vm_exec=export.ll
++	llvm_exec=export
++
+ 
+ 	vm_release=master
+ 	output_time=0.0
+@@ -22,6 +24,7 @@
+ 	subdir_error=errors
+ 	subdir_warning=warnings
+ 	subdir_include=include
++	subdir_no_llvm=no-llvm
+ 
+ 	while ! [[ -z $1 ]]
+ 	do
+@@ -185,10 +188,6 @@
+ 	else
+ 		compiler_debug=$compiler
+ 	fi
+-
+-	if [[ -z $ignore ]] ; then
+-		build_vm
+-	fi
+ }
+ 
+ run()
+@@ -269,7 +268,8 @@
+ {
+ 	if [[ $path == $dir_exec/* ]] ; then
+ 		action="execution"
+-		run $interpreter $interpreter_debug $vm_exec
++		clang-11 ../../uemu/executing_uemu.c -o app ../../uemu/libuemu_v7.so &>$log
++		./app $llvm_exec &>$log
+ 
+ 		case $? in
+ 			0)
+@@ -292,7 +292,7 @@
+ 				message_timeout
+ 				let timeout++
+ 				;;
+-			$exit_code)
++			*)
+ 				if [[ $path == */$subdir_error/* ]] ; then
+ 					if [[ $build_type == "(Debug)" ]] ; then
+ 						build_type=""
+@@ -312,18 +312,6 @@
+ 					fi
+ 				fi
+ 				;;
+-			*)
+-				# Segmentation fault
+-				# Double free or corruption (!prev)
+-				# Etcetera
+-
+-				message_failure
+-				let failure++
+-
+-				if ! [[ -z $debug ]] ; then
+-					cat $log
+-				fi
+-				;;
+ 		esac
+ 	else
+ 		let success++
+@@ -379,9 +367,9 @@
+ compiling()
+ {
+ 	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
+-		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
++		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] && [[ $path != */$subdir_no_llvm/* ]] ; then
+ 		action="compiling"
+-		run $compiler $compiler_debug $sources -o $vm_exec -VM
++		run $compiler $compiler_debug $sources -LLVM -o $vm_exec && clang-11 --target=mipsel-linux-gnu -static $vm_exec -lm -o $llvm_exec &>$log
+ 
+ 		case $? in
+ 			0)

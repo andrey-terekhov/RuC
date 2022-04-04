@@ -16,12 +16,12 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "dll.h"
 
 #ifdef __APPLE__
-	#include <stdint.h>
-
 	typedef uint32_t char32_t;
 #else
 	#include <uchar.h>
@@ -31,6 +31,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ *	Number of UTF-8 character bytes
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	Number of bytes
+ */
+EXPORTED size_t utf8_size(const char32_t symbol);
 
 /**
  *	Number of UTF-8 character octets
@@ -71,6 +80,26 @@ EXPORTED char32_t utf8_convert(const char *const symbol);
 EXPORTED size_t utf8_to_string(char *const buffer, const char32_t symbol);
 
 /**
+ *	Convert CP866 string to UTF-8 string
+ *
+ *	@param	src		CP866 string
+ *	@param	dest	UTF-8 string
+ *
+ *	@return	Size of destination string
+ */
+EXPORTED size_t utf8_from_cp866(const char *const src, char *const dest);
+
+/**
+ *	Convert Windows-1251 string to UTF-8 string
+ *
+ *	@param	src		Windows-1251 string
+ *	@param	dest	UTF-8 string
+ *
+ *	@return	Size of destination string
+ */
+EXPORTED size_t utf8_from_cp1251(const char *const src, char *const dest);
+
+/**
  *	Convert UTF-8 string to CP866 string
  *
  *	@param	src		UTF-8 string
@@ -100,40 +129,58 @@ EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
 EXPORTED char32_t utf8_to_upper(const char32_t symbol);
 
 /**
- *	Checks if сharacter is russian letter
+ *	Convert hexadecimal digit to number
  *
  *	@param	symbol	UTF-8 сharacter
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	Corresponding number
  */
-EXPORTED int utf8_is_russian(const char32_t symbol);
+EXPORTED uint8_t utf8_to_number(const char32_t symbol);
 
 /**
- *	Checks if сharacter is english or russian letter
+ *	Check if сharacter is russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_letter(const char32_t symbol);
+EXPORTED bool utf8_is_russian(const char32_t symbol);
 
 /**
- *	Checks if сharacter is digit
+ *	Check if сharacter is english or russian letter
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_digit(const char32_t symbol);
+EXPORTED bool utf8_is_letter(const char32_t symbol);
 
 /**
- *	Checks if сharacter is 'E', 'e', 'Е' or 'е'
+ *	Check if сharacter is decimal digit
  *
  *	@param	symbol	UTF-8 сharacter
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int utf8_is_power(const char32_t symbol);
+EXPORTED bool utf8_is_digit(const char32_t symbol);
+
+/**
+ *	Check if сharacter is hexadecimal digit
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED bool utf8_is_hexa_digit(const char32_t symbol);
+
+/**
+ *	Check if сharacter is 'E', 'e', 'Е' or 'е'
+ *
+ *	@param	symbol	UTF-8 сharacter
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED bool utf8_is_power(const char32_t symbol);
 
 #ifdef __cplusplus
 } /* extern "C" */

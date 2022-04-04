@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include "dll.h"
 
@@ -86,7 +87,7 @@ EXPORTED comment cmt_search(const char *const code, const size_t position);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-EXPORTED int cmt_is_correct(const comment *const cmt);
+EXPORTED bool cmt_is_correct(const comment *const cmt);
 
 
 /**

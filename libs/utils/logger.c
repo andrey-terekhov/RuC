@@ -23,42 +23,42 @@
 #ifdef _MSC_VER
 	#include <windows.h>
 
-	const uint8_t COLOR_TAG = 0x0F;
-	const uint8_t COLOR_ERROR = 0x0C;
-	const uint8_t COLOR_WARNING = 0x0D;
-	const uint8_t COLOR_NOTE = 0x0E;
-	const uint8_t COLOR_DEFAULT = 0x07;
+	static const uint8_t COLOR_TAG = 0x0F;
+	static const uint8_t COLOR_ERROR = 0x0C;
+	static const uint8_t COLOR_WARNING = 0x0D;
+	static const uint8_t COLOR_NOTE = 0x0E;
+	static const uint8_t COLOR_DEFAULT = 0x07;
 #else
-	const uint8_t COLOR_TAG = 39;
-	const uint8_t COLOR_ERROR = 31;
-	const uint8_t COLOR_WARNING = 35;
-	const uint8_t COLOR_NOTE = 33;
-	const uint8_t COLOR_DEFAULT = 0;
+	static const uint8_t COLOR_TAG = 39;
+	static const uint8_t COLOR_ERROR = 31;
+	static const uint8_t COLOR_WARNING = 35;
+	static const uint8_t COLOR_NOTE = 33;
+	static const uint8_t COLOR_DEFAULT = 0;
 #endif
 
 #define MAX_MSG_SIZE 1024
 
-const char *const TAG_LOGGER = "logger";
+static const char *const TAG_LOGGER = "logger";
 
-const char *const TAG_ERROR = "ошибка";
-const char *const TAG_WARNING = "предупреждение";
-const char *const TAG_NOTE = "примечание";
+static const char *const TAG_ERROR = "ошибка";
+static const char *const TAG_WARNING = "предупреждение";
+static const char *const TAG_NOTE = "примечание";
 
-const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на строку";
-const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
-
-
-void default_error_log(const char *const tag, const char *const msg);
-void default_warning_log(const char *const tag, const char *const msg);
-void default_note_log(const char *const tag, const char *const msg);
+static const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на строку";
+static const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
 
 
-logger current_error_log = &default_error_log;
-logger current_warning_log = &default_warning_log;
-logger current_note_log = &default_note_log;
+static void default_error_log(const char *const tag, const char *const msg);
+static void default_warning_log(const char *const tag, const char *const msg);
+static void default_note_log(const char *const tag, const char *const msg);
 
 
-void set_color(const uint8_t color)
+static logger current_error_log = &default_error_log;
+static logger current_warning_log = &default_warning_log;
+static logger current_note_log = &default_note_log;
+
+
+static inline void set_color(const uint8_t color)
 {
 #if defined(NDEBUG) || !defined(__APPLE__)
 	#ifdef _MSC_VER
@@ -71,7 +71,7 @@ void set_color(const uint8_t color)
 #endif
 }
 
-void print_msg(const uint8_t color, const char *const msg)
+static inline void print_msg(const uint8_t color, const char *const msg)
 {
 	set_color(COLOR_DEFAULT);
 
@@ -140,7 +140,7 @@ void print_msg(const uint8_t color, const char *const msg)
 }
 
 
-void default_log(const char *const tag, const char *const msg, const uint8_t color, const char *const tag_log)
+static inline void default_log(const char *const tag, const char *const msg, const uint8_t color, const char *const tag_log)
 {
 	set_color(COLOR_TAG);
 	fprintf(stderr, "%s: ", tag);
@@ -162,23 +162,23 @@ void default_log(const char *const tag, const char *const msg, const uint8_t col
 #endif
 }
 
-void default_error_log(const char *const tag, const char *const msg)
+static void default_error_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_ERROR, TAG_ERROR);
 }
 
-void default_warning_log(const char *const tag, const char *const msg)
+static void default_warning_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_WARNING, TAG_WARNING);
 }
 
-void default_note_log(const char *const tag, const char *const msg)
+static void default_note_log(const char *const tag, const char *const msg)
 {
 	default_log(tag, msg, COLOR_NOTE, TAG_NOTE);
 }
 
 
-int check_tag_msg(const char *const tag, const char *const msg)
+static int check_tag_msg(const char *const tag, const char *const msg)
 {
 	if (tag == NULL || msg == NULL)
 	{
@@ -196,7 +196,7 @@ int check_tag_msg(const char *const tag, const char *const msg)
 }
 
 
-size_t literal(const char *const line, const size_t symbol)
+static inline size_t literal(const char *const line, const size_t symbol)
 {
 	size_t i = utf8_to_first_byte(line, symbol);
 	size_t j = i;
@@ -218,7 +218,7 @@ size_t literal(const char *const line, const size_t symbol)
 }
 
 
-size_t length(const char *const line, const size_t size, const size_t symbol)
+static inline size_t length(const char *const line, const size_t size, const size_t symbol)
 {
 	size_t i = symbol;
 	size_t j = i;
@@ -240,14 +240,14 @@ size_t length(const char *const line, const size_t size, const size_t symbol)
 	return symbol >= size ? 0 : j == symbol ? 1 : j - symbol;
 }
 
-void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
+static void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
-	size_t cur = sprintf(buffer, "%s\n", msg);
+	size_t cur = (size_t)sprintf(buffer, "%s\n", msg);
 
 	size_t size = 0;
 	while (line[size] != '\0' && line[size] != '\n')
 	{
-		cur += sprintf(&buffer[cur], "%c", line[size]);
+		cur += (size_t)sprintf(&buffer[cur], "%c", line[size]);
 		size++;
 	}
 

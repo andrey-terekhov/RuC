@@ -21,11 +21,11 @@
 #include "utf8.h"
 
 
-const char *const PREFIX = "// #";
-const char SEPARATOR = ' ';
+static const char *const PREFIX = "// #";
+static const char SEPARATOR = ' ';
 
 
-void cmt_parse(comment *const cmt)
+static inline void cmt_parse(comment *const cmt)
 {
 	size_t i = 0;
 	while (cmt->path[i] != '\0' && cmt->path[i] != '\n' && cmt->path[i] != SEPARATOR)
@@ -39,7 +39,7 @@ void cmt_parse(comment *const cmt)
 	}
 
 	size_t line = 0;
-	if (sscanf(&(cmt->path[++i]), "%zi", &line) == 0)
+	if (sscanf(&(cmt->path[++i]), "%zu", &line) == 0)
 	{
 		return;
 	}
@@ -56,14 +56,14 @@ void cmt_parse(comment *const cmt)
 	}
 
 	size_t symbol = 0;
-	if (sscanf(&(cmt->path[++i]), "%zi", &symbol) != 0)
+	if (sscanf(&(cmt->path[++i]), "%zu", &symbol) != 0)
 	{
 		cmt->line = line;
 		cmt->symbol = symbol;
 	}
 }
 
-void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
+static inline void cmt_reverse(comment *const cmt, const char *const code, const size_t position)
 {
 	const size_t size = strlen(PREFIX);
 
@@ -142,11 +142,11 @@ size_t cmt_to_string(const comment *const cmt, char *const buffer)
 
 	if (cmt->symbol != SIZE_MAX)
 	{
-		return sprintf(buffer, "%s%c%s%c%zi%c%zi\n", PREFIX, SEPARATOR
+		return (size_t)sprintf(buffer, "%s%c%s%c%zu%c%zu\n", PREFIX, SEPARATOR
 			, cmt->path, SEPARATOR, cmt->line, SEPARATOR, cmt->symbol);
 	}
 
-	return sprintf(buffer, "%s%c%s%c%zi\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
+	return (size_t)sprintf(buffer, "%s%c%s%c%zu\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
 }
 
 
@@ -177,7 +177,7 @@ comment cmt_search(const char *const code, const size_t position)
 }
 
 
-int cmt_is_correct(const comment *const cmt)
+bool cmt_is_correct(const comment *const cmt)
 {
 	return cmt != NULL && cmt->path != NULL;
 }
@@ -192,7 +192,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 		return 0;
 	}
 
-	index += sprintf(&buffer[index], ":%zi", cmt->line);
+	index += (size_t)sprintf(&buffer[index], ":%zu", cmt->line);
 
 	const size_t first = utf8_to_first_byte(cmt->code, cmt->symbol);
 	size_t symbol = first;
@@ -205,7 +205,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 		i += size;
 	}
 
-	return index + sprintf(&buffer[index], ":%zi", symbol + 1);
+	return index + (size_t)sprintf(&buffer[index], ":%zu", symbol + 1);
 }
 
 size_t cmt_get_code_line(const comment *const cmt, char *const buffer)

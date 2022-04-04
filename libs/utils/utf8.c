@@ -15,18 +15,335 @@
  */
 
 #include "utf8.h"
+#include <assert.h>
 
 
-char char_to_cp866(const char32_t symbol)
+static char32_t char32_from_cp866(const unsigned char symbol)
 {
-	if (symbol >= U'А' && symbol <= U'Я')
+	if (symbol < 0x80)
 	{
-		return (char)(symbol - U'А' + 0x80);
+		return (char32_t)symbol;
 	}
 
-	if (symbol >= U'а' && symbol <= U'п')
+	if (symbol >= 0x80 && symbol <= 0xAF)
 	{
-		return (char)(symbol - U'а' + 0xA0);
+		return (char32_t)symbol - 0x80 + U'А';
+	}
+
+	if (symbol >= 0xE0 && symbol <= 0xEF)
+	{
+		return (char32_t)symbol - 0xE0 + U'р';
+	}
+
+	switch (symbol)
+	{
+		case 0xB0:
+			return U'░';
+		case 0xB1:
+			return U'▒';
+		case 0xB2:
+			return U'▓';
+		case 0xB3:
+			return U'│';
+		case 0xB4:
+			return U'┤';
+		case 0xB5:
+			return U'╡';
+		case 0xB6:
+			return U'╢';
+		case 0xB7:
+			return U'╖';
+		case 0xB8:
+			return U'╕';
+		case 0xB9:
+			return U'╣';
+		case 0xBA:
+			return U'║';
+		case 0xBB:
+			return U'╗';
+		case 0xBC:
+			return U'╝';
+		case 0xBD:
+			return U'╜';
+		case 0xBE:
+			return U'╛';
+		case 0xBF:
+			return U'┐';
+		case 0xC0:
+			return U'└';
+		case 0xC1:
+			return U'┴';
+		case 0xC2:
+			return U'┬';
+		case 0xC3:
+			return U'├';
+		case 0xC4:
+			return U'─';
+		case 0xC5:
+			return U'┼';
+		case 0xC6:
+			return U'╞';
+		case 0xC7:
+			return U'╟';
+		case 0xC8:
+			return U'╚';
+		case 0xC9:
+			return U'╔';
+		case 0xCA:
+			return U'╩';
+		case 0xCB:
+			return U'╦';
+		case 0xCC:
+			return U'╠';
+		case 0xCD:
+			return U'═';
+		case 0xCE:
+			return U'╬';
+		case 0xCF:
+			return U'╧';
+		case 0xD0:
+			return U'╨';
+		case 0xD1:
+			return U'╤';
+		case 0xD2:
+			return U'╥';
+		case 0xD3:
+			return U'╙';
+		case 0xD4:
+			return U'╘';
+		case 0xD5:
+			return U'╒';
+		case 0xD6:
+			return U'╓';
+		case 0xD7:
+			return U'╫';
+		case 0xD8:
+			return U'╪';
+		case 0xD9:
+			return U'┘';
+		case 0xDA:
+			return U'┌';
+		case 0xDB:
+			return U'█';
+		case 0xDC:
+			return U'▄';
+		case 0xDD:
+			return U'▌';
+		case 0xDE:
+			return U'▐';
+		case 0xDF:
+			return U'▀';
+
+		case 0xF0:
+			return U'Ё';
+		case 0xF1:
+			return U'ё';
+		case 0xF2:
+			return U'Є';
+		case 0xF3:
+			return U'є';
+		case 0xF4:
+			return U'Ї';
+		case 0xF5:
+			return U'ї';
+		case 0xF6:
+			return U'Ў';
+		case 0xF7:
+			return U'ў';
+
+		case 0xF8:
+			return U'°';
+		case 0xF9:
+			return U'∙';
+		case 0xFA:
+			return U'·';
+		case 0xFB:
+			return U'√';
+		case 0xFC:
+			return U'№';
+		case 0xFD:
+			return U'¤';
+		case 0xFE:
+			return U'■';
+		case 0xFF:
+			return 0xA0;
+
+		default:
+			return U'�';
+	}
+}
+
+static char32_t char32_from_cp1251(const unsigned char symbol)
+{
+	if (symbol < 0x80)
+	{
+		return (char32_t)symbol;
+	}
+	
+	if (symbol >= 0xC0)	// && symbol <= 0xFF
+	{
+		return (char32_t)symbol - 0xC0 + U'А';
+	}
+
+	switch (symbol)
+	{
+		case 0x80:
+			return U'Ђ';
+		case 0x81:
+			return U'Ѓ';
+		case 0x82:
+			return U'‚';
+		case 0x83:
+			return U'ѓ';
+		case 0x84:
+			return U'„';
+		case 0x85:
+			return U'…';
+		case 0x86:
+			return U'†';
+		case 0x87:
+			return U'‡';
+		case 0x88:
+			return U'€';
+		case 0x89:
+			return U'‰';
+		case 0x8A:
+			return U'Љ';
+		case 0x8B:
+			return U'‹';
+		case 0x8C:
+			return U'Њ';
+		case 0x8D:
+			return U'Ќ';
+		case 0x8E:
+			return U'Ћ';
+		case 0x8F:
+			return U'Џ';
+		case 0x90:
+			return U'ђ';
+		case 0x91:
+			return U'‘';
+		case 0x92:
+			return U'’';
+		case 0x93:
+			return U'“';
+		case 0x94:
+			return U'”';
+		case 0x95:
+			return U'•';
+		case 0x96:
+			return U'–';
+		case 0x97:
+			return U'—';
+
+		case 0x99:
+			return U'™';
+		case 0x9A:
+			return U'љ';
+		case 0x9B:
+			return U'›';
+		case 0x9C:
+			return U'њ';
+		case 0x9D:
+			return U'ќ';
+		case 0x9E:
+			return U'ћ';
+		case 0x9F:
+			return U'џ';
+
+		case 0xA1:
+			return U'Ў';
+		case 0xA2:
+			return U'ў';
+		case 0xA3:
+			return U'Ј';
+
+		case 0xA5:
+			return U'Ґ';
+
+		case 0xA8:
+			return U'Ё';
+
+		case 0xAA:
+			return U'Є';
+
+		case 0xAF:
+			return U'Ї';
+
+		case 0xB2:
+			return U'І';
+		case 0xB3:
+			return U'і';
+		case 0xB4:
+			return U'ґ';
+
+		case 0xB8:
+			return U'ё';
+		case 0xB9:
+			return U'№';
+		case 0xBA:
+			return U'є';
+
+		case 0xBC:
+			return U'ј';
+		case 0xBD:
+			return U'Ѕ';
+		case 0xBE:
+			return U'ѕ';
+		case 0xBF:
+			return U'ї';
+
+		case 0xA0:
+		case U'¤':
+		case U'¦':
+		case U'§':
+		case U'©':
+		case U'«':
+		case U'¬':
+		case 0xAD:
+		case U'®':
+		case U'°':
+		case U'±':
+		case U'µ':
+		case U'¶':
+		case U'·':
+		case U'»':
+			return (char32_t)symbol;
+
+		default:
+			return U'�';
+	}
+}
+
+static inline size_t utf8_from_codepage(const char *const src, char *const dest
+	, char32_t (*char_from_codepage)(const unsigned char))
+{
+	if (src == NULL || dest == NULL)
+	{
+		return 0;
+	}
+
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i++)
+	{
+		size += utf8_to_string(&dest[size], char_from_codepage((unsigned char)(src[i])));
+	}
+
+	dest[size] = '\0';
+	return size;
+}
+
+
+static char char_to_cp866(const char32_t symbol)
+{
+	if (symbol < 0x80)
+	{
+		return (char)symbol;
+	}
+	
+	if (symbol >= U'А' && symbol <= U'п')
+	{
+		return (char)(symbol - U'А' + 0x80);
 	}
 
 	if (symbol >= U'р' && symbol <= U'я')
@@ -37,265 +354,260 @@ char char_to_cp866(const char32_t symbol)
 	switch (symbol)
 	{
 		case U'░':
-			return 0xB0;
+			return '\xB0';
 		case U'▒':
-			return 0xB1;
+			return '\xB1';
 		case U'▓':
-			return 0xB2;
+			return '\xB2';
 		case U'│':
-			return 0xB3;
+			return '\xB3';
 		case U'┤':
-			return 0xB4;
+			return '\xB4';
 		case U'╡':
-			return 0xB5;
+			return '\xB5';
 		case U'╢':
-			return 0xB6;
+			return '\xB6';
 		case U'╖':
-			return 0xB7;
+			return '\xB7';
 		case U'╕':
-			return 0xB8;
+			return '\xB8';
 		case U'╣':
-			return 0xB9;
+			return '\xB9';
 		case U'║':
-			return 0xBA;
+			return '\xBA';
 		case U'╗':
-			return 0xBB;
+			return '\xBB';
 		case U'╝':
-			return 0xBC;
+			return '\xBC';
 		case U'╜':
-			return 0xBD;
+			return '\xBD';
 		case U'╛':
-			return 0xBE;
+			return '\xBE';
 		case U'┐':
-			return 0xBF;
+			return '\xBF';
 		case U'└':
-			return 0xC0;
+			return '\xC0';
 		case U'┴':
-			return 0xC1;
+			return '\xC1';
 		case U'┬':
-			return 0xC2;
+			return '\xC2';
 		case U'├':
-			return 0xC3;
+			return '\xC3';
 		case U'─':
-			return 0xC4;
+			return '\xC4';
 		case U'┼':
-			return 0xC5;
+			return '\xC5';
 		case U'╞':
-			return 0xC6;
+			return '\xC6';
 		case U'╟':
-			return 0xC7;
+			return '\xC7';
 		case U'╚':
-			return 0xC8;
+			return '\xC8';
 		case U'╔':
-			return 0xC9;
+			return '\xC9';
 		case U'╩':
-			return 0xCA;
+			return '\xCA';
 		case U'╦':
-			return 0xCB;
+			return '\xCB';
 		case U'╠':
-			return 0xCC;
+			return '\xCC';
 		case U'═':
-			return 0xCD;
+			return '\xCD';
 		case U'╬':
-			return 0xCE;
+			return '\xCE';
 		case U'╧':
-			return 0xCF;
+			return '\xCF';
 		case U'╨':
-			return 0xD0;
+			return '\xD0';
 		case U'╤':
-			return 0xD1;
+			return '\xD1';
 		case U'╥':
-			return 0xD2;
+			return '\xD2';
 		case U'╙':
-			return 0xD3;
+			return '\xD3';
 		case U'╘':
-			return 0xD4;
+			return '\xD4';
 		case U'╒':
-			return 0xD5;
+			return '\xD5';
 		case U'╓':
-			return 0xD6;
+			return '\xD6';
 		case U'╫':
-			return 0xD7;
+			return '\xD7';
 		case U'╪':
-			return 0xD8;
+			return '\xD8';
 		case U'┘':
-			return 0xD9;
+			return '\xD9';
 		case U'┌':
-			return 0xDA;
+			return '\xDA';
 		case U'█':
-			return 0xDB;
+			return '\xDB';
 		case U'▄':
-			return 0xDC;
+			return '\xDC';
 		case U'▌':
-			return 0xDD;
+			return '\xDD';
 		case U'▐':
-			return 0xDE;
+			return '\xDE';
 		case U'▀':
-			return 0xDF;
+			return '\xDF';
 
 		case U'Ё':
-			return 0xF0;
+			return '\xF0';
 		case U'ё':
-			return 0xF1;
+			return '\xF1';
 		case U'Є':
-			return 0xF2;
+			return '\xF2';
 		case U'є':
-			return 0xF3;
+			return '\xF3';
 		case U'Ї':
-			return 0xF4;
+			return '\xF4';
 		case U'ї':
-			return 0xF5;
+			return '\xF5';
 		case U'Ў':
-			return 0xF6;
+			return '\xF6';
 		case U'ў':
-			return 0xF7;
+			return '\xF7';
 
 		case U'°':
-			return 0xF8;
+			return '\xF8';
 		case U'∙':
-			return 0xF9;
+			return '\xF9';
 		case U'·':
-			return 0xFA;
+			return '\xFA';
 		case U'√':
-			return 0xFB;
+			return '\xFB';
 		case U'№':
-			return 0xBC;
+			return '\xFC';
 		case U'¤':
-			return 0xFD;
+			return '\xFD';
 		case U'■':
-			return 0xFE;
+			return '\xFE';
 		case 0xA0:
-			return 0xFF;
+			return '\xFF';
 
 		default:
-			return 0xFE;
+			return '\x1A';
 	}
 }
 
-char char_to_cp1251(const char32_t symbol)
+static char char_to_cp1251(const char32_t symbol)
 {
-	if (symbol >= U'А' && symbol <= U'Я')
+	if (symbol < 0x80)
+	{
+		return (char)symbol;
+	}
+	
+	if (symbol >= U'А' && symbol <= U'я')
 	{
 		return (char)(symbol - U'А' + 0xC0);
-	}
-
-	if (symbol >= U'а' && symbol <= U'п')
-	{
-		return (char)(symbol - U'а' + 0xE0);
-	}
-
-	if (symbol >= U'р' && symbol <= U'я')
-	{
-		return (char)(symbol - U'р' + 0xF0);
 	}
 
 	switch (symbol)
 	{
 		case U'Ђ':
-			return 0x80;
+			return '\x80';
 		case U'Ѓ':
-			return 0x81;
+			return '\x81';
 		case U'‚':
-			return 0x82;
+			return '\x82';
 		case U'ѓ':
-			return 0x83;
+			return '\x83';
 		case U'„':
-			return 0x84;
+			return '\x84';
 		case U'…':
-			return 0x85;
+			return '\x85';
 		case U'†':
-			return 0x86;
+			return '\x86';
 		case U'‡':
-			return 0x87;
+			return '\x87';
 		case U'€':
-			return 0x88;
+			return '\x88';
 		case U'‰':
-			return 0x89;
+			return '\x89';
 		case U'Љ':
-			return 0x8A;
+			return '\x8A';
 		case U'‹':
-			return 0x8B;
+			return '\x8B';
 		case U'Њ':
-			return 0x8C;
+			return '\x8C';
 		case U'Ќ':
-			return 0x8D;
+			return '\x8D';
 		case U'Ћ':
-			return 0x8E;
+			return '\x8E';
 		case U'Џ':
-			return 0x8F;
+			return '\x8F';
 		case U'ђ':
-			return 0x90;
+			return '\x90';
 		case U'‘':
-			return 0x91;
+			return '\x91';
 		case U'’':
-			return 0x92;
+			return '\x92';
 		case U'“':
-			return 0x93;
+			return '\x93';
 		case U'”':
-			return 0x94;
+			return '\x94';
 		case U'•':
-			return 0x95;
+			return '\x95';
 		case U'–':
-			return 0x96;
+			return '\x96';
 		case U'—':
-			return 0x97;
+			return '\x97';
 
 		case U'™':
-			return 0x99;
+			return '\x99';
 		case U'љ':
-			return 0x9A;
+			return '\x9A';
 		case U'›':
-			return 0x9B;
+			return '\x9B';
 		case U'њ':
-			return 0x9C;
+			return '\x9C';
 		case U'ќ':
-			return 0x9D;
+			return '\x9D';
 		case U'ћ':
-			return 0x9E;
+			return '\x9E';
 		case U'џ':
-			return 0x9F;
+			return '\x9F';
 
 		case U'Ў':
-			return 0xA1;
+			return '\xA1';
 		case U'ў':
-			return 0xA2;
+			return '\xA2';
 		case U'Ј':
-			return 0xA3;
+			return '\xA3';
 
 		case U'Ґ':
-			return 0xA5;
+			return '\xA5';
 
 		case U'Ё':
-			return 0xA8;
+			return '\xA8';
 
 		case U'Є':
-			return 0xAA;
+			return '\xAA';
 
 		case U'Ї':
-			return 0xAF;
+			return '\xAF';
 
 		case U'І':
-			return 0xB2;
+			return '\xB2';
 		case U'і':
-			return 0xB3;
+			return '\xB3';
 		case U'ґ':
-			return 0xB4;
+			return '\xB4';
 
 		case U'ё':
-			return 0xB8;
+			return '\xB8';
 		case U'№':
-			return 0xB9;
+			return '\xB9';
 		case U'є':
-			return 0xBA;
+			return '\xBA';
 
 		case U'ј':
-			return 0xBC;
+			return '\xBC';
 		case U'Ѕ':
-			return 0xBD;
+			return '\xBD';
 		case U'ѕ':
-			return 0xBE;
+			return '\xBE';
 		case U'ї':
-			return 0xBF;
+			return '\xBF';
 
 		case 0xA0:
 		case U'¤':
@@ -315,36 +627,25 @@ char char_to_cp1251(const char32_t symbol)
 			return (char)symbol;
 
 		default:
-			return 0x98;
+			return '\x1A';
 	}
 }
 
-size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
+static inline size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_codepage)(const char32_t))
 {
 	if (src == NULL || dest == NULL)
 	{
 		return 0;
 	}
 
-	size_t i = 0;
-	size_t j = 0;
-	while (src[i] != '\0')
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i += utf8_symbol_size(src[i]))
 	{
-		const size_t size = utf8_symbol_size(src[i]);
-		if (size == 1)
-		{
-			dest[j++] = src[i];
-		}
-		else
-		{
-			dest[j++] = char_to_codepage(utf8_convert(&src[i]));
-		}
-
-		i += size;
+		dest[size++] = char_to_codepage(utf8_convert(&src[i]));
 	}
 
-	dest[j] = '\0';
-	return j;
+	dest[size] = '\0';
+	return size;
 }
 
 
@@ -357,24 +658,49 @@ size_t utf8_to_codepage(const char *const src, char *const dest, char (*char_to_
  */
 
 
-size_t utf8_symbol_size(const char symbol)
+size_t utf8_size(const char32_t symbol)
 {
-	if ((symbol & 0b10000000) == 0b00000000)
+	if ((symbol & 0xFFFFFF80) == 0)
 	{
 		return 1;
 	}
 
-	if ((symbol & 0b11100000) == 0b11000000)
+	if ((symbol & 0xFFFFF800) == 0)
 	{
 		return 2;
 	}
 
-	if ((symbol & 0b11110000) == 0b11100000)
+	if ((symbol & 0xFFFF0000) == 0)
 	{
 		return 3;
 	}
 
-	if ((symbol & 0b11111000) == 0b11110000)
+	if ((symbol & 0xFFE00000) == 0)
+	{
+		return 4;
+	}
+
+	return 0;
+}
+
+size_t utf8_symbol_size(const char symbol)
+{
+	if ((symbol & 0x80 /* 0b10000000 */) == 0x00 /* 0b00000000 */)
+	{
+		return 1;
+	}
+
+	if ((symbol & 0xE0 /* 0b11100000 */) == 0xC0 /* 0b11000000 */)
+	{
+		return 2;
+	}
+
+	if ((symbol & 0xF0 /* 0b11110000 */) == 0xE0 /* 0b11100000 */)
+	{
+		return 3;
+	}
+
+	if ((symbol & 0xF8 /* 0b11111000 */) == 0xF0 /* 0b11110000 */)
 	{
 		return 4;
 	}
@@ -384,9 +710,14 @@ size_t utf8_symbol_size(const char symbol)
 
 size_t utf8_to_first_byte(const char *const str, const size_t index)
 {
-	return str == NULL ? 0
-		: (str[index] & 0b11000000) == 0b10000000
-			? utf8_to_first_byte(str, index - 1) : index;
+	if (str == NULL)
+	{
+		return 0;
+	}
+
+	return (str[index] & 0xC0 /* 0b11000000 */) == 0x80 /* 0b10000000 */
+		? utf8_to_first_byte(str, index - 1)
+		: index;
 }
 
 char32_t utf8_convert(const char *const symbol)
@@ -447,7 +778,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 	for (size_t i = 0; i < octets; i++)
 	{
-		buffer[i] = 0b10000000;
+		buffer[i] = '\x80' /* 0b10000000 */;
 		buffer[i] |= (char)((symbol & mask) >> (6 * (octets - i - 1)));
 		mask >>= 6;
 	}
@@ -455,20 +786,30 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 	switch (octets)
 	{
 		case 2:
-			buffer[0] |= 0b11000000;
+			buffer[0] |= 0xC0 /* 0b11000000 */;
 			break;
 
 		case 3:
-			buffer[0] |= 0b11100000;
+			buffer[0] |= 0xE0 /* 0b11100000 */;
 			break;
 
 		case 4:
-			buffer[0] |= 0b11110000;
+			buffer[0] |= 0xF0 /* 0b11110000 */;
 			break;
 	}
 
 	buffer[octets] = '\0';
 	return octets;
+}
+
+size_t utf8_from_cp866(const char *const src, char *const dest)
+{
+	return utf8_from_codepage(src, dest, &char32_from_cp866);
+}
+
+size_t utf8_from_cp1251(const char *const src, char *const dest)
+{
+	return utf8_from_codepage(src, dest, &char32_from_cp1251);
 }
 
 size_t utf8_to_cp866(const char *const src, char *const dest)
@@ -485,7 +826,7 @@ char32_t utf8_to_upper(const char32_t symbol)
 {
 	if (symbol >= 'a' && symbol <= 'z')
 	{
-		return symbol + ('A' - 'a');
+		return symbol + (char32_t)('A' - 'a');
 	}
 
 	if (symbol >= U'а' && symbol <= U'я')
@@ -496,7 +837,27 @@ char32_t utf8_to_upper(const char32_t symbol)
 	return symbol;
 }
 
-int utf8_is_russian(const char32_t symbol)
+uint8_t utf8_to_number(const char32_t symbol)
+{
+	if (utf8_is_digit(symbol))
+	{
+		return (uint8_t)(symbol - '0');
+	}
+
+	if (symbol >= 'A' && symbol <= 'F')
+	{
+		return (uint8_t)(symbol - 'A' + 10);
+	}
+
+	if (symbol >= 'a' && symbol <= 'f')
+	{
+		return (uint8_t)(symbol - 'a' + 10);
+	}
+
+	return 0;
+}
+
+bool utf8_is_russian(const char32_t symbol)
 {
 	return  symbol == U'Ё' || symbol == U'ё'
 		|| (symbol >= U'А' && symbol <= U'Я')
@@ -504,19 +865,26 @@ int utf8_is_russian(const char32_t symbol)
 		|| (symbol >= U'р' && symbol <= U'я');
 }
 
-int utf8_is_letter(const char32_t symbol)
+bool utf8_is_letter(const char32_t symbol)
 {
 	return  utf8_is_russian(symbol) || symbol == '_'
 		|| (symbol >= 'A' && symbol <= 'Z')
 		|| (symbol >= 'a' && symbol <= 'z');
 }
 
-int utf8_is_digit(const char32_t symbol)
+bool utf8_is_digit(const char32_t symbol)
 {
 	return symbol >= '0' && symbol <= '9';
 }
 
-int utf8_is_power(const char32_t symbol)
+bool utf8_is_hexa_digit(const char32_t symbol)
+{
+	return utf8_is_digit(symbol)
+		|| (symbol >= 'A' && symbol <= 'F')
+		|| (symbol >= 'a' && symbol <= 'f');
+}
+
+bool utf8_is_power(const char32_t symbol)
 {
 	return symbol == 'e' || symbol == 'E' || symbol == U'е' || symbol == U'Е';
 }

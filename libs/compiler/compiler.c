@@ -19,6 +19,7 @@
 #include <string.h>
 #include "codegen.h"
 #include "errors.h"
+#include "llvmgen.h"
 #include "parser.h"
 #include "preprocessor.h"
 #include "syntax.h"
@@ -30,18 +31,18 @@
 #endif
 
 
-const char *const DEFAULT_MACRO = "macro.txt";
+static const char *const DEFAULT_MACRO = "macro.txt";
 
-const char *const DEFAULT_VM = "out.ruc";
-const char *const DEFAULT_LLVM = "out.ll";
-const char *const DEFAULT_MIPS = "out.s";
+static const char *const DEFAULT_VM = "out.ruc";
+static const char *const DEFAULT_LLVM = "out.ll";
+static const char *const DEFAULT_MIPS = "out.s";
 
 
-typedef int (*encoder)(const workspace *const ws, universal_io *const io, syntax *const sx);
+typedef int (*encoder)(const workspace *const ws, syntax *const sx);
 
 
 /** Make executable actually executable on best-effort basis (if possible) */
-static void make_executable(const char *const path)
+static inline void make_executable(const char *const path)
 {
 #ifndef _MSC_VER
 	struct stat stat_buf;
@@ -57,35 +58,60 @@ static void make_executable(const char *const path)
 #endif
 }
 
+/** Skip linker stage */
+static inline bool skip_linker(const workspace *const ws)
+{
+	for (size_t i = 0; ; i++)
+	{
+		const char *flag = ws_get_flag(ws, i);
+		if (flag == NULL)
+		{
+			return false;
+		}
+		else if (strcmp(flag, "-c") == 0)
+		{
+			return true;
+		}
+	}
+}
 
-int compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
+
+static status_t compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
 	if (!in_is_correct(io) || !out_is_correct(io))
 	{
 		error_msg("некорректные параметры ввода/вывода");
 		io_erase(io);
-		return -1;
+		return sts_system_error;
 	}
 
-	syntax sx = sx_create();
-	int ret = parse(ws, io, &sx);
+	syntax sx = sx_create(ws, io);
+	int ret = parse(&sx);
+	status_t sts = sts_parse_error;
+
+	if (!ret && !skip_linker(ws))
+	{
+		ret = !sx_is_correct(&sx);
+		sts = sts_link_error;
+	}
 
 	if (!ret)
 	{
-		ret = enc(ws, io, &sx);
+		ret = enc(ws, &sx);
+		sts = sts_codegen_error;
 	}
 
 	sx_clear(&sx);
 	io_erase(io);
-	return ret;
+	return ret ? sts : sts_success;
 }
 
-int compile_from_ws(workspace *const ws, const encoder enc)
+static status_t compile_from_ws(workspace *const ws, const encoder enc)
 {
 	if (!ws_is_correct(ws) || ws_get_files_num(ws) == 0)
 	{
 		error_msg("некорректные входные данные");
-		return -1;
+		return sts_system_error;
 	}
 
 	universal_io io = io_create();
@@ -95,7 +121,7 @@ int compile_from_ws(workspace *const ws, const encoder enc)
 	char *const preprocessing = macro(ws); // макрогенерация
 	if (preprocessing == NULL)
 	{
-		return -1;
+		return sts_macro_error;
 	}
 
 	in_set_buffer(&io, preprocessing);
@@ -103,19 +129,19 @@ int compile_from_ws(workspace *const ws, const encoder enc)
 	int ret_macro = macro_to_file(ws, DEFAULT_MACRO);
 	if (ret_macro)
 	{
-		return ret_macro;
+		return sts_macro_error;
 	}
 
 	in_set_file(&io, DEFAULT_MACRO);
 #endif
 
 	out_set_file(&io, ws_get_output(ws));
-	const int ret = compile_from_io(ws, &io, enc);
+	const status_t sts = compile_from_io(ws, &io, enc);
 
 #ifndef GENERATE_MACRO
 	free(preprocessing);
 #endif
-	return ret;
+	return sts;
 }
 
 
@@ -128,7 +154,7 @@ int compile_from_ws(workspace *const ws, const encoder enc)
  */
 
 
-int compile(workspace *const ws)
+status_t compile(workspace *const ws)
 {
 	for (size_t i = 0; ; i++)
 	{
@@ -138,36 +164,64 @@ int compile(workspace *const ws)
 		{
 			return compile_to_vm(ws);
 		}
+		else if (strcmp(flag, "-LLVM") == 0)
+		{
+			return compile_to_llvm(ws);
+		}
 	}
 }
 
-int compile_to_vm(workspace *const ws)
+status_t compile_to_vm(workspace *const ws)
 {
 	if (ws_get_output(ws) == NULL)
 	{
 		ws_set_output(ws, DEFAULT_VM);
 	}
 
-	const int ret = compile_from_ws(ws, &encode_to_vm);
-	if (!ret)
+	const status_t sts = compile_from_ws(ws, &encode_to_vm);
+	if (sts == sts_success)
 	{
 		make_executable(ws_get_output(ws));
 	}
 
-	return ret;
+	return sts == sts_codegen_error ? sts_virtul_error : sts;
 }
+
+status_t compile_to_llvm(workspace *const ws)
+{
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_LLVM);
+	}
+
+	const status_t sts = compile_from_ws(ws, &encode_to_llvm);
+	return sts == sts_codegen_error ? sts_llvm_error : sts;
+}
+
 
 
 int auto_compile(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return compile(&ws);
+	const int ret = compile(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 int auto_compile_to_vm(const int argc, const char *const *const argv)
 {
 	workspace ws = ws_parse_args(argc, argv);
-	return compile_to_vm(&ws);
+	const int ret = compile_to_vm(&ws);
+	ws_clear(&ws);
+	return ret;
+}
+
+int auto_compile_to_llvm(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	const status_t ret = compile_to_llvm(&ws);
+	ws_clear(&ws);
+	return ret;
 }
 
 
@@ -187,5 +241,21 @@ int no_macro_compile_to_vm(const char *const path)
 		make_executable(ws_get_output(&ws));
 	}
 
+	ws_clear(&ws);
+	return ret;
+}
+
+int no_macro_compile_to_llvm(const char *const path)
+{
+	universal_io io = io_create();
+	in_set_file(&io, path);
+
+	workspace ws = ws_create();
+	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_LLVM);
+	out_set_file(&io, ws_get_output(&ws));
+
+	const int ret = compile_from_io(&ws, &io, &encode_to_llvm);
+	ws_clear(&ws);
 	return ret;
 }

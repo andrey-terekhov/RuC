@@ -22,7 +22,8 @@
 #include "workspace.h"
 
 
-const char *name = "../tests/reutovr.c";
+const char *name = "../tests/executable/output/printf/string_rus.c";
+// "../tests/mips/0test.c";
 
 
 int main(int argc, const char *argv[])
@@ -37,8 +38,11 @@ int main(int argc, const char *argv[])
 	}
 
 #ifdef TESTING_EXIT_CODE
-	return compile(&ws) ? TESTING_EXIT_CODE : 0;
+	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	return compile(&ws);
+	const int ret = compile(&ws);
 #endif
+
+	ws_clear(&ws);
+	return ret;
 }
