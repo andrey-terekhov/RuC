@@ -8,7 +8,7 @@ int global;
 
 // NONE: define internal void @asan.module_ctor() #[[#ATTR:]] {
 // NONE: define internal void @asan.module_dtor() #[[#ATTR]] {
-// NONE: attributes #[[#ATTR]] = { nounwind }
+// NONE: attributes #[[#ATTR]] = { nounwind } 
 
 // NONLEAF: define internal void @asan.module_ctor() #[[#ATTR:]] {
 // NONLEAF: define internal void @asan.module_dtor() #[[#ATTR]] {
