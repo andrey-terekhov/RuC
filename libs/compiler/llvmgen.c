@@ -947,7 +947,7 @@ static void emit_subscript_expression(information *const info, const node *const
 		base = node_get_type(&base) == OP_SLICE ? expression_subscript_get_base(&base) : node_broken();
 	}
 
-	const size_t id = expression_identifier_get_id(&base);
+	const size_t id = node_get_type(&base) == OP_IDENTIFIER ? expression_identifier_get_id(&base) : SIZE_MAX;
 	location_t location = info->variable_location;
 	const size_t dimensions = hash_get_amount(&info->arrays, id) - 1;
 
