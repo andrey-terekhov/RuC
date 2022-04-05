@@ -42,4 +42,4 @@ jobs:
         uses: actions/checkout@v1
       - run: patch ./scripts/test.sh < ./scripts/llvm.patch
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -w 3
