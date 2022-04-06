@@ -928,6 +928,7 @@ static void emit_subscript_expression(information *const info, const node *const
 			}
 			else
 			{
+				uni_printf(info->sx->io, " call void @exit(i32 1)");
 				info->answer_const = ITEM_MAX;
 			}
 		}
