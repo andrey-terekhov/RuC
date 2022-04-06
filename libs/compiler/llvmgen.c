@@ -1680,7 +1680,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_const_double(info, info->answer_const_double, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
-	else if (type_is_floating(operation_type))
+	else if (type_is_boolean(operation_type))
 	{
 		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
