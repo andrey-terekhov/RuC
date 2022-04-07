@@ -1381,7 +1381,6 @@ static void emit_unary_expression(information *const info, const node *const nd)
 				}
 				else
 				{
-					check_type_and_branch(info, expression_get_type(&operand));
 					to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
 				}
 				info->answer_reg = info->register_num++;
