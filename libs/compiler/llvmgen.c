@@ -1626,7 +1626,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	size_t result = info->answer_reg;
 
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_INTEGER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER && info->answer_kind != ACONST)
 	{
 		to_code_char_to_int(info, result);
 		result = info->register_num - 1;
@@ -1634,7 +1634,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_CHARACTER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER && info->answer_kind != ACONST)
 	{
 		to_code_int_to_char(info, result);
 		result = info->register_num - 1;
