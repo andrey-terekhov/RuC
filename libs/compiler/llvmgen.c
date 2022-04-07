@@ -402,6 +402,7 @@ static void to_code_load(information *const info, const size_t result, const siz
 				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
 			}
 		}
+		uni_printf(info->sx->io, "__%zu", id);
 		uni_printf(info->sx->io, ", align 4\n");
 		return;
 	}
@@ -1083,6 +1084,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 					uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
 				}
 			}
+			uni_printf(info->sx->io, "__%zu", func_ref);
 		}
 		else
 		{
@@ -1151,6 +1153,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 					uni_printf(info->sx->io, "%c",  'A' + (abs(str[j]) % ('z' - 'A')));
 				}
 			}
+			uni_printf(info->sx->io, "__%zu", func_ref);
 		}
 		else if (arguments_type[i] == AREG || arguments_type[i] == ALOGIC)
 		{
@@ -2465,6 +2468,7 @@ static void emit_function_definition(information *const info, const node *const 
 				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
 			}
 		}
+		uni_printf(info->sx->io, "__%zu", ref_ident);
 		uni_printf(info->sx->io, "(");
 	}
 
