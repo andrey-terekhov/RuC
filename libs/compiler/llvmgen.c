@@ -3148,7 +3148,9 @@ static void builin_functions_declaration(information *const info)
 			else
 			{
 				type_to_io(info, ret_type);
-				uni_printf(info->sx->io, " @%s(", ident_get_spelling(info->sx, i));
+				uni_printf(info->sx->io, " @");
+				func_name_to_io(info, i);
+				uni_printf(info->sx->io, "(");
 			}
 
 			for (size_t j = 0; j < parameters; j++)
