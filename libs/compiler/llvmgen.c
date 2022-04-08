@@ -131,8 +131,7 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 static void func_name_to_io(information *const info, const size_t func_ref)
 {
 	const char *str = ident_get_spelling(info->sx, func_ref);
-	size_t len = strlen(str);
-	for (size_t i = 0; i < len; i++)
+	for (size_t i = 0; str[i] != 0; i++)
 	{
 		if (str[i] > 0)
 		{
