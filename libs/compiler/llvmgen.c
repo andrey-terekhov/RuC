@@ -128,6 +128,23 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 	return i;
 }
 
+static void func_name_to_io(information *const info, const size_t func_ref)
+{
+	const char *str = ident_get_spelling(info->sx, func_ref);
+	size_t len = strlen(str);
+	for (size_t i = 0; i < len; i++)
+	{
+		if (str[i] > 0)
+		{
+			uni_printf(info->sx->io, "%c", str[i]);
+		}
+		else
+		{
+			uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
+		}
+	}
+}
+
 static void type_to_io(information *const info, const item_t type)
 {
 	const type_t type_class = type_get_class(info->sx, type);
@@ -389,19 +406,7 @@ static void to_code_load(information *const info, const size_t result, const siz
 	if (type_get_class(info->sx, type) == TYPE_FUNCTION && !is_local)
 	{
 		uni_printf(info->sx->io, "* @");
-		const char *str = ident_get_spelling(info->sx, info->func_ref);
-		size_t len = strlen(str);
-		for (size_t i = 0; i < len; i++)
-		{
-			if (str[i] > 0)
-			{
-				uni_printf(info->sx->io, "%c", str[i]);
-			}
-			else
-			{
-				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
-			}
-		}
+		func_name_to_io(info, info->func_ref);
 		uni_printf(info->sx->io, ", align 4\n");
 		return;
 	}
@@ -1070,19 +1075,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		if (ident_is_local(info->sx, func_ref))
 		{
 			uni_printf(info->sx->io, " @");
-			const char *str = ident_get_spelling(info->sx, func_ref);
-			size_t len = strlen(str);
-			for (size_t i = 0; i < len; i++)
-			{
-				if (str[i] > 0)
-				{
-					uni_printf(info->sx->io, "%c", str[i]);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
-				}
-			}
+			func_name_to_io(info, func_ref);
 		}
 		else
 		{
@@ -1138,19 +1131,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 			const size_t id = expression_identifier_get_id(&argument);
 
 			uni_printf(info->sx->io, " @");
-			const char *str = ident_get_spelling(info->sx, id);
-			size_t len = strlen(str);
-			for (size_t j = 0; j < len; j++)
-			{
-				if (str[j] > 0)
-				{
-					uni_printf(info->sx->io, "%c", str[j]);
-				}
-				else
-				{
-					uni_printf(info->sx->io, "%c",  'A' + (abs(str[j]) % ('z' - 'A')));
-				}
-			}
+			func_name_to_io(info, id);
 		}
 		else if (arguments_type[i] == AREG || arguments_type[i] == ALOGIC)
 		{
@@ -2452,19 +2433,7 @@ static void emit_function_definition(information *const info, const node *const 
 	else
 	{
 		uni_printf(info->sx->io, " @");
-		const char *str = ident_get_spelling(info->sx, ref_ident);
-		size_t len = strlen(str);
-		for (size_t i = 0; i < len; i++)
-		{
-			if (str[i] > 0)
-			{
-				uni_printf(info->sx->io, "%c", str[i]);
-			}
-			else
-			{
-				uni_printf(info->sx->io, "%c",  'A' + (abs(str[i]) % ('z' - 'A')));
-			}
-		}
+		func_name_to_io(info, ref_ident);
 		uni_printf(info->sx->io, "(");
 	}
 
