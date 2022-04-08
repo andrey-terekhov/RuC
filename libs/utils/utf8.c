@@ -649,6 +649,226 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
 }
 
 
+static size_t char_transliteration(char *const buffer, const char32_t symbol)
+{
+	if (symbol < U'А' && symbol > U'я')
+	{
+		return utf8_to_string(buffer, symbol);
+	}
+
+	switch (symbol)
+	{
+		case U'А':
+			buffer[0] = 'A';
+			return 1;
+		case U'а':
+			buffer[0] = 'a';
+			return 1;
+		case U'Б':
+			buffer[0] = 'B';
+			return 1;
+		case U'б':
+			buffer[0] = 'b';
+			return 1;
+		case U'В':
+			buffer[0] = 'V';
+			return 1;
+		case U'в':
+			buffer[0] = 'v';
+			return 1;
+		case U'Г':
+			buffer[0] = 'G';
+			return 1;
+		case U'г':
+			buffer[0] = 'g';
+			return 1;
+		case U'Д':
+			buffer[0] = 'D';
+			return 1;
+		case U'д':
+			buffer[0] = 'd';
+			return 1;
+		case U'З':
+			buffer[0] = 'Z';
+			return 1;
+		case U'з':
+			buffer[0] = 'z';
+			return 1;
+		case U'И':
+		case U'Й':
+			buffer[0] = 'I';
+			return 1;
+		case U'и':
+		case U'й':
+			buffer[0] = 'i';
+			return 1;
+		case U'К':
+			buffer[0] = 'K';
+			return 1;
+		case U'к':
+			buffer[0] = 'k';
+			return 1;
+		case U'Л':
+			buffer[0] = 'L';
+			return 1;
+		case U'л':
+			buffer[0] = 'l';
+			return 1;
+		case U'М':
+			buffer[0] = 'M';
+			return 1;
+		case U'м':
+			buffer[0] = 'm';
+			return 1;
+		case U'Н':
+			buffer[0] = 'N';
+			return 1;
+		case U'н':
+			buffer[0] = 'n';
+			return 1;
+		case U'О':
+			buffer[0] = 'O';
+			return 1;
+		case U'о':
+			buffer[0] = 'o';
+			return 1;
+		case U'П':
+			buffer[0] = 'P';
+			return 1;
+		case U'п':
+			buffer[0] = 'p';
+			return 1;
+		case U'Р':
+			buffer[0] = 'R';
+			return 1;
+		case U'р':
+			buffer[0] = 'r';
+			return 1;
+		case U'С':
+			buffer[0] = 'S';
+			return 1;
+		case U'с':
+			buffer[0] = 's';
+			return 1;
+		case U'Т':
+			buffer[0] = 'T';
+			return 1;
+		case U'т':
+			buffer[0] = 't';
+			return 1;
+		case U'У':
+			buffer[0] = 'U';
+			return 1;
+		case U'у':
+			buffer[0] = 'u';
+			return 1;
+		case U'Ф':
+			buffer[0] = 'F';
+			return 1;
+		case U'ф':
+			buffer[0] = 'f';
+			return 1;
+		case U'Ы':
+			buffer[0] = 'Y';
+			return 1;
+		case U'ы':
+			buffer[0] = 'y';
+			return 1;
+		case U'Е':
+		case U'Ё':
+		case U'Э':
+			buffer[0] = 'E';
+			return 1;
+		case U'е':
+		case U'ё':
+		case U'э':
+			buffer[0] = 'e';
+			return 1;
+
+		case U'Ж':
+			buffer[0] = 'Z';
+			buffer[1] = 'h';
+			return 2;
+		case U'ж':
+			buffer[0] = 'z';
+			buffer[1] = 'h';
+			return 2;
+		case U'Х':
+			buffer[0] = 'K';
+			buffer[1] = 'h';
+			return 2;
+		case U'х':
+			buffer[0] = 'k';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ц':
+			buffer[0] = 'T';
+			buffer[1] = 's';
+			return 2;
+		case U'ц':
+			buffer[0] = 't';
+			buffer[1] = 's';
+			return 2;
+		case U'Ч':
+			buffer[0] = 'C';
+			buffer[1] = 'h';
+			return 2;
+		case U'ч':
+			buffer[0] = 'c';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ш':
+			buffer[0] = 'S';
+			buffer[1] = 'h';
+			return 2;
+		case U'ш':
+			buffer[0] = 's';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ъ':
+			buffer[0] = 'I';
+			buffer[1] = 'e';
+			return 2;
+		case U'ъ':
+			buffer[0] = 'i';
+			buffer[1] = 'e';
+			return 2;
+		case U'Ю':
+			buffer[0] = 'I';
+			buffer[1] = 'u';
+			return 2;
+		case U'ю':
+			buffer[0] = 'i';
+			buffer[1] = 'u';
+			return 2;
+		case U'Я':
+			buffer[0] = 'I';
+			buffer[1] = 'a';
+			return 2;
+		case U'я':
+			buffer[0] = 'i';
+			buffer[1] = 'a';
+			return 2;
+
+		case U'Щ':
+			buffer[0] = 'S';
+			buffer[1] = 'h';
+			buffer[2] = 'c';
+			buffer[3] = 'h';
+			return 4;
+		case U'щ':
+			buffer[0] = 's';
+			buffer[1] = 'h';
+			buffer[2] = 'c';
+			buffer[3] = 'h';
+			return 4;
+
+		default:
+			return 0;
+	}
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -820,6 +1040,24 @@ size_t utf8_to_cp866(const char *const src, char *const dest)
 size_t utf8_to_cp1251(const char *const src, char *const dest)
 {
 	return utf8_to_codepage(src, dest, &char_to_cp1251);
+}
+
+
+size_t utf8_transliteration(const char *const src, char *const dest)
+{
+	if (src == NULL || dest == NULL)
+	{
+		return 0;
+	}
+
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i += utf8_symbol_size(src[i]))
+	{
+		size += char_transliteration(&dest[size], utf8_convert(&src[i]));
+	}
+
+	dest[size] = '\0';
+	return size;
 }
 
 char32_t utf8_to_upper(const char32_t symbol)

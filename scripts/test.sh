@@ -2,7 +2,7 @@
 
 init()
 {
-	exit_code=1
+	exit_code=64
 	vm_exec=export.txt
 
 	vm_release=master
@@ -502,4 +502,3 @@ main()
 }
 
 main $@
-

@@ -1,9 +1,9 @@
---- test.sh	2022-03-09 20:38:58.473520400 +0300
-+++ llvm.sh	2022-03-09 20:40:27.502109200 +0300
+--- test.sh	2022-04-01 17:47:11.615209900 +0300
++++ llvm.sh	2022-04-01 17:50:50.542879300 +0300
 @@ -3,7 +3,9 @@
  init()
  {
- 	exit_code=1
+ 	exit_code=64
 -	vm_exec=export.txt
 +	vm_exec=export.ll
 +	llvm_exec=export
@@ -40,7 +40,35 @@
  
  		case $? in
  			0)
-@@ -379,9 +379,9 @@
+@@ -292,7 +292,7 @@
+ 				message_timeout
+ 				let timeout++
+ 				;;
+-			$exit_code)
++			*)
+ 				if [[ $path == */$subdir_error/* ]] ; then
+ 					if [[ $build_type == "(Debug)" ]] ; then
+ 						build_type=""
+@@ -312,18 +312,6 @@
+ 					fi
+ 				fi
+ 				;;
+-			*)
+-				# Segmentation fault
+-				# Double free or corruption (!prev)
+-				# Etcetera
+-
+-				message_failure
+-				let failure++
+-
+-				if ! [[ -z $debug ]] ; then
+-					cat $log
+-				fi
+-				;;
+ 		esac
+ 	else
+ 		let success++
+@@ -379,9 +367,9 @@
  compiling()
  {
  	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
