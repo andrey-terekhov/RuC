@@ -1053,7 +1053,7 @@ size_t utf8_transliteration(const char *const src, char *const dest)
 	size_t size = 0;
 	for (size_t i = 0; src[i] != '\0'; i += utf8_symbol_size(src[i]))
 	{
-		size += char_transliteration(dest[size], utf8_convert(&src[i]));
+		size += char_transliteration(&dest[size], utf8_convert(&src[i]));
 	}
 
 	dest[size] = '\0';
