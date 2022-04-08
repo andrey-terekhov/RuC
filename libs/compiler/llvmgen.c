@@ -25,6 +25,7 @@
 #define MAX_FUNCTION_ARGS 128
 #define MAX_PRINTF_ARGS 128
 #define MAX_CASES 4096
+#define MAX_NAME 4096
 
 
 static const size_t HASH_TABLE_SIZE = 1024;
@@ -136,7 +137,10 @@ static void func_name_to_io(information *const info, const size_t func_ref)
 		return;
 	}
 
-	uni_printf(info->sx->io, "__ruc_%zu", func_ref);
+	const char *name = ident_get_spelling(info->sx, func_ref);
+	char modified_name[MAX_NAME];
+	utf8_transliteration(name, modified_name);
+	uni_printf(info->sx->io, "%s", modified_name);
 }
 
 static void type_to_io(information *const info, const item_t type)
