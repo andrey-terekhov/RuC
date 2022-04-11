@@ -651,11 +651,6 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
 
 static size_t char_transliteration(char *const buffer, const char32_t symbol)
 {
-	if (symbol < U'А' || symbol > U'я')
-	{
-		return utf8_to_string(buffer, symbol);
-	}
-
 	switch (symbol)
 	{
 		case U'А':
@@ -863,8 +858,12 @@ static size_t char_transliteration(char *const buffer, const char32_t symbol)
 			buffer[3] = 'h';
 			return 4;
 
-		default:
+		case U'Ь':
+		case U'ь':
 			return 0;
+
+		default:
+			return utf8_to_string(buffer, symbol);
 	}
 }
 
