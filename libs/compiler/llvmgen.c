@@ -131,13 +131,13 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 
 static void func_name_to_io(information *const info, const size_t func_ref)
 {
+	const char *name = ident_get_spelling(info->sx, func_ref);
 	if (func_ref < BEGIN_USER_FUNC)
 	{
-		uni_printf(info->sx->io, "%s", ident_get_spelling(info->sx, func_ref));
+		uni_printf(info->sx->io, "%s", name);
 		return;
 	}
 
-	const char *name = ident_get_spelling(info->sx, func_ref);
 	char modified_name[MAX_NAME];
 	utf8_transliteration(name, modified_name);
 	uni_printf(info->sx->io, "%s", modified_name);
