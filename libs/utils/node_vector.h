@@ -39,7 +39,7 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-node_vector node_vector_create(void);
+EXPORTED node_vector node_vector_create(void);
 
 /**
  *	Add new node
