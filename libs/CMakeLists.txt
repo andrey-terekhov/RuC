@@ -10,5 +10,5 @@ add_subdirectory(preprocessor)
 # Add compiler library
 add_subdirectory(compiler)
 
-# Add compiler library
+# Add C++ wrapper library
 add_subdirectory(cpp-wrap)
