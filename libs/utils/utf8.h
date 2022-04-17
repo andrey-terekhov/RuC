@@ -22,7 +22,9 @@
 #include "dll.h"
 
 #ifdef __APPLE__
+#ifndef __cplusplus
 	typedef uint32_t char32_t;
+#endif
 #else
 	#include <uchar.h>
 #endif
