@@ -15,6 +15,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 if(MSVC)
+	set(CMAKE_CXX_STANDARD 20)
+
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
 	add_compile_options(/W4 /WX /wd4204 /wd4221 /wd5105 /utf-8
 						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
