@@ -39,10 +39,7 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-inline node_vector node_vector_create(void)
-{
-	return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };
-}
+node_vector node_vector_create(void);
 
 /**
  *	Add new node

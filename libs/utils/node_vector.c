@@ -24,3 +24,8 @@ extern node node_vector_get(const node_vector *const vec, const size_t index);
 extern size_t node_vector_size(const node_vector *const vec);
 extern bool node_vector_is_correct(const node_vector *const vec);
 extern int node_vector_clear(node_vector *const vec);
+
+node_vector node_vector_create(void)
+{
+    return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };
+}
