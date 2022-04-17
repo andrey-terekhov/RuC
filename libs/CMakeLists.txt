@@ -9,3 +9,6 @@ add_subdirectory(preprocessor)
 
 # Add compiler library
 add_subdirectory(compiler)
+
+# Add compiler library
+add_subdirectory(cpp-wrap)

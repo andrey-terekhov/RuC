@@ -23,9 +23,11 @@ if(MSVC)
 
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
+	set(CMAKE_C_STANDARD 11)
+
 	# Add POSIX flag to declare ‘fileno’ function
 	# Enable -s flag for Release build to remove code info from exec
-	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-const-variable -std=c11
+	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-const-variable
 						"$<$<NOT:$<CXX_COMPILER_ID:AppleClang,Clang>>:-posix>"
 						"$<$<NOT:$<OR:$<CXX_COMPILER_ID:AppleClang,Clang>,$<CONFIG:Debug>>>:-s>"
 						"$<$<NOT:$<CONFIG:Debug>>:-O2>"
