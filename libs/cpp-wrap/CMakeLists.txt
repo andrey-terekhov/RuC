@@ -6,12 +6,8 @@ project(ruccpp)
 
 add_library(${PROJECT_NAME} SHARED wrap.cpp)
 
-target_link_libraries(${PROJECT_NAME}
-					  PUBLIC
-					  	compiler
-					  	utils)
-if (RUC_CPPWRAP_CHECK_PREPROCESSOR)
-	target_link_libraries(${PROJECT_NAME}
-						  PUBLIC
-						  	preprocessor)
-endif ()
+target_link_libraries(${PROJECT_NAME} PUBLIC compiler utils)
+if(DEFINED RUC_CPPWRAP_CHECK_PREPROCESSOR)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE -DRUC_CPPWRAP_CHECK_PREPROCESSOR)
+	target_link_libraries(${PROJECT_NAME} PUBLIC preprocessor)
+endif()

@@ -43,6 +43,7 @@ static inline void node_set_child(const node *const parent, const node *const ch
  *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
  */
 
+
 location node_get_location(const node *const nd)
 {
 	const size_t argc = node_get_argc(nd);
