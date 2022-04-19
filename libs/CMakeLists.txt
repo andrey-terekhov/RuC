@@ -13,7 +13,7 @@ add_subdirectory(compiler)
 # Add C++ wrapper library
 add_subdirectory(cpp-wrap)
 
-if(DEFINED ENABLE_ANALYSIS)
+if(ENABLE_ANALYSIS)
 	# Add analysis library
 	add_subdirectory(analysis)
 endif()
