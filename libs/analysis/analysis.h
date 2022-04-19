@@ -29,7 +29,7 @@ typedef enum ANALYSIS_RESULT
 	ANALYSIS_RESULT_OK,				/**< No errors found */
 	ANALYSIS_RESULT_WARNINGS_FOUND,	/**< Warnings emitted */
 	ANALYSIS_RESULT_ERRORS_FOUND,	/**< Errors emitted */
-    ANALYSIS_RESULT_INTERNAL_ERROR, /**< Errors emitted */
+    ANALYSIS_RESULT_INTERNAL_ERROR, /**< Internal error occurred */
 } analysis_result_t;
 
 EXPORTED analysis_result_t analyze(workspace *const ws);
