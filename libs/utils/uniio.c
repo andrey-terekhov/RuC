@@ -20,7 +20,7 @@
 #include <string.h>
 #include "workspace.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#include <windows.h>
 
 	extern intptr_t _get_osfhandle(int fd);
@@ -192,7 +192,7 @@ static int out_func_user(universal_io *const io, const char *const format, va_li
 
 static inline size_t io_get_path(FILE *const file, char *const buffer)
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
 	GetFinalPathNameByHandleA((HANDLE)_get_osfhandle(_fileno(file)), buffer, MAX_PATH, FILE_NAME_NORMALIZED);
 
 	size_t ret = 0;
