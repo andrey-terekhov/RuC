@@ -129,6 +129,7 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 	{
 		case TYPE_ENUM:
 		case TYPE_INTEGER:
+		case TYPE_BOOLEAN:
 		{
 			const item_t left_value = expression_literal_get_integer(LHS);
 			const item_t right_value = expression_literal_get_integer(RHS);
