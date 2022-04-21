@@ -36,6 +36,15 @@ static void _asp_report_cb(asp_report *report, void *opaque)
 	   report->line_content, data->user_opaque);
 }
 
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
 analysis_result_t analyze(workspace *const ws, analysis_report_cb cb,
 						  void *user_opaque)
 {
