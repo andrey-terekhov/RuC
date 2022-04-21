@@ -24,6 +24,7 @@ typedef struct _asp_cb_data
 {
 	analysis_report_cb cb;	/**< Internal report callback */
 	void *user_opaque;		/**< Opaque user data */
+	int   error_count;		/**< Found errors */
 } _asp_cb_data;
 
 static void _asp_report_cb(asp_report *report, void *opaque)
@@ -34,6 +35,7 @@ static void _asp_report_cb(asp_report *report, void *opaque)
 	/* Pass the data to upper level callback */
 	cb(report->file, report->line, report->column, report->explanation,
 	   report->line_content, data->user_opaque);
+	data->error_count++;
 }
 
 /*
@@ -75,6 +77,7 @@ analysis_result_t analyze(workspace *const ws, analysis_report_cb cb,
 
 	cb_data.cb = cb;
 	cb_data.user_opaque = user_opaque;
+	cb_data.error_count = 0;
 	diag.opaque = &cb_data;
 
 	/* Set up environment */
@@ -86,6 +89,9 @@ analysis_result_t analyze(workspace *const ws, analysis_report_cb cb,
 	free(paths);
 	if (rc != ASP_EOK)
 		return ANALYSIS_RESULT_INTERNAL_ERROR;
+
+	if (cb_data.error_count > 0)
+		return ANALYSIS_RESULT_ERRORS_FOUND;
 
 	return ANALYSIS_RESULT_OK;
 }
