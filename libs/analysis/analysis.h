@@ -32,7 +32,26 @@ typedef enum ANALYSIS_RESULT
     ANALYSIS_RESULT_INTERNAL_ERROR, /**< Internal error occurred */
 } analysis_result_t;
 
-EXPORTED analysis_result_t analyze(workspace *const ws);
+/** Report callback */
+typedef void (*analysis_report_cb)(const char *filename, int line, int col,
+                                   const char *msg, const char *line_content,
+                                   void *opaque);
+
+
+/**
+ * Analyze the workspace in an external static analyzer
+ *
+ * @param      ws              Workspace to analyze
+ * @param      cb              Report callback that will receive analysis
+ *                             results
+ * @param      user_opaque     Opaque data to pass to callbacks
+ *
+ * @return     Analysis result.
+ * @retval     <return value>  @c ANALYSIS_RESULT_OK
+ * on success
+ */
+EXPORTED analysis_result_t analyze(workspace *const ws, analysis_report_cb cb,
+                                   void *user_opaque);
 
 #ifdef __cplusplus
 } /* extern "C" */
