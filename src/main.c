@@ -20,9 +20,6 @@
 
 #include "compiler.h"
 #include "workspace.h"
-#ifdef ENABLE_ANALYSIS
-#include "analysis.h"
-#endif
 
 const char *name = "../tests/executable/output/printf/string_rus.c";
 // "../tests/mips/0test.c";
@@ -43,12 +40,6 @@ int main(int argc, const char *argv[])
 	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
 	const int ret = compile(&ws);
-#endif
-#ifdef ENABLE_ANALYSIS
-	if (ret == 0)
-	{
-		analyze(&ws);
-	}
 #endif
 
 	ws_clear(&ws);
