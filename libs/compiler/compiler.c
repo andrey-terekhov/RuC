@@ -24,6 +24,11 @@
 #include "preprocessor.h"
 #include "syntax.h"
 #include "uniio.h"
+#include "logger.h"
+
+#ifdef ENABLE_ANALYSIS
+#include "analysis.h"
+#endif
 
 #ifndef _WIN32
 	#include <sys/stat.h>
@@ -40,6 +45,21 @@ static const char *const DEFAULT_MIPS = "out.s";
 
 typedef int (*encoder)(const workspace *const ws, syntax *const sx);
 
+#ifdef ENABLE_ANALYSIS
+static void ruc_analysis_report_cb(const char *filename, int line, int col,
+                                   const char *msg, const char *line_content,
+                                   void *opaque)
+{
+	char 				desc[1000] = { 0 };
+	universal_io *const io = (universal_io *const)opaque;
+
+	snprintf(desc, sizeof(desc), "%s:%d:%d", filename, line, col);
+	if (col != 1 || line != 1)
+	{
+		log_error(desc, msg, line_content, col);
+	}
+}
+#endif
 
 /** Make executable actually executable on best-effort basis (if possible) */
 static inline void make_executable(const char *const path)
@@ -87,6 +107,12 @@ static status_t compile_from_io(const workspace *const ws, universal_io *const i
 
 	syntax sx = sx_create(ws, io);
 	int ret = parse(&sx);
+#ifdef ENABLE_ANALYSIS
+	if (ret == 0)
+	{
+		analyze(ws, ruc_analysis_report_cb, io);
+	}
+#endif
 	status_t sts = sts_parse_error;
 
 	if (!ret && !skip_linker(ws))

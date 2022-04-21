@@ -16,3 +16,8 @@ target_link_libraries(${PROJECT_NAME} preprocessor utils)
 if(NOT MSVC)
 	target_link_libraries(${PROJECT_NAME} m)
 endif()
+
+if (ENABLE_ANALYSIS)
+	target_compile_definitions(${PROJECT_NAME} PRIVATE -DENABLE_ANALYSIS)
+	target_link_libraries(${PROJECT_NAME} analysis)
+endif ()
