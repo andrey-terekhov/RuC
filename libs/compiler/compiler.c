@@ -46,12 +46,16 @@ static const char *const DEFAULT_MIPS = "out.s";
 typedef int (*encoder)(const workspace *const ws, syntax *const sx);
 
 #ifdef ENABLE_ANALYSIS
+/* Analysis error callback */
 static void ruc_analysis_report_cb(const char *filename, int line, int col,
                                    const char *msg, const char *line_content,
                                    void *opaque)
 {
 	char 				desc[1000] = { 0 };
 	universal_io *const io = (universal_io *const)opaque;
+
+	/* Not used for now, to be used later */
+	(void)io;
 
 	snprintf(desc, sizeof(desc), "%s:%d:%d", filename, line, col);
 	if (col != 1 || line != 1)
