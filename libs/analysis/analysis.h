@@ -27,15 +27,14 @@ extern "C" {
 typedef enum ANALYSIS_RESULT
 {
 	ANALYSIS_RESULT_OK,				/**< No errors found */
-	ANALYSIS_RESULT_WARNINGS_FOUND,	/**< Warnings emitted */
+	ANALYSIS_RESULT_WARNINGS_FOUND, /**< Warnings emitted */
 	ANALYSIS_RESULT_ERRORS_FOUND,	/**< Errors emitted */
-    ANALYSIS_RESULT_INTERNAL_ERROR, /**< Internal error occurred */
+	ANALYSIS_RESULT_INTERNAL_ERROR, /**< Internal error occurred */
 } analysis_result_t;
 
 /** Report callback */
-typedef void (*analysis_report_cb)(const char *filename, int line, int col,
-                                   const char *msg, const char *line_content,
-                                   void *opaque);
+typedef void (*analysis_report_cb)(const char *filename, int line, int col, const char *msg, const char *line_content,
+								   void *opaque);
 
 
 /**
@@ -50,8 +49,7 @@ typedef void (*analysis_report_cb)(const char *filename, int line, int col,
  * @retval     <return value>  @c ANALYSIS_RESULT_OK
  * on success
  */
-EXPORTED analysis_result_t analyze(workspace *const ws, analysis_report_cb cb,
-                                   void *user_opaque);
+EXPORTED analysis_result_t analyze(const workspace *const ws, analysis_report_cb cb, void *user_opaque);
 
 #ifdef __cplusplus
 } /* extern "C" */

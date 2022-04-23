@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.13.5)
 
 project(ruc)
 
-set(ENABLE_ANALYSIS ON)
+option(ENABLE_ANALYSIS "Enable static analysis" OFF)
+
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
