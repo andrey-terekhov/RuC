@@ -8,7 +8,7 @@ if (DEFINED ENABLE_ASP_LOCAL)
 else ()
   FetchContent_Declare(
     asp
-    GIT_TAG "simple_api"
+    GIT_TAG "v1.5.1"
     GIT_REPOSITORY "https://github.com/maximmenshikov/asp.git"
   )
 
