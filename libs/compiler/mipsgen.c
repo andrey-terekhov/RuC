@@ -1611,6 +1611,22 @@ static void emit_for_statement(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit translation unit
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_declaration_statement(information *const info, const node *const nd)
+{
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = statement_declaration_get_declarator(nd, i);
+		emit_declaration(info, &decl);
+	}
+}
+
+/**
  *	Emit statement
  *
  *	@param	info		Encoder
@@ -1621,7 +1637,7 @@ static void emit_statement(information *const info, const node *const nd)
 	switch (statement_get_class(nd))
 	{
 		case STMT_DECL:
-			emit_declaration(info, nd);
+			emit_declaration_statement(info, nd);
 			return;
 
 		case STMT_CASE:
