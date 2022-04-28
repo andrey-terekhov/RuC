@@ -1086,10 +1086,10 @@ static void emit_integral_expression(information *const info, const node *const 
  */
 static void emit_assignment_expression(information *const info, const node *const nd)
 {
-	const binary_t operator = expression_binary_get_operator(nd);
+	const binary_t operator = expression_assignment_get_operator(nd);
 	const item_t operation_type = expression_get_type(nd);
 
-	const node LHS = expression_binary_get_LHS(nd);
+	const node LHS = expression_assignment_get_LHS(nd);
 
 	// TODO: обработать случай, когда слева вырезка или выборка
 	const size_t id = expression_identifier_get_id(&LHS);
@@ -1104,7 +1104,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	const mips_register_t result = info->request_reg;
-	const node RHS = expression_binary_get_RHS(nd);
+	const node RHS = expression_assignment_get_RHS(nd);
 	emit_expression(info, &RHS);
 
 	if (operator != BIN_ASSIGN)
@@ -1164,11 +1164,6 @@ static void emit_assignment_expression(information *const info, const node *cons
 static void emit_binary_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
-	if (operation_is_assignment(operator))
-	{
-		emit_assignment_expression(info, nd);
-		return;
-	}
 
 	switch (operator)
 	{
@@ -1270,6 +1265,10 @@ static void emit_expression(information *const info, const node *const nd)
 
 		case EXPR_BINARY:
 			emit_binary_expression(info, nd);
+			return;
+
+		case EXPR_ASSIGNMENT:
+			emit_assignment_expression(info, nd);
 			return;
 
 		default:
