@@ -732,6 +732,47 @@ static void emit_identifier_expression(information *const info, const node *cons
 }
 
 /**
+ *	Emit call expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_call_expression(information *const info, const node *const nd)
+{
+	const node callee = expression_call_get_callee(nd);
+	const size_t func_ref = expression_identifier_get_id(&callee);
+	const size_t args_amount = expression_call_get_arguments_amount(nd);
+
+	if (func_ref == BI_PRINTF)
+	{
+		const node string = expression_call_get_argument(nd, 0);
+		const size_t index = expression_literal_get_string(&string);
+		const size_t amount = strings_amount(info->sx);
+
+		size_t i = 1;
+		for (i = 1; i < args_amount; i++)
+		{
+			info->request_kind = RQ_REG;
+			// TODO: хорошо бы определённый регистр тоже через функцию выделять
+			info->request_reg = R_A1;
+
+			const node arg = expression_call_get_argument(nd, i);
+			emit_expression(info, &arg);
+
+			uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+			uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+			uni_printf(info->sx->io, "\tjal printf\n");
+		}
+
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\tjal printf\n");
+
+		info->request_kind = RQ_NO_REQUEST;
+	}
+}
+
+/**
  *	Emit increment/decrement expression
  *
  *	@param	info	Encoder
@@ -1216,7 +1257,7 @@ static void emit_expression(information *const info, const node *const nd)
 			return;
 
 		case EXPR_CALL:
-			// emit_call_expression(info, nd);
+			emit_call_expression(info, nd);
 			return;
 
 		case EXPR_MEMBER:
@@ -1435,42 +1476,6 @@ static void emit_compound_statement(information *const info, const node *const n
 		emit_statement(info, &sub_stmt);
 	}
 }
-
-// /**
-//  *	Emit printf statement
-//  *
-//  *	@param	info		Encoder
-//  *	@param	nd			Node in AST
-//  */
-// static void emit_printf_statement(information *const info, const node *const nd)
-// {
-// 	const size_t argc = statement_printf_get_argc(nd);
-// 	const node string = statement_printf_get_format_str(nd);
-// 	const size_t index = expression_literal_get_string(&string);
-// 	const size_t amount = strings_amount(info->sx);
-
-// 	size_t i;
-
-// 	for (i = 0; i < argc; i++)
-// 	{
-// 		info->request_kind = RQ_REG;
-// 		// TODO: хорошо бы определённый регистр тоже через функцию выделять
-// 		info->request_reg = R_A1;
-
-// 		const node arg = statement_printf_get_argument(nd, i);
-// 		emit_expression(info, &arg);
-
-// 		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
-// 		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
-// 		uni_printf(info->sx->io, "\tjal printf\n");
-// 	}
-
-// 	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
-// 	uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
-// 	uni_printf(info->sx->io, "\tjal printf\n");
-
-// 	info->request_kind = RQ_NO_REQUEST;
-// }
 
 /**
  *	Emit if statement
