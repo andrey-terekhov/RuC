@@ -39,7 +39,6 @@ typedef enum UNARY
 	UN_ADDRESS,			/**< '&' operator */
 	UN_INDIRECTION,		/**< '*' operator */
 	// Unary arithmetic
-	UN_PLUS,			/**< '+' operator */
 	UN_MINUS,			/**< '-' operator */
 	UN_NOT,				/**< '~' operator */
 	UN_LOGNOT,			/**< '!' operator */
@@ -249,11 +248,11 @@ precedence_t get_operator_precedence(const token_t token);
 /**
  *	Check if operator is assignment
  *
- *	@param	operator	Operator
+ *	@param	op			Operator
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool operation_is_assignment(const binary_t operator);
+bool operation_is_assignment(const binary_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

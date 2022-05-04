@@ -146,7 +146,10 @@ typedef enum ERROR
 	// Codegen errors
 	tables_cannot_be_compressed,
 	wrong_init_in_actparam,
-} error_t;
+	array_borders_cannot_be_static_dynamic,
+	such_array_is_not_supported,
+	too_many_arguments
+} err_t;
 
 /** Warnings codes */
 typedef enum WARNING
@@ -162,7 +165,7 @@ typedef enum WARNING
  *	@param	io			Universal io
  *	@param	num			Error number
  */
-void error(const universal_io *const io, error_t num, ...);
+void error(const universal_io *const io, err_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -180,7 +183,7 @@ void warning(const universal_io *const io, warning_t num, ...);
  *	@param	num			Error number
  *	@param	args		Variable list
  */
-void verror(const universal_io *const io, const error_t num, va_list args);
+void verror(const universal_io *const io, const err_t num, va_list args);
 
 /**
  *	Emit a warning (embedded version)
@@ -197,7 +200,7 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args);
  *
  *	@param	num			Error number
  */
-void system_error(error_t num, ...);
+void system_error(err_t num, ...);
 
 /**
  *	Emit a warning by number

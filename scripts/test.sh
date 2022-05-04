@@ -2,7 +2,7 @@
 
 init()
 {
-	exit_code=1
+	exit_code=64
 	vm_exec=export.txt
 
 	vm_release=master
@@ -11,8 +11,13 @@ init()
 
 	dir_install=./install
 	dir_test=../tests
-	dir_error=../tests/errors
-	dir_exec=../tests/executable
+	dir_lexing=../tests/lexing
+	dir_preprocessor=../tests/preprocessor
+	dir_semantics=../tests/semantics
+	dir_syntax=../tests/syntax
+	dir_multiple_errors=../tests/multiple_errors
+	dir_unsorted=../tests/unsorted
+	dir_exec=../tests/codegen/executable
 
 	subdir_error=errors
 	subdir_warning=warnings
@@ -25,7 +30,12 @@ init()
 				echo -e "Usage: ./${0##*/} [KEY] ..."
 				echo -e "Description:"
 				echo -e "\tThis script tests all files from \"$dir_test\" directory."
-				echo -e "\tFolder \"$dir_error\" should contain tests with expected error."
+				echo -e "\tFolder \"$dir_lexing\" should contain tests with lexer errors."
+				echo -e "\tFolder \"$dir_preprocessor\" should contain tests with preprocessor errors."
+				echo -e "\tFolder \"$dir_semantics\" should contain tests with semantics errors."
+				echo -e "\tFolder \"$dir_syntax\" should contain tests with syntax errors."
+				echo -e "\tFolder \"$dir_multiple_errors\" should contain tests with multiple errors."
+				echo -e "\tFolder \"$dir_unsorted\" should contain tests with unsorted errors."
 				echo -e "\tExecutable tests should be in \"$dir_exec\" directory."
 				echo -e "\tTo ignore invalid tests output, use \"*/$subdir_warning/*\" subdirectory."
 				echo -e "\tFor tests with expected runtime error, use \"*/$subdir_error/*\" subdirectory."
@@ -183,8 +193,8 @@ build()
 
 run()
 {
-	exec=$1
-	exec_debug=$2
+	exec=`realpath $1`
+	exec_debug=`realpath $2`
 	shift
 	shift
 
@@ -322,7 +332,9 @@ execution()
 
 check_warnings()
 {
-	if [[ $path == */$subdir_warning/* ]] ; then
+	# в unsorted проверяется только наличие ошибки. multiple_errors и preprocessor здесь временно
+	if [[ $path == */$subdir_warning/* || $path == $dir_unsorted/* || $dir_multiple_errors/* || 
+		$path == $dir_preprocessor/* ]] ; then
 		message_success
 		let success++
 	else
@@ -333,28 +345,48 @@ check_warnings()
 		fi
 
 		if [[ $flag > 1 ]] ; then
-			message_warning
-			let warning++
+			# проверка на наличие одной ошибки
+			if [[ $path == $dir_lexing/* || $path == $dir_semantics/* || $path == $dir_syntax/* ]] ; then
+				message_failure
+				let failure++
+			fi
+
+			# # проверка на наличие нескольких ошибки. временно убрано
+			# if [[ $path == $dir_multiple_errors/* ]] ; then
+			# 	message_success
+			# 	let success++
+			# fi
 
 			if ! [[ -z $debug ]] ; then
 				cat $log
 			fi
 		else
-			message_success
-			let success++
+			# проверка на наличие одной ошибки
+			if [[ $path == $dir_lexing/* || $path == $dir_semantics/* || $path == $dir_syntax/* ]] ; then
+				message_success
+				let success++
+			fi
+
+			# # проверка на наличие нескольких ошибки. временно убрано
+			# if [[ $path == $dir_multiple_errors/* ]] ; then
+			# 	message_failure
+			# 	let failure++
+			# fi
 		fi
 	fi
 }
 
 compiling()
 {
-	if [[ -z $ignore || $path != $dir_error/* ]] ; then
+	if [[ -z $ignore || $path != $dir_lexing/* || $path != $dir_preprocessor/* || $path != $dir_semantics/* 
+		|| $path != $dir_syntax/* || $path != $dir_multiple_errors/* || $path != $dir_unsorted/* ]] ; then
 		action="compiling"
-		run $compiler $compiler_debug $sources -o $vm_exec
+		run $compiler $compiler_debug $sources -o $vm_exec -VM
 
 		case $? in
 			0)
-				if [[ $path == $dir_error/* ]] ; then
+				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
 					message_failure
 					let failure++
 				else
@@ -379,7 +411,8 @@ compiling()
 				let timeout++
 				;;
 			$exit_code)
-				if [[ $path == $dir_error/* ]] ; then
+				if [[ $path == $dir_lexing/* || $path == $dir_preprocessor/* || $path == $dir_semantics/* 
+					|| $path == $dir_syntax/* || $path == $dir_multiple_errors/* || $path == $dir_unsorted/* ]] ; then
 					if [[ $build_type == "(Debug)" ]] ; then
 						build_type=""
 
@@ -469,4 +502,3 @@ main()
 }
 
 main $@
-

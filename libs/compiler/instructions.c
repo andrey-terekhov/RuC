@@ -69,13 +69,13 @@ instruction_t builtin_to_instruction(const builtin_t func)
 
 		default:
 			system_error(node_unexpected);
-			return 0;
+			return IC_NOP;
 	}
 }
 
-instruction_t unary_to_instruction(const unary_t operator)
+instruction_t unary_to_instruction(const unary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case UN_POSTINC:				return IC_POST_INC;
 		case UN_POSTDEC:				return IC_POST_DEC;
@@ -83,7 +83,6 @@ instruction_t unary_to_instruction(const unary_t operator)
 		case UN_PREDEC:					return IC_PRE_DEC;
 		case UN_ADDRESS:				return IC_LA;
 		case UN_INDIRECTION:			return IC_LOAD;
-		case UN_PLUS:					return IC_NOP;
 		case UN_MINUS:					return IC_UNMINUS;
 		case UN_NOT:					return IC_NOT;
 		case UN_LOGNOT:					return IC_LOG_NOT;
@@ -94,9 +93,9 @@ instruction_t unary_to_instruction(const unary_t operator)
 	}
 }
 
-instruction_t binary_to_instruction(const binary_t operator)
+instruction_t binary_to_instruction(const binary_t op)
 {
-	switch (operator)
+	switch (op)
 	{
 		case BIN_MUL:					return IC_MUL;
 		case BIN_DIV:					return IC_DIV;

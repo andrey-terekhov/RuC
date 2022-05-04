@@ -20,8 +20,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "errors.h"
 #include "map.h"
+#include "reporter.h"
 #include "strings.h"
 #include "tree.h"
 #include "vector.h"
@@ -53,6 +53,8 @@ typedef enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_ENUM,
+
+	BEGIN_USER_TYPE = 15,
 } type_t;
 
 
@@ -60,6 +62,7 @@ typedef enum TYPE
 typedef struct syntax
 {
 	universal_io *io;			/**< Universal io structure */
+	reporter rprt;				/**< Reporter */
 
 	strings string_literals;	/**< String literals list */
 
@@ -83,8 +86,6 @@ typedef struct syntax
 	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
 	size_t ref_main;			/**< Main function reference */
-	
-	bool was_error;				/**< Set, if was error */
 } syntax;
 
 /** Scope */
@@ -98,16 +99,17 @@ typedef struct scope
 /**
  *	Create Syntax structure
  *
- *	@param	io			Universal io structure
+ *	@param	ws				Compiler workspace
+ *	@param	io				Universal io structure
  *
  *	@return	Syntax structure
  */
-syntax sx_create(universal_io *const io);
+syntax sx_create(const workspace *const ws, universal_io *const io);
 
 /**
  *	Check if syntax structure is correct
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -116,7 +118,7 @@ bool sx_is_correct(syntax *const sx);
 /**
  *	Free allocated memory
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
@@ -144,14 +146,22 @@ size_t string_add(syntax *const sx, const vector *const str);
 const char* string_get(const syntax *const sx, const size_t index);
 
 /**
- *	Get string length
+ *	Get length of a string
  *
- *	@param	sx				Syntax structure
- *	@param	index			Index
+ *	@param  sx	  Syntax structure
  *
- *	@return	String length, @c 0 on failure
+ *	@return Length of a string
  */
-size_t string_length(const syntax *const sx, const size_t index);
+size_t strings_length(const syntax *const sx, const size_t index);
+
+/**
+ *	Get amount of strings
+ *
+ *	@param  sx	  Syntax structure
+ *
+ *	@return Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
 
 
 /**
@@ -310,6 +320,16 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
  */
 bool ident_is_type_specifier(syntax *const sx, const size_t index);
 
+/**
+ *	Check if identifier is local by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return @c 1 on true, @c 0 on false
+ */
+bool ident_is_local(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add a new record to types table
@@ -337,7 +357,7 @@ item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const 
  *	Get type class
  *
  *	@param	sx			Syntax structure
- *	@param	type		Type of lvalue, expression or function designator
+ *	@param	type		Type
  *
  *	@return	Type class
  */

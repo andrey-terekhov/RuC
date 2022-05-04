@@ -60,7 +60,7 @@ EXPORTED workspace ws_parse_args(const int argc, const char *const *const argv);
  *
  *	@return	Workspace structure
  */
-EXPORTED workspace ws_create();
+EXPORTED workspace ws_create(void);
 
 
 /**

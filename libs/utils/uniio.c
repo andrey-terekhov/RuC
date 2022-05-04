@@ -20,7 +20,7 @@
 #include <string.h>
 #include "workspace.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#include <windows.h>
 
 	extern intptr_t _get_osfhandle(int fd);
@@ -165,9 +165,9 @@ static int out_func_buffer(universal_io *const io, const char *const format, va_
 
 	int ret = vsnprintf(&io->out_buffer[io->out_position], io->out_size - io->out_position, format, local);
 
-	if (ret != -1 && ret + io->out_position < io->out_size)
+	if (ret != -1 && (size_t)ret + io->out_position < io->out_size)
 	{
-		io->out_position += ret;
+		io->out_position += (size_t)ret;
 		return ret;
 	}
 
@@ -192,7 +192,7 @@ static int out_func_user(universal_io *const io, const char *const format, va_li
 
 static inline size_t io_get_path(FILE *const file, char *const buffer)
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
 	GetFinalPathNameByHandleA((HANDLE)_get_osfhandle(_fileno(file)), buffer, MAX_PATH, FILE_NAME_NORMALIZED);
 
 	size_t ret = 0;
@@ -232,7 +232,7 @@ static inline size_t io_get_path(FILE *const file, char *const buffer)
  */
 
 
-universal_io io_create()
+universal_io io_create(void)
 {
 	universal_io io;
 

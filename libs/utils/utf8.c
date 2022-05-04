@@ -315,7 +315,8 @@ static char32_t char32_from_cp1251(const unsigned char symbol)
 	}
 }
 
-static inline size_t utf8_from_codepage(const char *const src, char *const dest, char32_t (*char_from_codepage)(const unsigned char))
+static inline size_t utf8_from_codepage(const char *const src, char *const dest
+	, char32_t (*char_from_codepage)(const unsigned char))
 {
 	if (src == NULL || dest == NULL)
 	{
@@ -325,7 +326,7 @@ static inline size_t utf8_from_codepage(const char *const src, char *const dest,
 	size_t size = 0;
 	for (size_t i = 0; src[i] != '\0'; i++)
 	{
-		size += utf8_to_string(&dest[size], char_from_codepage(src[i]));
+		size += utf8_to_string(&dest[size], char_from_codepage((unsigned char)(src[i])));
 	}
 
 	dest[size] = '\0';
@@ -353,138 +354,138 @@ static char char_to_cp866(const char32_t symbol)
 	switch (symbol)
 	{
 		case U'░':
-			return 0xB0;
+			return '\xB0';
 		case U'▒':
-			return 0xB1;
+			return '\xB1';
 		case U'▓':
-			return 0xB2;
+			return '\xB2';
 		case U'│':
-			return 0xB3;
+			return '\xB3';
 		case U'┤':
-			return 0xB4;
+			return '\xB4';
 		case U'╡':
-			return 0xB5;
+			return '\xB5';
 		case U'╢':
-			return 0xB6;
+			return '\xB6';
 		case U'╖':
-			return 0xB7;
+			return '\xB7';
 		case U'╕':
-			return 0xB8;
+			return '\xB8';
 		case U'╣':
-			return 0xB9;
+			return '\xB9';
 		case U'║':
-			return 0xBA;
+			return '\xBA';
 		case U'╗':
-			return 0xBB;
+			return '\xBB';
 		case U'╝':
-			return 0xBC;
+			return '\xBC';
 		case U'╜':
-			return 0xBD;
+			return '\xBD';
 		case U'╛':
-			return 0xBE;
+			return '\xBE';
 		case U'┐':
-			return 0xBF;
+			return '\xBF';
 		case U'└':
-			return 0xC0;
+			return '\xC0';
 		case U'┴':
-			return 0xC1;
+			return '\xC1';
 		case U'┬':
-			return 0xC2;
+			return '\xC2';
 		case U'├':
-			return 0xC3;
+			return '\xC3';
 		case U'─':
-			return 0xC4;
+			return '\xC4';
 		case U'┼':
-			return 0xC5;
+			return '\xC5';
 		case U'╞':
-			return 0xC6;
+			return '\xC6';
 		case U'╟':
-			return 0xC7;
+			return '\xC7';
 		case U'╚':
-			return 0xC8;
+			return '\xC8';
 		case U'╔':
-			return 0xC9;
+			return '\xC9';
 		case U'╩':
-			return 0xCA;
+			return '\xCA';
 		case U'╦':
-			return 0xCB;
+			return '\xCB';
 		case U'╠':
-			return 0xCC;
+			return '\xCC';
 		case U'═':
-			return 0xCD;
+			return '\xCD';
 		case U'╬':
-			return 0xCE;
+			return '\xCE';
 		case U'╧':
-			return 0xCF;
+			return '\xCF';
 		case U'╨':
-			return 0xD0;
+			return '\xD0';
 		case U'╤':
-			return 0xD1;
+			return '\xD1';
 		case U'╥':
-			return 0xD2;
+			return '\xD2';
 		case U'╙':
-			return 0xD3;
+			return '\xD3';
 		case U'╘':
-			return 0xD4;
+			return '\xD4';
 		case U'╒':
-			return 0xD5;
+			return '\xD5';
 		case U'╓':
-			return 0xD6;
+			return '\xD6';
 		case U'╫':
-			return 0xD7;
+			return '\xD7';
 		case U'╪':
-			return 0xD8;
+			return '\xD8';
 		case U'┘':
-			return 0xD9;
+			return '\xD9';
 		case U'┌':
-			return 0xDA;
+			return '\xDA';
 		case U'█':
-			return 0xDB;
+			return '\xDB';
 		case U'▄':
-			return 0xDC;
+			return '\xDC';
 		case U'▌':
-			return 0xDD;
+			return '\xDD';
 		case U'▐':
-			return 0xDE;
+			return '\xDE';
 		case U'▀':
-			return 0xDF;
+			return '\xDF';
 
 		case U'Ё':
-			return 0xF0;
+			return '\xF0';
 		case U'ё':
-			return 0xF1;
+			return '\xF1';
 		case U'Є':
-			return 0xF2;
+			return '\xF2';
 		case U'є':
-			return 0xF3;
+			return '\xF3';
 		case U'Ї':
-			return 0xF4;
+			return '\xF4';
 		case U'ї':
-			return 0xF5;
+			return '\xF5';
 		case U'Ў':
-			return 0xF6;
+			return '\xF6';
 		case U'ў':
-			return 0xF7;
+			return '\xF7';
 
 		case U'°':
-			return 0xF8;
+			return '\xF8';
 		case U'∙':
-			return 0xF9;
+			return '\xF9';
 		case U'·':
-			return 0xFA;
+			return '\xFA';
 		case U'√':
-			return 0xFB;
+			return '\xFB';
 		case U'№':
-			return 0xFC;
+			return '\xFC';
 		case U'¤':
-			return 0xFD;
+			return '\xFD';
 		case U'■':
-			return 0xFE;
+			return '\xFE';
 		case 0xA0:
-			return 0xFF;
+			return '\xFF';
 
 		default:
-			return 0x1A;
+			return '\x1A';
 	}
 }
 
@@ -503,110 +504,110 @@ static char char_to_cp1251(const char32_t symbol)
 	switch (symbol)
 	{
 		case U'Ђ':
-			return 0x80;
+			return '\x80';
 		case U'Ѓ':
-			return 0x81;
+			return '\x81';
 		case U'‚':
-			return 0x82;
+			return '\x82';
 		case U'ѓ':
-			return 0x83;
+			return '\x83';
 		case U'„':
-			return 0x84;
+			return '\x84';
 		case U'…':
-			return 0x85;
+			return '\x85';
 		case U'†':
-			return 0x86;
+			return '\x86';
 		case U'‡':
-			return 0x87;
+			return '\x87';
 		case U'€':
-			return 0x88;
+			return '\x88';
 		case U'‰':
-			return 0x89;
+			return '\x89';
 		case U'Љ':
-			return 0x8A;
+			return '\x8A';
 		case U'‹':
-			return 0x8B;
+			return '\x8B';
 		case U'Њ':
-			return 0x8C;
+			return '\x8C';
 		case U'Ќ':
-			return 0x8D;
+			return '\x8D';
 		case U'Ћ':
-			return 0x8E;
+			return '\x8E';
 		case U'Џ':
-			return 0x8F;
+			return '\x8F';
 		case U'ђ':
-			return 0x90;
+			return '\x90';
 		case U'‘':
-			return 0x91;
+			return '\x91';
 		case U'’':
-			return 0x92;
+			return '\x92';
 		case U'“':
-			return 0x93;
+			return '\x93';
 		case U'”':
-			return 0x94;
+			return '\x94';
 		case U'•':
-			return 0x95;
+			return '\x95';
 		case U'–':
-			return 0x96;
+			return '\x96';
 		case U'—':
-			return 0x97;
+			return '\x97';
 
 		case U'™':
-			return 0x99;
+			return '\x99';
 		case U'љ':
-			return 0x9A;
+			return '\x9A';
 		case U'›':
-			return 0x9B;
+			return '\x9B';
 		case U'њ':
-			return 0x9C;
+			return '\x9C';
 		case U'ќ':
-			return 0x9D;
+			return '\x9D';
 		case U'ћ':
-			return 0x9E;
+			return '\x9E';
 		case U'џ':
-			return 0x9F;
+			return '\x9F';
 
 		case U'Ў':
-			return 0xA1;
+			return '\xA1';
 		case U'ў':
-			return 0xA2;
+			return '\xA2';
 		case U'Ј':
-			return 0xA3;
+			return '\xA3';
 
 		case U'Ґ':
-			return 0xA5;
+			return '\xA5';
 
 		case U'Ё':
-			return 0xA8;
+			return '\xA8';
 
 		case U'Є':
-			return 0xAA;
+			return '\xAA';
 
 		case U'Ї':
-			return 0xAF;
+			return '\xAF';
 
 		case U'І':
-			return 0xB2;
+			return '\xB2';
 		case U'і':
-			return 0xB3;
+			return '\xB3';
 		case U'ґ':
-			return 0xB4;
+			return '\xB4';
 
 		case U'ё':
-			return 0xB8;
+			return '\xB8';
 		case U'№':
-			return 0xB9;
+			return '\xB9';
 		case U'є':
-			return 0xBA;
+			return '\xBA';
 
 		case U'ј':
-			return 0xBC;
+			return '\xBC';
 		case U'Ѕ':
-			return 0xBD;
+			return '\xBD';
 		case U'ѕ':
-			return 0xBE;
+			return '\xBE';
 		case U'ї':
-			return 0xBF;
+			return '\xBF';
 
 		case 0xA0:
 		case U'¤':
@@ -626,7 +627,7 @@ static char char_to_cp1251(const char32_t symbol)
 			return (char)symbol;
 
 		default:
-			return 0x1A;
+			return '\x1A';
 	}
 }
 
@@ -645,6 +646,225 @@ static inline size_t utf8_to_codepage(const char *const src, char *const dest, c
 
 	dest[size] = '\0';
 	return size;
+}
+
+
+static size_t char_transliteration(char *const buffer, const char32_t symbol)
+{
+	switch (symbol)
+	{
+		case U'А':
+			buffer[0] = 'A';
+			return 1;
+		case U'а':
+			buffer[0] = 'a';
+			return 1;
+		case U'Б':
+			buffer[0] = 'B';
+			return 1;
+		case U'б':
+			buffer[0] = 'b';
+			return 1;
+		case U'В':
+			buffer[0] = 'V';
+			return 1;
+		case U'в':
+			buffer[0] = 'v';
+			return 1;
+		case U'Г':
+			buffer[0] = 'G';
+			return 1;
+		case U'г':
+			buffer[0] = 'g';
+			return 1;
+		case U'Д':
+			buffer[0] = 'D';
+			return 1;
+		case U'д':
+			buffer[0] = 'd';
+			return 1;
+		case U'З':
+			buffer[0] = 'Z';
+			return 1;
+		case U'з':
+			buffer[0] = 'z';
+			return 1;
+		case U'И':
+		case U'Й':
+			buffer[0] = 'I';
+			return 1;
+		case U'и':
+		case U'й':
+			buffer[0] = 'i';
+			return 1;
+		case U'К':
+			buffer[0] = 'K';
+			return 1;
+		case U'к':
+			buffer[0] = 'k';
+			return 1;
+		case U'Л':
+			buffer[0] = 'L';
+			return 1;
+		case U'л':
+			buffer[0] = 'l';
+			return 1;
+		case U'М':
+			buffer[0] = 'M';
+			return 1;
+		case U'м':
+			buffer[0] = 'm';
+			return 1;
+		case U'Н':
+			buffer[0] = 'N';
+			return 1;
+		case U'н':
+			buffer[0] = 'n';
+			return 1;
+		case U'О':
+			buffer[0] = 'O';
+			return 1;
+		case U'о':
+			buffer[0] = 'o';
+			return 1;
+		case U'П':
+			buffer[0] = 'P';
+			return 1;
+		case U'п':
+			buffer[0] = 'p';
+			return 1;
+		case U'Р':
+			buffer[0] = 'R';
+			return 1;
+		case U'р':
+			buffer[0] = 'r';
+			return 1;
+		case U'С':
+			buffer[0] = 'S';
+			return 1;
+		case U'с':
+			buffer[0] = 's';
+			return 1;
+		case U'Т':
+			buffer[0] = 'T';
+			return 1;
+		case U'т':
+			buffer[0] = 't';
+			return 1;
+		case U'У':
+			buffer[0] = 'U';
+			return 1;
+		case U'у':
+			buffer[0] = 'u';
+			return 1;
+		case U'Ф':
+			buffer[0] = 'F';
+			return 1;
+		case U'ф':
+			buffer[0] = 'f';
+			return 1;
+		case U'Ы':
+			buffer[0] = 'Y';
+			return 1;
+		case U'ы':
+			buffer[0] = 'y';
+			return 1;
+		case U'Е':
+		case U'Ё':
+		case U'Э':
+			buffer[0] = 'E';
+			return 1;
+		case U'е':
+		case U'ё':
+		case U'э':
+			buffer[0] = 'e';
+			return 1;
+
+		case U'Ж':
+			buffer[0] = 'Z';
+			buffer[1] = 'h';
+			return 2;
+		case U'ж':
+			buffer[0] = 'z';
+			buffer[1] = 'h';
+			return 2;
+		case U'Х':
+			buffer[0] = 'K';
+			buffer[1] = 'h';
+			return 2;
+		case U'х':
+			buffer[0] = 'k';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ц':
+			buffer[0] = 'T';
+			buffer[1] = 's';
+			return 2;
+		case U'ц':
+			buffer[0] = 't';
+			buffer[1] = 's';
+			return 2;
+		case U'Ч':
+			buffer[0] = 'C';
+			buffer[1] = 'h';
+			return 2;
+		case U'ч':
+			buffer[0] = 'c';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ш':
+			buffer[0] = 'S';
+			buffer[1] = 'h';
+			return 2;
+		case U'ш':
+			buffer[0] = 's';
+			buffer[1] = 'h';
+			return 2;
+		case U'Ъ':
+			buffer[0] = 'I';
+			buffer[1] = 'e';
+			return 2;
+		case U'ъ':
+			buffer[0] = 'i';
+			buffer[1] = 'e';
+			return 2;
+		case U'Ю':
+			buffer[0] = 'I';
+			buffer[1] = 'u';
+			return 2;
+		case U'ю':
+			buffer[0] = 'i';
+			buffer[1] = 'u';
+			return 2;
+		case U'Я':
+			buffer[0] = 'I';
+			buffer[1] = 'a';
+			return 2;
+		case U'я':
+			buffer[0] = 'i';
+			buffer[1] = 'a';
+			return 2;
+
+		case U'Щ':
+			buffer[0] = 'S';
+			buffer[1] = 'h';
+			buffer[2] = 'c';
+			buffer[3] = 'h';
+			return 4;
+		case U'щ':
+			buffer[0] = 's';
+			buffer[1] = 'h';
+			buffer[2] = 'c';
+			buffer[3] = 'h';
+			return 4;
+
+		case U'Ь':
+		case U'ь':
+			return 0;
+
+		default:
+			return utf8_to_string(buffer, symbol);
+	}
 }
 
 
@@ -684,22 +904,22 @@ size_t utf8_size(const char32_t symbol)
 
 size_t utf8_symbol_size(const char symbol)
 {
-	if ((symbol & 0b10000000) == 0b00000000)
+	if ((symbol & 0x80 /* 0b10000000 */) == 0x00 /* 0b00000000 */)
 	{
 		return 1;
 	}
 
-	if ((symbol & 0b11100000) == 0b11000000)
+	if ((symbol & 0xE0 /* 0b11100000 */) == 0xC0 /* 0b11000000 */)
 	{
 		return 2;
 	}
 
-	if ((symbol & 0b11110000) == 0b11100000)
+	if ((symbol & 0xF0 /* 0b11110000 */) == 0xE0 /* 0b11100000 */)
 	{
 		return 3;
 	}
 
-	if ((symbol & 0b11111000) == 0b11110000)
+	if ((symbol & 0xF8 /* 0b11111000 */) == 0xF0 /* 0b11110000 */)
 	{
 		return 4;
 	}
@@ -709,9 +929,14 @@ size_t utf8_symbol_size(const char symbol)
 
 size_t utf8_to_first_byte(const char *const str, const size_t index)
 {
-	return str == NULL ? 0
-		: (str[index] & 0b11000000) == 0b10000000
-			? utf8_to_first_byte(str, index - 1) : index;
+	if (str == NULL)
+	{
+		return 0;
+	}
+
+	return (str[index] & 0xC0 /* 0b11000000 */) == 0x80 /* 0b10000000 */
+		? utf8_to_first_byte(str, index - 1)
+		: index;
 }
 
 char32_t utf8_convert(const char *const symbol)
@@ -772,7 +997,7 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 
 	for (size_t i = 0; i < octets; i++)
 	{
-		buffer[i] = 0b10000000;
+		buffer[i] = '\x80' /* 0b10000000 */;
 		buffer[i] |= (char)((symbol & mask) >> (6 * (octets - i - 1)));
 		mask >>= 6;
 	}
@@ -780,15 +1005,15 @@ size_t utf8_to_string(char *const buffer, const char32_t symbol)
 	switch (octets)
 	{
 		case 2:
-			buffer[0] |= 0b11000000;
+			buffer[0] |= 0xC0 /* 0b11000000 */;
 			break;
 
 		case 3:
-			buffer[0] |= 0b11100000;
+			buffer[0] |= 0xE0 /* 0b11100000 */;
 			break;
 
 		case 4:
-			buffer[0] |= 0b11110000;
+			buffer[0] |= 0xF0 /* 0b11110000 */;
 			break;
 	}
 
@@ -816,11 +1041,29 @@ size_t utf8_to_cp1251(const char *const src, char *const dest)
 	return utf8_to_codepage(src, dest, &char_to_cp1251);
 }
 
+
+size_t utf8_transliteration(const char *const src, char *const dest)
+{
+	if (src == NULL || dest == NULL)
+	{
+		return 0;
+	}
+
+	size_t size = 0;
+	for (size_t i = 0; src[i] != '\0'; i += utf8_symbol_size(src[i]))
+	{
+		size += char_transliteration(&dest[size], utf8_convert(&src[i]));
+	}
+
+	dest[size] = '\0';
+	return size;
+}
+
 char32_t utf8_to_upper(const char32_t symbol)
 {
 	if (symbol >= 'a' && symbol <= 'z')
 	{
-		return symbol + ('A' - 'a');
+		return symbol + (char32_t)('A' - 'a');
 	}
 
 	if (symbol >= U'а' && symbol <= U'я')

@@ -20,7 +20,7 @@
 #include <string.h>
 #include "utf8.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#include <windows.h>
 
 	static const uint8_t COLOR_TAG = 0x0F;
@@ -61,7 +61,7 @@ static logger current_note_log = &default_note_log;
 static inline void set_color(const uint8_t color)
 {
 #if defined(NDEBUG) || !defined(__APPLE__)
-	#ifdef _MSC_VER
+	#ifdef _WIN32
 		SetConsoleTextAttribute(GetStdHandle(STD_ERROR_HANDLE), color);
 	#else
 		fprintf(stderr, "\x1B[1;%im", color);
@@ -101,7 +101,7 @@ static inline void print_msg(const uint8_t color, const char *const msg)
 
 	while (msg[j] != '^')
 	{
-#ifdef _MSC_VER
+#ifdef _WIN32
 		fprintf(stderr, "%c", msg[i++]);
 #else
 		for (size_t k = utf8_symbol_size(msg[i]); k > 0; k--)
@@ -116,7 +116,7 @@ static inline void print_msg(const uint8_t color, const char *const msg)
 	set_color(color);
 	while (msg[j] != '\0')
 	{
-#ifdef _MSC_VER
+#ifdef _WIN32
 		fprintf(stderr, "%c", msg[i++]);
 #else
 		for (size_t k = utf8_symbol_size(msg[i]); k > 0; k--)
@@ -146,7 +146,7 @@ static inline void default_log(const char *const tag, const char *const msg, con
 	fprintf(stderr, "%s: ", tag);
 
 	set_color(color);
-#ifdef _MSC_VER
+#ifdef _WIN32
 	char buffer[MAX_MSG_SIZE];
 	utf8_to_cp866(tag_log, buffer);
 	fprintf(stderr, "%s: ", buffer);
@@ -154,7 +154,7 @@ static inline void default_log(const char *const tag, const char *const msg, con
 	fprintf(stderr, "%s: ", tag_log);
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	utf8_to_cp866(msg, buffer);
 	print_msg(color, buffer);
 #else
@@ -242,12 +242,12 @@ static inline size_t length(const char *const line, const size_t size, const siz
 
 static void splice(char *const buffer, const char *const msg, const char *const line, const size_t symbol)
 {
-	size_t cur = sprintf(buffer, "%s\n", msg);
+	size_t cur = (size_t)sprintf(buffer, "%s\n", msg);
 
 	size_t size = 0;
 	while (line[size] != '\0' && line[size] != '\n')
 	{
-		cur += sprintf(&buffer[cur], "%c", line[size]);
+		cur += (size_t)sprintf(&buffer[cur], "%c", line[size]);
 		size++;
 	}
 

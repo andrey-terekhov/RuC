@@ -31,8 +31,8 @@
 #define MAX_MSG_SIZE MAX_TAG_SIZE * 4
 #define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
-#include <stdlib.h>
-static void get_error(const error_t num, char *const msg, va_list args)
+
+static void get_error(const err_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
@@ -388,8 +388,17 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case tables_cannot_be_compressed:
 			sprintf(msg, "невозможно сжать таблицы до заданного размера");
 			break;
+
 		case wrong_init_in_actparam:
 			sprintf(msg, "в инициализаторе-фактическом параметре функции могут быть только константы");
+		case array_borders_cannot_be_static_dynamic:
+			sprintf(msg, "массив не может иметь статические и динамические границы");
+			break;
+		case such_array_is_not_supported:
+			sprintf(msg, "такие массивы пока не поддерживаются в кодогенераторе");
+			break;
+		case too_many_arguments:
+			sprintf(msg, "слишком много аргументов у функции, допустимое количество до 128");
 			break;
 
 		default:
@@ -453,7 +462,7 @@ static void output(const universal_io *const io, const char *const msg, const lo
  */
 
 
-void error(const universal_io *const io, error_t num, ...)
+void error(const universal_io *const io, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -474,7 +483,7 @@ void warning(const universal_io *const io, warning_t num, ...)
 }
 
 
-void verror(const universal_io *const io, const error_t num, va_list args)
+void verror(const universal_io *const io, const err_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
@@ -489,7 +498,7 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args)
 }
 
 
-void system_error(error_t num, ...)
+void system_error(err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);

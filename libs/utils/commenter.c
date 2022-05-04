@@ -142,11 +142,11 @@ size_t cmt_to_string(const comment *const cmt, char *const buffer)
 
 	if (cmt->symbol != SIZE_MAX)
 	{
-		return sprintf(buffer, "%s%c%s%c%zu%c%zu\n", PREFIX, SEPARATOR
+		return (size_t)sprintf(buffer, "%s%c%s%c%zu%c%zu\n", PREFIX, SEPARATOR
 			, cmt->path, SEPARATOR, cmt->line, SEPARATOR, cmt->symbol);
 	}
 
-	return sprintf(buffer, "%s%c%s%c%zu\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
+	return (size_t)sprintf(buffer, "%s%c%s%c%zu\n", PREFIX, SEPARATOR, cmt->path, SEPARATOR, cmt->line);
 }
 
 
@@ -192,7 +192,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 		return 0;
 	}
 
-	index += sprintf(&buffer[index], ":%zu", cmt->line);
+	index += (size_t)sprintf(&buffer[index], ":%zu", cmt->line);
 
 	const size_t first = utf8_to_first_byte(cmt->code, cmt->symbol);
 	size_t symbol = first;
@@ -205,7 +205,7 @@ size_t cmt_get_tag(const comment *const cmt, char *const buffer)
 		i += size;
 	}
 
-	return index + sprintf(&buffer[index], ":%zu", symbol + 1);
+	return index + (size_t)sprintf(&buffer[index], ":%zu", symbol + 1);
 }
 
 size_t cmt_get_code_line(const comment *const cmt, char *const buffer)

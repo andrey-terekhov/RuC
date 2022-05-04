@@ -100,7 +100,7 @@ static inline void type_init(syntax *const sx)
 static inline item_t get_static(syntax *const sx, const item_t type)
 {
 	const item_t old_displ = sx->displ;
-	sx->displ += sx->lg * type_size(sx, type);
+	sx->displ += sx->lg * (item_t)type_size(sx, type);
 
 	if (sx->lg > 0)
 	{
@@ -222,9 +222,9 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
 	
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
-	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, NULL));
-	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, NULL));
-	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, NULL));
+	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, "."));
+	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, "."));
+	builtin_add(sx, U"getid", U"читатьид", type_function(sx, TYPE_VOID, "."));
 }
 
 static item_t type_get(const syntax *const sx, const size_t index)
@@ -242,7 +242,7 @@ static item_t type_get(const syntax *const sx, const size_t index)
  */
 
 
-syntax sx_create(universal_io *const io)
+syntax sx_create(const workspace *const ws, universal_io *const io)
 {
 	syntax sx;
 	sx.io = io;
@@ -274,17 +274,23 @@ syntax sx_create(universal_io *const io)
 	sx.displ = -3;
 	sx.lg = -1;
 
-	sx.was_error = false;
+	sx.rprt = reporter_create(ws);
 
 	return sx;
 }
 
 bool sx_is_correct(syntax *const sx)
 {
+	if (reporter_get_errors_number(&sx->rprt))
+	{
+		return true;
+	}
+
+	bool was_error = false;
 	if (sx->ref_main == 0)
 	{
 		system_error(no_main_in_program);
-		sx->was_error = true;
+		was_error = true;
 	}
 
 	for (size_t i = 0; i < vector_size(&sx->predef); i++)
@@ -292,11 +298,11 @@ bool sx_is_correct(syntax *const sx)
 		if (vector_get(&sx->predef, i))
 		{
 			system_error(predef_but_notdef, repr_get_name(sx, (size_t)vector_get(&sx->predef, i)));
-			sx->was_error = true;
+			was_error = true;
 		}
 	}
 
-	return !sx->was_error;
+	return !was_error;
 }
 
 int sx_clear(syntax *const sx)
@@ -471,7 +477,7 @@ item_t ident_get_displ(const syntax *const sx, const size_t index)
 
 const char *ident_get_spelling(const syntax *const sx, const size_t index)
 {
-	return repr_get_name(sx, (size_t)ident_get_repr(sx, index));
+	return repr_get_name(sx, (size_t)abs((int)ident_get_repr(sx, index)));
 }
 
 int ident_set_repr(syntax *const sx, const size_t index, const item_t repr)
@@ -492,6 +498,11 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ)
 bool ident_is_type_specifier(syntax *const sx, const size_t index)
 {
 	return ident_get_displ(sx, index) >= 1000;
+}
+
+bool ident_is_local(const syntax *const sx, const size_t index)
+{
+	return ident_get_displ(sx, index) > 0;
 }
 
 
@@ -530,7 +541,7 @@ item_t type_add(syntax *const sx, const item_t *const record, const size_t size)
 
 item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size)
 {
-	if (sx == NULL || record == NULL || !type_is_enum(sx, sx->types.size - 1))
+	if (sx == NULL || record == NULL || !type_is_enum(sx, (item_t)sx->types.size - 1))
 	{
 		return ITEM_MAX;
 	}
@@ -892,4 +903,15 @@ item_t scope_func_exit(syntax *const sx, const item_t displ)
 	sx->displ = displ;
 
 	return sx->max_displ;
+}
+
+
+size_t strings_amount(const syntax *const sx)
+{
+	return strings_size(&sx->string_literals);
+}
+
+size_t strings_length(const syntax *const sx, const size_t index)
+{
+	return strings_get_length(&sx->string_literals, index);
 }
