@@ -26,7 +26,7 @@
 #include "syntax.h"
 #include "uniio.h"
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 	#include <sys/stat.h>
 	#include <sys/types.h>
 #endif
@@ -45,7 +45,7 @@ typedef int (*encoder)(const workspace *const ws, syntax *const sx);
 /** Make executable actually executable on best-effort basis (if possible) */
 static inline void make_executable(const char *const path)
 {
-#ifndef _MSC_VER
+#ifndef _WIN32
 	struct stat stat_buf;
 
 	if (stat(path, &stat_buf))

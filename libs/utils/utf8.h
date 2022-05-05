@@ -22,7 +22,9 @@
 #include "dll.h"
 
 #ifdef __APPLE__
-	typedef uint32_t char32_t;
+	#ifndef __cplusplus
+		typedef uint32_t char32_t;
+	#endif
 #else
 	#include <uchar.h>
 #endif
@@ -118,6 +120,16 @@ EXPORTED size_t utf8_to_cp866(const char *const src, char *const dest);
  *	@return	Size of destination string
  */
 EXPORTED size_t utf8_to_cp1251(const char *const src, char *const dest);
+
+/**
+ *	Transliteration from russian to english
+ *
+ *	@param	src		Russian string
+ *	@param	dest	English string
+ *
+ *	@return	Size of destination string
+ */
+EXPORTED size_t utf8_transliteration(const char *const src, char *const dest);
 
 /**
  *	Convert UTF-8 symbol to upper case

@@ -97,11 +97,7 @@ inline node node_broken(void)
  *
  *	@return	Node location
  */
-inline location node_get_location(const node *const nd)
-{
-	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
-}
+location node_get_location(const node *const nd);
 
 
 /**
