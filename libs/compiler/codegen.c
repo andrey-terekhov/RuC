@@ -603,6 +603,10 @@ static void emit_argument(encoder *const enc, const node *const nd)
 		mem_set(enc, reserved - 1, (item_t)size);
 		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
 	}
+	else if (expression_get_class(nd) == EXPR_CALL)
+	{
+		emit_call_expression(enc, nd, /*is_argument=*/true);
+	}
 	else
 	{
 		emit_expression(enc, nd);
@@ -719,8 +723,9 @@ static void emit_print_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
+ *	@param  is_argument	@c true if this call expression is call argument
  */
-static void emit_call_expression(encoder *const enc, const node *const nd)
+static void emit_call_expression(encoder *const enc, const node *const nd, const bool is_argument)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func = expression_identifier_get_id(&callee);
@@ -743,7 +748,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 
 	if (func >= BEGIN_USER_FUNC)
 	{
-		mem_add(enc, IC_CALL1);
+		mem_add(enc, is_argument ? IC_CALL1ARG : IC_CALL1);
 	}
 
 	const size_t args = expression_call_get_arguments_amount(nd);
@@ -1101,7 +1106,7 @@ static void emit_expression(encoder *const enc, const node *const nd)
 			return;
 
 		case EXPR_CALL:
-			emit_call_expression(enc, nd);
+			emit_call_expression(enc, nd, /*is_argument=*/false);
 			return;
 
 		case EXPR_MEMBER:
