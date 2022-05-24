@@ -257,6 +257,8 @@ typedef enum INSTURCTION
 	IC_FGETC,					/**< 'FGETC' instruction code */
 	IC_FPUTC,					/**< 'FPUTC' instruction code */
 
+	IC_CALL1ARG,				/**< 'CALL1ARG' instruction code */
+
 	MAX_INSTRUCTION_CODE,
 } instruction_t;
 
