@@ -14,6 +14,8 @@ virtual:
     - apt-get install -y build-essential cmake git
   script:
     - ./scripts/test.sh
+  tags:
+  - R2LIN
 
 llvm-intel:
   stage: llvm
@@ -24,6 +26,8 @@ llvm-intel:
     - ln -s /usr/bin/clang++-11 /usr/bin/clang++
     - patch ./scripts/test.sh < ./scripts/llvm.patch
     - ./scripts/test.sh
+  tags:
+  - R2LIN
 
 llvm-uemu:
   stage: llvm
@@ -35,6 +39,8 @@ llvm-uemu:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
     - ./scripts/test.sh -d
+  tags:
+  - R2LIN
 
 llvm-baikal:
   stage: llvm
@@ -44,3 +50,5 @@ llvm-baikal:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-baikal.patch
     - ./scripts/test.sh -d
+  tags:
+  - R2LIN
