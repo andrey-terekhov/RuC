@@ -49,6 +49,7 @@ typedef enum EXPRESSION
 	EXPR_ASSIGNMENT,	/**< Assignment expression */
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INVALID,		/**< Invalid expression */
+    EXPR_INLINE         /**< Inline expression */
 } expression_t;
 
 /** Statement class */
