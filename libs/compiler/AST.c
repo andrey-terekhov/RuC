@@ -44,6 +44,12 @@ static inline void node_set_child(const node *const parent, const node *const ch
  */
 
 
+location node_get_location(const node *const nd)
+{
+	const size_t argc = node_get_argc(nd);
+	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
+}
+
 expression_t expression_get_class(const node *const nd)
 {
 	switch (node_get_type(nd))
