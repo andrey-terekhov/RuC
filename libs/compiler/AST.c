@@ -77,7 +77,7 @@ expression_t expression_get_class(const node *const nd)
 		case OP_INITIALIZER:
 			return EXPR_INITIALIZER;
 		case OP_INLINE:
-			return EXPR_INLINE
+			return EXPR_INLINE;
 		default:
 			return EXPR_INVALID;
 	}
@@ -507,7 +507,7 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 }
 
 
-node expression_inline(node_vector *const exprs, const location loc, const item_t type)
+node expression_inline(const item_t type, node_vector *const exprs, const location loc)
 {
 	node fst = node_vector_get(exprs, 0);
 	node nd = node_insert(&fst, OP_INLINE, 4);
