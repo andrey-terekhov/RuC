@@ -616,6 +616,18 @@ size_t expression_initializer_get_size(const node *const nd);
  */
 node expression_initializer_get_subexpr(const node *const nd, const size_t index);
 
+/**
+ *  Create new inline expression
+ *
+ *  @param  type            Value type
+ *  @param  exprs           Subexpressions   
+ *  @param  loc             Expression location
+ *  @param 
+ *
+ *  @return Expression
+ */
+node expression_inline(const item_t type, node_vector *const exprs, const location loc);
+
 
 /**
  *	Get statement class
