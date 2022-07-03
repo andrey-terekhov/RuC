@@ -131,7 +131,7 @@ typedef enum OPERATION
 	OP_TERNARY,				/**< Ternary operator node */
 	OP_ASSIGNMENT,			/**< Assignment operator node */
 	OP_INITIALIZER,			/**< Initializer node */
-	OP_INLINE,				/**< Inline node */
+	OP_INLINE,				/**< Inline operation node */
 
 	// Statements
 	OP_CASE,				/**< Case statement node */

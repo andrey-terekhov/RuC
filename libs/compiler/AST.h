@@ -620,13 +620,33 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
  *  Create new inline expression
  *
  *  @param  type            Value type
+ *  @param  callee			Called expression
  *  @param  exprs           Subexpressions   
  *  @param  loc             Expression location
- *  @param 
  *
  *  @return Expression
  */
-node expression_inline(const item_t type, node_vector *const exprs, const location loc);
+node expression_inline(const item_t type, node *const callee, node_vector *const exprs, const location loc);
+
+/**
+ *	Get size of inline expresssion
+ *
+ *	@param	nd				Expression
+ *
+ *	@return	Size
+ */
+size_t expression_inline_get_size(const node *const nd);
+
+/**
+ *	Get subexpression of inline expression by index
+ *
+ *	@param	nd				Expression
+ *	@param	index			Subexpression index
+ *
+ *	@return	Expression
+ */
+node expression_inline_get_subexpr(const node *const nd, const size_t index);
+
 
 
 /**

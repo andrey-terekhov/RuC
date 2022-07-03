@@ -359,18 +359,27 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		return node_broken();
 	}
 
+	node_vector exprs = node_vector_create();
+	node_vector* exprs_ptr = &exprs;
+
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	
 	for (size_t i = 0; i < argc; i++)
 	{
-		const node argument = node_vector_get(args, i);
+		node argument = node_vector_get(args, i);
 		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
 			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
 			return node_broken();
 		}
+		//const size_t identifier_index = expression_identifier_get_id(&argument); // <= здесь что-то другое, наверное
+		//argument = build_identifier_expression(bldr, identifier_index, loc); // <= здесь что-то другое, наверное
+		node_vector_add(exprs_ptr, &argument); // идея в добавлении изменённых аргументов в новый node_vector и 
+											   // последующей отправке этого нового node_vector'а в expression_inline
 	}
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
-	return expression_call(TYPE_VOID, callee, args, loc);
+	return expression_inline(expression_get_type(callee), callee, exprs_ptr, loc);
+	//return expression_call(TYPE_VOID, callee, args, loc);
 }
 
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
