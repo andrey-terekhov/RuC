@@ -136,6 +136,16 @@ int sx_clear(syntax *const sx);
 size_t string_add(syntax *const sx, const vector *const str);
 
 /**
+ *	Add new const char *const string to string literal vector 
+ *
+ *	@param	sx				Syntax structure
+ *	@param	str				String
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+size_t string_add_by_char(syntax *const sx, const char *const str); 
+
+/**
  *	Get string
  *
  *	@param	sx				Syntax structure

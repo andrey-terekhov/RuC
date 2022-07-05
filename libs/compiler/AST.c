@@ -210,7 +210,7 @@ node expression_string_literal(node *const context, const item_t type, const siz
 }
 
 size_t expression_literal_get_string(const node *const nd)
-{
+{ 
 	assert(node_get_type(nd) == OP_LITERAL);
 	return (size_t)node_get_arg(nd, 2);
 }
@@ -508,9 +508,8 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 
 
 node expression_inline(const item_t type, node *const callee, node_vector *const exprs, const location loc)
-{
-	node nd = node_insert(callee, OP_INLINE, 4);
-
+{ 
+	node nd = node_insert(callee, OP_INLINE, 4); 
 	
 	if (node_vector_is_correct(exprs))
 	{

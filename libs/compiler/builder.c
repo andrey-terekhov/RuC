@@ -222,8 +222,8 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 static size_t evaluate_args(builder *const bldr, const node *const format_str
 	, item_t *const format_types, char32_t *const placeholders)
 {
-	const size_t str_index = expression_literal_get_string(format_str);
-	const char *const string = string_get(bldr->sx, str_index);
+	const size_t str_index = expression_literal_get_string(format_str); 
+	const char *const string = string_get(bldr->sx, str_index); 
 
 	size_t args = 0;
 	for (size_t i = 0; string[i] != '\0'; i += utf8_symbol_size(string[i]))
@@ -303,7 +303,7 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 
 	char32_t placeholders[MAX_PRINTF_ARGS];
 	item_t format_types[MAX_PRINTF_ARGS];
-	const size_t expected_args = evaluate_args(bldr, &fst, format_types, placeholders);
+	const size_t expected_args = evaluate_args(bldr, &fst, format_types, placeholders); 
 
 	if (expected_args != argc - 1)
 	{
@@ -359,8 +359,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		return node_broken();
 	}
 
-	node_vector exprs = node_vector_create();
-	node_vector* exprs_ptr = &exprs;
+	node_vector exprs = node_vector_create(); 
 
 	const location loc = { node_get_location(callee).begin, r_loc.end };
 	
@@ -372,14 +371,42 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
 			return node_broken();
 		}
-		//const size_t identifier_index = expression_identifier_get_id(&argument); // <= здесь что-то другое, наверное
-		//argument = build_identifier_expression(bldr, identifier_index, loc); // <= здесь что-то другое, наверное
-		node_vector_add(exprs_ptr, &argument); // идея в добавлении изменённых аргументов в новый node_vector и 
-											   // последующей отправке этого нового node_vector'а в expression_inline
+
+		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
+		const char* argument_name = ident_get_spelling(bldr->sx, argument_identifier_index);
+		const size_t argument_name_len = strlen(argument_name);  
+		node child_argument = build_identifier_expression(bldr, argument_identifier_index, loc); // потом отправится в
+																								 // expression_inline в качестве callee
+
+		switch (type_get_class(bldr->sx, expression_get_type(&argument)))
+		{
+			case TYPE_INTEGER:  
+			{ 
+				const char *eq_sign = " = %%i\n";
+				const size_t eq_sign_len = strlen(eq_sign); 
+
+				char *str = malloc(eq_sign_len + argument_name_len + 1); // создаём строку
+				memcpy(str, argument_name, argument_name_len);
+				memcpy(str + argument_name_len, eq_sign, eq_sign_len + 1); 
+
+
+				size_t str_index = string_add_by_char(bldr->sx, str);
+				node str_node = build_string_literal_expression(bldr, str_index, loc);  
+
+				node_vector tmp_node_vector = node_vector_create();  // для build_printf_expression(...)
+				node_vector_add(&tmp_node_vector, &str_node);
+ 
+				node child = build_printf_expression(bldr, callee, &tmp_node_vector, loc); // либо здесь вместо callee что-то
+ 
+				node_vector_add(&exprs, &child);  
+				break;
+			}
+			
+			// и т. д. для каждого типа?
+		}
 	}
 
-	return expression_inline(expression_get_type(callee), callee, exprs_ptr, loc);
-	//return expression_call(TYPE_VOID, callee, args, loc);
+	return expression_inline(TYPE_VOID, callee, &exprs, loc); 
 }
 
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)

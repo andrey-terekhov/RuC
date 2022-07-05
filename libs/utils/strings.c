@@ -205,7 +205,7 @@ size_t strings_size(const strings *const vec)
 }
 
 bool strings_is_correct(const strings *const vec)
-{
+{ 
 	return vec != NULL && vec->indexes != NULL && vec->all_strings != NULL;
 }
 
