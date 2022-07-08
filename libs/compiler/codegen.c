@@ -642,14 +642,21 @@ static void compress_ident(encoder *const enc, const size_t ref)
  */
 static void emit_printid_expression(encoder *const enc, const node *const nd)
 {
+	size_t sum_size = 0;
 	const size_t argc = expression_call_get_arguments_amount(nd);
-	for (size_t i = 0; i < argc; i++)
+	for (size_t i = 1; i < argc; i++)
 	{
-		mem_add(enc, IC_PRINTID);
-
 		const node arg = expression_call_get_argument(nd, i);
-		compress_ident(enc, expression_identifier_get_id(&arg)); // Ссылка в identtab
+		emit_expression(enc, &arg);
+
+		sum_size += type_size(enc->sx, expression_get_type(&arg));
 	}
+
+	const node format_string = expression_call_get_argument(nd, 0);
+	emit_expression(enc, &format_string);
+
+	mem_add(enc, IC_PRINTID);
+	mem_add(enc, (item_t)sum_size); 
 }
 
 /**
