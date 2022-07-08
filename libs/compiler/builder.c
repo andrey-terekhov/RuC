@@ -330,25 +330,97 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 
 static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
-	size_t argc;
-	if (args == NULL || (argc = node_vector_size(args)) == 0)
+	const location loc = { node_get_location(callee).begin, r_loc.end };   
+	
+	node_vector exprs = node_vector_create();   
+
+	const size_t argc = node_vector_size(args);
+	if (args == NULL || argc == 0)
 	{
-		semantic_error(bldr, r_loc, expected_expression);
+		semantic_error(bldr, r_loc, expected_identifier_in_printid);
 		return node_broken();
-	}
+	}  
+
+	size_t sum_str_len = 0;
+	char *str = (char *) malloc(1); 
+	if (!str)
+		printf("malloc error\n"); // специального типа ошибки под это нет
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		const node argument = node_vector_get(args, i);
-		if (type_is_pointer(bldr->sx, expression_get_type(&argument)))
-		{
-			semantic_error(bldr, node_get_location(&argument), pointer_in_print);
-			return node_broken();
-		}
-	}
+		bool complicated_type = 0;
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
-	return expression_call(TYPE_VOID, callee, args, loc);
+		node argument = node_vector_get(args, i);
+		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
+		{
+			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
+			return node_broken();
+		} 
+
+		const char *ident_str; 
+
+		switch (type_get_class(bldr->sx, expression_get_type(&argument)))
+		{
+			case TYPE_BOOLEAN:
+			case TYPE_INTEGER:  
+			{ 
+				ident_str = "%%i "; 
+				break;
+			}
+			case TYPE_CHARACTER:
+			{
+				ident_str = "%%c "; 
+				break;
+			}
+			case TYPE_FLOATING:
+			{
+				ident_str = "%%f "; 
+				break;
+			}
+			
+			default:
+			{
+				// сложный тип
+				complicated_type = 1; 
+			}
+		} 
+
+		if (!complicated_type) 
+		{
+			sum_str_len += strlen(ident_str); 
+			str = (char *) realloc(str, sum_str_len);
+			if (!str)
+				printf("realloc error\n"); // специального типа ошибки под это нет
+				 
+			strcat(str, ident_str);		
+		}
+	}   
+	
+	// создаём строку и вносим её в вектор
+	size_t str_index = string_add_by_char(bldr->sx, str);  
+	node str_node = build_string_literal_expression(bldr, str_index, loc);
+
+	node_vector tmp_node_vector = node_vector_create();  // для build_printf_expression(...)
+	node_vector_add(&tmp_node_vector, &str_node);  
+
+	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // требуется, чтобы заменить старый узел printid
+																					 // 166 -- номер printf в таблице идентификаторов
+ 
+	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
+
+	// навешиваем потомков на узел вызова
+	for (size_t i = 0; i < argc; i++) 
+	{
+		node argument = node_vector_get(args, i);  
+		node temp = node_add_child(&call_printf_node, OP_NOP);
+		node_swap(&argument, &temp);
+		node_remove(&temp);
+	} 
+	
+	free(str); 
+	node_remove(callee);
+	
+	return call_printf_node;
 }
 
 static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
@@ -425,18 +497,19 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		}
 	}   
 	
+	// создаём строку и вносим её в вектор
 	size_t str_index = string_add_by_char(bldr->sx, str);  
 	node str_node = build_string_literal_expression(bldr, str_index, loc);
-	free(str); 
-	node_remove(callee);
-
+	
 	node_vector tmp_node_vector = node_vector_create();  
 	node_vector_add(&tmp_node_vector, &str_node);  
 
-	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // 166 -- номер printf в таблице идентификаторов
+	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // требуется, чтобы заменить старый узел printid
+																					 // 166 -- номер printf в таблице идентификаторов
  
 	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
 
+	// навешиваем потомков на узел вызова
 	for (size_t i = 0; i < argc; i++) 
 	{
 		node argument = node_vector_get(args, i);  
@@ -445,10 +518,13 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		node_remove(&temp);
 	} 
 
-	node_vector_add(&exprs, &call_printf_node);
+	free(str); 
+	node_remove(callee); 
 
 	if (!complicated_type_in_args)
 		return call_printf_node;
+
+	node_vector_add(&exprs, &call_printf_node);
 
 	return expression_inline(TYPE_VOID, &exprs, loc);   
 }
