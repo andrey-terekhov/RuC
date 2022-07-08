@@ -351,19 +351,6 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-
-char * concat_strings(const char* s1, const char* s2)
-{
-	const size_t s1_len = strlen(s1);
-	const size_t s2_len = strlen(s2);
-
-	char *str = malloc(s1_len + s2_len + 1); 
-	memcpy(str, s1, s1_len);
-	memcpy(str + s1_len, s2, s2_len + 1); 
-
-	return str;
-}
-
 static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 { 
 	const location loc = { node_get_location(callee).begin, r_loc.end };   
@@ -375,15 +362,13 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	{
 		semantic_error(bldr, r_loc, expected_identifier_in_printid);
 		return node_broken();
-	}
-
+	} 
 
 	bool complicated_type_in_args = 0;  
 	size_t sum_str_len = 0;
 	char *str = (char *) malloc(1); 
 	if (!str)
-		printf("allocation error\n"); // специального типа ошибки под это нет
-	
+		printf("malloc error\n"); // специального типа ошибки под это нет
 
 	for (size_t i = 0; i < argc; i++)
 	{
@@ -430,10 +415,10 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 
 		if (!complicated_type) 
 		{
-			sum_str_len += strlen(argument_name) + strlen(eq_sign)-1; 
+			sum_str_len += strlen(argument_name) + strlen(eq_sign); 
 			str = (char *) realloc(str, sum_str_len);
 			if (!str)
-				printf("allocation error\n"); // специального типа ошибки под это нет
+				printf("realloc error\n"); // специального типа ошибки под это нет
 				
 			strcat(str, argument_name);
 			strcat(str, eq_sign);		
@@ -441,30 +426,33 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	}   
 	
 	size_t str_index = string_add_by_char(bldr->sx, str);  
-	node str_node = build_string_literal_expression(bldr, str_index, loc);  
-	
+	node str_node = build_string_literal_expression(bldr, str_index, loc);
+	free(str); 
+	node_remove(callee);
+
 	node_vector tmp_node_vector = node_vector_create();  
 	node_vector_add(&tmp_node_vector, &str_node);  
+
+	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // 166 -- номер printf в таблице идентификаторов
  
-	node printf_node = build_printf_expression(bldr, &str_node, &tmp_node_vector, r_loc); 
-	
-	free(str); 
-	
+	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
+
 	for (size_t i = 0; i < argc; i++) 
 	{
 		node argument = node_vector_get(args, i);  
-		node temp = node_add_child(&printf_node, OP_NOP);
+		node temp = node_add_child(&call_printf_node, OP_NOP);
 		node_swap(&argument, &temp);
 		node_remove(&temp);
 	} 
-	
-	node_vector_add(&exprs, &printf_node);
+
+	node_vector_add(&exprs, &call_printf_node);
 
 	if (!complicated_type_in_args)
-		return printf_node;
+		return call_printf_node;
 
-	return expression_inline(TYPE_VOID, &exprs, loc); 
+	return expression_inline(TYPE_VOID, &exprs, loc);   
 }
+
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
