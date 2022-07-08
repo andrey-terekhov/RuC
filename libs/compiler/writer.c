@@ -378,7 +378,7 @@ static void write_call_expression(writer *const wrt, const node *const nd)
 	const node callee = expression_call_get_callee(nd);
 	write_expression(wrt, &callee);
 
-	const size_t arguments_amount = expression_call_get_arguments_amount(nd);
+	const size_t arguments_amount = expression_call_get_arguments_amount(nd); 
 	for (size_t i = 0; i < arguments_amount; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
@@ -537,6 +537,27 @@ static void write_initializer(writer *const wrt, const node *const nd)
 	}
 }
 
+
+/**
+ *	Write inline expression
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_inline_expression(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "EXPR_INLINE");
+	write_expression_metadata(wrt, nd);
+
+	 
+	const size_t size = expression_inline_get_size(nd); 
+	for (size_t i = 0; i < size; i++)
+	{ 
+		const node subexpr = expression_inline_get_subexpr(nd, i);
+		write_expression(wrt, &subexpr);
+	} 
+}
+
 /**
  *	Write expression
  *
@@ -590,6 +611,10 @@ static void write_expression(writer *const wrt, const node *const nd)
 
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
+			break;
+		
+		case EXPR_INLINE:
+			write_inline_expression(wrt, nd);
 			break;
 
 		case EXPR_INVALID:

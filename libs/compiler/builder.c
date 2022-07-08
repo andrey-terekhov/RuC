@@ -16,6 +16,7 @@
 
 #include "builder.h"
 #include "AST.h"
+#include <string.h>
 
 
 #define MAX_PRINTF_ARGS 20
@@ -350,8 +351,25 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+
+char * concat_strings(const char* s1, const char* s2)
 {
+	const size_t s1_len = strlen(s1);
+	const size_t s2_len = strlen(s2);
+
+	char *str = malloc(s1_len + s2_len + 1); 
+	memcpy(str, s1, s1_len);
+	memcpy(str + s1_len, s2, s2_len + 1); 
+
+	return str;
+}
+
+static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+{ 
+	const location loc = { node_get_location(callee).begin, r_loc.end };   
+	
+	node_vector exprs = node_vector_create();   
+
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
 	{
@@ -359,12 +377,18 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		return node_broken();
 	}
 
-	node_vector exprs = node_vector_create(); 
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	bool complicated_type_in_args = 0;  
+	size_t sum_str_len = 0;
+	char *str = (char *) malloc(1); 
+	if (!str)
+		printf("allocation error\n"); // специального типа ошибки под это нет
 	
+
 	for (size_t i = 0; i < argc; i++)
 	{
+		bool complicated_type = 0;
+
 		node argument = node_vector_get(args, i);
 		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
@@ -373,42 +397,74 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		}
 
 		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
-		const char* argument_name = ident_get_spelling(bldr->sx, argument_identifier_index);
-		const size_t argument_name_len = strlen(argument_name);  
-		node child_argument = build_identifier_expression(bldr, argument_identifier_index, loc); // потом отправится в
-																								 // expression_inline в качестве callee
+		const char *argument_name = ident_get_spelling(bldr->sx, argument_identifier_index); 
+
+		const char *eq_sign; 
 
 		switch (type_get_class(bldr->sx, expression_get_type(&argument)))
 		{
+			case TYPE_BOOLEAN:
 			case TYPE_INTEGER:  
 			{ 
-				const char *eq_sign = " = %%i\n";
-				const size_t eq_sign_len = strlen(eq_sign); 
-
-				char *str = malloc(eq_sign_len + argument_name_len + 1); // создаём строку
-				memcpy(str, argument_name, argument_name_len);
-				memcpy(str + argument_name_len, eq_sign, eq_sign_len + 1); 
-
-
-				size_t str_index = string_add_by_char(bldr->sx, str);
-				node str_node = build_string_literal_expression(bldr, str_index, loc);  
-
-				node_vector tmp_node_vector = node_vector_create();  // для build_printf_expression(...)
-				node_vector_add(&tmp_node_vector, &str_node);
- 
-				node child = build_printf_expression(bldr, callee, &tmp_node_vector, loc); // либо здесь вместо callee что-то
- 
-				node_vector_add(&exprs, &child);  
+				eq_sign = " = %%i\\n"; 
+				break;
+			}
+			case TYPE_CHARACTER:
+			{
+				eq_sign = " = %%c\\n"; 
+				break;
+			}
+			case TYPE_FLOATING:
+			{
+				eq_sign = " = %%f\\n"; 
 				break;
 			}
 			
-			// и т. д. для каждого типа?
+			default:
+			{
+				// сложный тип
+				complicated_type_in_args = 1;
+				complicated_type = 1; 
+			}
+		} 
+
+		if (!complicated_type) 
+		{
+			sum_str_len += strlen(argument_name) + strlen(eq_sign)-1; 
+			str = (char *) realloc(str, sum_str_len);
+			if (!str)
+				printf("allocation error\n"); // специального типа ошибки под это нет
+				
+			strcat(str, argument_name);
+			strcat(str, eq_sign);		
 		}
-	}
+	}   
+	
+	size_t str_index = string_add_by_char(bldr->sx, str);  
+	node str_node = build_string_literal_expression(bldr, str_index, loc);  
+	
+	node_vector tmp_node_vector = node_vector_create();  
+	node_vector_add(&tmp_node_vector, &str_node);  
+ 
+	node printf_node = build_printf_expression(bldr, &str_node, &tmp_node_vector, r_loc); 
+	
+	free(str); 
+	
+	for (size_t i = 0; i < argc; i++) 
+	{
+		node argument = node_vector_get(args, i);  
+		node temp = node_add_child(&printf_node, OP_NOP);
+		node_swap(&argument, &temp);
+		node_remove(&temp);
+	} 
+	
+	node_vector_add(&exprs, &printf_node);
 
-	return expression_inline(TYPE_VOID, callee, &exprs, loc); 
+	if (!complicated_type_in_args)
+		return printf_node;
+
+	return expression_inline(TYPE_VOID, &exprs, loc); 
 }
-
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);

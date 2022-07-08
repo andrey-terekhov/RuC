@@ -97,7 +97,7 @@ node expression_identifier(node *const context, const item_t type, const size_t 
 }
 
 size_t expression_identifier_get_id(const node *const nd)
-{
+{ 
 	assert(node_get_type(nd) == OP_IDENTIFIER);
 	return (size_t)node_get_arg(nd, 2);
 }
@@ -507,16 +507,17 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 }
 
 
-node expression_inline(const item_t type, node *const callee, node_vector *const exprs, const location loc)
+node expression_inline(const item_t type, node_vector *const args, const location loc)
 { 
-	node nd = node_insert(callee, OP_INLINE, 4); 
+	node fst = node_vector_get(args, 0);
+	node nd = node_insert(&fst, OP_INLINE, 4); 
 	
-	if (node_vector_is_correct(exprs))
+	if (node_vector_is_correct(args))
 	{
-		const size_t amount = node_vector_size(exprs);
+		const size_t amount = node_vector_size(args);
 		for (size_t i = 0; i < amount; i++)
 		{
-			node subexpr = node_vector_get(exprs, i);
+			node subexpr = node_vector_get(args, i);
 			node_set_child(&nd, &subexpr);				// i-ое подвыражение списка
 		}
 	}
@@ -536,8 +537,8 @@ size_t expression_inline_get_size(const node *const nd)
 }
 
 node expression_inline_get_subexpr(const node *const nd, const size_t index)
-{
-	assert(node_get_type(nd) == OP_INLINE);
+{ 
+	assert(node_get_type(nd) == OP_INLINE); 
 	return node_get_child(nd, index);
 }
 

@@ -626,7 +626,7 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
  *
  *  @return Expression
  */
-node expression_inline(const item_t type, node *const callee, node_vector *const exprs, const location loc);
+node expression_inline(const item_t type, node_vector *const args, const location loc);
 
 /**
  *	Get size of inline expresssion
