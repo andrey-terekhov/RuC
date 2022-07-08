@@ -331,8 +331,6 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const location loc = { node_get_location(callee).begin, r_loc.end };   
-	
-	node_vector exprs = node_vector_create();   
 
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -403,8 +401,8 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	node_vector tmp_node_vector = node_vector_create();  // для build_printf_expression(...)
 	node_vector_add(&tmp_node_vector, &str_node);  
 
-	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // требуется, чтобы заменить старый узел printid
-																					 // 166 -- номер printf в таблице идентификаторов
+	// требуется, чтобы заменить старый узел print
+	node printf_callee = expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc);  			 
  
 	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
 
@@ -501,12 +499,12 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	size_t str_index = string_add_by_char(bldr->sx, str);  
 	node str_node = build_string_literal_expression(bldr, str_index, loc);
 	
-	node_vector tmp_node_vector = node_vector_create();  
-	node_vector_add(&tmp_node_vector, &str_node);  
+	node_vector tmp_node_vector = node_vector_create();  // для build_printf_expression(...)
+	node_vector_add(&tmp_node_vector, &str_node);   
+	 
+	// требуется, чтобы заменить старый узел printid
+	node printf_callee = expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc); 
 
-	node printf_callee = expression_identifier(&bldr->context, TYPE_VOID, 166, loc); // требуется, чтобы заменить старый узел printid
-																					 // 166 -- номер printf в таблице идентификаторов
- 
 	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
 
 	// навешиваем потомков на узел вызова
