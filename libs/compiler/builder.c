@@ -537,33 +537,12 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, location l_l
 			node_vector_add(&subscripts, &sub_subscript_expr);
 
 			curr_subscr_arg = sub_subscript_expr;
-		} 
-		
-		// навешивание потомков идёт от той вырезки, базой для которой является текущий одномерный массив
-		// далее навешиваем потомков на только что созданную вырезку и т.д.
-		node curr_subscript_parent = call_printf_node;
-		for (int i = dimensions - 1; i >= 0; i -= 1)
-		{
-			printf("\ni == %i\n", i);
-			node sub_subscript = node_vector_get(&subscripts, i);
-			
-			node temp = node_add_child(&curr_subscript_parent, OP_NOP);
-			node_swap(&sub_subscript, &temp);
-			node_remove(&temp);
-
-			curr_subscript_parent = sub_subscript; 
 		}
 
-		// правильно выставляем базу и индексы у вырезок
-		for (int i = 0; i < dimensions; i++)
-		{
-			node sub_subscript = node_vector_get(&subscripts, i);
-			node tmp_base = expression_subscript_get_base(&sub_subscript);
-			node tmp_index = expression_subscript_get_index(&sub_subscript);
-
-			if (i != 0)
-				node_swap(&tmp_base, &tmp_index);
-		}
+		node main_subscript = node_vector_get(&subscripts, dimensions - 1);	
+		node temp = node_add_child(&call_printf_node, OP_NOP);
+		node_swap(&main_subscript, &temp);
+		node_remove(&temp); 
 
 		// 5. полный узел цикла
 		return build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &call_printf_node, loc);
