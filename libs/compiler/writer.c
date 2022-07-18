@@ -535,8 +535,7 @@ static void write_initializer(writer *const wrt, const node *const nd)
 		const node subexpr = expression_initializer_get_subexpr(nd, i);
 		write_expression(wrt, &subexpr);
 	}
-}
-
+} 
 
 /**
  *	Write inline expression
@@ -547,14 +546,17 @@ static void write_initializer(writer *const wrt, const node *const nd)
 static void write_inline_expression(writer *const wrt, const node *const nd)
 {
 	write_line(wrt, "EXPR_INLINE");
-	write_expression_metadata(wrt, nd);
-
+	write_expression_metadata(wrt, nd); 
 	 
-	const size_t size = expression_inline_get_size(nd); 
+	const size_t size = expression_inline_get_size(nd);  
 	for (size_t i = 0; i < size; i++)
 	{ 
-		const node subexpr = expression_inline_get_subexpr(nd, i);
-		write_expression(wrt, &subexpr);
+		const node sub = expression_inline_get_subexpr(nd, i);
+		const statement_t class = statement_get_class(&sub);
+		if (class == STMT_EXPR) 
+			write_expression(wrt, &sub); 
+		else
+			write_statement(wrt, &sub);
 	} 
 }
 
