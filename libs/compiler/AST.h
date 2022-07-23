@@ -616,6 +616,7 @@ size_t expression_initializer_get_size(const node *const nd);
  */
 node expression_initializer_get_subexpr(const node *const nd, const size_t index);
 
+
 /**
  *  Create new inline expression
  *
@@ -638,15 +639,42 @@ node expression_inline(const item_t type, node_vector *const args, const locatio
 size_t expression_inline_get_size(const node *const nd);
 
 /**
- *	Get subexpression of inline expression by index
+ *	Get subestatement of inline expression by index
  *
  *	@param	nd				Expression
- *	@param	index			Subexpression index
+ *	@param	index			Subestatement index
  *
- *	@return	Expression
+ *	@return	Statement
  */
-node expression_inline_get_subexpr(const node *const nd, const size_t index);
+node expression_inline_get_substmt(const node *const nd, const size_t index);
 
+/**
+ *	Get arguments amount of inline expression
+ *
+ *	@param	nd				inline expression
+ *
+ *	@return	Arguments amount
+ */
+size_t expression_inline_get_arguments_amount(const node *const nd);
+
+/**
+ *	Get argument of inline expression by index
+ *
+ *	@param	nd				inline expression
+ *	@param	index			Argument index
+ *
+ *	@return	Argument
+ */
+node expression_inline_get_argument(const node *const nd, const size_t index);
+
+/**
+ *	Get called expression of inline expression
+ *
+ *	@param	nd				Inline expression
+ *
+ *	@return	Called expression
+ */
+node expression_inline_get_callee(const node *const nd);
 
 
 /**
