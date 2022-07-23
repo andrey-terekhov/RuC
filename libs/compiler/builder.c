@@ -357,11 +357,12 @@ node create_printf_node(builder *bldr, const char *str, node_vector *args, locat
 		node argument = node_vector_get(args, i);
 		node_vector_add(&tmp_node_vector, &argument);
 	}
-	
+
+	//node printf_callee = build_identifier_expression(bldr, BI_PRINTF, loc);
 	node printf_callee = expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc);  			 
  
 	// разворачиваемся в вызов printf
-	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc);
+	node call_printf_node = build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc); 
 
 	return call_printf_node;
 }
@@ -372,11 +373,11 @@ const char *create_scalar_type_str(item_t type)
 	{
 		case TYPE_BOOLEAN:
 		case TYPE_INTEGER:  
-			return "%i ";
+			return "%i";
 		case TYPE_CHARACTER:
-			return "%c "; 
+			return "%c"; 
 		case TYPE_FLOATING:
-			return "%f "; 
+			return "%f"; 
 	} 
 	return 0;
 }
@@ -414,24 +415,95 @@ char *create_new_temp_identifier(size_t ident_table_size)
 		return 0;  
 	
 	return new_identifier_name;
-}
- 
-node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector *where_to_add, 
-	location l_loc, location r_loc, size_t dimensions, size_t *temp_idents_reprs)
-{    
+} 
+
+size_t create_new_identifier(builder *bldr, item_t type)
+{
+	// имя нового идентификатора должно быть уникальным
+	char *new_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
+	if (!new_identifier_name)
+	{
+		printf("unable to create new identifier\n");
+		return 0;
+	} 
+	// добавляем имя нового идентификатора в таблицу representations 
+	const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX);  
+	// добавляем идентификатор в identifiers
+	ident_add(bldr->sx, repr, 0, type, 3); 
+
+	return repr;
+} 
+
+node create_new_identifier_expression_by_node(builder *bldr, node *argument, location loc);
+
+node create_idents_subscripts(builder *bldr, node *argument, size_t dimensions, size_t *idents, location l_loc, location r_loc)
+{
 	const location loc = {l_loc.begin, r_loc.end};
+
+	// создание идёт от той вырезки, базой для которой является исходный массив, 
+	// базой следующей вырезки является только что созданная вырезка и т.д.
+	node curr_subscr_arg = *argument; 
+
+	for (size_t i = 0; i < dimensions; i += 1)
+	{ 
+		// вырезку берём по соответствующему идентификатору
+		node sub_subscript_index_expr = build_identifier_expression(bldr, idents[i], loc);
+
+		node sub_subscript_expr = build_subscript_expression(bldr, &curr_subscr_arg, &sub_subscript_index_expr, l_loc, r_loc);
+
+		curr_subscr_arg = sub_subscript_expr;
+
+		//node_remove(&sub_subscript_index_expr);
+	} 
+	return curr_subscr_arg;
+}
+
+node create_new_identifier_expression_by_node(builder *bldr, node *argument, location loc)
+{
+	// берём индекс для переданного argument из representations table  
+	const size_t argument_id = expression_identifier_get_id(argument);
+	const char *argument_spelling = ident_get_spelling(bldr->sx, argument_id);
+	const size_t argument_repr = map_get_index(&bldr->sx->representations, argument_spelling); 
+
+	// создаём узел идентификатора для переданного argument  
+	return build_identifier_expression(bldr, argument_repr, loc);  
+}
+
+node create_upb_subscritps(builder *bldr, node *argument, size_t dimensions, location l_loc, location r_loc)
+{
+	const location loc = {l_loc.begin, r_loc.end};
+
+	// создание идёт от той вырезки, базой для которой является исходный массив, 
+	// базой следующей вырезки является только что созданная вырезка и т.д.
+
+	node curr_subscr_arg = create_new_identifier_expression_by_node(bldr, argument, loc);
+		
+	for (size_t i = 0; i < dimensions; i += 1)
+	{ 
+		node sub_subscript_index_expr = build_integer_literal_expression(bldr, 0, loc);  
+
+		node sub_subscript_expr = build_subscript_expression(bldr, &curr_subscr_arg, &sub_subscript_index_expr, l_loc, r_loc);
+
+		curr_subscr_arg = sub_subscript_expr;  
+	}  
+	return curr_subscr_arg;
+}
+
+node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
+ 
+node create_array_nodes(builder *bldr, node *argument, item_t type, location l_loc, location r_loc, size_t dimensions, size_t *temp_idents_reprs)
+{    
+	const location loc = {l_loc.begin, r_loc.end}; 
+
+	node_vector final = node_vector_create();  
 
 	item_t elements_type = type_array_get_element_type(bldr->sx, type); 
 	if (type_is_array(bldr->sx, elements_type))
 	{   
-		// 1. инициализация -- создаём новый идентификатор  
-		// его имя должно быть уникальным
-		const char *new_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
-		if (!new_identifier_name)
+		// 1. инициализация -- создаём новый идентификатор    
+		const size_t repr = create_new_identifier(bldr, TYPE_INTEGER);
+		if (!repr)
 			return node_broken();
-
-		// добавляем имя нового идентификатора в таблицу representations 
-		const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX); 
 
 		// вносим его в массив для дальнейшего использования
 		temp_idents_reprs = (size_t)realloc(temp_idents_reprs, sizeof(temp_idents_reprs) + sizeof(repr));
@@ -440,10 +512,7 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector 
 			printf("realloc error\n");
 			return node_broken();
 		}
-		temp_idents_reprs[dimensions-1] = repr; 
-
-		// добавляем идентификатор в identifiers
-		ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
+		temp_idents_reprs[dimensions-1] = repr;  
 
 		// создаём узел инициализации 
 		node init_lhs_expr = build_identifier_expression(bldr, repr, loc);  
@@ -453,28 +522,9 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector 
 		// 2. условие
 		node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
 
-		// главный узел, который отправится в build_unary_expression()
-		node cond_main_subs_expr;  
-
-		// для условия создаём вырезки массива по нулевому индексу 
-		// создание идёт от той вырезки, базой для которой является исходный массив, 
-		// базой следующей вырезки является только что созданная вырезка и т.д.
-
-		// создаём узел идентификатора для переданного argument 
-		const size_t argument_id = expression_identifier_get_id(argument);
-		const char *argument_spelling = ident_get_spelling(bldr->sx, argument_id);
-		const size_t argument_repr = map_add(&bldr->sx->representations, argument_spelling, ITEM_MAX);   
-		node curr_cond_subscr_arg = build_identifier_expression(bldr, argument_repr, loc);  
-		 
-		for (size_t i = 0; i < dimensions-1; i += 1)
-		{ 
-			node cond_sub_subscript_index_expr = build_integer_literal_expression(bldr, 0, loc);  
-
-			node cond_sub_subscript_expr = build_subscript_expression(bldr, &curr_cond_subscr_arg, &cond_sub_subscript_index_expr, l_loc, r_loc);
-
-			curr_cond_subscr_arg = cond_sub_subscript_expr;  
-		}  
-		cond_main_subs_expr = curr_cond_subscr_arg;
+		// главный узел, который отправится в build_unary_expression() оператора upb
+		// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
+		node cond_main_subs_expr = create_upb_subscritps(bldr, argument, dimensions - 1, l_loc, r_loc);
 
 		// оператор upb ("кол_во")
 		node cond_rhs_expr = build_unary_expression(bldr, &cond_main_subs_expr, UN_UPB, loc);
@@ -486,36 +536,56 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector 
 		node incr_expr = build_unary_expression(bldr, &incr_lhs_expr, UN_POSTINC, loc);
 
 		// 4. тело цикла  
+		// разворачиваемся в узлы printf, чтобы отпечатать "{" и "}, " (или "}", если цикл дальше не пойдёт)
+		node_vector blank_tmp_node_vector = node_vector_create();
+		node first_printf_node = create_printf_node(bldr, "{", &blank_tmp_node_vector, l_loc, r_loc); 
+		node_vector_add(&final, &first_printf_node); 
+
 		dimensions += 1;
-		node array_nodes = create_array_nodes(bldr, argument, elements_type, where_to_add, l_loc, r_loc, dimensions, temp_idents_reprs);  
+		node array_nodes = create_array_nodes(bldr, argument, elements_type, l_loc, r_loc, dimensions, temp_idents_reprs);  
+
+
+		node_vector_add(&final, &array_nodes);
+		
+		// левая часть if
+		node if_binary_lhs = build_identifier_expression(bldr, repr, loc);
+
+		// правая часть if: "upb(<массив по нужному измерению>) - 1"
+ 
+		// главный узел, который отправится в build_unary_expression() оператора upb
+		// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
+		node if_binary_rhs_main_subs = create_upb_subscritps(bldr, argument, dimensions - 2, l_loc, r_loc);
+
+		// оператор upb ("кол_во")
+		node if_binary_rhs_upb = build_unary_expression(bldr, &if_binary_rhs_main_subs, UN_UPB, loc); 
+
+		node if_binary_rhs_num_one = build_integer_literal_expression(bldr, 1, loc);
+
+		// оператор "минус"
+		node if_binary_rhs = build_binary_expression(bldr, &if_binary_rhs_upb, &if_binary_rhs_num_one, BIN_SUB, loc);
+
+		// операция сравнения (равенства)
+		node if_binary = build_binary_expression(bldr, &if_binary_lhs, &if_binary_rhs, BIN_EQ, loc);
+
+		// условие выполнено
+		node if_true = create_printf_node(bldr, "}", &blank_tmp_node_vector, l_loc, r_loc);
+		// условие не выполнено
+		node if_false = create_printf_node(bldr, "}, ", &blank_tmp_node_vector, l_loc, r_loc);
+
+		// само выражение
+		node if_statement = build_if_statement(bldr, &if_binary, &if_true, &if_false, loc); 
+		node_vector_add(&final, &if_statement);
+
+		node body = build_compound_statement(bldr, &final, l_loc, r_loc);
 		
 		// 5. полный узел цикла
-		node for_stmt = build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &array_nodes, loc); 
-
-		// разворачиваемся в узлы printf, чтобы отпечатать "{" и "} "
-		node_vector blank_tmp_node_vector = node_vector_create();
-		node first_printf_node = create_printf_node(bldr, "{", &blank_tmp_node_vector, l_loc, r_loc);
-		node second_printf_node = create_printf_node(bldr, "} ", &blank_tmp_node_vector, l_loc, r_loc);
-
-		// добавляем в нужном порядке результаты
-		node_vector_add(where_to_add, &first_printf_node);
-		if (dimensions == 2) // навешиваем в качестве потомка только самый первый созданный цикл
-			node_vector_add(where_to_add, &for_stmt);
-		node_vector_add(where_to_add, &second_printf_node);
+		node for_stmt = build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &body, loc);  
 
 		return for_stmt;
 	}   
-
+	 
 	// 1. инициализация -- создаём новый идентификатор 
-	char *new_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
-	if (!new_identifier_name)
-	{
-		printf("unable to create new identifier\n");
-		return node_broken();
-	}
-
-	// добавляем имя нового идентификатора в таблицу representations 
-	const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX);  
+	const size_t repr = create_new_identifier(bldr, TYPE_INTEGER);
 
 	// вносим его в массив для дальнейшего использования
 	temp_idents_reprs = (size_t)realloc(temp_idents_reprs, sizeof(temp_idents_reprs) + sizeof(repr));
@@ -524,10 +594,7 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector 
 		printf("realloc error\n");
 		return node_broken();
 	}
-	temp_idents_reprs[dimensions-1] = repr;
-	
-	// добавляем идентификатор в identifiers
-	ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
+	temp_idents_reprs[dimensions-1] = repr; 
 
 	// создаём узел инициализации 
 	node init_lhs_expr = build_identifier_expression(bldr, repr, loc);  
@@ -537,91 +604,330 @@ node create_array_nodes(builder *bldr, node *argument, item_t type, node_vector 
 	// 2. условие
 	node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
 	
-	// для условия создаём вырезки массива по нулевому индексу 
-	// создание идёт от той вырезки, базой для которой является исходный массив, 
-	// базой следующей вырезки является только что созданная вырезка и т.д.
-
-	// создаём узел идентификатора для переданного argument 
-	const size_t argument_id = expression_identifier_get_id(argument);
-	const char *argument_spelling = ident_get_spelling(bldr->sx, argument_id);
-	const size_t argument_repr = map_add(&bldr->sx->representations, argument_spelling, ITEM_MAX);   
-	node curr_cond_subscr_arg = build_identifier_expression(bldr, argument_repr, loc);  
- 
-	for (size_t i = 0; i < dimensions - 1; i += 1)
-	{  
-		node cond_sub_subscript_index_expr = build_integer_literal_expression(bldr, 0, loc); 
-
-		node cond_sub_subscript_expr = build_subscript_expression(bldr, &curr_cond_subscr_arg, &cond_sub_subscript_index_expr, l_loc, r_loc);
-
-		curr_cond_subscr_arg = cond_sub_subscript_expr; 
-	}  
-	node cond_main_subs_expr = curr_cond_subscr_arg;
+	// главный узел, который отправится в build_unary_expression() оператора upb
+	// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
+	node cond_main_subs_expr = create_upb_subscritps(bldr, argument, dimensions-1, l_loc, r_loc);
 
 	// оператор upb ("кол_во")
-	node cond_rhs_expr = build_unary_expression(bldr, &cond_main_subs_expr, UN_UPB, loc);
+	node cond_rhs_expr = build_unary_expression(bldr, &cond_main_subs_expr, UN_UPB, loc);  
 
 	node cond_expr = build_binary_expression(bldr, &cond_lhs_expr, &cond_rhs_expr, BIN_LT, loc);
 
 	// 3. инкремент
 	node incr_lhs_expr = build_identifier_expression(bldr, repr, loc); 
 	node incr_expr = build_unary_expression(bldr, &incr_lhs_expr, UN_POSTINC, loc);
-
+	 
 	// 4. тело цикла (зависит от класса типа элементов массива)
 	item_t type_class = type_get_class(bldr->sx, elements_type);
 	if (type_class != TYPE_STRUCTURE)
-	{ 
-		// разворачиваемся в узел printf, для этого строим строку
-		const char *str = create_scalar_type_str(type_class);
+	{  
+		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев
+		char *str = (char *)malloc(1);
 		if (!str)
+		{
+			printf("malloc error\n");
 			return node_broken();
+		} 
+		const char *tmp = create_scalar_type_str(type_class);
+		if (!tmp)
+			return node_broken();
+		concat_strings(str, tmp);
+		if (!str)
+			return node_broken(); 
 
-		// создаём узлы вырезки 
-		// создание идёт от той вырезки, базой для которой является исходный массив, 
-		// базой следующей вырезки является только что созданная вырезка и т.д.
+		// создаём узлы вырезки, которые отправятся в качестве аргумента для printf  
+		// узлов должно быть два, т.к. будем разворачиваться в if statement
+		
+		// создаём узел идентификатора для переданного argument  
+		node curr_subscr_arg = create_new_identifier_expression_by_node(bldr, argument, loc);
 
-		// создаём узел идентификатора для переданного argument 
-		const size_t argument_id = expression_identifier_get_id(argument);
-		const char *argument_spelling = ident_get_spelling(bldr->sx, argument_id);
-		const size_t argument_repr = map_add(&bldr->sx->representations, argument_spelling, ITEM_MAX);   
-		node curr_subscr_arg = build_identifier_expression(bldr, argument_repr, loc);  
+		// в качестве аргумента для create_printf_node() отправятся только последние по порядку создания узлы
+		node main_subscript1 = create_idents_subscripts(bldr, &curr_subscr_arg, dimensions, temp_idents_reprs, l_loc, r_loc);	
+		node_vector tmp_args1 = node_vector_create();
+		node_vector_add(&tmp_args1, &main_subscript1); 
+
+		node main_subscript2 = create_idents_subscripts(bldr, argument, dimensions, temp_idents_reprs, l_loc, r_loc);	
+		node_vector tmp_args2 = node_vector_create();
+		node_vector_add(&tmp_args2, &main_subscript2);  
+		
+		// левая часть if
+		node if_binary_lhs = build_identifier_expression(bldr, repr, loc);
+
+		// правая часть if: "upb(<массив по нужному измерению>) - 1"
  
-		for (int i = 0; i < dimensions; i += 1)
-		{ 
-			node sub_subscript_index_expr = build_identifier_expression(bldr, temp_idents_reprs[i], loc);
+		// главный узел, который отправится в build_unary_expression() оператора upb
+		// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
+		node if_binary_rhs_main_subs = create_upb_subscritps(bldr, argument, dimensions - 1, l_loc, r_loc);
 
-			node sub_subscript_expr = build_subscript_expression(bldr, &curr_subscr_arg, &sub_subscript_index_expr, l_loc, r_loc);
+		// оператор upb ("кол_во")
+		node if_binary_rhs_upb = build_unary_expression(bldr, &if_binary_rhs_main_subs, UN_UPB, loc); 
 
-			curr_subscr_arg = sub_subscript_expr;
-		}
+		node if_binary_rhs_num_one = build_integer_literal_expression(bldr, 1, loc);
 
-		// отправляем только главную (последнюю по порядку создания) вырезку в качестве аргумента для create_printf_node()
-		node main_subscript = curr_subscr_arg;	
-		node_vector tmp_args = node_vector_create();
-		node_vector_add(&tmp_args, &main_subscript);
-		node body_node = create_printf_node(bldr, str, &tmp_args, l_loc, r_loc);
+		// оператор "минус"
+		node if_binary_rhs = build_binary_expression(bldr, &if_binary_rhs_upb, &if_binary_rhs_num_one, BIN_SUB, loc);
+
+		// операция сравнения (равенства)
+		node if_binary = build_binary_expression(bldr, &if_binary_lhs, &if_binary_rhs, BIN_EQ, loc);
+
+		// разворачиваемся в узлы printf, чтобы отпечатать "%<нужный идентификатор>, " или "%<нужный идентификатор>", если цикл дальше не пойдёт
+		// условие выполнено
+		node if_true = create_printf_node(bldr, str, &tmp_args1, l_loc, r_loc);
+		// условие не выполнено
+		concat_strings(str, ", ");
+		node if_false = create_printf_node(bldr, str, &tmp_args2, l_loc, r_loc);
+
+		// само выражение
+		node if_statement = build_if_statement(bldr, &if_binary, &if_true, &if_false, loc); 
+
+		node_vector_add(&final, &if_statement);
+
+		node body = build_compound_statement(bldr, &final, l_loc, r_loc); 
 
 		// 5. полный узел цикла
-		node for_stmt = build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &body_node, loc);
-
-		if (dimensions == 1)
-			node_vector_add(where_to_add, &for_stmt);  
+		node for_stmt = build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &body, loc); 
 
 		return for_stmt;
 	}
 	else 
 	{
+		// 5. полный узел цикла   
+
+		// создаём узел структуры как корректную вырезку из массива
+		node subs_struct_node = create_idents_subscripts(bldr, argument, dimensions, temp_idents_reprs, l_loc, r_loc);	  
+
+		// хотим создать узел структуры -- для этого создаём новый идентификатор,
+		// т.к. просто узел вырезки отправить не можем 
+		const size_t repr = create_new_identifier(bldr, expression_get_type(&subs_struct_node));  
+
+		// создаём узел структуры как идентификатор
+		node subs_struct_ident_node = build_identifier_expression(bldr, repr, loc); 
+
+		// приравняем его к вырезке из массива (иначе будет пустым)
+		node assignement_expr = build_binary_expression(bldr, &subs_struct_ident_node, &subs_struct_node, BIN_ASSIGN, loc);
+		node_vector_add(&final, &assignement_expr);  
+
+		// разворачиваемся в узел printf, чтобы отпечатать "\n{ struct" 
+		node_vector blank_tmp_node_vector = node_vector_create();
+		node first_printf_node = create_printf_node(bldr, "\n{ struct", &blank_tmp_node_vector, l_loc, r_loc);
+		node_vector_add(&final, &first_printf_node);
+		
+		// отправляем нужный узел в create_struct_nodes()
+		node struct_node = create_struct_nodes(bldr, &subs_struct_ident_node, 1, l_loc, r_loc); 
+		node_vector_add(&final, &struct_node);  
+
+		// if-statement: будет отпечатывать запятую после каждого элемента массива, кроме последнего
+
+		// левая часть if
+		node if_binary_lhs = build_identifier_expression(bldr, temp_idents_reprs[dimensions-1], loc);
+
+		// правая часть if: "upb(<массив по нужному измерению>) - 1"
+ 
+		// главный узел, который отправится в build_unary_expression() оператора upb
+		// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
+		node if_binary_rhs_main_subs = create_upb_subscritps(bldr, argument, dimensions - 1, l_loc, r_loc);
+
+		// оператор upb ("кол_во")
+		node if_binary_rhs_upb = build_unary_expression(bldr, &if_binary_rhs_main_subs, UN_UPB, loc); 
+
+		node if_binary_rhs_num_one = build_integer_literal_expression(bldr, 1, loc);
+
+		// оператор "минус"
+		node if_binary_rhs = build_binary_expression(bldr, &if_binary_rhs_upb, &if_binary_rhs_num_one, BIN_SUB, loc);
+
+		// операция сравнения (равенства)
+		node if_binary = build_binary_expression(bldr, &if_binary_lhs, &if_binary_rhs, BIN_EQ, loc);
+
+		// условие выполнено
+		node if_true = create_printf_node(bldr, "\n}", &blank_tmp_node_vector, l_loc, r_loc);
+		// условие не выполнено
+		node if_false = create_printf_node(bldr, "}, ", &blank_tmp_node_vector, l_loc, r_loc);
+
+		// само выражение
+		node if_statement = build_if_statement(bldr, &if_binary, &if_true, &if_false, loc); 
+		node_vector_add(&final, &if_statement); 
+
+		node body = build_compound_statement(bldr, &final, l_loc, r_loc); 
+
 		// 5. полный узел цикла
-		printf("Structure!\n");
-		return node_broken();
+		node for_stmt = build_for_statement(bldr, &init_expr, &cond_expr, &incr_expr, &body, loc); 
+
+		return for_stmt; 
 	}
 
-}  
+}
+
+void create_correct_spaces(char *str, size_t tab_deep)
+{ 
+	// глубина одного уровня -- 4 пробела
+	for (size_t j = 0; j < tab_deep*4; j++)
+	{
+		concat_strings(str, " ");
+		if (!str)
+			return;
+	}
+}
+
+node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc)
+{
+	const location loc = {l_loc.begin, r_loc.end};
+
+	// будет statement compound'ом
+	node result;
+
+	node_vector res_stmts = node_vector_create();
+
+	item_t type = expression_get_type(argument);
+	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type);
+
+	for (size_t i = 0; i < member_amount; i++)
+	{
+		item_t member_type = type_structure_get_member_type(bldr->sx, type, i);
+		item_t member_type_class = type_get_class(bldr->sx, member_type);
+		size_t member_name = type_structure_get_member_name(bldr->sx, type, i);
+		const char *member_name_str = repr_get_name(bldr->sx, member_name); 
+
+		// создаём узел идентификатора для переданного argument 
+		node tmp_arg = create_new_identifier_expression_by_node(bldr, argument, loc); 
+		// строим узел поля структуры
+		node member_node = build_member_expression(bldr, &tmp_arg, member_name, 0, l_loc, r_loc);
+
+		// создаём корректное начало строки
+		char *str = (char *)malloc(1);
+		if (!str)
+		{
+			printf("malloc error\n");
+			return node_broken();
+		}
+		concat_strings(str, "\n\n");
+		if (!str)
+			return node_broken();
+		create_correct_spaces(str, tab_deep);
+		if (!str)
+			return node_broken();
+		concat_strings(str, "{\n");
+		if (!str)
+			return node_broken();
+		create_correct_spaces(str, tab_deep+1);
+		if (!str)
+			return node_broken();
+		concat_strings(str, ".");
+		if (!str)
+			return node_broken();
+		concat_strings(str, member_name_str);
+		if (!str)
+			return node_broken();
+		concat_strings(str, " = ");
+		if (!str)
+			return node_broken();
+
+		if ((member_type_class == TYPE_ARRAY) || (member_type_class == TYPE_STRUCTURE))
+		{
+			// хотим создать узел структуры или массива из поля класса -- для этого создаём новый идентификатор,
+			// т.к. просто узел поля класса отправить не можем
+			const size_t repr = create_new_identifier(bldr, member_type);
+
+			// создаём узел идентификатора
+			node member_ident_node = build_identifier_expression(bldr, repr, loc);
+
+			// приравняем его к полю класса (иначе будет пустым) 
+			node assignement_expr = build_binary_expression(bldr, &member_ident_node, &member_node, BIN_ASSIGN, loc);
+
+			// запоминаем приравнивание
+			node_vector_add(&res_stmts, &assignement_expr);
+
+			// заново создаём узел идентификатора, только уже приравненный к нужным значениям
+			member_ident_node = build_identifier_expression(bldr, repr, loc);
+
+			if (member_type_class == TYPE_ARRAY)
+			{  
+				concat_strings(str, "{");
+				if (!str)
+					return node_broken();
+				node_vector blank_tmp_nv1 = node_vector_create();
+				node printf_node_first = create_printf_node(bldr, str, &blank_tmp_nv1, l_loc, r_loc);
+				node_vector_add(&res_stmts, &printf_node_first); 
+
+				size_t *idents = (size_t)malloc(1);  
+				node array_node = create_array_nodes(bldr, &member_ident_node, member_type, l_loc, r_loc, 1, idents);
+				node_vector_add(&res_stmts, &array_node); 
+				 
+				node_vector blank_tmp_nv2 = node_vector_create();
+				node printf_paren_second = create_printf_node(bldr, "}", &blank_tmp_nv2, l_loc, r_loc); 
+				node_vector_add(&res_stmts, &printf_paren_second); 
+			}
+			else
+			{
+				const char *temp_str = "{ struct";
+				concat_strings(str, temp_str); 
+				if (!str)
+					return node_broken();
+				node_vector blank_tmp_nv1 = node_vector_create();
+				node printf_node_first = create_printf_node(bldr, str, &blank_tmp_nv1, l_loc, r_loc); 
+				node_vector_add(&res_stmts, &printf_node_first);  
+
+				node struct_node = create_struct_nodes(bldr, &member_ident_node, tab_deep+1, l_loc, r_loc);
+				node_vector_add(&res_stmts, &struct_node); 
+				
+				node_vector blank_tmp_nv2 = node_vector_create();
+				node printf_paren_second = create_printf_node(bldr, " }", &blank_tmp_nv2, l_loc, r_loc);
+				node_vector_add(&res_stmts, &printf_paren_second); 
+			}
+		}
+		else
+		{ 
+			// для скалярных типов разворачиваемся в узлы printf по отдельности
+
+			const char *tmp = create_scalar_type_str(member_type_class);   
+			if (!tmp)
+				return node_broken(); 
+			concat_strings(str, tmp);
+			if (!str)
+				return node_broken(); 
+
+			node_vector tmp_nv = node_vector_create();
+			node_vector_add(&tmp_nv, &member_node);
+
+			node printf_node = create_printf_node(bldr, str, &tmp_nv, l_loc, r_loc);
+
+			node_vector_add(&res_stmts, &printf_node);
+
+		}  
+		free(str);
+		// правильно завершаем строку: если текущее поле, которое требуется распечатать, -- последнее, то запятую не ставим, иначе -- ставим
+		str = (char *)malloc(1);
+		if (!str)
+		{
+			printf("malloc error\n");
+			return node_broken();
+		}
+		concat_strings(str, "\n");
+		if (!str)
+			return node_broken();
+		create_correct_spaces(str, tab_deep);
+		if (!str)
+			return node_broken();
+		(i == member_amount-1) ? concat_strings(str, "}") : concat_strings(str, "},");
+		if (!str)
+			return node_broken();
+
+		node_vector tmp_nv = node_vector_create();
+		node printf_node = create_printf_node(bldr, str, &tmp_nv, l_loc, r_loc);
+
+		node_vector_add(&res_stmts, &printf_node);
+	}
+
+	result = build_compound_statement(bldr, &res_stmts, l_loc, r_loc);
+	return result; 
+}
 
 static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const location loc = { node_get_location(callee).begin, r_loc.end };    
 	
-	node_vector exprs = node_vector_create();  
+	node_vector stmts = node_vector_create();   
+
+	node_vector_add(&stmts, callee);
 		
 	node_vector tmp_args = node_vector_create();
 
@@ -633,6 +939,10 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	} 
 
 	bool complicated_type_in_args = 0;  
+
+	size_t last_scalar_argument_index = 0;
+	size_t first_scalar_argument_index = 0;
+	size_t last_argument_index = 0;
 
 	char *str = (char *) malloc(1); 
 	if (!str)
@@ -650,24 +960,53 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			semantic_error(bldr, node_get_location(&argument), pointer_in_print);
 			return node_broken();
 		}  
+
+		location curr_loc = node_get_location(&argument); 
+		
+		node last_argument = *callee;
+		if (i > 0)
+		{
+			last_argument_index = i - 1;
+			last_argument = node_vector_get(args, last_argument_index);
+		} 
+		location last_argument_loc = node_get_location(&last_argument);  
 		
 		const item_t argument_type = expression_get_type(&argument);
 		const item_t argument_type_class = type_get_class(bldr->sx, argument_type); 
 		if (argument_type_class == TYPE_ARRAY || argument_type_class == TYPE_STRUCTURE)
 		{ 
 			complicated_type_in_args = 1;  
+
+			// т.к. может оказаться, что это массив-поле структуры или массив структур, то
+			// хотим создать узел идентификатора -- для этого создаём новый идентификатор искуственно 
+			const size_t argument_new_ident_repr = create_new_identifier(bldr, argument_type); 
+
+			// создаём узел идентификатора
+			node argument_new_ident_node = build_identifier_expression(bldr, argument_new_ident_repr, loc);
+
+			// приравниваем его к аргументу
+			node assignement_node = build_binary_expression(bldr, &argument_new_ident_node, &argument, BIN_ASSIGN, loc);
+			node_vector_add(&stmts, &assignement_node);
+
+			// для массивов заново создаём узел, уже приравненный к нужным значениям
+			if (argument_type_class == TYPE_ARRAY)
+				argument_new_ident_node = build_identifier_expression(bldr, argument_new_ident_repr, loc);    
 			
-			const char *tmp =  (argument_type_class == TYPE_ARRAY) ? "{ " : "struct {\\n"; 
-				
-			concat_strings(str, tmp);
+			(argument_type_class == TYPE_ARRAY) ? concat_strings(str, "{") : concat_strings(str, "{ struct"); 
 			if (!str)
-				return node_broken(); 
+				return node_broken();   
+
+			// корректно определяем location	
+			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
+			location fs_arg_loc = node_get_location(&first_scalar_argument);
+			node last_scalar_argument = node_vector_get(args, last_scalar_argument_index);
+			location ls_arg_loc = node_get_location(&last_scalar_argument);
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			node printf_node = create_printf_node(bldr, str, &tmp_args, node_get_location(&argument), r_loc);
+			node printf_node = create_printf_node(bldr, str, &tmp_args, fs_arg_loc, ls_arg_loc); 
 			// запоминаем узел 
-			node_vector_add(&exprs, &printf_node);
-	
+			node_vector_add(&stmts, &printf_node);
+
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
 			free(str); 
 			str = (char *)malloc(1);
@@ -676,16 +1015,24 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 				printf("malloc error\n");
 				return node_broken();
 			}
-			// избавляемся от предыдущих добавленных аргументов 
+			// избавляемся от предыдущих запомненных аргументов 
 			tmp_args = node_vector_create(); 
+			first_scalar_argument_index = 0; 
+			last_scalar_argument_index = 0; 
 			
-			size_t *idents = (size_t)malloc(1); 
+			node complicated_type_node; 
 			if (argument_type_class == TYPE_ARRAY)
-				create_array_nodes(bldr, &argument, argument_type, &exprs, node_get_location(callee), r_loc, 1, idents);
+			{ 
+				size_t *idents = (size_t)malloc(1); 
+				complicated_type_node = create_array_nodes(bldr, &argument_new_ident_node, argument_type, last_argument_loc, curr_loc, 1, idents);
+			}
 			else
-			{} 
+				complicated_type_node = create_struct_nodes(bldr, &argument_new_ident_node, 1, last_argument_loc, curr_loc);
 
-			concat_strings(str, "} ");
+			node_vector_add(&stmts, &complicated_type_node);
+			
+
+			(argument_type_class == TYPE_STRUCTURE) ? concat_strings(str, "\n}\n") : concat_strings(str, "} ");
 			if (!str)
 				return node_broken();
 		}
@@ -693,6 +1040,11 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 		{ 
 			// запоминаем для дальнейшего использования аргумент только в случае, если тип скалярный
 			node_vector_add(&tmp_args, &argument);
+ 
+			if (last_scalar_argument_index == 0)
+				first_scalar_argument_index = i;
+
+			last_scalar_argument_index = i; 
 
 			const char *tmp = create_scalar_type_str(argument_type_class);   
 			if (!tmp)
@@ -700,27 +1052,37 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			concat_strings(str, tmp);
 			if (!str)
 				return node_broken();
+			concat_strings(str, " ");
+			if (!str)
+				return node_broken();
 		} 
 
-	} 
-	
+	}  
+	node last_argument = node_vector_get(args, first_scalar_argument_index);
+	location last_argument_loc = node_get_location(&last_argument); 
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	node printf_node = create_printf_node(bldr, "str", &tmp_args, node_get_location(callee), r_loc);
+	node printf_node = create_printf_node(bldr, str, &tmp_args, last_argument_loc, r_loc); 
  
 	if (!complicated_type_in_args)
+	{
+		node_vector_clear(&stmts);
+		node_remove(callee);
 		return printf_node;
+	}
 
-	node_vector_add(&exprs, &printf_node); 
+	node_vector_add(&stmts, &printf_node); 
 		 
-	return expression_inline(TYPE_VOID, &exprs, loc); 
+	return expression_inline(TYPE_VOID, &stmts, loc); 
 } 
 
 static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 { 
 	const location loc = { node_get_location(callee).begin, r_loc.end };   
 	
-	node_vector exprs = node_vector_create();   
+	node_vector stmts = node_vector_create();   
+	node_vector_add(&stmts, callee);
+
 	node_vector tmp_args = node_vector_create();
 
 	const size_t argc = node_vector_size(args);
@@ -730,7 +1092,12 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		return node_broken();
 	} 
 
-	bool complicated_type_in_args = 0;   
+	bool complicated_type_in_args = 0;    
+
+	size_t last_scalar_argument_index = 0;
+	size_t first_scalar_argument_index = 0;
+	size_t last_argument_index = 0;
+	
 	char *str = (char *) malloc(1); 
 	if (!str)
 	{
@@ -746,6 +1113,16 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
 			return node_broken();
 		}  
+
+		location curr_loc = node_get_location(&argument); 
+ 
+		node last_argument = *callee;
+		if (i > 0)
+		{
+			last_argument_index = i - 1;
+			last_argument = node_vector_get(args, last_argument_index);
+		} 
+		location last_argument_loc = node_get_location(&last_argument); 
 
 		// создаём строку "имя_аргумента = "
 		char *argument_name = (char *)malloc(1);
@@ -772,18 +1149,38 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		const item_t argument_type_class = type_get_class(bldr->sx, argument_type); 
 		if (argument_type_class == TYPE_ARRAY || argument_type_class == TYPE_STRUCTURE)
 		{  
-			complicated_type_in_args = 1;  
+			complicated_type_in_args = 1;   
+
+			// т.к. может оказаться, что это массив-поле структуры или массив структур, то
+			// хотим создать узел идентификатора -- для этого создаём новый идентификатор искуственно 
+			const size_t argument_new_ident_repr = create_new_identifier(bldr, argument_type); 
+
+			// создаём узел идентификатора
+			node argument_new_ident_node = build_identifier_expression(bldr, argument_new_ident_repr, loc);
+
+			// приравниваем его к аргументу
+			node assignement_node = build_binary_expression(bldr, &argument_new_ident_node, &argument, BIN_ASSIGN, loc);
+			node_vector_add(&stmts, &assignement_node);
+
+			// для массивов заново создаём узел, уже приравненный к нужным значениям
+			if (argument_type_class == TYPE_ARRAY)
+				argument_new_ident_node = build_identifier_expression(bldr, argument_new_ident_repr, loc);  
 			
-			const char *tmp = (argument_type_class == TYPE_ARRAY) ? "{ " : "struct {\\n\\t"; 
-				
-			concat_strings(str, tmp);
+			
+			(argument_type_class == TYPE_ARRAY) ? concat_strings(str, "{") : concat_strings(str, "{ struct");  
 			if (!str)
 				return node_broken();
- 
+
+			// корректно определяем location
+			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
+			location fs_arg_loc = node_get_location(&first_scalar_argument); 
+			node last_scalar_argument = node_vector_get(args, last_scalar_argument_index);
+			location ls_arg_loc = node_get_location(&last_scalar_argument); 
+
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			node printf_node = create_printf_node(bldr, str, &tmp_args, node_get_location(callee), r_loc);
+			node printf_node = create_printf_node(bldr, str, &tmp_args, fs_arg_loc, ls_arg_loc); 
 			// запоминаем узел 
-			node_vector_add(&exprs, &printf_node);
+			node_vector_add(&stmts, &printf_node);
 	
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
 			free(str); 
@@ -795,12 +1192,19 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			}
 			// избавляемся от предыдущих добавленных аргументов 
 			tmp_args = node_vector_create(); 
-
-			size_t *idents = (size_t)malloc(1); 
+			first_scalar_argument_index = 0; 
+			last_scalar_argument_index = 0; 
+ 
+			node complicated_type_node;  
 			if (argument_type_class == TYPE_ARRAY)
-				create_array_nodes(bldr, &argument, argument_type, &exprs, node_get_location(callee), r_loc, 1, idents);
+			{ 
+				size_t *idents = (size_t)malloc(1); 
+				complicated_type_node = create_array_nodes(bldr, &argument_new_ident_node, argument_type, last_argument_loc, curr_loc, 1, idents);
+			}
 			else
-			{} 
+				complicated_type_node = create_struct_nodes(bldr, &argument, 1, node_get_location(callee), r_loc);
+
+			node_vector_add(&stmts, &complicated_type_node); 
 
 			concat_strings(str, "} ");
 			if (!str)
@@ -810,6 +1214,11 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		{ 
 			// запоминаем для возможного использования аргумент только в случае, если тип скалярный
 			node_vector_add(&tmp_args, &argument);
+			
+			if (last_scalar_argument_index == 0)
+				first_scalar_argument_index = i;
+
+			last_scalar_argument_index = i;
 
 			const char *tmp = create_scalar_type_str(argument_type_class);   
 			if (!tmp)
@@ -817,18 +1226,28 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			concat_strings(str, tmp);
 			if (!str)
 				return node_broken();
+			concat_strings(str, " ");
+			if (!str)
+				return node_broken();
 		} 	 
 	}  
+
+	node last_argument = node_vector_get(args, first_scalar_argument_index);
+	location last_argument_loc = node_get_location(&last_argument);
 
 	// разворачиваемся в printf для имеющейся на данный момент строки
 	node printf_node = create_printf_node(bldr, str, &tmp_args, node_get_location(callee), r_loc);
  
 	if (!complicated_type_in_args)
+	{
+		node_vector_clear(&stmts);
+		node_remove(callee);
 		return printf_node;
+	}
 
-	node_vector_add(&exprs, &printf_node); 
+	node_vector_add(&stmts, &printf_node); 
 
-	return expression_inline(TYPE_VOID, &exprs, loc);
+	return expression_inline(TYPE_VOID, &stmts, loc);
 }
 
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
