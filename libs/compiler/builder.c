@@ -836,24 +836,22 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 			// запоминаем приравнивание
 			node_vector_add(&res_stmts, &assignement_expr);
 
-			// заново создаём узел идентификатора, только уже приравненный к нужным значениям
-			member_ident_node = build_identifier_expression(bldr, repr, loc);
+			node_vector blank_tmp_nv = node_vector_create();
 
 			if (member_type_class == TYPE_ARRAY)
 			{  
-				concat_strings(str, "{");
-				if (!str)
-					return node_broken();
-				node_vector blank_tmp_nv1 = node_vector_create();
-				node printf_node_first = create_printf_node(bldr, str, &blank_tmp_nv1, l_loc, r_loc);
-				node_vector_add(&res_stmts, &printf_node_first); 
+				member_ident_node = build_identifier_expression(bldr, repr, loc);
+				
+				node printf_str_node = create_printf_node(bldr, str, &blank_tmp_nv, l_loc, r_loc);
+				node_vector_add(&res_stmts, &printf_str_node); 
+				node printf_paren_first = create_printf_node(bldr, "{", &blank_tmp_nv, l_loc, r_loc); 
+				node_vector_add(&res_stmts, &printf_paren_first); 
 
 				size_t *idents = (size_t)malloc(1);  
 				node array_node = create_array_nodes(bldr, &member_ident_node, member_type, l_loc, r_loc, 1, idents);
 				node_vector_add(&res_stmts, &array_node); 
 				 
-				node_vector blank_tmp_nv2 = node_vector_create();
-				node printf_paren_second = create_printf_node(bldr, "}", &blank_tmp_nv2, l_loc, r_loc); 
+				node printf_paren_second = create_printf_node(bldr, "}", &blank_tmp_nv, l_loc, r_loc); 
 				node_vector_add(&res_stmts, &printf_paren_second); 
 			}
 			else
@@ -861,16 +859,14 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 				const char *temp_str = "{ struct";
 				concat_strings(str, temp_str); 
 				if (!str)
-					return node_broken();
-				node_vector blank_tmp_nv1 = node_vector_create();
-				node printf_node_first = create_printf_node(bldr, str, &blank_tmp_nv1, l_loc, r_loc); 
-				node_vector_add(&res_stmts, &printf_node_first);  
+					return node_broken(); 
+				node printf_str_node = create_printf_node(bldr, str, &blank_tmp_nv, l_loc, r_loc); 
+				node_vector_add(&res_stmts, &printf_str_node);  
 
 				node struct_node = create_struct_nodes(bldr, &member_ident_node, tab_deep+1, l_loc, r_loc);
 				node_vector_add(&res_stmts, &struct_node); 
 				
-				node_vector blank_tmp_nv2 = node_vector_create();
-				node printf_paren_second = create_printf_node(bldr, " }", &blank_tmp_nv2, l_loc, r_loc);
+				node printf_paren_second = create_printf_node(bldr, " }", &blank_tmp_nv, l_loc, r_loc);
 				node_vector_add(&res_stmts, &printf_paren_second); 
 			}
 		}
