@@ -429,10 +429,11 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 
 	// будет statement_compound'ом
 	node result;
-	node_vector res_stmts = node_vector_create();  // для трех аргументов результата-statement compound'а
+
+	node_vector res_stmts = node_vector_create();  // для аргументов результата-statement compound'а
 	node_vector body_args = node_vector_create();  // для построения тела цикла 
 
-	// сохраняем аргумент в новую переменную-идентификатор с уникальным именем
+	// сохраняем переданный аргумент в новую переменную-идентификатор с уникальным именем
 	char *arg_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
 	if (!arg_identifier_name)
 	{
@@ -457,8 +458,8 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 	node_vector_add(&res_stmts, &arg_parent);  
 	*/  
 	// присваивание
-	node tmp_arg23 = build_identifier_expression(bldr, arg_repr, loc);
-	node bin = build_binary_expression(bldr, &tmp_arg23, argument, BIN_ASSIGN, loc); 
+	node tmp_arg1 = build_identifier_expression(bldr, arg_repr, loc);
+	node bin = build_binary_expression(bldr, &tmp_arg1, argument, BIN_ASSIGN, loc); 
 	node_vector_add(&res_stmts, &bin);   
 
 	item_t elements_type = type_array_get_element_type(bldr->sx, type); 
@@ -507,9 +508,9 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 		node incr_expr = build_unary_expression(bldr, &incr_lhs_expr, UN_POSTINC, loc);
 
 		// 4. тело цикла   
-		node tmp_arg10 = build_identifier_expression(bldr, arg_repr, loc);
+		node tmp_arg2 = build_identifier_expression(bldr, arg_repr, loc);
 		node main_subscript_index = build_identifier_expression(bldr, repr, loc);
-		node main_subscript = build_subscript_expression(bldr, &tmp_arg10, &main_subscript_index, l_loc, r_loc);  
+		node main_subscript = build_subscript_expression(bldr, &tmp_arg2, &main_subscript_index, l_loc, r_loc);  
  
 		node array_nodes = create_array_nodes(bldr, &main_subscript, l_loc, r_loc, dimensions-1);   
 
@@ -589,10 +590,10 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 	// 2. условие
 	node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
 	
-	// главный узел, который отправится в build_unary_expression() оператора upb 
-	node tmp_arg7 = build_identifier_expression(bldr, arg_repr, loc);   
+	// узел, который отправится в build_unary_expression() оператора upb 
+	node tmp_arg3 = build_identifier_expression(bldr, arg_repr, loc);   
 	// оператор upb ("кол_во")
-	node cond_rhs_expr = build_unary_expression(bldr, &tmp_arg7, UN_UPB, loc);  
+	node cond_rhs_expr = build_unary_expression(bldr, &tmp_arg3, UN_UPB, loc);  
 
 	node cond_expr = build_binary_expression(bldr, &cond_lhs_expr, &cond_rhs_expr, BIN_LT, loc);
 
@@ -621,16 +622,16 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 		// создаём узлы вырезки, которые отправятся в качестве аргумента для printf  
 		// узлов должно быть два, т.к. будем разворачиваться в if statement
 
-		node tmp_arg3 = build_identifier_expression(bldr, arg_repr, loc);
+		node tmp_arg4 = build_identifier_expression(bldr, arg_repr, loc);
 		node main_subscript1_index = build_identifier_expression(bldr, repr, loc);
-		node main_subscript1 = build_subscript_expression(bldr, &tmp_arg3, &main_subscript1_index, l_loc, r_loc);
+		node main_subscript1 = build_subscript_expression(bldr, &tmp_arg4, &main_subscript1_index, l_loc, r_loc);
 
 		node_vector tmp_args_nv1 = node_vector_create();
 		node_vector_add(&tmp_args_nv1, &main_subscript1); 
  
-		node tmp_arg4 = build_identifier_expression(bldr, arg_repr, loc); 
+		node tmp_arg5 = build_identifier_expression(bldr, arg_repr, loc); 
 		node main_subscript2_index = build_identifier_expression(bldr, repr, loc);
-		node main_subscript2 = build_subscript_expression(bldr, &tmp_arg4, &main_subscript2_index, l_loc, r_loc); 
+		node main_subscript2 = build_subscript_expression(bldr, &tmp_arg5, &main_subscript2_index, l_loc, r_loc); 
 
 		node_vector tmp_args_nv2 = node_vector_create();
 		node_vector_add(&tmp_args_nv2, &main_subscript2);  
@@ -640,11 +641,11 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 
 		// правая часть if: "upb(<массив по нужному измерению>) - 1"
  
-		// главный узел, который отправится в build_unary_expression() оператора upb 
-		node tmp_arg5 = build_identifier_expression(bldr, arg_repr, loc); 
+		// узел, который отправится в build_unary_expression() оператора upb 
+		node tmp_arg6 = build_identifier_expression(bldr, arg_repr, loc); 
 
 		// оператор upb ("кол_во")
-		node if_binary_rhs_upb = build_unary_expression(bldr, &tmp_arg5, UN_UPB, loc); 
+		node if_binary_rhs_upb = build_unary_expression(bldr, &tmp_arg6, UN_UPB, loc); 
 
 		node if_binary_rhs_num_one = build_integer_literal_expression(bldr, 1, loc);
 
@@ -678,13 +679,11 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 		return result;
 	}
 	else 
-	{
-		// 5. полный узел цикла   
-
+	{ 
 		// создаём узел структуры как корректную вырезку из массива
-		node tmp_arg6 = build_identifier_expression(bldr, arg_repr, loc); 
+		node tmp_arg7 = build_identifier_expression(bldr, arg_repr, loc); 
 		node main_subscript2_index = build_identifier_expression(bldr, repr, loc);
-		node subs_struct_node = build_subscript_expression(bldr, &tmp_arg6, &main_subscript2_index, l_loc, r_loc);  
+		node subs_struct_node = build_subscript_expression(bldr, &tmp_arg7, &main_subscript2_index, l_loc, r_loc);  
 
 		// разворачиваемся в узел printf, чтобы отпечатать "\n{ struct" 
 		node_vector blank_tmp_node_vector = node_vector_create();
@@ -702,9 +701,9 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 
 		// правая часть if: "upb(<массив по нужному измерению>) - 1"
   
-		node tmp_arg13 = build_identifier_expression(bldr, arg_repr, loc);  
+		node tmp_arg8 = build_identifier_expression(bldr, arg_repr, loc);  
 		// оператор upb ("кол_во")
-		node if_binary_rhs_upb = build_unary_expression(bldr, &tmp_arg13, UN_UPB, loc); 
+		node if_binary_rhs_upb = build_unary_expression(bldr, &tmp_arg8, UN_UPB, loc); 
 
 		node if_binary_rhs_num_one = build_integer_literal_expression(bldr, 1, loc);
 
@@ -755,11 +754,11 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 	// будет statement compound'ом
 	node result;
 
-	node_vector res_stmts = node_vector_create();
+	node_vector res_stmts = node_vector_create(); // для аргументов результата-statement compound'а
 
 	item_t type = expression_get_type(argument);
 
-	// сохраняем аргумент в новую переменную-идентификатор с уникальным именем
+	// сохраняем переданный аргумент в новую переменную-идентификатор с уникальным именем
 	char *arg_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
 	if (!arg_identifier_name)
 	{
@@ -783,8 +782,8 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 	node_vector_add(&res_stmts, &arg_parent); 
 	*/
 	// присваивание
-	node tmp_arg9 = build_identifier_expression(bldr, arg_repr, loc);
-	node bin = build_binary_expression(bldr, &tmp_arg9, argument, BIN_ASSIGN, loc);
+	node tmp_arg1 = build_identifier_expression(bldr, arg_repr, loc);
+	node bin = build_binary_expression(bldr, &tmp_arg1, argument, BIN_ASSIGN, loc);
 	node_vector_add(&res_stmts, &bin);  
  
 	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type); 
@@ -797,8 +796,8 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 
 		// создаём узел идентификатора для переданного argument  
 		// строим узел поля структуры
-		node tmp_arg = build_identifier_expression(bldr, arg_repr, loc);
-		node member_node = build_member_expression(bldr, &tmp_arg, member_name, 0, l_loc, r_loc); 
+		node tmp_arg2 = build_identifier_expression(bldr, arg_repr, loc);
+		node member_node = build_member_expression(bldr, &tmp_arg2, member_name, 0, l_loc, r_loc); 
 
 		// создаём корректное начало строки
 		char *str = (char *)malloc(1);
