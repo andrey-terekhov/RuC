@@ -1169,6 +1169,60 @@ static void emit_call_expression(information *const info, const node *const nd)
 }
 
 /**
+ *	Emit printid expression
+ *
+ *	@param	info			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_printid_expression(information *const info, const node *const nd)
+{
+	const size_t argc = expression_inline_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
+	{
+		const node arg = expression_inline_get_argument(nd, i);
+		emit_statement(info, &arg); 
+	}
+}
+
+/**
+ *	Emit print expression
+ *
+ *	@param	info			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_print_expression(information *const info, const node *const nd)
+{
+	const size_t argc = expression_inline_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
+	{
+		const node arg = expression_inline_get_argument(nd, i);
+		emit_statement(info, &arg); 
+	}
+}
+
+/**
+ *	Emit inline expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */
+static void emit_inline_expression(information *const info, node *const nd)
+{
+	const node callee = expression_inline_get_callee(nd);
+	const size_t func = expression_identifier_get_id(&callee); 
+
+	switch (func)
+	{ 
+		case BI_PRINT:
+			emit_print_expression(info, nd);
+			return;
+		case BI_PRINTID:
+			emit_printid_expression(info, nd);
+			return; 
+	}
+} 
+
+/**
  *	Emit member expression
  *
  *	@param	info	Encoder
@@ -1973,6 +2027,10 @@ static void emit_expression(information *const info, const node *const nd)
 
 		case EXPR_INITIALIZER:
 			emit_initializer_expression(info, nd);
+			return;
+		
+		case EXPR_INLINE:
+			emit_inline_expression(info, nd);
 			return;
 
 		default:
