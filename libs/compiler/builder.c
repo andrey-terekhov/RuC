@@ -328,7 +328,7 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
-void concat_strings(char *dst, const char *src)
+static void concat_strings(char *dst, const char *src)
 {
 	dst = (char *)realloc(dst, strlen(dst) + strlen(src));
 	if (!dst)
@@ -339,7 +339,7 @@ void concat_strings(char *dst, const char *src)
 	strcat(dst, src);
 }
 
-node create_printf_node(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
+static node create_printf_node(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
 {
 	const location loc = {l_loc.begin, r_loc.end};
 
@@ -367,7 +367,7 @@ node create_printf_node(builder *bldr, const char *str, node_vector *args, locat
 	return call_printf_node;
 }
 
-const char *create_scalar_type_str(item_t type)
+static const char *create_scalar_type_str(item_t type)
 { 	
 	switch (type)
 	{
@@ -382,13 +382,13 @@ const char *create_scalar_type_str(item_t type)
 	return 0;
 }
 
-void to_string(char* restrict buf, int num) 
+static void to_string(char* restrict buf, int num) 
 {  
     if (buf!=NULL) 
         sprintf(buf, "%d", num); 
 } 
 
-char *create_new_temp_identifier(size_t ident_table_size)
+static char *create_new_temp_identifier(size_t ident_table_size)
 {
 	char *new_identifier_number_str = (char *)malloc(100);
 	if (!new_identifier_number_str)
@@ -417,9 +417,9 @@ char *create_new_temp_identifier(size_t ident_table_size)
 	return new_identifier_name;
 }   
 
-node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
+static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
  
-node create_array_nodes(builder *bldr, node *argument, location l_loc, location r_loc, size_t dimensions)
+static node create_array_nodes(builder *bldr, node *argument, location l_loc, location r_loc, size_t dimensions)
 {    
 	const location loc = {l_loc.begin, r_loc.end}; 
 
@@ -736,7 +736,7 @@ node create_array_nodes(builder *bldr, node *argument, location l_loc, location 
 
 }
 
-void create_correct_spaces(char *str, size_t tab_deep)
+static void create_correct_spaces(char *str, size_t tab_deep)
 { 
 	// глубина одного уровня -- 4 пробела
 	for (size_t j = 0; j < tab_deep*4; j++)
@@ -747,7 +747,7 @@ void create_correct_spaces(char *str, size_t tab_deep)
 	}
 }
 
-node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc)
+static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc)
 {
 	const location loc = {l_loc.begin, r_loc.end};
 
@@ -769,8 +769,7 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 	const size_t arg_repr = map_add(&bldr->sx->representations, arg_identifier_name, ITEM_MAX-1);  
 	// добавляем идентификатор в identifiers 
 	const size_t arg_id = ident_add(bldr->sx, arg_repr, 0, type, 3); 
-	/*
-	// где-то здесь ошибка?
+	 
 	node arg_parent = node_add_child(&bldr->context, OP_DECLSTMT);
 	node arg_nd = node_add_child(&arg_parent, OP_DECL_VAR);
 	node_add_arg(&arg_nd, (item_t)arg_id);
@@ -780,7 +779,7 @@ node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, locatio
 
 	// запоминаем объявление
 	node_vector_add(&res_stmts, &arg_parent); 
-	*/
+	
 	// присваивание
 	node tmp_arg1 = build_identifier_expression(bldr, arg_repr, loc);
 	node bin = build_binary_expression(bldr, &tmp_arg1, argument, BIN_ASSIGN, loc);
