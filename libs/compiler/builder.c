@@ -452,16 +452,16 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	node_add_arg(&arg_nd, 0);	// Размерность
 	node_add_arg(&arg_nd, 0);	// Флаг наличия инициализатора
 	node_set_arg(&arg_nd, 1, (item_t)dimensions);
-	node_set_arg(&arg_nd, 2, false);   
-	
+	node_set_arg(&arg_nd, 2, false);
+
 	// запоминаем объявление
 	node_vector_add(&res_stmts, &arg_parent);  
-	*/  
+	*/ 
 	// присваивание
 	node tmp_arg1 = build_identifier_expression(bldr, arg_repr, loc);
 	node bin = build_binary_expression(bldr, &tmp_arg1, argument, BIN_ASSIGN, loc); 
 	node_vector_add(&res_stmts, &bin);   
-
+	
 	item_t elements_type = type_array_get_element_type(bldr->sx, type); 
 	if (type_is_array(bldr->sx, elements_type))
 	{   
@@ -477,8 +477,8 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 		// добавляем идентификатор в identifiers
 		const size_t id = ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
 
-		node parent = node_add_child(&bldr->context, OP_DECLSTMT);
-		node nd = node_add_child(&parent, OP_DECL_VAR);
+		node init_expr = node_add_child(&bldr->context, OP_DECLSTMT);
+		node nd = node_add_child(&init_expr, OP_DECL_VAR);
 		node_add_arg(&nd, (item_t)id);
 		node_add_arg(&nd, 0);	// Размерность
 		node_add_arg(&nd, 0);	// Флаг наличия инициализатора
@@ -488,9 +488,6 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 		node temp = node_add_child(&nd, OP_NOP);
 		node_swap(&init_rhs_expr, &temp);
 		node_remove(&temp);    
-
-		// создаём узел инициализации 
-		node init_expr = parent;
 
 		// 2. условие
 		node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
@@ -572,8 +569,8 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	// добавляем идентификатор в identifiers
 	const size_t id = ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
 
-	node parent = node_add_child(&bldr->context, OP_DECLSTMT);
-	node nd = node_add_child(&parent, OP_DECL_VAR);
+	node init_expr = node_add_child(&bldr->context, OP_DECLSTMT);
+	node nd = node_add_child(&init_expr, OP_DECL_VAR);
 	node_add_arg(&nd, (item_t)id);
 	node_add_arg(&nd, 0);	// Размерность
 	node_add_arg(&nd, 0);	// Флаг наличия инициализатора
@@ -582,10 +579,7 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	node init_rhs_expr = build_integer_literal_expression(bldr, 0, loc); 
 	node temp = node_add_child(&nd, OP_NOP);
 	node_swap(&init_rhs_expr, &temp);
-	node_remove(&temp);   
-
-	// создаём узел объявления
-	node init_expr = parent; 
+	node_remove(&temp);    
 
 	// 2. условие
 	node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
@@ -775,15 +769,14 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	node_add_arg(&arg_nd, (item_t)arg_id);
 	node_add_arg(&arg_nd, 0);	// Размерность
 	node_add_arg(&arg_nd, 0);	// Флаг наличия инициализатора
-	node_set_arg(&arg_nd, 2, false);  
+	node_set_arg(&arg_nd, 2, true);  
+ 
+	node arg_temp = node_add_child(&arg_nd, OP_NOP);
+	node_swap(argument, &arg_temp);
+	node_remove(&arg_temp);
 
 	// запоминаем объявление
-	node_vector_add(&res_stmts, &arg_parent); 
-	
-	// присваивание
-	node tmp_arg1 = build_identifier_expression(bldr, arg_repr, loc);
-	node bin = build_binary_expression(bldr, &tmp_arg1, argument, BIN_ASSIGN, loc);
-	node_vector_add(&res_stmts, &bin);  
+	node_vector_add(&res_stmts, &arg_parent);  
  
 	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type); 
 	for (size_t i = 0; i < member_amount; i++)
@@ -1002,7 +995,6 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			first_scalar_argument_index = 0; 
 			last_scalar_argument_index = 0;  
 			
-			node complicated_type_node; 
 			if (argument_type_class == TYPE_ARRAY) 
 			{
 				size_t dimensions = 1;
@@ -1014,15 +1006,16 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 					elements_type = type_array_get_element_type(bldr->sx, elements_type);
 				}
 
-				complicated_type_node = create_array_nodes(bldr, &argument,  last_argument_loc, curr_loc, dimensions); 
+				node complicated_type_node = create_array_nodes(bldr, &argument,  last_argument_loc, curr_loc, dimensions); 
+				concat_strings(str, "} ");
+				node_vector_add(&stmts, &complicated_type_node);
 			}
 			else
-				complicated_type_node = create_struct_nodes(bldr, &argument, 1, last_argument_loc, curr_loc);
- 
-			node_vector_add(&stmts, &complicated_type_node);
-			
-
-			(argument_type_class == TYPE_STRUCTURE) ? concat_strings(str, "\n}\n") : concat_strings(str, "} ");
+			{
+				node complicated_type_node = create_struct_nodes(bldr, &argument, 1, last_argument_loc, curr_loc);
+				node_vector_add(&stmts, &complicated_type_node);
+				concat_strings(str, "\n}\n");
+			} 
 			if (!str)
 				return node_broken();
 		}
@@ -1169,7 +1162,6 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			first_scalar_argument_index = 0; 
 			last_scalar_argument_index = 0; 
  
-			node complicated_type_node;  
 			if (argument_type_class == TYPE_ARRAY) 
 			{
 				size_t dimensions = 1;
@@ -1181,14 +1173,16 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 					elements_type = type_array_get_element_type(bldr->sx, elements_type);
 				}
 
-				complicated_type_node = create_array_nodes(bldr, &argument,  last_argument_loc, curr_loc, dimensions); 
+				node complicated_type_node = create_array_nodes(bldr, &argument,  last_argument_loc, curr_loc, dimensions); 
+				concat_strings(str, "} ");
+				node_vector_add(&stmts, &complicated_type_node);
 			}
 			else
-				complicated_type_node = create_struct_nodes(bldr, &argument, 1, curr_loc, r_loc);
-
-			node_vector_add(&stmts, &complicated_type_node); 
-
-			concat_strings(str, "} ");
+			{
+				node complicated_type_node = create_struct_nodes(bldr, &argument, 1, last_argument_loc, curr_loc);
+				node_vector_add(&stmts, &complicated_type_node);
+				concat_strings(str, "\n}\n");
+			} 
 			if (!str)
 				return node_broken();
 		}
