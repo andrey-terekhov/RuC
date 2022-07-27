@@ -413,6 +413,8 @@ static char *create_new_temp_identifier(size_t ident_table_size)
 	concat_strings(new_identifier_name, "_");
 	if (!new_identifier_name)  
 		return 0;  
+
+	free(new_identifier_number_str);
 	
 	return new_identifier_name;
 }   
@@ -434,7 +436,7 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	node_vector body_args = node_vector_create();  // для построения тела цикла 
 
 	// сохраняем переданный аргумент в новую переменную-идентификатор с уникальным именем
-	char *arg_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers));
+	char *arg_identifier_name = create_new_temp_identifier((size_t)vector_size(&bldr->sx->identifiers)); 
 	if (!arg_identifier_name)
 	{
 		printf("unable to create new identifier\n");
@@ -442,18 +444,16 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	} 
 	// добавляем имя нового идентификатора в таблицу representations 
 	const size_t arg_repr = map_add(&bldr->sx->representations, arg_identifier_name, ITEM_MAX);  
-	// добавляем идентификатор в identifiers
+	// добавляем идентификатор в identifiers 
 	const size_t arg_id = ident_add(bldr->sx, arg_repr, 0, type, 3);  
 	/*
 	// где-то здесь ошибка?
 	node arg_parent = node_add_child(&bldr->context, OP_DECLSTMT);
-	node arg_nd = node_add_child(&arg_parent, OP_DECL_VAR);
-	node_add_arg(&arg_nd, (item_t)arg_id);
-	node_add_arg(&arg_nd, 0);	// Размерность
-	node_add_arg(&arg_nd, 0);	// Флаг наличия инициализатора
-	node_set_arg(&arg_nd, 1, (item_t)dimensions);
-	node_set_arg(&arg_nd, 2, false);
-
+	node arg_nd = node_add_child(&arg_parent, OP_DECL_VAR); 
+	node_add_arg(&arg_nd, arg_id);
+	node_add_arg(&arg_nd, (item_t)dimensions);	// Размерность
+	node_add_arg(&arg_nd, false);	// Флаг наличия инициализатора 
+	
 	// запоминаем объявление
 	node_vector_add(&res_stmts, &arg_parent);  
 	*/ 
@@ -481,8 +481,7 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 		node nd = node_add_child(&init_expr, OP_DECL_VAR);
 		node_add_arg(&nd, (item_t)id);
 		node_add_arg(&nd, 0);	// Размерность
-		node_add_arg(&nd, 0);	// Флаг наличия инициализатора
-		node_set_arg(&nd, 2, true);
+		node_add_arg(&nd, true);	// Флаг наличия инициализатора
 
 		node init_rhs_expr = build_integer_literal_expression(bldr, 0, loc); 
 		node temp = node_add_child(&nd, OP_NOP);
@@ -507,8 +506,8 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 		// 4. тело цикла   
 		node tmp_arg2 = build_identifier_expression(bldr, arg_repr, loc);
 		node main_subscript_index = build_identifier_expression(bldr, repr, loc);
-		node main_subscript = build_subscript_expression(bldr, &tmp_arg2, &main_subscript_index, l_loc, r_loc);  
- 
+		node main_subscript = build_subscript_expression(bldr, &tmp_arg2, &main_subscript_index, l_loc, r_loc);   
+
 		node array_nodes = create_array_nodes(bldr, &main_subscript, l_loc, r_loc, dimensions-1);   
 
 		// разворачиваемся в узлы printf, чтобы отпечатать "{" и "}, " (или "}", если цикл дальше не пойдёт)
@@ -573,8 +572,7 @@ static node create_array_nodes(builder *bldr, node *argument, location l_loc, lo
 	node nd = node_add_child(&init_expr, OP_DECL_VAR);
 	node_add_arg(&nd, (item_t)id);
 	node_add_arg(&nd, 0);	// Размерность
-	node_add_arg(&nd, 0);	// Флаг наличия инициализатора
-	node_set_arg(&nd, 2, true);
+	node_add_arg(&nd, true);	// Флаг наличия инициализатора
 
 	node init_rhs_expr = build_integer_literal_expression(bldr, 0, loc); 
 	node temp = node_add_child(&nd, OP_NOP);
@@ -768,8 +766,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	node arg_nd = node_add_child(&arg_parent, OP_DECL_VAR);
 	node_add_arg(&arg_nd, (item_t)arg_id);
 	node_add_arg(&arg_nd, 0);	// Размерность
-	node_add_arg(&arg_nd, 0);	// Флаг наличия инициализатора
-	node_set_arg(&arg_nd, 2, true);  
+	node_add_arg(&arg_nd, true);	// Флаг наличия инициализатора
  
 	node arg_temp = node_add_child(&arg_nd, OP_NOP);
 	node_swap(argument, &arg_temp);
@@ -1006,7 +1003,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 					elements_type = type_array_get_element_type(bldr->sx, elements_type);
 				}
 
-				node complicated_type_node = create_array_nodes(bldr, &argument,  last_argument_loc, curr_loc, dimensions); 
+				node complicated_type_node = create_array_nodes(bldr, &argument, last_argument_loc, curr_loc, dimensions); 
 				concat_strings(str, "} ");
 				node_vector_add(&stmts, &complicated_type_node);
 			}
