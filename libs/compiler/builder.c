@@ -390,7 +390,7 @@ static char *create_new_temp_identifier_name(size_t ident_table_size)
 		printf("malloc error\n");
 		return 0;
 	}
-	sprintf(new_identifier_number_str, "%d", ident_table_size);
+	sprintf(new_identifier_number_str, "%d", (int)ident_table_size);
 
 	char *new_identifier_name = (char *)malloc(1);
 	if (!new_identifier_name)
