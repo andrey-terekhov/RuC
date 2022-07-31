@@ -473,15 +473,7 @@ static node copy_member_node(builder *bldr, node *argument, location l_loc, loca
 	size_t name = type_structure_get_member_name(bldr->sx, type, index);
 	
 	return build_member_expression(bldr, &base_copy, name, 0, l_loc, r_loc);
-}
-
-static node copy_string_literal_node(builder *bldr, node *argument, location loc)
-{
-	// получаем индекс строки
-	size_t index = expression_literal_get_string(argument);
-
-	return build_string_literal_expression(bldr, index, loc);
-}
+} 
 
 static node copy_argument_node(builder *bldr, node *argument, location l_loc, location r_loc)
 {
@@ -496,9 +488,7 @@ static node copy_argument_node(builder *bldr, node *argument, location l_loc, lo
 		case OP_SELECT:
 			return copy_member_node(bldr, argument, l_loc, r_loc);
 		case OP_SLICE:
-			return copy_subscript_node(bldr, argument, l_loc, r_loc);
-		//case OP_LITERAL:
-		//	return copy_string_literal_node(bldr, argument, loc); // в случае literal это может быть только string_literal
+			return copy_subscript_node(bldr, argument, l_loc, r_loc); 
 		default:
 		{
 			printf("unable to create new identifier expression by node\n");
