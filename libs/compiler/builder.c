@@ -221,7 +221,7 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 
 
 static size_t evaluate_args(builder *const bldr, const node *const format_str
-	, item_t *const format_types, char32_t *const placeholders)
+	, item_t *const format_types, item_t *const actual_types, char32_t *const placeholders)
 {
 	const size_t str_index = expression_literal_get_string(format_str); 
 	const char *const string = string_get(bldr->sx, str_index); 
@@ -263,6 +263,12 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 					format_types[args++] = type_string(bldr->sx);
 					break;
 
+				case 'p':
+				case U'у': 
+					format_types[args] = actual_types[args]; 
+					args++;
+					break;
+
 				case '%':
 					break;
 
@@ -302,9 +308,17 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 		return node_broken();
 	}
 
+	item_t actual_types[MAX_PRINTF_ARGS];
+	for (size_t i = 1; i < argc; i++)
+	{
+		node argument = node_vector_get(args, i);
+		item_t arg_type = expression_get_type(&argument);
+		actual_types[i-1] = arg_type;
+	}
+
 	char32_t placeholders[MAX_PRINTF_ARGS];
 	item_t format_types[MAX_PRINTF_ARGS];
-	const size_t expected_args = evaluate_args(bldr, &fst, format_types, placeholders); 
+	const size_t expected_args = evaluate_args(bldr, &fst, format_types, actual_types, placeholders); 
 
 	if (expected_args != argc - 1)
 	{
@@ -326,17 +340,62 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 
 	const location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_INTEGER, callee, args, loc);
+} 
+
+static char *string_append(const char *s1, const char *s2)
+{
+	int s1_len = strlen(s1);
+	int s2_len = strlen(s2);
+
+	int size = s1_len + s2_len + 1;
+
+	char *s = calloc(size, sizeof(char));
+	if (!s)
+	{
+		printf("calloc error\n");
+		return NULL;	
+	}
+
+
+	for (int i = 0; i < s1_len; i++)
+		s[i] = s1[i];
+
+	for (int i = 0; i < s2_len; i++)
+		s[s1_len + i] = s2[i];
+
+	s[size - 1] = '\0';
+
+	return s;
 }
 
-static void concat_strings(char *dst, const char *src)
-{
-	dst = (char *)realloc(dst, strlen(dst) + strlen(src) + 1);
-	if (!dst)
+static char *string_copy(char *src)
+{ 
+	int size = strlen(src) + 1; 
+  	char *s = calloc(size, sizeof(char));
+	if (!s)
 	{
-		printf("realloc error\n"); 
-		return;
+		printf("calloc error\n");
+		return NULL;	
 	}
-	strcat(dst, src);
+
+	for (int i = 0; i < size-1; i++)
+		s[i] = src[i];
+	
+	s[size-1] = '\0';
+	return s;
+
+}
+
+static void concat_strings(char **dst, const char *src)
+{
+	char *tmp = string_append(*dst, src);
+	if (!tmp)
+		return;
+	free(*dst);
+	*dst = string_copy(tmp);
+	if (!*dst) 
+		return; 
+	free(tmp);
 }
 
 static node create_printf_node(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
@@ -365,7 +424,7 @@ static node create_printf_node(builder *bldr, const char *str, node_vector *args
 	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, r_loc); 
 }
 
-static const char *create_scalar_type_str(item_t type)
+static const char *create_simple_type_str(item_t type)
 { 	
 	switch (type)
 	{
@@ -376,39 +435,43 @@ static const char *create_scalar_type_str(item_t type)
 			return "%c"; 
 		case TYPE_FLOATING:
 			return "%f"; 
-		case TYPE_ARRAY: // попали сюда => в качестве массива может выступать только строка
+		case TYPE_ARRAY: // попали сюда => в качестве массива может выступать только строка => "%s"
 			return "%s";
+		case TYPE_NULL_POINTER:
+		case TYPE_POINTER:
+			return "%p"; 
 	} 
+	printf("unable to create simple type string\n");
 	return 0;
 }
 
 static char *create_new_temp_identifier_name(size_t ident_table_size)
 {
-	char *new_identifier_number_str = (char *)malloc(100);
+	char *new_identifier_number_str =  calloc(10, sizeof(char));
 	if (!new_identifier_number_str)
 	{
-		printf("malloc error\n");
-		return 0;
+		printf("calloc error\n");
+		return NULL;
 	}
 	sprintf(new_identifier_number_str, "%d", (int)ident_table_size);
 
-	char *new_identifier_name = (char *)malloc(1);
+	char *new_identifier_name = calloc(1, sizeof(char));
 	if (!new_identifier_name)
 	{
-		printf("malloc error\n");
-		return 0;
+		printf("calloc error\n");
+		return NULL;
 	}
-	concat_strings(new_identifier_name, "_temporal_identifier_");
+	concat_strings(&new_identifier_name, "_temporal_identifier_");
 	if (!new_identifier_name) 
-		return 0;
-	concat_strings(new_identifier_name, new_identifier_number_str);
-	if (!new_identifier_name)  
-		return 0;  
-	concat_strings(new_identifier_name, "_");
-	if (!new_identifier_name)  
-		return 0;  
-	
+		return NULL;
+	concat_strings(&new_identifier_name, new_identifier_number_str);
 	free(new_identifier_number_str);
+	if (!new_identifier_name)  
+		return NULL;  
+	concat_strings(&new_identifier_name, "_");
+	if (!new_identifier_name)  
+		return NULL;  
+	
 
 	return new_identifier_name;
 }  
@@ -417,7 +480,7 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 {
 	const location loc = {l_loc.begin, r_loc.end};
 
-	// создание идёт от той вырезки, базой для которой является исходный массив, 
+	// создание идёт от той вырезки, базой для которой является исходный аргумент, 
 	// базой следующей вырезки является только что созданная вырезка и т.д.
 	node curr_subscr_arg = *argument; 
 
@@ -518,6 +581,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		} 
 		// добавляем имя нового идентификатора в таблицу representations 
 		const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX);  
+		free(new_identifier_name);
 		// добавляем идентификатор в identifiers
 		const size_t id = ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
 		// узел объявления
@@ -607,6 +671,22 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		return for_stmt;
 	}   
+
+	// проверяем, не пришёл ли массив-строка (на случай многомерных массивов char, иначе будут отпечатаны слова через запятую)
+	if (type_is_string(bldr->sx, type))
+	{ 
+		node subscript_node = create_consec_subscripts(bldr, argument, dimensions-1, temp_idents_reprs, l_loc, r_loc);	
+		
+		node_vector arg = node_vector_create();
+		node_vector_add(&arg, &subscript_node);
+		
+		node printf_node = create_printf_node(bldr, "%s", &arg, l_loc, r_loc);
+		node_vector_add(&body_args, &printf_node);
+
+		return build_compound_statement(bldr, &body_args, l_loc, r_loc);
+	}
+
+	// не пришёл => делаем цикл
 	 
 	// 1. инициализация -- объявляем новый уникальный идентификатор     
 	char *new_identifier_name = create_new_temp_identifier_name(vector_size(&bldr->sx->identifiers));
@@ -616,7 +696,8 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		return node_broken();
 	} 
 	// добавляем имя нового идентификатора в таблицу representations 
-	const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX);  
+	const size_t repr = map_add(&bldr->sx->representations, new_identifier_name, ITEM_MAX); 
+	free(new_identifier_name);
 	// добавляем идентификатор в identifiers
 	const size_t id = ident_add(bldr->sx, repr, 0, TYPE_INTEGER, 3); 
 	// узел объявления
@@ -662,16 +743,16 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	if (type_class != TYPE_STRUCTURE)
 	{  
 		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев
-		char *str = (char *)malloc(1);
+		char *str = calloc(1, sizeof(char));
 		if (!str)
 		{
-			printf("malloc error\n");
+			printf("calloc error\n");
 			return node_broken();
 		} 
-		const char *tmp = create_scalar_type_str(type_class);
+		const char *tmp = create_simple_type_str(type_class);
 		if (!tmp)
 			return node_broken();
-		concat_strings(str, tmp);
+		concat_strings(&str, tmp);
 		if (!str)
 			return node_broken(); 
 
@@ -716,8 +797,11 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// условие выполнено
 		node if_true = create_printf_node(bldr, str, &tmp_args1, l_loc, r_loc);
 		// условие не выполнено
-		concat_strings(str, ", ");
-		node if_false = create_printf_node(bldr, str, &tmp_args2, l_loc, r_loc);
+		concat_strings(&str, ", ");
+		if (!str)
+			return node_broken();
+		node if_false = create_printf_node(bldr, str, &tmp_args2, l_loc, r_loc); 
+		free(str);
 
 		// само выражение
 		node if_statement = build_if_statement(bldr, &if_binary, &if_true, &if_false, loc); 
@@ -787,16 +871,40 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		return for_stmt; 
 	}
 
+} 
+
+static node create_complicated_type_str(builder *bldr, node *argument, location l_loc, location r_loc, size_t tab_deep) 
+{
+	node complicated_type_node;
+	item_t argument_type = expression_get_type(argument);
+	if (type_is_array(bldr->sx, argument_type))
+	{ 
+		size_t *idents = (size_t *)malloc(1); 
+		if (!idents)
+		{
+			printf("malloc error\n");
+			return node_broken();
+		}
+		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
+		free(idents);
+	}
+	else
+		complicated_type_node = create_struct_nodes(bldr, argument, tab_deep, l_loc, r_loc);
+	
+	return complicated_type_node;
 }
 
-static void create_correct_spaces(char *str, size_t tab_deep)
+static void create_correct_spaces(char **str, size_t tab_deep)
 { 
 	// глубина одного уровня -- 4 пробела
 	for (size_t j = 0; j < tab_deep*4; j++)
 	{
 		concat_strings(str, " ");
 		if (!str)
+		{
+			*str = NULL;
 			return;
+		}
 	}
 }
 
@@ -807,7 +915,9 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	// будет statement compound'ом
 	node result;
 
-	node_vector res_stmts = node_vector_create();
+	node_vector res_stmts = node_vector_create(); 
+
+	node_vector args_to_print = node_vector_create();
 
 	item_t type = expression_get_type(argument);
 	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type);
@@ -822,6 +932,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	} 
 	// добавляем имя нового идентификатора в таблицу representations 
 	const size_t arg_repr = map_add(&bldr->sx->representations, new_arg_identifier_name, ITEM_MAX);  
+	free(new_arg_identifier_name);
 	// добавляем идентификатор в identifiers
 	const size_t arg_id = ident_add(bldr->sx, arg_repr, 0, type, 3); 
 	// узел объявления
@@ -835,12 +946,18 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	node_swap(argument, &temp);
 	node_remove(&temp);    
 
-	node_vector_add(&res_stmts, &arg_parent);
+	node_vector_add(&res_stmts, &arg_parent); 
+
+	char *str = calloc(1, sizeof(char));
+	if (!str)
+	{
+		printf("calloc error\n");
+		return node_broken();
+	}
 
 	for (size_t i = 0; i < member_amount; i++)
 	{
 		item_t member_type = type_structure_get_member_type(bldr->sx, type, i);
-		item_t member_type_class = type_get_class(bldr->sx, member_type);
 		size_t member_name = type_structure_get_member_name(bldr->sx, type, i);
 		const char *member_name_str = repr_get_name(bldr->sx, member_name);  
 
@@ -848,112 +965,97 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		node tmp_arg = build_identifier_expression(bldr, arg_repr, loc);
 		// строим узел поля структуры
 		node member_node = build_member_expression(bldr, &tmp_arg, member_name, 0, l_loc, r_loc);  
-
+		
 		// создаём корректное начало строки
-		char *str = (char *)malloc(1);
-		if (!str)
-		{
-			printf("malloc error\n");
-			return node_broken();
-		}
-		concat_strings(str, "\n\n");
+		concat_strings(&str, "\n\n");
 		if (!str)
 			return node_broken();
-		create_correct_spaces(str, tab_deep);
+		create_correct_spaces(&str, tab_deep);
 		if (!str)
 			return node_broken();
-		concat_strings(str, "{\n");
+		concat_strings(&str, "{\n");
 		if (!str)
 			return node_broken();
-		create_correct_spaces(str, tab_deep+1);
+		create_correct_spaces(&str, tab_deep+1);
 		if (!str)
 			return node_broken();
-		concat_strings(str, ".");
+		concat_strings(&str, ".");
 		if (!str)
 			return node_broken();
-		concat_strings(str, member_name_str);
+		concat_strings(&str, member_name_str);
 		if (!str)
 			return node_broken();
-		concat_strings(str, " = ");
+		concat_strings(&str, " = ");
 		if (!str)
-			return node_broken();
+			return node_broken();    
 
-		if ((member_type_class == TYPE_ARRAY) || (member_type_class == TYPE_STRUCTURE))
-		{
-			// в случае не скалярного типа нужно сразу отпечатать имеющуюся строку
-			node_vector blank_tmp_nv = node_vector_create();
-			node printf_str_node = create_printf_node(bldr, str, &blank_tmp_nv, l_loc, r_loc); 
-			node_vector_add(&res_stmts, &printf_str_node);  
+		if (type_is_aggregate(bldr->sx, member_type) && !type_is_string(bldr->sx, member_type))
+		{ 
+			if (type_is_array(bldr->sx, member_type)) 
+				concat_strings(&str, "{");
+			else 
+				concat_strings(&str, "{ struct"); 
+			if (!str)
+				return node_broken();  
 
-			if (member_type_class == TYPE_ARRAY)
-			{    
-				node printf_paren_first = create_printf_node(bldr, "{", &blank_tmp_nv, l_loc, r_loc); 
-				node_vector_add(&res_stmts, &printf_paren_first); 
+			// разворачиваемся в printf для имеющейся на данный момент строки
+			node printf_node = create_printf_node(bldr, str, &args_to_print, r_loc, l_loc); 
+			free(str); 
+			// запоминаем узел 
+			node_vector_add(&res_stmts, &printf_node);
 
-				size_t *idents = (size_t *)malloc(1);  
-				node array_node = create_array_nodes(bldr, &member_node, member_type, l_loc, r_loc, 1, idents);
-				free(idents);
-				node_vector_add(&res_stmts, &array_node); 
-				 
-				node printf_paren_second = create_printf_node(bldr, "} ", &blank_tmp_nv, l_loc, r_loc); 
-				node_vector_add(&res_stmts, &printf_paren_second); 
+			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
+			str = calloc(1, sizeof(char));
+			if (!str)
+			{
+				printf("calloc error\n");
+				return node_broken();
 			}
+			// избавляемся от предыдущих запомненных аргументов 
+			node_vector_clear(&args_to_print);
+			args_to_print = node_vector_create(); 
+			
+			node complicated_type_node = create_complicated_type_str(bldr, &member_node, l_loc, r_loc, tab_deep + 1);
+			node_vector_add(&res_stmts, &complicated_type_node);
+
+			if (type_is_array(bldr->sx, member_type)) 
+				concat_strings(&str, "} ");
 			else
-			{ 
-				node printf_temp_node = create_printf_node(bldr, "{ struct", &blank_tmp_nv, l_loc, r_loc); 
-				node_vector_add(&res_stmts, &printf_temp_node);  
-
-				node struct_node = create_struct_nodes(bldr, &member_node, tab_deep+1, l_loc, r_loc);
-				node_vector_add(&res_stmts, &struct_node); 
-				
-				node printf_paren_second = create_printf_node(bldr, " }", &blank_tmp_nv, l_loc, r_loc);
-				node_vector_add(&res_stmts, &printf_paren_second); 
-			}
+				concat_strings(&str, "}\n");
+			if (!str)
+				return node_broken(); 
 		}
 		else
 		{ 
-			// для скалярных типов разворачиваемся в узлы printf по отдельности
+			node_vector_add(&args_to_print, &member_node);
 
-			const char *tmp = create_scalar_type_str(member_type_class);   
+			const item_t member_type_class = type_get_class(bldr->sx, member_type);
+			const char *tmp = create_simple_type_str(member_type_class);   
 			if (!tmp)
-				return node_broken(); 
-			concat_strings(str, tmp);
+				return node_broken();  
+			concat_strings(&str, tmp);
 			if (!str)
-				return node_broken(); 
-
-			node_vector tmp_nv = node_vector_create();
-			node_vector_add(&tmp_nv, &member_node);
-
-			node printf_node = create_printf_node(bldr, str, &tmp_nv, l_loc, r_loc);
-
-			node_vector_add(&res_stmts, &printf_node);
-
+				return node_broken();
 		}  
-		//free(str);
 		// правильно завершаем строку: если текущее поле, которое требуется распечатать, -- последнее, то запятую не ставим, иначе -- ставим
-		str = (char *)malloc(1);
-		if (!str)
-		{
-			printf("malloc error\n");
-			return node_broken();
-		}
-		concat_strings(str, "\n");
+		concat_strings(&str, "\n");
 		if (!str)
 			return node_broken();
-		create_correct_spaces(str, tab_deep);
+		create_correct_spaces(&str, tab_deep);
 		if (!str)
 			return node_broken();
-		(i == member_amount-1) ? concat_strings(str, "}") : concat_strings(str, "},");
+		if (i == member_amount-1) 
+			concat_strings(&str, "}");
+		else
+			concat_strings(&str, "},");
 		if (!str)
-			return node_broken();
+			return node_broken();  
+	}  
 
-		node_vector tmp_nv = node_vector_create();
-		node printf_node = create_printf_node(bldr, str, &tmp_nv, l_loc, r_loc); 
-
-		node_vector_add(&res_stmts, &printf_node);
-
-		//free(str);
-	}
+	// разворачиваемся в printf для имеющейся на данный момент строки 
+	node printf_node = create_printf_node(bldr, str, &args_to_print, l_loc, r_loc); 
+	free(str);
+	node_vector_add(&res_stmts, &printf_node);
 
 	result = build_compound_statement(bldr, &res_stmts, l_loc, r_loc);
 	return result; 
@@ -967,7 +1069,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 
 	node_vector_add(&stmts, callee);
 		
-	node_vector tmp_args = node_vector_create();
+	node_vector args_to_print = node_vector_create();
 
 	size_t argc;
 	if (args == NULL || (argc = node_vector_size(args)) == 0)
@@ -982,25 +1084,16 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 
-	char *str = (char *) malloc(1); 
+	char *str = calloc(1, sizeof(char));
 	if (!str)
 	{
-		printf("malloc error\n"); 
+		printf("calloc error\n"); 
 		return node_broken();
 	} 
 	
-	// чтобы избавится от переданных в качестве аргументов строк
-	node_vector args_to_remove = node_vector_create();
-	
 	for (size_t i = 0; i < argc; i++)
 	{  
-		node argument = node_vector_get(args, i);
-
-		if (type_is_pointer(bldr->sx, expression_get_type(&argument)))
-		{
-			semantic_error(bldr, node_get_location(&argument), pointer_in_print);
-			return node_broken();
-		}  
+		node argument = node_vector_get(args, i); 
 
 		location curr_loc = node_get_location(&argument); 
 		
@@ -1012,13 +1105,15 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 		} 
 		location last_argument_loc = node_get_location(&last_argument);  
 		
-		const item_t argument_type = expression_get_type(&argument);
-		const item_t argument_type_class = type_get_class(bldr->sx, argument_type); 
-		if ((argument_type_class == TYPE_ARRAY || argument_type_class == TYPE_STRUCTURE) && !type_is_string(bldr->sx, argument_type))
+		item_t argument_type = expression_get_type(&argument);  
+		if (type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type))
 		{  
 			complicated_type_in_args = 1;  
 			
-			(argument_type_class == TYPE_ARRAY) ? concat_strings(str, "{") : concat_strings(str, "\n{ struct"); 
+			if (type_is_array(bldr->sx, argument_type)) 
+				concat_strings(&str, "{");
+			else
+				concat_strings(&str, "{ struct"); 
 			if (!str)
 				return node_broken();   
 
@@ -1029,62 +1124,56 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			location ls_arg_loc = node_get_location(&last_scalar_argument);
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			node printf_node = create_printf_node(bldr, str, &tmp_args, fs_arg_loc, ls_arg_loc); 
+			node printf_node = create_printf_node(bldr, str, &args_to_print, fs_arg_loc, ls_arg_loc); 
+			free(str); 
 			// запоминаем узел 
 			node_vector_add(&stmts, &printf_node);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			free(str); 
-			str = (char *)malloc(1);
+			str = calloc(1, sizeof(char));
 			if (!str)
 			{
-				printf("malloc error\n");
+				printf("calloc error\n");
 				return node_broken();
 			}
 			// избавляемся от предыдущих запомненных аргументов 
-			node_vector_clear(&tmp_args);
-			tmp_args = node_vector_create(); 
+			node_vector_clear(&args_to_print);
+			args_to_print = node_vector_create(); 
 			first_scalar_argument_index = 0; 
 			last_scalar_argument_index = 0; 
 			
-			node complicated_type_node; 
-			if (argument_type_class == TYPE_ARRAY)
-			{ 
-				size_t *idents = (size_t *)malloc(1); 
-				complicated_type_node = create_array_nodes(bldr, &argument, argument_type, last_argument_loc, curr_loc, 1, idents);
-				free(idents);
-				concat_strings(str, "} ");
-			}
-			else
-			{
-				complicated_type_node = create_struct_nodes(bldr, &argument, 1, last_argument_loc, curr_loc);
-				concat_strings(str, "\n}\n");
-			}	
-			if (!str)
-				return node_broken();
-
+			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1); 
 			node_vector_add(&stmts, &complicated_type_node);
-			
+
+			if (type_is_array(bldr->sx, argument_type)) 
+				concat_strings(&str, "} ");
+			else
+				concat_strings(&str, "\n}\n");
+			if (!str)
+				return node_broken();  
 		}
 		else
 		{ 
-			// запоминаем для дальнейшего использования аргумент только в случае, если тип скалярный
-			node_vector_add(&tmp_args, &argument);
- 
 			if (last_scalar_argument_index == 0)
 				first_scalar_argument_index = i;
 
 			last_scalar_argument_index = i; 
+			
+			node_vector_add(&args_to_print, &argument);
 
-			const char *tmp = create_scalar_type_str(argument_type_class);   
+			const item_t argument_type_class = type_get_class(bldr->sx, argument_type);
+			const char *tmp = create_simple_type_str(argument_type_class);   
 			if (!tmp)
 				return node_broken(); 
-			concat_strings(str, tmp);
+			concat_strings(&str, tmp);
 			if (!str)
 				return node_broken();
-			concat_strings(str, " ");
-			if (!str)
-				return node_broken();
+			if (i != argc-1)
+			{
+				concat_strings(&str, " ");
+				if (!str)
+					return node_broken();
+			}
 		} 
 
 	}  
@@ -1092,17 +1181,8 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	location last_argument_loc = node_get_location(&last_argument); 
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	node printf_node = create_printf_node(bldr, str, &tmp_args, last_argument_loc, r_loc); 
-
-	free(str);
-
-	// избавляемся от ненужных узлов аргументов (аргументов-строк)
-	for (size_t i = 0; i < node_vector_size(&args_to_remove); i++)
-	{
-		node arg = node_vector_get(&args_to_remove, i);
-		node_remove(&arg);
-	}
-	node_vector_clear(&args_to_remove);
+	node printf_node = create_printf_node(bldr, str, &args_to_print, last_argument_loc, r_loc);  
+	free(str); 
  
 	if (!complicated_type_in_args)
 	{
@@ -1123,7 +1203,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	node_vector stmts = node_vector_create();   
 	node_vector_add(&stmts, callee);
 
-	node_vector tmp_args = node_vector_create();
+	node_vector args_to_print = node_vector_create();
 
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -1138,10 +1218,10 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 	
-	char *str = (char *) malloc(1); 
+	char *str = calloc(1, sizeof(char));
 	if (!str)
 	{
-		printf("malloc error\n"); 
+		printf("calloc error\n"); 
 		return node_broken();
 	}
  
@@ -1165,33 +1245,36 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		location last_argument_loc = node_get_location(&last_argument); 
 
 		// создаём строку "имя_аргумента = "
-		char *argument_name = (char *)malloc(1);
+		char *argument_name = calloc(1, sizeof(char));
 		if (!argument_name)
 		{
-			printf("malloc error\n"); 
+			printf("calloc error\n"); 
 			return node_broken();
 		}
 		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
 		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index); 
-		concat_strings(argument_name, tmp_argument_name);
+		concat_strings(&argument_name, tmp_argument_name);
 		if (!argument_name)
 			return node_broken();
-		concat_strings(argument_name, " = ");
+		concat_strings(&argument_name, " = ");
 		if (!argument_name)
 			return node_broken();
 
 		// соединяем с основной строкой
-		concat_strings(str, argument_name);			
+		concat_strings(&str, argument_name);			
+		free(argument_name);
 		if (!str)
-			return node_broken();
+			return node_broken();  
 		
-		const item_t argument_type = expression_get_type(&argument);
-		const item_t argument_type_class = type_get_class(bldr->sx, argument_type); 
-		if (argument_type_class == TYPE_ARRAY || argument_type_class == TYPE_STRUCTURE)
+		item_t argument_type = expression_get_type(&argument);  
+		if (type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type))
 		{  
 			complicated_type_in_args = 1;  
 			
-			(argument_type_class == TYPE_ARRAY) ? concat_strings(str, "{") : concat_strings(str, "\n{ struct"); 
+			if (type_is_array(bldr->sx, argument_type)) 
+				concat_strings(&str, "{");
+			else 
+				concat_strings(&str, "{ struct"); 
 			if (!str)
 				return node_broken();   
 
@@ -1202,68 +1285,63 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			location ls_arg_loc = node_get_location(&last_scalar_argument);
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			node printf_node = create_printf_node(bldr, str, &tmp_args, fs_arg_loc, ls_arg_loc); 
+			node printf_node = create_printf_node(bldr, str, &args_to_print, fs_arg_loc, ls_arg_loc); 
+			free(str); 
 			// запоминаем узел 
 			node_vector_add(&stmts, &printf_node);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			free(str); 
-			str = (char *)malloc(1);
+			str = calloc(1, sizeof(char));
 			if (!str)
 			{
-				printf("malloc error\n");
+				printf("calloc error\n");
 				return node_broken();
 			}
 			// избавляемся от предыдущих запомненных аргументов 
-			node_vector_clear(&tmp_args);
-			tmp_args = node_vector_create(); 
+			node_vector_clear(&args_to_print);
+			args_to_print = node_vector_create(); 
 			first_scalar_argument_index = 0; 
 			last_scalar_argument_index = 0; 
 			
-			node complicated_type_node; 
-			if (argument_type_class == TYPE_ARRAY)
-			{ 
-				size_t *idents = (size_t *)malloc(1); 
-				complicated_type_node = create_array_nodes(bldr, &argument, argument_type, last_argument_loc, curr_loc, 1, idents);
-				free(idents);
-				concat_strings(str, "} ");
-			}
-			else
-			{
-				complicated_type_node = create_struct_nodes(bldr, &argument, 1, last_argument_loc, curr_loc);
-				concat_strings(str, "\n}\n");
-			}	
-			if (!str)
-				return node_broken();
-
+			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1);
 			node_vector_add(&stmts, &complicated_type_node);
+
+			if (type_is_array(bldr->sx, argument_type)) 
+				concat_strings(&str, "} ");
+			else
+				concat_strings(&str, "\n}\n");
+			if (!str)
+				return node_broken(); 
 		}
 		else
-		{ 
-			// запоминаем для возможного использования аргумент только в случае, если тип скалярный
-			node_vector_add(&tmp_args, &argument);
-			
+		{  
 			if (last_scalar_argument_index == 0)
 				first_scalar_argument_index = i;
 
-			last_scalar_argument_index = i;
+			last_scalar_argument_index = i; 
+			
+			node_vector_add(&args_to_print, &argument);
 
-			const char *tmp = create_scalar_type_str(argument_type_class);   
+			const item_t argument_type_class = type_get_class(bldr->sx, argument_type);
+			const char *tmp = create_simple_type_str(argument_type_class);   
 			if (!tmp)
 				return node_broken(); 
-			concat_strings(str, tmp);
+			concat_strings(&str, tmp);
 			if (!str)
 				return node_broken();
-			concat_strings(str, " ");
-			if (!str)
-				return node_broken();
+			if (i != argc-1)
+			{
+				concat_strings(&str, " ");
+				if (!str)
+					return node_broken();
+			}
 		} 	 
 	}  
 	node last_argument = node_vector_get(args, first_scalar_argument_index);
 	location last_argument_loc = node_get_location(&last_argument); 
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	node printf_node = create_printf_node(bldr, str, &tmp_args, last_argument_loc, r_loc); 
+	node printf_node = create_printf_node(bldr, str, &args_to_print, last_argument_loc, r_loc); 
 	free(str);
  
 	if (!complicated_type_in_args)
