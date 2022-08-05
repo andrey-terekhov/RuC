@@ -70,6 +70,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_ASSIGNMENT;
 		case OP_INITIALIZER:
 			return EXPR_INITIALIZER;
+		case OP_INLINE:
+			return EXPR_INLINE;
 		default:
 			return EXPR_INVALID;
 	}
@@ -497,6 +499,60 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 	assert(node_get_type(nd) == OP_INITIALIZER);
 	return node_get_child(nd, index);
 }
+
+
+node expression_inline(const item_t type, node_vector *const args, const location loc)
+{ 
+	node fst = node_vector_get(args, 0);
+	node nd = node_insert(&fst, OP_INLINE, 4); 
+	
+	if (node_vector_is_correct(args))
+	{
+		const size_t amount = node_vector_size(args);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node subexpr = node_vector_get(args, i);
+			node_set_child(&nd, &subexpr);				// i-ое подвыражение списка
+		}
+	}
+
+	node_set_arg(&nd, 0, type);						// Тип значения выражения
+	node_set_arg(&nd, 1, RVALUE);					// Категория значения выражения
+	node_set_arg(&nd, 2, (item_t)loc.begin);		// Начальная позиция выражения
+	node_set_arg(&nd, 3, (item_t)loc.end);			// Конечная позиция выражения 
+
+	return nd;		 
+}
+
+size_t expression_inline_get_size(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_INLINE);
+	return node_get_amount(nd);
+}
+
+node expression_inline_get_substmt(const node *const nd, const size_t index)
+{ 
+	assert(node_get_type(nd) == OP_INLINE); 
+	return node_get_child(nd, index);
+}
+
+node expression_inline_get_callee(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_INLINE);
+	return node_get_child(nd, 0);
+}
+
+size_t expression_inline_get_arguments_amount(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_INLINE);
+	return node_get_amount(nd);
+}
+
+node expression_inline_get_argument(const node *const nd, const size_t index)
+{ 
+	assert(node_get_type(nd) == OP_INLINE);
+	return node_get_child(nd, index);
+} 
 
 
 statement_t statement_get_class(const node *const nd)

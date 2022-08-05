@@ -642,13 +642,11 @@ static void compress_ident(encoder *const enc, const size_t ref)
  */
 static void emit_printid_expression(encoder *const enc, const node *const nd)
 {
-	const size_t argc = expression_call_get_arguments_amount(nd);
-	for (size_t i = 0; i < argc; i++)
+	const size_t argc = expression_inline_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
 	{
-		mem_add(enc, IC_PRINTID);
-
-		const node arg = expression_call_get_argument(nd, i);
-		compress_ident(enc, expression_identifier_get_id(&arg)); // Ссылка в identtab
+		const node arg = expression_inline_get_argument(nd, i);
+		emit_statement(enc, &arg); 
 	}
 }
 
@@ -703,14 +701,11 @@ static void emit_printf_expression(encoder *const enc, const node *const nd)
  */
 static void emit_print_expression(encoder *const enc, const node *const nd)
 {
-	const size_t argc = expression_call_get_arguments_amount(nd);
-	for (size_t i = 0; i < argc; i++)
+	const size_t argc = expression_inline_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
 	{
-		const node arg = expression_call_get_argument(nd, i);
-		emit_expression(enc, &arg);
-
-		mem_add(enc, IC_PRINT);
-		mem_add(enc, expression_get_type(&arg));
+		const node arg = expression_inline_get_argument(nd, i);
+		emit_statement(enc, &arg); 
 	}
 }
 
@@ -729,13 +724,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	{
 		case BI_PRINTF:
 			emit_printf_expression(enc, nd);
-			return;
-		case BI_PRINT:
-			emit_print_expression(enc, nd);
-			return;
-		case BI_PRINTID:
-			emit_printid_expression(enc, nd);
-			return;
+			return; 
 		case BI_GETID:
 			emit_getid_expression(enc, nd);
 			return;
@@ -761,6 +750,28 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	else
 	{
 		mem_add(enc, builtin_to_instruction((builtin_t)func));
+	}
+}
+
+/**
+ *	Emit inline expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_inline_expression(encoder *const enc, const node *const nd)
+{
+	const node callee = expression_inline_get_callee(nd);
+	const size_t func = expression_identifier_get_id(&callee);
+
+	switch (func)
+	{ 
+		case BI_PRINT:
+			emit_print_expression(enc, nd);
+			return;
+		case BI_PRINTID:
+			emit_printid_expression(enc, nd);
+			return; 
 	}
 }
 
@@ -1102,6 +1113,10 @@ static void emit_expression(encoder *const enc, const node *const nd)
 
 		case EXPR_CALL:
 			emit_call_expression(enc, nd);
+			return;
+
+		case EXPR_INLINE:
+			emit_inline_expression(enc, nd);
 			return;
 
 		case EXPR_MEMBER:
