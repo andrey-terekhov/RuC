@@ -632,23 +632,7 @@ static void compress_ident(encoder *const enc, const size_t ref)
 	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
 	ident_set_repr(enc->sx, ref, new_ref);
 	mem_add(enc, new_ref);
-}
-
-/**
- *	Emit printid expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_printid_expression(encoder *const enc, const node *const nd)
-{
-	const size_t argc = expression_inline_get_arguments_amount(nd);
-	for (size_t i = 1; i < argc; i++)
-	{
-		const node arg = expression_inline_get_argument(nd, i);
-		emit_statement(enc, &arg); 
-	}
-}
+} 
 
 /**
  *	Emit getid expression
@@ -691,23 +675,7 @@ static void emit_printf_expression(encoder *const enc, const node *const nd)
 
 	mem_add(enc, IC_PRINTF);
 	mem_add(enc, (item_t)sum_size);
-}
-
-/**
- *	Emit print expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_print_expression(encoder *const enc, const node *const nd)
-{
-	const size_t argc = expression_inline_get_arguments_amount(nd);
-	for (size_t i = 1; i < argc; i++)
-	{
-		const node arg = expression_inline_get_argument(nd, i);
-		emit_statement(enc, &arg); 
-	}
-}
+} 
 
 /**
  *	Emit call expression
@@ -761,17 +729,11 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
  */
 static void emit_inline_expression(encoder *const enc, const node *const nd)
 {
-	const node callee = expression_inline_get_callee(nd);
-	const size_t func = expression_identifier_get_id(&callee);
-
-	switch (func)
-	{ 
-		case BI_PRINT:
-			emit_print_expression(enc, nd);
-			return;
-		case BI_PRINTID:
-			emit_printid_expression(enc, nd);
-			return; 
+	const size_t argc = expression_inline_get_arguments_amount(nd);
+	for (size_t i = 1; i < argc; i++)
+	{
+		const node arg = expression_inline_get_argument(nd, i);
+		emit_statement(enc, &arg); 
 	}
 }
 

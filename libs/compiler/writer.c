@@ -1275,14 +1275,6 @@ static size_t elem_get_name(const instruction_t elem, const size_t num, char *co
 			sprintf(buffer, "GETNUMC");
 			break;
 
-		case IC_PRINT:
-			argc = 1;
-			sprintf(buffer, "PRINT");
-			break;
-		case IC_PRINTID:
-			argc = 1;
-			sprintf(buffer, "PRINTID");
-			break;
 		case IC_PRINTF:
 			argc = 1;
 			sprintf(buffer, "PRINTF");
