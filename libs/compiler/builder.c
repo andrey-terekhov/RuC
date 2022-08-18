@@ -418,7 +418,6 @@ static node create_printf_node(builder *bldr, const char *str, node_vector *args
 		node_vector_add(&tmp_node_vector, &argument);
 	}
 
-	//node printf_callee = build_identifier_expression(bldr, BI_PRINTF, loc);
 	node printf_callee = expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc);  			 
  
 	// разворачиваемся в вызов printf
@@ -485,7 +484,7 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 	// базой следующей вырезки является только что созданная вырезка и т.д.
 	node curr_subscr_arg = *argument; 
 
-	for (size_t i = 0; i < dimensions; i += 1)
+	for (size_t i = 0; i < dimensions; i++)
 	{ 
 		// вырезку берём по соответствующему идентификатору
 		node sub_subscript_index_expr = build_identifier_expression(bldr, idents[i], loc);
