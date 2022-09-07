@@ -21,10 +21,10 @@
 
 static char *string_append(const char *s1, const char *s2)
 {
-	int s1_len = strlen(s1);
-	int s2_len = strlen(s2);
+	size_t s1_len = strlen(s1);
+	size_t s2_len = strlen(s2);
 
-	int size = s1_len + s2_len + 1;
+	size_t size = s1_len + s2_len + 1;
 
 	char *s = calloc(size, sizeof(char));
 	if (!s)
@@ -33,10 +33,10 @@ static char *string_append(const char *s1, const char *s2)
 		return NULL;	
 	} 
 
-	for (int i = 0; i < s1_len; i++)
+	for (size_t i = 0; i < s1_len; i++)
 		s[i] = s1[i];
 
-	for (int i = 0; i < s2_len; i++)
+	for (size_t i = 0; i < s2_len; i++)
 		s[s1_len + i] = s2[i];
 
 	s[size - 1] = '\0';
@@ -46,7 +46,7 @@ static char *string_append(const char *s1, const char *s2)
 
 static char *string_copy(char *src)
 { 
-	int size = strlen(src) + 1; 
+	size_t size = strlen(src) + 1; 
   	char *s = calloc(size, sizeof(char));
 	if (!s)
 	{
@@ -54,7 +54,7 @@ static char *string_copy(char *src)
 		return NULL;	
 	}
 
-	for (int i = 0; i < size-1; i++)
+	for (size_t i = 0; i < size-1; i++)
 		s[i] = src[i];
 	
 	s[size-1] = '\0';
