@@ -1177,11 +1177,12 @@ static void emit_call_expression(information *const info, const node *const nd)
  */
 static void emit_inline_expression(information *const info, const node *const nd)
 {  
-	const size_t argc = expression_inline_get_arguments_amount(nd);
-	for (size_t i = 1; i < argc; i++)
+	// FIXME: inline expression cannot return value at the moment
+	const size_t substms = expression_inline_get_size(nd);
+	for (size_t i = 0; i < substms; i++)
 	{
-		const node arg = expression_inline_get_argument(nd, i);
-		emit_statement(info, &arg); 
+		const node stmt = expression_inline_get_substmt(nd, i);
+		emit_statement(info, &stmt); 
 	}
 } 
 

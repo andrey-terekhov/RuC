@@ -534,24 +534,6 @@ node expression_inline_get_substmt(const node *const nd, const size_t index)
 { 
 	assert(node_get_type(nd) == OP_INLINE); 
 	return node_get_child(nd, index);
-}
-
-node expression_inline_get_callee(const node *const nd)
-{
-	assert(node_get_type(nd) == OP_INLINE);
-	return node_get_child(nd, 0);
-}
-
-size_t expression_inline_get_arguments_amount(const node *const nd)
-{
-	assert(node_get_type(nd) == OP_INLINE);
-	return node_get_amount(nd);
-}
-
-node expression_inline_get_argument(const node *const nd, const size_t index)
-{ 
-	assert(node_get_type(nd) == OP_INLINE);
-	return node_get_child(nd, index);
 } 
 
 
