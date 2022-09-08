@@ -183,7 +183,7 @@ static char *create_new_temp_identifier_name(size_t ident_table_size)
 	return new_identifier_name;
 }  
 
-static node create_consec_subscripts(builder *bldr, node *argument, size_t dimensions, size_t *idents, location l_loc, location r_loc)
+static node create_consec_subscripts(builder *bldr, node *argument, size_t dimensions, vector idents, location l_loc, location r_loc)
 {
 	const location loc = {l_loc.begin, r_loc.end};
 
@@ -194,7 +194,7 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 	for (size_t i = 0; i < dimensions; i++)
 	{ 
 		// вырезку берём по соответствующему идентификатору
-		node sub_subscript_index_expr = build_identifier_expression(bldr, idents[i], loc);
+		node sub_subscript_index_expr = build_identifier_expression(bldr, vector_get(&idents, i), loc);
 
 		node sub_subscript_expr = build_subscript_expression(bldr, &curr_subscr_arg, &sub_subscript_index_expr, l_loc, r_loc);
 
@@ -275,7 +275,7 @@ static node copy_argument_node(builder *bldr, node *argument, location l_loc, lo
 
 static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
  
-static node create_array_nodes(builder *bldr, node *argument, item_t type, location l_loc, location r_loc, size_t dimensions, size_t *temp_idents_reprs)
+static node create_array_nodes(builder *bldr, node *argument, item_t type, location l_loc, location r_loc, size_t dimensions, vector temp_idents_reprs)
 {   
 	const location loc = {l_loc.begin, r_loc.end}; 
 
@@ -309,14 +309,12 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node_swap(&init_rhs_expr, &temp);
 		node_remove(&temp);    
 
-		// вносим его в массив для дальнейшего использования
-		temp_idents_reprs = (size_t *)realloc(temp_idents_reprs, sizeof(temp_idents_reprs) + sizeof(repr));
-		if (!temp_idents_reprs)
+		// вносим его в вектор для дальнейшего использования
+		if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
 		{
-			printf("realloc error\n");
+			printf("Unable to add repr to vector\n");
 			return node_broken();
 		}
-		temp_idents_reprs[dimensions-1] = repr; 
 
 		// 2. условие
 		node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
@@ -431,14 +429,12 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	node_swap(&init_rhs_expr, &temp);
 	node_remove(&temp);    
 
-	// вносим его в массив для дальнейшего использования
-	temp_idents_reprs = (size_t *)realloc(temp_idents_reprs, sizeof(temp_idents_reprs) + sizeof(repr));
-	if (!temp_idents_reprs)
+	// вносим его в вектор для дальнейшего использования
+	if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
 	{
-		printf("realloc error\n");
+		printf("Unable to add repr to vector\n");
 		return node_broken();
 	}
-	temp_idents_reprs[dimensions-1] = repr; 
 
 	// 2. условие
 	node cond_lhs_expr = build_identifier_expression(bldr, repr, loc); 
@@ -566,7 +562,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// if-statement: отпечатываем запятую после каждого элемента массива, кроме последнего
 
 		// левая часть if
-		node if_binary_lhs = build_identifier_expression(bldr, temp_idents_reprs[dimensions-1], loc);
+		node if_binary_lhs = build_identifier_expression(bldr,  vector_get(&temp_idents_reprs, dimensions-1), loc);
 
 		// правая часть if: "upb(<массив по нужному измерению>) - 1"
  
@@ -630,14 +626,9 @@ static node create_complicated_type_str(builder *bldr, node *argument, location 
 	item_t argument_type = expression_get_type(argument); 
 	if (type_is_array(bldr->sx, argument_type))
 	{ 
-		size_t *idents = (size_t *)malloc(1); 
-		if (!idents)
-		{
-			printf("malloc error\n");
-			return node_broken();
-		}
+		vector idents = vector_create(0);
 		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
-		free(idents);
+		vector_clear(&idents);
 	}
 	else if (type_is_structure(bldr->sx, argument_type))
 		complicated_type_node = create_struct_nodes(bldr, argument, tab_deep, l_loc, r_loc); 
