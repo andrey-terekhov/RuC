@@ -130,13 +130,18 @@ static const char *create_simple_type_str(item_t type)
 
 static char *create_new_temp_identifier_name(size_t ident_table_size)
 {
-	char *new_identifier_number_str =  calloc(30, sizeof(char));
+	size_t ident_table_digits = 1;
+	size_t tmp = ident_table_size;
+	while (tmp /= 10) 
+		ident_table_digits++; 
+
+	char *new_identifier_number_str = calloc(ident_table_digits+1, sizeof(char));
 	if (!new_identifier_number_str)
 	{
 		printf("calloc error\n");
 		return NULL;
 	}
-	sprintf(new_identifier_number_str, "%d", (int)ident_table_size);
+	sprintf(new_identifier_number_str, "%d", (int)ident_table_size); 
 
 	char *new_identifier_name = calloc(1, sizeof(char));
 	if (!new_identifier_name)
