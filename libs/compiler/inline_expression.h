@@ -73,21 +73,7 @@ static void concat_strings(char **dst, const char *src)
 	}
 	*dst = string_copy(tmp);
 	free(tmp);
-}
-
-static bool vector_add_str(vector *dst, const char *src)
-{
-	size_t i = 0;
-	while (src[i] != '\0')
-	{
-		if (vector_add(dst, src[i]) == SIZE_MAX)
-		{
-			return 0;
-		}
-		i++;
-	}
-	return 1;
-}
+} 
 
 static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
 
@@ -110,17 +96,7 @@ static node create_printf_node(builder *bldr, node_vector *args, location loc, s
  
 	// разворачиваемся в вызов printf
 	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, loc); 
-}
-
-static node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc)
-{
-	const location loc = {l_loc.begin, r_loc.end};
-
-	// создаём строку и вносим её в вектор
-	size_t str_index = strings_add_by_vector(&bldr->sx->string_literals, str);  
-	
-    return create_printf_node(bldr, args, loc, str_index);
-}
+} 
 
 static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
 {
@@ -154,7 +130,7 @@ static const char *create_simple_type_str(item_t type)
 
 static char *create_new_temp_identifier_name(size_t ident_table_size)
 {
-	char *new_identifier_number_str =  calloc(10, sizeof(char));
+	char *new_identifier_number_str =  calloc(30, sizeof(char));
 	if (!new_identifier_number_str)
 	{
 		printf("calloc error\n");
@@ -165,20 +141,26 @@ static char *create_new_temp_identifier_name(size_t ident_table_size)
 	char *new_identifier_name = calloc(1, sizeof(char));
 	if (!new_identifier_name)
 	{
+		free(new_identifier_number_str);
 		printf("calloc error\n");
 		return NULL;
 	}
+
 	concat_strings(&new_identifier_name, "_temporal_identifier_");
 	if (!new_identifier_name) 
+	{
+		free(new_identifier_number_str);
 		return NULL;
+	}
+
 	concat_strings(&new_identifier_name, new_identifier_number_str);
 	free(new_identifier_number_str);
 	if (!new_identifier_name)  
 		return NULL;  
+
 	concat_strings(&new_identifier_name, "_");
 	if (!new_identifier_name)  
-		return NULL;  
-	
+		return NULL;   
 
 	return new_identifier_name;
 }  
@@ -323,7 +305,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// для него создаём нужное количество "предварительных" вырезок
 		node cond_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
 		if (!node_is_correct(&cond_subs_arg_expr))
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		node cond_main_subs_expr = create_consec_subscripts(bldr, &cond_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
 
@@ -357,7 +339,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// для него создаём нужное количество "предварительных" вырезок
 		node if_binary_rhs_main_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
 		if (!node_is_correct(&if_binary_rhs_main_subs_arg_expr))
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, &if_binary_rhs_main_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
 
@@ -443,7 +425,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	// для него создаём нужное количество "предварительных" вырезок 
 	node cond_main_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
 	if (!node_is_correct(&cond_main_subs_arg_expr))
-		// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+		// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 		return node_broken();
 	node cond_main_subs_expr = create_consec_subscripts(bldr, &cond_main_subs_arg_expr, dimensions-1, temp_idents_reprs, l_loc, r_loc); 
 
@@ -479,7 +461,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// создаём новый узел аргумента
 		node curr_subscr_arg1 = copy_argument_node(bldr, argument, l_loc, r_loc); 
 		if (!node_is_correct(&curr_subscr_arg1))
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken(); 
 		// в качестве аргумента для create_printf_node() отправятся только последние по порядку создания узлы
 		node main_subscript1 = create_consec_subscripts(bldr, &curr_subscr_arg1, dimensions, temp_idents_reprs, l_loc, r_loc);	
@@ -489,7 +471,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// создаём новый узел аргумента
 		node curr_subscr_arg2 = copy_argument_node(bldr, argument, l_loc, r_loc); 
 		if (!node_is_correct(&curr_subscr_arg2))
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		// в качестве аргумента для create_printf_node() отправятся только последние по порядку создания узлы
 		node main_subscript2 = create_consec_subscripts(bldr, &curr_subscr_arg2, dimensions, temp_idents_reprs, l_loc, r_loc);	
@@ -522,7 +504,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// условие не выполнено
 		concat_strings(&str, ", ");
 		if (!str) 
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае 
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае 
 			return node_broken(); 
 		node if_false = create_printf_node_by_str(bldr, str, &tmp_args2, l_loc, r_loc); 
 		free(str);
@@ -546,7 +528,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// создаём узел структуры как корректную вырезку из массива
 		node tmp_arg = copy_argument_node(bldr, argument, l_loc, r_loc);
 		if (!node_is_correct(&tmp_arg))
-			// для temp_idents_reprs будет сделан free по выходу из create_array_nodes() в любом случае
+			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		node subs_struct_node = create_consec_subscripts(bldr, &tmp_arg, dimensions, temp_idents_reprs, l_loc, r_loc);	 
 
@@ -707,19 +689,25 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		concat_strings(&str, "\n\n");
 		if (!str)
 			return node_broken();
+
 		if (!create_correct_spaces(&str, tab_deep)) 
 			return node_broken();
+
 		concat_strings(&str, "{\n");
 		if (!str)
 			return node_broken();
+
 		if (!create_correct_spaces(&str, tab_deep+1)) 
 			return node_broken();
+
 		concat_strings(&str, ".");
 		if (!str)
 			return node_broken();
+
 		concat_strings(&str, member_name_str);
 		if (!str)
 			return node_broken();
+
 		concat_strings(&str, " = ");
 		if (!str)
 			return node_broken();

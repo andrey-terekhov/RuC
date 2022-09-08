@@ -588,10 +588,11 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			if (strlen(str))
 			{
 				node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, fs_arg_loc, ls_arg_loc); 
-				free(str); 
 				// запоминаем узел 
 				node_vector_add(&stmts, &printf_node);
 			}
+
+			free(str); 
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
 			str = calloc(1, sizeof(char));
