@@ -388,18 +388,14 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			if (type_is_array(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "{");
-				{
-					free(str);
+				if (!str)
 					return node_broken();
-				}
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "{ struct");
-				{
-					free(str);
+				if (!str)
 					return node_broken();
-				}
 			}  
 
 			// корректно определяем location	
@@ -437,14 +433,20 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			if (type_is_array(bldr->sx, argument_type)) 
 			{
 				concat_strings(&str, "} "); 
+				if (!str)
+					return node_broken();
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "\n}\n"); 
+				if (!str)
+					return node_broken();
 			}
 			else if (i != argc-1)
 			{
 				concat_strings(&str, " "); 
+				if (!str)
+					return node_broken();
 			} 
 		}
 		else
@@ -467,9 +469,13 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 				return node_broken(); 
 			}
 			concat_strings(&str, tmp); 
+			if (!str)
+				return node_broken();
 			if (i != argc-1)
 			{
 				concat_strings(&str, " "); 
+				if (!str)
+					return node_broken();
 			}
 		}  
 	}  
@@ -547,7 +553,11 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
 		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index); 
 		concat_strings(&str, tmp_argument_name); 
+		if (!str)
+			return node_broken();
 		concat_strings(&str, " = "); 
+		if (!str)
+			return node_broken();
 		
 		item_t argument_type = expression_get_type(&argument);  
 		if ((type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type)) || 
@@ -558,10 +568,14 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			if (type_is_array(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "{"); 
+				if (!str)
+					return node_broken();
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "{ struct"); 
+				if (!str)
+					return node_broken();
 			}
 
 			// корректно определяем location	
@@ -598,14 +612,20 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			if (type_is_array(bldr->sx, argument_type)) 
 			{
 				concat_strings(&str, "} "); 
+				if (!str)
+					return node_broken();
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				concat_strings(&str, "\n}\n"); 
+				if (!str)
+					return node_broken();
 			}
 			else if (i != argc-1)
 			{
 				concat_strings(&str, " "); 
+				if (!str)
+					return node_broken();
 			}
 		}
 		else
@@ -625,9 +645,13 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 				return node_broken(); 
 			}
 			concat_strings(&str, tmp); 
+			if (!str)
+				return node_broken();
 			if (i != argc-1)
 			{
 				concat_strings(&str, " "); 
+				if (!str)
+					return node_broken();
 			}
 		} 	 
 	}  

@@ -474,6 +474,8 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 			return node_broken();
 		}
 		concat_strings(&str, tmp);
+		if (!str)
+			return node_broken();
 
 		// создаём узлы вырезки, которые отправятся в качестве аргумента для printf  
 		// узлов должно быть два, т.к. будем разворачиваться в if statement
@@ -651,7 +653,7 @@ static bool create_correct_spaces(char **str, size_t tab_deep)
 	for (size_t j = 0; j < tab_deep*4; j++)
 	{
 		concat_strings(str, " ");
-		if (!str)
+		if (!*str)
 			return 0; 
 	}
 	return 1;
