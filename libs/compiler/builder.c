@@ -363,7 +363,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 
-	vector str = vector_create(0);
+	char* str = malloc(sizeof(char));
 	
 	for (size_t i = 0; i < argc; i++)
 	{  
@@ -387,17 +387,17 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			
 			if (type_is_array(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "{"))
+				concat_strings(&str, "{");
 				{
-					vector_clear(&str);
+					free(str);
 					return node_broken();
 				}
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "{ struct")) 
+				concat_strings(&str, "{ struct");
 				{
-					vector_clear(&str);
+					free(str);
 					return node_broken();
 				}
 			}  
@@ -409,17 +409,17 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			location ls_arg_loc = node_get_location(&last_scalar_argument);
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			if (vector_size(&str))
+			if (strlen(str))
 			{
-				node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, fs_arg_loc, ls_arg_loc); 
+				node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, fs_arg_loc, ls_arg_loc); 
 				// запоминаем узел 
 				node_vector_add(&stmts, &printf_node); 
 			}
 
-			vector_clear(&str);
+			free(str);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = vector_create(0);
+			str = malloc(sizeof(char));
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 
@@ -429,34 +429,22 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1); 
 			if (!node_is_correct(&complicated_type_node))
 			{
-				vector_clear(&str);
+				free(str);
 				return complicated_type_node;
 			}
 			node_vector_add(&stmts, &complicated_type_node);
 
 			if (type_is_array(bldr->sx, argument_type)) 
 			{
-				if (!vector_add_str(&str, "} "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "} "); 
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "\n}\n"))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "\n}\n"); 
 			}
 			else if (i != argc-1)
 			{
-				if (!vector_add_str(&str, " "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, " "); 
 			} 
 		}
 		else
@@ -475,21 +463,13 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			const char *tmp = create_simple_type_str(argument_type_class);   
 			if (!tmp)
 			{
-				vector_clear(&str);
+				free(str);
 				return node_broken(); 
 			}
-			if (!vector_add_str(&str, tmp))
-			{
-				vector_clear(&str);
-				return node_broken();
-			}
+			concat_strings(&str, tmp); 
 			if (i != argc-1)
 			{
-				if (!vector_add_str(&str, " "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, " "); 
 			}
 		}  
 	}  
@@ -499,20 +479,20 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	node_remove(callee);
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	if (vector_size(&str))
+	if (strlen(str))
 	{
-		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);   
+		node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, last_argument_loc, r_loc);   
 
 		if (!complicated_type_in_args)
 		{
-			vector_clear(&str);
+			free(str);
 			node_vector_clear(&stmts);
 			return printf_node;
 		}
 
 		node_vector_add(&stmts, &printf_node); 
 	}
-	vector_clear(&str);
+	free(str);
 		 
 	return expression_inline(TYPE_VOID, &stmts, loc); 
 } 
@@ -538,7 +518,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 	
-	vector str = vector_create(0);
+	char* str = malloc(sizeof(char));
  
 	for (size_t i = 0; i < argc; i++)
 	{
@@ -566,16 +546,8 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		// добавляем строку "имя_аргумента = "
 		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
 		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index); 
-		if (!vector_add_str(&str, tmp_argument_name))
-		{
-			vector_clear(&str);
-			return node_broken();
-		}
-		if (!vector_add_str(&str, " = "))
-		{
-			vector_clear(&str);
-			return node_broken();
-		} 
+		concat_strings(&str, tmp_argument_name); 
+		concat_strings(&str, " = "); 
 		
 		item_t argument_type = expression_get_type(&argument);  
 		if ((type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type)) || 
@@ -585,19 +557,11 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			
 			if (type_is_array(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "{"))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "{"); 
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "{ struct")) 
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "{ struct"); 
 			}
 
 			// корректно определяем location	
@@ -607,16 +571,16 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			location ls_arg_loc = node_get_location(&last_scalar_argument);
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			if (vector_size(&str))
+			if (strlen(str))
 			{
-				node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, fs_arg_loc, ls_arg_loc); 
-				vector_clear(&str); 
+				node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, fs_arg_loc, ls_arg_loc); 
+				free(str); 
 				// запоминаем узел 
 				node_vector_add(&stmts, &printf_node);
 			}
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = vector_create(0);
+			str = malloc(sizeof(char));
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 
@@ -626,34 +590,22 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1); 
 			if (!node_is_correct(&complicated_type_node))
 			{
-				vector_clear(&str);
+				free(str);
 				return complicated_type_node;
 			}
 			node_vector_add(&stmts, &complicated_type_node);
 
 			if (type_is_array(bldr->sx, argument_type)) 
 			{
-				if (!vector_add_str(&str, "} "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "} "); 
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "\n}\n"))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, "\n}\n"); 
 			}
 			else if (i != argc-1)
 			{
-				if (!vector_add_str(&str, " "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, " "); 
 			}
 		}
 		else
@@ -669,21 +621,13 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			const char *tmp = create_simple_type_str(argument_type_class);   
 			if (!tmp)
 			{
-				vector_clear(&str);
+				free(str);
 				return node_broken(); 
 			}
-			if (!vector_add_str(&str, tmp))
-			{
-				vector_clear(&str);
-				return node_broken();
-			};
+			concat_strings(&str, tmp); 
 			if (i != argc-1)
 			{
-				if (!vector_add_str(&str, " "))
-				{
-					vector_clear(&str);
-					return node_broken();
-				}
+				concat_strings(&str, " "); 
 			}
 		} 	 
 	}  
@@ -693,20 +637,20 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	node_remove(callee);
  
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	if (vector_size(&str))
+	if (strlen(str))
 	{
-		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);   
+		node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, last_argument_loc, r_loc);   
 
 		if (!complicated_type_in_args)
 		{
-			vector_clear(&str);
+			free(str);
 			node_vector_clear(&stmts);
 			return printf_node;
 		}
 
 		node_vector_add(&stmts, &printf_node); 
 	}
-	vector_clear(&str);
+	free(str);
 		 
 	return expression_inline(TYPE_VOID, &stmts, loc); 
 } 
