@@ -465,7 +465,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	if (type_class != TYPE_STRUCTURE)
 	{  
 		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев
-		char* str = malloc(sizeof(char));
+		char* str = calloc(1, sizeof(char));
 		
 		const char *tmp = create_simple_type_str(type_class);
 		if (!tmp)
@@ -697,7 +697,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 
 	node_vector_add(&res_stmts, &arg_parent); 
 
-	char* str = malloc(sizeof(char));
+	char* str = calloc(1, sizeof(char));
 
 	for (size_t i = 0; i < member_amount; i++)
 	{
@@ -754,7 +754,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			node_vector_add(&res_stmts, &printf_node);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = malloc(sizeof(char));
+			str = calloc(1, sizeof(char));
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 

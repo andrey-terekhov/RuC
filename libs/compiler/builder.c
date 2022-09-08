@@ -363,7 +363,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 
-	char* str = malloc(sizeof(char));
+	char* str = calloc(1, sizeof(char));
 	
 	for (size_t i = 0; i < argc; i++)
 	{  
@@ -419,7 +419,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			free(str);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = malloc(sizeof(char));
+			str = calloc(1, sizeof(char));
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 
@@ -518,7 +518,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 	
-	char* str = malloc(sizeof(char));
+	char* str = calloc(1, sizeof(char));
  
 	for (size_t i = 0; i < argc; i++)
 	{
@@ -580,7 +580,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			}
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = malloc(sizeof(char));
+			str = calloc(1, sizeof(char));
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 
