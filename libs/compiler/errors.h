@@ -154,6 +154,7 @@ typedef enum ERROR
 /** Warnings codes */
 typedef enum WARNING
 {
+	result_of_assignment_as_condition,		/**< Using the result of an assignment as a condition */
 	too_long_int,
 	variable_deviation,
 } warning_t;

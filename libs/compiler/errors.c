@@ -412,6 +412,9 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 	(void)args;
 	switch (num)
 	{
+		case result_of_assignment_as_condition:
+			sprintf(msg, "результат присваивания используется в качестве условия");
+			break;
 		case too_long_int:
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
