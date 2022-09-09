@@ -1477,9 +1477,15 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 	node_vector stmts = node_vector_create();
 	while (token_is_not(&prs->tk, TK_R_BRACE) && token_is_not(&prs->tk, TK_EOF))
 	{
-		const node stmt = is_declaration_specifier(prs)
-			? parse_declaration(prs)
-			: parse_statement(prs);
+		node stmt;
+		if (is_declaration_specifier(prs))
+		{
+			stmt = parse_declaration(prs);
+		}
+		else
+		{
+			stmt = parse_statement(prs);
+		}
 
 		node_vector_add(&stmts, &stmt);
 	}
@@ -1592,10 +1598,10 @@ static node parse_while_statement(parser *const prs)
 
 	node condition = parse_condition(prs);
 
-	const bool old_in_switch = prs->is_in_switch;
+	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
 	node body = parse_statement(prs);
-	prs->is_in_loop = old_in_switch;
+	prs->is_in_loop = old_in_loop;
 
 	return build_while_statement(&prs->bld, &condition, &body, while_loc);
 }
@@ -1727,8 +1733,11 @@ static node parse_for_statement(parser *const prs)
 	prs->is_in_loop = old_in_loop;
 
 	scope_block_exit(prs->sx, scp);
-	return build_for_statement(&prs->bld, has_init ? &init : NULL
-		, has_cond ? &cond : NULL, has_incr ? &incr : NULL, &body, for_loc);
+
+	node* init_ptr = has_init ? &init : NULL;
+	node* cond_ptr = has_cond ? &cond : NULL;
+	node* incr_ptr = has_incr ? &incr : NULL;
+	return build_for_statement(&prs->bld, init_ptr, cond_ptr, incr_ptr, &body, for_loc);
 }
 
 /**
