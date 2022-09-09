@@ -718,13 +718,13 @@ static node parse_initializer(parser *const prs)
 }
 
 /**
- *	Parse parenthesized expression
+ *	Parse condition
  *
  *	'(' expression ')'
  *
  *	@param	prs			Parser
  *
- *	@return Parenthesized expression
+ *	@return Condition
  */
 static node parse_condition(parser *const prs)
 {
@@ -752,7 +752,7 @@ static node parse_condition(parser *const prs)
 		return node_broken();
 	}
 
-	return condition;
+	return build_condition(&prs->bld, &condition);
 }
 
 

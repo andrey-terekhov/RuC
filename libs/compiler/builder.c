@@ -38,6 +38,24 @@ static void semantic_error(builder *const bldr, const location loc, err_t num, .
 	va_end(args);
 }
 
+/**
+ *	Emit a semantic warning
+ *
+ *	@param	bldr		AST builder
+ *	@param	loc			Warning location
+ *	@param	num			Warning code
+ */
+static void semantic_warning(builder *const bldr, const location loc, warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	report_warning(&bldr->sx->rprt, bldr->sx->io, loc, num, args);
+
+	va_end(args);
+}
+
+
 static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
@@ -1067,6 +1085,16 @@ node build_constant_expression(builder *const bldr, node *const expr)
 	{
 		semantic_error(bldr, node_get_location(expr), expected_constant_expression);
 		return node_broken();
+	}
+
+	return *expr;
+}
+
+node build_condition(builder *const bldr, node *const expr)
+{
+	if (expression_get_class(expr) == EXPR_ASSIGNMENT)
+	{
+		semantic_warning(bldr, node_get_location(expr), result_of_assignment_as_condition);
 	}
 
 	return *expr;

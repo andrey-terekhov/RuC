@@ -250,6 +250,16 @@ node build_initializer(builder *const bldr, node_vector *const exprs, const loca
  */
 node build_constant_expression(builder *const bldr, node *const expr);
 
+/**
+ *	Build a condition expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	expr			Expression
+ *
+ *	@return	Condition expression
+ */
+node build_condition(builder *const bldr, node *const expr);
+
 
 /**
  *	Build a case statement
