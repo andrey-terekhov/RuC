@@ -27,10 +27,23 @@ static const bool IS_ON_STACK = true;					/**< Хранится ли перем�
 
 static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
-// TODO: расписать, что за данные сохраняются в стеке при вызове
-static const size_t FUNC_DISPL = 80;					/**< Смещение в стеке для сохранения данных вызова функции */
-static const size_t SP_DISPL = 20;						/**< Смещение в стеке для сохранения значения регистра R_SP */
-static const size_t RA_DISPL = 16;						/**< Смещение в стеке для сохранения значения регистра R_RA */
+
+static const size_t FUNC_DISPL_PRESEREVED = 80;			/**< Смещение в стеке для сохранения оберегаемых регистров,
+															 без учёта оптимизаций */
+// s0-s7: 4 байт * 8 = 32 байта     | 
+// sp: 4 байта						| => 80 байт 
+// ra: 4 байта						| 
+// fs0-fs10: 4 байта * 10 = 40 байт |
+
+static const size_t FUNC_DISPL_NONPRESERVED = 112;		/**< Смещение в стеке для сохранения необерегаемых регистров,
+															 без учёта оптимизаций */
+// t0-t9: 4 байта * 10 = 40 байт    		 | 
+// a0-a3: 4 байта * 4 = 16 байт				 | => 112 байт 
+// ft0-ft10: 4 байта * 10 = 40 байт 		 |
+// fa0-fa3: 4 байта * 4 = 16 байт			 |
+
+static const size_t SP_DISPL = 4;						/**< Смещение в стеке для сохранения значения регистра R_SP */
+static const size_t RA_DISPL = 4;						/**< Смещение в стеке для сохранения значения регистра R_RA */
 
 
 typedef enum ANSWER
@@ -47,8 +60,7 @@ typedef enum REQUEST
 	RQ_NO_REQUEST,						/**< Нет запроса */
 } request_t;
 
-// Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
-// TODO: надо будет ещё добавить регистры для чисел с плавающей точкой
+// Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition 
 typedef enum REGISTER
 {
 	R_ZERO,							/**< Always has the value 0 */	
@@ -86,7 +98,7 @@ typedef enum REGISTER
 	R_T8,
 	R_T9,							/**< Temporary registers used for expression evaluations;
 										values are not preserved across function calls.  When
-										calling position independent functions $25 must contain
+										calling position independent functions $25 (R_T9) must contain
 										the address of the called function */
 
 	R_K0,
@@ -97,6 +109,48 @@ typedef enum REGISTER
 	R_FP,							/**< Saved register (like s0-s7) or frame pointer */
 	R_RA,							/**< Return address. The return address is the location to
 										which a function should return control */
+
+	// Регистры для работы с числами с плавающей точкой
+	// Для чисел с двойной точностью используется пара регистров:
+	// - регистр с чётным номером содержит младшие 32 бита числа;
+	// - регистр с нечётным номером содержит старшие 32 бита числа.
+	R_FV0,
+	R_FV1,							
+	R_FV2,
+	R_FV3,							/**< used to hold floating-point type function results; 
+										single-precision uses $f0 and double-precision uses 
+										the register pair $f0..$f1 */ 
+
+	R_FA0,
+	R_FA1,
+	R_FA2,
+	R_FA3,							/**< Used for passing arguments to functions */
+
+	R_FT0,
+	R_FT1,
+	R_FT2,
+	R_FT3,
+	R_FT4,
+	R_FT5,
+	R_FT6,
+	R_FT7,
+	R_FT8,
+	R_FT9,
+	R_FT10,
+	R_FT11,						    /**< Temporary registers */
+
+	R_FS0,
+	R_FS1,
+	R_FS2,
+	R_FS3,
+	R_FS4,
+	R_FS5,
+	R_FS6,
+	R_FS7,
+	R_FS8,
+	R_FS9,
+	R_FS10,
+	R_FS11							/**< saved registers; their values are preserved across function calls */
 } mips_register_t;
 
 // Назначение команд взято из документации MIPS® Architecture for Programmers 
@@ -148,7 +202,9 @@ typedef enum INSTRUCTION
 	IC_MIPS_BNE,					/**< Branch on Not Equal.
 										To compare GPRs then do a PC-relative conditional branch */
 
-	IC_MIPS_NOP,					/**< o perform no operation */
+	IC_MIPS_LA,						/**< Load the address of a named memory location into a register (не из вышеуказанной книги)*/
+
+	IC_MIPS_NOP,					/**<To perform no operation */
 } mips_instruction_t;
 
 typedef enum LABEL
@@ -175,7 +231,7 @@ typedef struct information
 
 	item_t answer_reg;					/**< Регистр с ответом */
 	item_t answer_const;				/**< Константа с ответом */
-	item_t answer_displ;				/**< Смемещние с ответом */
+	item_t answer_displ;				/**< Смещение с ответом */
 	answer_t answer_kind;				/**< Вид ответа */
 
 	size_t max_displ;					/**< Максимальное смещение */
@@ -184,7 +240,8 @@ typedef struct information
 												@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре 
 												@c value[1]  - смещение или номер регистра */
 
-	mips_register_t next_register;		/**< Следующий регистр для выделения */
+	mips_register_t next_register;		/**< Следующий обычный регистр для выделения */
+	mips_register_t next_f_register;		/**< Следующий регистр с плавающей точкой для выделения */
 
 	item_t label_num;					/**< Номер метки */
 
@@ -393,6 +450,106 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_RA:
 			uni_printf(io, "$ra");
 			break;
+
+		case R_FV0:
+			uni_printf(io, "$f0");
+			break;
+		case R_FV1:
+			uni_printf(io, "$f1");
+			break;
+		case R_FV2:
+			uni_printf(io, "$f2");
+			break;
+		case R_FV3:
+			uni_printf(io, "$f3");
+			break;
+
+		case R_FT0:
+			uni_printf(io, "$f4");
+			break;
+		case R_FT1:
+			uni_printf(io, "$f5");
+			break;
+		case R_FT2:
+			uni_printf(io, "$f6");
+			break;
+		case R_FT3:
+			uni_printf(io, "$f7");
+			break;
+		case R_FT4:
+			uni_printf(io, "$f8");
+			break;
+		case R_FT5:
+			uni_printf(io, "$f9");
+			break;
+		case R_FT6:
+			uni_printf(io, "$f10");
+			break;
+		case R_FT7:
+			uni_printf(io, "$f11");
+			break;
+		case R_FT8:
+			uni_printf(io, "$f16");
+			break;
+		case R_FT9:
+			uni_printf(io, "$f17");
+			break;
+		case R_FT10:
+			uni_printf(io, "$f18");
+			break;
+		case R_FT11:
+			uni_printf(io, "$f19");
+			break;
+		
+		case R_FA0:
+			uni_printf(io, "$f12");
+			break;
+		case R_FA1:
+			uni_printf(io, "$f13");
+			break;
+		case R_FA2:
+			uni_printf(io, "$f14");
+			break;
+		case R_FA3:
+			uni_printf(io, "$f15");
+			break;
+
+		case R_FS0:
+			uni_printf(io, "$f20");
+			break;
+		case R_FS1:
+			uni_printf(io, "$f21");
+			break;
+		case R_FS2:
+			uni_printf(io, "$f22");
+			break;
+		case R_FS3:
+			uni_printf(io, "$f23");
+			break;
+		case R_FS4:
+			uni_printf(io, "$f24");
+			break;
+		case R_FS5:
+			uni_printf(io, "$f25");
+			break;
+		case R_FS6:
+			uni_printf(io, "$f26");
+			break;
+		case R_FS7:
+			uni_printf(io, "$f27");
+			break;
+		case R_FS8:
+			uni_printf(io, "$f28");
+			break;
+		case R_FS9:
+			uni_printf(io, "$f29");
+			break;
+		case R_FS10:
+			uni_printf(io, "$f30");
+			break;
+		case R_FS11:
+			uni_printf(io, "$f31");
+			break; 
 	}
 }
 
@@ -405,6 +562,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			break;
 		case IC_MIPS_LI:
 			uni_printf(io, "li");
+			break;
+		case IC_MIPS_LA:
+			uni_printf(io, "la");
 			break;
 
 		case IC_MIPS_ADDI:
@@ -665,6 +825,16 @@ static inline void free_register(information *const info)
 	info->next_register--;
 }
 
+static inline mips_register_t get_f_register(information *const info)
+{
+	return info->next_f_register++;
+}
+
+static inline void free_f_register(information *const info)
+{
+	info->next_f_register--;
+}
+
 
 /*
  *	 ______     __  __     ______   ______     ______     ______     ______     __     ______     __   __     ______
@@ -741,7 +911,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
-	const size_t args_amount = expression_call_get_arguments_amount(nd);
+	const size_t args_amount = expression_call_get_arguments_amount(nd); 
 
 	if (func_ref == BI_PRINTF)
 	{
@@ -770,6 +940,62 @@ static void emit_call_expression(information *const info, const node *const nd)
 
 		info->request_kind = RQ_NO_REQUEST;
 	}
+	else if (func_ref >= BEGIN_USER_FUNC)
+	{
+		size_t f_arg_count = 0;
+		size_t arg_count = 0;
+		
+		uni_printf(info->sx->io, "\n\t#arguments saving\n");
+
+		for (size_t i = 0; i < args_amount; i++)
+		{
+			const node arg = expression_call_get_argument(nd, i);
+			const item_t arg_type = expression_get_type(&arg);
+			
+			if (type_is_floating(arg_type))
+			{
+				if (f_arg_count < 4) // в регистр fa0-fa3
+				{
+					//to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра -> */ 36 + f_arg_count, );
+
+				}
+				else // иначе на стек 
+				{
+
+				}
+				f_arg_count++;
+			}
+			else
+			{
+				if (arg_count < 4) // в регистр a0-a3
+				{
+					if (type_is_scalar(info->sx, arg_type))
+					{
+						// identifier либо literal expression
+						if (expression_get_type(&arg) == EXPR_LITERAL)
+						{
+							//expression_literal_get_integer(&arg);
+							//to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра -> */ 4 + arg_count, );
+						}
+						else
+						{
+							//item_t arg_id = expression_identifier_get_id(&arg);
+							//bool in_register = hash_get(&info->displacements, arg_id, 0);
+							//if (in_register)
+							//	to_code_3R(info->sx->io, IC_MIPS_ADD, /* код регистра -> */ 4 + arg_count,
+							//		hash_get(&info->displacements, arg_id, 1), R_ZERO);
+						}
+					}
+				}
+				else // иначе на стек
+				{
+
+				}
+				arg_count++;
+			}
+		}
+	}
+	uni_printf(info->sx->io, "\tJAL %s\n", ident_get_spelling(info->sx, func_ref));
 }
 
 /**
@@ -1270,7 +1496,16 @@ static void emit_expression(information *const info, const node *const nd)
 		case EXPR_ASSIGNMENT:
 			emit_assignment_expression(info, nd);
 			return;
+		/*
+		case EXPR_INLINE:
+			emit_inline_expression(info, nd);
+			return;
+		*/
 
+		case EXPR_INITIALIZER:
+			//emit_initializer_expression(info, nd);
+			return;
+		
 		default:
 			// TODO: генерация оставшихся выражений
 			return;
@@ -1313,23 +1548,33 @@ static void emit_variable_declaration(information *const info, const node *const
 	const bool has_init = declaration_variable_has_initializer(nd);
 	const item_t type = ident_get_type(info->sx, id);
 
+	uni_printf(info->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(info->sx, id));
+
 	info->max_displ += type_size(info->sx, type) * 4;
 	const size_t value_displ = info->max_displ;
+
 	// TODO: в глобальных переменных регистр gp
+	// просто эту конструкцию в рекурсивную функцию
+	/*
+	node parent_node = node_get_parent(nd);
+	item_t parent_type = node_get_type(&parent_node);
+	const mips_register_t value_reg = (type_is_function(info->sx, parent_type)) ? R_SP : R_GP;
+	*/
 	const mips_register_t value_reg = R_SP;
+
+	const size_t index = hash_add(&info->displacements, id, 2);
+	hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
+	hash_set_by_index(&info->displacements, index, 1, value_displ);
 
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{
-		const size_t index = hash_add(&info->displacements, id, 2);
-		hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
-		hash_set_by_index(&info->displacements, index, 1, value_displ);
 		// TODO: регистровые переменные
 		// TODO: вещественные числа
 
 		if (has_init)
 		{
-			info->request_kind = RQ_REG;
-			info->request_reg = get_register(info);
+			info->request_kind = RQ_REG; 
+			info->request_reg = (type_is_floating(type)) ? get_f_register(info) : get_register(info); 
 
 			// TODO: тип char
 
@@ -1348,13 +1593,15 @@ static void emit_variable_declaration(information *const info, const node *const
 		const size_t dimensions = array_get_dim(info, type);
 		const item_t element_type = array_get_type(info, type);
 		const item_t usual = 1; // предстоит выяснить, что это такое
-
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions);
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4);
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ);
+ 
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions); // передаём размерность
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4); // передаём размер элемента
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ); // передаём смещение относительно fp (положительное значение) или gp (отрицательное значение)
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
 		uni_printf(info->sx->io, "\tjal DEFARR\n");
+		uni_printf(info->sx->io, "\t#addr 0($fp) contains array size, addr 4($fp) contains first array element");
 	}
+	uni_printf(info->sx->io, "\n");
 }
 
 /**
@@ -1369,9 +1616,23 @@ static void emit_function_definition(information *const info, const node *const 
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 
+	// FIXME: нет смысла сохранять данные для main
 	if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 	{
 		info->main_label = ref_ident;
+	}
+
+	// Узнаём, не является ли функция нелистовой (в этом случае надо дополнительно сохранять необерегаемые регистры)
+	bool nonleaf = 0;
+	for (size_t i = 0; i < parameters; i++)
+	{
+		const size_t id = declaration_function_get_param(nd, i);
+		const item_t param_type = ident_get_type(info->sx, id);
+		if (type_is_function(info->sx, param_type))
+		{
+			nonleaf = 1;
+			break;
+		}
 	}
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
@@ -1384,48 +1645,182 @@ static void emit_function_definition(information *const info, const node *const 
 	info->sx->io = &new_io;
 
 	// Сохранение данных перед началом работы функции
+	info->max_displ = FUNC_DISPL_PRESEREVED + ((nonleaf) ? FUNC_DISPL_NONPRESERVED : 0);
+	
+	uni_printf(info->sx->io, "\n\t#data saving:\n");
+	
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ); 	
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
-	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
-	uni_printf(info->sx->io, "\n");
-	info->max_displ = FUNC_DISPL;
+	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);  
 
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
+
+	uni_printf(info->sx->io, "\n");
+
+	// Не вынесено в отдельную подпрограмму для упрощения последующего создания оптимизаций
+	// TODO: оптимизация обращений к памяти
+	// Сохранение s0-s7
+	for (size_t i = 0; i < 8; i++)
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
+	
+	uni_printf(info->sx->io, "\n");
+
+	// Сохранение fs0-fs7
+	for (size_t i = 0; i < 10; i++)
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
+
+	uni_printf(info->sx->io, "\n");
+	
+	if (nonleaf)
+	{
+		// Сохранение a0-a3, а потом сразу t0-t7
+		for (size_t i = 0; i < 12; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+		
+		uni_printf(info->sx->io, "\n");
+
+		// Сохранение fa0-fa3, а потом сразу ft0-ft11
+		for (size_t i = 0; i < 16; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+	}
+
+	uni_printf(info->sx->io, "\n\t#argument loading:\n"); 
+
+	size_t f_arg_count = 0;
+	size_t arg_count = 0;
+	size_t arg_displ_sum = 0; 
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
-		const item_t param_type = ident_get_type(info->sx, id);
+		const item_t param_type = ident_get_type(info->sx, id); 
 
-		// TODO: сделать параметры
+		uni_printf(info->sx->io, "\t#argument \"%s\":\n", ident_get_spelling(info->sx, id));
+
+		// Первые 4 аргумента в a0-a3 (либо в fa0-fa3), остальные переданы вызывающей функцией над fp 
 		if (type_is_floating(param_type))
-		{
-
+		{ 
+			if (f_arg_count < 12) // количество временных регистров
+			{
+				if (f_arg_count < 4) 
+					// берём из fa0-fa3
+					to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра ft0-ft11 -> */ 40 + f_arg_count, /* код регистра fa0-fa3 -> */ 36 + f_arg_count);
+				else
+				{
+					// берём со стека
+					arg_displ_sum += 4; 
+					to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра ft0-ft11 -> */ 40 + f_arg_count, arg_displ_sum, R_FP);
+				}
+			}
+			// иначе остаётся на стеке
+			else 
+				uni_printf(info->sx->io, "\t#stays on stack\n");
+			f_arg_count++;
+			get_f_register(info);
 		}
-		else
-		{
+		else 
+		{ 
+			if (arg_count < 8) // количество временных регистров
+			{  
+				if (arg_count < 4) 
+					// берём из a0-a3
+					to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра t0-t7 -> */ 8 + arg_count, /* код регистра a0-a3 -> */ 4 + arg_count);
+				else 
+				{
+					// берём со стека
+					arg_displ_sum += 4;
+					to_code_R_I_R(info->sx->io, 
+						/* в случае не скалярного типа берём адрес первого элемента */ type_is_scalar(info->sx, param_type) ? IC_MIPS_LW : IC_MIPS_LA, 
+						/* код регистра t0-t7 -> */ 8 + arg_count, arg_displ_sum, R_FP);
 
+					// FIXME: лучше бы это обернуть в функцию
+					// нужно узнать смещение (в случае скалярного типа увеличить на 4 в начале достаточно, поэтому считаем только для aggregate)
+					if (type_is_aggregate(info->sx, param_type))
+					{
+						if (type_is_structure(info->sx, param_type))
+							// FIXME: обязательно четыре?
+							arg_displ_sum += (type_structure_get_member_amount(info->sx, param_type) - 1)*4*
+								type_size(info->sx, param_type); // структура обязана иметь поля, так что безопасно
+						else 
+						{
+							// TODO: массивы
+							// адрес размера массива, следом за ним идут элементы
+							item_t arr_displ = hash_get(&info->displacements, id, 1); 
+							if (i != parameters - 1) // иначе нам всё равно
+							{
+								// находим адрес следующего элемента (чтобы посчитать смещение для следующего аргумента)
+								// он ниже на стеке (т.е. смещение у него больше)
+								item_t next_element_id = declaration_function_get_param(nd, i + 1);
+								item_t next_element_displ = hash_get(&info->displacements, next_element_id, 1); 
+								arg_displ_sum += next_element_displ - arr_displ; // берём вместе с размером массива (он уже учтён в увеличении на 4 выше)
+								// не забыть учесть то, что на нужное кол-во байт мы уже сместились выше
+							}
+						}
+					} 
+				}
+			}
+			// иначе остаётся на стеке
+			else 
+				uni_printf(info->sx->io, "\t#stays on stack\n");
+
+			arg_count++;
+			get_register(info);
 		}
+
+		uni_printf(info->sx->io, "\n");
 	}
+
+	uni_printf(info->sx->io, "\n\t#function body:\n");
 
 	const node body = declaration_function_get_body(nd);
 	emit_statement(info, &body);
 
 	// Выравнивание смещения на 8
-	// info->max_displ = (info->max_displ + 7) * 8 / 8;
+	info->max_displ += info->max_displ % 8;
 
 	// Извлечение буфера с телом функции в старый io
 	char *buffer = out_extract_buffer(info->sx->io);
 	info->sx->io = old_io;
 
-	// Выделение на стеке памяти для тела функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
+	// Выделение на стеке памяти для тела функции  
 	uni_printf(info->sx->io, "%s", buffer);
 	free(buffer);
 
-	uni_printf(info->sx->io, "\n");
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
 
 	// Восстановление стека после работы функции
+	uni_printf(info->sx->io, "\n\t#data restoring:\n");
+
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
+
+	uni_printf(info->sx->io, "\n");
+
+	// Восстановление s0-s7
+	for (size_t i = 0; i < 8; i++)
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
+	
+	uni_printf(info->sx->io, "\n");
+
+	// Восстановление fs0-fs7
+	for (size_t i = 0; i < 10; i++)
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
+
+	uni_printf(info->sx->io, "\n");
+	
+	if (nonleaf)
+	{
+		// Восстановление a0-a3, а потом сразу t0-t7
+		for (size_t i = 0; i < 12; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+		
+		uni_printf(info->sx->io, "\n");
+
+		// Восстановление fa0-fa3, а потом сразу ft0-ft11
+		for (size_t i = 0; i < 16; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+	}
+
+	uni_printf(info->sx->io, "\n");
+
 	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, info->max_displ);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, SP_DISPL, R_SP);
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
@@ -1607,6 +2002,88 @@ static void emit_for_statement(information *const info, const node *const nd)
 	to_code_label(info->sx->io, L_ELSE, label);
 
 	info->label_else = old_label;
+} 
+
+static node get_parent_function(information *const info, const node *const nd)
+{
+	if (!node_is_correct(nd))
+		return node_broken();
+
+	const item_t nd_type = node_get_type(nd);
+	if (nd_type == OP_FUNC_DEF)
+		return *nd;
+
+	node parent = node_get_parent(nd);
+	return get_parent_function(info, &parent);
+
+}
+
+/**
+ *	Emit return statement
+ *
+ *	@param	info		Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_return_statement(information *const info, const node *const nd)
+{
+	// имеет ли функция возвращаемое значение
+	if (node_get_amount(nd))
+	{
+		uni_printf(info->sx->io, "\n\t#return:\n");
+		const node returning = node_get_child(nd, 0); // либо identifier, либо literal
+		const item_t ret_node_type = node_get_type(&returning);
+		const item_t ret_val_type = expression_get_type(&returning);
+		if (ret_node_type == OP_IDENTIFIER)
+		{
+			// сначала смотрим, лежит ли переменная в регистре или на стеке
+			const item_t ident_id = expression_identifier_get_id(&returning);
+
+			const bool on_stack = hash_get(&info->displacements, ident_id, 0);
+			const size_t reg_or_displ = hash_get(&info->displacements, ident_id, 1); 
+
+			if (on_stack) // если на стеке
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, type_is_floating(ret_val_type) ? R_FV0 : R_V0, reg_or_displ, R_SP);
+			else // в регистре
+				to_code_2R(info->sx->io, IC_MIPS_MOVE,  type_is_floating(ret_val_type) ? R_FV0 : R_V0, reg_or_displ);
+		}
+		else // literal
+		{
+			switch (ret_val_type)
+			{
+				case TYPE_INTEGER:
+					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, expression_literal_get_integer(&returning));
+					break;
+				
+				case TYPE_CHARACTER:
+					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, expression_literal_get_character(&returning));
+					break;
+				
+				case TYPE_BOOLEAN:
+					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, expression_literal_get_boolean(&returning));
+					break;
+
+				case TYPE_FLOATING:
+					to_code_R_I(info->sx->io, IC_MIPS_LI, R_FV0, expression_literal_get_floating(&returning));
+					break;
+				
+				case TYPE_ARRAY: // literal array может быть только string
+					// TODO: положить на стек и потом отдавать адрес?
+					//to_code_R_I(info->sx->io, IC_MIPS_LA, R_V0, expression_literal_get_string(&returning));
+					break;
+				
+				default:
+					break;
+			}
+		}
+	}
+
+	// Прыжок на следующую метку
+	uni_printf(info->sx->io, "\n");
+	node parent_func = get_parent_function(info, nd);
+	if (!node_is_correct(&parent_func))
+		return;
+	const size_t parent_func_id = declaration_function_get_id(&parent_func);
+	to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, parent_func_id); 
 }
 
 /**
@@ -1687,7 +2164,10 @@ static void emit_statement(information *const info, const node *const nd)
 			return;
 
 		case STMT_RETURN:
-			// emit_return_statement(info, nd);
+			emit_return_statement(info, nd);
+			uni_printf(info->sx->io, "\n");
+			//const size_t func_id = declaration_function_get_id(nd);
+			//to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, func_id); 
 			return;
 
 		// case STMT_PRINTF:
@@ -1723,36 +2203,40 @@ static int emit_translation_unit(information *const info, const node *const nd)
 // TODO: подписать, что значит каждая директива и команда
 static void pregen(syntax *const sx)
 {
-	uni_printf(sx->io, "\t.section .mdebug.abi32\n");
-	uni_printf(sx->io, "\t.previous\n");
-	uni_printf(sx->io, "\t.nan\tlegacy\n");
-	uni_printf(sx->io, "\t.module fp=xx\n");
-	uni_printf(sx->io, "\t.module nooddspreg\n");
-	uni_printf(sx->io, "\t.abicalls\n");
-	uni_printf(sx->io, "\t.option pic0\n");
-	uni_printf(sx->io, "\t.text\n");
-	uni_printf(sx->io, "\t.align 2\n");
+	// Подпись "GNU As:" для директив GNU 
+	// Подпись "MIPS Assembler:" для директив ассемблера MIPS
 
-	uni_printf(sx->io, "\n\t.globl\tmain\n");
-	uni_printf(sx->io, "\t.ent\tmain\n");
-	uni_printf(sx->io, "\t.type\tmain, @function\n");
+	uni_printf(sx->io, "\t.section .mdebug.abi32\n"); // ?
+	uni_printf(sx->io, "\t.previous\n"); // следующая инструкция будет перенесена в секцию, описанную выше
+	uni_printf(sx->io, "\t.nan\tlegacy\n"); // ?
+	uni_printf(sx->io, "\t.module fp=xx\n"); // ?
+	uni_printf(sx->io, "\t.module nooddspreg\n"); // ?
+	uni_printf(sx->io, "\t.abicalls\n"); // ?
+	uni_printf(sx->io, "\t.option pic0\n"); // как если бы при компиляции была включена опция "-fpic" (?) (что означает?)
+	uni_printf(sx->io, "\t.text\n"); // последующий код будет перенесён в текстовый сегмент памяти
+	uni_printf(sx->io, "\t.align 2\n"); // выравнивание последующих данных/команд по границе, кратной 2^n байт (в данном случае 2^2 = 4)
+
+	uni_printf(sx->io, "\n\t.globl\tmain\n"); // делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
+	uni_printf(sx->io, "\t.ent\tmain\n"); // начало процедуры main
+	uni_printf(sx->io, "\t.type\tmain, @function\n"); // тип "main" -- функция
 	uni_printf(sx->io, "main:\n");
 
 	// инициализация gp
-	uni_printf(sx->io, "\tlui $28, %%hi(__gnu_local_gp)\n");
+	uni_printf(sx->io, "\tlui $28, %%hi(__gnu_local_gp)\n"); // "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
 	uni_printf(sx->io, "\taddiu $28, $28, %%lo(__gnu_local_gp)\n");
 
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_FP, R_FP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_FP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP); // инициализация frame pointer
+	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_FP, R_FP, -4); // выделяем память на стеке
+	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_FP); // return address отправляется в стек по адресу frame pointer
+	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER); // ?
+	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP); // ?
 	uni_printf(sx->io, "\n");
 }
 
+// создаём метки всех строк в программе
 static void strings_declaration(information *const info)
 {
-	uni_printf(info->sx->io, "\t.rdata\n");
+	uni_printf(info->sx->io, "\t.rdata\n"); 
 	uni_printf(info->sx->io, "\t.align 2\n");
 
 	const size_t amount = strings_amount(info->sx);
@@ -1799,12 +2283,15 @@ static void strings_declaration(information *const info)
 static void postgen(information *const info)
 {
 	uni_printf(info->sx->io, "\n");
-	to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, info->main_label);
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -4, R_SP);
-	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
+	to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, info->main_label); // прыгаем обратно в main
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -4, R_SP); // загружаем в return address значение из -4($sp) (что там находится?)
+	to_code_R(info->sx->io, IC_MIPS_JR, R_RA); // прыгаем на это значение
 
+	// вставляем runtime.s в конец файла
 	uni_printf(info->sx->io, "\n\n# runtime\n");
-	char *runtime = "runtimeMIPS/runtime.s";
+	//char *runtime = "../runtimeMIPS/runtime.s";
+	// FIXME: корректный путь к runtime
+	char *runtime = "/home/mexanobar/programming/RuC/RuC/branch/mips_codegen/RuC/runtimeMIPS/runtime.s";
 	FILE *file = fopen(runtime, "r+");
 	if (runtime != NULL)
 	{
@@ -1844,6 +2331,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.main_label = 0;
 	info.max_displ = 0;
 	info.next_register = R_T0;
+	info.next_f_register = R_FT0;
 	info.request_kind = RQ_NO_REQUEST;
 	info.label_num = 1;
 	info.label_else = 1;
