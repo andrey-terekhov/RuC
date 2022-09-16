@@ -1599,7 +1599,7 @@ static void emit_variable_declaration(information *const info, const node *const
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ); // передаём смещение относительно fp (положительное значение) или gp (отрицательное значение)
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
 		uni_printf(info->sx->io, "\tjal DEFARR\n");
-		uni_printf(info->sx->io, "\t#addr 0($fp) contains array size, addr 4($fp) contains first array element");
+		uni_printf(info->sx->io, "\t#addr 0($fp) now contains array size, addr 4($fp) contains first array element\n");
 	}
 	uni_printf(info->sx->io, "\n");
 }
@@ -1615,21 +1615,23 @@ static void emit_function_definition(information *const info, const node *const 
 	const size_t ref_ident = declaration_function_get_id(nd);
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
-
-	// FIXME: нет смысла сохранять данные для main
+ 
+	bool is_main = 0;
 	if (ident_get_prev(info->sx, ref_ident) == TK_MAIN)
 	{
 		info->main_label = ref_ident;
+		is_main = 1;
 	}
 
 	// Узнаём, не является ли функция нелистовой (в этом случае надо дополнительно сохранять необерегаемые регистры)
 	bool nonleaf = 0;
-	for (size_t i = 0; i < parameters; i++)
+	node body = declaration_function_get_body(nd);
+	const size_t children_amount = node_get_amount(&body); 
+	for (size_t i = 0; i < children_amount; i++)
 	{
-		const size_t id = declaration_function_get_param(nd, i);
-		const item_t param_type = ident_get_type(info->sx, id);
-		if (type_is_function(info->sx, param_type))
-		{
+		const node child = node_get_child(&body, i);
+		if (node_get_type(&child) == OP_CALL)
+		{ 
 			nonleaf = 1;
 			break;
 		}
@@ -1644,44 +1646,49 @@ static void emit_function_definition(information *const info, const node *const 
   	out_set_buffer(&new_io, BUFFER_SIZE);
 	info->sx->io = &new_io;
 
-	// Сохранение данных перед началом работы функции
-	info->max_displ = FUNC_DISPL_PRESEREVED + ((nonleaf) ? FUNC_DISPL_NONPRESERVED : 0);
-	
-	uni_printf(info->sx->io, "\n\t#data saving:\n");
-	
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ); 	
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
-	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);  
+	uni_printf(info->sx->io, "\t#\"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
-
-	uni_printf(info->sx->io, "\n");
-
-	// Не вынесено в отдельную подпрограмму для упрощения последующего создания оптимизаций
-	// TODO: оптимизация обращений к памяти
-	// Сохранение s0-s7
-	for (size_t i = 0; i < 8; i++)
-		to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
-	
-	uni_printf(info->sx->io, "\n");
-
-	// Сохранение fs0-fs7
-	for (size_t i = 0; i < 10; i++)
-		to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
-
-	uni_printf(info->sx->io, "\n");
-	
-	if (nonleaf)
+	if (!is_main)
 	{
-		// Сохранение a0-a3, а потом сразу t0-t7
-		for (size_t i = 0; i < 12; i++)
-			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+		// Сохранение данных перед началом работы функции
+		info->max_displ = FUNC_DISPL_PRESEREVED + ((nonleaf) ? FUNC_DISPL_NONPRESERVED : 0);
+		
+		uni_printf(info->sx->io, "\n\t#data saving:\n");
+		
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ); 	
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
+		to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);  
+
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, RA_DISPL, R_SP);
+
+		uni_printf(info->sx->io, "\n");
+
+		// Не вынесено в отдельную подпрограмму для упрощения последующего создания оптимизаций
+		// TODO: оптимизация обращений к памяти
+		// Сохранение s0-s7
+		for (size_t i = 0; i < 8; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
 		
 		uni_printf(info->sx->io, "\n");
 
-		// Сохранение fa0-fa3, а потом сразу ft0-ft11
-		for (size_t i = 0; i < 16; i++)
-			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+		// Сохранение fs0-fs7
+		for (size_t i = 0; i < 10; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
+
+		uni_printf(info->sx->io, "\n");
+		
+		if (nonleaf)
+		{
+			// Сохранение a0-a3, а потом сразу t0-t7
+			for (size_t i = 0; i < 12; i++)
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+			
+			uni_printf(info->sx->io, "\n");
+
+			// Сохранение fa0-fa3, а потом сразу ft0-ft11
+			for (size_t i = 0; i < 16; i++)
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+		}
 	}
 
 	uni_printf(info->sx->io, "\n\t#argument loading:\n"); 
@@ -1770,8 +1777,7 @@ static void emit_function_definition(information *const info, const node *const 
 	}
 
 	uni_printf(info->sx->io, "\n\t#function body:\n");
-
-	const node body = declaration_function_get_body(nd);
+ 
 	emit_statement(info, &body);
 
 	// Выравнивание смещения на 8
@@ -1787,36 +1793,40 @@ static void emit_function_definition(information *const info, const node *const 
 
 	to_code_label(info->sx->io, L_FUNCEND, ref_ident);
 
-	// Восстановление стека после работы функции
-	uni_printf(info->sx->io, "\n\t#data restoring:\n");
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
-
-	uni_printf(info->sx->io, "\n");
-
-	// Восстановление s0-s7
-	for (size_t i = 0; i < 8; i++)
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
-	
-	uni_printf(info->sx->io, "\n");
-
-	// Восстановление fs0-fs7
-	for (size_t i = 0; i < 10; i++)
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
-
-	uni_printf(info->sx->io, "\n");
-	
-	if (nonleaf)
+	if (!is_main)
 	{
-		// Восстановление a0-a3, а потом сразу t0-t7
-		for (size_t i = 0; i < 12; i++)
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+		// Восстановление стека после работы функции
+		uni_printf(info->sx->io, "\n\t#data restoring:\n");
+
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
+
+		uni_printf(info->sx->io, "\n");
+
+		// Восстановление s0-s7
+		for (size_t i = 0; i < 8; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 16 + i, /* 4 за ra (sp уже учтен) + смещение -> */ 4 + 4*(i+1), R_SP);
 		
 		uni_printf(info->sx->io, "\n");
 
-		// Восстановление fa0-fa3, а потом сразу ft0-ft11
-		for (size_t i = 0; i < 16; i++)
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+		// Восстановление fs0-fs7
+		for (size_t i = 0; i < 10; i++)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 52 + i, /* 36 за ra + s0-s7 + смещение -> */ 36 + 4*(i+1), R_SP);
+
+		uni_printf(info->sx->io, "\n");
+		
+		if (nonleaf)
+		{
+			// Восстановление a0-a3, а потом сразу t0-t7
+			for (size_t i = 0; i < 12; i++)
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 4 + i, /* 76 за оберегаемые + смещение -> */ 76 + 4*(i+1), R_SP);
+			
+			uni_printf(info->sx->io, "\n");
+
+			// Восстановление fa0-fa3, а потом сразу ft0-ft11
+			for (size_t i = 0; i < 16; i++)
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра -> */ 36 + i, /* 124 за всё предыдущее + смещение */ 124 + 4*(i+1), R_SP);
+		}
 	}
 
 	uni_printf(info->sx->io, "\n");
