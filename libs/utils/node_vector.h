@@ -39,10 +39,7 @@ typedef struct node_vector
  *
  *	@return	Node vector
  */
-inline node_vector node_vector_create()
-{
-	return (node_vector){ .tree = NULL, .nodes = vector_create(NODE_VECTOR_SIZE) };
-}
+EXPORTED node_vector node_vector_create(void);
 
 /**
  *	Add new node
@@ -98,7 +95,19 @@ inline node node_vector_get(const node_vector *const vec, const size_t index)
  */
 inline size_t node_vector_size(const node_vector *const vec)
 {
-	return vector_size(&vec->nodes);
+	return vec == NULL ? 0 : vector_size(&vec->nodes);
+}
+
+/**
+ *	Check that vector is correct
+ *
+ *	@param	vec				Node vector
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+inline bool node_vector_is_correct(const node_vector *const vec)
+{
+	return vec != NULL && vector_is_correct(vec->tree) && vector_is_correct(&vec->nodes);
 }
 
 /**

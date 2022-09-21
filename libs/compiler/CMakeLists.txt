@@ -13,6 +13,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} macro utils)
 
-if(NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+if(NOT MSVC)
 	target_link_libraries(${PROJECT_NAME} m)
 endif()

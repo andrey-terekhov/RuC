@@ -18,7 +18,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "tokens.h"
+#include "token.h"
 
 
 #ifdef __cplusplus
@@ -39,12 +39,13 @@ typedef enum UNARY
 	UN_ADDRESS,			/**< '&' operator */
 	UN_INDIRECTION,		/**< '*' operator */
 	// Unary arithmetic
-	UN_PLUS,			/**< '+' operator */
 	UN_MINUS,			/**< '-' operator */
 	UN_NOT,				/**< '~' operator */
 	UN_LOGNOT,			/**< '!' operator */
 	// Abs operator
 	UN_ABS,				/**< 'abs' operator */
+	// Upb operator
+	UN_UPB,				/**< 'upb' operator */
 } unary_t;
 
 /** Binary operator kinds */
@@ -128,10 +129,10 @@ typedef enum OPERATION
 	OP_UNARY,				/**< Unary operator node */
 	OP_BINARY,				/**< Binary operator node */
 	OP_TERNARY,				/**< Ternary operator node */
-	OP_LIST,
+	OP_ASSIGNMENT,			/**< Assignment operator node */
+	OP_INITIALIZER,			/**< Initializer node */
 
 	// Statements
-	OP_LABEL,				/**< Label statement node */
 	OP_CASE,				/**< Case statement node */
 	OP_DEFAULT,				/**< Default statement node */
 	OP_BLOCK,				/**< Compound statement node */
@@ -140,21 +141,15 @@ typedef enum OPERATION
 	OP_WHILE,				/**< While statement node */
 	OP_DO,					/**< Do statement node */
 	OP_FOR,					/**< For statement node */
-	OP_GOTO,				/**< Goto statement node */
 	OP_CONTINUE,			/**< Continue statement node */
 	OP_BREAK,				/**< Break statement node */
 	OP_RETURN,				/**< Return statement node */
+	OP_DECLSTMT,			/**< Declaration statement */
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
 	OP_DECL_TYPE,			/**< Type declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
-
-	// Built-in functions
-	OP_PRINTID,
-	OP_PRINT,
-	OP_GETID,
-	OP_PRINTF,
 } operation_t;
 
 typedef enum builtin
@@ -213,9 +208,13 @@ typedef enum builtin
 	BI_FCLOSE				= 158,
 
 	BI_EXIT					= 162,
-	BI_UPB					= 166,
 
-	BEGIN_USER_FUNC			= 170,
+	BI_PRINTF				= 166,
+	BI_PRINT				= 170,
+	BI_PRINTID				= 174,
+	BI_GETID				= 178,
+
+	BEGIN_USER_FUNC			= 182,
 } builtin_t;
 
 
@@ -249,11 +248,11 @@ precedence_t get_operator_precedence(const token_t token);
 /**
  *	Check if operator is assignment
  *
- *	@param	operator	Operator
+ *	@param	op			Operator
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool operation_is_assignment(const binary_t operator);
+bool operation_is_assignment(const binary_t op);
 
 #ifdef __cplusplus
 } /* extern "C" */

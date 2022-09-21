@@ -1,0 +1,54 @@
+image: ubuntu
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+
+stages:
+  - virtual
+  - llvm
+
+virtual:
+  stage: virtual
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake git
+  script:
+    - ./scripts/test.sh
+  tags:
+  - R2LIN
+
+llvm-intel:
+  stage: llvm
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu
+  script:
+    - ln -s /usr/bin/clang++-11 /usr/bin/clang++
+    - patch ./scripts/test.sh < ./scripts/llvm.patch
+    - ./scripts/test.sh
+  tags:
+  - R2LIN
+
+llvm-uemu:
+  stage: llvm
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu git
+    - rm -rf ../uemu
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.softcom.su/ruc/uemu ../uemu
+  script:
+    - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
+    - ./scripts/test.sh -d
+  tags:
+  - R2LIN
+
+llvm-baikal:
+  stage: llvm
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu sshpass
+  script:
+    - patch ./scripts/test.sh < ./scripts/llvm-baikal.patch
+    - ./scripts/test.sh -d
+  tags:
+  - R2LIN

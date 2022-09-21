@@ -17,7 +17,7 @@
 #include "workspace.h"
 #include <string.h>
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 	#include <unistd.h>
 #else
 	#define F_OK 0
@@ -205,7 +205,7 @@ workspace ws_parse_args(const int argc, const char *const *const argv)
 }
 
 
-workspace ws_create()
+workspace ws_create(void)
 {
 	workspace ws;
 
