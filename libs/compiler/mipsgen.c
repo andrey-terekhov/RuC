@@ -1742,6 +1742,9 @@ static void emit_function_definition(information *const info, const node *const 
 		const size_t id = declaration_function_get_param(nd, i);
 		const item_t param_type = ident_get_type(info->sx, id); 
 
+		// Вносим переменную в таблицу символов 
+		const size_t index = hash_add(&info->displacements, id, 2);
+
 		uni_printf(info->sx->io, "\t#argument \"%s\":\n", ident_get_spelling(info->sx, id));
 
 		// Первые 4 аргумента в a0-a3 (либо в fa0-fa3), остальные переданы вызывающей функцией над fp 
@@ -1758,12 +1761,24 @@ static void emit_function_definition(information *const info, const node *const 
 					arg_displ_sum += 4; 
 					to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра ft0-ft11 -> */ 40 + f_arg_count, arg_displ_sum, R_FP);
 				}
+				
+				// Все переменные обязательно должны быть на стеке
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, 40 + f_arg_count, -(item_t)(arg_displ_sum + 4), R_SP);
+
+				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
 			}
 			// иначе остаётся на стеке
 			else 
+			{
 				uni_printf(info->sx->io, "\t#stays on stack\n");
+
+				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
+			}
+
 			f_arg_count++;
 			get_f_register(info);
+
+			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
 		else 
 		{ 
@@ -1778,7 +1793,7 @@ static void emit_function_definition(information *const info, const node *const 
 					arg_displ_sum += 4;
 					to_code_R_I_R(info->sx->io, 
 						/* в случае не скалярного типа берём адрес первого элемента */ type_is_scalar(info->sx, param_type) ? IC_MIPS_LW : IC_MIPS_LA, 
-						/* код регистра t0-t7 -> */ 8 + arg_count, arg_displ_sum, R_FP);
+						/* код регистра t0-t7 -> */ 8 + arg_count, arg_displ_sum, R_FP); 
 
 					// FIXME: лучше бы это обернуть в функцию
 					// нужно узнать смещение (в случае скалярного типа увеличить на 4 в начале достаточно, поэтому считаем только для aggregate)
@@ -1805,13 +1820,24 @@ static void emit_function_definition(information *const info, const node *const 
 						}
 					} 
 				}
+
+				// Все переменные обязательно должны быть на стеке
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, 8 + arg_count, -(item_t)(arg_displ_sum + 4), R_SP);
+
+				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
 			}
 			// иначе остаётся на стеке
 			else 
+			{
 				uni_printf(info->sx->io, "\t#stays on stack\n");
 
+				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
+			} 
+			
 			arg_count++;
 			get_register(info);
+
+			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
 
 		uni_printf(info->sx->io, "\n");
