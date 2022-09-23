@@ -150,7 +150,7 @@ static inline token_t peek_token(parser *const prs)
  *	@param	prs			Parser
  *	@param	expected	Expected token kind
  *
- *	@return	@c 1 on consuming 'peek token', @c 0 on otherwise
+ *	@return	@c true on consuming 'peek token', @c false otherwise
  */
 static bool try_consume_token(parser *const prs, const token_t expected)
 {
@@ -184,8 +184,8 @@ static void expect_and_consume(parser *const prs, const token_t expected, const 
 		if (curr_token == TK_R_PAREN || curr_token == TK_R_SQUARE)
 		{
 			parser_error(prs, extraneous_bracket_before_semi);
-			consume_token(prs);	// ')' or ']'
-			consume_token(prs);	// ';'
+			consume_token(prs);	// `)` or `]`
+			consume_token(prs);	// `;`
 			return;
 		}
 	}
@@ -294,8 +294,8 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
  *	primary-expression:
  *		identifier
  *		literal
- *		'NULL'
- *		'(' expression ')'
+ *		`null`
+ *		`(` expression `)`
  *
  *	@param	prs			Parser
  *
@@ -379,7 +379,7 @@ static node parse_primary_expression(parser *const prs)
  *
  *	initializer-list:
  *		initializer
- *		expression-list ',' initializer
+ *		expression-list `,` initializer
  *
  *	@param	prs			Parser
  *
@@ -403,12 +403,12 @@ static node_vector parse_initializer_list(parser *const prs)
  *
  *	postfix-expression:
  *		primary-expression
- *		postfix-expression '[' expression ']'
- *		postfix-expression '(' initializer-list[opt] ')'
- *		postfix-expression '.' identifier
- *		postfix-expression '->' identifier
- *		postfix-expression '++'
- *		postfix-expression '--'
+ *		postfix-expression `[` expression `]`
+ *		postfix-expression `(` initializer-list[opt] `)`
+ *		postfix-expression `.` identifier
+ *		postfix-expression `->` identifier
+ *		postfix-expression `++`
+ *		postfix-expression `--`
  *
  *	@param	prs			Parser
  *
@@ -520,12 +520,12 @@ static node parse_postfix_expression(parser *const prs)
  *
  *	unary-expression:
  *		postfix-expression
- *		'++' unary-expression
- *		'--' unary-expression
+ *		`++` unary-expression
+ *		`--` unary-expression
  *		unary-operator unary-expression
  *
  *	unary-operator: one of
- *		'&', '*', '-', '~', '!', 'abs'
+ *		`&`, `*`, `-`, `~`, `!`, `abs`, `upb`
  *
  *	@param	prs			Parser
  *
@@ -624,7 +624,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
  *		unary-expression assignment-operator assignment-expression
  *
  *	assignment-operator: one of
- *		'=', '*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '&=', 'ˆ=', '|='
+ *		`=`, `*=`, `/=`, `%=`, `+=`, `-=`, `<<=`, `>>=`, `&=`, `ˆ=`, `|=`
  *
  *	@param	prs			Parser
  *
@@ -641,7 +641,7 @@ static node parse_assignment_expression(parser *const prs)
  *
  *	expression:
  *		assignment-expression
- *		expression ',' assignment-expression
+ *		expression `,` assignment-expression
  *
  *	@param	prs			Parser
  *
@@ -676,7 +676,7 @@ static node parse_constant_expression(parser *const prs)
  *
  *	initializer:
  *		assignment-expression
- *		'{' expression-list[opt] '}'
+ *		`{` expression-list[opt] `}`
  *
  *	@param	prs			Parser
  *
@@ -720,7 +720,7 @@ static node parse_initializer(parser *const prs)
 /**
  *	Parse condition
  *
- *	'(' expression ')'
+ *	`(` expression `)`
  *
  *	@param	prs			Parser
  *
@@ -769,14 +769,14 @@ static node parse_condition(parser *const prs)
  *	Parse type specifier [C99 6.7.2]
  *
  *	type-specifier:
- *		'void'
- *		'bool'
- *		'char'
- *		'short'
- *		'int'
- *		'long'
- *		'float'
- *		'double'
+ *		`void`
+ *		`bool`
+ *		`char`
+ *		`short`
+ *		`int`
+ *		`long`
+ *		`float`
+ *		`double`
  *		struct-or-union-specifier
  *		enum-specifier
  *		typedef-name
@@ -887,12 +887,12 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
  *	Parse struct or union specifier [C99 6.7.2.1p1]
  *
  *	struct-or-union-specifier:
- *		struct-or-union identifier[opt] '{' struct-contents '}'
+ *		struct-or-union identifier[opt] `{` struct-contents `}`
  *		struct-or-union identifier
  *
  *	struct-or-union:
- *		'struct'
- *		'union'
+ *		`struct`
+ *		`union`
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -949,7 +949,7 @@ static item_t parse_struct_or_union_specifier(parser *const prs, node *const par
  *	Parse array definition
  *
  *	direct-abstract-declarator:
- *		direct-abstract-declarator[opt] '[' constant-expression[opt] ']'
+ *		direct-abstract-declarator[opt] `[` constant-expression[opt] `]`
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -1010,11 +1010,11 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
  *		struct-declaration-list struct-declaration
  *
  *	struct-declaration:
- *		type-specifier struct-declarator-list ';'
+ *		type-specifier struct-declarator-list `;`
  *
  *	struct-declarator-list:
  *		declarator
- *		struct-declarator-list ',' declarator
+ *		struct-declarator-list `,` declarator
  *
  *	@param	prs			Parser structure
  *	@param	parent		Parent node in AST
@@ -1289,11 +1289,11 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
  *	Parse declaration
  *
  *	declaration:
- *		type-specifier init-declarator-list[opt] ';'
+ *		type-specifier init-declarator-list[opt] `;`
  *
  *	init-declarator-list:
  *		init-declarator
- *		init-declarator-list ',' init-declarator
+ *		init-declarator-list `,` init-declarator
  *
  *	@param	prs			Parser
  *
@@ -1389,7 +1389,7 @@ static bool is_declaration_specifier(parser *const prs)
  *	Parse case statement
  *
  *	labeled-statement:
- *		'case' constant-expression ':' statement
+ *		`case` constant-expression `:` statement
  *
  *	@param	prs			Parser
  *
@@ -1397,14 +1397,15 @@ static bool is_declaration_specifier(parser *const prs)
  */
 static node parse_case_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_CASE));
+	const location case_loc = consume_token(prs);
+
 	if (!prs->is_in_switch)
 	{
 		parser_error(prs, case_not_in_switch);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
-
-	const location case_loc = consume_token(prs);
 
 	node expr = parse_constant_expression(prs);
 	if (!node_is_correct(&expr))
@@ -1423,7 +1424,7 @@ static node parse_case_statement(parser *const prs)
  *	Parse default statement
  *
  *	labeled-statement:
- *		'default' ':' statement
+ *		`default` `:` statement
  *
  *	@param	prs			Parser
  *
@@ -1431,14 +1432,15 @@ static node parse_case_statement(parser *const prs)
  */
 static node parse_default_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_DEFAULT));
+	const location default_loc = consume_token(prs);
+
 	if (!prs->is_in_switch)
 	{
 		parser_error(prs, default_not_in_switch);
 		skip_until(prs, TK_SEMICOLON);
 		return node_broken();
 	}
-
-	const location default_loc = consume_token(prs);
 
 	expect_and_consume(prs, TK_COLON, expected_colon_after_default);
 	node substmt = parse_statement(prs);
@@ -1447,10 +1449,10 @@ static node parse_default_statement(parser *const prs)
 }
 
 /**
- *	Parse compound statement
+ *	Parse compound statement without scope
  *
  *	compound-statement:
- *  	'{' block-item-list[opt] '}'
+ *  	`{` block-item-list[opt] `}`
  *
  *	block-item-list:
  *		block-item
@@ -1462,31 +1464,18 @@ static node parse_default_statement(parser *const prs)
  *
  *	@param	prs			Parser
  *
- *	@return	Compound statement
+ *	@return	Compound statement body
  */
-static node parse_compound_statement(parser *const prs, const bool is_function_body)
+static node parse_compound_statement_body(parser *const prs)
 {
-	scope scp = { ITEM_MAX, ITEM_MAX };
-	if (!is_function_body)
-	{
-		scp = scope_block_enter(prs->sx);
-	}
-
+	assert(token_is(&prs->tk, TK_L_BRACE));
 	const location l_loc = consume_token(prs);
 
 	node_vector stmts = node_vector_create();
 	while (token_is_not(&prs->tk, TK_R_BRACE) && token_is_not(&prs->tk, TK_EOF))
 	{
-		const node stmt = is_declaration_specifier(prs)
-			? parse_declaration(prs)
-			: parse_statement(prs);
-
+		const node stmt = is_declaration_specifier(prs) ? parse_declaration(prs) : parse_statement(prs);
 		node_vector_add(&stmts, &stmt);
-	}
-
-	if (!is_function_body)
-	{
-		scope_block_exit(prs->sx, scp);
 	}
 
 	if (token_is_not(&prs->tk, TK_R_BRACE))
@@ -1503,10 +1492,26 @@ static node parse_compound_statement(parser *const prs, const bool is_function_b
 }
 
 /**
+ *	Parse compound statement with a new scope
+ *
+ *	@param	prs			Parser
+ *
+ *	@return	Compound statement
+ */
+static node parse_compound_statement(parser *const prs)
+{
+	const scope scp = scope_block_enter(prs->sx);
+	node body = parse_compound_statement_body(prs);
+
+	scope_block_exit(prs->sx, scp);
+	return body;
+}
+
+/**
  *	Parse expression statement
  *
  *	expression-statement:
- *		expression ';'
+ *		expression `;`
  *
  *	@param	prs			Parser
  *
@@ -1529,8 +1534,8 @@ static node parse_expression_statement(parser *const prs)
  *	Parse if statement
  *
  *	if-statement:
- *		'if' '(' expression ')' statement
- *		'if' '(' expression ')' statement 'else' statement
+ *		`if` `(` expression `)` statement
+ *		`if` `(` expression `)` statement `else` statement
  *
  *	@param	prs			Parser
  *
@@ -1538,6 +1543,7 @@ static node parse_expression_statement(parser *const prs)
  */
 static node parse_if_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_IF));
 	const location if_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
@@ -1556,7 +1562,7 @@ static node parse_if_statement(parser *const prs)
  *	Parse switch statement
  *
  *	switch-statement:
- *		'switch' '(' expression ')' statement
+ *		`switch` `(` expression `)` statement
  *
  *	@param	prs			Parser
  *
@@ -1564,6 +1570,7 @@ static node parse_if_statement(parser *const prs)
  */
 static node parse_switch_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_SWITCH));
 	const location switch_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
@@ -1580,7 +1587,7 @@ static node parse_switch_statement(parser *const prs)
  *	Parse while statement
  *
  *	while-statement:
- *		'while' '(' expression ')' statement
+ *		`while` `(` expression `)` statement
  *
  *	@param	prs			Parser
  *
@@ -1588,14 +1595,15 @@ static node parse_switch_statement(parser *const prs)
  */
 static node parse_while_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_WHILE));
 	const location while_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
 
-	const bool old_in_switch = prs->is_in_switch;
+	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
 	node body = parse_statement(prs);
-	prs->is_in_loop = old_in_switch;
+	prs->is_in_loop = old_in_loop;
 
 	return build_while_statement(&prs->bld, &condition, &body, while_loc);
 }
@@ -1604,7 +1612,7 @@ static node parse_while_statement(parser *const prs)
  *	Parse do statement
  *
  *	do-statement:
- *		'do' statement 'while' '(' expression ')' ';'
+ *		`do` statement `while` `(` expression `)` `;`
  *
  *	@param	prs			Parser
  *
@@ -1612,6 +1620,7 @@ static node parse_while_statement(parser *const prs)
  */
 static node parse_do_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_DO));
 	const location do_loc = consume_token(prs);
 
 	const bool old_in_loop = prs->is_in_loop;
@@ -1636,8 +1645,8 @@ static node parse_do_statement(parser *const prs)
  *	Parse for statement
  *
  *	for-statement:
- *		'for' '(' expression[opt] ';' expression[opt] ';' expression[opt] ')' statement
- *		'for' '(' declaration expression[opt] ';' expression[opt] ')' statement
+ *		`for` `(` expression[opt] `;` expression[opt] `;` expression[opt] `)` statement
+ *		`for` `(` declaration expression[opt] `;` expression[opt] `)` statement
  *
  *	@param	prs			Parser
  *
@@ -1645,6 +1654,7 @@ static node parse_do_statement(parser *const prs)
  */
 static node parse_for_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_FOR));
 	const location for_loc = consume_token(prs);
 	const scope scp = scope_block_enter(prs->sx);
 
@@ -1727,15 +1737,18 @@ static node parse_for_statement(parser *const prs)
 	prs->is_in_loop = old_in_loop;
 
 	scope_block_exit(prs->sx, scp);
-	return build_for_statement(&prs->bld, has_init ? &init : NULL
-		, has_cond ? &cond : NULL, has_incr ? &incr : NULL, &body, for_loc);
+
+	node* init_ptr = has_init ? &init : NULL;
+	node* cond_ptr = has_cond ? &cond : NULL;
+	node* incr_ptr = has_incr ? &incr : NULL;
+	return build_for_statement(&prs->bld, init_ptr, cond_ptr, incr_ptr, &body, for_loc);
 }
 
 /**
  *	Parse continue statement
  *
  *	jump-statement:
- *		'continue' ';'
+ *		`continue` `;`
  *
  *	@param	prs			Parser
  *
@@ -1743,6 +1756,9 @@ static node parse_for_statement(parser *const prs)
  */
 static node parse_continue_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_CONTINUE));
+	const location continue_loc = consume_token(prs);
+
 	if (!prs->is_in_loop)
 	{
 		parser_error(prs, continue_not_in_loop);
@@ -1750,7 +1766,6 @@ static node parse_continue_statement(parser *const prs)
 		return node_broken();
 	}
 
-	const location continue_loc = consume_token(prs);
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 	return build_continue_statement(&prs->bld, continue_loc);
 }
@@ -1759,7 +1774,7 @@ static node parse_continue_statement(parser *const prs)
  *	Parse break statement
  *
  *	jump-statement:
- *		'break' ';'
+ *		`break` `;`
  *
  *	@param	prs			Parser
  *
@@ -1767,6 +1782,9 @@ static node parse_continue_statement(parser *const prs)
  */
 static node parse_break_statement(parser *const prs)
 {
+	assert(token_is(&prs->tk, TK_BREAK));
+	const location break_loc = consume_token(prs);
+
 	if (!(prs->is_in_loop || prs->is_in_switch))
 	{
 		parser_error(prs, break_not_in_loop_or_switch);
@@ -1774,7 +1792,6 @@ static node parse_break_statement(parser *const prs)
 		return node_broken();
 	}
 
-	const location break_loc = consume_token(prs);
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
 	return build_break_statement(&prs->bld, break_loc);
 }
@@ -1783,7 +1800,7 @@ static node parse_break_statement(parser *const prs)
  *	Parse return statement
  *
  *	jump-statement:
- *		'return' expression[opt] ';'
+ *		`return` expression[opt] `;`
  *
  *	@param	prs			Parser
  *
@@ -1791,8 +1808,10 @@ static node parse_break_statement(parser *const prs)
  */
 static node parse_return_statement(parser *const prs)
 {
-	prs->was_return = true;
+	assert(token_is(&prs->tk, TK_RETURN));
 	const location return_loc = consume_token(prs);
+
+	prs->was_return = true;
 	if (try_consume_token(prs, TK_SEMICOLON))
 	{
 		return build_return_statement(&prs->bld, NULL, return_loc);
@@ -1835,7 +1854,7 @@ static node parse_statement(parser *const prs)
 			return parse_default_statement(prs);
 
 		case TK_L_BRACE:
-			return parse_compound_statement(prs, /*is_function_body=*/false);
+			return parse_compound_statement(prs);
 
 		case TK_SEMICOLON:
 			return build_null_statement(&prs->bld, consume_token(prs));
@@ -1914,8 +1933,8 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 		{
 			int arg_func = 0;	/**< Тип возврата функции-параметра:
 									 @c 0 - обычный тип,
-									 @c 1 - была '*',
-									 @c 2 - была '[' */
+									 @c 1 - была `*`,
+									 @c 2 - была `[` */
 			item_t type = parse_type_specifier(prs, NULL);
 
 			if (try_consume_token(prs, TK_STAR))
@@ -2115,7 +2134,7 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
 	node_copy(&prs->bld.context, &nd);
-	node body = parse_compound_statement(prs, /*is_function_body=*/true);
+	node body = parse_compound_statement_body(prs);
 
 	node temp = node_add_child(&nd, OP_NOP);
 	node_swap(&body, &temp);
@@ -2173,7 +2192,7 @@ static void parse_function_declaration(parser *const prs, node *const parent, co
 	else if (prs->func_def == 1)
 	{
 		parser_error(prs, function_has_no_body);
-		// На тот случай, если после неправильного декларатора стоит ';'
+		// На тот случай, если после неправильного декларатора стоит `;`
 		try_consume_token(prs, TK_SEMICOLON);
 	}
 }
