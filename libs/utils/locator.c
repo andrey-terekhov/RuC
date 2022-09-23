@@ -132,8 +132,8 @@ location loc_search(universal_io *const io)
 	loc.io = io;
 	loc.path = SIZE_MAX;
 	loc.code = 0;
-	loc.line = 0;
-	loc.symbol = 0;
+	loc.line = 1;
+	loc.symbol = 1;
 
 	if (loc_search_from(&loc))
 	{
@@ -165,7 +165,7 @@ int loc_line_break(location *const loc)
 
 	loc->code = in_get_position(loc->io);
 	loc->line++;
-	loc->symbol = 0;
+	loc->symbol = 1;
 
 	return 0;
 }
@@ -176,9 +176,65 @@ bool loc_is_correct(const location *const loc)
 }
 
 
-size_t loc_get_tag(location *const loc, char *const buffer) {}
-size_t loc_get_code_line(location *const loc, char *const buffer) {}
-size_t loc_get_path(location *const loc, char *const buffer) {}
+size_t loc_get_tag(location *const loc, char *const buffer)
+{
+	size_t size = loc_get_path(loc, buffer);
+	if (size == 0)
+	{
+		return 0;
+	}
+
+	return size + sprintf(&buffer[size], ":%zu:%zu", loc->line, loc->symbol);
+}
+
+size_t loc_get_code_line(location *const loc, char *const buffer)
+{
+	if (!loc_is_correct(loc) || buffer == NULL)
+	{
+		return 0;
+	}
+
+	size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->code);
+
+	size_t size = 0;
+	char32_t character = uni_scan_char(loc->io);
+	while (character != '\n' && character != EOF)
+	{
+		size += utf8_to_string(buffer, character);
+		character = uni_scan_char(loc->io);
+	}
+
+	in_set_position(loc->io, position);
+	return size;
+}
+
+size_t loc_get_path(location *const loc, char *const buffer)
+{
+	if (!loc_is_correct(loc) || buffer == NULL)
+	{
+		return 0;
+	}
+
+	if (loc->path == SIZE_MAX)
+	{
+		return in_get_path(loc->io, buffer);
+	}
+
+	size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->path);
+
+	size_t size = 0;
+	char32_t character = uni_scan_char(loc->io);
+	while (character != '"' && size < MAX_PATH)
+	{
+		size += utf8_to_string(buffer, character);
+		character = uni_scan_char(loc->io);
+	}
+
+	in_set_position(loc->io, position);
+	return size;
+}
 
 size_t loc_get_line(const location *const loc)
 {
