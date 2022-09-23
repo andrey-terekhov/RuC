@@ -21,8 +21,13 @@
 #include "utf8.h"
 
 
+#define MAX_PATH 1024
+
+
 static const char *const PREFIX = "#line";
 static const char SEPARATOR = ' ';
+static const char *const COMMENT = "//";
+static const char FILLER = ' ';
 
 
 /*
@@ -58,7 +63,7 @@ location loc_create_end(universal_io *const io)
 
 int loc_update(location *const loc)
 {
-	char path[260];
+	char path[MAX_PATH];
 	if (loc_search_from(loc) || !loc_get_path(loc, path))
 	{
 		loc->io = NULL;
@@ -71,14 +76,15 @@ int loc_update(location *const loc)
 
 int loc_update_begin(location *const loc)
 {
-	char path[260];
+	char path[MAX_PATH];
 	if (loc_search_from(loc) || !loc_get_path(loc, path))
 	{
 		loc->io = NULL;
 		return -1;
 	}
 
-	uni_printf(loc->io, "%s%c%zu%c\"%s\"%c//%c", PREFIX, SEPARATOR, loc->line, SEPARATOR, path, SEPARATOR, SEPARATOR);
+	uni_printf(loc->io, "%s%c%zu%c\"%s\"%c%s%c", PREFIX, SEPARATOR, loc->line, SEPARATOR, path
+		, SEPARATOR, COMMENT, SEPARATOR);
 
 	size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->code);
@@ -95,22 +101,27 @@ int loc_update_begin(location *const loc)
 
 	for (size_t i = 0; i < loc->symbol; i++)
 	{
-		uni_print_char(loc->io, ' ');
+		uni_print_char(loc->io, FILLER);
 	}
 	return 0;
 }
 
 int loc_update_end(location *const loc)
 {
-	// char path[260];
-	// if (loc_search_from(loc) || !loc_get_path(loc, path))
-	// {
-	// 	loc->io = NULL;
-	// 	return -1;
-	// }
+	char path[MAX_PATH];
+	if (loc_search_from(loc) || !loc_get_path(loc, path))
+	{
+		loc->io = NULL;
+		return -1;
+	}
 
-	// uni_printf(loc->io, "%s%c%zu%c\"%s\"\n", PREFIX, SEPARATOR, loc->line, SEPARATOR, path);
-	// return 0;
+	uni_printf(loc->io, "%s%c%zu\n", PREFIX, SEPARATOR, loc->line);
+
+	for (size_t i = 0; i < loc->symbol; i++)
+	{
+		uni_print_char(loc->io, FILLER);
+	}
+	return 0;
 }
 
 
