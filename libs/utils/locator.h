@@ -113,7 +113,7 @@ EXPORTED int loc_search_from(location *const loc);
 
 
 /**
- *	Append line number after '\n' character scanned
+ *	Append line number when @c '\\n' character scanned
  *	@note Unsafe, only for unprocessed files
  *
  *	@param	loc			Location

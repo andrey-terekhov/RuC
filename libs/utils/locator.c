@@ -64,7 +64,7 @@ location loc_create_end(universal_io *const io)
 int loc_update(location *const loc)
 {
 	char path[MAX_PATH];
-	if (loc_search_from(loc) || !loc_get_path(loc, path))
+	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
 		loc->io = NULL;
 		return -1;
@@ -77,7 +77,7 @@ int loc_update(location *const loc)
 int loc_update_begin(location *const loc)
 {
 	char path[MAX_PATH];
-	if (loc_search_from(loc) || !loc_get_path(loc, path))
+	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
 		loc->io = NULL;
 		return -1;
@@ -109,7 +109,7 @@ int loc_update_begin(location *const loc)
 int loc_update_end(location *const loc)
 {
 	char path[MAX_PATH];
-	if (loc_search_from(loc) || !loc_get_path(loc, path))
+	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
 		loc->io = NULL;
 		return -1;
@@ -156,7 +156,20 @@ int loc_search_from(location *const loc)
 }
 
 
-int loc_line_break(location *const loc) {}
+int loc_line_break(location *const loc)
+{
+	if (!loc_is_correct(loc))
+	{
+		return -1;
+	}
+
+	loc->code = in_get_position(loc->io);
+	loc->line++;
+	loc->symbol = 0;
+
+	return 0;
+}
+
 bool loc_is_correct(const location *const loc)
 {
 	return loc != NULL && in_is_correct(loc->io);
@@ -166,5 +179,13 @@ bool loc_is_correct(const location *const loc)
 size_t loc_get_tag(location *const loc, char *const buffer) {}
 size_t loc_get_code_line(location *const loc, char *const buffer) {}
 size_t loc_get_path(location *const loc, char *const buffer) {}
-size_t loc_get_line(const location *const loc) {}
-size_t loc_get_symbol(const location *const loc) {}
+
+size_t loc_get_line(const location *const loc)
+{
+	return loc_is_correct(loc) ? loc->line : 0;
+}
+
+size_t loc_get_symbol(const location *const loc)
+{
+	return loc_is_correct(loc) ? loc->symbol : 0;
+}
