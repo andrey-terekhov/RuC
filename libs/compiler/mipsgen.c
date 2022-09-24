@@ -2421,9 +2421,7 @@ static void postgen(information *const info)
 
 	// вставляем runtime.s в конец файла
 	uni_printf(info->sx->io, "\n\n# runtime\n");
-	//char *runtime = "../runtimeMIPS/runtime.s";
-	// FIXME: корректный путь к runtime
-	char *runtime = "/home/mexanobar/programming/RuC/RuC/branch/mips_codegen/RuC/runtimeMIPS/runtime.s";
+	char *runtime = "../runtimeMIPS/runtime.s"; 
 	FILE *file = fopen(runtime, "r+");
 	if (runtime != NULL)
 	{
