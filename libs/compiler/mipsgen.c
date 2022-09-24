@@ -49,8 +49,8 @@ static const size_t RA_DISPL = 4;						/**< Смещение в стеке дл�
 /** Kinds of lvalue */
 typedef enum LVALUE_OPERAND
 {
-	VARIABLE,		/**< Variable operand */
-	ADDRESS,		/**< Address operand */
+	VARIABLE,						/**< Variable operand */
+	ADDRESS							/**< Address operand */
 } lvalue_operand_t;
  
 typedef struct LVALUE
@@ -63,30 +63,21 @@ typedef struct LVALUE
 /** Kinds of rvalue */
 typedef enum RVALUE_LOC
 {
-	REGISTER,		
-	STACK,		
-} stored_in_t;
+	MEMORY,							// Значит, запомнили константу и потом обработали её
+	STACK
+} rvalue_stored_in_t;
  
 typedef struct RVALUE
 {
-	stored_in_t stored_in;			/**< Where the value is stored */ 
-	item_t loc;						/**< Value location */
+	item_t loc;						/**< Where the value is stored */ 
+	rvalue_stored_in_t stored_in;	/**< Value kind */
 	item_t type;					/**< Value type */
-} rvalue;  
-
-/** Rvalue or lvalue*/
-typedef enum VALUE_TYPE
-{	
-	LVAL,	
-	RVAL,		
-} value_t;
-
-typedef struct VALUE
-{
-	rvalue rv;
-	lvalue lv;
-	value_t value_type; 
-} value;
+	union 
+	{
+		item_t val;
+		// TODO: остальные типы (включая сложные: массивы/структуры)
+	}; 
+} rvalue;   
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition 
@@ -275,7 +266,7 @@ typedef struct information
 
 
 static lvalue emit_lvalue(information *info, const node *const nd);
-static value emit_expression(information *const info, const node *const nd);
+static rvalue emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
 
 
@@ -746,7 +737,7 @@ static void to_code_2R_I(universal_io *const io, const mips_instruction_t instru
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
-// Вид инструкции:	instr	fst_reg, snd_reg, imm
+// Вид инструкции:	instr	fst_reg, snd_reg, thd_reg
 static void to_code_3R(universal_io *const io, const mips_instruction_t instruction
 	, const mips_register_t fst_reg, const mips_register_t snd_reg, const mips_register_t thd_reg)
 {
@@ -889,25 +880,16 @@ static rvalue emit_literal_expression(information *const info, const node *const
 {
 	const item_t type = expression_get_type(nd);
 
-	// TODO: оставшиеся типы
+	// TODO: оставшиеся типы 
 
-	// Кладём на стек (иначе непонятно, как действовать -- один и тот же регистр за один expression может быть использован дважды)
 	if (type_is_integer(info->sx, type))
-	{  
-		const mips_register_t tmp_reg = get_register(info);
-		to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, expression_literal_get_integer(nd));  
-		free_register(info);
-
-		info->max_displ += 4*type_size(info->sx, type); 
-		const item_t displ = -(item_t)info->max_displ;
-
-		to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, displ, R_SP);
-
-		return (rvalue){ .loc = displ, .stored_in = STACK, .type = type };
+	{   
+		// Константа => хотим просто запомнить её значение   
+		return (rvalue){ .stored_in = MEMORY, .type = type, .val = expression_literal_get_integer(nd) };
 	}
 	
-	return (rvalue){ .loc = 123, .stored_in = REGISTER, .type = TYPE_VOID };
-}
+	return (rvalue){ .loc = 123, .stored_in = MEMORY, .type = TYPE_VOID };
+} 
 
 /**
  *	Emit identifier expression
@@ -930,11 +912,13 @@ static lvalue emit_identifier_expression(information *const info, const node *co
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static value emit_call_expression(information *const info, const node *const nd)
+static rvalue emit_call_expression(information *const info, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t args_amount = expression_call_get_arguments_amount(nd); 
+
+	uni_printf(info->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(info->sx, func_ref));
 
 	if (func_ref == BI_PRINTF)
 	{
@@ -949,7 +933,7 @@ static value emit_call_expression(information *const info, const node *const nd)
 
 			const node arg = expression_call_get_argument(nd, i);
 
-			const value arg_value = emit_expression(info, &arg);
+			emit_expression(info, &arg);
 
 			uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
 			uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
@@ -960,17 +944,24 @@ static value emit_call_expression(information *const info, const node *const nd)
 		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
 		uni_printf(info->sx->io, "\tjal printf\n");
 	}
+	// TODO: Лучше бы это единообразно через функцию сделать, как с get_operation()
+	else if (func_ref == BI_SIN)
+	{  
+		// to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, )
+	}
 	else if (func_ref >= BEGIN_USER_FUNC)
 	{
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
+
+		size_t arg_displ_sum = 0;
 		
-		uni_printf(info->sx->io, "\n\t#arguments saving\n");
+		uni_printf(info->sx->io, "\t# arguments saving:\n");
 
 		for (size_t i = 0; i < args_amount; i++)
 		{
 			const node arg = expression_call_get_argument(nd, i);
-			const item_t arg_type = expression_get_type(&arg);
+			const item_t arg_type = expression_get_type(&arg); 
 			
 			if (type_is_floating(arg_type))
 			{
@@ -981,7 +972,7 @@ static value emit_call_expression(information *const info, const node *const nd)
 				}
 				else // иначе на стек 
 				{
-
+					
 				}
 				f_arg_count++;
 			}
@@ -991,35 +982,72 @@ static value emit_call_expression(information *const info, const node *const nd)
 				{
 					if (type_is_scalar(info->sx, arg_type))
 					{
-						// identifier либо literal expression
-						if (expression_get_type(&arg) == EXPR_LITERAL)
+						if (expression_is_lvalue(&arg))
 						{
-							//expression_literal_get_integer(&arg);
-							//to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра -> */ 4 + arg_count, );
+							lvalue arg_lvalue = emit_lvalue(info, &arg);
+							to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра a0-a3 -> */ 4 + arg_count, 
+								arg_lvalue.loc, R_SP);
 						}
-						else
+						else 
 						{
-							//item_t arg_id = expression_identifier_get_id(&arg);
-							//bool in_register = hash_get(&info->displacements, arg_id, 0);
-							//if (in_register)
-							//	to_code_3R(info->sx->io, IC_MIPS_ADD, /* код регистра -> */ 4 + arg_count,
-							//		hash_get(&info->displacements, arg_id, 1), R_ZERO);
+							rvalue arg_rvalue = emit_expression(info, &arg);
+							if (arg_rvalue.stored_in == MEMORY)
+								to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.val);
+							else 
+								to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра a0-a4 -> */ 4 + arg_count, 
+								arg_rvalue.loc, R_SP);
+						}
+					}
+					else // TODO: массивы/структуры
+					{
+						if (type_is_structure(info->sx, arg_type))
+						{
+							// Хотим записывать смещение, по которому записана структура в стеке 
+							// TODO: emit_member_expression()
 						}
 					}
 				}
 				else // иначе на стек
 				{
 
+					if (type_is_scalar(info->sx, arg_type))
+					{
+						mips_register_t tmp_reg = get_register(info);
+						if (expression_is_lvalue(&arg))
+						{
+							lvalue arg_lvalue = emit_lvalue(info, &arg);
+							to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, arg_lvalue.loc, R_SP);
+							to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);
+						}
+						else 
+						{
+							rvalue arg_rvalue = emit_expression(info, &arg);
+							if (arg_rvalue.stored_in == MEMORY)
+								to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, arg_rvalue.val);
+							else 
+								to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, arg_rvalue.loc, R_SP);
+							
+							to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);	
+						}
+						free_register(info);
+					}
+					else // TODO: массивы/структуры
+					{
+						if (type_is_structure(info->sx, arg_type))
+						{
+							// Хотим записывать смещение, по которому записана структура в стеке 
+							// TODO: emit_member_expression()
+						}
+					}
+					arg_displ_sum += 4*type_size(info->sx, arg_type);
 				}
 				arg_count++;
 			}
 		}
+		to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, func_ref);
+		uni_printf(info->sx->io, "\n");
 	}
-	uni_printf(info->sx->io, "\tJAL %s\n", ident_get_spelling(info->sx, func_ref));
-
-	// TODO: При вызове функции
-	rvalue res = { .loc = 123, .stored_in = 0, .type = TYPE_INTEGER };
-	return (value) { .rv = res, .value_type = 1 };
+	return (rvalue){};
 }
 
 /**
@@ -1028,46 +1056,78 @@ static value emit_call_expression(information *const info, const node *const nd)
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static value emit_inc_dec_expression(information *const info, const node *const nd)
+static rvalue emit_inc_dec_expression(information *const info, const node *const nd)
 {
 	const unary_t operation = expression_unary_get_operator(nd);
 
-	const mips_register_t result = get_register(info);
 	const node identifier = expression_unary_get_operand(nd);
-	const value identifier_value = emit_expression(info, &identifier);
 
-	if (identifier_value.value_type) // RVAL
+	const mips_register_t result = get_register(info);
+
+	// TODO: вещественные числа
+
+	// Загружаем требуемое значение в регистр
+	if (expression_is_lvalue(&identifier))
 	{
-		if (identifier_value.rv.stored_in == REGISTER)
-			to_code_3R(info->sx->io, IC_MIPS_ADD, result, identifier_value.rv.loc, R_ZERO);
-		else 
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, identifier_value.rv.loc, R_SP); 
+		lvalue identifier_lvalue = emit_lvalue(info, &identifier);
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, identifier_lvalue.loc, R_SP);
+
+		switch (operation)
+		{
+			case UN_PREDEC:
+			case UN_POSTDEC:
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
+				break;
+			case UN_PREINC:
+			case UN_POSTINC:
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
+				break;
+
+			default:
+				break;
+		}
+
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, identifier_lvalue.loc, R_SP); 
+		
+		free_register(info);
+
+		return (rvalue) { .loc = identifier_lvalue.loc, .stored_in = STACK, .type = identifier_lvalue.type};
 	}
-	else // LVAL => на стеке
+	else 
 	{
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, identifier_value.lv.loc, R_SP);
+		rvalue identifier_rvalue = emit_expression(info, &identifier);
+		if (identifier_rvalue.stored_in != MEMORY)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, identifier_rvalue.loc, R_SP);
+		else
+			to_code_R_I(info->sx->io, IC_MIPS_LI, result, identifier_rvalue.val);
+
+		switch (operation)
+		{
+			case UN_PREDEC:
+			case UN_POSTDEC:
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, (identifier_rvalue.stored_in != MEMORY) ? result : identifier_rvalue.loc, R_ZERO, -1);
+				break;
+			case UN_PREINC:
+			case UN_POSTINC:
+				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, (identifier_rvalue.stored_in != MEMORY) ? result : identifier_rvalue.loc, R_ZERO, 1);
+				break;
+
+			default:
+				break;
+		}
+
+		if (identifier_rvalue.stored_in != MEMORY)
+		{
+			info->max_displ += 4*type_size(info->sx, identifier_rvalue.type);
+			identifier_rvalue.loc = -(item_t)info->max_displ;			
+			identifier_rvalue.stored_in = STACK;
+		}
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, identifier_rvalue.loc, R_SP); 
+		
+		free_register(info);  
+
+		return identifier_rvalue;
 	}
-
-	switch (operation)
-	{
-		case UN_PREDEC:
-		case UN_POSTDEC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
-			break;
-		case UN_PREINC:
-		case UN_POSTINC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
-			break;
-
-		default:
-			break;
-	}
-
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, identifier_value.lv.loc, R_SP); // Тут точно LVAL?
-
-	free_register(info);
-
-	return identifier_value;
 } 
 
 /**
@@ -1076,10 +1136,9 @@ static value emit_inc_dec_expression(information *const info, const node *const 
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static value emit_unary_expression(information *const info, const node *const nd)
+static rvalue emit_unary_expression(information *const info, const node *const nd)
 {
-	const unary_t operator = expression_unary_get_operator(nd);
-	// const node operand = expression_unary_get_operand(nd);
+	const unary_t operator = expression_unary_get_operator(nd); 
 
 	switch (operator)
 	{
@@ -1090,42 +1149,68 @@ static value emit_unary_expression(information *const info, const node *const nd
 			return emit_inc_dec_expression(info, nd);
 
 		case UN_MINUS:
-		case UN_NOT:
+		case UN_NOT: 
 		{
 			const mips_register_t result = get_register(info);
+			
 			const node operand = expression_unary_get_operand(nd);
-			const value operand_value = emit_expression(info, &operand);
-
-			if (operator == UN_MINUS)
+			if (expression_is_lvalue(&operand))
 			{
-				to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
-			}
-			else
-			{
-				to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
-			}
+				lvalue operand_lvalue = emit_lvalue(info, &operand);
+				// Загружаем в result
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, operand_lvalue.loc, R_SP);
 
-			// Закидываем result в расположение результата
-
-			if (operand_value.value_type) // RVAL
-			{
-				if (operand_value.rv.stored_in == REGISTER)
+				if (operator == UN_MINUS)
 				{
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, operand_value.rv.loc, result);
+					to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
 				}
 				else
 				{
-					to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, operand_value.rv.loc, R_SP);
+					to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
 				}
-			}
-			else // LVAL => на стеке
-			{
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, operand_value.lv.loc, R_SP);
-			}
 
-			return operand_value;
+				// Закидываем значение из result в расположение операнда
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, operand_lvalue.loc, R_SP);
+
+				free_register(info);
+
+				return (rvalue) { .loc = operand_lvalue.loc, .stored_in = STACK, .type = operand_lvalue.type};
+			}
+			else
+			{
+				rvalue operand_rvalue = emit_expression(info, &operand); 
+				// Загружаем в result
+				if (operand_rvalue.stored_in == MEMORY) // пришло просто константное значение
+					to_code_R_I(info->sx->io, IC_MIPS_LI, result, operand_rvalue.loc);
+				else 
+					to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, operand_rvalue.loc, R_SP);
+				
+				if (operator == UN_MINUS)
+				{
+					to_code_3R(info->sx->io, IC_MIPS_SUB, result, R_ZERO, result);
+				}
+				else
+				{
+					to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
+				}
+
+				// Закидываем значение из result в расположение операнда
+				rvalue res = operand_rvalue;
+				if (operand_rvalue.stored_in == MEMORY) // просто пришло константное значение => сохраним его на стеке
+				{
+					info->max_displ += 4*type_size(info->sx, operand_rvalue.type);
+					res.loc = -(item_t)info->max_displ;
+					res.stored_in = STACK;
+					to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, res.loc, R_SP);
+				}
+				else // уже на стеке
+				{
+					to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, operand_rvalue.loc, R_SP);
+				}
+
+				return res;
+			}
 		}
-		break;
 
 		case UN_LOGNOT:
 		{
@@ -1133,7 +1218,6 @@ static value emit_unary_expression(information *const info, const node *const nd
 			const node operand = expression_unary_get_operand(nd);
 			return emit_expression(info, &operand);
 		}
-		break;
 
 		case UN_ADDRESS:
 		case UN_INDIRECTION:
@@ -1142,9 +1226,9 @@ static value emit_unary_expression(information *const info, const node *const nd
 
 		default:
 			// TODO: оставшиеся унарные операторы
-			return (value) {};
+			return (rvalue) {};
 	}
-	return (value) {};
+	return (rvalue) {};
 } 
 
 /**
@@ -1153,53 +1237,69 @@ static value emit_unary_expression(information *const info, const node *const nd
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */ 
-static value emit_logic_expression(information *const info, const node *const nd)
+static rvalue emit_logic_expression(information *const info, const node *const nd)
 {
 	const binary_t operation = expression_binary_get_operator(nd);
 
 	const mips_register_t curr_reg = get_register_amount(info);
 
+	item_t type;
+
 	// TODO: вещественные числа 
 	
-	const node LHS = expression_binary_get_LHS(nd);
-	const value lhs_value = emit_expression(info, &LHS);
-	mips_register_t left_reg;
-	if (lhs_value.value_type) // lhs -- это RVAL
+	mips_register_t left_reg = get_register(info);
+	const node LHS = expression_binary_get_LHS(nd); 
+	if (expression_is_lvalue(&LHS)) 
 	{
-		left_reg = (lhs_value.rv.stored_in == REGISTER) ? lhs_value.rv.stored_in : get_register(info);
+		const lvalue lhs_lvalue = emit_lvalue(info, &LHS); 
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_lvalue.loc, R_SP);
+		type = lhs_lvalue.type;
 	}
-	else // lhs -- это LVAL
+	else 
 	{
-		left_reg = get_register(info);
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_value.lv.loc, R_SP);
+		const rvalue lhs_rvalue = emit_expression(info, &LHS);
+		if (lhs_rvalue.stored_in == STACK) 
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_rvalue.loc, R_SP);
+		else
+		{ 
+			to_code_R_I(info->sx->io, IC_MIPS_LI, left_reg, lhs_rvalue.val);
+		} 
+		type = lhs_rvalue.type;
 	}
 
 
+	mips_register_t right_reg = get_register(info);
 	const node RHS = expression_binary_get_RHS(nd);
-	const value rhs_value = emit_expression(info, &RHS);
-	mips_register_t right_reg;
-	if (rhs_value.value_type) // rhs -- это RVAL
+	if (expression_is_lvalue(&RHS))
 	{
-		right_reg = (rhs_value.rv.stored_in == REGISTER) ? rhs_value.rv.stored_in : get_register(info);
+		const lvalue rhs_lvalue = emit_lvalue(info, &RHS); 
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_lvalue.loc, R_SP);
 	}
-	else // rhs -- это LVAL
+	else 
 	{
-		right_reg = get_register(info);
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_value.lv.loc, R_SP);
+		const rvalue rhs_rvalue = emit_expression(info, &RHS);
+		if (rhs_rvalue.stored_in == STACK) 
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_rvalue.loc, R_SP);
+		else
+		{ 
+			to_code_R_I(info->sx->io, IC_MIPS_LI, right_reg, rhs_rvalue.val);
+		} 
 	}
 
 	info->reverse_logic_command = !info->reverse_logic_command;
 
+	mips_register_t result = get_register(info);
+	to_code_3R(info->sx->io, IC_MIPS_SUB, result, left_reg, right_reg);
+
+	// TODO: оптимизация, чтобы не надо было применить операцию с непосредственным операндом вместо загрузки в регистр
 	if (operation == BIN_EQ || operation == BIN_NE)
 	{
-		to_code_2R_L(info->sx->io, get_instruction(info, operation, /* Два регистра => 0 в get_instruction() -> */ 0), left_reg, right_reg,
+		to_code_2R_L(info->sx->io, get_instruction(info, operation, /* Два регистра => 0 в get_instruction() -> */ 0), result, R_ZERO,
 			L_ELSE, info->label_else);
 	}
 	else
 	{
-		to_code_3R(info->sx->io, IC_MIPS_SUB, left_reg, left_reg, right_reg);
-		to_code_R_L(info->sx->io, get_instruction(info, operation, /* Два регистра => 0 в get_instruction() -> */ 0), left_reg, 
-			L_ELSE, info->label_else);
+		to_code_R_L(info->sx->io, get_instruction(info, operation, /* Два регистра => 0 в get_instruction() -> */ 0), result, L_ELSE, info->label_else);
 	}
 
 	info->reverse_logic_command = false;
@@ -1207,8 +1307,10 @@ static value emit_logic_expression(information *const info, const node *const nd
 	while (get_register_amount(info) > curr_reg)
 		free_register(info); 
 
-	rvalue res = { .loc = left_reg, .stored_in = REGISTER, .type = (lhs_value.value_type) ? lhs_value.rv.type : lhs_value.lv.type };
-	return (value){ .value_type = 1, .rv = res };
+	// Загружаем результат на стек, чтобы вернуть
+	info->max_displ += 4*type_size(info->sx, type);
+
+	return (rvalue) { .loc = -(item_t)info->max_displ, .stored_in = STACK, .type = type };
 } 
 
 /**
@@ -1217,7 +1319,7 @@ static value emit_logic_expression(information *const info, const node *const nd
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */ 
-static value emit_integral_expression(information *const info, const node *const nd)
+static rvalue emit_integral_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd); 
 
@@ -1225,56 +1327,55 @@ static value emit_integral_expression(information *const info, const node *const
 
 	const mips_register_t result = get_register(info);
 
-	const node LHS = expression_binary_get_LHS(nd);
-	const value lhs_value = emit_expression(info, &LHS);
-	mips_register_t left_reg;
-
-	const node RHS = expression_binary_get_RHS(nd);
-	const value rhs_value = emit_expression(info, &RHS);
-	mips_register_t right_reg;
-
 	// TODO: вещественные числа
 
-	if (lhs_value.value_type) // lhs -- это RVAL
+	item_t type;
+
+	mips_register_t left_reg = get_register(info); 
+	const node LHS = expression_binary_get_LHS(nd);
+	if (expression_is_lvalue(&LHS))
 	{
-		if (lhs_value.rv.stored_in == REGISTER) 
-			left_reg = lhs_value.rv.loc;
-		else
-		{
-			left_reg = get_register(info);
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_value.rv.loc, R_SP);
-		}
+		lvalue lhs_lvalue = emit_lvalue(info, &LHS);
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_lvalue.loc, R_SP);
+		type = lhs_lvalue.type;
 	}
-	else // lhs -- это LVAL
+	else
 	{
-		left_reg = get_register(info);
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_value.lv.loc, R_SP);
+		rvalue lhs_rvalue = emit_expression(info, &LHS);
+		if (lhs_rvalue.stored_in == STACK)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_rvalue.loc, R_SP);
+		else 
+			to_code_R_I(info->sx->io, IC_MIPS_LI, left_reg, lhs_rvalue.val);
+		type = lhs_rvalue.type;
 	}
 
-	if (rhs_value.value_type) // rhs -- это RVAL
+	mips_register_t right_reg = get_register(info);
+	const node RHS = expression_binary_get_RHS(nd);  
+	if (expression_is_lvalue(&RHS))
 	{
-		if (rhs_value.rv.stored_in == REGISTER)
-			right_reg = rhs_value.rv.loc;
-		else
-		{
-			right_reg = get_register(info);
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_value.rv.loc, R_SP);
-		} 
+		lvalue rhs_lvalue = emit_lvalue(info, &RHS);
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_lvalue.loc, R_SP); 
 	}
-	else // rhs -- это LVAL
+	else
 	{
-		right_reg = get_register(info);
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_value.lv.loc, R_SP);
+		rvalue rhs_rvalue = emit_expression(info, &RHS);
+		if (rhs_rvalue.stored_in == STACK)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_rvalue.loc, R_SP);
+		else 
+			to_code_R_I(info->sx->io, IC_MIPS_LI, right_reg, rhs_rvalue.val); 
 	}
 
+	// TODO: оптимизация с непосредственным операндом
 	to_code_3R(info->sx->io, get_instruction(info, operator, /* Два регистра => 0 в get_instruction() -> */ 0), result, left_reg, right_reg); 
 	
 	while (get_register_amount(info) > curr_reg)
 		free_register(info); 
 
-	rvalue res = { .loc = result, .stored_in = REGISTER, .type = (lhs_value.value_type) ? lhs_value.rv.type : lhs_value.lv.type};
-
-	return (value){ .value_type = 1, .rv = res };
+	// результат положим на стек
+	info->max_displ += 4*type_size(info->sx, type);
+	rvalue res = { .loc = -(item_t)info->max_displ, .stored_in = STACK, .type = type };
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, res.loc, R_SP);
+	return res;
 } 
 
 /**
@@ -1283,69 +1384,48 @@ static value emit_integral_expression(information *const info, const node *const
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static value emit_assignment_expression(information *const info, const node *const nd)
+static rvalue emit_assignment_expression(information *const info, const node *const nd)
 {  
 	const mips_register_t curr_reg = get_register_amount(info);
 
 	const binary_t operator = expression_assignment_get_operator(nd);
-	const item_t operation_type = expression_get_type(nd);
+	// const item_t operation_type = expression_get_type(nd);
 
+	// LHS -- точно lvalue
+	mips_register_t left_reg = get_register(info);  
 	const node LHS = expression_assignment_get_LHS(nd);
-	const value lhs_value = emit_expression(info, &LHS);
- 
-	const node RHS = expression_assignment_get_RHS(nd);
-	const value rhs_value = emit_expression(info, &RHS);
+	const lvalue lhs_lvalue = emit_lvalue(info, &LHS);
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_lvalue.loc, R_SP); 
 
 	mips_register_t result = get_register(info); 
- 
-	if (operator != BIN_ASSIGN) // "+=", "-=" и т.п. 
+	const node RHS = expression_assignment_get_RHS(nd);  
+	if (expression_is_lvalue(&RHS))
 	{
-		mips_register_t right_reg; 
-
-		if (rhs_value.value_type) // rhs -- это RVAL
-		{
-			if (rhs_value.rv.stored_in == REGISTER)
-			{
-				right_reg = rhs_value.rv.loc;
-			}
-			else
-			{
-				right_reg = get_register(info);
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_value.rv.loc, R_SP);
-			}
-		}
-		else // rhs -- это LVAL
-		{
-			right_reg = get_register(info);
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_value.lv.loc, R_SP);
-		}
-
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, /* точно LVAL -> */ lhs_value.lv.loc, R_SP);
-
-		to_code_3R(info->sx->io, get_instruction(info, operator, 0), result, right_reg, result); 
-	} 
-	else if (type_is_integer(info->sx, operation_type)) 
-	{
-		if (rhs_value.value_type) // rhs -- это RVAL
-		{
-			if (rhs_value.rv.stored_in == REGISTER)
-				to_code_3R(info->sx->io, IC_MIPS_ADD, result, rhs_value.rv.loc, R_ZERO);
-			else
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, rhs_value.rv.loc, R_SP);
-		}
-		else // rhs -- это LVAL => на стеке
-		{
-			to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, rhs_value.lv.loc, R_SP);
-		}
+		lvalue rhs_lvalue = emit_lvalue(info, &RHS);
+		to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, rhs_lvalue.loc, R_SP); 
 	}
+	else
+	{
+		rvalue rhs_rvalue = emit_expression(info, &RHS);
+		if (rhs_rvalue.stored_in == STACK)
+			to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, rhs_rvalue.loc, R_SP);
+		else 
+			to_code_R_I(info->sx->io, IC_MIPS_LI, result, rhs_rvalue.val); 
+	}
+
+	// TODO: оптимизация с непосредственным операндом 
+	if (operator != BIN_ASSIGN) // это "+=", "-=" и т.п. 
+	{   
+		to_code_3R(info->sx->io, get_instruction(info, operator, /* два регистра в операции => ноль в get_instruction() -> */ 0), result, left_reg, result); 
+	} 
 	// TODO: оставшиеся типы
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, lhs_value.lv.loc, R_SP);
+	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, lhs_lvalue.loc, R_SP);
 
 	while (get_register_amount(info) > curr_reg)
 		free_register(info);  
 	
-	return lhs_value; 
+	return (rvalue) { .loc = lhs_lvalue.loc, .stored_in = STACK, .type = lhs_lvalue.type }; 
 }
 
 /**
@@ -1354,7 +1434,7 @@ static value emit_assignment_expression(information *const info, const node *con
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */ 
-static value emit_binary_expression(information *const info, const node *const nd)
+static rvalue emit_binary_expression(information *const info, const node *const nd)
 {
 	const binary_t operator = expression_binary_get_operator(nd);
 
@@ -1399,62 +1479,64 @@ static value emit_binary_expression(information *const info, const node *const n
 
 			const mips_register_t curr_reg = get_register_amount(info);
 
+			item_t type;
+
 			const node LHS = expression_binary_get_LHS(nd);
-			const value lhs_value = emit_expression(info, &LHS);
-			mips_register_t left_register; 
-			if  (lhs_value.value_type) // lhs -- это RVAL
+			mips_register_t left_reg = get_register(info); 
+			if (expression_is_lvalue(&LHS))
 			{
-				if (lhs_value.rv.stored_in == REGISTER)
-					left_register = lhs_value.rv.loc;
-				else
-				{
-					left_register = get_register(info);
-					to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_register, lhs_value.rv.loc, R_SP);
-				}
-			} 
+				lvalue lhs_lvalue = emit_lvalue(info, &LHS);
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_lvalue.loc, R_SP); 
+				type = lhs_lvalue.type;
+			}
 			else
 			{
-				left_register = get_register(info);
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_register, lhs_value.lv.loc, R_SP);
+				rvalue lhs_rvalue = emit_expression(info, &LHS);
+				if (lhs_rvalue.stored_in == STACK)
+					to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_rvalue.loc, R_SP);
+				else 
+					to_code_R_I(info->sx->io, IC_MIPS_LI, left_reg, lhs_rvalue.val); 
+				type = lhs_rvalue.type;
 			}
 
 			info->label_else = old_label_else;
 			info->reverse_logic_command = false;
-			const node RHS = expression_binary_get_RHS(nd);
-			const value rhs_value = emit_expression(info, &RHS); 
-			mips_register_t right_register; 
-			if  (rhs_value.value_type) // rhs -- это RVAL
+
+			const node RHS = expression_binary_get_RHS(nd); 
+			mips_register_t right_reg = get_register(info); 
+			if (expression_is_lvalue(&RHS))
 			{
-				if (rhs_value.rv.stored_in == REGISTER)
-					left_register = rhs_value.rv.loc;
-				else
-				{
-					right_register = get_register(info);
-					to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_register, rhs_value.rv.loc, R_SP);
-				}
-			} 
+				lvalue rhs_lvalue = emit_lvalue(info, &RHS);
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_lvalue.loc, R_SP); 
+			}
 			else
 			{
-				right_register = get_register(info);
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_register, rhs_value.lv.loc, R_SP);
+				rvalue rhs_rvalue = emit_expression(info, &LHS);
+				if (rhs_rvalue.stored_in == STACK)
+					to_code_R_I_R(info->sx->io, IC_MIPS_LW, right_reg, rhs_rvalue.loc, R_SP);
+				else 
+					to_code_R_I(info->sx->io, IC_MIPS_LI, right_reg, rhs_rvalue.val); 
 			}
 
 			mips_register_t result = get_register(info);
 
-			to_code_3R(info->sx->io, (operator == BIN_LOG_OR) ? IC_MIPS_OR : IC_MIPS_AND, left_register, left_register, right_register);
+			to_code_3R(info->sx->io, (operator == BIN_LOG_OR) ? IC_MIPS_OR : IC_MIPS_AND, result, left_reg, right_reg);
 
 			to_code_label(info->sx->io, L_ELSE, label_then);
 
+			// Кладём результат на стек
+			info->max_displ += 4*type_size(info->sx, type);
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, -(item_t)info->max_displ, R_SP);
+
 			while (get_register_amount(info) > curr_reg)
 				free_register(info);
- 
-			rvalue res = { .loc = result, .type = (lhs_value.value_type) ? lhs_value.rv.type : lhs_value.lv.type, .stored_in = REGISTER };
-			return (value) { .value_type = 1, .rv = res };
+  
+			return (rvalue) { .loc = result, .type = type, .stored_in = STACK };
 		} 
 
 		default:
 			// TODO: оставшиеся бинарные операторы
-			return (value) { .value_type = 1};
+			return (rvalue) { };
 	}
 }
 
@@ -1470,7 +1552,7 @@ static lvalue emit_lvalue(information *info, const node *const nd)
 	switch (expression_get_class(nd))
 	{
 		case EXPR_IDENTIFIER:
-			return emit_identifier_expression(info, nd);
+			return emit_identifier_expression(info, nd); 
 
 		case EXPR_SUBSCRIPT:
 			//return emit_subscript_expression(info, nd);
@@ -1478,7 +1560,7 @@ static lvalue emit_lvalue(information *info, const node *const nd)
 		case EXPR_MEMBER:
 			//return emit_member_expression(info, nd);
 
-		case EXPR_UNARY: 
+		case EXPR_UNARY: // Только UN_INDIRECTION
 		{ 
 			
 		}
@@ -1498,18 +1580,17 @@ static lvalue emit_lvalue(information *info, const node *const nd)
  *	@param	info	Encoder
  *	@param	nd		Node in AST
  */
-static value emit_expression(information *const info, const node *const nd)
+static rvalue emit_expression(information *const info, const node *const nd)
 {
 	if (expression_is_lvalue(nd))
 	{
-		lvalue val = emit_lvalue(info, nd);
-		return (value){ .lv = val, .value_type = 0}; 
+		lvalue lv = emit_lvalue(info, nd);
+		return (rvalue){ .stored_in = STACK, .loc = lv.loc, .type = lv.type }; 
 	}
 
 	// Иначе rvalue:
-	value val;
-
-	mips_register_t curr_reg = get_register_amount(info);
+	//rvalue rv;
+	//mips_register_t curr_reg = get_register_amount(info);
 	switch (expression_get_class(nd))
 	{
 		/*
@@ -1517,14 +1598,14 @@ static value emit_expression(information *const info, const node *const nd)
 			return emit_cast_expression(info, nd);
 		*/
 		case EXPR_LITERAL:
-			val = (value){ .rv = emit_literal_expression(info, nd), .value_type = 1 };
+			return emit_literal_expression(info, nd);
 			break;
 		/*
 		case EXPR_SUBSCRIPT:
 			return emit_subscript_expression(info, nd);
 		*/ 
 		case EXPR_CALL:
-			val = emit_call_expression(info, nd); 
+			return emit_call_expression(info, nd); 
 			break;
 		/*
 		case EXPR_MEMBER:
@@ -1532,15 +1613,15 @@ static value emit_expression(information *const info, const node *const nd)
 		*/
 		
 		case EXPR_UNARY:
-			val = emit_unary_expression(info, nd);
+			return emit_unary_expression(info, nd);
 			break;
 		
 		case EXPR_BINARY:
-			val = emit_binary_expression(info, nd); 
+			return emit_binary_expression(info, nd); 
 			break;
 		
-		case EXPR_ASSIGNMENT:
-			val = emit_assignment_expression(info, nd); 
+		case EXPR_ASSIGNMENT: 
+			return emit_assignment_expression(info, nd); 
 			break;
 		/*
 		case EXPR_TERNARY:
@@ -1558,14 +1639,9 @@ static value emit_expression(information *const info, const node *const nd)
 		
 		default: // EXPR_INVALID
 			// TODO: генерация оставшихся выражений
-			return (value){ .value_type = 1};
+			return (rvalue) {};
 		
-	}
-	
-	while(get_register_amount(info) > curr_reg)
-		free_register(info);
-	
-	return val;
+	}  
 } 
 
 /**
@@ -1624,36 +1700,26 @@ static void emit_variable_declaration(information *const info, const node *const
 		// TODO: вещественные числа
 		// TODO: структуры 
 		// TODO: массивы 
+		// TODO: А если мы имеем дело с глобальными переменными? value_reg не работает
 
 		if (has_init)
 		{
 			// TODO: тип char
 
 			const node initializer = declaration_variable_get_initializer(nd);
-			const value initializer_value = emit_expression(info, &initializer);
+			const rvalue initializer_value = emit_expression(info, &initializer);
 
-			// TODO: А если мы имеем дело с глобальными переменными? value_reg не работает
-			if (initializer_value.value_type) // RVAL
+			const mips_register_t tmp_reg = get_register(info);
+			if (initializer_value.stored_in == MEMORY)
 			{
-				if (initializer_value.rv.stored_in == REGISTER)
-					to_code_R_I_R(info->sx->io, IC_MIPS_SW, initializer_value.rv.loc, -(item_t)value_displ, value_reg); 
-				else 
-				{
-					// копируем значение с одного положения в стеке в другое
-					mips_register_t tmp_reg = get_register(info);
-					to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, initializer_value.rv.loc, value_reg);
-					to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg); 
-					free_register(info);
-				}
+				to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, initializer_value.val); 
 			}
-			else // LVAL => на стеке
+			else 
 			{
-				// копируем значение с одного положения в стеке в другое
-				mips_register_t tmp_reg = get_register(info);
-				to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, initializer_value.lv.loc, value_reg);
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg);
-				free_register(info);
-			} 
+				to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, initializer_value.loc, value_reg); 
+			}
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg);
+			free_register(info);
 		}
 	}
 	else
@@ -1700,14 +1766,14 @@ static void emit_function_definition(information *const info, const node *const 
   	out_set_buffer(&new_io, BUFFER_SIZE);
 	info->sx->io = &new_io;
 
-	uni_printf(info->sx->io, "\t#\"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
+	uni_printf(info->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
 
 	if (!is_main)
 	{
 		// Сохранение данных перед началом работы функции
-		info->max_displ = FUNC_DISPL_PRESEREVED;
+		info->max_displ = info->max_displ + FUNC_DISPL_PRESEREVED;
 		
-		uni_printf(info->sx->io, "\n\t#data saving:\n");
+		uni_printf(info->sx->io, "\n\t# data saving:\n");
 		
 		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ); 	
 		to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, SP_DISPL, R_FP);
@@ -1732,7 +1798,7 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, "\n"); 
 	}
 
-	uni_printf(info->sx->io, "\n\t#argument loading:\n"); 
+	uni_printf(info->sx->io, "\n\t# argument loading:\n"); 
 
 	size_t f_arg_count = 0;
 	size_t arg_count = 0;
@@ -1745,38 +1811,38 @@ static void emit_function_definition(information *const info, const node *const 
 		// Вносим переменную в таблицу символов 
 		const size_t index = hash_add(&info->displacements, id, 2);
 
-		uni_printf(info->sx->io, "\t#argument \"%s\":\n", ident_get_spelling(info->sx, id));
+		uni_printf(info->sx->io, "\t# argument \"%s\":\n", ident_get_spelling(info->sx, id));
 
 		// Первые 4 аргумента в a0-a3 (либо в fa0-fa3), остальные переданы вызывающей функцией над fp 
 		if (type_is_floating(param_type))
 		{ 
+			mips_register_t tmp_reg = get_f_register(info);
 			if (f_arg_count < 12) // количество временных регистров
 			{
 				if (f_arg_count < 4) 
 					// берём из fa0-fa3
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра ft0-ft11 -> */ 40 + f_arg_count, /* код регистра fa0-fa3 -> */ 36 + f_arg_count);
+					to_code_2R(info->sx->io, IC_MIPS_MOVE,  tmp_reg, /* код регистра fa0-fa3 -> */ 36 + f_arg_count);
 				else
 				{
 					// берём со стека
 					arg_displ_sum += 4; 
-					to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра ft0-ft11 -> */ 40 + f_arg_count, arg_displ_sum, R_FP);
+					to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, arg_displ_sum, R_FP);
 				}
 				
 				// Все переменные обязательно должны быть на стеке
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, 40 + f_arg_count, -(item_t)(arg_displ_sum + 4), R_SP);
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP);
 
 				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
 			}
 			// иначе остаётся на стеке
 			else 
 			{
-				uni_printf(info->sx->io, "\t#stays on stack\n");
+				uni_printf(info->sx->io, "\t# stays on stack\n");
 
 				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
 			}
 
-			f_arg_count++;
-			get_f_register(info);
+			f_arg_count++; 
 
 			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
@@ -1784,25 +1850,25 @@ static void emit_function_definition(information *const info, const node *const 
 		{ 
 			if (arg_count < 8) // количество временных регистров
 			{  
+				arg_displ_sum += 4;
+				mips_register_t tmp_reg = get_register(info);
 				if (arg_count < 4) 
 					// берём из a0-a3
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра t0-t7 -> */ 8 + arg_count, /* код регистра a0-a3 -> */ 4 + arg_count);
+					to_code_2R(info->sx->io, IC_MIPS_MOVE, tmp_reg, /* код регистра a0-a3 -> */ 4 + arg_count);
 				else 
 				{
 					// берём со стека
-					arg_displ_sum += 4;
 					to_code_R_I_R(info->sx->io, 
 						/* в случае не скалярного типа берём адрес первого элемента */ type_is_scalar(info->sx, param_type) ? IC_MIPS_LW : IC_MIPS_LA, 
-						/* код регистра t0-t7 -> */ 8 + arg_count, arg_displ_sum, R_FP); 
+						tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP); 
 
 					// FIXME: лучше бы это обернуть в функцию
 					// нужно узнать смещение (в случае скалярного типа увеличить на 4 в начале достаточно, поэтому считаем только для aggregate)
 					if (type_is_aggregate(info->sx, param_type))
 					{
 						if (type_is_structure(info->sx, param_type))
-							// FIXME: обязательно четыре?
-							arg_displ_sum += (type_structure_get_member_amount(info->sx, param_type) - 1)*4*
-								type_size(info->sx, param_type); // структура обязана иметь поля, так что безопасно
+							// Обязательно четыре?
+							arg_displ_sum += 4*(type_size(info->sx, param_type) - 1); // структура обязана иметь поля, так что безопасно
 						else 
 						{
 							// TODO: массивы
@@ -1822,20 +1888,22 @@ static void emit_function_definition(information *const info, const node *const 
 				}
 
 				// Все переменные обязательно должны быть на стеке
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, 8 + arg_count, -(item_t)(arg_displ_sum + 4), R_SP);
+				// TODO: оптимизировать, чтобы не брать со стека и сразу не класть
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP);
 
 				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
+
+				free_register(info);
 			}
 			// иначе остаётся на стеке
 			else 
 			{
-				uni_printf(info->sx->io, "\t#stays on stack\n");
+				uni_printf(info->sx->io, "\t# stays on stack\n");
 
 				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
 			} 
 			
-			arg_count++;
-			get_register(info);
+			arg_count++; 
 
 			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
@@ -1843,7 +1911,7 @@ static void emit_function_definition(information *const info, const node *const 
 		uni_printf(info->sx->io, "\n");
 	}
 
-	uni_printf(info->sx->io, "\n\t#function body:\n");
+	uni_printf(info->sx->io, "\n\t# function body:\n");
  
 	node body = declaration_function_get_body(nd);
 	emit_statement(info, &body);
@@ -1864,8 +1932,10 @@ static void emit_function_definition(information *const info, const node *const 
 
 	if (!is_main)
 	{
+		// TODO: восстановление хэша 
+
 		// Восстановление стека после работы функции
-		uni_printf(info->sx->io, "\n\t#data restoring:\n");
+		uni_printf(info->sx->io, "\n\t# data restoring:\n");
 
 		to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, RA_DISPL, R_SP);
 
@@ -1942,7 +2012,7 @@ static void emit_compound_statement(information *const info, const node *const n
  */
 static void emit_if_statement(information *const info, const node *const nd)
 {
-	uni_printf(info->sx->io, "\n\t#\"if\" statement:\n");
+	uni_printf(info->sx->io, "\n\t# \"if\" statement:\n");
 	const item_t label = info->label_num++;
 
 	info->label_else = label;
@@ -2124,7 +2194,8 @@ static void emit_return_statement(information *const info, const node *const nd)
 					break;
 
 				case TYPE_FLOATING:
-					to_code_R_I(info->sx->io, IC_MIPS_LI, R_FV0, expression_literal_get_floating(&returning));
+					// TODO: Разобраться с загрузкой вещественных чисел 
+					// to_code_R_I(info->sx->io, IC_MIPS_LI, R_FV0, expression_literal_get_floating(&returning));
 					break;
 				
 				case TYPE_ARRAY: // literal array может быть только string
