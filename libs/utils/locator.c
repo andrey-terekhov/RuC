@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "uniprinter.h"
+#include "uniscanner.h"
 #include "utf8.h"
 
 
@@ -28,6 +30,86 @@ static const char *const PREFIX = "#line";
 static const char SEPARATOR = ' ';
 static const char *const COMMENT = "//";
 static const char FILLER = ' ';
+
+
+void line_to_start(universal_io *const io, size_t *const symbol, size_t *const fillers)
+{
+	*symbol = 1;
+	*fillers = 1;
+
+	size_t position = in_get_position(io);
+	char ch = '\0';
+
+	while (position != 0)
+	{
+		in_set_position(io, --position);
+		uni_scanf(io, "%c", &ch);
+
+		if (ch == '\n')
+		{
+			break;
+		}
+
+		*symbol += 2 - utf8_symbol_size(ch);
+		*fillers = ch == FILLER ? (*fillers) + 1 : 1;
+	}
+}
+
+void line_to_end(universal_io *const io)
+{
+	char32_t character = uni_scan_char(io);
+	while (character != '\n' && character != EOF)
+	{
+		character = uni_scan_char(io);
+	}
+}
+
+bool mark_compare(universal_io *const io, const char *const str)
+{
+	char ch;
+	for (size_t i = 0; str[i] != '\0'; i++)
+	{
+		uni_scanf(io, "%c", &ch);
+		if (ch != str[i])
+		{
+			return false;
+		}
+	}
+
+	uni_scanf(io, "%c", &ch);
+	return ch == SEPARATOR;
+}
+
+int mark_recognize(universal_io *const io, size_t *const line, size_t *const path, size_t *const code)
+{
+	if (!mark_compare(io, PREFIX))
+	{
+		return -1;
+	}
+
+	uni_scanf(io, "%zu", line);
+	*path = SIZE_MAX;
+	*code = SIZE_MAX;
+
+	char ch;
+	uni_scanf(io, "%c", &ch);
+	if (ch != SEPARATOR)
+	{
+		return 0;
+	}
+
+	uni_scanf(io, "%c", &ch);
+	*path = in_get_position(io);
+	while (uni_scanf(io, "%c", &ch) == 1 && ch != '"');
+
+	uni_scanf(io, "%c", &ch);
+	if (ch == SEPARATOR && mark_compare(io, COMMENT))
+	{
+		*code = in_get_position(io);
+	}
+
+	return 0;
+}
 
 
 /*
@@ -71,6 +153,11 @@ int loc_update(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu%c\"%s\"\n", PREFIX, SEPARATOR, loc->line, SEPARATOR, path);
+	for (size_t i = 0; i < loc->symbol; i++)
+	{
+		uni_print_char(loc->io, FILLER);
+	}
+
 	return 0;
 }
 
@@ -116,11 +203,11 @@ int loc_update_end(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu\n", PREFIX, SEPARATOR, loc->line);
-
 	for (size_t i = 0; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
+
 	return 0;
 }
 
@@ -150,8 +237,23 @@ int loc_search_from(location *const loc)
 		return -1;
 	}
 
-//
+	size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->code);
 
+	char32_t character = '\0';
+	while (in_get_position(loc->io) <= position && character != EOF)
+	{
+		if (loc->symbol == 1)
+		{
+
+		}
+
+
+	}
+
+
+
+	in_set_position(loc->io, position);
 	return 0;
 }
 

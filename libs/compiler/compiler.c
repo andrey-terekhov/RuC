@@ -21,7 +21,7 @@
 #include "errors.h"
 #include "llvmgen.h"
 #include "parser.h"
-#include "preprocessor.h"
+#include "macro.h"
 #include "syntax.h"
 #include "uniio.h"
 
