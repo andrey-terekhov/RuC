@@ -180,6 +180,15 @@ EXPORTED size_t loc_get_line(const location *const loc);
  */
 EXPORTED size_t loc_get_symbol(const location *const loc);
 
+/**
+ *	Get character index of code line
+ *
+ *	@param	loc			Location
+ *
+ *	@return	Index of code line
+ */
+EXPORTED size_t loc_get_index(location *const loc);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

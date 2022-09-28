@@ -32,10 +32,10 @@ static const char *const COMMENT = "//";
 static const char FILLER = ' ';
 
 
-void line_to_start(universal_io *const io, size_t *const symbol, size_t *const fillers)
+void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const filler)
 {
 	*symbol = 1;
-	*fillers = 1;
+	*filler = 1;
 
 	size_t position = in_get_position(io);
 	char ch = '\0';
@@ -51,7 +51,7 @@ void line_to_start(universal_io *const io, size_t *const symbol, size_t *const f
 		}
 
 		*symbol += 2 - utf8_symbol_size(ch);
-		*fillers = ch == FILLER ? (*fillers) + 1 : 1;
+		*filler = ch == FILLER ? (*filler) + 1 : 1;
 	}
 }
 
@@ -66,7 +66,7 @@ void line_to_end(universal_io *const io)
 
 bool mark_compare(universal_io *const io, const char *const str)
 {
-	char ch;
+	char ch = '\0';
 	for (size_t i = 0; str[i] != '\0'; i++)
 	{
 		uni_scanf(io, "%c", &ch);
@@ -80,22 +80,22 @@ bool mark_compare(universal_io *const io, const char *const str)
 	return ch == SEPARATOR;
 }
 
-int mark_recognize(universal_io *const io, size_t *const line, size_t *const path, size_t *const code)
+bool mark_recognize(universal_io *const io, size_t *const line, size_t *const path, size_t *const code)
 {
 	if (!mark_compare(io, PREFIX))
 	{
-		return -1;
+		return false;
 	}
 
 	uni_scanf(io, "%zu", line);
 	*path = SIZE_MAX;
 	*code = SIZE_MAX;
 
-	char ch;
+	char ch = '\0';
 	uni_scanf(io, "%c", &ch);
 	if (ch != SEPARATOR)
 	{
-		return 0;
+		return true;
 	}
 
 	uni_scanf(io, "%c", &ch);
@@ -108,7 +108,7 @@ int mark_recognize(universal_io *const io, size_t *const line, size_t *const pat
 		*code = in_get_position(io);
 	}
 
-	return 0;
+	return true;
 }
 
 
@@ -153,7 +153,7 @@ int loc_update(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu%c\"%s\"\n", PREFIX, SEPARATOR, loc->line, SEPARATOR, path);
-	for (size_t i = 0; i < loc->symbol; i++)
+	for (size_t i = 1; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -173,7 +173,7 @@ int loc_update_begin(location *const loc)
 	uni_printf(loc->io, "%s%c%zu%c\"%s\"%c%s%c", PREFIX, SEPARATOR, loc->line, SEPARATOR, path
 		, SEPARATOR, COMMENT, SEPARATOR);
 
-	size_t position = in_get_position(loc->io);
+	const size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->code);
 
 	char32_t character = uni_scan_char(loc->io);
@@ -186,7 +186,7 @@ int loc_update_begin(location *const loc)
 	uni_print_char(loc->io, '\n');
 	in_set_position(loc->io, position);
 
-	for (size_t i = 0; i < loc->symbol; i++)
+	for (size_t i = 1; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -203,7 +203,7 @@ int loc_update_end(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu\n", PREFIX, SEPARATOR, loc->line);
-	for (size_t i = 0; i < loc->symbol; i++)
+	for (size_t i = 1; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -237,21 +237,42 @@ int loc_search_from(location *const loc)
 		return -1;
 	}
 
-	size_t position = in_get_position(loc->io);
-	in_set_position(loc->io, loc->code);
+	const size_t position = in_get_position(loc->io);
 
-	char32_t character = '\0';
-	while (in_get_position(loc->io) <= position && character != EOF)
+	size_t filler = 1;
+	line_to_begin(loc->io, &loc->symbol, &filler);
+	// size_t code = in_get_position(loc->io);
+
+	size_t line = 1;
+	size_t path = SIZE_MAX;
+	size_t comment = SIZE_MAX;
+
+	line_to_end(loc->io);
+	if (mark_recognize(loc->io, &line, &path, &comment) && comment != SIZE_MAX)
 	{
-		if (loc->symbol == 1)
-		{
+		loc->line = line;
+		loc->path = path;
+		loc->code = comment;
 
-		}
-
-
+		// in_set_position(loc->io, position);
+		// return 0;
 	}
+	else
+	{
+
+		// in_set_position(loc->io, loc->code);
+
+		// char32_t character = '\0';
+		// while (in_get_position(loc->io) <= position && character != EOF)
+		// {
+		// 	if (loc->symbol == 1)
+		// 	{
+
+		// 	}
 
 
+		// }
+	}
 
 	in_set_position(loc->io, position);
 	return 0;
@@ -280,7 +301,7 @@ bool loc_is_correct(const location *const loc)
 
 size_t loc_get_tag(location *const loc, char *const buffer)
 {
-	size_t size = loc_get_path(loc, buffer);
+	const size_t size = loc_get_path(loc, buffer);
 	if (size == 0)
 	{
 		return 0;
@@ -296,14 +317,14 @@ size_t loc_get_code_line(location *const loc, char *const buffer)
 		return 0;
 	}
 
-	size_t position = in_get_position(loc->io);
+	const size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->code);
 
 	size_t size = 0;
 	char32_t character = uni_scan_char(loc->io);
 	while (character != '\n' && character != EOF)
 	{
-		size += utf8_to_string(buffer, character);
+		size += utf8_to_string(&buffer[size], character);
 		character = uni_scan_char(loc->io);
 	}
 
@@ -323,14 +344,14 @@ size_t loc_get_path(location *const loc, char *const buffer)
 		return in_get_path(loc->io, buffer);
 	}
 
-	size_t position = in_get_position(loc->io);
+	const size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->path);
 
 	size_t size = 0;
 	char32_t character = uni_scan_char(loc->io);
 	while (character != '"' && size < MAX_PATH)
 	{
-		size += utf8_to_string(buffer, character);
+		size += utf8_to_string(&buffer[size], character);
 		character = uni_scan_char(loc->io);
 	}
 
@@ -340,10 +361,30 @@ size_t loc_get_path(location *const loc, char *const buffer)
 
 size_t loc_get_line(const location *const loc)
 {
-	return loc_is_correct(loc) ? loc->line : 0;
+	return loc_is_correct(loc) ? loc->line : 1;
 }
 
 size_t loc_get_symbol(const location *const loc)
 {
-	return loc_is_correct(loc) ? loc->symbol : 0;
+	return loc_is_correct(loc) ? loc->symbol : 1;
+}
+
+size_t loc_get_index(location *const loc)
+{
+	if (!loc_is_correct(loc))
+	{
+		return 0;
+	}
+
+	const size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->code);
+
+	for (size_t i = 1; i < loc->symbol; i++)
+	{
+		uni_scan_char(loc->io);
+	}
+
+	const size_t index = in_get_position(loc->io) - loc->code;
+	in_set_position(loc->io, position);
+	return index;
 }
