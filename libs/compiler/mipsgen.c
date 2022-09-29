@@ -1002,6 +1002,26 @@ static mips_register_t get_rvalue_reg(information *const info, const rvalue rval
 	return result;
 }
 
+static char* bi_func_get_ref(const builtin_t func)
+{
+	switch (func)
+	{
+		// Math:
+		case BI_SQRT:					return "sqrt";
+		case BI_EXP:					return "exp";
+		case BI_SIN:					return "sin";
+		case BI_COS:					return "cos";
+		case BI_LOG:					return "log";
+		case BI_LOG10:					return "log10";
+		case BI_ASIN:					return "asin";
+		case BI_RAND:					return "rand";
+		case BI_ROUND:					return "round";
+
+		// TODO:
+		default:						return 0;
+	}
+} 
+
 /**
  *	Emit call expression
  *
@@ -1012,9 +1032,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
-	const size_t args_amount = expression_call_get_arguments_amount(nd);  
-
-	mips_register_t curr_reg = get_register_amount(info);
+	const size_t args_amount = expression_call_get_arguments_amount(nd); 
 
 	uni_printf(info->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(info->sx, func_ref));
 
@@ -1024,7 +1042,8 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 		const size_t index = expression_literal_get_string(&string);
 		const size_t amount = strings_amount(info->sx);
 
-		for (size_t i = 1; i < args_amount; i++)
+		size_t i = 1;
+		for (i = 1; i < args_amount; i++)
 		{
 			// TODO: хорошо бы определённый регистр тоже через функцию выделять
 
@@ -1037,16 +1056,11 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 			uni_printf(info->sx->io, "\tjal printf\n");
 		}
 
-		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + args_amount * amount);
-		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + args_amount * amount);
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
 		uni_printf(info->sx->io, "\tjal printf\n");
 	}
-	// TODO: Лучше бы это единообразно через функцию сделать, как с get_operation()
-	else if (func_ref == BI_SIN)
-	{  
-		// to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, )
-	}
-	else if (func_ref >= BEGIN_USER_FUNC)
+	else
 	{
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
@@ -1063,15 +1077,30 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 			if (type_is_floating(arg_type))
 			{
 				if (f_arg_count < 4) // в регистр fa0-fa3
-				{
-					//to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра -> */ 36 + f_arg_count, );
-
+				{ 
+					rvalue arg_rvalue = emit_expression(info, &arg);
+					if (arg_rvalue.kind == CONST)
+						to_code_R_I(info->sx->io, IC_MIPS_LI_S, /* код регистра fa0-fa3 -> */ 36 + f_arg_count, arg_rvalue.val.float_val);
+					else 
+						to_code_R_I_R(info->sx->io, IC_MIPS_L_S, /* код регистра fa0-fa3 -> */ 36 + f_arg_count, arg_rvalue.reg.reg_num, R_SP); 
 				}
 				else // иначе на стек 
 				{
+					mips_register_t tmp_reg = get_f_register(info);
+				
+					rvalue arg_rvalue = emit_expression(info, &arg);
+					if (arg_rvalue.kind == CONST)
+						to_code_R_I(info->sx->io, IC_MIPS_LI_S, tmp_reg, arg_rvalue.val.float_val);
+					else 
+						to_code_R_I_R(info->sx->io, IC_MIPS_L_S, tmp_reg, arg_rvalue.reg.reg_num, R_SP);
 					
+					to_code_R_I_R(info->sx->io, IC_MIPS_S_S, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);	
+						
+					free_f_register(info);
+					arg_displ_sum += WORD_LENGTH; // 4*type_size(info->sx, arg_type); ?
 				}
-				f_arg_count++;
+
+				f_arg_count += 2; // т.к. в операциях с одинароной точностью использовать необходимо только чётные регистры
 			}
 			else
 			{
@@ -1080,11 +1109,11 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 					if (type_is_scalar(info->sx, arg_type))
 					{
 						rvalue arg_rvalue = emit_expression(info, &arg);
-
 						if (arg_rvalue.kind == CONST)
 							to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.val.int_val);
 						else 
-							to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.reg.reg_num);
+							to_code_R_I_R(info->sx->io, IC_MIPS_LW, /* код регистра a0-a4 -> */ 4 + arg_count, 
+								arg_rvalue.reg.reg_num, R_SP);
 					}
 					else // TODO: массивы/структуры
 					{
@@ -1099,16 +1128,15 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 				{ 
 					if (type_is_scalar(info->sx, arg_type))
 					{
-						mips_register_t tmp_reg = get_register(info); 
+						mips_register_t tmp_reg = get_register(info);
 						
 						rvalue arg_rvalue = emit_expression(info, &arg);
-
 						if (arg_rvalue.kind == CONST)
 							to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, arg_rvalue.val.int_val);
 						else 
-							to_code_R_I_R(info->sx->io, IC_MIPS_MOVE, tmp_reg, arg_rvalue.reg.reg_num, R_SP);
+							to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, arg_rvalue.reg.reg_num, R_SP);
 						
-						to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);	 
+						to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);	
 						
 						free_register(info);
 					}
@@ -1125,14 +1153,13 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 				arg_count++;
 			}
 		}
-		to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, func_ref);
-		uni_printf(info->sx->io, "\n");
-	}
-
-	while(get_register_amount(info) > curr_reg)
-		free_register(info);
-
-	return (rvalue){};
+		
+		if (func_ref >= BEGIN_USER_FUNC)
+			to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, func_ref); 
+		else // builtin-функция
+			uni_printf(info->sx->io, "\tjal %s\n", bi_func_get_ref(func_ref)); // TODO: проверить!
+	} 
+	return (rvalue){ .kind = REGISTER, .reg.reg_num = R_V0, .type = type_function_get_return_type(info->sx, expression_get_type(&callee))};
 }
 
 /**
