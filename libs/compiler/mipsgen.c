@@ -70,18 +70,18 @@ typedef enum RVALUE_KIND
  
 typedef struct RVALUE
 {
-	union
+	union non_const
 	{
-		item_t reg;					/**< Where the value is stored */ 
-	};
-	rvalue_kind_t kind;	/**< Value kind */
+		item_t reg_num;				/**< Where the value is stored */ 
+	} reg;
+	rvalue_kind_t kind;				/**< Value kind */
 	item_t type;					/**< Value type */
-	union 
+	union val_kind
 	{
 		int64_t int_val;			/**< Value of integer literal */
 		double float_val;			/**< Value of floating literal */
 		// TODO: остальные типы (включая сложные: массивы/структуры)
-	}; 
+	} val; 
 } rvalue;   
 
 
@@ -954,10 +954,10 @@ static rvalue emit_literal_expression(information *const info, const node *const
 	if (type_is_integer(info->sx, type))
 	{   
 		// Константа => хотим просто запомнить её значение   
-		return (rvalue){ .kind = CONST, .type = type, .int_val = expression_literal_get_integer(nd) };
+		return (rvalue){ .kind = CONST, .type = type, .val = { .int_val = expression_literal_get_integer(nd) } };
 	}
 	
-	return (rvalue){ .reg = 123, .kind = CONST, .type = TYPE_VOID };
+	return (rvalue){};
 } 
 
 /**
@@ -985,11 +985,11 @@ static mips_register_t get_rvalue_reg(information *const info, const rvalue rval
 		switch (rval.type)
 		{
 			case TYPE_INTEGER:
-				to_code_R_I(info->sx->io, IC_MIPS_LI, result, rval.int_val);
+				to_code_R_I(info->sx->io, IC_MIPS_LI, result, rval.val.int_val);
 				break;
 
 			case TYPE_FLOATING:
-				to_code_R_I(info->sx->io, IC_MIPS_LI_S, result, rval.float_val);
+				to_code_R_FPI(info->sx->io, IC_MIPS_LI_S, result, rval.val.float_val);
 				break;
 			
 			default:
@@ -997,7 +997,7 @@ static mips_register_t get_rvalue_reg(information *const info, const rvalue rval
 		}
 	}
 	else
-		result = rval.reg;
+		result = rval.reg.reg_num;
 
 	return result;
 }
@@ -1082,9 +1082,9 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 						rvalue arg_rvalue = emit_expression(info, &arg);
 
 						if (arg_rvalue.kind == CONST)
-							to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.int_val);
+							to_code_R_I(info->sx->io, IC_MIPS_LI, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.val.int_val);
 						else 
-							to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.reg);
+							to_code_2R(info->sx->io, IC_MIPS_MOVE, /* код регистра a0-a3 -> */ 4 + arg_count, arg_rvalue.reg.reg_num);
 					}
 					else // TODO: массивы/структуры
 					{
@@ -1104,9 +1104,9 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 						rvalue arg_rvalue = emit_expression(info, &arg);
 
 						if (arg_rvalue.kind == CONST)
-							to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, arg_rvalue.int_val);
+							to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, arg_rvalue.val.int_val);
 						else 
-							to_code_R_I_R(info->sx->io, IC_MIPS_MOVE, tmp_reg, arg_rvalue.reg, R_SP);
+							to_code_R_I_R(info->sx->io, IC_MIPS_MOVE, tmp_reg, arg_rvalue.reg.reg_num, R_SP);
 						
 						to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + info->max_displ), R_SP);	 
 						
@@ -1176,9 +1176,9 @@ static rvalue emit_inc_dec_expression(information *const info, const node *const
 
 	if (operation == UN_POSTDEC || operation == UN_POSTINC)
 	{
-		return (rvalue) { .reg = post_result, .kind = REGISTER, .type = identifier_lvalue.type}; 
+		return (rvalue) { .reg = { post_result }, .kind = REGISTER, .type = identifier_lvalue.type}; 
 	}
-	return (rvalue){ .reg = result, .kind = REGISTER, .type = identifier_lvalue.type };
+	return (rvalue){ .reg = { result }, .kind = REGISTER, .type = identifier_lvalue.type };
 } 
 
 /**
@@ -1217,7 +1217,7 @@ static rvalue emit_unary_expression(information *const info, const node *const n
 				to_code_2R_I(info->sx->io, IC_MIPS_XORI, result, result, -1);
 			}
 			
-			return (rvalue){ .kind = REGISTER, .reg = result, .type = operand_rvalue.type };
+			return (rvalue){ .kind = REGISTER, .reg = { result }, .type = operand_rvalue.type };
 		}
 
 		case UN_LOGNOT:
@@ -1232,7 +1232,7 @@ static rvalue emit_unary_expression(information *const info, const node *const n
 
 			to_code_2R(info->sx->io, IC_MIPS_NOT, result, result);
 
-			return (rvalue){ .kind = REGISTER, .reg = result, .type = operand_rvalue.type };
+			return (rvalue){ .kind = REGISTER, .reg = { result }, .type = operand_rvalue.type };
 		}
 
 		case UN_ADDRESS:
@@ -1292,7 +1292,7 @@ static rvalue emit_logic_expression(information *const info, const node *const n
 	while (get_register_amount(info) > curr_reg + 1) // +1 чтобы не освободить result
 		free_register(info); 
 
-	return (rvalue) { .reg = result, .kind = REGISTER, .type = lhs_rvalue.type };
+	return (rvalue) { .reg = { result }, .kind = REGISTER, .type = lhs_rvalue.type };
 } 
 
 /**
@@ -1326,7 +1326,7 @@ static rvalue emit_integral_expression(information *const info, const node *cons
 	while (get_register_amount(info) > curr_reg + 1) // +1 чтобы не освободить result
 		free_register(info); 
 	
-	return (rvalue){ .kind = REGISTER, .reg = result, .type = lhs_rvalue.type };
+	return (rvalue){ .kind = REGISTER, .reg = { result }, .type = lhs_rvalue.type };
 } 
 
 /**
@@ -1372,7 +1372,7 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 	while (get_register_amount(info) > curr_reg) // освобождаем result, т.к. если дальше он понадобиться, то он будет лежать уже в переменной?
 		free_register(info);  
 	
-	return (rvalue) { .reg = result, .kind = REGISTER, .type = lhs_lvalue.type }; 
+	return (rvalue) { .reg = { result }, .kind = REGISTER, .type = lhs_lvalue.type }; 
 }
 
 /**
@@ -1453,7 +1453,7 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 			while (get_register_amount(info) > curr_reg + 1) // +1 чтобы не освободить result
 				free_register(info);
   
-			return (rvalue) { .kind = REGISTER, .reg = result, .type = lhs_rvalue.type };
+			return (rvalue) { .kind = REGISTER, .reg = { result }, .type = lhs_rvalue.type };
 		} 
 
 		default:
@@ -1512,7 +1512,7 @@ static rvalue emit_expression(information *const info, const node *const nd)
 		mips_register_t tmp_reg = (type_is_floating(lv.type)) ? get_f_register(info) : get_register(info);
 		to_code_R_I_R(info->sx->io, (type_is_floating(lv.type)) ? IC_MIPS_L_S : IC_MIPS_LW, tmp_reg, lv.loc, R_SP);
 
-		return (rvalue){ .kind = REGISTER, .reg = tmp_reg, .type = lv.type }; 
+		return (rvalue){ .kind = REGISTER, .reg = { tmp_reg }, .type = lv.type }; 
 	}
 
 	// Иначе rvalue: 
@@ -2074,18 +2074,18 @@ static void emit_return_statement(information *const info, const node *const nd)
 		if (type_is_floating(returning_rvalue.type))
 		{
 			if (returning_rvalue.kind == CONST)
-				to_code_R_FPI(info->sx->io, IC_MIPS_LI_S, R_FV0, returning_rvalue.float_val);
+				to_code_R_FPI(info->sx->io, IC_MIPS_LI_S, R_FV0, returning_rvalue.val.float_val);
 			else
-				to_code_2R(info->sx->io, IC_MIPS_MOV_S, R_FV0, returning_rvalue.reg);
+				to_code_2R(info->sx->io, IC_MIPS_MOV_S, R_FV0, returning_rvalue.reg.reg_num);
 		}
 		else
 		{
 			if (type_is_scalar(info->sx, returning_rvalue.type))
 			{
 				if (returning_rvalue.kind == CONST)
-					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, returning_rvalue.int_val);
+					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, returning_rvalue.val.int_val);
 				else
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, R_V0, returning_rvalue.reg);
+					to_code_2R(info->sx->io, IC_MIPS_MOVE, R_V0, returning_rvalue.reg.reg_num);
 			}
 			else
 			{
