@@ -278,14 +278,9 @@ int loc_search_from(location *const loc)
 	const size_t position = in_get_position(loc->io);
 	size_t filler = FIRST_SYMBOL;
 	line_to_begin(loc->io, &loc->symbol, &filler);
-
 	const size_t code = in_get_position(loc->io);
-	if (loc->code == code)
-	{
-		in_set_position(loc->io, position);
-		return 0;
-	}
 
+	line_to_end(loc->io);
 	size_t line = FIRST_LINE;
 	size_t path = SIZE_MAX;
 	size_t comment = SIZE_MAX;
@@ -319,11 +314,9 @@ int loc_search_from(location *const loc)
 		}
 		else if (path != SIZE_MAX)		// usual
 		{
-			loc->line = line + diff;
+			loc->line = line;
 			loc->path = path;
-			loc->code = code;
-			in_set_position(loc->io, position);
-			return 0;
+			break;
 		}
 		else							// macro end
 		{
@@ -422,7 +415,7 @@ size_t loc_get_path(location *const loc, char *const buffer)
 
 	size_t size = 0;
 	char32_t character = uni_scan_char(loc->io);
-	while (character != QUOTE && size < MAX_PATH)
+	while (character != (char32_t)QUOTE && size < MAX_PATH)
 	{
 		size += utf8_to_string(&buffer[size], character);
 		character = uni_scan_char(loc->io);
