@@ -52,7 +52,7 @@ static const size_t TEMP_REG_AMOUNT = 8;				/**< Количество време
 static const size_t ARG_REG_AMOUNT = 12;				/**< Количество регистров-аргументов для функций */
 
 static const size_t WORD_LENGTH = 4;					/**< Длина слова данных */
-static const size_t HALF_WORD_LENGTH = 4;				/**< Длина половины слова данных */
+static const size_t HALF_WORD_LENGTH = 2;				/**< Длина половины слова данных */
 
 
 typedef struct LVALUE
@@ -291,7 +291,6 @@ static lvalue emit_lvalue(information *info, const node *const nd);
 static rvalue emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
 
-
 // TODO: это есть в кодогенераторе llvm, не хотелось бы копипастить
 static item_t array_get_type(information *const info, const item_t array_type)
 {
@@ -304,6 +303,7 @@ static item_t array_get_type(information *const info, const item_t array_type)
 	return type;
 }
 
+/*
 static size_t array_get_dim(information *const info, const item_t array_type)
 {
 	size_t i = 0;
@@ -316,7 +316,7 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 
 	return i;
 }
-
+*/
 
 /** Get MIPS assembler instuction 
  * 
@@ -975,6 +975,22 @@ static lvalue emit_identifier_expression(information *const info, const node *co
 	return (lvalue){ .type = type, .loc = displ };
 }
 
+static void store_lvalue(information *info, const node *const nd, lvalue nd_lvalue, const mips_register_t reg_to_store)
+{
+	if (expression_get_class(nd) == EXPR_SUBSCRIPT)
+		to_code_R_I_R(info->sx->io, (type_is_floating(nd_lvalue.type)) ? IC_MIPS_S_S : IC_MIPS_SW, reg_to_store, R_ZERO, nd_lvalue.loc);
+	else
+		to_code_R_I_R(info->sx->io, (type_is_floating(nd_lvalue.type)) ? IC_MIPS_S_S : IC_MIPS_SW, reg_to_store, nd_lvalue.loc, R_SP); 
+}
+
+static void load_lvalue(information *info, const node *const nd, lvalue nd_lvalue, const mips_register_t reg_to_load)
+{
+	if (expression_get_class(nd) == EXPR_SUBSCRIPT)
+		to_code_R_I_R(info->sx->io, (type_is_floating(nd_lvalue.type)) ? IC_MIPS_L_S : IC_MIPS_LW, reg_to_load, R_ZERO, nd_lvalue.loc);
+	else
+		to_code_R_I_R(info->sx->io, (type_is_floating(nd_lvalue.type)) ? IC_MIPS_L_S : IC_MIPS_LW, reg_to_load, nd_lvalue.loc, R_SP); 	
+}
+
 static mips_register_t get_rvalue_reg(information *const info, const rvalue rval)
 {
 	mips_register_t result;
@@ -1000,6 +1016,49 @@ static mips_register_t get_rvalue_reg(information *const info, const rvalue rval
 		result = rval.reg.reg_num;
 
 	return result;
+}
+
+static mips_register_t get_subs_displ_on_reg(information *info, const node *const nd)
+{
+	const node base = expression_subscript_get_base(nd);
+	const size_t base_id = expression_identifier_get_id(&base);
+	const item_t base_displ = hash_get(&info->displacements, base_id, 1); // <- по данному смещению хранится кол-во элементов массива
+
+	// TODO: Проверка на выход за границы массива
+
+	const node index = expression_subscript_get_index(nd);
+	const rvalue index_rvalue = emit_expression(info, &index);
+	mips_register_t index_rvalue_reg = get_rvalue_reg(info, index_rvalue);
+
+	mips_register_t tmp_reg = get_register(info);
+
+	// <свободный регистр> = <регистр index_rvalue_reg> * WORD_LENGTH + base_displ + $sp 
+	uni_printf(info->sx->io, "\t# ");
+	mips_register_to_io(info->sx->io, tmp_reg);
+	uni_printf(info->sx->io, " = ");
+	mips_register_to_io(info->sx->io, index_rvalue_reg);
+	uni_printf(info->sx->io, " * %zu (== \"WORD_LENGTH\") + %" PRIitem " (== \"base_displ\") + $sp:\n", WORD_LENGTH, base_displ);
+	
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, tmp_reg, R_ZERO, WORD_LENGTH);
+	to_code_3R(info->sx->io, IC_MIPS_MUL, tmp_reg, tmp_reg, index_rvalue_reg);
+	to_code_3R(info->sx->io, IC_MIPS_ADD, tmp_reg, tmp_reg, R_SP);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, tmp_reg, R_ZERO, base_displ);
+
+	uni_printf(info->sx->io, "\n");
+
+	return tmp_reg;
+}
+
+static lvalue emit_subscript_expression(information *info, const node *const nd)
+{
+	const node base = expression_subscript_get_base(nd);
+	const size_t base_id = expression_identifier_get_id(&base);
+	const item_t arr_type = ident_get_type(info->sx, base_id);
+	const item_t base_type = array_get_type(info, arr_type);
+
+	mips_register_t tmp_reg = get_subs_displ_on_reg(info, nd); 
+
+	return (lvalue){ .type = type_array_get_element_type(info->sx, base_type), .loc = tmp_reg };
 }
 
 static char* bi_func_get_ref(const builtin_t func)
@@ -1180,7 +1239,7 @@ static rvalue emit_inc_dec_expression(information *const info, const node *const
 	// TODO: вещественные числа 
 
 	lvalue identifier_lvalue = emit_lvalue(info, &identifier);
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, result, identifier_lvalue.loc, R_SP);
+	load_lvalue(info, &identifier, identifier_lvalue, result);
 
 	to_code_R_I_R(info->sx->io, IC_MIPS_MOVE, post_result, identifier_lvalue.loc, R_SP);
 
@@ -1384,7 +1443,8 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 	{   
 		mips_register_t left_reg = get_register(info);  
 		// Для таких операций lvaue нужно загрузить на регистр
-		to_code_R_I_R(info->sx->io, IC_MIPS_LW, left_reg, lhs_lvalue.loc, R_SP); 
+
+		load_lvalue(info, &LHS, lhs_lvalue, left_reg); 	
 
 		// за result примем самый младший регистр, чтобы потом можно было освободить другой
 		result = (left_reg > right_reg) ? right_reg : left_reg;
@@ -1392,9 +1452,10 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 		to_code_3R(info->sx->io, get_instruction(info, operator, /* два регистра в операции => ноль в get_instruction() -> */ 0), 
 			result, left_reg, right_reg); 
 	} 
+
 	// TODO: оставшиеся типы
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_SW, result, lhs_lvalue.loc, R_SP);
+	store_lvalue(info, &LHS, lhs_lvalue, result);
 
 	while (get_register_amount(info) > curr_reg) // освобождаем result, т.к. если дальше он понадобиться, то он будет лежать уже в переменной?
 		free_register(info);  
@@ -1487,8 +1548,18 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 			// TODO: оставшиеся бинарные операторы
 			return (rvalue) { };
 	}
-}
+} 
 
+/**
+ *	Emit binary expression
+ *
+ *	@param	info	Encoder
+ *	@param	nd		Node in AST
+ */ 
+static rvalue emit_initializer_expression(information *info, const node *const nd)
+{
+	return (rvalue){};
+}
 
 /**
  * Emit lvalue type expression
@@ -1504,7 +1575,8 @@ static lvalue emit_lvalue(information *info, const node *const nd)
 			return emit_identifier_expression(info, nd); 
 
 		case EXPR_SUBSCRIPT:
-			//return emit_subscript_expression(info, nd);
+			// Для вырезки из массива в .loc у emit_subscript_expression() будет лежать регистр, в который записан адрес элемента массива
+			return emit_subscript_expression(info, nd);
 
 		case EXPR_MEMBER:
 			//return emit_member_expression(info, nd);
@@ -1520,8 +1592,7 @@ static lvalue emit_lvalue(information *info, const node *const nd)
 			return (lvalue){ .loc = ITEM_MAX };
 	}
 
-}
-
+} 
 
 /**
  *	Emit expression
@@ -1533,11 +1604,13 @@ static rvalue emit_expression(information *const info, const node *const nd)
 {
 	if (expression_is_lvalue(nd))
 	{
-		lvalue lv = emit_lvalue(info, nd);
+		// TODO: структуры
 
+		lvalue lv = emit_lvalue(info, nd);
+		
 		// Грузим переменную на регистр 
 		mips_register_t tmp_reg = (type_is_floating(lv.type)) ? get_f_register(info) : get_register(info);
-		to_code_R_I_R(info->sx->io, (type_is_floating(lv.type)) ? IC_MIPS_L_S : IC_MIPS_LW, tmp_reg, lv.loc, R_SP);
+		load_lvalue(info, nd, lv, tmp_reg);
 
 		return (rvalue){ .kind = REGISTER, .reg = { tmp_reg }, .type = lv.type }; 
 	}
@@ -1551,10 +1624,19 @@ static rvalue emit_expression(information *const info, const node *const nd)
 		*/
 		case EXPR_LITERAL:
 			return emit_literal_expression(info, nd); 
+
 		/*
 		case EXPR_SUBSCRIPT:
-			return emit_subscript_expression(info, nd);
-		*/ 
+		{
+			const lvalue lv = emit_subscript_expression(info, nd); 
+
+			// Грузим на регистр  
+			to_code_R_I_R(info->sx->io, (type_is_floating(lv.type)) ? IC_MIPS_L_S : IC_MIPS_LW, tmp_reg, R_ZERO, lv.loc);
+
+			return (rvalue){ .kind = REGISTER, .reg = { tmp_reg }, .type = lv.type };  
+		}
+		*/
+
 		case EXPR_CALL:
 			return emit_call_expression(info, nd);  
 		/*
@@ -1579,10 +1661,8 @@ static rvalue emit_expression(information *const info, const node *const nd)
 			emit_inline_expression(info, nd);
 			return;
 		*/
-		/*
 		case EXPR_INITIALIZER:
-			//return emit_initializer_expression(info, nd); 
-		*/
+			return emit_initializer_expression(info, nd); 
 		
 		default: // EXPR_INVALID
 			// TODO: генерация оставшихся выражений
@@ -1635,7 +1715,9 @@ static void emit_variable_declaration(information *const info, const node *const
 	uni_printf(info->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(info->sx, id));
 
 	info->max_displ += type_size(info->sx, type) * WORD_LENGTH;
-	const size_t value_displ = info->max_displ; 
+	size_t value_displ = info->max_displ; 
+
+	mips_register_t curr_reg = get_register_amount(info);
 
 	// TODO: в глобальных переменных регистр gp
 	// просто эту конструкцию в рекурсивную функцию
@@ -1659,35 +1741,56 @@ static void emit_variable_declaration(information *const info, const node *const
 
 		if (has_init)
 		{
-			// TODO: тип char
-
-			mips_register_t curr_reg = get_register_amount(info);
+			// TODO: тип char 
 
 			const node initializer = declaration_variable_get_initializer(nd);
-			const rvalue initializer_value = emit_expression(info, &initializer);
+			const rvalue initializer_rvalue = emit_expression(info, &initializer);
 
-			const mips_register_t tmp_reg = get_rvalue_reg(info, initializer_value);
+			const mips_register_t tmp_reg = get_rvalue_reg(info, initializer_rvalue);
 
-			to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg);
-
-			while (get_register_amount(info) > curr_reg)
-				free_register(info);
+			to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg); 
 		}
 	}
 	else
-	{
-		const size_t dimensions = array_get_dim(info, type);
-		const item_t element_type = array_get_type(info, type);
-		const item_t usual = 1; // предстоит выяснить, что это такое
- 
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions); // передаём размерность
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4); // передаём размер элемента
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, -(item_t)value_displ); // передаём смещение относительно fp (положительное значение) или gp (отрицательное значение)
-		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
-		uni_printf(info->sx->io, "\tjal DEFARR\n");
-		uni_printf(info->sx->io, "\t#addr 0($fp) now contains array size, addr 4($fp) contains first array element\n");
+	{  
+		// получение и сохранение границ
+		const size_t dim = declaration_variable_get_dim_amount(nd);
+		
+		// Загружаем общее количество элементов массива на стек
+		const mips_register_t tmp_reg = get_register(info);
+		for (size_t j = 1; j <= dim; j++)
+		{
+			const node dim_size = declaration_variable_get_dim_expr(nd, j - 1);
+			const rvalue dim_size_rvalue = emit_expression(info, &dim_size);
+			const mips_register_t dim_size_rvalue_reg = get_rvalue_reg(info, dim_size_rvalue);
+			to_code_3R(info->sx->io, IC_MIPS_ADD, tmp_reg, dim_size_rvalue_reg, tmp_reg);
+		}
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg);
+
+		// TODO: что делать с info->max_displ, куда размещать последующие переменные?
+		// Из идей: класть на текущий stack_frame только кол-во элементов и/или адрес, в который потом положим сам массив, потом вырезке брать адрес
+		// На это, конечно, уйдёт больше памяти, но других вариантов пока не придумал
+
+		while (get_register_amount(info) > curr_reg)
+			free_register(info); 
+
+		// TODO (отдельная подзадача):
+		if (has_init)
+		{
+			// Цикл по измерениям массива
+			const size_t dim = declaration_variable_get_dim_amount(nd);
+			for (size_t j = 1; j <= dim; j++)
+			{
+
+			}
+			
+		}	
+
 	}
 	uni_printf(info->sx->io, "\n");
+
+	while (get_register_amount(info) > curr_reg)
+		free_register(info);
 }
 
 /**
