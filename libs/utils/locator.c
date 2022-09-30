@@ -26,32 +26,44 @@
 #define MAX_PATH 1024
 
 
+static const size_t FIRST_LINE = 1;
+static const size_t FIRST_SYMBOL = 1;
+
 static const char *const PREFIX = "#line";
 static const char SEPARATOR = ' ';
+static const char QUOTE = '"';
 static const char *const COMMENT = "//";
 static const char FILLER = ' ';
 
 
 void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const filler)
 {
-	*symbol = 1;
-	*filler = 1;
+	*symbol = FIRST_SYMBOL;
+	*filler = FIRST_SYMBOL;
 
 	size_t position = in_get_position(io);
-	char ch = '\0';
-
-	while (position != 0)
+	if (position == 0)
 	{
-		in_set_position(io, --position);
-		uni_scanf(io, "%c", &ch);
+		return;
+	}
 
-		if (ch == '\n')
+	char ch = '\0';
+	in_set_position(io, --position);
+	uni_scanf(io, "%c", &ch);
+
+	while (ch != '\n')
+	{
+		*symbol += 2 - utf8_symbol_size(ch);
+		*filler = ch == FILLER ? (*filler) + 1 : FIRST_SYMBOL;
+
+		if (position == 0)
 		{
+			in_set_position(io, 0);
 			break;
 		}
 
-		*symbol += 2 - utf8_symbol_size(ch);
-		*filler = ch == FILLER ? (*filler) + 1 : 1;
+		in_set_position(io, --position);
+		uni_scanf(io, "%c", &ch);
 	}
 }
 
@@ -80,7 +92,8 @@ bool mark_compare(universal_io *const io, const char *const str)
 	return ch == SEPARATOR;
 }
 
-bool mark_recognize(universal_io *const io, size_t *const line, size_t *const path, size_t *const code)
+bool mark_recognize(universal_io *const io
+	, size_t *const line, size_t *const path, size_t *const code)
 {
 	if (!mark_compare(io, PREFIX))
 	{
@@ -100,7 +113,7 @@ bool mark_recognize(universal_io *const io, size_t *const line, size_t *const pa
 
 	uni_scanf(io, "%c", &ch);
 	*path = in_get_position(io);
-	while (uni_scanf(io, "%c", &ch) == 1 && ch != '"');
+	while (uni_scanf(io, "%c", &ch) == 1 && ch != QUOTE);
 
 	uni_scanf(io, "%c", &ch);
 	if (ch == SEPARATOR && mark_compare(io, COMMENT))
@@ -109,6 +122,30 @@ bool mark_recognize(universal_io *const io, size_t *const line, size_t *const pa
 	}
 
 	return true;
+}
+
+bool mark_reverse_recognize(universal_io *const io
+	, size_t *const line, size_t *const path, size_t *const code, size_t *const filler)
+{
+	size_t position = in_get_position(io);
+	if (position == 0)
+	{
+		return false;
+	}
+
+	size_t candidate;
+	in_set_position(io, position - 1);
+	line_to_begin(io, &position, &candidate);
+	position = in_get_position(io);
+
+	bool found = mark_recognize(io, line, path, code);
+	if (!found)
+	{
+		*filler = candidate;
+	}
+
+	in_set_position(io, position);
+	return found;
 }
 
 
@@ -152,8 +189,9 @@ int loc_update(location *const loc)
 		return -1;
 	}
 
-	uni_printf(loc->io, "%s%c%zu%c\"%s\"\n", PREFIX, SEPARATOR, loc->line, SEPARATOR, path);
-	for (size_t i = 1; i < loc->symbol; i++)
+	uni_printf(loc->io, "%s%c%zu%c%c%s%c\n", PREFIX, SEPARATOR, loc->line
+		, SEPARATOR, QUOTE, path, QUOTE);
+	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -170,8 +208,8 @@ int loc_update_begin(location *const loc)
 		return -1;
 	}
 
-	uni_printf(loc->io, "%s%c%zu%c\"%s\"%c%s%c", PREFIX, SEPARATOR, loc->line, SEPARATOR, path
-		, SEPARATOR, COMMENT, SEPARATOR);
+	uni_printf(loc->io, "%s%c%zu%c%c%s%c%c%s%c", PREFIX, SEPARATOR, loc->line
+		, SEPARATOR, QUOTE, path, QUOTE, SEPARATOR, COMMENT, SEPARATOR);
 
 	const size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->code);
@@ -186,7 +224,7 @@ int loc_update_begin(location *const loc)
 	uni_print_char(loc->io, '\n');
 	in_set_position(loc->io, position);
 
-	for (size_t i = 1; i < loc->symbol; i++)
+	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -203,7 +241,7 @@ int loc_update_end(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu\n", PREFIX, SEPARATOR, loc->line);
-	for (size_t i = 1; i < loc->symbol; i++)
+	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
 		uni_print_char(loc->io, FILLER);
 	}
@@ -219,8 +257,8 @@ location loc_search(universal_io *const io)
 	loc.io = io;
 	loc.path = SIZE_MAX;
 	loc.code = 0;
-	loc.line = 1;
-	loc.symbol = 1;
+	loc.line = FIRST_LINE;
+	loc.symbol = FIRST_SYMBOL;
 
 	if (loc_search_from(&loc))
 	{
@@ -238,41 +276,76 @@ int loc_search_from(location *const loc)
 	}
 
 	const size_t position = in_get_position(loc->io);
-
-	size_t filler = 1;
+	size_t filler = FIRST_SYMBOL;
 	line_to_begin(loc->io, &loc->symbol, &filler);
-	// size_t code = in_get_position(loc->io);
 
-	size_t line = 1;
+	const size_t code = in_get_position(loc->io);
+	if (loc->code == code)
+	{
+		in_set_position(loc->io, position);
+		return 0;
+	}
+
+	size_t line = FIRST_LINE;
 	size_t path = SIZE_MAX;
 	size_t comment = SIZE_MAX;
-
-	line_to_end(loc->io);
 	if (mark_recognize(loc->io, &line, &path, &comment) && comment != SIZE_MAX)
 	{
 		loc->line = line;
 		loc->path = path;
 		loc->code = comment;
-
-		// in_set_position(loc->io, position);
-		// return 0;
+		in_set_position(loc->io, position);
+		return 0;
 	}
-	else
+
+	size_t diff = 0;
+	size_t begin = code;
+	in_set_position(loc->io, code);
+	while (begin != 0 && begin != loc->code)
 	{
-
-		// in_set_position(loc->io, loc->code);
-
-		// char32_t character = '\0';
-		// while (in_get_position(loc->io) <= position && character != EOF)
-		// {
-		// 	if (loc->symbol == 1)
-		// 	{
-
-		// 	}
-
-
-		// }
+		if (!mark_reverse_recognize(loc->io, &line, &path, &comment, &filler))
+		{
+			begin = in_get_position(loc->io);
+			diff++;
+		}
+		else if (comment != SIZE_MAX)	// macro begin
+		{
+			loc->symbol = filler;
+			loc->line = line;
+			loc->path = path;
+			loc->code = comment;
+			in_set_position(loc->io, position);
+			return 0;
+		}
+		else if (path != SIZE_MAX)		// usual
+		{
+			loc->line = line + diff;
+			loc->path = path;
+			loc->code = code;
+			in_set_position(loc->io, position);
+			return 0;
+		}
+		else							// macro end
+		{
+			loc->line = line + diff;
+			while (!mark_reverse_recognize(loc->io, &line, &path, &comment, &filler)
+				&& in_get_position(loc->io) != 0);
+			
+			loc->path = path;
+			loc->code = diff == 0 && comment != SIZE_MAX ? comment : code;
+			in_set_position(loc->io, position);
+			return 0;
+		}
 	}
+
+	if (begin == 0)
+	{
+		loc->path = SIZE_MAX;
+		loc->line = FIRST_LINE;
+	}
+
+	loc->line += diff;
+	loc->code = code;
 
 	in_set_position(loc->io, position);
 	return 0;
@@ -288,7 +361,7 @@ int loc_line_break(location *const loc)
 
 	loc->code = in_get_position(loc->io);
 	loc->line++;
-	loc->symbol = 1;
+	loc->symbol = FIRST_SYMBOL;
 
 	return 0;
 }
@@ -349,7 +422,7 @@ size_t loc_get_path(location *const loc, char *const buffer)
 
 	size_t size = 0;
 	char32_t character = uni_scan_char(loc->io);
-	while (character != '"' && size < MAX_PATH)
+	while (character != QUOTE && size < MAX_PATH)
 	{
 		size += utf8_to_string(&buffer[size], character);
 		character = uni_scan_char(loc->io);
@@ -361,12 +434,12 @@ size_t loc_get_path(location *const loc, char *const buffer)
 
 size_t loc_get_line(const location *const loc)
 {
-	return loc_is_correct(loc) ? loc->line : 1;
+	return loc_is_correct(loc) ? loc->line : FIRST_LINE;
 }
 
 size_t loc_get_symbol(const location *const loc)
 {
-	return loc_is_correct(loc) ? loc->symbol : 1;
+	return loc_is_correct(loc) ? loc->symbol : FIRST_SYMBOL;
 }
 
 size_t loc_get_index(location *const loc)
@@ -379,7 +452,7 @@ size_t loc_get_index(location *const loc)
 	const size_t position = in_get_position(loc->io);
 	in_set_position(loc->io, loc->code);
 
-	for (size_t i = 1; i < loc->symbol; i++)
+	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
 		uni_scan_char(loc->io);
 	}
