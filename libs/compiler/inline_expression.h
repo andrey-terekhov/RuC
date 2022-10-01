@@ -614,11 +614,10 @@ static node create_complicated_type_str(builder *bldr, node *argument, location 
 	if (type_is_array(bldr->sx, argument_type))
 	{ 
 		size_t dimensions = 0;
-		const size_t ind = expression_identifier_get_id(argument);
-		item_t type = ident_get_type(bldr->sx, ind);
-		while (type_is_array(bldr->sx, type))
+		item_t elements_type = argument_type;
+		while (type_is_array(bldr->sx, elements_type))
 		{
-			type = type_array_get_element_type(bldr->sx, type);
+			elements_type = type_array_get_element_type(bldr->sx, elements_type);
 			dimensions++;
 		}
 
