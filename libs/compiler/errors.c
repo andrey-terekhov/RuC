@@ -185,6 +185,12 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case incompatible_cond_operands:
 			sprintf(msg, "несовместимые типы операндов условного оператора");
 			break;
+		case expected_identifier_in_declarator:
+			sprintf(msg, "ожидалось имя объявляемой переменной");
+			break;
+		case declaration_does_not_declare_anything:
+			sprintf(msg, "объявление ничего не объявляет");
+			break;
 		case case_expr_not_integer:
 			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
 			break;

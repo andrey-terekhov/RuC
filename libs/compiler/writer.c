@@ -592,8 +592,12 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_initializer(wrt, nd);
 			break;
 
+		case EXPR_EMPTY_BOUND:
+			write_line(wrt, "EXPR_EMPTY_BOUND\n");
+			break;
+
 		case EXPR_INVALID:
-			write(wrt, "EXPR_INVALID\n");
+			write_line(wrt, "EXPR_INVALID\n");
 			break;
 	}
 
@@ -627,6 +631,13 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
 	uni_printf(wrt->io, " declaring variable named \'%s\' with id %zu of type '", spelling, ident);
 	write_type(wrt, type);
 	write(wrt, "'\n");
+
+	const size_t amount = declaration_variable_get_bounds_amount(nd);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node bound = declaration_variable_get_bound(nd, i);
+		write_expression(wrt, &bound);
+	}
 
 	if (declaration_variable_has_initializer(nd))
 	{

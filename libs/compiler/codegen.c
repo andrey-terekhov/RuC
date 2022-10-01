@@ -1216,19 +1216,29 @@ static bool only_strings(const encoder *const enc, const node *const nd)
  */
 static void emit_array_declaration(encoder *const enc, const node *const nd)
 {
-	const size_t bounds = declaration_variable_get_dim_amount(nd);
-	for (size_t i = 0; i < bounds; i++)
-	{
-		const node bound = declaration_variable_get_dim_expr(nd, i);
-		emit_expression(enc, &bound);
-	}
-
 	const size_t ident = declaration_variable_get_id(nd);
 	item_t type = ident_get_type(enc->sx, ident);
 	item_t dimensions = 0;
+	bool has_empty_bounds = false;
+
 	while (type_is_array(enc->sx, type))
 	{
 		type = type_array_get_element_type(enc->sx, type);
+		const node bound = declaration_variable_get_bound(nd, (size_t)dimensions);
+		if (expression_get_class(&bound) == EXPR_EMPTY_BOUND)
+		{
+			if (type_is_array(enc->sx, type))
+			{
+				encoder_error(enc, node_get_location(&bound), empty_init);
+			}
+
+			has_empty_bounds = true;
+		}
+		else
+		{
+			emit_expression(enc, &bound);
+		}
+
 		dimensions++;
 	}
 
@@ -1244,7 +1254,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	mem_add(enc, iniproc && iniproc != ITEM_MAX ? iniproc : 0);
 
 	const size_t usual_addr = mem_size(enc);
-	item_t usual = dimensions == (item_t)bounds ? 1 : 0;
+	item_t usual = has_empty_bounds ? 0 : 1;
 	mem_add(enc, usual);
 
 	mem_add(enc, has_initializer);
@@ -1841,7 +1851,11 @@ int encode_to_vm(const workspace *const ws, syntax *const sx)
 	write_codes(DEFAULT_CODES, &enc.memory);
 #endif
 
-	int ret = enc_export(&enc);
+	int ret = reporter_get_errors_number(&enc.sx->rprt) != 0 ? 1 : 0;
+	if (!ret)
+	{
+		ret = enc_export(&enc);
+	}
 
 	enc_clear(&enc);
 	return ret;
