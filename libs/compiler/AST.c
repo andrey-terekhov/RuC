@@ -72,6 +72,8 @@ expression_t expression_get_class(const node *const nd)
 			return EXPR_INITIALIZER;
 		case OP_INLINE:
 			return EXPR_INLINE;
+		case OP_EMPTY_BOUND:
+			return EXPR_EMPTY_BOUND;
 		default:
 			return EXPR_INVALID;
 	}
@@ -535,6 +537,20 @@ node expression_inline_get_substmt(const node *const nd, const size_t index)
 	assert(node_get_type(nd) == OP_INLINE); 
 	return node_get_child(nd, index);
 } 
+
+
+node expression_empty_bound(node *const context, const location loc)
+{
+	node nd = node_create(context, OP_EMPTY_BOUND);
+
+
+	node_add_arg(&nd, TYPE_INTEGER);	  // Тип значения выражения
+	node_add_arg(&nd, RVALUE);			  // Категория значения выражения
+	node_add_arg(&nd, (item_t)loc.begin); // Начальная позиция оператора
+	node_add_arg(&nd, (item_t)loc.end);	  // Конечная позиция оператора
+
+	return nd;
+}
 
 
 statement_t statement_get_class(const node *const nd)

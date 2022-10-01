@@ -49,6 +49,7 @@ typedef enum EXPRESSION
 	EXPR_ASSIGNMENT,	/**< Assignment expression */
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INLINE,		/**< Inline expression */
+	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
 	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
 
@@ -650,6 +651,16 @@ size_t expression_inline_get_size(const node *const nd);
  *	@return	Statement
  */
 node expression_inline_get_substmt(const node *const nd, const size_t index);
+
+/**
+ *	Create new empty bound expression
+ *
+ *	@param	context			Context node
+ *	@param	loc				Expression location
+ *
+ *	@return	Empty bound expression
+ */
+node expression_empty_bound(node *const context, const location loc);
 
 
 /**
