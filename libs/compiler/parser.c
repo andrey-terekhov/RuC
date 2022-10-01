@@ -50,9 +50,9 @@ typedef struct parser
 } parser;
 
 
-static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent);
-static item_t parse_struct_declaration_list(parser *const prs, node *const parent, const size_t repr);
-static item_t parse_enum_specifier(parser *const prs, node *const parent);
+static item_t parse_struct_or_union_specifier(parser *const prs, const node *const parent);
+static item_t parse_struct_declaration_list(parser *const prs, const node *const parent, const size_t repr);
+static item_t parse_enum_specifier(parser *const prs, const node *const parent);
 static location consume_token(parser *const prs);
 static node parse_expression(parser *const prs);
 static node parse_initializer(parser *const prs);
@@ -786,7 +786,7 @@ static node parse_condition(parser *const prs)
  *
  *	@return	Standard type or index of the types table
  */
-static item_t parse_type_specifier(parser *const prs, node *const parent)
+static item_t parse_type_specifier(parser *const prs, const node *const parent)
 {
 	switch (token_get_kind(&prs->tk))
 	{
@@ -899,7 +899,7 @@ static item_t parse_type_specifier(parser *const prs, node *const parent)
  *
  *	@return	Index of types table, @c type_undefined on failure
  */
-static item_t parse_struct_or_union_specifier(parser *const prs, node *const parent)
+static item_t parse_struct_or_union_specifier(parser *const prs, const node *const parent)
 {
 	switch (token_get_kind(&prs->tk))
 	{
@@ -1022,7 +1022,7 @@ static item_t parse_array_definition(parser *const prs, node *const parent, item
  *
  *	@return	Index of types table, @c type_undefined on failure
  */
-static item_t parse_struct_declaration_list(parser *const prs, node *const parent, const size_t repr)
+static item_t parse_struct_declaration_list(parser *const prs, const node *const parent, const size_t repr)
 {
 	consume_token(prs);
 	if (try_consume_token(prs, TK_R_BRACE))
@@ -1110,71 +1110,13 @@ static item_t parse_struct_declaration_list(parser *const prs, node *const paren
 	return result;
 }
 
-/**
- *	Parse declarator with optional initializer
- *
- *	init-declarator:
- *		direct-declarator initializer[opt]
- *
- *	direct-declarator:
- *		identifier
- *
- *	@param	prs			Parser structure
- *	@param	parent		Parent node in AST
- *	@param	type		Type of variable in declaration
- */
-static void parse_init_declarator(parser *const prs, node *const parent, item_t type)
-{
-	const size_t name = token_get_ident_name(&prs->tk);
-	const size_t id = to_identab(prs, name, 0, type);
-	consume_token(prs);
-
-	prs->flag_empty_bounds = 1;
-	prs->array_dimensions = 0;
-
-	node nd = node_add_child(parent, OP_DECL_VAR);
-	node_add_arg(&nd, (item_t)id);
-	node_add_arg(&nd, 0);	// Тут будет размерность
-	node_add_arg(&nd, 0);	// Тут будет флаг наличия инициализатора
-
-	if (token_is(&prs->tk, TK_L_SQUARE))
-	{
-		// Меняем тип (увеличиваем размерность массива)
-		type = parse_array_definition(prs, &nd, type);
-		ident_set_type(prs->sx, id, type);
-		node_set_arg(&nd, 1, (item_t)prs->array_dimensions);
-		if (!prs->flag_empty_bounds && token_is_not(&prs->tk, TK_EQUAL))
-		{
-			parser_error(prs, empty_bound_without_init);
-		}
-	}
-
-	if (try_consume_token(prs, TK_EQUAL))
-	{
-		node_set_arg(&nd, 2, true);
-
-		node initializer = parse_initializer(prs);
-		if (!node_is_correct(&initializer))
-		{
-			skip_until(prs, TK_SEMICOLON);
-			return;
-		}
-
-		check_assignment_operands(&prs->bld, type, &initializer);
-
-		node temp = node_add_child(&nd, OP_NOP);
-		node_swap(&initializer, &temp);
-		node_remove(&temp);
-	}
-}
-
 static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number, size_t name)
 {
 	const size_t old_id = to_identab(prs, name, 0, type);
 	ident_set_displ(prs->sx, old_id, number);
 }
 
-static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
+static item_t parse_enum_declaration_list(parser *const prs, const node *const parent)
 {
 	consume_token(prs);
 	if (try_consume_token(prs, TK_R_BRACE))
@@ -1243,7 +1185,7 @@ static item_t parse_enum_declaration_list(parser *const prs, node *const parent)
 	return type;
 }
 
-static item_t parse_enum_specifier(parser *const prs, node *const parent)
+static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 {
 	switch (token_get_kind(&prs->tk))
 	{
@@ -1284,16 +1226,91 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
 	}
 }
 
+/**
+ *	Parse declarator with optional initializer
+ *
+ *	init-declarator:
+ *		declarator
+ *		declarator '=' initializer
+ *
+ *	declarator:
+ *		'*'[opt] direct-declarator
+ *
+ *	direct-declarator:
+ *		identifier
+ *		direct-declarator '[' assignment-expression[opt] ']'
+ *
+ *	@param	prs			Parser
+ *	@param	type		Declarator type
+ *
+ *	@return	Init declarator
+ */
+static node parse_init_declarator(parser *const prs, const item_t type)
+{
+	bool was_star = try_consume_token(prs, TK_STAR);
+	if (token_is_not(&prs->tk, TK_IDENTIFIER))
+	{
+		parser_error(prs, expected_identifier_in_declarator);
+		skip_until(prs, TK_COMMA | TK_SEMICOLON);
+		return node_broken();
+	}
+
+	const size_t name = token_get_ident_name(&prs->tk);
+	const location ident_loc = consume_token(prs);
+
+	node_vector bounds = node_vector_create();
+	while (try_consume_token(prs, TK_L_SQUARE))
+	{
+		if (token_is(&prs->tk, TK_R_SQUARE))
+		{
+			const location loc = consume_token(prs);
+			const node empty_bound = build_empty_bound_expression(&prs->bld, loc);
+			node_vector_add(&bounds, &empty_bound);
+			continue;
+		}
+
+		const node bound = parse_assignment_expression(prs);
+		node_vector_add(&bounds, &bound);
+
+		if (!node_is_correct(&bound))
+		{
+			skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+			try_consume_token(prs, TK_R_SQUARE);
+		}
+		else if (!try_consume_token(prs, TK_R_SQUARE))
+		{
+			parser_error(prs, expected_r_square);
+			skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+			try_consume_token(prs, TK_R_SQUARE);
+		}
+	}
+
+	node initializer = node_broken();
+	if (try_consume_token(prs, TK_EQUAL))
+	{
+		initializer = parse_initializer(prs);
+		if (!node_is_correct(&initializer))
+		{
+			skip_until(prs, TK_COMMA | TK_SEMICOLON);
+		}
+	}
+
+	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
+	node declarator = build_declarator(&prs->bld, type, name, was_star, &bounds, initializer_ptr, ident_loc);
+	node_vector_clear(&bounds);
+
+	return declarator;
+}
 
 /**
  *	Parse declaration
  *
  *	declaration:
- *		type-specifier init-declarator-list[opt] `;`
+ *		type-specifier init-declarator-list[opt] ';'
  *
  *	init-declarator-list:
  *		init-declarator
- *		init-declarator-list `,` init-declarator
+ *		init-declarator-list ',' init-declarator
  *
  *	@param	prs			Parser
  *
@@ -1301,43 +1318,29 @@ static item_t parse_enum_specifier(parser *const prs, node *const parent)
  */
 static node parse_declaration(parser *const prs)
 {
-	// TODO: рефакторинг разбора объявлений
-	node parent = node_add_child(&prs->bld.context, OP_DECLSTMT);
+	node declaration = build_empty_declaration(&prs->bld);
+	const location start_loc = token_get_location(&prs->tk);
 
-	prs->was_type_def = 0;
-	item_t group_type = parse_type_specifier(prs, &parent);
+	const item_t type = parse_type_specifier(prs, &declaration);
+	node_vector declarators = node_vector_create();
 
-	if (type_is_void(group_type))
+	if (token_is_not(&prs->tk, TK_SEMICOLON))
 	{
-		parser_error(prs, only_functions_may_have_type_VOID);
-		group_type = TYPE_UNDEFINED;
+		do
+		{
+			const node declarator = parse_init_declarator(prs, type);
+			node_vector_add(&declarators, &declarator);
+		} while (try_consume_token(prs, TK_COMMA));
 	}
-	else if (prs->was_type_def && try_consume_token(prs, TK_SEMICOLON))
-	{
-		return parent;
-	}
 
-	do
-	{
-		item_t type = group_type;
-		if (try_consume_token(prs, TK_STAR))
-		{
-			type = type_pointer(prs->sx, group_type);
-		}
-
-		if (token_is(&prs->tk, TK_IDENTIFIER))
-		{
-			parse_init_declarator(prs, &parent, type);
-		}
-		else
-		{
-			parser_error(prs, after_type_must_be_ident);
-			skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		}
-	} while (try_consume_token(prs, TK_COMMA));
-
+	const location end_loc = token_get_location(&prs->tk);
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	return parent;
+
+	const location loc = { start_loc.begin, end_loc.end };
+	const node result = build_declaration(&prs->bld, &declaration, &declarators, loc);
+	node_vector_clear(&declarators);
+
+	return result;
 }
 
 
@@ -2235,7 +2238,11 @@ static void parse_external_definition(parser *const prs, node *const root)
 			}
 			else
 			{
-				parse_init_declarator(prs, root, type);
+				node declarator = parse_init_declarator(prs, type);
+
+				node temp = node_add_child(root, OP_NOP);
+				node_swap(&declarator, &temp);
+				node_remove(&temp);
 			}
 		}
 		else
@@ -2284,6 +2291,7 @@ int parse(syntax *const sx)
 
 	parser prs = parser_create(sx);
 	node root = node_get_root(&sx->tree);
+	node_copy(&prs.bld.context, &root);
 
 	parse_translation_unit(&prs, &root);
 

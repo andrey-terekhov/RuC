@@ -79,6 +79,8 @@ typedef enum ERROR
 	condition_must_be_scalar,				/**< Condition must be of scalar type */
 	expected_constant_expression,			/**< Expected constant expression */
 	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
+	expected_identifier_in_declarator,		/**< Expected identifier in declarator */
+	declaration_does_not_declare_anything,	/**< Declaration does not declare anything */
 	case_expr_not_integer,					/**< Case expression is not an integer */
 	switch_expr_not_integer,				/**< Switch expression is not an integer */
 	void_func_valued_return,				/**< Void function should not return a value */

@@ -48,6 +48,7 @@ typedef enum EXPRESSION
 	EXPR_TERNARY,		/**< Ternary expression */
 	EXPR_ASSIGNMENT,	/**< Assignment expression */
 	EXPR_INITIALIZER,	/**< Initializer */
+	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
 	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
 
@@ -617,6 +618,17 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 
 
 /**
+ *	Create new empty bound expression
+ *
+ *	@param	context			Context node
+ *	@param	loc				Expression location
+ *
+ *	@return	Empty bound expression
+ */
+node expression_empty_bound(node *const context, const location loc);
+
+
+/**
  *	Get statement class
  *
  *	@param	nd				Statement
@@ -987,6 +999,31 @@ node statement_return_get_expression(const node *const nd);
 
 
 /**
+ *	Create new empty declaration statement
+ *
+ *	@return	Declaration statement
+ */
+node statement_declaration(node *const context);
+
+/**
+ *	Add declarator to a declaration statement
+ *
+ *	@param	declaration		Declaration statement
+ *	@param	declarator		Declarator
+ */
+void statement_declaration_add_declarator(const node *const declaration, node *const declarator);
+
+/**
+ *	Set location of a declaration statement
+ *
+ *	@param	declaration		Declaration statement
+ *	@param	loc				Statement location
+ *
+ *	@return	Declatation statement
+ */
+node statement_declaration_set_location(const node *const declaration, const location loc);
+
+/**
  *	Get size of declaration statement
  *
  *	@param	nd				Declaration statement
@@ -1035,11 +1072,25 @@ size_t declaration_type_get_id(const node *const nd);
 
 
 /**
- *	Get variable id in variable declaration
+ *	Create new variable declaration
+ *
+ *	@param	context			Context node
+ *	@param	id				Variable identifier
+ *	@param	bounds			Array bound expression
+ *	@param	initializer		Initializer
+ *	@param	loc				Declaration location
+ *
+ *	@return	Variable declaration
+ */
+node declaration_variable(node *const context, const size_t id, node_vector *const bounds
+	, node *const initializer, const location loc);
+
+/**
+ *	Get variable identifier in variable declaration
  *
  *	@param	nd				Variable declaration
  *
- *	@return	Id
+ *	@return	Variable identifier
  */
 size_t declaration_variable_get_id(const node *const nd);
 
@@ -1062,23 +1113,23 @@ bool declaration_variable_has_initializer(const node *const nd);
 node declaration_variable_get_initializer(const node *const nd);
 
 /**
- *	Get amount of dimenstions of variable declaration
+ *	Get amount of bounds of variable declaration
  *
  *	@param	nd				Variable declaration
  *
- *	@return	Amount of dimenstions
+ *	@return	Amount of bounds
  */
-size_t declaration_variable_get_dim_amount(const node *const nd);
+size_t declaration_variable_get_bounds_amount(const node *const nd);
 
 /**
- *	Get size-expression of dimenstions of variable declaration by index
+ *	Get bound expression of variable declaration by index
  *
  *	@param	nd				Variable declaration
- *	@param	index			Dimension index
+ *	@param	index			Bound index
  *
- *	@return	Size-expression
+ *	@return	Bound expression
  */
-node declaration_variable_get_dim_expr(const node *const nd, const size_t index);
+node declaration_variable_get_bound(const node *const nd, const size_t index);
 
 
 /**
