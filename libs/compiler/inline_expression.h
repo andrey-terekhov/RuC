@@ -613,7 +613,16 @@ static node create_complicated_type_str(builder *bldr, node *argument, location 
 	item_t argument_type = expression_get_type(argument); 
 	if (type_is_array(bldr->sx, argument_type))
 	{ 
-		vector idents = vector_create(0);
+		size_t dimensions = 0;
+		const size_t ind = expression_identifier_get_id(argument);
+		item_t type = ident_get_type(bldr->sx, ind);
+		while (type_is_array(bldr->sx, type))
+		{
+			type = type_array_get_element_type(bldr->sx, type);
+			dimensions++;
+		}
+
+		vector idents = vector_create(dimensions);
 		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
 		vector_clear(&idents);
 	}
