@@ -322,7 +322,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node_remove(&temp);    
 
 		// вносим его в вектор для дальнейшего использования
-		if (!vector_add(&temp_idents_reprs, repr))
+		if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
 		{
 			printf("Unable to add repr to vector\n");
 			return node_broken();
@@ -442,7 +442,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	node_remove(&temp);    
 
 	// вносим его в вектор для дальнейшего использования
-	if (!vector_add(&temp_idents_reprs, repr))
+	if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
 	{
 		printf("Unable to add repr to vector\n");
 		return node_broken();
