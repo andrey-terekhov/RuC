@@ -931,8 +931,10 @@ declaration_t declaration_get_class(const node *const nd)
 	{
 		case OP_DECL_VAR:
 			return DECL_VAR;
-		case OP_DECL_TYPE:
-			return DECL_TYPE;
+		case OP_DECL_MEMBER:
+			return DECL_MEMBER;
+		case OP_DECL_STRUCT:
+			return DECL_STRUCT;
 		case OP_FUNC_DEF:
 			return DECL_FUNC;
 		default:
@@ -941,16 +943,109 @@ declaration_t declaration_get_class(const node *const nd)
 }
 
 
-item_t declaration_type_get_type(const node *const nd)
+node declaration_member(node *const context, const item_t type, const size_t name
+	, node_vector *const bounds, const location loc)
 {
-	assert(node_get_type(nd) == OP_DECL_TYPE);
+	node nd = node_create(context, OP_DECL_MEMBER);
+
+	node_add_arg(&nd, type);						// Тип поля
+	node_add_arg(&nd, (item_t)name);				// Имя поля
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция объявления
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция объявления
+
+	if (node_vector_is_correct(bounds))
+	{
+		const size_t amount = node_vector_size(bounds);
+		for (size_t i = 0; i < amount; i++)
+		{
+			node item = node_vector_get(bounds, i);
+			node_set_child(&nd, &item);
+		}
+	}
+
+	return nd;
+}
+
+size_t declaration_member_get_name(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_DECL_MEMBER);
+	return (size_t)node_get_arg(nd, 1);
+}
+
+item_t declaration_member_get_type(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_DECL_MEMBER);
 	return node_get_arg(nd, 0);
 }
 
-size_t declaration_type_get_id(const node *const nd)
+size_t declaration_member_get_bounds_amount(const node *const nd)
 {
-	assert(node_get_type(nd) == OP_DECL_TYPE);
-	return node_get_arg(nd, 1) == ITEM_MAX ? SIZE_MAX : (size_t)node_get_arg(nd, 1);
+	assert(node_get_type(nd) == OP_DECL_MEMBER);
+	return node_get_amount(nd);
+}
+
+node declaration_member_get_bound(const node *const nd, const size_t index)
+{
+	assert(node_get_type(nd) == OP_DECL_MEMBER);
+	return node_get_child(nd, index);
+}
+
+
+node declaration_struct(node *const context, const size_t name, const location loc)
+{
+	node nd = node_create(context, OP_DECL_STRUCT);
+
+	node_add_arg(&nd, (item_t)name);				// Имя структуры
+	node_add_arg(&nd, TYPE_UNDEFINED);				// Тип структуры
+	node_add_arg(&nd, (item_t)loc.begin);			// Начальная позиция объявления
+	node_add_arg(&nd, (item_t)loc.end);				// Конечная позиция объявления
+
+	return nd;
+}
+
+void declaration_struct_add_declarator(node *const nd, node *const member)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	node_set_child(nd, member);
+}
+
+void declaration_struct_set_type(node *const nd, const item_t type)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	node_set_arg(nd, 1, type);
+}
+
+node declaration_struct_set_location(node *const nd, const location loc)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	node_set_arg(nd, 2, (item_t)loc.begin);
+	node_set_arg(nd, 3, (item_t)loc.end);
+
+	return *nd;
+}
+
+size_t declaration_struct_get_name(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	return (size_t)node_get_arg(nd, 0);
+}
+
+item_t declaration_struct_get_type(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	return node_get_arg(nd, 1);
+}
+
+size_t declaration_struct_get_size(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	return node_get_amount(nd);
+}
+
+node declaration_struct_get_member(const node *const nd, const size_t index)
+{
+	assert(node_get_type(nd) == OP_DECL_STRUCT);
+	return node_get_child(nd, index);
 }
 
 

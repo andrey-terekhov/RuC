@@ -270,6 +270,44 @@ node build_condition(builder *const bldr, node *const expr);
  */
 node build_empty_bound_expression(builder *const bldr, const location loc);
 
+
+/**
+ *	Build a member declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	type			Member type
+ *	@param	name			Member name
+ *	@param	was_star		Flag if there was a star token
+ *	@param	bounds			Member array bounds
+ *	@param	loc				Member location
+ *
+ *	@return	Member declaration
+ */
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, node_vector *const bounds, const location loc);
+
+/**
+ *	Build an empty struct declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	name			Structure type name
+ *	@param	struct_loc		Keyword location
+ *
+ *	@return	Empty struct declaration
+ */
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc);
+
+/**
+ *	Build a struct declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	declaration		Existing struct declaration
+ *	@param	members			Member declarations
+ *
+ *	@return	Struct declaration
+ */
+node build_struct_declaration(builder *const bldr, node *const declaration, node_vector *const members);
+
 /**
  *	Build a declarator
  *

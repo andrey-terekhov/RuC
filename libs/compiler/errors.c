@@ -185,6 +185,13 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case incompatible_cond_operands:
 			sprintf(msg, "несовместимые типы операндов условного оператора");
 			break;
+
+		case expected_member_name:
+			sprintf(msg, "ожидалось имя поля структуры");
+			break;
+		case array_member_must_have_bounds:
+			sprintf(msg, "поля-массивы должны иметь границы");
+			break;
 		case expected_identifier_in_declarator:
 			sprintf(msg, "ожидалось имя объявляемой переменной");
 			break;
