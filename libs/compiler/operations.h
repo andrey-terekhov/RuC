@@ -149,8 +149,12 @@ typedef enum OPERATION
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
-	OP_DECL_TYPE,			/**< Type declaration node */
+	OP_DECL_MEMBER,			/**< Member declaration node */
+	OP_DECL_STRUCT,			/**< Struct declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
+
+	// For internal use
+	OP_EMPTY_BOUND,			/**< Empty array size expression */
 } operation_t;
 
 typedef enum builtin

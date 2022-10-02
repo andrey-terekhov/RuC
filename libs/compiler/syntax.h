@@ -569,24 +569,15 @@ bool type_is_file(const item_t type);
 item_t type_array_get_element_type(const syntax *const sx, const item_t type);
 
 /**
- *	Check if structure has a name
+ *	Create structure type
  *
  *	@param	sx			Syntax structure
- *	@param	type		Structure type
+ *	@param	types		Member types
+ *	@param	names		Member names
  *
- *	@return	@c 1 on true, @c 0 on false
+ *	@return	Structure type
  */
-bool type_structure_has_name(const syntax *const sx, const item_t type);
-
-/**
- *	Get structure name
- *
- *	@param	sx			Syntax structure
- *	@param	type		Structure type
- *
- *	@return	Structure name, @c SIZE_MAX on failure
- */
-size_t type_structure_get_name(const syntax *const sx, const item_t type);
+item_t type_structure(syntax *const sx, vector *const types, vector *const names);
 
 /**
  *	Get member amount

@@ -2378,11 +2378,11 @@ static void emit_variable_declaration(information *const info, const node *const
 		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 		// получение и сохранение границ
-		const size_t bounds = declaration_variable_get_dim_amount(nd);
+		const size_t bounds = declaration_variable_get_bounds_amount(nd);
 		for (size_t j = 1; j <= bounds; j++)
 		{
 			info->variable_location = LFREE;
-			const node dim_size = declaration_variable_get_dim_expr(nd, j - 1);
+			const node dim_size = declaration_variable_get_bound(nd, j - 1);
 			emit_expression(info, &dim_size);
 
 			if (!has_init)
