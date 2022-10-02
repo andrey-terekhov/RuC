@@ -670,18 +670,28 @@ item_t type_array_get_element_type(const syntax *const sx, const item_t type)
 	return type_is_array(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 
-bool type_structure_has_name(const syntax *const sx, const item_t type)
-{
-	(void)sx;
-	(void)type;
-	return false;		// Ждем, пока в таблице будем сохранять имя структуры
-}
 
-size_t type_structure_get_name(const syntax *const sx, const item_t type)
+item_t type_structure(syntax *const sx, vector *const types, vector *const names)
 {
-	(void)sx;
-	(void)type;
-	return SIZE_MAX;	// Ждем, пока в таблице будем сохранять имя структуры
+	item_t local_modetab[100];
+	size_t local_md = 3;
+
+	const size_t members = vector_size(types);
+	item_t displ = 0;
+	for (size_t i = 0; i < members; i++)
+	{
+		const item_t type = vector_get(types, i);
+		const item_t name = vector_get(names, i);
+
+		local_modetab[local_md++] = type;
+		local_modetab[local_md++] = name;
+		displ += type_size(sx, type);
+	}
+
+	local_modetab[0] = TYPE_STRUCTURE;
+	local_modetab[1] = (item_t)displ;
+	local_modetab[2] = (item_t)members * 2;
+	return type_add(sx, local_modetab, local_md);
 }
 
 size_t type_structure_get_member_amount(const syntax *const sx, const item_t type)
@@ -698,6 +708,7 @@ item_t type_structure_get_member_type(const syntax *const sx, const item_t type,
 {
 	return type_is_structure(sx, type) ? type_get(sx, (size_t)type + 3 + 2 * index) : ITEM_MAX;
 }
+
 
 item_t type_function_get_return_type(const syntax *const sx, const item_t type)
 {

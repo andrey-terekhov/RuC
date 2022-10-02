@@ -50,7 +50,7 @@ typedef enum EXPRESSION
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INLINE,		/**< Inline expression */
 	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
-	EXPR_INVALID,		/**< Invalid expression */
+	EXPR_INVALID		/**< Invalid expression */
 } expression_t;
 
 /** Statement class */
@@ -77,7 +77,8 @@ typedef enum DECLARATION
 {
 	DECL_VAR,			/**< Variable declaration */
 	DECL_FUNC,			/**< Function declaration */
-	DECL_TYPE,			/**< Type declaration */
+	DECL_MEMBER,		/**< Member declaration */
+	DECL_STRUCT,		/**< Struct declaration */
 	DECL_INVALID,		/**< Invalid declaration */
 } declaration_t;
 
@@ -99,11 +100,7 @@ inline node node_broken(void)
  *
  *	@return	Node location
  */
-inline location node_get_location(const node *const nd)
-{
-	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
-}
+location node_get_location(const node *const nd);
 
 
 /**
@@ -652,6 +649,7 @@ size_t expression_inline_get_size(const node *const nd);
  */
 node expression_inline_get_substmt(const node *const nd, const size_t index);
 
+
 /**
  *	Create new empty bound expression
  *
@@ -1034,6 +1032,33 @@ node statement_return_get_expression(const node *const nd);
 
 
 /**
+ *	Create new empty declaration statement
+ *
+ *	@param	context			Context node
+ *
+ *	@return	Declaration statement
+ */
+node statement_declaration(node *const context);
+
+/**
+ *	Add declarator to a declaration statement
+ *
+ *	@param	nd				Declaration statement
+ *	@param	declarator		Declarator
+ */
+void statement_declaration_add_declarator(const node *const nd, node *const declarator);
+
+/**
+ *	Set location of a declaration statement
+ *
+ *	@param	nd				Declaration statement
+ *	@param	loc				Statement location
+ *
+ *	@return	Declatation statement
+ */
+node statement_declaration_set_location(const node *const nd, const location loc);
+
+/**
  *	Get size of declaration statement
  *
  *	@param	nd				Declaration statement
@@ -1043,9 +1068,10 @@ node statement_return_get_expression(const node *const nd);
 size_t statement_declaration_get_size(const node *const nd);
 
 /**
- *	Get declarator of declaration statement
+ *	Get declarator of declaration statement by index
  *
  *	@param	nd				Declaration statement
+ *	@param	index			Declarator index
  *
  *	@return	Declarator
  */
@@ -1063,30 +1089,152 @@ declaration_t declaration_get_class(const node *const nd);
 
 
 /**
- *  Get type that declaration defines
+ *	Create new member declaration
  *
- *  @param  nd              Type declaration
+ *	@param	context			Context node
+ *	@param	type			Member type
+ *	@param	name			Member name
+ *	@param	bounds			Array member bound expressions
+ *	@param	loc				Declaration location
  *
- *  @return Declaration type
+ *	@return	Member declaration
  */
-item_t declaration_type_get_type(const node *const nd);
+node declaration_member(node *const context, const item_t type, const size_t name
+	, node_vector *const bounds, const location loc);
 
 /**
- *  Get type id in type declaration
+ *	Get name of member in member declaration
  *
- *  @param  nd              Type declaration
+ *	@param	nd				Member declaration
  *
- *  @return Id
+ *	@return	Member name
  */
-size_t declaration_type_get_id(const node *const nd);
+size_t declaration_member_get_name(const node *const nd);
+
+/**
+ *	Get type of member in member declaration
+ *
+ *	@param	nd				Member declaration
+ *
+ *	@return	Member type
+ */
+item_t declaration_member_get_type(const node *const nd);
+
+/**
+ *	Get amount of bounds in member declaration
+ *
+ *	@param	nd				Member declaration
+ *
+ *	@return	Amount of bounds
+ */
+size_t declaration_member_get_bounds_amount(const node *const nd);
+
+/**
+ *	Get bound expression in variable declaration by index
+ *
+ *	@param	nd				Variable declaration
+ *	@param	index			Bound index
+ *
+ *	@return	Bound expression
+ */
+node declaration_member_get_bound(const node *const nd, const size_t index);
 
 
 /**
- *	Get variable id in variable declaration
+ *	Create new empty struct declaration
+ *
+ *	@param	context			Context node
+ *	@param	name			Struct name
+ *	@param	loc				Declaration location
+ *
+ *	@return	Struct declaration
+ */
+node declaration_struct(node *const context, const size_t name, const location loc);
+
+/**
+ *	Add member declaration to a struct declaration
+ *
+ *	@param	nd				Struct declaration
+ *	@param	member			Member declaration
+ */
+void declaration_struct_add_declarator(node *const nd, node *const member);
+
+/**
+ *	Set type of a struct declaration
+ *
+ *	@param	nd				Struct declaration
+ *	@param	type			Struct type
+ */
+void declaration_struct_set_type(node *const nd, const item_t type);
+
+/**
+ *	Set location of a struct declaration
+ *
+ *	@param	nd				Struct declaration
+ *	@param	loc				Declaration location
+ *
+ *	@return	Struct declaration
+ */
+node declaration_struct_set_location(node *const nd, const location loc);
+
+/**
+ *	Get struct name of struct declaration
+ *
+ *	@param	nd				Struct declaration
+ *
+ *	@return	Struct name
+ */
+size_t declaration_struct_get_name(const node *const nd);
+
+/**
+ *	Get struct type of struct declaration
+ *
+ *	@param	nd				Struct declaration
+ *
+ *	@return	Struct type
+ */
+item_t declaration_struct_get_type(const node *const nd);
+
+/**
+ *	Get size of declaration statement
+ *
+ *	@param	nd				Declaration statement
+ *
+ *	@return	Size
+ */
+size_t declaration_struct_get_size(const node *const nd);
+
+/**
+ *	Get member declaration of struct declaration by index
+ *
+ *	@param	nd				Struct declaration
+ *	@param	index			Member index
+ *
+ *	@return	Member declaration
+ */
+node declaration_struct_get_member(const node *const nd, const size_t index);
+
+
+/**
+ *	Create new variable declaration
+ *
+ *	@param	context			Context node
+ *	@param	id				Variable identifier
+ *	@param	bounds			Array bound expressions
+ *	@param	initializer		Initializer
+ *	@param	loc				Declaration location
+ *
+ *	@return	Variable declaration
+ */
+node declaration_variable(node *const context, const size_t id, node_vector *const bounds
+	, node *const initializer, const location loc);
+
+/**
+ *	Get variable identifier in variable declaration
  *
  *	@param	nd				Variable declaration
  *
- *	@return	Id
+ *	@return	Variable identifier
  */
 size_t declaration_variable_get_id(const node *const nd);
 
@@ -1109,23 +1257,23 @@ bool declaration_variable_has_initializer(const node *const nd);
 node declaration_variable_get_initializer(const node *const nd);
 
 /**
- *	Get amount of dimenstions of variable declaration
+ *	Get amount of bounds in variable declaration
  *
  *	@param	nd				Variable declaration
  *
- *	@return	Amount of dimenstions
+ *	@return	Amount of bounds
  */
-size_t declaration_variable_get_dim_amount(const node *const nd);
+size_t declaration_variable_get_bounds_amount(const node *const nd);
 
 /**
- *	Get size-expression of dimenstions of variable declaration by index
+ *	Get bound expression in variable declaration by index
  *
  *	@param	nd				Variable declaration
- *	@param	index			Dimension index
+ *	@param	index			Bound index
  *
- *	@return	Size-expression
+ *	@return	Bound expression
  */
-node declaration_variable_get_dim_expr(const node *const nd, const size_t index);
+node declaration_variable_get_bound(const node *const nd, const size_t index);
 
 
 /**

@@ -250,6 +250,102 @@ node build_initializer(builder *const bldr, node_vector *const exprs, const loca
  */
 node build_constant_expression(builder *const bldr, node *const expr);
 
+/**
+ *	Build a condition expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	expr			Expression
+ *
+ *	@return	Condition expression
+ */
+node build_condition(builder *const bldr, node *const expr);
+
+/**
+ *	Build a empty bound expression
+ *
+ *	@param	bldr			AST builder
+ *	@param	loc				Expression location
+ *
+ *	@return	Empty bound expression
+ */
+node build_empty_bound_expression(builder *const bldr, const location loc);
+
+
+/**
+ *	Build a member declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	type			Member type
+ *	@param	name			Member name
+ *	@param	was_star		Flag if there was a star token
+ *	@param	bounds			Member array bounds
+ *	@param	loc				Member location
+ *
+ *	@return	Member declaration
+ */
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, node_vector *const bounds, const location loc);
+
+/**
+ *	Build an empty struct declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	name			Structure type name
+ *	@param	struct_loc		Keyword location
+ *
+ *	@return	Empty struct declaration
+ */
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc);
+
+/**
+ *	Build a struct declaration
+ *
+ *	@param	bldr			AST builder
+ *	@param	declaration		Existing struct declaration
+ *	@param	members			Member declarations
+ *
+ *	@return	Struct declaration
+ */
+node build_struct_declaration(builder *const bldr, node *const declaration, node_vector *const members);
+
+/**
+ *	Build a declarator
+ *
+ *	@param	bldr			AST builder
+ *	@param	type			Base type
+ *	@param	name			Name
+ *	@param	was_star		Flag if there was a star token
+ *	@param	bounds			Bounds expressions
+ *	@param	initializer		Initializer
+ *	@param	ident_loc		Identifier location
+ *
+ *	@return	Declarator
+ */
+node build_declarator(builder *const bldr, const item_t type, const size_t name
+	, const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc);
+
+/**
+ *	Build an empty declaration
+ *
+ *	@param	bldr			AST builder
+ *
+ *	@return	Empty declaration
+ */
+node build_empty_declaration(builder *const bldr);
+
+/**
+ *	Build full declaration with the given declarators
+ *
+ *	@param	bldr			AST builder
+ *	@param	declaration		Existing declaration
+ *	@param	declarators		Declarators
+ *	@param	semi_loc		Semicolon location
+ *
+ *	@return	Declaration
+ */
+node build_declaration(builder *const bldr, node *const declaration
+	, node_vector *const declarators, const location semi_loc);
+
 
 /**
  *	Build a case statement
