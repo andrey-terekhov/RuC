@@ -906,7 +906,6 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 		parser_error(prs, expected_member_name);
 		skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
 		try_consume_token(prs, TK_SEMICOLON);
-		try_consume_token(prs, TK_R_BRACE);
 		return node_broken();
 	}
 

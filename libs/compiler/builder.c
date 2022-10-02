@@ -1143,11 +1143,13 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 	for (size_t i = 0; i < members_amount; i++)
 	{
 		node member = node_vector_get(members, i);
+		if (node_is_correct(&member))
+		{
+			vector_add(&types, declaration_member_get_type(&member));
+			vector_add(&names, (item_t)declaration_member_get_name(&member));
 
-		vector_add(&types, declaration_member_get_type(&member));
-		vector_add(&names, (item_t)declaration_member_get_name(&member));
-
-		declaration_struct_add_declarator(declaration, &member);
+			declaration_struct_add_declarator(declaration, &member);
+		}
 	}
 
 	const size_t name = declaration_struct_get_name(declaration);
