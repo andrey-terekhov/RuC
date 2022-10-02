@@ -75,6 +75,21 @@ static void concat_strings(char **dst, const char *src)
 	free(tmp);
 } 
 
+static bool vector_add_str(vector *dst, const char *src)
+{
+	size_t i = 0;
+	while (src[i] != '\0')
+	{
+		if (vector_add(dst, src[i]) == SIZE_MAX)
+		{
+			return 0;
+		}
+		i++;
+	}
+	return 1;
+}
+
+
 static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
 
 static node create_printf_node(builder *bldr, node_vector *args, location loc, size_t str_index)
@@ -97,6 +112,16 @@ static node create_printf_node(builder *bldr, node_vector *args, location loc, s
 	// разворачиваемся в вызов printf
 	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, loc); 
 } 
+
+static node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc)
+{
+	const location loc = {l_loc.begin, r_loc.end};
+
+	// создаём строку и вносим её в вектор
+	size_t str_index = strings_add_by_vector(&bldr->sx->string_literals, str);  
+
+    return create_printf_node(bldr, args, loc, str_index);
+}
 
 static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
 {
@@ -297,7 +322,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node_remove(&temp);    
 
 		// вносим его в вектор для дальнейшего использования
-		if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
+		if (!vector_add(&temp_idents_reprs, repr))
 		{
 			printf("Unable to add repr to vector\n");
 			return node_broken();
@@ -417,7 +442,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	node_remove(&temp);    
 
 	// вносим его в вектор для дальнейшего использования
-	if (vector_add(&temp_idents_reprs, repr) == SIZE_MAX)
+	if (!vector_add(&temp_idents_reprs, repr))
 	{
 		printf("Unable to add repr to vector\n");
 		return node_broken();
@@ -448,16 +473,16 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	if (type_class != TYPE_STRUCTURE)
 	{  
 		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев
-		char* str = calloc(1, sizeof(char));
+		// char* str = calloc(1, sizeof(char));
+		vector str = vector_create(1);
 		
 		const char *tmp = create_simple_type_str(type_class);
 		if (!tmp)
 		{
-			free(str);
+			vector_clear(&str);
 			return node_broken();
 		}
-		concat_strings(&str, tmp);
-		if (!str)
+		if (!vector_add_str(&str, tmp))
 			return node_broken();
 
 		// создаём узлы вырезки, которые отправятся в качестве аргумента для printf  
@@ -505,14 +530,13 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// разворачиваемся в узлы printf, чтобы отпечатать "%<нужный идентификатор>, " или "%<нужный идентификатор>", если цикл дальше не пойдёт
 		// условие выполнено
-		node if_true = create_printf_node_by_str(bldr, str, &tmp_args1, l_loc, r_loc);
+		node if_true = create_printf_node_by_vector(bldr, &str, &tmp_args1, l_loc, r_loc);
 		// условие не выполнено
-		concat_strings(&str, ", ");
-		if (!str) 
+		if (!vector_add_str(&str, ", "))
 			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае 
 			return node_broken(); 
-		node if_false = create_printf_node_by_str(bldr, str, &tmp_args2, l_loc, r_loc); 
-		free(str);
+		node if_false = create_printf_node_by_vector(bldr, &str, &tmp_args2, l_loc, r_loc); 
+		vector_clear(&str);
 
 		// само выражение
 		node if_statement = build_if_statement(bldr, &if_binary, &if_true, &if_false, loc); 
@@ -633,13 +657,13 @@ static node create_complicated_type_str(builder *bldr, node *argument, location 
 	return complicated_type_node;
 }
 
-static bool create_correct_spaces(char **str, size_t tab_deep)
+static bool create_correct_spaces(vector *str, size_t tab_deep)
 { 
 	// глубина одного уровня -- 4 пробела
 	for (size_t j = 0; j < tab_deep*4; j++)
 	{
-		concat_strings(str, " ");
-		if (!*str)
+		vector_add_str(str, " ");
+		if (!vector_size(str))
 			return 0; 
 	}
 	return 1;
@@ -685,7 +709,8 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 
 	node_vector_add(&res_stmts, &arg_parent); 
 
-	char* str = calloc(1, sizeof(char));
+	// char* str = calloc(1, sizeof(char));
+	vector str = vector_create(1);
 
 	for (size_t i = 0; i < member_amount; i++)
 	{
@@ -699,30 +724,25 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		node member_node = build_member_expression(bldr, &tmp_arg, member_name, 0, l_loc, r_loc);  
 		
 		// создаём корректное начало строки
-		concat_strings(&str, "\n\n");
-		if (!str)
+		if (!vector_add_str(&str, "\n\n"))
 			return node_broken();
 
 		if (!create_correct_spaces(&str, tab_deep)) 
 			return node_broken();
 
-		concat_strings(&str, "{\n");
-		if (!str)
+		if (!vector_add_str(&str, "{\n"))
 			return node_broken();
 
 		if (!create_correct_spaces(&str, tab_deep+1)) 
 			return node_broken();
 
-		concat_strings(&str, ".");
-		if (!str)
+		if (!vector_add_str(&str, "."))
 			return node_broken();
 
-		concat_strings(&str, member_name_str);
-		if (!str)
+		if (!vector_add_str(&str, member_name_str))
 			return node_broken();
 
-		concat_strings(&str, " = ");
-		if (!str)
+		if (!vector_add_str(&str, " = "))
 			return node_broken();
 
 		if ((type_is_aggregate(bldr->sx, member_type) && !type_is_string(bldr->sx, member_type)) || 
@@ -730,25 +750,24 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		{ 
 			if (type_is_array(bldr->sx, member_type)) 
 			{
-				concat_strings(&str, "{");
-				if (!str) 
+				if (!vector_add_str(&str, "{"))
 					return node_broken(); 
 			}
 			else if (type_is_structure(bldr->sx, member_type))
 			{
-				concat_strings(&str, "{ struct");
-				if (!str)  
+				if (!vector_add_str(&str, "{ struct"))
 					return node_broken(); 
 			}
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
-			node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, r_loc, l_loc); 
-			free(str); 
+			node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, r_loc, l_loc); 
+			vector_clear(&str); 
 			// запоминаем узел 
 			node_vector_add(&res_stmts, &printf_node);
 
 			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = calloc(1, sizeof(char));
+			// str = calloc(1, sizeof(char));
+			str = vector_create(1);
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
 			args_to_print = node_vector_create(); 
@@ -756,21 +775,19 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			node complicated_type_node = create_complicated_type_str(bldr, &member_node, l_loc, r_loc, tab_deep + 1);
 			if (!node_is_correct(&complicated_type_node))
 			{
-				free(str);
+				vector_clear(&str);
 				return complicated_type_node;
 			}
 			node_vector_add(&res_stmts, &complicated_type_node);
 
 			if (type_is_array(bldr->sx, member_type)) 
 			{
-				concat_strings(&str, "} ");
-				if (!str) 
+				if (!vector_add_str(&str, "} "))
 					return node_broken(); 
 			}
 			else if (type_is_structure(bldr->sx, member_type))
 			{
-				concat_strings(&str, "}\n");
-				if (!str) 
+				if (!vector_add_str(&str, "}\n"))
 					return node_broken(); 
 			}
 		}
@@ -782,39 +799,35 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			const char *tmp = create_simple_type_str(member_type_class);   
 			if (!tmp)
 			{
-				free(str);
+				vector_clear(&str);
 				return node_broken();  
 			}
-			concat_strings(&str, tmp);
-			if(!str)
+			if (!vector_add_str(&str, tmp))
 				return node_broken();
 		}  
 		// правильно завершаем строку: если текущее поле, которое требуется распечатать, -- последнее, то запятую не ставим, иначе -- ставим
-		concat_strings(&str, "\n");
-		if (!str)
+		if (!vector_add_str(&str, "\n"))
 			return node_broken();
 
 		create_correct_spaces(&str, tab_deep);
 		
 		if (i == member_amount-1) 
 		{
-			concat_strings(&str, "}");
-			if(!str)
+			if (!vector_add_str(&str, "}"))
 				return node_broken();
 		}
 		else
 		{
-			concat_strings(&str, "},");
-			if (!str)
+			if (!vector_add_str(&str, "},"))
 				return node_broken();
 		}
 	}  
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	if (strlen(str))
+	if (vector_size(&str))
 	{
-		node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, l_loc, r_loc); 
-		free(str);
+		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, l_loc, r_loc); 
+		vector_clear(&str);
 		node_vector_add(&res_stmts, &printf_node);
 	}
 
