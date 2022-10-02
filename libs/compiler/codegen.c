@@ -1372,10 +1372,27 @@ static void emit_member_declaration(encoder *const enc, const node *const nd, co
  */
 static void emit_struct_declaration(encoder *const enc, const node *const nd)
 {
+	const item_t type = declaration_struct_get_type(nd);
+	const size_t members = type_structure_get_member_amount(enc->sx, type);
+
+	bool has_arrays = false;
+	for (size_t i = 0; i < members; i++)
+	{
+		const item_t member_type = type_structure_get_member_type(enc->sx, type, i);
+		if (type_is_array(enc->sx, member_type))
+		{
+			has_arrays = true;
+		}
+	}
+
+	if (!has_arrays)
+	{
+		return;
+	}
+
 	mem_add(enc, IC_B);
 	const size_t addr = mem_reserve(enc);
 
-	const item_t type = declaration_struct_get_type(nd);
 	proc_set(enc, (size_t)type, (item_t)addr + 1);
 
 	item_t displ = 0;
@@ -1385,8 +1402,8 @@ static void emit_struct_declaration(encoder *const enc, const node *const nd)
 		const node member = declaration_struct_get_member(nd, i);
 		if (declaration_get_class(&member) == DECL_MEMBER)
 		{
-			displ += type_size(enc->sx, declaration_member_get_type(&member));
 			emit_member_declaration(enc, &member, displ);
+			displ += type_size(enc->sx, declaration_member_get_type(&member));
 		}
 		else
 		{
