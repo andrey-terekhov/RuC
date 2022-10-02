@@ -1106,6 +1106,69 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 }
 
 
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, node_vector *const bounds, const location loc)
+{
+	if (type_is_void(type))
+	{
+		semantic_error(bldr, loc, only_functions_may_have_type_VOID);
+	}
+
+	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	const size_t bounds_amount = node_vector_size(bounds);
+	for (size_t i = 0; i < bounds_amount; i++)
+	{
+		const node bound = node_vector_get(bounds, i);
+		member_type = type_array(bldr->sx, member_type);
+		if (!type_is_integer(bldr->sx, expression_get_type(&bound)))
+		{
+			semantic_error(bldr, node_get_location(&bound), array_size_must_be_int);
+		}
+	}
+
+	return declaration_member(&bldr->context, member_type, name, bounds, loc);
+}
+
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc)
+{
+	return declaration_struct(&bldr->context, name, struct_loc);
+}
+
+node build_struct_declaration(builder *const bldr, node *const declaration, node_vector *const members)
+{
+	const size_t members_amount = node_vector_size(members);
+	vector types = vector_create(members_amount);
+	vector names = vector_create(members_amount);
+
+	for (size_t i = 0; i < members_amount; i++)
+	{
+		node member = node_vector_get(members, i);
+
+		vector_add(&types, declaration_member_get_type(&member));
+		vector_add(&names, (item_t)declaration_member_get_name(&member));
+
+		declaration_struct_add_declarator(declaration, &member);
+	}
+
+	const size_t name = declaration_struct_get_name(declaration);
+	const item_t type = type_structure(bldr->sx, &types, &names);
+	const size_t id = ident_add(bldr->sx, name, 1000, type, 0);
+
+	vector_clear(&types);
+	vector_clear(&names);
+	declaration_struct_set_type(declaration, type);
+
+	const location struct_loc = node_get_location(declaration);
+	if (id == SIZE_MAX - 1)
+	{
+		semantic_error(bldr, struct_loc, repeated_decl, repr_get_name(bldr->sx, name));
+	}
+
+	const node last_member = node_vector_get(members, members_amount - 1);
+	const location loc = { struct_loc.begin, node_get_location(&last_member).end };
+	return declaration_struct_set_location(declaration, loc);
+}
+
 node build_declarator(builder *const bldr, const item_t type, const size_t name
    , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
