@@ -811,9 +811,12 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	}  
 
 	// разворачиваемся в printf для имеющейся на данный момент строки 
-	node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, l_loc, r_loc); 
-	free(str);
-	node_vector_add(&res_stmts, &printf_node);
+	if (strlen(str))
+	{
+		node printf_node = create_printf_node_by_str(bldr, str, &args_to_print, l_loc, r_loc); 
+		free(str);
+		node_vector_add(&res_stmts, &printf_node);
+	}
 
 	result = build_compound_statement(bldr, &res_stmts, l_loc, r_loc);
 	return result; 
