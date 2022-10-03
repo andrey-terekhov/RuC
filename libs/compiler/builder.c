@@ -381,7 +381,6 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 
-	//char* str = calloc(1, sizeof(char));
 	vector str = vector_create(1);
 	
 	for (size_t i = 0; i < argc; i++)
@@ -536,7 +535,6 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	size_t first_scalar_argument_index = 0;
 	size_t last_argument_index = 0;
 	
-	// char* str = calloc(1, sizeof(char));
 	vector str = vector_create(1);
  
 	for (size_t i = 0; i < argc; i++)
@@ -603,8 +601,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 
 			vector_clear(&str); 
 
-			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			// str = calloc(1, sizeof(char));
+			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения 
 			str = vector_create(1);
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
@@ -669,7 +666,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	// разворачиваемся в printf для имеющейся на данный момент строки 
 	if (vector_size(&str))
 	{
-		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);   
+		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);    
 
 		if (!complicated_type_in_args)
 		{

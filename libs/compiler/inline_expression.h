@@ -80,11 +80,12 @@ static bool vector_add_str(vector *dst, const char *src)
 	size_t i = 0;
 	while (src[i] != '\0')
 	{
-		if (vector_add(dst, src[i]) == SIZE_MAX)
+		char32_t ch = utf8_convert(&src[i]); 
+		if (vector_add(dst, ch) == SIZE_MAX)
 		{
 			return 0;
 		}
-		i++;
+		i += utf8_symbol_size(src[i]);
 	}
 	return 1;
 }
@@ -472,8 +473,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	item_t type_class = type_get_class(bldr->sx, elements_type);
 	if (type_class != TYPE_STRUCTURE)
 	{  
-		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев
-		// char* str = calloc(1, sizeof(char));
+		// разворачиваемся в узел if, в котором будет printf, для этого строим строки для каждого из случаев 
 		vector str = vector_create(1);
 		
 		const char *tmp = create_simple_type_str(type_class);
@@ -708,8 +708,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	node_remove(&temp);    
 
 	node_vector_add(&res_stmts, &arg_parent); 
-
-	// char* str = calloc(1, sizeof(char));
+	
 	vector str = vector_create(1);
 
 	for (size_t i = 0; i < member_amount; i++)
@@ -765,8 +764,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			// запоминаем узел 
 			node_vector_add(&res_stmts, &printf_node);
 
-			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			// str = calloc(1, sizeof(char));
+			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения 
 			str = vector_create(1);
 			// избавляемся от предыдущих запомненных аргументов 
 			node_vector_clear(&args_to_print);
