@@ -46,6 +46,7 @@ static const char *const TAG_NOTE = "примечание";
 
 static const char *const ERROR_LOGGER_ARG_NULL = "NULL указатель на строку";
 static const char *const ERROR_LOGGER_ARG_MULTILINE  = "многострочный входной параметр";
+static const char *const ERROR_LOGGER_NO_LOCATION  = "позиционирование невозможно";
 
 
 static void default_error_log(const char *const tag, const char *const msg);
@@ -178,15 +179,15 @@ static void default_note_log(const char *const tag, const char *const msg)
 }
 
 
-static int check_tag_msg(const char *const tag, const char *const msg)
+static int check_arg(const char *const arg)
 {
-	if (tag == NULL || msg == NULL)
+	if (arg == NULL)
 	{
 		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
 		return -1;
 	}
 
-	if (strchr(tag, '\n') != NULL || strchr(msg, '\n') != NULL)
+	if (strchr(arg, '\n') != NULL)
 	{
 		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_MULTILINE);
 		return -1;
@@ -274,6 +275,47 @@ static void splice(char *const buffer, const char *const msg, const char *const 
 }
 
 
+static inline void log_main(const logger func, const char *const tag, const char *const msg, const char *const line, const size_t symbol)
+{
+	if (check_arg(tag) || check_arg(msg))
+	{
+		return;
+	}
+
+	if (line == NULL)
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
+		return;
+	}
+
+	char buffer[MAX_MSG_SIZE];
+	splice(buffer, msg, line, symbol);
+
+	func(tag, buffer);
+}
+
+static inline void log_auto(const logger func, location *const loc, const char *const msg)
+{
+	if (check_arg(msg))
+	{
+		return;
+	}
+
+	char tag[MAX_MSG_SIZE];
+	char line[MAX_MSG_SIZE];
+	if (!loc_get_tag(loc, tag) || !loc_get_code_line(loc, line))
+	{
+		current_error_log(TAG_LOGGER, ERROR_LOGGER_NO_LOCATION);
+		return;
+	}
+
+	char buffer[MAX_MSG_SIZE];
+	splice(buffer, msg, line, loc_get_index(loc));
+
+	func(tag, buffer);
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -319,65 +361,39 @@ int set_note_log(const logger func)
 
 void log_error(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-
-	if (line == NULL)
-	{
-		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
-		return;
-	}
-
-	char buffer[MAX_MSG_SIZE];
-	splice(buffer, msg, line, symbol);
-
-	current_error_log(tag, buffer);
+	log_main(current_error_log, tag, msg, line, symbol);
 }
 
 void log_warning(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
-
-	if (line == NULL)
-	{
-		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
-		return;
-	}
-
-	char buffer[MAX_MSG_SIZE];
-	splice(buffer, msg, line, symbol);
-
-	current_warning_log(tag, buffer);
+	log_main(current_warning_log, tag, msg, line, symbol);
 }
 
 void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol)
 {
-	if (check_tag_msg(tag, msg))
-	{
-		return;
-	}
+	log_main(current_note_log, tag, msg, line, symbol);
+}
 
-	if (line == NULL)
-	{
-		current_error_log(TAG_LOGGER, ERROR_LOGGER_ARG_NULL);
-		return;
-	}
 
-	char buffer[MAX_MSG_SIZE];
-	splice(buffer, msg, line, symbol);
+void log_auto_error(location *const loc, const char *const msg)
+{
+	log_auto(current_error_log, loc, msg);
+}
 
-	current_note_log(tag, buffer);
+void log_auto_warning(location *const loc, const char *const msg)
+{
+	log_auto(current_warning_log, loc, msg);
+}
+
+void log_auto_note(location *const loc, const char *const msg)
+{
+	log_auto(current_note_log, loc, msg);
 }
 
 
 void log_system_error(const char *const tag, const char *const msg)
 {
-	if (check_tag_msg(tag, msg))
+	if (check_arg(tag) || check_arg(msg))
 	{
 		return;
 	}
@@ -387,7 +403,7 @@ void log_system_error(const char *const tag, const char *const msg)
 
 void log_system_warning(const char *const tag, const char *const msg)
 {
-	if (check_tag_msg(tag, msg))
+	if (check_arg(tag) || check_arg(msg))
 	{
 		return;
 	}
@@ -397,7 +413,7 @@ void log_system_warning(const char *const tag, const char *const msg)
 
 void log_system_note(const char *const tag, const char *const msg)
 {
-	if (check_tag_msg(tag, msg))
+	if (check_arg(tag) || check_arg(msg))
 	{
 		return;
 	}
