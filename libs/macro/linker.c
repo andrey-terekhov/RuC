@@ -19,7 +19,7 @@
 #include "item.h"
 #include "error.h"
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 	#include <unistd.h>
 #else
 	#define F_OK 0

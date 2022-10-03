@@ -80,7 +80,7 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 {
 	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
 	{
-#ifdef _MSC_VER
+#ifdef _WIN32
 		char flag[MAX_ARG_SIZE];
 		utf8_from_cp1251(ws_get_flag(ws, i), flag);
 #else
