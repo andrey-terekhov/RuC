@@ -337,6 +337,40 @@ int in_set_position(universal_io *const io, const size_t position)
 	return -1;
 }
 
+int in_swap(universal_io *const fst, universal_io *const snd)
+{
+	if (!in_is_correct(fst) || !in_is_correct(snd))
+	{
+		return -1;
+	}
+
+	FILE *in_file = fst->in_file;
+	fst->in_file = snd->in_file;
+	snd->in_file = in_file;
+
+	const char *in_buffer = fst->in_buffer;
+	fst->in_buffer = snd->in_buffer;
+	snd->in_buffer = in_buffer;
+
+	const size_t in_size = fst->in_size;
+	fst->in_size = snd->in_size;
+	snd->in_size = in_size;
+
+	const size_t in_position = fst->in_position;
+	fst->in_position = snd->in_position;
+	snd->in_position = in_position;
+
+	const io_user_func in_user_func = fst->in_user_func;
+	fst->in_user_func = snd->in_user_func;
+	snd->in_user_func = in_user_func;
+
+	const io_func in_func = fst->in_func;
+	fst->in_func = snd->in_func;
+	snd->in_func = in_func;
+
+	return 0;
+}
+
 
 bool in_is_correct(const universal_io *const io)
 {
