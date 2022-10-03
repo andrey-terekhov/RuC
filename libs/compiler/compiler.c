@@ -97,6 +97,11 @@ static status_t compile_from_ws(workspace *const ws, const encoder enc)
 		return sts_system_error;
 	}
 
+	if (ws_has_flag(ws, "-E"))
+	{
+		return macro_to_file(ws, ws_get_output(ws)) ? sts_macro_error : sts_success;
+	}
+
 	universal_io io = io_create();
 
 #ifndef GENERATE_MACRO
