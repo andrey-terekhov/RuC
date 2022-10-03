@@ -18,43 +18,10 @@
 #include <string.h>
 
 
-/**
- *	Check if error recovery disabled
- *
- *	@param	ws			Compiler workspace
- *
- *	@return	Recovery status
- */
-static inline bool recovery_status(const workspace *const ws)
-{
-	for (size_t i = 0; ; i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-		if (flag == NULL)
-		{
-			return false;
-		}
-		else if (strcmp(flag, "-Wno") == 0)
-		{
-			return true;
-		}
-	}
-}
-
-
-/*
- *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
- *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
- *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
- *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
- *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
- */
-
-
 reporter reporter_create(const workspace *const ws)
 {
 	reporter rprt;
-	rprt.is_recovery_disabled = recovery_status(ws);
+	rprt.is_recovery_disabled = ws_has_flag(ws, "-Wno");
 	rprt.errors = 0;
 	rprt.warnings = 0;
 

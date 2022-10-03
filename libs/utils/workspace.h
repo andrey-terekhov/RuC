@@ -149,6 +149,16 @@ EXPORTED int ws_set_output(workspace *const ws, const char *const path);
  */
 EXPORTED bool ws_is_correct(const workspace *const ws);
 
+/**
+ *	Check that workspace contains flag
+ *
+ *	@param	ws			Workspace structure
+ *	@param	flag		Flag to check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+EXPORTED bool ws_has_flag(const workspace *const ws, const char *const flag);
+
 
 /**
  *	Get file by index from workspase

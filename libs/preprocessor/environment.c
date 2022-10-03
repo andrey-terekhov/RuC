@@ -26,22 +26,6 @@
 #define MAX_CMT_SIZE MAX_ARG_SIZE + 32
 
 
-static inline int is_recovery_disabled(const workspace *const ws)
-{
-	for (size_t i = 0; ; i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-		if (flag == NULL)
-		{
-			return 0;
-		}
-		else if (strcmp(flag, "-Wno") == 0)
-		{
-			return 1;
-		}
-	}
-}
-
 void env_init(environment *const env, linker *const lk, universal_io *const output)
 {
 	env->output = output;
@@ -70,7 +54,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->error_string[0] = '\0';
 
 	env->was_error = 0;
-	env->disable_recovery = is_recovery_disabled(lk->ws);
+	env->disable_recovery =  ws_has_flag(lk->ws, "-Wno");
 
 	for (size_t i = 0; i < HASH; i++)
 	{

@@ -3041,22 +3041,15 @@ static int emit_translation_unit(information *const info, const node *const nd)
 
 static void architecture(const workspace *const ws, syntax *const sx)
 {
-	for (size_t i = 0; ; i++)
+	if (ws_has_flag(ws, "--mipsel"))
 	{
-		const char *flag = ws_get_flag(ws, i);
-
-		if (flag == NULL || strcmp(flag, "--x86_64") == 0)
-		{
-			uni_printf(sx->io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
-			uni_printf(sx->io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
-			return;
-		}
-		else if (strcmp(flag, "--mipsel") == 0)
-		{
-			uni_printf(sx->io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
-			uni_printf(sx->io, "target triple = \"mipsel\"\n\n");
-			return;
-		}
+		uni_printf(sx->io, "target datalayout = \"e-m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64\"\n");
+		uni_printf(sx->io, "target triple = \"mipsel\"\n\n");
+	}
+	else // if (ws_has_flag(ws, "--x86_64"))
+	{
+		uni_printf(sx->io, "target datalayout = \"e-m:e-i64:64-f80:128-n8:16:32:64-S128\"\n");
+		uni_printf(sx->io, "target triple = \"x86_64-pc-linux-gnu\"\n\n");
 	}
 }
 
