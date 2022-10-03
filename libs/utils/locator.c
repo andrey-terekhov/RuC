@@ -36,7 +36,7 @@ static const char *const COMMENT = "//";
 static const char FILLER = ' ';
 
 
-void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const filler)
+static void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const filler)
 {
 	*symbol = FIRST_SYMBOL;
 	*filler = FIRST_SYMBOL;
@@ -67,16 +67,16 @@ void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const f
 	}
 }
 
-void line_to_end(universal_io *const io)
+static inline void line_to_end(universal_io *const io)
 {
 	char32_t character = uni_scan_char(io);
-	while (character != '\n' && character != EOF)
+	while (character != '\n' && character != (char32_t)EOF)
 	{
 		character = uni_scan_char(io);
 	}
 }
 
-bool mark_compare(universal_io *const io, const char *const str)
+static inline bool mark_compare(universal_io *const io, const char *const str)
 {
 	char ch = '\0';
 	for (size_t i = 0; str[i] != '\0'; i++)
@@ -92,7 +92,7 @@ bool mark_compare(universal_io *const io, const char *const str)
 	return ch == SEPARATOR;
 }
 
-bool mark_recognize(universal_io *const io
+static bool mark_recognize(universal_io *const io
 	, size_t *const line, size_t *const path, size_t *const code)
 {
 	if (!mark_compare(io, PREFIX))
@@ -124,7 +124,7 @@ bool mark_recognize(universal_io *const io
 	return true;
 }
 
-bool mark_reverse_recognize(universal_io *const io
+static bool mark_reverse_recognize(universal_io *const io
 	, size_t *const line, size_t *const path, size_t *const code, size_t *const filler)
 {
 	size_t position = in_get_position(io);
@@ -215,7 +215,7 @@ int loc_update_begin(location *const loc)
 	in_set_position(loc->io, loc->code);
 
 	char32_t character = uni_scan_char(loc->io);
-	while (character != '\n' && character != EOF)
+	while (character != '\n' && character != (char32_t)EOF)
 	{
 		uni_print_char(loc->io, character);
 		character = uni_scan_char(loc->io);
@@ -388,7 +388,7 @@ size_t loc_get_code_line(location *const loc, char *const buffer)
 
 	size_t size = 0;
 	char32_t character = uni_scan_char(loc->io);
-	while (character != '\n' && character != EOF)
+	while (character != '\n' && character != (char32_t)EOF)
 	{
 		size += utf8_to_string(&buffer[size], character);
 		character = uni_scan_char(loc->io);
