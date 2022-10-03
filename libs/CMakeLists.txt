@@ -11,4 +11,4 @@ add_subdirectory(macro)
 add_subdirectory(compiler)
 
 # Add C++ wrapper library
-add_subdirectory(cpp-wrap)
+# add_subdirectory(cpp-wrap)
