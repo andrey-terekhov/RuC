@@ -152,6 +152,22 @@ size_t linker_search_external(linker *const lk, const char *const file)
 }
 
 
+size_t linker_get_index(const linker *const lk)
+{
+	return linker_is_correct(lk) ? lk->current : SIZE_MAX;
+}
+
+int linker_set_index(linker *const lk, const size_t index)
+{
+	if (!linker_is_correct(lk) && index >= ws_get_files_num(lk->ws))
+	{
+		return -1;
+	}
+
+	lk->current = index;
+	return 0;
+}
+
 const char* linker_current_path(const linker *const lk)
 {
 	return linker_is_correct(lk) ? ws_get_file(lk->ws, lk->current) : NULL;
