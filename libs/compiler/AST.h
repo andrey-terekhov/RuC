@@ -1254,6 +1254,15 @@ node declaration_variable_get_bound(const node *const nd, const size_t index);
 size_t declaration_function_get_id(const node *const nd);
 
 /**
+ *	Get parameters amount in function declaration
+ *
+ *	@param	nd				Function declaration
+ *
+ *	@return Parameters amount
+ */
+size_t declaration_function_get_parameters_amount(const node *const nd);
+
+/**
  *	Get parameter id in function declaration by index
  *
  *	@param	nd				Function declaration
@@ -1261,7 +1270,7 @@ size_t declaration_function_get_id(const node *const nd);
  *
  *	@return Parameter id
  */
-size_t declaration_function_get_param(const node *const nd, const size_t index);
+size_t declaration_function_get_parameter(const node *const nd, const size_t index);
 
 /**
  *	Get body of function declaration

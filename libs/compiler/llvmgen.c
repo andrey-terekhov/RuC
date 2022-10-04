@@ -2451,7 +2451,7 @@ static void emit_function_definition(information *const info, const node *const 
 
 	for (size_t i = 0; i < parameters; i++)
 	{
-		const size_t id = declaration_function_get_param(nd, i);
+		const size_t id = declaration_function_get_parameter(nd, i);
 		const item_t param_type = ident_get_type(info->sx, id);
 
 		uni_printf(info->sx->io, " %%var.%zu = alloca ", id);

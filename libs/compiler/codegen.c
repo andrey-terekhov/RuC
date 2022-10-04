@@ -1484,6 +1484,13 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	enc->max_displ = 3;
 	enc->is_global_scope = false;
 
+	const size_t parameters_amount = declaration_function_get_parameters_amount(nd);
+	for (size_t i = 0; i < parameters_amount; i++)
+	{
+		const size_t parameter = declaration_function_get_parameter(nd, i);
+		displ_add(enc, parameter);
+	}
+
 	mem_add(enc, IC_FUNC_BEG);
 
 	const size_t displ_addr = mem_reserve(enc);
