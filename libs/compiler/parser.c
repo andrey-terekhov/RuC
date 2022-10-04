@@ -2100,6 +2100,34 @@ static void parse_function_declaration(parser *const prs, node *const parent, co
 		prs->func_def = 2;
 	}
 
+	if (repr_get_reference(prs->sx, function_repr) == TK_MAIN)
+	{
+		const type_t type_class = type_get_class(prs->sx, type);
+		if (type_class != TYPE_INTEGER && type_class != TYPE_VOID)
+		{
+			parser_error(prs, main_should_return_int_or_void);
+		}
+
+		if (prs->func_def != 1)
+		{
+			parser_error(prs, main_should_be_defined);
+		}
+
+		const size_t parameters = type_function_get_parameter_amount(prs->sx, function_mode);
+		if (parameters > 1)
+		{
+			parser_error(prs, wrong_main_parameters);
+		}
+		else if (parameters == 1)
+		{
+			const item_t parameter_type = type_function_get_parameter_type(prs->sx, function_mode, 0);
+			if (parameter_type != type_array(prs->sx, type_string(prs->sx)))
+			{
+				parser_error(prs, wrong_main_parameter_type);
+			}
+		}
+	}
+
 	const size_t function_id = to_identab(prs, function_repr, (item_t)function_num, function_mode);
 
 	if (token_is(&prs->tk, TK_L_BRACE))

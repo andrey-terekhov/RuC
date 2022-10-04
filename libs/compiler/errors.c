@@ -124,6 +124,19 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			sprintf(msg, "оператор 'выход' не в цикле и не в операторе 'выбор'");
 			break;
 
+		case main_should_return_int_or_void:
+			sprintf(msg, "главная функция должна возвращать цел или пусто");
+			break;
+		case main_should_be_defined:
+			sprintf(msg, "главная функция должна быть описана");
+			break;
+		case wrong_main_parameters:
+			sprintf(msg, "главная функция должна иметь не больше одного параметра");
+			break;
+		case wrong_main_parameter_type:
+			sprintf(msg, "единственный параметр главной функции должен иметь тип char[][]");
+			break;
+
 		// Semantics errors
 		case use_of_undeclared_identifier:
 			sprintf(msg, "использование не объявленного идентификатора");
