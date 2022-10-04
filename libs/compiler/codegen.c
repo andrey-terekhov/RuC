@@ -26,6 +26,11 @@
 #include "writer.h"
 
 
+#ifndef max
+	#define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+
 static const char *const DEFAULT_CODES = "codes.txt";
 static const size_t MAX_MEM_SIZE = 100000;
 
@@ -157,15 +162,16 @@ static inline item_t displ_add(encoder *const enc, const size_t identifier)
 
 	if (enc->is_global_scope)
 	{
-		enc->displ += size;
-		enc->max_displ = enc->displ > enc->max_displ ? enc->displ : enc->max_displ;
-	}
-	else
-	{
 		enc->displ -= size;
 		enc->max_displg = -enc->displ;
 	}
+	else
+	{
+		enc->displ += size;
+		enc->max_displ = max(enc->displ, enc->max_displ);
+	}
 
+	vector_set(&enc->displacements, identifier, result_displ);
 	return result_displ;
 }
 
