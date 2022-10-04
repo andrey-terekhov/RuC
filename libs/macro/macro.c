@@ -1,5 +1,5 @@
 /*
- *	Copyright 2021 Andrey Terekhov, Egor Anikin
+ *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -65,17 +65,6 @@ static inline size_t ws_parse_name(const char *const name, char32_t *const buffe
 	}
 }
 
-static inline void ws_parse_value(const char *const value, char32_t *const buffer)
-{
-	size_t i = 0;
-	size_t j = 0;
-	do
-	{
-		buffer[i] = utf8_convert(&value[j]);
-		j += utf8_size(buffer[i]);
-	} while (buffer[i++] != '\0');
-}
-
 static inline int ws_parse(const workspace *const ws, storage *const stg)
 {
 	for (size_t i = 0; i < ws_get_flags_num(ws); i++)
@@ -99,15 +88,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 
 			if (flag[2 + index] != '\0')
 			{
-				char32_t value[MAX_ARG_SIZE];
-				ws_parse_value(&flag[2 + index], value);
-				if (storage_add_utf8(stg, name, value) == SIZE_MAX)
+				if (storage_add(stg, name, &flag[2 + index]) == SIZE_MAX)
 				{
 					macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 					return -1;
 				}
 			}
-			else if (storage_add_utf8(stg, name, NULL) == SIZE_MAX)
+			else if (storage_add(stg, name, NULL) == SIZE_MAX)
 			{
 				macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 				return -1;

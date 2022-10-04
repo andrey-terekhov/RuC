@@ -1,5 +1,5 @@
 /*
- *	Copyright 2021 Andrey Terekhov, Egor Anikin
+ *	Copyright 2021 Andrey Terekhov, Victor Y. Fadeev, Egor Anikin
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
