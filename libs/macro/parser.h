@@ -1,5 +1,5 @@
 /*
- *	Copyright 2021 Andrey Terekhov, Egor Anikin
+ *	Copyright 2022 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "linker.h"
-#include "storage.h"
-#include "strings.h"
-#include "uniio.h"
 #include "error.h"
+#include "linker.h"
+#include "locator.h"
+#include "storage.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -31,58 +31,52 @@ extern "C" {
 typedef struct parser
 {
 	linker *lk;						/**< Linker structure */
-	storage *stg;					/**< Storage structure */
+	storage *stg;					/**< Macro storage */
 
-	universal_io *in;				/**< Input io structure */
-	universal_io *out;				/**< Output io structure */
-
-	const char *path;				/**< Current file path */
-	size_t line_position;			/**< Сurrent line first character position in file */
-	size_t line;					/**< Сurrent line number in input */
-	size_t position;				/**< Сurrent character number in line */
-	strings code;					/**< Сode line */
+	universal_io *io;				/**< Universal IO structure */
+	location loc;					/**< Current location */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
-	bool was_error;					/**< Set, if was error */
 } parser;
+
 
 /**
  *	Create parser structure
  *
- *	@param	lk		Linker structure
- *	@param	stg		Storage structure
- *	@param	out		Output
+ *	@param	lk			Linker structure
+ *	@param	stg			Macro storage
+ *	@param	out			Output stream
  *
  *	@return	Parser structure
  */
-parser parser_create(linker *const lk, storage *const stg, universal_io *const out); 
+parser parser_create(linker *const lk, storage *const stg, universal_io *const out);
 
 
 /**
- *	Preprocess input data
+ *	Preprocess input stream
  *
- *	@param	prs		Parser structure
- *	@param	in		Input data
+ *	@param	prs			Parser structure
+ *	@param	in			Input stream
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int parser_preprocess(parser *const prs, universal_io *const in); 
+int parser_preprocess(parser *const prs, universal_io *const in);
 
 
 /**
  *	Disable error recovery
  *
- *	@param	prs		Parser structure
+ *	@param	prs			Parser structure
+ *	@param	status		Recovery status
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int parser_disable_recovery(parser *const prs);
-
+int parser_disable_recovery(parser *const prs, const bool status);
 
 /**
- *	Check that parser structure is correct
+ *	Check that parser is correct
  *
- *	@param	prs		Parser structure
+ *	@param	prs			Parser structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
