@@ -63,6 +63,63 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		case PARSER_COMM_NOT_ENDED:
+			sprintf(msg, "незакрытый комментарий в конце файла");
+			break;
+		case PARSER_STRING_NOT_ENDED:
+			sprintf(msg, "перенос строки в константе");
+			break;
+		case PARSER_UNEXPECTED_EOF:
+			sprintf(msg, "непредвиденное обнаружение конца файла");
+			break;
+
+		case PARSER_UNIDETIFIED_KEYWORD:
+			sprintf(msg, "нераспознанная директива препроцессора");
+			break;
+		case PARSER_UNEXPECTED_GRID:
+			sprintf(msg, "знак \'#\' здесь не предполагается");
+			break;
+		case PARSER_UNEXPECTED_ENDM:
+			sprintf(msg, "отсутствует #macro для этой директивы");
+			break;
+		case PARSER_UNEXPECTED_ENDIF:
+			sprintf(msg, "отсутствует #if для этой директивы");
+			break;
+		case PARSER_UNEXPECTED_ENDW:
+			sprintf(msg, "отсутствует #while для этой директивы");
+			break;
+
+		case PARSER_INCLUDE_NEED_FILENAME:
+			sprintf(msg, "#include требуется \"FILENAME\"");
+			break;
+		case PARSER_INCLUDE_INCORRECT_FILENAME:
+			sprintf(msg, "не удается открыть источник файл");
+			break;
+
+		case PARSER_NEED_IDENT:
+			sprintf(msg, "требуется идентификатор");
+			break;
+		case PARSER_BIG_IDENT_NAME:
+			sprintf(msg, "лексема переполнила внутренний буффер");
+			break;
+		case PARSER_NEED_SEPARATOR:
+			sprintf(msg, "требуется разделитель");
+			break;
+		case PARSER_IDENT_NEED_ARGS:
+			sprintf(msg, "требуется '(");
+			break;
+
+		case PARSER_SET_NOT_EXIST_IDENT:
+			sprintf(msg, "переопределение несуществующего идентификатора");
+			break;
+		case PARSER_SET_WITH_ARGS:
+			sprintf(msg, "для #set переопределение с аргументами запрещено");
+			break;
+
+		case PARSER_MACRO_NOT_ENDED:
+			sprintf(msg, "отсутствует #endm для этой директивы");
+			break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;
@@ -79,6 +136,14 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
+		case PARSER_UNEXPECTED_LEXEME:
+			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
+			break;
+
+		case PARSER_UNDEF_NOT_EXIST_IDENT:
+			sprintf(msg, "удаление несуществующего идентификатора");
+			break;
+
 		default:
 			sprintf(msg, "неизвестное предупреждение");
 			break;
@@ -89,14 +154,14 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 static void output(const char *const file, const char *const str, const size_t line, const size_t symbol
 	, const char *const msg, void (*func)(const char *const, const char *const, const char *const, const size_t))
 {
-	size_t size = 1;
+	size_t size = 0;
 	for (size_t i = 0; i < symbol && str[i] != '\0'; i += utf8_symbol_size(str[i]))
 	{
 		size++;
 	}
 
 	char tag[MAX_TAG_SIZE];
-	sprintf("%s:%zu:%zu", file, line, size);
+	sprintf(tag, "%s:%zu:%zu", file, line, size);
 
 	func(tag, msg, str, size);
 }

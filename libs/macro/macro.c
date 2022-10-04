@@ -101,13 +101,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 			{
 				char32_t value[MAX_ARG_SIZE];
 				ws_parse_value(&flag[2 + index], value);
-				if (storage_add(stg, name, value) == SIZE_MAX)
+				if (storage_add_utf8(stg, name, value) == SIZE_MAX)
 				{
 					macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 					return -1;
 				}
 			}
-			else if (storage_add(stg, name, NULL) == SIZE_MAX)
+			else if (storage_add_utf8(stg, name, NULL) == SIZE_MAX)
 			{
 				macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 				return -1;
@@ -123,7 +123,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 {
 	linker lk = linker_create(ws);
 	storage stg = storage_create();
-	parser prs = parser_create(&lk, output);
+	parser prs = parser_create(&lk, &stg, output);
 
 	int ret = ws_parse(ws, &stg);
 

@@ -28,7 +28,7 @@ extern const char *storage_get_arg(storage *const stg, const char32_t *const id,
 
 extern size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
 
-extern size_t storage_set(storage *const stg, const char32_t *const id, const char32_t *value);
+extern size_t storage_set(storage *const stg, const char32_t *const id, const char *value);
 
 extern int storage_remove(storage *const stg, const char32_t *const id);
 
@@ -57,7 +57,7 @@ storage storage_create()
 }
 
 
-size_t storage_add(storage *const stg, const char32_t *const id, const char32_t *const value)
+size_t storage_add_utf8(storage *const stg, const char32_t *const id, const char32_t *const value)
 {
 	if (!storage_is_correct(stg) || id == NULL)
 	{
@@ -72,6 +72,24 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char32_t 
 
 	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
 	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
+	return index;
+}
+
+size_t storage_add(storage *const stg, const char32_t *const id, const char *const value)
+{
+	if (!storage_is_correct(stg) || id == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t key = map_reserve_by_utf8(&stg->as, id);
+	if (value == NULL)
+	{
+		return hash_add(&stg->hs, (item_t)key, 0);
+	}
+
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
 	return index;
 }
 
@@ -141,7 +159,7 @@ int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t i
 }
 
 
-size_t storage_set_by_index(storage *const stg, const size_t id, const char32_t *value)
+size_t storage_set_by_index(storage *const stg, const size_t id, const char *value)
 {
 	if (!storage_is_correct(stg))
 	{
@@ -160,7 +178,7 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char32_t 
 	}
 
 	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
 	return index;
 }
 
