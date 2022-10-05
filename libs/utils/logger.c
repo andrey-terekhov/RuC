@@ -36,7 +36,7 @@
 	static const uint8_t COLOR_DEFAULT = 0;
 #endif
 
-#define MAX_MSG_SIZE 1024
+#define MAX_MSG_SIZE 4096
 
 static const char *const TAG_LOGGER = "logger";
 

@@ -63,7 +63,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		return -1;
 	}
 
-	return 0;
+	return -1;
 }
 
 
@@ -86,5 +86,6 @@ bool parser_is_correct(const parser *const prs)
 
 int parser_clear(parser *const prs)
 {
+	(void)prs;
 	return 0;
 }

@@ -113,9 +113,11 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 	parser prs = parser_create(&lk, &stg, output);
 
 	int ret = ws_parse(ws, &stg);
+	const bool is_recovery_disabled = ws_has_flag(ws, "-Wno");
+	parser_disable_recovery(&prs, is_recovery_disabled);
 
 	const size_t size = linker_size(&lk);
-	for (size_t i = 0; i < size && !ret; i++)
+	for (size_t i = 0; i < size && !(ret && is_recovery_disabled); i++)
 	{
 		universal_io in = linker_add_source(&lk, i);
 		if (!in_is_correct(&in))
@@ -123,7 +125,7 @@ static int macro_form_io(workspace *const ws, universal_io *const output)
 			macro_system_error(TAG_LINKER, LINKER_CANNOT_OPEN);
 		}
 
-		ret = parser_preprocess(&prs, &in);
+		ret |= parser_preprocess(&prs, &in);
 		in_clear(&in);
 	}
 

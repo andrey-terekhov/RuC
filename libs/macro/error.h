@@ -1,5 +1,5 @@
 /*
- *	Copyright 2020 Andrey Terekhov, Egor Anikin
+ *	Copyright 2020 Andrey Terekhov, Victor Y. Fadeev
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #pragma once
 
 #include <stdarg.h>
-#include <stddef.h>
+#include "locator.h"
 
 
 #ifdef __cplusplus
@@ -32,92 +32,49 @@ typedef enum ERROR
 	MACRO_NAME_NON,
 	MACRO_NAME_FIRST_CHARACTER,
 	MACRO_NAME_EXISTS,
-
-	PARSER_COMM_NOT_ENDED,
-	PARSER_STRING_NOT_ENDED,
-	PARSER_UNEXPECTED_EOF,
-
-	PARSER_UNIDETIFIED_KEYWORD,
-	PARSER_UNEXPECTED_GRID,
-	PARSER_UNEXPECTED_ENDM,
-	PARSER_UNEXPECTED_ENDIF,	// need test
-	PARSER_UNEXPECTED_ENDW,	// need test
-
-	PARSER_INCLUDE_NEED_FILENAME,
-	PARSER_INCLUDE_INCORRECT_FILENAME,
-
-	PARSER_NEED_IDENT,
-	PARSER_BIG_IDENT_NAME,
-	PARSER_NEED_SEPARATOR,
-	PARSER_IDENT_NEED_ARGS,	// need test
-
-	PARSER_SET_NOT_EXIST_IDENT,
-	PARSER_SET_WITH_ARGS,	// need test
-
-	PARSER_MACRO_NOT_ENDED,
 } error_t;
 
 /** Warning codes */
 typedef enum WARNING
 {
 	MACRO_CONSOLE_SEPARATOR,
-
-	PARSER_UNEXPECTED_LEXEME,
-
-	PARSER_UNDEF_NOT_EXIST_IDENT,
 } warning_t;
 
 
 /**
  *	Emit an error for some problem
  *
- *	@param	file		File name
- *	@param	str			Code line
- *	@param	line		Line number
- *	@param	symbol		Character number
+ *	@param	loc			Emitted location
  *	@param	num			Error code
  */
-void macro_error(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, error_t num, ...);
+void macro_error(location *const loc, error_t num, ...);
 
 /**
  *	Emit a warning for some problem
  *
- *	@param	file		File name
- *	@param	str			Code line
- *	@param	line		Line number
- *	@param	symbol		Character number
+ *	@param	loc			Emitted location
  *	@param	num			Warning code
  */
-void macro_warning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, warning_t num, ...);
+void macro_warning(location *const loc, warning_t num, ...);
 
 
 /**
  *	Emit an error (embedded version)
  *
- *	@param	file		File name
- *	@param	str			Code line
- *	@param	line		Line number
- *	@param	symbol		Character number
+ *	@param	loc			Emitted location
  *	@param	num			Error code
  *	@param	args		Variable list
  */
-void macro_verror(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const error_t num, va_list args);
+void macro_verror(location *const loc, const error_t num, va_list args);
 
 /**
  *	Emit a warning (embedded version)
  *
- *	@param	file		File name
- *	@param	str			Code line
- *	@param	line		Line number
- *	@param	symbol		Character number
+ *	@param	loc			Emitted location
  *	@param	num			Warning code
  *	@param	args		Variable list
  */
-void macro_vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const warning_t num, va_list args);
+void macro_vwarning(location *const loc, const warning_t num, va_list args);
 
 
 /**

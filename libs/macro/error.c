@@ -63,63 +63,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
-		case PARSER_COMM_NOT_ENDED:
-			sprintf(msg, "незакрытый комментарий в конце файла");
-			break;
-		case PARSER_STRING_NOT_ENDED:
-			sprintf(msg, "перенос строки в константе");
-			break;
-		case PARSER_UNEXPECTED_EOF:
-			sprintf(msg, "непредвиденное обнаружение конца файла");
-			break;
-
-		case PARSER_UNIDETIFIED_KEYWORD:
-			sprintf(msg, "нераспознанная директива препроцессора");
-			break;
-		case PARSER_UNEXPECTED_GRID:
-			sprintf(msg, "знак \'#\' здесь не предполагается");
-			break;
-		case PARSER_UNEXPECTED_ENDM:
-			sprintf(msg, "отсутствует #macro для этой директивы");
-			break;
-		case PARSER_UNEXPECTED_ENDIF:
-			sprintf(msg, "отсутствует #if для этой директивы");
-			break;
-		case PARSER_UNEXPECTED_ENDW:
-			sprintf(msg, "отсутствует #while для этой директивы");
-			break;
-
-		case PARSER_INCLUDE_NEED_FILENAME:
-			sprintf(msg, "#include требуется \"FILENAME\"");
-			break;
-		case PARSER_INCLUDE_INCORRECT_FILENAME:
-			sprintf(msg, "не удается открыть источник файл");
-			break;
-
-		case PARSER_NEED_IDENT:
-			sprintf(msg, "требуется идентификатор");
-			break;
-		case PARSER_BIG_IDENT_NAME:
-			sprintf(msg, "лексема переполнила внутренний буффер");
-			break;
-		case PARSER_NEED_SEPARATOR:
-			sprintf(msg, "требуется разделитель");
-			break;
-		case PARSER_IDENT_NEED_ARGS:
-			sprintf(msg, "требуется '(");
-			break;
-
-		case PARSER_SET_NOT_EXIST_IDENT:
-			sprintf(msg, "переопределение несуществующего идентификатора");
-			break;
-		case PARSER_SET_WITH_ARGS:
-			sprintf(msg, "для #set переопределение с аргументами запрещено");
-			break;
-
-		case PARSER_MACRO_NOT_ENDED:
-			sprintf(msg, "отсутствует #endm для этой директивы");
-			break;
-
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;
@@ -136,34 +79,10 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
-		case PARSER_UNEXPECTED_LEXEME:
-			sprintf(msg, "непредвиденная лексема за директивой препроцессора, требуется перенос строки");
-			break;
-
-		case PARSER_UNDEF_NOT_EXIST_IDENT:
-			sprintf(msg, "удаление несуществующего идентификатора");
-			break;
-
 		default:
 			sprintf(msg, "неизвестное предупреждение");
 			break;
 	}
-}
-
-
-static void output(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const char *const msg, void (*func)(const char *const, const char *const, const char *const, const size_t))
-{
-	size_t size = 0;
-	for (size_t i = 0; i < symbol && str[i] != '\0'; i += utf8_symbol_size(str[i]))
-	{
-		size++;
-	}
-
-	char tag[MAX_TAG_SIZE];
-	sprintf(tag, "%s:%zu:%zu", file, line, size);
-
-	func(tag, msg, str, size);
 }
 
 
@@ -176,43 +95,39 @@ static void output(const char *const file, const char *const str, const size_t l
  */
 
 
-void macro_error(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, error_t num, ...)
+void macro_error(location *const loc, error_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
 
-	macro_verror(file, str, line, symbol, num, args);
+	macro_verror(loc, num, args);
 
 	va_end(args);
 }
 
-void macro_warning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, warning_t num, ...)
+void macro_warning(location *const loc, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
 
-	macro_vwarning(file, str, line, symbol, num, args);
+	macro_vwarning(loc, num, args);
 
 	va_end(args);
 }
 
 
-void macro_verror(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const error_t num, va_list args)
+void macro_verror(location *const loc, const error_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
-	output(file, str, line, symbol, msg, &log_error);
+	log_auto_error(loc, msg);
 }
 
-void macro_vwarning(const char *const file, const char *const str, const size_t line, const size_t symbol
-	, const warning_t num, va_list args)
+void macro_vwarning(location *const loc, const warning_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_warning(num, msg, args);
-	output(file, str, line, symbol, msg, &log_warning);
+	log_auto_warning(loc, msg);
 }
 
 
