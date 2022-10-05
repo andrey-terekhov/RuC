@@ -339,7 +339,7 @@ int in_set_position(universal_io *const io, const size_t position)
 
 int in_swap(universal_io *const fst, universal_io *const snd)
 {
-	if (!in_is_correct(fst) || !in_is_correct(snd))
+	if (fst == NULL || snd == NULL)
 	{
 		return -1;
 	}

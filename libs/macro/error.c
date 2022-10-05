@@ -43,6 +43,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 {
 	switch (num)
 	{
+		case LINKER_NO_INPUT:
+			sprintf(msg, "нет входных файлов");
+			break;
+		case LINKER_WRONG_IO:
+			sprintf(msg, "некорректные параметры ввода/вывода");
+			break;
 		case LINKER_CANNOT_OPEN:
 			sprintf(msg, "невозможно открыть исходные тексты");
 			break;
@@ -60,6 +66,16 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			size_t index = sprintf(msg, "макрос '");
 			index += utf8_to_buffer(name, &msg[index]);
 			sprintf(&msg[index], "' уже существует");
+		}
+		break;
+
+		case PARSER_MISSING_TERMINATION:
+		{
+			const char32_t quote = va_arg(args, char32_t);
+
+			size_t index = sprintf(msg, "завершающий символ ");
+			index += utf8_to_string(&msg[index], quote);
+			sprintf(&msg[index], " пропущен");
 		}
 		break;
 

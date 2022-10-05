@@ -149,12 +149,14 @@ char *macro(workspace *const ws)
 {
 	if (ws_get_files_num(ws) == 0)
 	{
+		macro_system_error(TAG_LINKER, LINKER_NO_INPUT);
 		return NULL;
 	}
 
 	universal_io io = io_create();
 	if (out_set_buffer(&io, OUT_BUFFER_SIZE))
 	{
+		macro_system_error(TAG_LINKER, LINKER_WRONG_IO);
 		return NULL;
 	}
 
@@ -173,12 +175,14 @@ int macro_to_file(workspace *const ws, const char *const path)
 {
 	if (ws_get_files_num(ws) == 0)
 	{
+		macro_system_error(TAG_LINKER, LINKER_NO_INPUT);
 		return -1;
 	}
 
 	universal_io io = io_create();
 	if (out_set_file(&io, path))
 	{
+		macro_system_error(TAG_LINKER, LINKER_WRONG_IO);
 		return -1;
 	}
 

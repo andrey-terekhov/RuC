@@ -27,11 +27,14 @@ extern "C" {
 /** Error codes */
 typedef enum ERROR
 {
+	LINKER_WRONG_IO,
 	LINKER_CANNOT_OPEN,
 
 	MACRO_NAME_NON,
 	MACRO_NAME_FIRST_CHARACTER,
 	MACRO_NAME_EXISTS,
+
+	PARSER_MISSING_TERMINATION,
 } error_t;
 
 /** Warning codes */

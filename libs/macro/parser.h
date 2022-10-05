@@ -37,6 +37,8 @@ typedef struct parser
 	location loc;					/**< Current location */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
+	bool is_if_block;				/**< Set, if condition block processing */
+	bool was_error;					/**< Set, if error message occurred */
 } parser;
 
 
