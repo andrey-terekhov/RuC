@@ -385,8 +385,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
-		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, &if_binary_rhs_main_subs_arg_expr, dimensions - 1,
-																temp_idents_reprs, l_loc, r_loc);
+		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, &if_binary_rhs_main_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
 
 		// оператор upb ("кол_во")
 		node if_binary_rhs_upb = expression_unary(TYPE_INTEGER, RVALUE, &if_binary_rhs_main_subs, UN_UPB, loc);
@@ -416,8 +415,8 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		return for_stmt;
 	}
 
-	// проверяем, не пришёл ли массив-строка (на случай многомерных массивов char, иначе будут отпечатаны слова через
-	// запятую)
+	// проверяем, не пришёл ли массив-строка (на случай многомерных массивов char, иначе
+	// будут отпечатаны слова через запятую)
 	if (type_is_string(bldr->sx, type))
 	{
 		node subscript_node = create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
@@ -467,7 +466,8 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	// для него создаём нужное количество "предварительных" вырезок
 	node cond_main_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
 	if (!node_is_correct(&cond_main_subs_arg_expr))
-	{ // для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+	{ 
+		// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
 		return node_broken();
 	}
 	node cond_main_subs_expr =
@@ -749,7 +749,6 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		item_t member_type = type_structure_get_member_type(bldr->sx, type, i);
 		size_t member_name = type_structure_get_member_name(bldr->sx, type, i);
 		const char *member_name_str = repr_get_name(bldr->sx, member_name);
-
 
 		// строим узел нового аргумента
 		node tmp_arg = expression_identifier(&bldr->context, type, arg_id, loc);
