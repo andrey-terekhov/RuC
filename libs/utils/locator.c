@@ -30,10 +30,9 @@ static const size_t FIRST_LINE = 1;
 static const size_t FIRST_SYMBOL = 1;
 
 static const char *const PREFIX = "#line";
+static const char *const COMMENT = "//";
 static const char SEPARATOR = ' ';
 static const char QUOTE = '"';
-static const char *const COMMENT = "//";
-static const char FILLER = ' ';
 
 
 static void line_to_begin(universal_io *const io, size_t *const symbol, size_t *const filler)
@@ -54,7 +53,7 @@ static void line_to_begin(universal_io *const io, size_t *const symbol, size_t *
 	while (ch != '\n')
 	{
 		*symbol += 2 - utf8_symbol_size(ch);
-		*filler = ch == FILLER ? (*filler) + 1 : FIRST_SYMBOL;
+		*filler = ch == ' ' || ch == '\t' ? (*filler) + 1 : FIRST_SYMBOL;
 
 		if (position == 0)
 		{
@@ -191,11 +190,15 @@ int loc_update(location *const loc)
 
 	uni_printf(loc->io, "%s%c%zu%c%c%s%c\n", PREFIX, SEPARATOR, loc->line
 		, SEPARATOR, QUOTE, path, QUOTE);
+
+	const size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->code);
 	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
-		uni_print_char(loc->io, FILLER);
+		uni_print_char(loc->io, uni_scan_char(loc->io) == '\t' ? '\t' : ' ');
 	}
 
+	in_set_position(loc->io, position);
 	return 0;
 }
 
@@ -222,12 +225,14 @@ int loc_update_begin(location *const loc)
 	}
 
 	uni_print_char(loc->io, '\n');
-	in_set_position(loc->io, position);
 
+	in_set_position(loc->io, loc->code);
 	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
-		uni_print_char(loc->io, FILLER);
+		uni_print_char(loc->io, uni_scan_char(loc->io) == '\t' ? '\t' : ' ');
 	}
+
+	in_set_position(loc->io, position);
 	return 0;
 }
 
@@ -241,11 +246,15 @@ int loc_update_end(location *const loc)
 	}
 
 	uni_printf(loc->io, "%s%c%zu\n", PREFIX, SEPARATOR, loc->line);
+
+	const size_t position = in_get_position(loc->io);
+	in_set_position(loc->io, loc->code);
 	for (size_t i = FIRST_SYMBOL; i < loc->symbol; i++)
 	{
-		uni_print_char(loc->io, FILLER);
+		uni_print_char(loc->io, uni_scan_char(loc->io) == '\t' ? '\t' : ' ');
 	}
 
+	in_set_position(loc->io, position);
 	return 0;
 }
 
