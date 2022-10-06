@@ -16,6 +16,11 @@
 
 #include "inline_expression.h"
 
+node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc);
+node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
+
+static node copy_argument_node(builder *bldr, node *argument, location l_loc, location r_loc);
+
 static char *string_append(const char *s1, const char *s2)
 {
 	size_t s1_len = strlen(s1);
@@ -75,85 +80,6 @@ static void concat_strings(char **dst, const char *src)
 	free(tmp);
 }
 
-bool vector_add_str(vector *dst, const char *src)
-{
-	size_t i = 0;
-	while (src[i] != '\0')
-	{
-		char32_t ch = utf8_convert(&src[i]);
-		if (vector_add(dst, ch) == SIZE_MAX)
-		{
-			return 0;
-		}
-		i += utf8_symbol_size(src[i]);
-	}
-	return 1;
-}
-
-node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
-
-static node create_printf_node(builder *bldr, node_vector *args, location loc, size_t str_index)
-{
-	// node str_node = build_string_literal_expression(bldr, str_index, loc);
-	node str_node = expression_string_literal(&bldr->context, type_string(bldr->sx), str_index, loc);
-
-	// создаём новый вектор узлов, чтобы первым аргументом был форматный строковый литерал
-	node_vector tmp_node_vector = node_vector_create();
-	node_vector_add(&tmp_node_vector, &str_node);
-
-	const size_t argc = node_vector_size(args);
-	for (size_t i = 0; i < argc; i++)
-	{
-		node argument = node_vector_get(args, i);
-		node_vector_add(&tmp_node_vector, &argument);
-	}
-
-	node printf_callee =
-		expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc);
-
-	// разворачиваемся в вызов printf
-	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, loc);
-}
-
-node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc)
-{
-	const location loc = { l_loc.begin, r_loc.end };
-
-	// создаём строку и вносим её в вектор
-	size_t str_index = strings_add_by_vector(&bldr->sx->string_literals, str);
-
-	return create_printf_node(bldr, args, loc, str_index);
-}
-
-static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
-{
-	const location loc = { l_loc.begin, r_loc.end };
-
-	// создаём строку и вносим её в вектор
-	size_t str_index = string_add_by_char(bldr->sx, str);
-
-	return create_printf_node(bldr, args, loc, str_index);
-}
-
-const char *create_simple_type_str(item_t type)
-{
-	switch (type)
-	{
-		case TYPE_BOOLEAN:
-		case TYPE_INTEGER:
-			return "%i";
-		case TYPE_CHARACTER:
-			return "%c";
-		case TYPE_FLOATING:
-			return "%f";
-		case TYPE_ARRAY: // попали сюда => в качестве массива может выступать только строка => "%s"
-			return "%s";
-		case TYPE_NULL_POINTER:
-			return "NULL";
-	}
-	return 0;
-}
-
 static char *create_new_temp_identifier_name(size_t ident_table_size)
 {
 	size_t ident_table_digits = 1;
@@ -200,6 +126,38 @@ static char *create_new_temp_identifier_name(size_t ident_table_size)
 	return new_identifier_name;
 }
 
+static node create_printf_node(builder *bldr, node_vector *args, location loc, size_t str_index)
+{
+	node str_node = expression_string_literal(&bldr->context, type_string(bldr->sx), str_index, loc);
+
+	// создаём новый вектор узлов, чтобы первым аргументом был форматный строковый литерал
+	node_vector tmp_node_vector = node_vector_create();
+	node_vector_add(&tmp_node_vector, &str_node);
+
+	const size_t argc = node_vector_size(args);
+	for (size_t i = 0; i < argc; i++)
+	{
+		node argument = node_vector_get(args, i);
+		node_vector_add(&tmp_node_vector, &argument);
+	}
+
+	node printf_callee =
+		expression_identifier(&bldr->context, type_function(bldr->sx, TYPE_INTEGER, "s."), BI_PRINTF, loc);
+
+	// разворачиваемся в вызов printf
+	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, loc);
+}
+
+static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
+{
+	const location loc = { l_loc.begin, r_loc.end };
+
+	// создаём строку и вносим её в вектор
+	size_t str_index = string_add_by_char(bldr->sx, str);
+
+	return create_printf_node(bldr, args, loc, str_index);
+}
+
 static node create_consec_subscripts(builder *bldr, node *argument, size_t dimensions, vector idents, location l_loc,
 									 location r_loc)
 {
@@ -222,9 +180,7 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 		curr_subscr_arg = sub_subscript_expr;
 	}
 	return curr_subscr_arg;
-}
-
-static node copy_argument_node(builder *bldr, node *argument, location l_loc, location r_loc);
+} 
 
 static node copy_subscript_node(builder *bldr, node *argument, location l_loc, location r_loc)
 {
@@ -660,37 +616,7 @@ static node create_ptr_nodes(builder *bldr, node *argument, location l_loc, loca
 	node if_false = create_printf_node_by_str(bldr, "%p", &tmp_nv, l_loc, r_loc);
 
 	return statement_if(&cond, &if_true, &if_false, loc);
-}
-
-node create_complicated_type_str(builder *bldr, node *argument, location l_loc, location r_loc, size_t tab_deep)
-{
-	node complicated_type_node;
-	item_t argument_type = expression_get_type(argument);
-	if (type_is_array(bldr->sx, argument_type))
-	{
-		size_t dimensions = 0;
-		item_t elements_type = argument_type;
-		while (type_is_array(bldr->sx, elements_type))
-		{
-			elements_type = type_array_get_element_type(bldr->sx, elements_type);
-			dimensions++;
-		}
-
-		vector idents = vector_create(dimensions);
-		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
-		vector_clear(&idents);
-	}
-	else if (type_is_structure(bldr->sx, argument_type))
-	{
-		complicated_type_node = create_struct_nodes(bldr, argument, tab_deep, l_loc, r_loc);
-	}
-	else
-	{
-		complicated_type_node = create_ptr_nodes(bldr, argument, l_loc, r_loc);
-	}
-
-	return complicated_type_node;
-}
+} 
 
 static bool create_correct_spaces(vector *str, size_t tab_deep)
 {
@@ -896,3 +822,91 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	result = statement_compound(&bldr->context, &res_stmts, loc);
 	return result;
 }
+
+
+/*
+ *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
+ *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
+ *	\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __\ \ \  __ \  \ \ \____  \ \  __\
+ *	 \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\    \ \_\ \_\  \ \_____\  \ \_____\
+ *	  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/     \/_/\/_/   \/_____/   \/_____/
+ */
+
+
+node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc)
+{
+	const location loc = { l_loc.begin, r_loc.end };
+
+	// создаём строку и вносим её в вектор
+	size_t str_index = strings_add_by_vector(&bldr->sx->string_literals, str);
+
+	return create_printf_node(bldr, args, loc, str_index);
+}
+
+
+bool vector_add_str(vector *dst, const char *src)
+{
+	size_t i = 0;
+	while (src[i] != '\0')
+	{
+		char32_t ch = utf8_convert(&src[i]);
+		if (vector_add(dst, ch) == SIZE_MAX)
+		{
+			return 0;
+		}
+		i += utf8_symbol_size(src[i]);
+	}
+	return 1;
+}
+
+
+const char *create_simple_type_str(item_t type)
+{
+	switch (type)
+	{
+		case TYPE_BOOLEAN:
+		case TYPE_INTEGER:
+			return "%i";
+		case TYPE_CHARACTER:
+			return "%c";
+		case TYPE_FLOATING:
+			return "%f";
+		case TYPE_ARRAY: // попали сюда => в качестве массива может выступать только строка => "%s"
+			return "%s";
+		case TYPE_NULL_POINTER:
+			return "NULL";
+	}
+	return 0;
+}
+
+
+node create_complicated_type_str(builder *bldr, node *argument, location l_loc, location r_loc, size_t tab_deep)
+{
+	node complicated_type_node;
+	item_t argument_type = expression_get_type(argument);
+	if (type_is_array(bldr->sx, argument_type))
+	{
+		size_t dimensions = 0;
+		item_t elements_type = argument_type;
+		while (type_is_array(bldr->sx, elements_type))
+		{
+			elements_type = type_array_get_element_type(bldr->sx, elements_type);
+			dimensions++;
+		}
+
+		vector idents = vector_create(dimensions);
+		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
+		vector_clear(&idents);
+	}
+	else if (type_is_structure(bldr->sx, argument_type))
+	{
+		complicated_type_node = create_struct_nodes(bldr, argument, tab_deep, l_loc, r_loc);
+	}
+	else
+	{
+		complicated_type_node = create_ptr_nodes(bldr, argument, l_loc, r_loc);
+	}
+
+	return complicated_type_node;
+}
+
