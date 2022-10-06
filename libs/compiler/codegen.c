@@ -26,6 +26,8 @@
 #include "writer.h"
 
 
+#define DISPL_START 3
+
 #ifndef abs
 	#define abs(a) ((a) > 0 ? (a) : -(a))
 #endif
@@ -73,7 +75,7 @@ typedef struct encoder
 	size_t addr_case;				/**< Case operator address */
 	size_t addr_break;				/**< Break operator address */
 
-	item_t displ;					/**< Stack displacement in current scope */
+	item_t displ;					/**< Current stack displacement */
 
 	item_t max_local_displ;			/**< Maximal local displacement */
 	item_t max_global_displ;		/**< Maximal global displacement */
@@ -178,8 +180,8 @@ static inline item_t displacements_add(encoder *const enc, const size_t identifi
 	}
 	else
 	{
-		enc->displ -= size;
-		enc->max_global_displ = -enc->displ;
+		result_displ = -enc->max_global_displ;
+		enc->max_global_displ += size;
 	}
 
 	vector_set(&enc->displacements, identifier, result_displ);
@@ -319,9 +321,7 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	vector_increase(&enc.displacements, vector_size(&sx->identifiers));
 	vector_increase(&enc.functions, 2);
 
-	enc.displ = -3;
 	enc.max_global_displ = 3;
-	enc.max_local_displ = 3;
 	enc.curr_func = NULL;
 
 	return enc;
@@ -915,7 +915,7 @@ static void emit_member_rvalue(encoder *const enc, const node *const nd)
 	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
 	const node base = expression_member_get_base(nd);
 	emit_expression(enc, &base);
-	
+
 	const item_t base_type = expression_get_type(&base);
 	const size_t member_index = expression_member_get_member_index(nd);
 
@@ -1284,7 +1284,7 @@ static void emit_void_expression(encoder *const enc, const node *const nd)
 		const size_t index = mem_get(enc, mem_size(enc) - 1) < MIN_INSTRUCTION_CODE
 			? mem_size(enc) - 2
 			: mem_size(enc) - 1;
-		
+
 		const instruction_t operation = (instruction_t)mem_get(enc, index);
 		mem_set(enc, index, instruction_to_void_ver(operation));
 	}
@@ -1553,10 +1553,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	functions_add(enc, identifier, mem_size(enc));
 
 	enc->curr_func = nd;
-
-	const item_t displ = enc->displ;
-	enc->displ = 3;
-	enc->max_local_displ = 3;
+	enc->displ = DISPL_START;
+	enc->max_local_displ = enc->displ;
 
 	const size_t parameters_amount = declaration_function_get_parameters_amount(nd);
 	for (size_t i = 0; i < parameters_amount; i++)
@@ -1576,8 +1574,6 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	mem_set(enc, displ_addr, enc->max_local_displ);
 	mem_set(enc, jump_addr, (item_t)mem_size(enc));
-
-	enc->displ = displ;
 	enc->curr_func = NULL;
 }
 
