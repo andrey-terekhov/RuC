@@ -28,54 +28,50 @@
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-static void parser_error(parser *const prs, const size_t position, const error_t num, ...)
+static void parser_error(parser *const prs, location *const loc, const error_t num, ...)
 {
 	if (prs->is_recovery_disabled && prs->was_error)
 	{
 		return;
 	}
 
-	const size_t current = in_get_position(prs->io);
-	in_set_position(prs->io, position);
-	loc_search_from(&prs->loc);
-
 	va_list args;
 	va_start(args, num);
-	macro_verror(&prs->loc, num, args);
-	va_end(args);
 
-	in_set_position(prs->io, current);
+	macro_verror(loc, num, args);
 	prs->was_error = true;
+
+	va_end(args);
 }
 
 
 static void skip_string(parser *const prs, const char32_t quote)
 {
-	const size_t position = in_get_position(prs->io) - utf8_size(quote);
-	uni_print_char(prs->io, quote);
+	uni_unscan_char(prs->io, quote);
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
 
-	size_t lines = 0;
 	bool was_slash = false;
-	char32_t character = '\0';
+	char32_t character = uni_scan_char(prs->io);
+	uni_print_char(prs->io, character);
+
 	do
 	{
 		was_slash = (!was_slash && character == '\\') || (was_slash && character == '\r');
 		character = uni_scan_char(prs->io);
 		uni_print_char(prs->io, character);
 
-		lines += character == '\n' ? 1 : 0;
+		if (character == '\n')
+		{
+			loc_line_break(&prs->loc);
+		}
 
 		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
 		{
-			parser_error(prs, position, PARSER_MISSING_TERMINATION, quote);
+			parser_error(prs, &loc, PARSER_MISSING_TERMINATION, quote);
 			break;
 		}
 	} while (was_slash || character != quote);
-
-	for (size_t i = 0; i < lines; i++)
-	{
-		loc_line_break(&prs->loc);
-	}
 }
 
 static void skip_comment(parser *const prs)
