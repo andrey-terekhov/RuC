@@ -28,21 +28,24 @@
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-static void parser_error(parser *const prs, const error_t num, ...)
+static void parser_error(parser *const prs, const size_t position, const error_t num, ...)
 {
 	if (prs->is_recovery_disabled && prs->was_error)
 	{
 		return;
 	}
 
+	const size_t current = in_get_position(prs->io);
+	in_set_position(prs->io, position);
+	loc_search_from(&prs->loc);
+
 	va_list args;
 	va_start(args, num);
-
-	loc_search_from(&prs->loc);
 	macro_verror(&prs->loc, num, args);
-	prs->was_error = true;
-
 	va_end(args);
+
+	in_set_position(prs->io, current);
+	prs->was_error = true;
 }
 
 
@@ -64,10 +67,7 @@ static void skip_string(parser *const prs, const char32_t quote)
 
 		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
 		{
-			const size_t end = in_get_position(prs->io);
-			in_set_position(prs->io, position);
-			parser_error(prs, PARSER_MISSING_TERMINATION, quote);
-			in_set_position(prs->io, end);
+			parser_error(prs, position, PARSER_MISSING_TERMINATION, quote);
 			break;
 		}
 	} while (was_slash || character != quote);
