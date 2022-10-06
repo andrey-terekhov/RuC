@@ -760,7 +760,7 @@ static void compress_ident(encoder *const enc, const size_t ref)
 	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
 	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
 	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
-	vector_add(&enc->identifiers, ident_get_displ(enc->sx, ref));
+	vector_add(&enc->identifiers, displacements_get(enc, ref));
 
 	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
 	for (size_t i = 0; buffer[i] != '\0'; i += utf8_symbol_size(buffer[i]))
