@@ -27,6 +27,7 @@ extern "C" {
 /** Error codes */
 typedef enum ERROR
 {
+	LINKER_NO_INPUT,
 	LINKER_WRONG_IO,
 	LINKER_CANNOT_OPEN,
 

@@ -56,7 +56,7 @@ static void skip_string(parser *const prs, const char32_t quote)
 	char32_t character = '\0';
 	do
 	{
-		was_slash = !was_slash && character == '\\';
+		was_slash = (!was_slash && character == '\\') || (was_slash && character == '\r');
 		character = uni_scan_char(prs->io);
 		uni_print_char(prs->io, character);
 
@@ -76,6 +76,29 @@ static void skip_string(parser *const prs, const char32_t quote)
 	{
 		loc_line_break(&prs->loc);
 	}
+}
+
+static void skip_comment(parser *const prs)
+{
+	bool was_slash = false;
+	char32_t character = '\0';
+	do
+	{
+		was_slash = character == '\\';
+		character = uni_scan_char(prs->io);
+
+		if (character == '\r')
+		{
+			uni_print_char(prs->io, character);
+			character = uni_scan_char(prs->io);
+		}
+
+		if (character == '\n')
+		{
+			uni_print_char(prs->io, character);
+			loc_line_break(&prs->loc);
+		}
+	} while (character != (char32_t)EOF && (was_slash || character != '\n'));
 }
 
 
@@ -180,7 +203,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case '/':
 				if (was_slash)
 				{
-					// skip_comment(prs);
+					skip_comment(prs);
 				}
 				was_slash = !was_slash;
 				break;
