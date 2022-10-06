@@ -15,11 +15,15 @@
  */
 
 #include "parser.h"
+#include <stdlib.h>
 #include "error.h"
 #include "keywords.h"
 #include "uniprinter.h"
 #include "uniscanner.h"
 #include "utf8.h"
+
+
+static const size_t MAX_COMMENT_SIZE = 4096;
 
 
 /**
@@ -51,9 +55,9 @@ static void skip_string(parser *const prs, const char32_t quote)
 	loc_search_from(&prs->loc);
 	location loc = prs->loc;
 
+	uni_print_char(prs->io, uni_scan_char(prs->io));
+	char32_t character = '\0';
 	bool was_slash = false;
-	char32_t character = uni_scan_char(prs->io);
-	uni_print_char(prs->io, character);
 
 	do
 	{
@@ -76,8 +80,9 @@ static void skip_string(parser *const prs, const char32_t quote)
 
 static void skip_comment(parser *const prs)
 {
-	bool was_slash = false;
 	char32_t character = '\0';
+	bool was_slash = false;
+
 	do
 	{
 		was_slash = character == '\\';
@@ -95,6 +100,61 @@ static void skip_comment(parser *const prs)
 			loc_line_break(&prs->loc);
 		}
 	} while (character != (char32_t)EOF && (was_slash || character != '\n'));
+}
+
+static void skip_multi_comment(parser *const prs)
+{
+	uni_unscan_char(prs->io, '*');
+	uni_unscan_char(prs->io, '/');
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+
+	universal_io out = io_create();
+	out_set_buffer(&out, MAX_COMMENT_SIZE);
+	uni_print_char(&out, uni_scan_char(prs->io));
+	uni_print_char(&out, uni_scan_char(prs->io));
+	char32_t character = '\0';
+	bool was_star = false;
+
+	do
+	{
+		was_star = character == '*';
+		character = uni_scan_char(prs->io);
+		uni_print_char(&out, character);
+
+		if (was_star && character == '/')
+		{
+			char *buffer = out_extract_buffer(&out);
+			uni_printf(prs->io, "%s", buffer);
+			free(buffer);
+			return;
+		}
+	} while (character != '\r' && character != '\n' && character != (char32_t)EOF);
+
+	out_clear(&out);
+	uni_print_char(prs->io, character);
+	if (character == '\r')
+	{
+		uni_print_char(prs->io, '\n');
+	}
+
+	while (!was_star || character != '/')
+	{
+		if (character == (char32_t)EOF)
+		{
+			parser_error(prs, &loc, PARSER_UNTERMINATED_COMMENT);
+			return;
+		}
+		else if (character == '\n')
+		{
+			loc_line_break(&prs->loc);
+		}
+
+		was_star = character == '*';
+		character = uni_scan_char(prs->io);
+	}
+
+	loc_update(&prs->loc);
 }
 
 
@@ -206,7 +266,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 			case '*':
 				if (was_slash)
 				{
-					// skip_multi_comment(prs);
+					skip_multi_comment(prs);
 					was_slash = false;
 				}
 				else

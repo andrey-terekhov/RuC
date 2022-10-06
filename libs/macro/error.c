@@ -78,6 +78,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(&msg[index], " пропущен");
 		}
 		break;
+		case PARSER_UNTERMINATED_COMMENT:
+			sprintf(msg, "незавершённый комментарий");
+			break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");

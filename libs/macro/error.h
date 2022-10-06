@@ -36,6 +36,7 @@ typedef enum ERROR
 	MACRO_NAME_EXISTS,
 
 	PARSER_MISSING_TERMINATION,
+	PARSER_UNTERMINATED_COMMENT,
 } error_t;
 
 /** Warning codes */
