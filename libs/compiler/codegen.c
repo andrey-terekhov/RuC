@@ -66,21 +66,19 @@ typedef struct encoder
 
 	vector identifiers;				/**< Local identifiers table */
 	vector representations;			/**< Local representations table */
-	vector displacements;			/**< Local displacements table */
+	vector displacements;			/**< Displacements table */
 	vector functions;				/**< Functions table */
 
 	size_t addr_cond;				/**< Condition address */
 	size_t addr_case;				/**< Case operator address */
 	size_t addr_break;				/**< Break operator address */
 
-	item_t max_displ;				/**< Maximal local displacement */
-	item_t max_displg;				/**< Maximal global displacement */
-
 	item_t displ;					/**< Stack displacement in current scope */
 
-	bool is_global_scope;			/**< Flag if in global scope */
-	const node* curr_func;
+	item_t max_local_displ;			/**< Maximal local displacement */
+	item_t max_global_displ;		/**< Maximal global displacement */
 
+	const node *curr_func;			/**< Currently emitted function */
 	const item_status target;		/**< Target tables item type */
 } encoder;
 
@@ -164,19 +162,24 @@ static inline item_t proc_get(const encoder *const enc, const size_t index)
  */
 static inline item_t displacements_add(encoder *const enc, const size_t identifier)
 {
-	const item_t result_displ = enc->displ;
 	const item_t type = ident_get_type(enc->sx, identifier);
 	const item_t size = (item_t)type_size(enc->sx, type);
+	item_t result_displ = enc->displ;
 
-	if (enc->is_global_scope)
+	if (enc->curr_func)
 	{
-		enc->displ -= size;
-		enc->max_displg = -enc->displ;
+		if (type_is_function(enc->sx, type))
+		{
+			result_displ *= -1;
+		}
+
+		enc->displ += size;
+		enc->max_local_displ = max(enc->displ, enc->max_local_displ);
 	}
 	else
 	{
-		enc->displ += size;
-		enc->max_displ = max(enc->displ, enc->max_displ);
+		enc->displ -= size;
+		enc->max_global_displ = -enc->displ;
 	}
 
 	vector_set(&enc->displacements, identifier, result_displ);
@@ -237,13 +240,16 @@ static inline item_t functions_get(encoder *const enc, const size_t identifier)
 {
 	const item_t displ = vector_get(&enc->displacements, identifier);
 
-	const size_t parameters_amount = declaration_function_get_parameters_amount(enc->curr_func);
-	for (size_t i = 0; i < parameters_amount; i++)
+	if (enc->curr_func)
 	{
-		const size_t parameter = declaration_function_get_parameter(enc->curr_func, i);
-		if (identifier == parameter)
+		const size_t parameters_amount = declaration_function_get_parameters_amount(enc->curr_func);
+		for (size_t i = 0; i < parameters_amount; i++)
 		{
-			return displ;
+			const size_t parameter = declaration_function_get_parameter(enc->curr_func, i);
+			if (identifier == parameter)
+			{
+				return displ;
+			}
 		}
 	}
 
@@ -313,12 +319,11 @@ static encoder enc_create(const workspace *const ws, syntax *const sx)
 	vector_increase(&enc.displacements, vector_size(&sx->identifiers));
 	vector_increase(&enc.functions, 2);
 
-	enc.max_displg = 3;
-
-	enc.max_displ = 3;
 	enc.displ = -3;
+	enc.max_global_displ = 3;
+	enc.max_local_displ = 3;
+	enc.curr_func = NULL;
 
-	enc.is_global_scope = true;
 	return enc;
 }
 
@@ -366,7 +371,7 @@ static int enc_export(const encoder *const enc)
 		, vector_size(&enc->identifiers)
 		, vector_size(&enc->representations)
 		, vector_size(&enc->sx->types)
-		, enc->max_displg);
+		, enc->max_global_displ);
 
 	return print_table(enc, &enc->memory)
 		|| print_table(enc, &enc->functions)
@@ -1551,23 +1556,13 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	const item_t displ = enc->displ;
 	enc->displ = 3;
-	enc->max_displ = 3;
-	enc->is_global_scope = false;
+	enc->max_local_displ = 3;
 
 	const size_t parameters_amount = declaration_function_get_parameters_amount(nd);
 	for (size_t i = 0; i < parameters_amount; i++)
 	{
 		const size_t parameter = declaration_function_get_parameter(nd, i);
-		const item_t parameter_type = ident_get_type(enc->sx, parameter);
-		if (type_is_function(enc->sx, parameter_type))
-		{
-			vector_set(&enc->displacements, parameter, -(enc->displ++));
-			enc->max_displ = enc->displ;
-		}
-		else
-		{
-			displacements_add(enc, parameter);
-		}
+		displacements_add(enc, parameter);
 	}
 
 	mem_add(enc, IC_FUNC_BEG);
@@ -1579,11 +1574,11 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	emit_statement(enc, &function_body);
 	mem_add(enc, IC_RETURN_VOID);
 
-	mem_set(enc, displ_addr, enc->max_displ);
+	mem_set(enc, displ_addr, enc->max_local_displ);
 	mem_set(enc, jump_addr, (item_t)mem_size(enc));
 
 	enc->displ = displ;
-	enc->is_global_scope = true;
+	enc->curr_func = NULL;
 }
 
 /**
