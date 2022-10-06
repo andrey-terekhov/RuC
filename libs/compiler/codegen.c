@@ -159,7 +159,7 @@ static inline item_t proc_get(const encoder *const enc, const size_t index)
  *	@param	enc			Encoder
  *	@param	identifier	Variable identifier
  *
- *	@return	Allocated displacement
+ *	@return	Allocated variable displacement
  */
 static inline item_t displacements_add(encoder *const enc, const size_t identifier)
 {
@@ -201,12 +201,27 @@ static inline item_t displacements_get(const encoder *const enc, const size_t id
  *
  *	@param	enc			Encoder
  *	@param	identifier	Function identifier
- *	@param	addr		Function address
+ *	@param	address		Function address
  */
-static inline void functions_add(encoder *const enc, const size_t identifier, const size_t addr)
+static inline void functions_add(encoder *const enc, const size_t identifier, const size_t address)
 {
-	const size_t func_number = vector_add(&enc->functions, (item_t)addr);
+	const size_t func_number = vector_add(&enc->functions, (item_t)address);
 	vector_set(&enc->displacements, identifier, (item_t)func_number);
+
+	// If the function is defined after its calls, the callee is a predecl id
+	const size_t predecl_identifier = ident_get_prev(enc->sx, identifier);
+	item_t predecl_displ = displacements_get(enc, predecl_identifier);
+
+	if (predecl_displ < 0)
+	{
+		size_t call_address = (size_t)abs(predecl_displ);
+		while (call_address != 0)
+		{
+			const size_t ref = (size_t)mem_get(enc, call_address);
+			mem_set(enc, call_address, (item_t)func_number);
+			call_address = ref;
+		}
+	}
 }
 
 /**
@@ -217,9 +232,15 @@ static inline void functions_add(encoder *const enc, const size_t identifier, co
  *
  *	@return	Funciton displacement
  */
-static inline item_t functions_get(const encoder *const enc, const size_t identifier)
+static inline item_t functions_get(encoder *const enc, const size_t identifier)
 {
-	return vector_get(&enc->displacements, identifier);
+	const item_t displ = vector_get(&enc->displacements, identifier);
+	if (displ <= 0)
+	{
+		vector_set(&enc->displacements, identifier, -(item_t)mem_size(enc));
+	}
+
+	return abs(displ);
 }
 
 
@@ -670,7 +691,7 @@ static void emit_argument(encoder *const enc, const node *const nd)
 	if (type_is_function(enc->sx, arg_type))
 	{
 		const size_t identifier = expression_identifier_get_id(nd);
-		const item_t displ = functions_get(enc, identifier);
+		const item_t displ = displacements_get(enc, identifier);
 		mem_add(enc, displ >= 0 ? IC_LI : IC_LOAD);
 		mem_add(enc, abs(displ));
 	}
