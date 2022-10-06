@@ -3,22 +3,10 @@ int add(int, int), mul(int, int);
 void main()
 {
 	int a = 2, b = 3;
-
-	printid(a, b);
-
 	int c = add(a, b), d = mul(a, b);
-
-	printid(c, d);
-
-	assert(c == 5, "c should be 5");
-	assert(d == 6, "d should be 6");
-
 	int e = mul(d, a);
 	int f1 = add(c, d), f2 = mul(c, d);
 	int g = add(c, e), h = mul(f1, f2);
-
-	printid(g, h);
-
 	assert(g == 17, "g should be 17");
 	assert(h == 330, "h should be 330");
 }
