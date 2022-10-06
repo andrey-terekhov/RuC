@@ -79,6 +79,7 @@ typedef struct encoder
 	item_t displ;					/**< Stack displacement in current scope */
 
 	bool is_global_scope;			/**< Flag if in global scope */
+	const node* curr_func;
 
 	const item_status target;		/**< Target tables item type */
 } encoder;
@@ -235,6 +236,17 @@ static inline void functions_add(encoder *const enc, const size_t identifier, co
 static inline item_t functions_get(encoder *const enc, const size_t identifier)
 {
 	const item_t displ = vector_get(&enc->displacements, identifier);
+
+	const size_t parameters_amount = declaration_function_get_parameters_amount(enc->curr_func);
+	for (size_t i = 0; i < parameters_amount; i++)
+	{
+		const size_t parameter = declaration_function_get_parameter(enc->curr_func, i);
+		if (identifier == parameter)
+		{
+			return displ;
+		}
+	}
+
 	if (displ <= 0)
 	{
 		vector_set(&enc->displacements, identifier, -(item_t)mem_size(enc));
@@ -1534,6 +1546,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = declaration_function_get_id(nd);
 	functions_add(enc, identifier, mem_size(enc));
+
+	enc->curr_func = nd;
 
 	const item_t displ = enc->displ;
 	enc->displ = 3;
