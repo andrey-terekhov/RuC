@@ -19,7 +19,7 @@
 node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc);
 node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
 
-static node copy_argument_node(builder *bldr, node *argument, location l_loc, location r_loc);
+static node copy_argument_node(builder *bldr, node *argument, location loc);
 
 static char *string_append(const char *s1, const char *s2)
 {
@@ -148,21 +148,16 @@ static node create_printf_node(builder *bldr, node_vector *args, location loc, s
 	return build_printf_expression(bldr, &printf_callee, &tmp_node_vector, loc);
 }
 
-static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location l_loc, location r_loc)
+static node create_printf_node_by_str(builder *bldr, const char *str, node_vector *args, location loc)
 {
-	const location loc = { l_loc.begin, r_loc.end };
-
 	// создаём строку и вносим её в вектор
 	size_t str_index = string_add_by_char(bldr->sx, str);
 
 	return create_printf_node(bldr, args, loc, str_index);
 }
 
-static node create_consec_subscripts(builder *bldr, node *argument, size_t dimensions, vector idents, location l_loc,
-									 location r_loc)
+static node create_consec_subscripts(builder *bldr, node *argument, size_t dimensions, vector idents, location loc)
 {
-	const location loc = { l_loc.begin, r_loc.end };
-
 	// создание идёт от той вырезки, базой для которой является исходный аргумент,
 	// базой следующей вырезки является только что созданная вырезка и т.д.
 	node curr_subscr_arg = *argument;
@@ -180,16 +175,14 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 		curr_subscr_arg = sub_subscript_expr;
 	}
 	return curr_subscr_arg;
-} 
+}
 
-static node copy_subscript_node(builder *bldr, node *argument, location l_loc, location r_loc)
+static node copy_subscript_node(builder *bldr, node *argument, location loc)
 {
-	const location loc = { l_loc.begin, r_loc.end };
-
 	// берём текущий индекс вырезки
 	node index_curr = expression_subscript_get_index(argument);
 	// копируем его
-	node index_copy = copy_argument_node(bldr, &index_curr, l_loc, r_loc);
+	node index_copy = copy_argument_node(bldr, &index_curr, loc);
 	if (!node_is_correct(&index_copy))
 	{
 		return node_broken();
@@ -198,7 +191,7 @@ static node copy_subscript_node(builder *bldr, node *argument, location l_loc, l
 	// берём родителя переданного аргумента
 	node base_curr = expression_subscript_get_base(argument);
 	// копируем его узел
-	node base_copy = copy_argument_node(bldr, &base_curr, l_loc, r_loc);
+	node base_copy = copy_argument_node(bldr, &base_curr, loc);
 	if (!node_is_correct(&base_copy))
 	{
 		return node_broken();
@@ -216,14 +209,12 @@ static node copy_identitfier_node(builder *bldr, node *argument, location loc)
 	return expression_identifier(&bldr->context, expression_get_type(argument), argument_id, loc);
 }
 
-static node copy_member_node(builder *bldr, node *argument, location l_loc, location r_loc)
+static node copy_member_node(builder *bldr, node *argument, location loc)
 {
-	location loc = { l_loc.begin, r_loc.end };
-
 	// берём родителя переданного аргумента
 	node base_curr = expression_member_get_base(argument);
 	// копируем его узел
-	node base_copy = copy_argument_node(bldr, &base_curr, l_loc, r_loc);
+	node base_copy = copy_argument_node(bldr, &base_curr, loc);
 	if (!node_is_correct(&base_copy))
 	{
 		return node_broken();
@@ -236,18 +227,16 @@ static node copy_member_node(builder *bldr, node *argument, location l_loc, loca
 	return expression_member(type, expression_is_lvalue(&base_copy) ? LVALUE : RVALUE, index, 0, &base_copy, loc);
 }
 
-static node copy_argument_node(builder *bldr, node *argument, location l_loc, location r_loc)
+static node copy_argument_node(builder *bldr, node *argument, location loc)
 {
-	location loc = { l_loc.begin, r_loc.end };
-
 	switch (expression_get_class(argument))
 	{
 		case EXPR_IDENTIFIER:
 			return copy_identitfier_node(bldr, argument, loc);
 		case EXPR_MEMBER:
-			return copy_member_node(bldr, argument, l_loc, r_loc);
+			return copy_member_node(bldr, argument, loc);
 		case EXPR_SUBSCRIPT:
-			return copy_subscript_node(bldr, argument, l_loc, r_loc);
+			return copy_subscript_node(bldr, argument, loc);
 		default:
 			return node_broken();
 	}
@@ -256,9 +245,9 @@ static node copy_argument_node(builder *bldr, node *argument, location l_loc, lo
 static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
 
 static node create_array_nodes(builder *bldr, node *argument, item_t type, location l_loc, location r_loc,
-							   size_t dimensions, vector temp_idents_reprs)
+							   size_t dimensions, vector temp_idents_id)
 {
-	const location loc = { l_loc.begin, r_loc.end };
+	location loc = { l_loc.begin, r_loc.end };
 
 	// аргументы для тела цикла
 	node_vector body_args = node_vector_create();
@@ -287,7 +276,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		statement_declaration_add_declarator(&decl_stmt, &init_expr);
 
 		// вносим его в вектор для дальнейшего использования
-		if (vector_add(&temp_idents_reprs, id) == SIZE_MAX)
+		if (vector_add(&temp_idents_id, id) == SIZE_MAX)
 		{
 			return node_broken();
 		}
@@ -297,14 +286,14 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок
-		node cond_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
+		node cond_subs_arg_expr = copy_argument_node(bldr, argument, loc);
 		if (!node_is_correct(&cond_subs_arg_expr))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
 		node cond_main_subs_expr =
-			create_consec_subscripts(bldr, &cond_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+			create_consec_subscripts(bldr, &cond_subs_arg_expr, dimensions - 1, temp_idents_id, loc);
 
 		// оператор upb ("кол_во")
 		node cond_rhs_expr = expression_unary(TYPE_INTEGER, RVALUE, &cond_main_subs_expr, UN_UPB, loc);
@@ -318,12 +307,11 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// 4. тело цикла
 		// печатаем "{"
 		node_vector blank_tmp_node_vector = node_vector_create();
-		node first_printf_node = create_printf_node_by_str(bldr, "{", &blank_tmp_node_vector, l_loc, r_loc);
+		node first_printf_node = create_printf_node_by_str(bldr, "{", &blank_tmp_node_vector, loc);
 		node_vector_add(&body_args, &first_printf_node);
 
 		// печатаем массив
-		node array_nodes =
-			create_array_nodes(bldr, argument, elements_type, l_loc, r_loc, dimensions + 1, temp_idents_reprs);
+		node array_nodes = create_array_nodes(bldr, argument, elements_type, l_loc, r_loc, dimensions + 1, temp_idents_id);
 		node_vector_add(&body_args, &array_nodes);
 
 		// печатаем "}, " или "}", если цикл дальше не пойдёт
@@ -335,13 +323,14 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// главный узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок
-		node if_binary_rhs_main_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
+		node if_binary_rhs_main_subs_arg_expr = copy_argument_node(bldr, argument, loc);
 		if (!node_is_correct(&if_binary_rhs_main_subs_arg_expr))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
-		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, &if_binary_rhs_main_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+		node if_binary_rhs_main_subs =
+			create_consec_subscripts(bldr, &if_binary_rhs_main_subs_arg_expr, dimensions - 1, temp_idents_id, loc);
 
 		// оператор upb ("кол_во")
 		node if_binary_rhs_upb = expression_unary(TYPE_INTEGER, RVALUE, &if_binary_rhs_main_subs, UN_UPB, loc);
@@ -355,9 +344,9 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node if_binary = expression_binary(TYPE_BOOLEAN, &if_binary_lhs, &if_binary_rhs, BIN_EQ, loc);
 
 		// условие выполнено
-		node if_true = create_printf_node_by_str(bldr, "}", &blank_tmp_node_vector, l_loc, r_loc);
+		node if_true = create_printf_node_by_str(bldr, "}", &blank_tmp_node_vector, loc);
 		// условие не выполнено
-		node if_false = create_printf_node_by_str(bldr, "}, ", &blank_tmp_node_vector, l_loc, r_loc);
+		node if_false = create_printf_node_by_str(bldr, "}, ", &blank_tmp_node_vector, loc);
 
 		// само выражение
 		node if_statement = statement_if(&if_binary, &if_true, &if_false, loc);
@@ -375,15 +364,15 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	// будут отпечатаны слова через запятую)
 	if (type_is_string(bldr->sx, type))
 	{
-		node subscript_node = create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+		node subscript_node = create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_id, loc);
 
 		node_vector arg = node_vector_create();
 		node_vector_add(&arg, &subscript_node);
 
-		node printf_node = create_printf_node_by_str(bldr, "%s", &arg, l_loc, r_loc);
+		node printf_node = create_printf_node_by_str(bldr, "%s", &arg, loc);
 		node_vector_add(&body_args, &printf_node);
 
-		return build_compound_statement(bldr, &body_args, l_loc, r_loc);
+		return statement_compound(&bldr->context, &body_args, loc);
 	}
 
 	// не пришёл => делаем цикл
@@ -409,7 +398,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 	statement_declaration_add_declarator(&decl_stmt, &init_expr);
 
 	// вносим его в вектор для дальнейшего использования
-	if (vector_add(&temp_idents_reprs, id) == SIZE_MAX)
+	if (vector_add(&temp_idents_id, id) == SIZE_MAX)
 	{
 		return node_broken();
 	}
@@ -420,14 +409,14 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 	// главный узел, который отправится в build_unary_expression() оператора upb
 	// для него создаём нужное количество "предварительных" вырезок
-	node cond_main_subs_arg_expr = copy_argument_node(bldr, argument, l_loc, r_loc);
+	node cond_main_subs_arg_expr = copy_argument_node(bldr, argument, loc);
 	if (!node_is_correct(&cond_main_subs_arg_expr))
-	{ 
-		// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+	{
+		// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 		return node_broken();
 	}
 	node cond_main_subs_expr =
-		create_consec_subscripts(bldr, &cond_main_subs_arg_expr, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+		create_consec_subscripts(bldr, &cond_main_subs_arg_expr, dimensions - 1, temp_idents_id, loc);
 
 	// оператор upb ("кол_во")
 	node cond_rhs_expr = expression_unary(TYPE_INTEGER, RVALUE, &cond_main_subs_expr, UN_UPB, loc);
@@ -460,28 +449,26 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// узлов должно быть два, т.к. будем разворачиваться в if statement
 
 		// создаём новый узел аргумента
-		node curr_subscr_arg1 = copy_argument_node(bldr, argument, l_loc, r_loc);
+		node curr_subscr_arg1 = copy_argument_node(bldr, argument, loc);
 		if (!node_is_correct(&curr_subscr_arg1))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
 		// в качестве аргумента для create_printf_node() отправятся только последние по порядку создания узлы
-		node main_subscript1 =
-			create_consec_subscripts(bldr, &curr_subscr_arg1, dimensions, temp_idents_reprs, l_loc, r_loc);
+		node main_subscript1 = create_consec_subscripts(bldr, &curr_subscr_arg1, dimensions, temp_idents_id, loc);
 		node_vector tmp_args1 = node_vector_create();
 		node_vector_add(&tmp_args1, &main_subscript1);
 
 		// создаём новый узел аргумента
-		node curr_subscr_arg2 = copy_argument_node(bldr, argument, l_loc, r_loc);
+		node curr_subscr_arg2 = copy_argument_node(bldr, argument, loc);
 		if (!node_is_correct(&curr_subscr_arg2))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
 		// в качестве аргумента для create_printf_node() отправятся только последние по порядку создания узлы
-		node main_subscript2 =
-			create_consec_subscripts(bldr, &curr_subscr_arg2, dimensions, temp_idents_reprs, l_loc, r_loc);
+		node main_subscript2 = create_consec_subscripts(bldr, &curr_subscr_arg2, dimensions, temp_idents_id, loc);
 		node_vector tmp_args2 = node_vector_create();
 		node_vector_add(&tmp_args2, &main_subscript2);
 
@@ -492,8 +479,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// главный узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок
-		node if_binary_rhs_main_subs =
-			create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_id, loc);
 
 		// оператор upb ("кол_во")
 		node if_binary_rhs_upb = expression_unary(TYPE_INTEGER, RVALUE, &if_binary_rhs_main_subs, UN_UPB, loc);
@@ -513,7 +499,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// условие не выполнено
 		if (!vector_add_str(&str, ", "))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
 		node if_false = create_printf_node_by_vector(bldr, &str, &tmp_args2, l_loc, r_loc);
@@ -536,17 +522,17 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// 5. полный узел цикла
 
 		// создаём узел структуры как корректную вырезку из массива
-		node tmp_arg = copy_argument_node(bldr, argument, l_loc, r_loc);
+		node tmp_arg = copy_argument_node(bldr, argument, loc);
 		if (!node_is_correct(&tmp_arg))
 		{
-			// для temp_idents_reprs будет сделан clear по выходу из create_array_nodes() в любом случае
+			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
 			return node_broken();
 		}
-		node subs_struct_node = create_consec_subscripts(bldr, &tmp_arg, dimensions, temp_idents_reprs, l_loc, r_loc);
+		node subs_struct_node = create_consec_subscripts(bldr, &tmp_arg, dimensions, temp_idents_id, loc);
 
 		// разворачиваемся в узел printf, чтобы отпечатать "\n{ struct"
 		node_vector blank_tmp_node_vector = node_vector_create();
-		node first_printf_node = create_printf_node_by_str(bldr, "\n{ struct", &blank_tmp_node_vector, l_loc, r_loc);
+		node first_printf_node = create_printf_node_by_str(bldr, "\n{ struct", &blank_tmp_node_vector, loc);
 		node_vector_add(&body_args, &first_printf_node);
 
 		// отправляем нужный узел в create_struct_nodes()
@@ -557,14 +543,13 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// левая часть if
 		node if_binary_lhs =
-			expression_identifier(&bldr->context, TYPE_INTEGER, vector_get(&temp_idents_reprs, dimensions - 1), loc);
+			expression_identifier(&bldr->context, TYPE_INTEGER, vector_get(&temp_idents_id, dimensions - 1), loc);
 
 		// правая часть if: "upb(<массив по нужному измерению>) - 1"
 
 		// главный узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок по нулевому индексу
-		node if_binary_rhs_main_subs =
-			create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_reprs, l_loc, r_loc);
+		node if_binary_rhs_main_subs = create_consec_subscripts(bldr, argument, dimensions - 1, temp_idents_id, loc);
 
 		// оператор upb ("кол_во")
 		node if_binary_rhs_upb = expression_unary(TYPE_INTEGER, RVALUE, &if_binary_rhs_main_subs, UN_UPB, loc);
@@ -578,9 +563,9 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node if_binary = expression_binary(TYPE_BOOLEAN, &if_binary_lhs, &if_binary_rhs, BIN_EQ, loc);
 
 		// условие выполнено
-		node if_true = create_printf_node_by_str(bldr, "\n}", &blank_tmp_node_vector, l_loc, r_loc);
+		node if_true = create_printf_node_by_str(bldr, "\n}", &blank_tmp_node_vector, loc);
 		// условие не выполнено
-		node if_false = create_printf_node_by_str(bldr, "}, ", &blank_tmp_node_vector, l_loc, r_loc);
+		node if_false = create_printf_node_by_str(bldr, "}, ", &blank_tmp_node_vector, loc);
 
 		// само выражение
 		node if_statement = statement_if(&if_binary, &if_true, &if_false, loc);
@@ -599,7 +584,7 @@ static node create_ptr_nodes(builder *bldr, node *argument, location l_loc, loca
 {
 	const location loc = { l_loc.begin, r_loc.end };
 
-	node arg_copy = copy_argument_node(bldr, argument, l_loc, r_loc); // не NULL_POINTER => аргумент -- идентификатор
+	node arg_copy = copy_argument_node(bldr, argument, loc); // не NULL_POINTER => аргумент -- идентификатор
 	if (!node_is_correct(&arg_copy))
 	{
 		return node_broken();
@@ -608,15 +593,15 @@ static node create_ptr_nodes(builder *bldr, node *argument, location l_loc, loca
 	node cond = expression_unary(TYPE_BOOLEAN, RVALUE, &arg_copy, UN_LOGNOT, loc);
 
 	node_vector blank_tmp_nv = node_vector_create();
-	node if_true = create_printf_node_by_str(bldr, "NULL", &blank_tmp_nv, l_loc, r_loc);
+	node if_true = create_printf_node_by_str(bldr, "NULL", &blank_tmp_nv, loc);
 
 	node_vector tmp_nv = node_vector_create();
 
 	node_vector_add(&tmp_nv, argument);
-	node if_false = create_printf_node_by_str(bldr, "%p", &tmp_nv, l_loc, r_loc);
+	node if_false = create_printf_node_by_str(bldr, "%p", &tmp_nv, loc);
 
 	return statement_if(&cond, &if_true, &if_false, loc);
-} 
+}
 
 static bool create_correct_spaces(vector *str, size_t tab_deep)
 {
@@ -634,7 +619,7 @@ static bool create_correct_spaces(vector *str, size_t tab_deep)
 
 static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc)
 {
-	const location loc = { l_loc.begin, r_loc.end };
+	location loc = { l_loc.begin, r_loc.end };
 
 	// будет statement compound'ом
 	node result;
@@ -909,4 +894,3 @@ node create_complicated_type_str(builder *bldr, node *argument, location l_loc, 
 
 	return complicated_type_node;
 }
-

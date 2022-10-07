@@ -40,7 +40,7 @@ node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector 
  * @param   argument        Source node
  * @param   l_loc           Left source location
  * @param   r_loc           Right source location
- * @param   tab_deep        Tabulation deep for structure printig
+ * @param   tab_deep        Tabulation deep for structure printing
  * 
  * @return  Created nodes
  */
