@@ -32,7 +32,7 @@ static const size_t MAX_COMMENT_SIZE = 4096;
  *	@param	prs			Parser structure
  *	@param	num			Error code
  */
-static void parser_error(parser *const prs, location *const loc, const error_t num, ...)
+static void parser_error(parser *const prs, location *const loc, error_t num, ...)
 {
 	if (prs->is_recovery_disabled && prs->was_error)
 	{
