@@ -492,7 +492,14 @@ token lex(lexer *const lxr)
 				if (utf8_is_letter(lxr->character) || lxr->character == '#')
 				{
 					// Keywords and identifiers
-					return lex_identifier_or_keyword(lxr);
+					const token token = lex_identifier_or_keyword(lxr);
+					if (token_is(&token, TK_LINE))
+					{
+						skip_line_comment(lxr);
+						continue;
+					}
+
+					return token;
 				}
 				else
 				{

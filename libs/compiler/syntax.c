@@ -52,6 +52,8 @@ static void repr_add_keyword(map *const reprtab, const char32_t *const eng, cons
 
 static inline void repr_init(map *const reprtab)
 {
+	repr_add_keyword(reprtab, U"#line", U"#строка", TK_LINE);
+
 	repr_add_keyword(reprtab, U"main", U"главная", TK_MAIN);
 	repr_add_keyword(reprtab, U"char", U"литера", TK_CHAR);
 	repr_add_keyword(reprtab, U"double", U"двойной", TK_DOUBLE);
