@@ -941,7 +941,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		{
 			if (type_is_floating(left_type) || type_is_floating(right_type))
 			{
-				warning(bldr->sx->io, variable_deviation);
+				semantic_warning(bldr, op_loc, variable_deviation);
 			}
 
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))

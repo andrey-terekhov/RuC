@@ -1115,7 +1115,13 @@ size_t declaration_function_get_id(const node *const nd)
 	return (size_t)node_get_arg(nd, 0);
 }
 
-size_t declaration_function_get_param(const node *const nd, const size_t index)
+size_t declaration_function_get_parameters_amount(const node *const nd)
+{
+	assert(node_get_type(nd) == OP_FUNC_DEF);
+	return node_get_amount(nd) - 1;
+}
+
+size_t declaration_function_get_parameter(const node *const nd, const size_t index)
 {
 	assert(node_get_type(nd) == OP_FUNC_DEF);
 

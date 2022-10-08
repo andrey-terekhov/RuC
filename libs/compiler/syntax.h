@@ -233,9 +233,9 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const i
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Index of previous declaration in identifiers table, @c ITEM_MAX on failure
+ *	@return	Index of previous declaration in identifiers table, @c SIZE_MAX on failure
  */
-item_t ident_get_prev(const syntax *const sx, const size_t index);
+size_t ident_get_prev(const syntax *const sx, const size_t index);
 
 /**
  *	Get item representation from identifiers table by index

@@ -2018,10 +2018,10 @@ static void parse_function_definition(parser *const prs, node *const parent, con
 
 	prs->was_return = 0;
 
-	const item_t prev = ident_get_prev(prs->sx, function_id);
+	const size_t prev = ident_get_prev(prs->sx, function_id);
 	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
 	{
-		if (prs->bld.func_type != ident_get_type(prs->sx, (size_t)prev))
+		if (prs->bld.func_type != ident_get_type(prs->sx, prev))
 		{
 			parser_error(prs, decl_and_def_have_diff_type);
 			skip_until(prs, TK_R_BRACE);
