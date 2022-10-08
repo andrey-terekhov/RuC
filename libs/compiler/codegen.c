@@ -465,14 +465,14 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 }
 
 /**
- *	Emit identifier expression
+ *	Emit identifier lvalue
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  *
- *	@return	Expression value
+ *	@return	Identifier designator
  */
-static lvalue emit_identifier_expression(encoder *const enc, const node *const nd)
+static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = expression_identifier_get_id(nd);
 	const item_t type = ident_get_type(enc->sx, identifier);
@@ -482,14 +482,14 @@ static lvalue emit_identifier_expression(encoder *const enc, const node *const n
 }
 
 /**
- *	Emit subscript expression
+ *	Emit subscript lvalue
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  *
- *	@return Expression value
+ *	@return Subscript designator
  */
-static lvalue emit_subscript_expression(encoder *const enc, const node *const nd)
+static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 {
 	const node base = expression_subscript_get_base(nd);
 	emit_expression(enc, &base);
@@ -510,14 +510,14 @@ static lvalue emit_subscript_expression(encoder *const enc, const node *const nd
 }
 
 /**
- *	Emit member expression
+ *	Emit member lvalue
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  *
- *	@return	Expression value
+ *	@return	Member designator
  */
-static lvalue emit_member_expression(encoder *const enc, const node *const nd)
+static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
 	const node base = expression_member_get_base(nd);
@@ -569,40 +569,51 @@ static lvalue emit_member_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit expression
+ *	Emit indirection lvalue
  *
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  *
- *	@return	Expression value
+ *	@return	Indirection designator
+ */
+static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
+{
+	const item_t type = expression_get_type(nd);
+	const node operand = expression_unary_get_operand(nd);
+	const lvalue value = emit_lvalue(enc, &operand);
+	if (value.kind == VARIABLE)
+	{
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, value.displ);
+	}
+
+	return (lvalue){ .kind = ADDRESS, .type = type };
+}
+
+/**
+ *	Emit lvalue
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ *
+ *	@return	Lvalue designator
  */
 static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 {
 	switch (expression_get_class(nd))
 	{
 		case EXPR_IDENTIFIER:
-			return emit_identifier_expression(enc, nd);
+			return emit_identifier_lvalue(enc, nd);
 
 		case EXPR_SUBSCRIPT:
-			return emit_subscript_expression(enc, nd);
+			return emit_subscript_lvalue(enc, nd);
 
 		case EXPR_MEMBER:
-			return emit_member_expression(enc, nd);
+			return emit_member_lvalue(enc, nd);
 
 		case EXPR_UNARY:
-		{
-			// Тут может быть только UN_INDIRECTION
-			const item_t type = expression_get_type(nd);
-			const node operand = expression_unary_get_operand(nd);
-			const lvalue value = emit_lvalue(enc, &operand);
-			if (value.kind == VARIABLE)
-			{
-				mem_add(enc, IC_LOAD);
-				mem_add(enc, value.displ);
-			}
-
-			return (lvalue){ .kind = ADDRESS, .type = type };
-		}
+			// There can be only indirection
+			return emit_indirection_lvalue(enc, nd);
 
 		default:
 			// Cannot be an lvalue
@@ -610,6 +621,7 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 			return (lvalue){ .displ = ITEM_MAX };
 	}
 }
+
 
 /**
  *	Emit literal expression
