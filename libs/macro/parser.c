@@ -77,7 +77,7 @@ static void skip_string(parser *const prs, const char32_t quote)
 		uni_print_char(prs->io, character);
 		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
 		{
-			parser_error(prs, &loc, PARSER_MISSING_TERMINATION, quote);
+			parser_error(prs, &loc, STRING_UNTERMINATED, quote);
 			break;
 		}
 	} while (was_slash || character != quote);
@@ -136,7 +136,7 @@ static void skip_multi_comment(parser *const prs)
 	{
 		if (character == (char32_t)EOF)
 		{
-			parser_error(prs, &loc, PARSER_UNTERMINATED_COMMENT);
+			parser_error(prs, &loc, COMMENT_UNTERMINATED);
 			return;
 		}
 		else if (character == '\n')
@@ -197,30 +197,35 @@ void parse_line(parser *const prs, char32_t character)
 	uni_unscan_char(prs->io, character);
 	uni_unscan(prs->io, storage_last_read(prs->stg));
 	loc_search_from(&prs->loc);
-	macro_warning(&prs->loc, PARSER_LINE_DIRECTIVE);
+	macro_warning(&prs->loc, LINE_DIRECTIVE_SKIPED);
 
 	const size_t line = loc_get_line(&prs->loc);
+	uni_print_char(prs->io, '\n');
+
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
 
 	bool was_slash = false;
 	character = uni_scan_char(prs->io);
-	while (character != '\r' && character != '\n' && character != (char32_t)EOF)
+	while (character != '\n' && character != (char32_t)EOF)
 	{
 		was_slash = parse_character(prs, character, was_slash);
 		if (line < loc_get_line(&prs->loc))
 		{
 			out_swap(prs->io, &out);
-			uni_print_char(prs->io, '\n');
 			loc_update(&prs->loc);
 			return;
 		}
 
 		character = uni_scan_char(prs->io);
+		if (character == '\r')
+		{
+			character = uni_scan_char(prs->io);
+		}
 	}
 
-	uni_unscan_char(prs->io, character);
 	out_swap(prs->io, &out);
+	loc_line_break(&prs->loc);
 }
 
 

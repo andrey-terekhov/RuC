@@ -69,7 +69,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
-		case PARSER_MISSING_TERMINATION:
+		case STRING_UNTERMINATED:
 		{
 			const char32_t quote = va_arg(args, char32_t);
 
@@ -78,7 +78,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(&msg[index], " пропущен");
 		}
 		break;
-		case PARSER_UNTERMINATED_COMMENT:
+		case COMMENT_UNTERMINATED:
 			sprintf(msg, "незавершённый комментарий");
 			break;
 
@@ -98,7 +98,7 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
-		case PARSER_LINE_DIRECTIVE:
+		case LINE_DIRECTIVE_SKIPED:
 			sprintf(msg, "директива позиционирования будет пропущена");
 			break;
 
