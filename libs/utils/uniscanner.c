@@ -16,6 +16,7 @@
 
 #include "uniscanner.h"
 #include <stdarg.h>
+#include <string.h>
 #include "utf8.h"
 
 
@@ -59,4 +60,9 @@ char32_t uni_scan_char(universal_io *const io)
 int uni_unscan_char(universal_io *const io, const char32_t wchar)
 {
 	return in_set_position(io, in_get_position(io) - utf8_size(wchar));
+}
+
+int uni_unscan(universal_io *const io, const char *const str)
+{
+	return str != NULL ? in_set_position(io, in_get_position(io) - strlen(str)) : -1;
 }

@@ -344,29 +344,29 @@ int in_swap(universal_io *const fst, universal_io *const snd)
 		return -1;
 	}
 
-	FILE *in_file = fst->in_file;
+	FILE *file = fst->in_file;
 	fst->in_file = snd->in_file;
-	snd->in_file = in_file;
+	snd->in_file = file;
 
-	const char *in_buffer = fst->in_buffer;
+	const char *buffer = fst->in_buffer;
 	fst->in_buffer = snd->in_buffer;
-	snd->in_buffer = in_buffer;
+	snd->in_buffer = buffer;
 
-	const size_t in_size = fst->in_size;
+	const size_t size = fst->in_size;
 	fst->in_size = snd->in_size;
-	snd->in_size = in_size;
+	snd->in_size = size;
 
-	const size_t in_position = fst->in_position;
+	const size_t position = fst->in_position;
 	fst->in_position = snd->in_position;
-	snd->in_position = in_position;
+	snd->in_position = position;
 
-	const io_user_func in_user_func = fst->in_user_func;
+	const io_user_func user_func = fst->in_user_func;
 	fst->in_user_func = snd->in_user_func;
-	snd->in_user_func = in_user_func;
+	snd->in_user_func = user_func;
 
-	const io_func in_func = fst->in_func;
+	const io_func func = fst->in_func;
 	fst->in_func = snd->in_func;
-	snd->in_func = in_func;
+	snd->in_func = func;
 
 	return 0;
 }
@@ -508,6 +508,40 @@ int out_set_func(universal_io *const io, const io_user_func func)
 
 	io->out_user_func = func;
 	io->out_func = &out_func_user;
+
+	return 0;
+}
+
+int out_swap(universal_io *const fst, universal_io *const snd)
+{
+	if (fst == NULL || snd == NULL)
+	{
+		return -1;
+	}
+
+	FILE *file = fst->out_file;
+	fst->out_file = snd->out_file;
+	snd->out_file = file;
+
+	char *buffer = fst->out_buffer;
+	fst->out_buffer = snd->out_buffer;
+	snd->out_buffer = buffer;
+
+	const size_t size = fst->out_size;
+	fst->out_size = snd->out_size;
+	snd->out_size = size;
+
+	const size_t position = fst->out_position;
+	fst->out_position = snd->out_position;
+	snd->out_position = position;
+
+	const io_user_func user_func = fst->out_user_func;
+	fst->out_user_func = snd->out_user_func;
+	snd->out_user_func = user_func;
+
+	const io_func func = fst->out_func;
+	fst->out_func = snd->out_func;
+	snd->out_func = func;
 
 	return 0;
 }

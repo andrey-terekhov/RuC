@@ -59,6 +59,16 @@ EXPORTED char32_t uni_scan_char(universal_io *const io);
  */
 EXPORTED int uni_unscan_char(universal_io *const io, const char32_t wchar);
 
+/**
+ *	Universal function for discarding string
+ *
+ *	@param	io			Universal io structure
+ *	@param	str			NULL-terminated string
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int uni_unscan(universal_io *const io, const char *const str);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

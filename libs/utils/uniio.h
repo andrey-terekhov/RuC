@@ -259,6 +259,16 @@ EXPORTED int out_set_buffer(universal_io *const io, const size_t size);
  */
 EXPORTED int out_set_func(universal_io *const io, const io_user_func func);
 
+/**
+ *	Swap output option between two streams
+ *
+ *	@param	fst			First universal io structure
+ *	@param	snd			Second universal io structure
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int out_swap(universal_io *const fst, universal_io *const snd);
+
 
 /**
  *	Check that current output option is correct
