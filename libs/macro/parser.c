@@ -153,6 +153,46 @@ static void skip_multi_comment(parser *const prs)
 }
 
 
+bool parse_character(parser *const prs, char32_t character, const bool was_slash)
+{
+	if (was_slash && character == '/')
+	{
+		skip_comment(prs);
+		return false;
+	}
+	else if (was_slash && character == '*')
+	{
+		skip_multi_comment(prs);
+		return false;
+	}
+	else if (was_slash)
+	{
+		uni_print_char(prs->io, '/');
+	}
+
+	switch (character)
+	{
+		case '/':
+			return true;
+
+		case '\'':
+			skip_string(prs, character);
+			return false;
+		case '"':
+			skip_string(prs, character);
+			return false;
+
+		case '\r':
+			character = uni_scan_char(prs->io);
+		case '\n':
+			loc_line_break(&prs->loc);
+		default:
+			uni_print_char(prs->io, character);
+			return false;
+	}
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -199,6 +239,9 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	{
 		switch (storage_search(prs->stg, prs->io, &character))
 		{
+			case KW_LINE:
+				break;
+
 			case KW_INCLUDE:
 
 			case KW_DEFINE:
@@ -243,46 +286,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				break;
 		}
 
-		switch (character)
-		{
-			case '\'':
-				skip_string(prs, character);
-				break;
-			case '"':
-				skip_string(prs, character);
-				break;
-			case '/':
-				if (was_slash)
-				{
-					skip_comment(prs);
-				}
-				was_slash = !was_slash;
-				break;
-			case '*':
-				if (was_slash)
-				{
-					skip_multi_comment(prs);
-					was_slash = false;
-				}
-				else
-				{
-					uni_print_char(prs->io, character);
-				}
-				break;
-
-			case '\r':
-				break;
-			case '\n':
-				loc_line_break(&prs->loc);
-			default:
-				if (was_slash)
-				{
-					uni_print_char(prs->io, '/');
-					was_slash = false;
-				}
-				uni_print_char(prs->io, character);
-				break;
-		}
+		was_slash = parse_character(prs, character, was_slash);
 	} while (character != (char32_t)EOF);
 
 	in_swap(prs->io, in);

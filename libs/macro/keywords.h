@@ -29,6 +29,7 @@ typedef enum KEYWORD
 	BEGIN_KEYWORD,
 
 	KW_INCLUDE,					/**< '#include'	keyword	*/
+	KW_LINE,					/**< '#line'	keyword	*/
 
 	KW_DEFINE,					/**< '#define'	keyword	*/
 	KW_SET,						/**< '#set'		keyword	*/

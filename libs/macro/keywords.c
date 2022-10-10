@@ -47,7 +47,8 @@ int kw_add(map *const as)
 	}
 
 	return add_keyword(as, U"#include",		U"#INCLUDE",	U"#подключить",		U"#ПОДКЛЮЧИТЬ",		KW_INCLUDE)
-	
+		|| add_keyword(as, U"#line",		U"#LINE",		U"#строка",			U"#СТРОКА",			KW_LINE)
+
 		|| add_keyword(as, U"#define",		U"#DEFINE",		U"#определить",		U"#ОПРЕДЕЛИТЬ",		KW_DEFINE)
 		|| add_keyword(as, U"#set",			U"#SET",		U"#переопределить",	U"#ПЕРЕОПРЕДЕЛИТЬ",	KW_SET)
 		|| add_keyword(as, U"#undef",		U"#UNDEF",		U"#разопределить",	U"#РАЗОПРЕДЕЛИТЬ",	KW_UNDEF)
