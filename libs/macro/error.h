@@ -43,6 +43,8 @@ typedef enum ERROR
 typedef enum WARNING
 {
 	MACRO_CONSOLE_SEPARATOR,
+
+	PARSER_LINE_DIRECTIVE,
 } warning_t;
 
 

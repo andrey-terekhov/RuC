@@ -192,6 +192,37 @@ bool parse_character(parser *const prs, char32_t character, const bool was_slash
 	}
 }
 
+void parse_line(parser *const prs, char32_t character)
+{
+	uni_unscan_char(prs->io, character);
+	uni_unscan(prs->io, storage_last_read(prs->stg));
+	loc_search_from(&prs->loc);
+	macro_warning(&prs->loc, PARSER_LINE_DIRECTIVE);
+
+	const size_t line = loc_get_line(&prs->loc);
+	universal_io out = io_create();
+	out_swap(prs->io, &out);
+
+	bool was_slash = false;
+	character = uni_scan_char(prs->io);
+	while (character != '\r' && character != '\n' && character != (char32_t)EOF)
+	{
+		was_slash = parse_character(prs, character, was_slash);
+		if (line < loc_get_line(&prs->loc))
+		{
+			out_swap(prs->io, &out);
+			uni_print_char(prs->io, '\n');
+			loc_update(&prs->loc);
+			return;
+		}
+
+		character = uni_scan_char(prs->io);
+	}
+
+	uni_unscan_char(prs->io, character);
+	out_swap(prs->io, &out);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -237,10 +268,19 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	char32_t character = '\0';
 	do
 	{
-		switch (storage_search(prs->stg, prs->io, &character))
+		const size_t keyword = storage_search(prs->stg, prs->io, &character);
+		const char *last = storage_last_read(prs->stg);
+		if (was_slash && last != NULL)
+		{
+			uni_print_char(prs->io, '/');
+			was_slash = false;
+		}
+
+		switch (keyword)
 		{
 			case KW_LINE:
-				break;
+				parse_line(prs, character);
+				continue;
 
 			case KW_INCLUDE:
 
@@ -268,19 +308,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				break;
 
 			case SIZE_MAX:
-			{
-				const char *last = storage_last_read(prs->stg);
 				if (last != NULL)
 				{
-					if (was_slash)
-					{
-						uni_print_char(prs->io, '/');
-						was_slash = false;
-					}
 					uni_printf(prs->io, "%s", last);
 				}
-			}
-			break;
+				break;
 
 			default:
 				break;

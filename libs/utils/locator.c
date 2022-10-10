@@ -184,7 +184,6 @@ int loc_update(location *const loc)
 	char path[MAX_PATH];
 	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
-		loc->io = NULL;
 		return -1;
 	}
 
@@ -207,7 +206,6 @@ int loc_update_begin(location *const loc)
 	char path[MAX_PATH];
 	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
-		loc->io = NULL;
 		return -1;
 	}
 
@@ -241,7 +239,6 @@ int loc_update_end(location *const loc)
 	char path[MAX_PATH];
 	if (loc_search_from(loc) || !loc_get_path(loc, path) || !out_is_correct(loc->io))
 	{
-		loc->io = NULL;
 		return -1;
 	}
 

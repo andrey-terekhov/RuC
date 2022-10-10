@@ -98,6 +98,10 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
+		case PARSER_LINE_DIRECTIVE:
+			sprintf(msg, "директива позиционирования будет пропущена");
+			break;
+
 		default:
 			sprintf(msg, "неизвестное предупреждение");
 			break;
