@@ -124,21 +124,21 @@ static inline void skip_block_comment(lexer *const lxr)
  */
 static token lex_identifier_or_keyword(lexer *const lxr)
 {
+	assert(utf8_is_letter(lxr->character));
 	const size_t loc_begin = in_get_position(lxr->sx->io);
+
 	uni_unscan_char(lxr->sx->io, lxr->character);
-
 	const size_t repr = repr_reserve(lxr->sx, &lxr->character);
-	const size_t loc_end = in_get_position(lxr->sx->io);
 
+	const size_t loc_end = in_get_position(lxr->sx->io);
 	const item_t ref = repr_get_reference(lxr->sx, repr);
+
 	if (ref >= 0)
 	{
 		return token_identifier((location){ loc_begin, loc_end }, repr);
 	}
-	else
-	{
-		return token_keyword((location){ loc_begin, loc_end }, (token_t)ref);
-	}
+
+	return token_keyword((location){ loc_begin, loc_end }, (token_t)ref);
 }
 
 /**
@@ -150,6 +150,7 @@ static token lex_identifier_or_keyword(lexer *const lxr)
  */
 static token lex_numeric_literal(lexer *const lxr)
 {
+	assert(utf8_is_digit(lxr->character) || lxr->character == '.');
 	const size_t loc_begin = in_get_position(lxr->sx->io);
 
 	// Основание по умолчанию - 10
@@ -362,15 +363,12 @@ static inline char32_t get_next_string_elem(lexer *const lxr)
 				return lxr->character;
 		}
 	}
-	else
-	{
-		return lxr->character;
-	}
+
+	return lxr->character;
 }
 
 /**
  *	Lex character literal
- *	@note Lexes the remainder of a character literal after apostrophe
  *
  *	@param	lxr			Lexer
  *
@@ -378,6 +376,7 @@ static inline char32_t get_next_string_elem(lexer *const lxr)
  */
 static token lex_char_literal(lexer *const lxr)
 {
+	assert(lxr->character == '\'');
 	const size_t loc_begin = in_get_position(lxr->sx->io);
 
 	if (scan(lxr) == '\'')
@@ -406,7 +405,6 @@ static token lex_char_literal(lexer *const lxr)
 
 /**
  *	Lex string literal
- *	@note	Lexes the remainder of a string literal after quote mark
  *
  *	@param	lxr			Lexer
  *
@@ -414,10 +412,10 @@ static token lex_char_literal(lexer *const lxr)
  */
 static token lex_string_literal(lexer *const lxr)
 {
+	assert(lxr->character == '"');
 	const size_t loc_begin = in_get_position(lxr->sx->io);
-	vector_resize(&lxr->lexstr, 0);
 
-	while (lxr->character == '\"')
+	while (lxr->character == '"')
 	{
 		scan(lxr);
 		while (lxr->character != '"' && lxr->character != '\n')
@@ -439,6 +437,8 @@ static token lex_string_literal(lexer *const lxr)
 
 	const size_t loc_end = in_get_position(lxr->sx->io);
 	const size_t index = string_add(lxr->sx, &lxr->lexstr);
+	vector_resize(&lxr->lexstr, 0);
+
 	return token_string_literal((location){ loc_begin, loc_end }, index);
 }
 
@@ -454,9 +454,7 @@ static token lex_string_literal(lexer *const lxr)
 
 lexer lexer_create(syntax *const sx)
 {
-	lexer lxr;
-	lxr.sx = sx;
-
+	lexer lxr = { .sx = sx };
 	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
 
 	scan(&lxr);
@@ -489,7 +487,7 @@ token lex(lexer *const lxr)
 				return token_eof();
 
 			default:
-				if (utf8_is_letter(lxr->character) || lxr->character == '#')
+				if (utf8_is_letter(lxr->character))
 				{
 					// Keywords and identifiers
 					return lex_identifier_or_keyword(lxr);
@@ -499,7 +497,7 @@ token lex(lexer *const lxr)
 					lexer_error(lxr, bad_character);
 					// Pretending the character didn't exist
 					scan(lxr);
-					return lex(lxr);
+					continue;
 				}
 
 				// Integer and floating literals

@@ -31,7 +31,7 @@ extern "C" {
 /** Lexer structure */
 typedef struct lexer
 {
-	syntax *sx;								/**< Syntax structure */
+	syntax *const sx;						/**< Syntax structure */
 
 	char32_t character;						/**< Current character */
 	vector lexstr;							/**< Representation of the read string literal */
