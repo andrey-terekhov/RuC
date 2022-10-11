@@ -616,7 +616,7 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 			return emit_indirection_lvalue(enc, nd);
 
 		default:
-			// Cannot be an lvalue
+			// Cannot be lvalue
 			system_error(node_unexpected, nd);
 			return (lvalue){ .displ = ITEM_MAX };
 	}
@@ -922,7 +922,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
  *	@param	enc			Encoder
  *	@param	nd			Node in AST
  */
-static void emit_member_rvalue(encoder *const enc, const node *const nd)
+static void emit_member_expression(encoder *const enc, const node *const nd)
 {
 	// Member expression может выдать rvalue только в одном случае: слева rvalue и оператор '.'
 	const node base = expression_member_get_base(nd);
@@ -1244,7 +1244,7 @@ static void emit_expression(encoder *const enc, const node *const nd)
 			return;
 
 		case EXPR_MEMBER:
-			emit_member_rvalue(enc, nd);
+			emit_member_expression(enc, nd);
 			return;
 
 		case EXPR_CAST:

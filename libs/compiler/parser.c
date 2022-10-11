@@ -27,7 +27,7 @@ static const char *const DEFAULT_TREE = "tree.txt";
 /** Parser */
 typedef struct parser
 {
-	syntax *sx;							/**< Syntax structure */
+	syntax *const sx;					/**< Syntax structure */
 
 	builder bld;						/**< AST builder */
 	lexer lxr;							/**< Lexer */
@@ -76,10 +76,8 @@ static node parse_statement(parser *const prs);
  */
 static inline parser parser_create(syntax *const sx)
 {
-	parser prs;
-	prs.sx = sx;
+	parser prs = { .sx = sx, .lxr = lexer_create(sx) };
 	prs.bld = builder_create(sx);
-	prs.lxr = lexer_create(sx);
 
 	prs.is_in_loop = false;
 	prs.is_in_switch = false;
