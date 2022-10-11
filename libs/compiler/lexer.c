@@ -454,7 +454,9 @@ static token lex_string_literal(lexer *const lxr)
 
 lexer lexer_create(syntax *const sx)
 {
-	lexer lxr = { .sx = sx };
+	lexer lxr;
+
+	lxr.sx = sx;
 	lxr.lexstr = vector_create(MAX_STRING_LENGTH);
 
 	scan(&lxr);
