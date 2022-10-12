@@ -634,14 +634,12 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			}
 			node_vector_add(&res_stmts, &complicated_type_node);
 
-			if (type_is_array(bldr->sx, member_type))
+			if (!create_correct_spaces(&str, tab_deep))
 			{
-				if (!vector_add_str(&str, "} "))
-				{
-					return node_broken();
-				}
+				return node_broken();
 			}
-			else if (type_is_structure(bldr->sx, member_type))
+
+			if (!type_is_pointer(bldr->sx, member_type))
 			{
 				if (!vector_add_str(&str, "}"))
 				{
@@ -665,8 +663,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 				return node_broken();
 			}
 		}
-		// правильно завершаем строку: если текущее поле, которое требуется распечатать, -- последнее, то запятую не
-		// ставим, иначе -- ставим
+		// правильно завершаем строку
 		if (i != member_amount - 1)
 		{
 			if (!vector_add_str(&str, ","))
@@ -674,10 +671,12 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 				return node_broken();
 			}
 		}
-
-		if (!create_correct_spaces(&str, tab_deep))
+		else
 		{
-			return node_broken();
+			if (!vector_add_str(&str, "\n"))
+			{
+				return node_broken();
+			}
 		}
 	}
 
