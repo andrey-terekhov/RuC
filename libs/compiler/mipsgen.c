@@ -1038,59 +1038,46 @@ static mips_register_t get_subs_displ_on_reg(information *info, const node *cons
 {
 	const node base = expression_subscript_get_base(nd);
 	const size_t base_id = expression_identifier_get_id(&base); 
-	const item_t base_displ =
-		hash_get(&info->displacements, base_id, 1); // <- по данному смещению хранится кол-во элементов массива
-
+	
 	const node index = expression_subscript_get_index(nd);
 	const rvalue index_rvalue = emit_expression(info, &index);
 	mips_register_t index_rvalue_reg = get_rvalue_reg(info, index_rvalue);
 
-	// TODO: умножить WORD_LENGTH на type_size
-	const item_t base_addr = base_displ - WORD_LENGTH; // <- по данному смещению хранится адрес самого массива
+	uni_printf(info->sx->io, "\n\t# loading base address to a register:\n");
+	const item_t base_addr = hash_get(&info->displacements, base_id, 1); // <- по данному смещению хранится адрес самого массива
 	const mips_register_t base_addr_reg = get_register(info);
 	to_code_R_I_R(info->sx->io, IC_MIPS_LW, base_addr_reg, base_addr, R_SP);
+	
+	uni_printf(info->sx->io, "\n\t# loading base size to a register: \n");
+	const mips_register_t base_size_reg = get_register(info);
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, base_size_reg, 0, base_addr_reg);
 
-	// <регистр index_rvalue_reg> = <регистр index_rvalue_reg> * (-WORD_LENGTH) + <регистр base_addr_reg>
-	uni_printf(info->sx->io, "\t# ");
+	// <регистр index_rvalue_reg> = (<регистр index_rvalue_reg> + 1) * WORD_LENGTH + <регистр base_addr_reg>
+	uni_printf(info->sx->io, "\n\t# ");
 	mips_register_to_io(info->sx->io, index_rvalue_reg);
-	uni_printf(info->sx->io, " = ");
+	uni_printf(info->sx->io, " = (");
 	mips_register_to_io(info->sx->io, index_rvalue_reg);
-	uni_printf(info->sx->io, " * %zu (== \"WORD_LENGTH\" * type_size()) + ", WORD_LENGTH);
+	uni_printf(info->sx->io, " + 1) * %zu (== \"WORD_LENGTH\" * type_size()) + ", WORD_LENGTH);
 	mips_register_to_io(info->sx->io, base_addr_reg);
 	uni_printf(info->sx->io, " (== base address):\n");
 
+	// TODO: умножить WORD_LENGTH на type_size?
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, index_rvalue_reg, index_rvalue_reg, 1);
 	to_code_2R_I(info->sx->io, IC_MIPS_MUL, index_rvalue_reg, index_rvalue_reg, WORD_LENGTH);
 	to_code_3R(info->sx->io, IC_MIPS_ADD, index_rvalue_reg, index_rvalue_reg, base_addr_reg);
 
-	free_register(info);
-
 	uni_printf(info->sx->io, "\n");
-
-	/*
-	// tmp_reg = <регистр index_rvalue_reg> * (-WORD_LENGTH) + base_displ + $sp
-	uni_printf(info->sx->io, "\t# ");
-	mips_register_to_io(info->sx->io, tmp_reg);
-	uni_printf(info->sx->io, " = ");
-	mips_register_to_io(info->sx->io, index_rvalue_reg);
-	uni_printf(info->sx->io, " * (-1) * %zu (== \"WORD_LENGTH\") + %" PRIitem " (== \"base_displ\") + $sp:\n", WORD_LENGTH,
-			   base_displ);
-
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, tmp_reg, R_ZERO, (-1) * WORD_LENGTH);
-	to_code_3R(info->sx->io, IC_MIPS_MUL, tmp_reg, tmp_reg, index_rvalue_reg);
-	to_code_3R(info->sx->io, IC_MIPS_ADD, tmp_reg, tmp_reg, R_SP);
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, tmp_reg, R_ZERO, base_displ);
-	*/
 
 	// Проверка на выход за границы массива
 	uni_printf(info->sx->io, "\t# out-of-bounds check:\n");
-	const mips_register_t base_size_reg = get_register(info);
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, base_size_reg, base_displ, R_SP);
 	to_code_3R(info->sx->io, IC_MIPS_SUB, base_size_reg, base_size_reg, index_rvalue_reg);
 	// TODO: нет ERROR метки в кодогенераторе, так что приходится пока так
 	uni_printf(info->sx->io, "\tbltz ");
 	mips_register_to_io(info->sx->io, base_size_reg); // TODO: проверить при равенстве нулю
 	uni_printf(info->sx->io, " ERROR\n");
 
+	// Освобождаем base_addr_reg и base_size_reg:
+	free_register(info);
 	free_register(info);
 
 	uni_printf(info->sx->io, "\n");
@@ -1107,7 +1094,7 @@ static lvalue emit_subscript_expression(information *info, const node *const nd)
 	const item_t arr_type = ident_get_type(info->sx, base_id);
 	const item_t base_type = array_get_type(info, arr_type);
 
-	uni_printf(info->sx->io, "\t# placing subscript address on register:\n");
+	uni_printf(info->sx->io, "\t# placing subscript address on register:\n\n");
 
 	mips_register_t tmp_reg = get_subs_displ_on_reg(info, nd);
 
@@ -1198,7 +1185,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 
 			if (type_is_floating(arg_type))
 			{
-				if (f_arg_count < 4) // в регистр fa0-fa3
+				if (f_arg_count < ARG_REG_AMOUNT) // в регистр fa0-fa3
 				{
 					rvalue arg_rvalue = emit_expression(info, &arg);
 					if (arg_rvalue.kind == CONST)
@@ -1234,7 +1221,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 			{
 				if (arg_count < 4) // в регистр a0-a3
 				{
-					if (type_is_scalar(info->sx, arg_type))
+					if ((type_is_scalar(info->sx, arg_type)) || (type_is_array(info->sx, arg_type)))
 					{
 						rvalue arg_rvalue = emit_expression(info, &arg);
 						if (arg_rvalue.kind == CONST)
@@ -1248,18 +1235,15 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 										  arg_rvalue.reg.reg_num, R_SP);
 						}
 					}
-					else // TODO: массивы/структуры
+					else // TODO: структуры
 					{
-						if (type_is_structure(info->sx, arg_type))
-						{
-							// Хотим записывать смещение, по которому записана структура в стеке
-							// TODO: emit_member_expression()
-						}
+						// Хотим записывать смещение, по которому записана структура в стеке
+						// TODO: emit_member_expression()
 					}
 				}
 				else // иначе на стек
 				{
-					if (type_is_scalar(info->sx, arg_type))
+					if ((type_is_scalar(info->sx, arg_type)) || (type_is_array(info->sx, arg_type)))
 					{
 						mips_register_t tmp_reg = get_register(info);
 
@@ -1277,7 +1261,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 
 						free_register(info);
 					}
-					else // TODO: массивы/структуры
+					else // TODO: структуры
 					{
 						if (type_is_structure(info->sx, arg_type))
 						{
@@ -1849,16 +1833,21 @@ static void emit_variable_declaration(information *const info, const node *const
 		const size_t dim = declaration_variable_get_dim_amount(nd);
 
 		// Загружаем общее количество элементов массива на стек
-		const mips_register_t tmp_reg = get_register(info);
-		to_code_R_I(info->sx->io, IC_MIPS_LI, tmp_reg, 1);
+		const mips_register_t elem_amount_reg = get_register(info);
+		to_code_R_I(info->sx->io, IC_MIPS_LI, elem_amount_reg, 1);
 		for (size_t j = 1; j <= dim; j++)
 		{
 			const node dim_size = declaration_variable_get_dim_expr(nd, j - 1);
 			const rvalue dim_size_rvalue = emit_expression(info, &dim_size);
 			const mips_register_t dim_size_rvalue_reg = get_rvalue_reg(info, dim_size_rvalue);
-			to_code_3R(info->sx->io, IC_MIPS_MUL, tmp_reg, dim_size_rvalue_reg, tmp_reg);
+			to_code_3R(info->sx->io, IC_MIPS_MUL, elem_amount_reg, dim_size_rvalue_reg, elem_amount_reg);
 		}
-		to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)value_displ, value_reg);
+		
+		uni_printf(info->sx->io, "\n\t# Incrementing ");
+		mips_register_to_io(info->sx->io, elem_amount_reg);
+		uni_printf(info->sx->io, " to store array size\n");
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, elem_amount_reg, elem_amount_reg, 1);
+		//to_code_R_I_R(info->sx->io, IC_MIPS_SW, elem_amount_reg, -(item_t)value_displ, value_reg);
 
 		// Добавляем смещение на стеке, в котором хранится размер массива,
 		// в специальный вектор, чтобы потом эту память освободить
@@ -1867,14 +1856,22 @@ static void emit_variable_declaration(information *const info, const node *const
 		// Cледующим за количеством элементов будет храниться адрес первого элемента -- выделяем память в 
 		// куче с помощью syscall #9
 		uni_printf(info->sx->io, "\n\t# allocating memory for array on the heap:\n");
-		to_code_2R(info->sx->io, IC_MIPS_MOVE, R_A0, tmp_reg);
+		to_code_2R(info->sx->io, IC_MIPS_MOVE, R_A0, elem_amount_reg);
 		to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, 9);
-		uni_printf(info->sx->io, "\tsyscall # $v0 now contains address of an array on the heap\n\n");
+		uni_printf(info->sx->io, "\tsyscall # $v0 now contains address of an array on the heap\n");
 
 		// $v0 теперь хранит в себе адрес выделенной памяти -- кладём её на стек
-		info->max_displ += type_size(info->sx, type) * WORD_LENGTH;
-		value_displ = info->max_displ;
+		//info->max_displ += type_size(info->sx, type) * WORD_LENGTH;
+		//value_displ = info->max_displ;
+		uni_printf(info->sx->io, "\n\t# storing array address on the stack:\n");
 		to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_V0, -(item_t)value_displ, value_reg); 
+
+		uni_printf(info->sx->io, "\n\t# storing array size:\n");
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, elem_amount_reg, elem_amount_reg, -1);
+		to_code_R_I_R(info->sx->io, IC_MIPS_SW, elem_amount_reg, 0, R_V0);
+
+		to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_V0, R_V0, 
+				type_size(info->sx, type_array_get_element_type(info->sx, type)) * WORD_LENGTH);
 
 		// TODO: многомерные массивы
 		if (has_init)
@@ -1885,7 +1882,7 @@ static void emit_variable_declaration(information *const info, const node *const
 			to_code_R_I(info->sx->io, IC_MIPS_LI, elem_count_reg, 0);
 				
 			// $v0 всё ещё хранит в себе адрес массива в куче
-			// tmp_reg всё ещё хранит в себе размер массива
+			// elem_amount_reg всё ещё хранит в себе размер массива
 
 			// Цикл по измерениям массива
 			const size_t dim = declaration_variable_get_dim_amount(nd);
@@ -1904,8 +1901,8 @@ static void emit_variable_declaration(information *const info, const node *const
 					uni_printf(info->sx->io, "\t# out-of-bounds check:\n");
 
 					const mips_register_t buf_reg = get_register(info);
-					// Вычли из текущего индекса tmp_reg (размеры массива)
-					to_code_3R(info->sx->io, IC_MIPS_SUB, buf_reg, elem_count_reg, tmp_reg);
+					// Вычли из текущего индекса elem_amount_reg (размеры массива)
+					to_code_3R(info->sx->io, IC_MIPS_SUB, buf_reg, elem_count_reg, elem_amount_reg);
 
 					// TODO: Проверить при равенстве нулю
 					// TODO: нет ERROR метки в кодогенераторе, так что приходится пока так
@@ -1924,7 +1921,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 					to_code_2R_I(info->sx->io, IC_MIPS_ADDI, elem_count_reg, elem_count_reg, 1);
 					to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_V0, R_V0, 
-							   type_size(info->sx, type_array_get_element_type(info->sx, type)) * WORD_LENGTH);
+							     type_size(info->sx, type_array_get_element_type(info->sx, type)) * WORD_LENGTH);
 
 					uni_printf(info->sx->io, "\n");
 
@@ -2030,7 +2027,7 @@ static void emit_function_definition(information *const info, const node *const 
 		if (type_is_floating(param_type))
 		{
 			mips_register_t tmp_reg = get_f_register(info);
-			arg_displ_sum += WORD_LENGTH;
+			arg_displ_sum += WORD_LENGTH * type_size(info->sx, param_type);
 			if (f_arg_count < TEMP_FP_REG_AMOUNT) // количество временных регистров
 			{
 				if (f_arg_count < ARG_REG_AMOUNT)
@@ -2045,19 +2042,19 @@ static void emit_function_definition(information *const info, const node *const 
 				}
 
 				// Все переменные обязательно должны быть на стеке
-				to_code_R_I_R(info->sx->io, IC_MIPS_S_S, tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP);
+				to_code_R_I_R(info->sx->io, IC_MIPS_S_S, tmp_reg, -(item_t)(arg_displ_sum), R_SP);
 
-				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
+				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum));
 			}
 			// иначе остаётся на стеке
 			else
 			{
 				uni_printf(info->sx->io, "\t# stays on stack\n");
 
-				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
+				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum));
 			}
 
-			f_arg_count += 2; // т.к. в операциях с одинароной точностью использовать необходимо только чётные регистры
+			f_arg_count += 2; // т.к. в операциях с одинарной точностью использовать необходимо только чётные регистры
 
 			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
@@ -2077,44 +2074,23 @@ static void emit_function_definition(information *const info, const node *const 
 					// берём со стека
 					to_code_R_I_R(info->sx->io,
 								  /* в случае не скалярного типа берём адрес первого элемента */
-									  type_is_scalar(info->sx, param_type) ? IC_MIPS_LW : IC_MIPS_LA,
-								  tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP);
+								  type_is_scalar(info->sx, param_type) ? IC_MIPS_LW : IC_MIPS_LA,
+								  tmp_reg, -(item_t)(arg_displ_sum), R_SP);
 
 					// FIXME: лучше бы это обернуть в функцию
-					// нужно узнать смещение (в случае скалярного типа увеличить на 4 в начале достаточно, поэтому
-					// считаем только для aggregate)
-					if (type_is_aggregate(info->sx, param_type))
+					if (type_is_structure(info->sx, param_type))
 					{
-						if (type_is_structure(info->sx, param_type))
-						{
-							// Обязательно WORD_LENGTH?
-							arg_displ_sum += WORD_LENGTH * (type_size(info->sx, param_type) - 1); 
-							// структура обязана иметь поля, так что безопасно
-						}
-						else
-						{
-							// TODO: массивы
-							// адрес размера массива, следом за ним идут элементы
-							item_t arr_displ = hash_get(&info->displacements, id, 1);
-							if (i != parameters - 1) // иначе нам всё равно
-							{
-								// находим адрес следующего элемента (чтобы посчитать смещение для следующего аргумента)
-								// он ниже на стеке (т.е. смещение у него больше)
-								item_t next_element_id = declaration_function_get_param(nd, i + 1);
-								item_t next_element_displ = hash_get(&info->displacements, next_element_id, 1);
-								arg_displ_sum += next_element_displ - arr_displ; 
-								// берём вместе с размером массива (он уже учтён в увеличении на 4 выше)
-								// не забыть учесть то, что на нужное кол-во байт мы уже сместились выше
-							}
-						}
+						// Обязательно WORD_LENGTH?
+						arg_displ_sum += WORD_LENGTH * (type_size(info->sx, param_type) - 1); 
+						// структура обязана иметь поля, так что безопасно
 					}
 				}
 
 				// Все переменные обязательно должны быть на стеке
 				// TODO: оптимизировать, чтобы не брать со стека и сразу не класть
-				to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum + 4), R_SP);
+				to_code_R_I_R(info->sx->io, IC_MIPS_SW, tmp_reg, -(item_t)(arg_displ_sum), R_SP);
 
-				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum + 4));
+				hash_set_by_index(&info->displacements, index, 1, -(item_t)(arg_displ_sum));
 
 				free_register(info);
 			}
@@ -2123,7 +2099,7 @@ static void emit_function_definition(information *const info, const node *const 
 			{
 				uni_printf(info->sx->io, "\t# stays on stack\n");
 
-				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum + 4));
+				hash_set_by_index(&info->displacements, index, 1, (arg_displ_sum));
 			}
 
 			arg_count++;
@@ -2418,20 +2394,13 @@ static void emit_return_statement(information *const info, const node *const nd)
 		}
 		else
 		{
-			if (type_is_scalar(info->sx, returning_rvalue.type))
+			if (returning_rvalue.kind == CONST)
 			{
-				if (returning_rvalue.kind == CONST)
-				{
-					to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, returning_rvalue.val.int_val);
-				}
-				else
-				{
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, R_V0, returning_rvalue.reg.reg_num);
-				}
+				to_code_R_I(info->sx->io, IC_MIPS_LI, R_V0, returning_rvalue.val.int_val);
 			}
 			else
 			{
-				// TODO: массивы/структуры
+				to_code_2R(info->sx->io, IC_MIPS_MOVE, R_V0, returning_rvalue.reg.reg_num);
 			}
 		}
 	}
