@@ -404,20 +404,13 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 		{
 			complicated_type_in_args = 1;
 
-			if (type_is_array(bldr->sx, argument_type))
+			if (!type_is_pointer(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "{"))
 				{
 					return node_broken();
 				}
-			}
-			else if (type_is_structure(bldr->sx, argument_type))
-			{
-				if (!vector_add_str(&str, "{ struct"))
-				{
-					return node_broken();
-				}
-			}
+			} 
 
 			// корректно определяем location
 			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
@@ -453,7 +446,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 
 			if (type_is_array(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "} "))
+				if (!vector_add_str(&str, "}"))
 				{
 					return node_broken();
 				}
@@ -461,13 +454,6 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "\n}\n"))
-				{
-					return node_broken();
-				}
-			}
-			else if (i != argc - 1)
-			{
-				if (!vector_add_str(&str, " "))
 				{
 					return node_broken();
 				}
@@ -502,9 +488,10 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			{
 				return node_broken();
 			}
-			if (i != argc - 1)
+			
+			if (i == argc - 1)
 			{
-				if (!vector_add_str(&str, " "))
+				if (!vector_add_str(&str, "\n"))
 				{
 					return node_broken();
 				}
@@ -602,20 +589,13 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		{
 			complicated_type_in_args = 1;
 
-			if (type_is_array(bldr->sx, argument_type))
+			if (!type_is_pointer(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "{"))
 				{
 					return node_broken();
 				}
-			}
-			else if (type_is_structure(bldr->sx, argument_type))
-			{
-				if (!vector_add_str(&str, "{ struct"))
-				{
-					return node_broken();
-				}
-			}
+			} 
 
 			// корректно определяем location
 			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
@@ -651,7 +631,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 
 			if (type_is_array(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "} "))
+				if (!vector_add_str(&str, "}"))
 				{
 					return node_broken();
 				}
@@ -659,13 +639,6 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "\n}\n"))
-				{
-					return node_broken();
-				}
-			}
-			else if (i != argc - 1)
-			{
-				if (!vector_add_str(&str, " "))
 				{
 					return node_broken();
 				}
@@ -693,9 +666,10 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			{
 				return node_broken();
 			}
-			if (i != argc - 1)
+			
+			if (i == argc - 1)
 			{
-				if (!vector_add_str(&str, " "))
+				if (!vector_add_str(&str, "\n"))
 				{
 					return node_broken();
 				}

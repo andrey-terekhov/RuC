@@ -19,8 +19,6 @@
 node create_printf_node_by_vector(builder *bldr, const vector *str, node_vector *args, location l_loc, location r_loc);
 node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc);
 
-static node copy_argument_node(builder *bldr, node *argument, location loc);
-
 static char *string_append(const char *s1, const char *s2)
 {
 	size_t s1_len = strlen(s1);
@@ -177,71 +175,6 @@ static node create_consec_subscripts(builder *bldr, node *argument, size_t dimen
 	return curr_subscr_arg;
 }
 
-static node copy_subscript_node(builder *bldr, node *argument, location loc)
-{
-	// берём текущий индекс вырезки
-	node index_curr = expression_subscript_get_index(argument);
-	// копируем его
-	node index_copy = copy_argument_node(bldr, &index_curr, loc);
-	if (!node_is_correct(&index_copy))
-	{
-		return node_broken();
-	}
-
-	// берём родителя переданного аргумента
-	node base_curr = expression_subscript_get_base(argument);
-	// копируем его узел
-	node base_copy = copy_argument_node(bldr, &base_curr, loc);
-	if (!node_is_correct(&base_copy))
-	{
-		return node_broken();
-	}
-
-	// return build_subscript_expression(bldr, &base_copy, &index_copy, l_loc, r_loc);
-	return expression_subscript(expression_get_type(&base_copy), &base_copy, &index_copy, loc);
-}
-
-static node copy_identitfier_node(builder *bldr, node *argument, location loc)
-{
-	// берём индекс для переданного argument из identifiers table
-	const size_t argument_id = expression_identifier_get_id(argument);
-
-	return expression_identifier(&bldr->context, expression_get_type(argument), argument_id, loc);
-}
-
-static node copy_member_node(builder *bldr, node *argument, location loc)
-{
-	// берём родителя переданного аргумента
-	node base_curr = expression_member_get_base(argument);
-	// копируем его узел
-	node base_copy = copy_argument_node(bldr, &base_curr, loc);
-	if (!node_is_correct(&base_copy))
-	{
-		return node_broken();
-	}
-
-	item_t type = expression_get_type(argument);
-
-	size_t index = expression_member_get_member_index(argument);
-
-	return expression_member(type, expression_is_lvalue(&base_copy) ? LVALUE : RVALUE, index, 0, &base_copy, loc);
-}
-
-static node copy_argument_node(builder *bldr, node *argument, location loc)
-{
-	switch (expression_get_class(argument))
-	{
-		case EXPR_IDENTIFIER:
-			return copy_identitfier_node(bldr, argument, loc);
-		case EXPR_MEMBER:
-			return copy_member_node(bldr, argument, loc);
-		case EXPR_SUBSCRIPT:
-			return copy_subscript_node(bldr, argument, loc);
-		default:
-			return node_broken();
-	}
-}
-
 static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, location l_loc, location r_loc);
 
 static node create_array_nodes(builder *bldr, node *argument, item_t type, location l_loc, location r_loc,
@@ -286,7 +219,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок
-		node cond_subs_arg_expr = copy_argument_node(bldr, argument, loc);
+		node cond_subs_arg_expr = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 		if (!node_is_correct(&cond_subs_arg_expr))
 		{
 			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -323,7 +256,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 		// главный узел, который отправится в build_unary_expression() оператора upb
 		// для него создаём нужное количество "предварительных" вырезок
-		node if_binary_rhs_main_subs_arg_expr = copy_argument_node(bldr, argument, loc);
+		node if_binary_rhs_main_subs_arg_expr = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 		if (!node_is_correct(&if_binary_rhs_main_subs_arg_expr))
 		{
 			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -409,7 +342,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 
 	// главный узел, который отправится в build_unary_expression() оператора upb
 	// для него создаём нужное количество "предварительных" вырезок
-	node cond_main_subs_arg_expr = copy_argument_node(bldr, argument, loc);
+	node cond_main_subs_arg_expr = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 	if (!node_is_correct(&cond_main_subs_arg_expr))
 	{
 		// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -449,7 +382,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// узлов должно быть два, т.к. будем разворачиваться в if statement
 
 		// создаём новый узел аргумента
-		node curr_subscr_arg1 = copy_argument_node(bldr, argument, loc);
+		node curr_subscr_arg1 = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 		if (!node_is_correct(&curr_subscr_arg1))
 		{
 			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -461,7 +394,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		node_vector_add(&tmp_args1, &main_subscript1);
 
 		// создаём новый узел аргумента
-		node curr_subscr_arg2 = copy_argument_node(bldr, argument, loc);
+		node curr_subscr_arg2 = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 		if (!node_is_correct(&curr_subscr_arg2))
 		{
 			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -522,7 +455,7 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		// 5. полный узел цикла
 
 		// создаём узел структуры как корректную вырезку из массива
-		node tmp_arg = copy_argument_node(bldr, argument, loc);
+		node tmp_arg = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 		if (!node_is_correct(&tmp_arg))
 		{
 			// для temp_idents_id будет сделан clear по выходу из create_array_nodes() в любом случае
@@ -530,13 +463,13 @@ static node create_array_nodes(builder *bldr, node *argument, item_t type, locat
 		}
 		node subs_struct_node = create_consec_subscripts(bldr, &tmp_arg, dimensions, temp_idents_id, loc);
 
-		// разворачиваемся в узел printf, чтобы отпечатать "\n{ struct"
+		// разворачиваемся в узел printf, чтобы отпечатать "\n{ "
 		node_vector blank_tmp_node_vector = node_vector_create();
-		node first_printf_node = create_printf_node_by_str(bldr, "\n{ struct", &blank_tmp_node_vector, loc);
+		node first_printf_node = create_printf_node_by_str(bldr, "\n{ ", &blank_tmp_node_vector, loc);
 		node_vector_add(&body_args, &first_printf_node);
 
 		// отправляем нужный узел в create_struct_nodes()
-		node struct_nodes = create_struct_nodes(bldr, &subs_struct_node, 1, l_loc, r_loc);
+		node struct_nodes = create_complicated_type_str(bldr, &subs_struct_node, l_loc, r_loc, 1);
 		node_vector_add(&body_args, &struct_nodes);
 
 		// if-statement: отпечатываем запятую после каждого элемента массива, кроме последнего
@@ -584,7 +517,7 @@ static node create_ptr_nodes(builder *bldr, node *argument, location l_loc, loca
 {
 	const location loc = { l_loc.begin, r_loc.end };
 
-	node arg_copy = copy_argument_node(bldr, argument, loc); // не NULL_POINTER => аргумент -- идентификатор
+	node arg_copy = expression_identifier(&bldr->context, expression_get_type(argument), expression_identifier_get_id(argument), loc);
 	if (!node_is_correct(&arg_copy))
 	{
 		return node_broken();
@@ -629,29 +562,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 	node_vector args_to_print = node_vector_create();
 
 	item_t type = expression_get_type(argument);
-	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type);
-
-	// т.к. в качестве аргумента может придти вырезка из массива, идентификатор, или поле структуры -- объявляем новый
-	// идентификатор, который будет проинициализирован аргументом
-	char *new_arg_identifier_name = create_new_temp_identifier_name(vector_size(&bldr->sx->identifiers));
-	if (!new_arg_identifier_name)
-	{
-		return node_broken();
-	}
-	// добавляем имя нового идентификатора в таблицу representations
-	const size_t arg_repr = map_add(&bldr->sx->representations, new_arg_identifier_name, ITEM_MAX);
-	free(new_arg_identifier_name);
-	// добавляем идентификатор в identifiers
-	const size_t arg_id = ident_add(bldr->sx, arg_repr, 0, type, 3);
-
-	node decl_stmt = statement_declaration(&bldr->context);
-
-	node_vector bounds = node_vector_create();
-	node init_expr = declaration_variable(&decl_stmt, arg_id, &bounds, argument, loc);
-
-	statement_declaration_add_declarator(&decl_stmt, &init_expr);
-
-	node_vector_add(&res_stmts, &decl_stmt);
+	const size_t member_amount = type_structure_get_member_amount(bldr->sx, type); 
 
 	vector str = vector_create(1);
 
@@ -662,27 +573,17 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		const char *member_name_str = repr_get_name(bldr->sx, member_name);
 
 		// строим узел нового аргумента
-		node tmp_arg = expression_identifier(&bldr->context, type, arg_id, loc);
+		node tmp_arg = expression_identifier(&bldr->context, type, expression_identifier_get_id(argument), loc);
 		// строим узел поля структуры
 		node member_node = expression_member(member_type, LVALUE, i, 0, &tmp_arg, loc);
 
 		// создаём корректное начало строки
-		if (!vector_add_str(&str, "\n\n"))
+		if (!vector_add_str(&str, "\n"))
 		{
 			return node_broken();
 		}
-
+		
 		if (!create_correct_spaces(&str, tab_deep))
-		{
-			return node_broken();
-		}
-
-		if (!vector_add_str(&str, "{\n"))
-		{
-			return node_broken();
-		}
-
-		if (!create_correct_spaces(&str, tab_deep + 1))
 		{
 			return node_broken();
 		}
@@ -705,20 +606,13 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		if ((type_is_aggregate(bldr->sx, member_type) && !type_is_string(bldr->sx, member_type)) ||
 			(type_is_pointer(bldr->sx, member_type)) || (type_is_null_pointer(member_type)))
 		{
-			if (type_is_array(bldr->sx, member_type))
+			if (!type_is_pointer(bldr->sx, member_type))
 			{
 				if (!vector_add_str(&str, "{"))
 				{
 					return node_broken();
 				}
-			}
-			else if (type_is_structure(bldr->sx, member_type))
-			{
-				if (!vector_add_str(&str, "{ struct"))
-				{
-					return node_broken();
-				}
-			}
+			} 
 
 			// разворачиваемся в printf для имеющейся на данный момент строки
 			node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, r_loc, l_loc);
@@ -749,7 +643,7 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 			}
 			else if (type_is_structure(bldr->sx, member_type))
 			{
-				if (!vector_add_str(&str, "}\n"))
+				if (!vector_add_str(&str, "}"))
 				{
 					return node_broken();
 				}
@@ -773,26 +667,17 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		}
 		// правильно завершаем строку: если текущее поле, которое требуется распечатать, -- последнее, то запятую не
 		// ставим, иначе -- ставим
-		if (!vector_add_str(&str, "\n"))
+		if (i != member_amount - 1)
+		{
+			if (!vector_add_str(&str, ","))
+			{
+				return node_broken();
+			}
+		}
+
+		if (!create_correct_spaces(&str, tab_deep))
 		{
 			return node_broken();
-		}
-
-		create_correct_spaces(&str, tab_deep);
-
-		if (i == member_amount - 1)
-		{
-			if (!vector_add_str(&str, "}"))
-			{
-				return node_broken();
-			}
-		}
-		else
-		{
-			if (!vector_add_str(&str, "},"))
-			{
-				return node_broken();
-			}
 		}
 	}
 
@@ -803,6 +688,10 @@ static node create_struct_nodes(builder *bldr, node *argument, size_t tab_deep, 
 		vector_clear(&str);
 		node_vector_add(&res_stmts, &printf_node);
 	}
+
+	// т.к. по итогу всегда заново создавали узлы идентификатора, и чтобы изначальный
+	// узел, переданный в данную функцию, нигде не висел, надо его удалить
+	node_remove(argument);
 
 	result = statement_compound(&bldr->context, &res_stmts, loc);
 	return result;
@@ -869,28 +758,78 @@ node create_complicated_type_str(builder *bldr, node *argument, location l_loc, 
 {
 	node complicated_type_node;
 	item_t argument_type = expression_get_type(argument);
+
+	location loc = { l_loc.begin, r_loc.end };
+
+	node_vector res_stmts = node_vector_create();
+
+	char *new_arg_identifier_name = create_new_temp_identifier_name(vector_size(&bldr->sx->identifiers));
+	if (!new_arg_identifier_name)
+	{
+		return node_broken();
+	}
+	// добавляем имя нового идентификатора в таблицу representations
+	const size_t arg_repr = map_add(&bldr->sx->representations, new_arg_identifier_name, ITEM_MAX);
+	free(new_arg_identifier_name);
+	// добавляем идентификатор в identifiers
+	const size_t arg_id = ident_add(bldr->sx, arg_repr, 0, argument_type, 3);
+
+	node decl_stmt = statement_declaration(&bldr->context);
+
+	node_vector bounds = node_vector_create();
+
 	if (type_is_array(bldr->sx, argument_type))
 	{
 		size_t dimensions = 0;
 		item_t elements_type = argument_type;
 		while (type_is_array(bldr->sx, elements_type))
 		{
+			node empty_bound = expression_empty_bound(&bldr->context, loc);
+			node_vector_add(&bounds, &empty_bound);
 			elements_type = type_array_get_element_type(bldr->sx, elements_type);
 			dimensions++;
 		}
 
+		node init_expr = declaration_variable(&decl_stmt, arg_id, &bounds, argument, loc);
+
+		statement_declaration_add_declarator(&decl_stmt, &init_expr);
+
+		node_vector_add(&res_stmts, &decl_stmt);
+
+		node new_arg = expression_identifier(&bldr->context, argument_type, arg_id, loc);
+
 		vector idents = vector_create(dimensions);
-		complicated_type_node = create_array_nodes(bldr, argument, argument_type, l_loc, r_loc, 1, idents);
+		complicated_type_node = create_array_nodes(bldr, &new_arg, argument_type, l_loc, r_loc, 1, idents);
 		vector_clear(&idents);
 	}
 	else if (type_is_structure(bldr->sx, argument_type))
 	{
-		complicated_type_node = create_struct_nodes(bldr, argument, tab_deep, l_loc, r_loc);
+		node init_expr = declaration_variable(&decl_stmt, arg_id, &bounds, argument, loc);
+
+		statement_declaration_add_declarator(&decl_stmt, &init_expr);
+
+		node_vector_add(&res_stmts, &decl_stmt);
+
+		node new_arg = expression_identifier(&bldr->context, argument_type, arg_id, loc);
+
+		complicated_type_node = create_struct_nodes(bldr, &new_arg, tab_deep, l_loc, r_loc);
 	}
 	else
 	{
-		complicated_type_node = create_ptr_nodes(bldr, argument, l_loc, r_loc);
+		node init_expr = declaration_variable(&decl_stmt, arg_id, &bounds, argument, loc);
+
+		statement_declaration_add_declarator(&decl_stmt, &init_expr);
+
+		node_vector_add(&res_stmts, &decl_stmt);
+
+		node new_arg = expression_identifier(&bldr->context, argument_type, arg_id, loc);
+
+		complicated_type_node = create_ptr_nodes(bldr, &new_arg, l_loc, r_loc);
 	}
 
-	return complicated_type_node;
+	node_vector_add(&res_stmts, &complicated_type_node);
+
+	node result = statement_compound(&bldr->context, &res_stmts, loc);
+
+	return result;
 }
