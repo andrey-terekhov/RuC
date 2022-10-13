@@ -156,12 +156,13 @@ static void skip_directive(parser *const prs, char32_t character)
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
 
-	bool was_slash = false;
-	bool was_backslash = character == '\\';
-	character = character == '\r' ? uni_scan_char(prs->io) : character;
+	bool was_slash = parse_character(prs, character, false);
+	bool was_backslash = false;
 
-	while ((was_backslash || character != '\n') && character != (char32_t)EOF)
+	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
 	{
+		was_backslash = character == '\\';
+		character = uni_scan_char(prs->io);
 		if (was_slash && character == '/')
 		{
 			skip_comment(prs);
@@ -169,10 +170,6 @@ static void skip_directive(parser *const prs, char32_t character)
 		}
 
 		was_slash = parse_character(prs, character, was_slash);
-		was_backslash = character == '\\';
-
-		character = uni_scan_char(prs->io);
-		character = character == '\r' ? uni_scan_char(prs->io) : character;
 	}
 
 	out_swap(prs->io, &out);
