@@ -26,6 +26,9 @@
 static const size_t MAX_COMMENT_SIZE = 4096;
 
 
+static bool parse_character(parser *const prs, char32_t character, const bool was_slash);
+
+
 /**
  *	Emit an error from parser
  *
@@ -63,11 +66,7 @@ static void skip_string(parser *const prs, const char32_t quote)
 	{
 		was_slash = !was_slash && character == '\\';
 		character = uni_scan_char(prs->io);
-
-		if (character == '\r')
-		{
-			character = uni_scan_char(prs->io);
-		}
+		character = character == '\r' ? uni_scan_char(prs->io) : character;
 
 		if (character == '\n')
 		{
@@ -152,8 +151,37 @@ static void skip_multi_comment(parser *const prs)
 	loc_update(&prs->loc);
 }
 
+static void skip_directive(parser *const prs, char32_t character)
+{
+	universal_io out = io_create();
+	out_swap(prs->io, &out);
 
-bool parse_character(parser *const prs, char32_t character, const bool was_slash)
+	bool was_slash = false;
+	bool was_backslash = character == '\\';
+	character = character == '\r' ? uni_scan_char(prs->io) : character;
+
+	while ((was_backslash || character != '\n') && character != (char32_t)EOF)
+	{
+		if (was_slash && character == '/')
+		{
+			skip_comment(prs);
+			break;
+		}
+
+		was_slash = parse_character(prs, character, was_slash);
+		was_backslash = character == '\\';
+
+		character = uni_scan_char(prs->io);
+		character = character == '\r' ? uni_scan_char(prs->io) : character;
+	}
+
+	out_swap(prs->io, &out);
+	uni_print_char(prs->io, '\n');
+	loc_update(&prs->loc);
+}
+
+
+static bool parse_character(parser *const prs, char32_t character, const bool was_slash)
 {
 	if (was_slash && character == '/')
 	{
@@ -192,40 +220,14 @@ bool parse_character(parser *const prs, char32_t character, const bool was_slash
 	}
 }
 
-void parse_line(parser *const prs, char32_t character)
+static void parse_line(parser *const prs, char32_t character)
 {
 	uni_unscan_char(prs->io, character);
 	uni_unscan(prs->io, storage_last_read(prs->stg));
 	loc_search_from(&prs->loc);
-	macro_warning(&prs->loc, LINE_DIRECTIVE_SKIPED);
+	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
 
-	const size_t line = loc_get_line(&prs->loc);
-	uni_print_char(prs->io, '\n');
-
-	universal_io out = io_create();
-	out_swap(prs->io, &out);
-
-	bool was_slash = false;
-	character = uni_scan_char(prs->io);
-	while (character != '\n' && character != (char32_t)EOF)
-	{
-		was_slash = parse_character(prs, character, was_slash);
-		if (line < loc_get_line(&prs->loc))
-		{
-			out_swap(prs->io, &out);
-			loc_update(&prs->loc);
-			return;
-		}
-
-		character = uni_scan_char(prs->io);
-		if (character == '\r')
-		{
-			character = uni_scan_char(prs->io);
-		}
-	}
-
-	out_swap(prs->io, &out);
-	loc_line_break(&prs->loc);
+	skip_directive(prs, uni_scan_char(prs->io));
 }
 
 

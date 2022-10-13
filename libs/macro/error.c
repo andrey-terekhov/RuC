@@ -81,6 +81,19 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case COMMENT_UNTERMINATED:
 			sprintf(msg, "незавершённый комментарий");
 			break;
+		case HASH_STRAY:
+			sprintf(msg, "потерянный '#' в программе");
+			break;
+
+		case INCLUDE_EXPECTS_FILENAME:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "%s ожидает \"ИМЯФАЙЛА\" или <ИМЯФАЙЛА>", directive);
+		}
+		break;
+		case INCLUDE_NO_SUCH_FILE:
+			sprintf(msg, "нет такого файла или каталога");
+			break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");
@@ -98,7 +111,13 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
 
-		case LINE_DIRECTIVE_SKIPED:
+		case DIRECTIVE_EXTRA_TOKENS:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "дополнительные токены в конце директивы %s", directive);
+		}
+		break;
+		case DIRECTIVE_LINE_SKIPED:
 			sprintf(msg, "директива позиционирования будет пропущена");
 			break;
 
