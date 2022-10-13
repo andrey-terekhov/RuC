@@ -453,7 +453,7 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "\n}\n"))
+				if (!vector_add_str(&str, "}\n"))
 				{
 					return node_broken();
 				}
@@ -638,7 +638,7 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			}
 			else if (type_is_structure(bldr->sx, argument_type))
 			{
-				if (!vector_add_str(&str, "\n}\n"))
+				if (!vector_add_str(&str, "}\n"))
 				{
 					return node_broken();
 				}
