@@ -282,6 +282,66 @@ static void parse_line(parser *const prs, char32_t character)
 	skip_directive(prs, uni_scan_char(prs->io));
 }
 
+static void parse_include(parser *const prs, char32_t character)
+{
+	uni_unscan_char(prs->io, character);
+	uni_unscan(prs->io, storage_last_read(prs->stg));
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+
+	storage_search(prs->stg, prs->io, &character);
+	universal_io out = io_create();
+	out_swap(prs->io, &out);
+
+	bool was_slash = false;
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		if (was_slash && character == '*')
+		{
+			skip_multi_comment(prs);
+			character = uni_scan_char(prs->io);
+			was_slash = false;
+			continue;
+		}
+		else if (was_slash && character == '/')
+		{
+			skip_comment(prs);
+			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+			break;
+		}
+		else if (was_slash)
+		{
+			uni_unscan_char(prs->io, character);
+			uni_unscan_char(prs->io, '/');
+			loc_search_from(&prs->loc);
+			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+			break;
+		}
+
+		switch (character)
+		{
+			case '/':
+				was_slash = true;
+				break;
+			case '\\':
+				character = uni_scan_char(prs->io);
+				character = character == '\r' ? uni_scan_char(prs->io) : character;
+				if (character != '\n')
+				{
+					uni_unscan_char(prs->io, character);
+					uni_unscan_char(prs->io, '\\');
+					loc_search_from(&prs->loc);
+					parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+					break;
+				}
+
+
+		}
+	}
+
+	out_swap(prs->io, &out);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
