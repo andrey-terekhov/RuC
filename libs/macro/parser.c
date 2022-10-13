@@ -177,6 +177,61 @@ static void skip_directive(parser *const prs, char32_t character)
 	loc_update(&prs->loc);
 }
 
+static char32_t skip_until(parser *const prs, char32_t character)
+{
+	while (true)
+	{
+		switch (character)
+		{
+			case '/':
+				character = uni_scan_char(prs->io);
+				if (character == '*')
+				{
+					skip_multi_comment(prs);
+					character = uni_scan_char(prs->io);
+					break;
+				}
+				else if (character == '/')
+				{
+					skip_comment(prs);
+					return '\n';
+				}
+				else
+				{
+					uni_unscan_char(prs->io, character);
+					return '/';
+				}
+
+			case '\\':
+				character = uni_scan_char(prs->io);
+				character = character == '\r' ? uni_scan_char(prs->io) : character;
+				if (character == '\n')
+				{
+					loc_line_break(&prs->loc);
+					character = uni_scan_char(prs->io);
+					break;
+				}
+				else
+				{
+					uni_unscan_char(prs->io, character);
+					return '\\';
+				}
+
+			case ' ':
+			case '\t':
+				character = uni_scan_char(prs->io);
+				break;
+
+			case '\r':
+				character = uni_scan_char(prs->io);
+			case '\n':
+				loc_line_break(&prs->loc);
+			default:
+				return character;
+		}
+	}
+}
+
 
 static bool parse_character(parser *const prs, char32_t character, const bool was_slash)
 {
