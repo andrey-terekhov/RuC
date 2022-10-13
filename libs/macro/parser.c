@@ -293,53 +293,39 @@ static void parse_include(parser *const prs, char32_t character)
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
 
-	bool was_slash = false;
-	while (character != '\n' && character != (char32_t)EOF)
+	character = skip_until(prs, character);
+	switch (character)
 	{
-		if (was_slash && character == '*')
-		{
-			skip_multi_comment(prs);
-			character = uni_scan_char(prs->io);
-			was_slash = false;
-			continue;
-		}
-		else if (was_slash && character == '/')
-		{
-			skip_comment(prs);
-			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+		case '"':
 			break;
-		}
-		else if (was_slash)
-		{
+		case '<':
+			break;
+
+		case '\n':
+			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+
+			out_swap(prs->io, &out);
+			uni_print_char(prs->io, '\n');
+			loc_update(&prs->loc);
+			return;
+
+		default:
 			uni_unscan_char(prs->io, character);
-			uni_unscan_char(prs->io, '/');
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			break;
-		}
+			skip_directive(prs, uni_scan_char(prs->io));
 
-		switch (character)
-		{
-			case '/':
-				was_slash = true;
-				break;
-			case '\\':
-				character = uni_scan_char(prs->io);
-				character = character == '\r' ? uni_scan_char(prs->io) : character;
-				if (character != '\n')
-				{
-					uni_unscan_char(prs->io, character);
-					uni_unscan_char(prs->io, '\\');
-					loc_search_from(&prs->loc);
-					parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-					break;
-				}
-
-
-		}
+			out_swap(prs->io, &out);
+			uni_print_char(prs->io, '\n');
+			loc_update(&prs->loc);
+			return;
 	}
 
+	skip_directive(prs, uni_scan_char(prs->io));
+
 	out_swap(prs->io, &out);
+	uni_print_char(prs->io, '\n');
+	loc_update(&prs->loc);
 }
 
 
@@ -402,6 +388,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				continue;
 
 			case KW_INCLUDE:
+				parse_include(prs, character);
+				continue;
 
 			case KW_DEFINE:
 			case KW_SET:
