@@ -50,7 +50,7 @@ typedef enum EXPRESSION
 	EXPR_INITIALIZER,	/**< Initializer */
 	EXPR_INLINE,		/**< Inline expression */
 	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
-	EXPR_INVALID		/**< Invalid expression */
+	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
 
 /** Statement class */
@@ -623,12 +623,12 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
  *  Create new inline expression
  *
  *  @param  type            Value type
- *  @param  args            Expression arguments   
+ *  @param  substmts        Expression arguments
  *  @param  loc             Expression location
  *
  *  @return Expression
  */
-node expression_inline(const item_t type, node_vector *const args, const location loc);
+node expression_inline(const item_t type, node_vector *const substmts, const location loc);
 
 /**
  *	Get size of inline expression

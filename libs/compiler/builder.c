@@ -72,8 +72,8 @@ static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 	return TYPE_INTEGER;
 }
 
-static node fold_unary_expression(builder *const bldr, const item_t type, const category_t ctg, node *const expr,
-								  const unary_t op, const location loc)
+static node fold_unary_expression(builder *const bldr, const item_t type, const category_t ctg
+	, node *const expr, const unary_t op, const location loc)
 {
 	if (expression_get_class(expr) != EXPR_LITERAL)
 	{
@@ -135,8 +135,8 @@ static node fold_unary_expression(builder *const bldr, const item_t type, const 
 	}
 }
 
-static node fold_binary_expression(builder *const bldr, const item_t type, node *const LHS, node *const RHS,
-								   const binary_t op, const location loc)
+static node fold_binary_expression(builder *const bldr, const item_t type
+	, node *const LHS, node *const RHS, const binary_t op, const location loc)
 {
 	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
 	{
@@ -238,8 +238,8 @@ static node fold_binary_expression(builder *const bldr, const item_t type, node 
 }
 
 
-static size_t evaluate_args(builder *const bldr, const node *const format_str, item_t *const format_types,
-							item_t *const actual_types, char32_t *const placeholders)
+static size_t evaluate_args(builder *const bldr, const node *const format_str
+	, item_t *const format_types, char32_t *const placeholders)
 {
 	const size_t str_index = expression_literal_get_string(format_str);
 	const char *const string = string_get(bldr->sx, str_index);
@@ -283,8 +283,7 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str, i
 
 				case 'p':
 				case U'у':
-					format_types[args] = actual_types[args];
-					args++;
+					format_types[args++] = TYPE_UNDEFINED;
 					break;
 
 				case '%':
@@ -304,7 +303,7 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str, i
 	return args;
 }
 
-node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -326,17 +325,9 @@ node build_printf_expression(builder *const bldr, node *const callee, node_vecto
 		return node_broken();
 	}
 
-	item_t actual_types[MAX_PRINTF_ARGS];
-	for (size_t i = 1; i < argc; i++)
-	{
-		node argument = node_vector_get(args, i);
-		item_t arg_type = expression_get_type(&argument);
-		actual_types[i - 1] = arg_type;
-	}
-
 	char32_t placeholders[MAX_PRINTF_ARGS];
 	item_t format_types[MAX_PRINTF_ARGS];
-	const size_t expected_args = evaluate_args(bldr, &fst, format_types, actual_types, placeholders);
+	const size_t expected_args = evaluate_args(bldr, &fst, format_types, placeholders);
 
 	if (expected_args != argc - 1)
 	{
@@ -360,8 +351,8 @@ node build_printf_expression(builder *const bldr, node *const callee, node_vecto
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
-static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args,
-								   const location r_loc)
+static node build_print_expression(builder *const bldr, node *const callee
+	, node_vector *const args, const location r_loc)
 {
 	const location loc = { node_get_location(callee).begin, r_loc.end };
 
@@ -373,6 +364,8 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 	if (args == NULL || (argc = node_vector_size(args)) == 0)
 	{
 		semantic_error(bldr, r_loc, expected_expression);
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
 		return node_broken();
 	}
 
@@ -399,15 +392,16 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 		location last_argument_loc = node_get_location(&last_argument);
 
 		item_t argument_type = expression_get_type(&argument);
-		if ((type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type)) ||
-			(type_is_pointer(bldr->sx, argument_type)))
+		if (type_is_complicated(bldr->sx, argument_type))
 		{
 			complicated_type_in_args = 1;
 
-			if (!type_is_pointer(bldr->sx, argument_type))
+			if (type_is_aggregate(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "{"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			} 
@@ -436,25 +430,31 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			first_scalar_argument_index = 0;
 			last_scalar_argument_index = 0;
 
-			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1);
-			if (!node_is_correct(&complicated_type_node))
+			const size_t creating_res = create_complicated_type_str(bldr, &argument, &stmts, last_argument_loc, curr_loc, 1);
+			if (creating_res == SIZE_MAX)
 			{
 				vector_clear(&str);
-				return complicated_type_node;
-			}
-			node_vector_add(&stmts, &complicated_type_node);
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
+				return node_broken();
+			}			
 
-			if (type_is_array(bldr->sx, argument_type))
+			if ((type_is_array(bldr->sx, argument_type)) || (type_is_structure(bldr->sx, argument_type)))
 			{
 				if (!vector_add_str(&str, "}"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			}
-			else if (type_is_structure(bldr->sx, argument_type))
+			
+			if ((type_is_structure(bldr->sx, argument_type)) && (i != argc - 1))
 			{
-				if (!vector_add_str(&str, "}\n"))
+				if (!vector_add_str(&str, "\n"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			}
@@ -482,19 +482,15 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 			if (!tmp)
 			{
 				vector_clear(&str);
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
 				return node_broken();
 			}
 			if (!vector_add_str(&str, tmp))
 			{
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
 				return node_broken();
-			}
-			
-			if (i == argc - 1)
-			{
-				if (!vector_add_str(&str, "\n"))
-				{
-					return node_broken();
-				}
 			}
 		}
 	}
@@ -503,27 +499,38 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 
 	node_remove(callee);
 
-	// разворачиваемся в printf для имеющейся на данный момент строки
-	if (vector_size(&str))
+	if (!vector_add_str(&str, "\n"))
 	{
-		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
-
-		if (!complicated_type_in_args)
-		{
-			vector_clear(&str);
-			node_vector_clear(&stmts);
-			return printf_node;
-		}
-
-		node_vector_add(&stmts, &printf_node);
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
+		return node_broken();
 	}
+
+	// разворачиваемся в printf для имеющейся на данный момент строки
+	node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
+
+	if (!complicated_type_in_args)
+	{
+		vector_clear(&str);
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
+		return printf_node;
+	}
+
+	node_vector_add(&stmts, &printf_node);
+
 	vector_clear(&str);
 
-	return expression_inline(TYPE_VOID, &stmts, loc);
+	node res = expression_inline(TYPE_VOID, &stmts, loc);
+
+	node_vector_clear(&stmts);
+	node_vector_clear(&args_to_print);
+
+	return res;
 }
 
-static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args,
-									 const location r_loc)
+static node build_printid_expression(builder *const bldr, node *const callee
+	, node_vector *const args, const location r_loc)
 {
 	const location loc = { node_get_location(callee).begin, r_loc.end };
 
@@ -535,6 +542,8 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 	if (args == NULL || argc == 0)
 	{
 		semantic_error(bldr, r_loc, expected_identifier_in_printid);
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
 		return node_broken();
 	}
 
@@ -552,6 +561,8 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
 			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
+			node_vector_clear(&stmts);
+			node_vector_clear(&args_to_print);
 			return node_broken();
 		}
 		// аргумент -- идентификатор, а узел -- нет => идентификатор не объявлен, но
@@ -576,23 +587,28 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index);
 		if (!vector_add_str(&str, tmp_argument_name))
 		{
+			node_vector_clear(&stmts);
+			node_vector_clear(&args_to_print);
 			return node_broken();
 		}
 		if (!vector_add_str(&str, " = "))
 		{
+			node_vector_clear(&stmts);
+			node_vector_clear(&args_to_print);
 			return node_broken();
 		}
 
 		item_t argument_type = expression_get_type(&argument);
-		if ((type_is_aggregate(bldr->sx, argument_type) && !type_is_string(bldr->sx, argument_type)) ||
-			(type_is_pointer(bldr->sx, argument_type)))
+		if (type_is_complicated(bldr->sx, argument_type))
 		{
 			complicated_type_in_args = 1;
 
-			if (!type_is_pointer(bldr->sx, argument_type))
+			if (type_is_aggregate(bldr->sx, argument_type))
 			{
 				if (!vector_add_str(&str, "{"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			} 
@@ -621,25 +637,31 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			first_scalar_argument_index = 0;
 			last_scalar_argument_index = 0;
 
-			node complicated_type_node = create_complicated_type_str(bldr, &argument, last_argument_loc, curr_loc, 1);
-			if (!node_is_correct(&complicated_type_node))
+			const size_t creating_res = create_complicated_type_str(bldr, &argument, &stmts, last_argument_loc, curr_loc, 1);
+			if (creating_res == SIZE_MAX)
 			{
 				vector_clear(&str);
-				return complicated_type_node;
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
+				return node_broken();
 			}
-			node_vector_add(&stmts, &complicated_type_node);
 
-			if (type_is_array(bldr->sx, argument_type))
+			if ((type_is_array(bldr->sx, argument_type)) || (type_is_structure(bldr->sx, argument_type)))
 			{
 				if (!vector_add_str(&str, "}"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			}
-			else if (type_is_structure(bldr->sx, argument_type))
+
+			if ((type_is_structure(bldr->sx, argument_type)) && (i != argc - 1))
 			{
-				if (!vector_add_str(&str, "}\n"))
+				if (!vector_add_str(&str, "\n"))
 				{
+					node_vector_clear(&stmts);
+					node_vector_clear(&args_to_print);
 					return node_broken();
 				}
 			}
@@ -660,48 +682,55 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 			if (!tmp)
 			{
 				vector_clear(&str);
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
 				return node_broken();
 			}
 			if (!vector_add_str(&str, tmp))
 			{
+				node_vector_clear(&stmts);
+				node_vector_clear(&args_to_print);
 				return node_broken();
-			}
-			
-			if (i == argc - 1)
-			{
-				if (!vector_add_str(&str, "\n"))
-				{
-					return node_broken();
-				}
 			}
 		}
 	}
+
+	if (!vector_add_str(&str, "\n"))
+	{
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
+		return node_broken();
+	}
+
 	node last_argument = node_vector_get(args, first_scalar_argument_index);
 	location last_argument_loc = node_get_location(&last_argument);
 
 	node_remove(callee);
 
 	// разворачиваемся в printf для имеющейся на данный момент строки
-	if (vector_size(&str))
+	node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
+
+	if (!complicated_type_in_args)
 	{
-		node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
-
-		if (!complicated_type_in_args)
-		{
-			vector_clear(&str);
-			node_vector_clear(&stmts);
-			return printf_node;
-		}
-
-		node_vector_add(&stmts, &printf_node);
+		vector_clear(&str);
+		node_vector_clear(&stmts);
+		node_vector_clear(&args_to_print);
+		return printf_node;
 	}
+
+	node_vector_add(&stmts, &printf_node);
+	
 	vector_clear(&str);
 
-	return expression_inline(TYPE_VOID, &stmts, loc);
+	node res = expression_inline(TYPE_VOID, &stmts, loc);
+
+	node_vector_clear(&stmts);
+	node_vector_clear(&args_to_print);
+
+	return res;
 }
 
-static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args,
-								   const location r_loc)
+static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -829,6 +858,11 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return true;
 	}
 
+	if (type_is_pointer(sx, expected_type) && type_is_undefined(actual_type))
+	{
+		return true;
+	}
+
 	if (expected_type == actual_type)
 	{
 		return true;
@@ -889,8 +923,8 @@ node build_string_literal_expression(builder *const bldr, const size_t index, co
 	return expression_string_literal(&bldr->context, type_string(bldr->sx), index, loc);
 }
 
-node build_subscript_expression(builder *const bldr, node *const base, node *const index, const location l_loc,
-								const location r_loc)
+node build_subscript_expression(builder *const bldr, node *const base, node *const index
+	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(base) || !node_is_correct(index))
 	{
@@ -917,8 +951,8 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
 	return expression_subscript(element_type, base, index, loc);
 }
 
-node build_call_expression(builder *const bldr, node *const callee, node_vector *const args, const location l_loc,
-						   const location r_loc)
+node build_call_expression(builder *const bldr, node *const callee, node_vector *const args
+	, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(callee))
 	{
@@ -975,8 +1009,8 @@ node build_call_expression(builder *const bldr, node *const callee, node_vector 
 	return expression_call(return_type, callee, args, loc);
 }
 
-node build_member_expression(builder *const bldr, node *const base, const size_t name, const bool is_arrow,
-							 const location op_loc, const location id_loc)
+node build_member_expression(builder *const bldr, node *const base, const size_t name
+	, const bool is_arrow, const location op_loc, const location id_loc)
 {
 	if (!node_is_correct(base))
 	{
@@ -1170,8 +1204,8 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 	}
 }
 
-node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS, const binary_t op_kind,
-							 const location op_loc)
+node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS
+	, const binary_t op_kind, const location op_loc)
 {
 	if (!node_is_correct(LHS) || !node_is_correct(RHS))
 	{
@@ -1413,8 +1447,8 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 }
 
 
-node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star,
-							  node_vector *const bounds, const location loc)
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name
+	, const bool was_star, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
@@ -1478,8 +1512,8 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 	return declaration_struct_set_location(declaration, loc);
 }
 
-node build_declarator(builder *const bldr, const item_t type, const size_t name, const bool was_star,
-					  node_vector *const bounds, node *const initializer, const location ident_loc)
+node build_declarator(builder *const bldr, const item_t type, const size_t name
+	, const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
@@ -1678,8 +1712,8 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
 	return statement_do(body, cond, loc);
 }
 
-node build_for_statement(builder *const bldr, node *const init, node *const cond, node *const incr, node *const body,
-						 const location for_loc)
+node build_for_statement(builder *const bldr, node *const init, node *const cond
+	, node *const incr, node *const body, const location for_loc)
 {
 	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond)) || (incr && !node_is_correct(incr)) ||
 		!node_is_correct(body))
