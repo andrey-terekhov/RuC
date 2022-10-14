@@ -116,7 +116,6 @@ universal_io linker_add_source(linker *const lk, const size_t index)
 universal_io linker_add_header(linker *const lk, const size_t index)
 {
 	universal_io input = io_create();
-
 	if (linker_is_correct(lk) && index >= lk->sources
 		&& vector_get(&lk->included, index - lk->sources) == 0
 		&& in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
