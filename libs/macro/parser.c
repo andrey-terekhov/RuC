@@ -24,6 +24,7 @@
 
 
 static const size_t MAX_COMMENT_SIZE = 4096;
+static const size_t MAX_PATH_SIZE = 1024;
 
 
 static bool parse_character(parser *const prs, char32_t character, const bool was_slash);
@@ -219,6 +220,7 @@ static char32_t skip_until(parser *const prs, char32_t character)
 
 			case ' ':
 			case '\t':
+				uni_print_char(prs->io, character);
 				character = uni_scan_char(prs->io);
 				break;
 
@@ -282,6 +284,85 @@ static void parse_line(parser *const prs, char32_t character)
 	skip_directive(prs, uni_scan_char(prs->io));
 }
 
+static void parse_include_path(parser *const prs, const char32_t quote)
+{
+	uni_unscan_char(prs->io, quote);
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+	uni_scan_char(prs->io);
+
+	universal_io buffer = io_create();
+	out_set_buffer(&buffer, MAX_PATH_SIZE);
+	char32_t character = uni_scan_char(prs->io);
+
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		if (character == quote)
+		{
+			char *path = out_extract_buffer(&buffer);
+			size_t index = quote == '"'
+				? linker_search_internal(prs->lk, path)
+				: linker_search_external(prs->lk, path);
+			free(path);
+
+			if (index == SIZE_MAX)
+			{
+				parser_error(prs, &loc, INCLUDE_NO_SUCH_FILE);
+				skip_directive(prs, character);
+				return;
+			}
+
+			character = skip_until(prs, character);
+			if (character != '\n')
+			{
+				uni_unscan_char(prs->io, character);
+				loc_search_from(&prs->loc);
+				macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
+				skip_directive(prs, uni_scan_char(prs->io));
+			}
+
+			loc = prs->loc;
+			universal_io header = linker_add_header(prs->lk, index);
+			parser_preprocess(prs, &header);
+			in_clear(&header);
+			prs->loc = loc;
+
+			return;
+		}
+
+		switch (character)
+		{
+			case '\\':
+				character = uni_scan_char(prs->io);
+				character = character == '\r' ? uni_scan_char(prs->io) : character;
+				if (character == '\n')
+				{
+					loc_line_break(&prs->loc);
+					character = uni_scan_char(prs->io);
+				}
+				else
+				{
+					uni_print_char(&buffer, '\\');
+				}
+				break;
+
+			case '\r':
+				character = uni_scan_char(prs->io);
+			case '\n':
+				loc_line_break(&prs->loc);
+				break;
+
+			default:
+				uni_print_char(&buffer, character);
+				character = uni_scan_char(prs->io);
+				break;
+		}
+	}
+
+	parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+	out_clear(&buffer);
+}
+
 static void parse_include(parser *const prs, char32_t character)
 {
 	uni_unscan_char(prs->io, character);
@@ -296,32 +377,22 @@ static void parse_include(parser *const prs, char32_t character)
 	character = skip_until(prs, character);
 	switch (character)
 	{
-		case '"':
-			break;
 		case '<':
+			character = '>';
+		case '"':
+			parse_include_path(prs, character);
 			break;
 
 		case '\n':
 			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-
-			out_swap(prs->io, &out);
-			uni_print_char(prs->io, '\n');
-			loc_update(&prs->loc);
-			return;
-
+			break;
 		default:
 			uni_unscan_char(prs->io, character);
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
 			skip_directive(prs, uni_scan_char(prs->io));
-
-			out_swap(prs->io, &out);
-			uni_print_char(prs->io, '\n');
-			loc_update(&prs->loc);
-			return;
+			break;
 	}
-
-	skip_directive(prs, uni_scan_char(prs->io));
 
 	out_swap(prs->io, &out);
 	uni_print_char(prs->io, '\n');
