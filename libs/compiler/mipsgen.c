@@ -1197,7 +1197,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 					, (-1) * ((type_is_floating(rval2.type)) ? rval2.val.float_val : rval2.val.int_val));
 
 				to_code_R_L(info->sx->io
-					, get_instruction(info, operation, /* Два регистра => 0 в get_instruction() -> */ 0)
+					, get_instruction(info, operation, /* Один регистр => 1 в get_instruction() -> */ 1)
 					, result
 					, L_ELSE
 					, info->label_else);
@@ -1212,7 +1212,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 					, (-1) * ((type_is_floating(rval2.type)) ? rval2.val.float_val : rval2.val.int_val));
 
 				to_code_2R_L(info->sx->io
-					, get_instruction(info, operation, /* Один регистр => 1 в get_instruction() -> */ 0)
+					, get_instruction(info, operation, /* Один регистр => 1 в get_instruction() -> */ 1)
 					, result
 					, R_ZERO
 					, L_ELSE
@@ -1606,24 +1606,19 @@ static rvalue emit_binary_expression_rvalue(information *const info, const node 
 			}
 
 			const node LHS = expression_binary_get_LHS(nd);
-			rvalue lhs_rvalue = emit_expression_rvalue(info, &LHS);
+			emit_expression_rvalue(info, &LHS);
 
 			info->label_else = old_label_else;
 			info->reverse_logic_command = false;
 
 			const node RHS = expression_binary_get_RHS(nd); 
-			rvalue rhs_rvalue = emit_expression_rvalue(info, &RHS);
-
-			const rvalue res = apply_bin_operation_rvalue(info
-				, lhs_rvalue
-				, rhs_rvalue
-				, (operator == BIN_LOG_AND) ? BIN_AND : BIN_OR);
+			emit_expression_rvalue(info, &RHS);
 
 			to_code_label(info->sx->io, L_ELSE, label_then);
 
 			free_all_regs(info, curr_reg, curr_float_reg);
   
-			return res;
+			return (rvalue) { };
 		} 
 
 		default:
