@@ -49,7 +49,12 @@ static void linker_make_path(char *const buffer, const char *const name, const c
 		}
 	}
 
-	strcpy(&buffer[index], name);
+	for (size_t i = 0; name[i] != '\0'; i++)
+	{
+		buffer[index] = name[i] == '\\' ? '/' : name[i];
+		index += name[i] == '\n' || (name[i] == '\\' && name[i + 1] != '\\') ? 0 : 1;
+	}
+	buffer[index] = '\0';
 }
 
 static inline size_t linker_internal_path(linker *const lk, const char *const file)
