@@ -283,7 +283,7 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 
 				case 'p':
 				case U'у':
-					format_types[args++] = TYPE_UNDEFINED;
+					format_types[args++] = type_pointer(bldr->sx, TYPE_UNDEFINED);
 					break;
 
 				case '%':
@@ -400,6 +400,7 @@ static node build_print_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "{"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -443,6 +444,7 @@ static node build_print_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "}"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -453,6 +455,7 @@ static node build_print_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "\n"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -488,6 +491,7 @@ static node build_print_expression(builder *const bldr, node *const callee
 			}
 			if (!vector_add_str(&str, tmp))
 			{
+				vector_clear(&str);
 				node_vector_clear(&stmts);
 				node_vector_clear(&args_to_print);
 				return node_broken();
@@ -501,6 +505,7 @@ static node build_print_expression(builder *const bldr, node *const callee
 
 	if (!vector_add_str(&str, "\n"))
 	{
+		vector_clear(&str);
 		node_vector_clear(&stmts);
 		node_vector_clear(&args_to_print);
 		return node_broken();
@@ -587,14 +592,18 @@ static node build_printid_expression(builder *const bldr, node *const callee
 		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index);
 		if (!vector_add_str(&str, tmp_argument_name))
 		{
+			vector_clear(&str);
 			node_vector_clear(&stmts);
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return node_broken();
 		}
 		if (!vector_add_str(&str, " = "))
 		{
+			vector_clear(&str);
 			node_vector_clear(&stmts);
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return node_broken();
 		}
 
@@ -607,6 +616,7 @@ static node build_printid_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "{"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -650,6 +660,7 @@ static node build_printid_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "}"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -660,6 +671,7 @@ static node build_printid_expression(builder *const bldr, node *const callee
 			{
 				if (!vector_add_str(&str, "\n"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&stmts);
 					node_vector_clear(&args_to_print);
 					return node_broken();
@@ -688,6 +700,7 @@ static node build_printid_expression(builder *const bldr, node *const callee
 			}
 			if (!vector_add_str(&str, tmp))
 			{
+				vector_clear(&str);
 				node_vector_clear(&stmts);
 				node_vector_clear(&args_to_print);
 				return node_broken();
@@ -697,6 +710,7 @@ static node build_printid_expression(builder *const bldr, node *const callee
 
 	if (!vector_add_str(&str, "\n"))
 	{
+		vector_clear(&str);
 		node_vector_clear(&stmts);
 		node_vector_clear(&args_to_print);
 		return node_broken();
@@ -858,9 +872,12 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return true;
 	}
 
-	if (type_is_pointer(sx, expected_type) && type_is_undefined(actual_type))
+	if (type_is_pointer(sx, expected_type) && type_is_pointer(sx, actual_type))
 	{
-		return true;
+		if (type_pointer_get_element_type(sx, actual_type) == TYPE_UNDEFINED)
+		{
+			return true;
+		}
 	}
 
 	if (expected_type == actual_type)
@@ -1104,8 +1121,8 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 	const item_t operand_type = expression_get_type(operand);
 
 	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
-							 ? (location){ node_get_location(operand).begin, op_loc.end }
-							 : (location){ op_loc.begin, node_get_location(operand).end };
+		? (location){ node_get_location(operand).begin, op_loc.end }
+		: (location){ op_loc.begin, node_get_location(operand).end };
 
 	switch (op_kind)
 	{
@@ -1293,8 +1310,9 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
 
-			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type)) ||
-				(type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type)) || left_type == right_type)
+			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
+				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type)) 
+				|| left_type == right_type)
 			{
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
@@ -1398,7 +1416,8 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 		return expression_ternary(LHS_type, cond, LHS, RHS, loc);
 	}
 
-	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bldr->sx, RHS_type)) || (LHS_type == RHS_type))
+	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bldr->sx, RHS_type)) 
+		|| (LHS_type == RHS_type))
 	{
 		return expression_ternary(RHS_type, cond, LHS, RHS, loc);
 	}
@@ -1643,8 +1662,8 @@ node build_null_statement(builder *const bldr, const location semi_loc)
 	return statement_null(&bldr->context, semi_loc);
 }
 
-node build_if_statement(builder *const bldr, node *const cond, node *const then_stmt, node *const else_stmt,
-						const location if_loc)
+node build_if_statement(builder *const bldr, node *const cond, node *const then_stmt
+	, node *const else_stmt, const location if_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(then_stmt) || (else_stmt && !node_is_correct(else_stmt)))
 	{
@@ -1715,8 +1734,8 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
 node build_for_statement(builder *const bldr, node *const init, node *const cond
 	, node *const incr, node *const body, const location for_loc)
 {
-	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond)) || (incr && !node_is_correct(incr)) ||
-		!node_is_correct(body))
+	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond)) 
+		|| (incr && !node_is_correct(incr)) || !node_is_correct(body))
 	{
 		return node_broken();
 	}

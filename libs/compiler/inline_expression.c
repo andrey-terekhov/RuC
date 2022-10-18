@@ -508,6 +508,7 @@ static size_t create_array_nodes(builder *bldr, const node *const argument, node
 		}
 		if (!vector_add_str(&str, tmp))
 		{
+			vector_clear(&str);
 			node_vector_clear(&body_args);
 			node_vector_clear(&bounds);
 			return SIZE_MAX;
@@ -583,6 +584,7 @@ static size_t create_array_nodes(builder *bldr, const node *const argument, node
 			node_vector_clear(&bounds);
 			node_vector_clear(&tmp_args1);
 			node_vector_clear(&tmp_args2);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 		node if_false = create_printf_node_by_vector(bldr, &str, &tmp_args2, l_loc, r_loc);
@@ -648,30 +650,35 @@ static size_t create_struct_nodes(builder *bldr, node *argument, node_vector *st
 		if (!vector_add_str(&str, "\n"))
 		{
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 		
 		if (!create_correct_spaces(&str, tab_deep))
 		{
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 
 		if (!vector_add_str(&str, "."))
 		{
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 
 		if (!vector_add_str(&str, member_name_str))
 		{
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 
 		if (!vector_add_str(&str, " = "))
 		{
 			node_vector_clear(&args_to_print);
+			vector_clear(&str);
 			return SIZE_MAX;
 		}
 
@@ -682,6 +689,7 @@ static size_t create_struct_nodes(builder *bldr, node *argument, node_vector *st
 				if (!vector_add_str(&str, "{"))
 				{
 					node_vector_clear(&args_to_print);
+					vector_clear(&str);
 					return SIZE_MAX;
 				}
 			} 
@@ -709,6 +717,7 @@ static size_t create_struct_nodes(builder *bldr, node *argument, node_vector *st
 			if (!create_correct_spaces(&str, tab_deep))
 			{
 				node_vector_clear(&args_to_print);
+				vector_clear(&str);
 				return SIZE_MAX;
 			}
 
@@ -716,6 +725,7 @@ static size_t create_struct_nodes(builder *bldr, node *argument, node_vector *st
 			{
 				if (!vector_add_str(&str, "}"))
 				{
+					vector_clear(&str);
 					node_vector_clear(&args_to_print);
 					return SIZE_MAX;
 				}
@@ -735,6 +745,7 @@ static size_t create_struct_nodes(builder *bldr, node *argument, node_vector *st
 			}
 			if (!vector_add_str(&str, tmp))
 			{
+				vector_clear(&str);
 				node_vector_clear(&args_to_print);
 				return SIZE_MAX;
 			}

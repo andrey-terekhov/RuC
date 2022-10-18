@@ -520,7 +520,7 @@ node expression_inline(const item_t type, node_vector *const substmts, const loc
 		for (size_t i = 1; i < amount; i++)
 		{
 			node substmt = node_vector_get(substmts, i);
-			node_set_child(&nd, &substmt);   // i-ое подвыражение списка
+			node_set_child(&nd, &substmt);   // i-ый подоператор списка
 		}
 	}
 
