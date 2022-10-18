@@ -136,34 +136,36 @@ static void skip_multi_comment(parser *const prs)
 	loc_update(&prs->loc);
 }
 
-static void skip_string(parser *const prs, const char32_t quote)
+static char32_t skip_string(parser *const prs, const char32_t quote)
 {
 	uni_unscan_char(prs->io, quote);
 	loc_search_from(&prs->loc);
 	location loc = prs->loc;
 
 	uni_print_char(prs->io, uni_scan_char(prs->io));
-	char32_t character = '\0';
+	char32_t character = uni_scan_char(prs->io);
 	bool was_slash = false;
 
-	do
+	while (was_slash || character != quote)
 	{
-		was_slash = !was_slash && character == '\\';
-		character = uni_scan_char(prs->io);
 		character = character == '\r' ? uni_scan_char(prs->io) : character;
-
 		if (character == '\n')
 		{
 			loc_line_break(&prs->loc);
 		}
 
-		uni_print_char(prs->io, character);
 		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
 		{
 			parser_error(prs, &loc, STRING_UNTERMINATED, quote);
 			break;
 		}
-	} while (was_slash || character != quote);
+
+		uni_print_char(prs->io, character);
+		was_slash = !was_slash && character == '\\';
+		character = uni_scan_char(prs->io);
+	}
+
+	return character;
 }
 
 static void skip_directive(parser *const prs, char32_t character)
@@ -272,10 +274,10 @@ static bool parse_character(parser *const prs, char32_t character, const bool wa
 			return true;
 
 		case '\'':
-			skip_string(prs, character);
+			uni_print_char(prs->io, skip_string(prs, character));
 			return false;
 		case '"':
-			skip_string(prs, character);
+			uni_print_char(prs->io, skip_string(prs, character));
 			return false;
 
 		case '\r':
