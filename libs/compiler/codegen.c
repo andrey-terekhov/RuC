@@ -784,25 +784,7 @@ static void compress_ident(encoder *const enc, const size_t ref)
 	vector_set(&enc->sx->identifiers, ref, ITEM_MAX);
 	ident_set_repr(enc->sx, ref, new_ref);
 	mem_add(enc, new_ref);
-}
-
-/**
- *	Emit printid expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_printid_expression(encoder *const enc, const node *const nd)
-{
-	const size_t argc = expression_call_get_arguments_amount(nd);
-	for (size_t i = 0; i < argc; i++)
-	{
-		mem_add(enc, IC_PRINTID);
-
-		const node arg = expression_call_get_argument(nd, i);
-		compress_ident(enc, expression_identifier_get_id(&arg)); // Ссылка в identtab
-	}
-}
+} 
 
 /**
  *	Emit getid expression
@@ -845,26 +827,7 @@ static void emit_printf_expression(encoder *const enc, const node *const nd)
 
 	mem_add(enc, IC_PRINTF);
 	mem_add(enc, (item_t)sum_size);
-}
-
-/**
- *	Emit print expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_print_expression(encoder *const enc, const node *const nd)
-{
-	const size_t argc = expression_call_get_arguments_amount(nd);
-	for (size_t i = 0; i < argc; i++)
-	{
-		const node arg = expression_call_get_argument(nd, i);
-		emit_expression(enc, &arg);
-
-		mem_add(enc, IC_PRINT);
-		mem_add(enc, expression_get_type(&arg));
-	}
-}
+} 
 
 /**
  *	Emit call expression
@@ -881,13 +844,7 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	{
 		case BI_PRINTF:
 			emit_printf_expression(enc, nd);
-			return;
-		case BI_PRINT:
-			emit_print_expression(enc, nd);
-			return;
-		case BI_PRINTID:
-			emit_printid_expression(enc, nd);
-			return;
+			return; 
 		case BI_GETID:
 			emit_getid_expression(enc, nd);
 			return;
@@ -913,6 +870,23 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	else
 	{
 		mem_add(enc, builtin_to_instruction((builtin_t)func));
+	}
+}
+
+/**
+ *	Emit inline expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_inline_expression(encoder *const enc, const node *const nd)
+{
+	// FIXME: inline expression cannot return value at the moment
+	const size_t substms = expression_inline_get_size(nd);
+	for (size_t i = 0; i < substms; i++)
+	{
+		const node stmt = expression_inline_get_substmt(nd, i);
+		emit_statement(enc, &stmt); 
 	}
 }
 
@@ -1241,6 +1215,10 @@ static void emit_expression(encoder *const enc, const node *const nd)
 
 		case EXPR_CALL:
 			emit_call_expression(enc, nd);
+			return;
+
+		case EXPR_INLINE:
+			emit_inline_expression(enc, nd);
 			return;
 
 		case EXPR_MEMBER:

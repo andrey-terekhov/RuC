@@ -332,6 +332,11 @@ size_t string_add(syntax *const sx, const vector *const str)
 	return strings_add_by_vector(&sx->string_literals, str);
 }
 
+size_t string_add_by_char(syntax *const sx, const char *const str)
+{
+	return strings_add(&sx->string_literals, str);
+}
+
 const char* string_get(const syntax *const sx, const size_t index)
 {
 	return strings_get(&sx->string_literals, index);

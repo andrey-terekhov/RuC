@@ -27,9 +27,7 @@ typedef enum INSTURCTION
 {
 	IC_GETID = -27,				/**< 'GETID' instruction code */
 	IC_SCANF,					/**< 'SCANF' instruction code */
-	IC_PRINTF,					/**< 'PRINTF' instruction code */
-	IC_PRINT,					/**< 'PRINT' instruction code */
-	IC_PRINTID,					/**< 'PRINTID' instruction code */
+	IC_PRINTF,					/**< 'PRINTF' instruction code */ 
 
 	MIN_INSTRUCTION_CODE = 9000,
 
