@@ -53,36 +53,13 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
 }
 
 
-static void skip_string(parser *const prs, const char32_t quote)
-{
-	uni_unscan_char(prs->io, quote);
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
-
-	uni_print_char(prs->io, uni_scan_char(prs->io));
-	char32_t character = '\0';
-	bool was_slash = false;
-
-	do
-	{
-		was_slash = !was_slash && character == '\\';
-		character = uni_scan_char(prs->io);
-		character = character == '\r' ? uni_scan_char(prs->io) : character;
-
-		if (character == '\n')
-		{
-			loc_line_break(&prs->loc);
-		}
-
-		uni_print_char(prs->io, character);
-		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
-		{
-			parser_error(prs, &loc, STRING_UNTERMINATED, quote);
-			break;
-		}
-	} while (was_slash || character != quote);
-}
-
+/**
+ *	Skip single line comment after double slash read.
+ *	All line breaks will be replaced by empty lines.
+ *	Exit on @c '\n' without backslash or @c EOF character read.
+ *
+ *	@param prs			Parser structure
+ */
 static void skip_comment(parser *const prs)
 {
 	char32_t character = '\0';
@@ -101,6 +78,13 @@ static void skip_comment(parser *const prs)
 	} while (character != (char32_t)EOF && (was_slash || character != '\n'));
 }
 
+/**
+ *	Skip multi line comment after slash and star sequence.
+ *	If it haven't line break comment will be saved.
+ *	Otherwise it will be removed with @c #line mark generation.
+ *
+ *	@param prs			Parser structure
+ */
 static void skip_multi_comment(parser *const prs)
 {
 	uni_unscan_char(prs->io, '*');
@@ -150,6 +134,36 @@ static void skip_multi_comment(parser *const prs)
 
 	uni_print_char(prs->io, '\n');
 	loc_update(&prs->loc);
+}
+
+static void skip_string(parser *const prs, const char32_t quote)
+{
+	uni_unscan_char(prs->io, quote);
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+
+	uni_print_char(prs->io, uni_scan_char(prs->io));
+	char32_t character = '\0';
+	bool was_slash = false;
+
+	do
+	{
+		was_slash = !was_slash && character == '\\';
+		character = uni_scan_char(prs->io);
+		character = character == '\r' ? uni_scan_char(prs->io) : character;
+
+		if (character == '\n')
+		{
+			loc_line_break(&prs->loc);
+		}
+
+		uni_print_char(prs->io, character);
+		if (character == (char32_t)EOF || (!was_slash && character == '\n'))
+		{
+			parser_error(prs, &loc, STRING_UNTERMINATED, quote);
+			break;
+		}
+	} while (was_slash || character != quote);
 }
 
 static void skip_directive(parser *const prs, char32_t character)
