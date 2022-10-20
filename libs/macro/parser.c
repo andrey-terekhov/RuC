@@ -27,9 +27,6 @@ static const size_t MAX_COMMENT_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
 
 
-static bool parse_character(parser *const prs, char32_t character, const bool was_slash);
-
-
 /**
  *	Emit an error from parser
  *
@@ -168,32 +165,6 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
 	return character;
 }
 
-static void skip_directive(parser *const prs, char32_t character)
-{
-	universal_io out = io_create();
-	out_swap(prs->io, &out);
-
-	bool was_slash = parse_character(prs, character, false);
-	bool was_backslash = false;
-
-	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
-	{
-		was_backslash = character == '\\';
-		character = uni_scan_char(prs->io);
-		if (was_slash && character == '/')
-		{
-			skip_comment(prs);
-			break;
-		}
-
-		was_slash = parse_character(prs, character, was_slash);
-	}
-
-	out_swap(prs->io, &out);
-	uni_print_char(prs->io, '\n');
-	loc_update(&prs->loc);
-}
-
 static char32_t skip_until(parser *const prs, char32_t character)
 {
 	while (true)
@@ -292,6 +263,25 @@ static bool parse_character(parser *const prs, char32_t character, const bool wa
 	}
 }
 
+static void parse_until(parser *const prs, char32_t character)
+{
+	bool was_slash = parse_character(prs, character, false);
+	bool was_backslash = false;
+
+	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
+	{
+		was_backslash = character == '\\';
+		character = uni_scan_char(prs->io);
+		if (was_slash && character == '/')
+		{
+			skip_comment(prs);
+			break;
+		}
+
+		was_slash = parse_character(prs, character, was_slash);
+	}
+}
+
 static void parse_line(parser *const prs, char32_t character)
 {
 	uni_unscan_char(prs->io, character);
@@ -299,7 +289,13 @@ static void parse_line(parser *const prs, char32_t character)
 	loc_search_from(&prs->loc);
 	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
 
-	skip_directive(prs, uni_scan_char(prs->io));
+	universal_io out = io_create();
+	out_swap(prs->io, &out);
+	parse_until(prs, uni_scan_char(prs->io));
+	out_swap(prs->io, &out);
+
+	uni_print_char(prs->io, '\n');
+	loc_update(&prs->loc);
 }
 
 static void parse_include_path(parser *const prs, const char32_t quote)
@@ -331,27 +327,28 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (index == SIZE_MAX)
 	{
 		parser_error(prs, &loc, INCLUDE_NO_SUCH_FILE);
-		skip_directive(prs, uni_scan_char(prs->io));
+		parse_until(prs, uni_scan_char(prs->io));
 		out_swap(prs->io, &out);
 		return;
 	}
 
 	character = skip_until(prs, uni_scan_char(prs->io));
-	out_swap(prs->io, &out);
-
 	if (character != '\n')
 	{
 		uni_unscan_char(prs->io, character);
 		loc_search_from(&prs->loc);
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
-		skip_directive(prs, uni_scan_char(prs->io));
+		parse_until(prs, uni_scan_char(prs->io));
 	}
 
-	loc = prs->loc;
+	out_swap(prs->io, &out);
 	universal_io header = linker_add_header(prs->lk, index);
+
+	loc = prs->loc;
 	parser_preprocess(prs, &header);
-	in_clear(&header);
 	prs->loc = loc;
+
+	in_clear(&header);
 }
 
 static void parse_include(parser *const prs, char32_t character)
@@ -383,7 +380,7 @@ static void parse_include(parser *const prs, char32_t character)
 			uni_unscan_char(prs->io, character);
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			skip_directive(prs, uni_scan_char(prs->io));
+			parse_until(prs, uni_scan_char(prs->io));
 			out_swap(prs->io, &out);
 			break;
 	}
