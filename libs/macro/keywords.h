@@ -19,6 +19,9 @@
 #include "map.h"
 
 
+#define MAX_KEYWORD_SIZE 64
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

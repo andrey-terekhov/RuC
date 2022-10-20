@@ -28,6 +28,7 @@ static const size_t MAX_PATH_SIZE = 1024;
 
 
 static bool parse_character(parser *const prs, char32_t character, const bool was_slash);
+static char32_t parse_until(parser *const prs);
 
 
 /**
@@ -168,28 +169,21 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
 	return character;
 }
 
-static void skip_directive(parser *const prs, char32_t character)
+static void skip_directive(parser *const prs)
 {
+	const bool is_recovery_disabled = prs->is_recovery_disabled;
+	const bool was_error = prs->was_error;
+	prs->is_recovery_disabled = true;
+	prs->was_error = true;
+
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
-
-	bool was_slash = parse_character(prs, character, false);
-	bool was_backslash = false;
-
-	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
-	{
-		was_backslash = character == '\\';
-		character = uni_scan_char(prs->io);
-		if (was_slash && character == '/')
-		{
-			skip_comment(prs);
-			break;
-		}
-
-		was_slash = parse_character(prs, character, was_slash);
-	}
-
+	parse_until(prs);
 	out_swap(prs->io, &out);
+
+	prs->was_error = was_error;
+	prs->is_recovery_disabled = is_recovery_disabled;
+
 	uni_print_char(prs->io, '\n');
 	loc_update(&prs->loc);
 }
@@ -270,6 +264,13 @@ static bool parse_character(parser *const prs, char32_t character, const bool wa
 
 	switch (character)
 	{
+		case '#':
+			uni_unscan_char(prs->io, character);
+			loc_search_from(&prs->loc);
+			parser_error(prs, &prs->loc, HASH_STRAY);
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+			return false;
+
 		case '/':
 			return true;
 
@@ -292,6 +293,82 @@ static bool parse_character(parser *const prs, char32_t character, const bool wa
 	}
 }
 
+static char32_t parse_until(parser *const prs)
+{
+	char32_t character = uni_scan_char(prs->io);
+	bool was_slash = parse_character(prs, character, false);
+	bool was_backslash = false;
+
+	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
+	{
+		was_backslash = character == '\\';
+		character = uni_scan_char(prs->io);
+		if (was_slash && character == '/')
+		{
+			skip_comment(prs);
+			return '\n';
+		}
+
+		was_slash = parse_character(prs, character, was_slash);
+	}
+
+	return character;
+}
+
+static size_t parse_directive(parser *const prs)
+{
+	char32_t character = skip_until(prs, uni_scan_char(prs->io));
+	uni_unscan_char(prs->io, character);
+	if (character != '#')
+	{
+		return SIZE_MAX;
+	}
+
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+	universal_io out = io_create();
+	out_set_buffer(&out, MAX_COMMENT_SIZE);
+	uni_print_char(&out, character);
+
+	size_t keyword = storage_search(prs->stg, prs->io, &character);
+	if (storage_last_read(prs->stg)[1] == '\0')
+	{
+		out_swap(prs->io, &out);
+		character = skip_until(prs, character);
+		out_swap(prs->io, &out);
+
+		char32_t directive[MAX_KEYWORD_SIZE + 1] = U"#";
+		size_t i = 1;
+
+		while (i < MAX_KEYWORD_SIZE && (utf8_is_letter(character) || utf8_is_digit(character)))
+		{
+			directive[i++] = character;
+			character = uni_scan_char(prs->io);
+		}
+		directive[i] = '\0';
+		keyword = storage_get_index(prs->stg, directive);
+	}
+
+	if (!kw_is_correct(keyword))
+	{
+		parser_error(prs, &loc, HASH_STRAY);
+		char *buffer = out_extract_buffer(&out);
+
+		uni_unscan_char(prs->io, character);
+		uni_unscan(prs->io, buffer[1] != '\0'
+			? &storage_last_read(prs->stg)[1]
+			: storage_last_read(prs->stg));
+
+		uni_printf(prs->io, "%s", buffer);
+		free(buffer);
+		return SIZE_MAX;
+	}
+
+	out_clear(&out);
+	return keyword;
+}
+
+
 static void parse_line(parser *const prs, char32_t character)
 {
 	uni_unscan_char(prs->io, character);
@@ -299,7 +376,7 @@ static void parse_line(parser *const prs, char32_t character)
 	loc_search_from(&prs->loc);
 	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
 
-	skip_directive(prs, uni_scan_char(prs->io));
+	skip_directive(prs);
 }
 
 static void parse_include_path(parser *const prs, const char32_t quote)
@@ -331,27 +408,28 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (index == SIZE_MAX)
 	{
 		parser_error(prs, &loc, INCLUDE_NO_SUCH_FILE);
-		skip_directive(prs, uni_scan_char(prs->io));
+		skip_directive(prs);
 		out_swap(prs->io, &out);
 		return;
 	}
 
 	character = skip_until(prs, uni_scan_char(prs->io));
-	out_swap(prs->io, &out);
-
 	if (character != '\n')
 	{
 		uni_unscan_char(prs->io, character);
 		loc_search_from(&prs->loc);
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
-		skip_directive(prs, uni_scan_char(prs->io));
+		skip_directive(prs);
 	}
 
-	loc = prs->loc;
+	out_swap(prs->io, &out);
 	universal_io header = linker_add_header(prs->lk, index);
+
+	loc = prs->loc;
 	parser_preprocess(prs, &header);
-	in_clear(&header);
 	prs->loc = loc;
+
+	in_clear(&header);
 }
 
 static void parse_include(parser *const prs, char32_t character)
@@ -383,7 +461,7 @@ static void parse_include(parser *const prs, char32_t character)
 			uni_unscan_char(prs->io, character);
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			skip_directive(prs, uni_scan_char(prs->io));
+			skip_directive(prs);
 			out_swap(prs->io, &out);
 			break;
 	}
@@ -433,24 +511,15 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	in_swap(prs->io, in);
 	prs->loc = loc_create(prs->io);
 
-	bool was_slash = false;
 	char32_t character = '\0';
-	do
+	while (character != (char32_t)EOF)
 	{
-		const size_t keyword = storage_search(prs->stg, prs->io, &character);
-		const char *last = storage_last_read(prs->stg);
-		if (was_slash && last != NULL)
-		{
-			uni_print_char(prs->io, '/');
-			was_slash = false;
-		}
-
+		const size_t keyword = parse_directive(prs);
 		switch (keyword)
 		{
 			case KW_LINE:
 				parse_line(prs, character);
 				continue;
-
 			case KW_INCLUDE:
 				parse_include(prs, character);
 				continue;
@@ -478,19 +547,12 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				/* error */
 				break;
 
-			case SIZE_MAX:
-				if (last != NULL)
-				{
-					uni_printf(prs->io, "%s", last);
-				}
-				break;
-
 			default:
 				break;
 		}
 
-		was_slash = parse_character(prs, character, was_slash);
-	} while (character != (char32_t)EOF);
+		character = parse_until(prs);
+	}
 
 	in_swap(prs->io, in);
 	return 0;
