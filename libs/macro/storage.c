@@ -115,8 +115,10 @@ size_t storage_get_index(storage *const stg, const char32_t *const id)
 		return SIZE_MAX;
 	}
 
-	const size_t key = map_get_index_by_utf8(&stg->as, id);
-	return key != SIZE_MAX ? hash_get_index(&stg->hs, (item_t)key) : SIZE_MAX;
+	const size_t index = map_get_index_by_utf8(&stg->as, id);
+	const item_t value = map_get_by_index(&stg->as, index);
+
+	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
 }
 
 const char *storage_get_by_index(const storage *const stg, const size_t id)

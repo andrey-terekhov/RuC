@@ -84,7 +84,7 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
  *	@param	stg			Macro storage
  *	@param	id			Macro name
  *
- *	@return	Index of record, @c SIZE_MAX on failure
+ *	@return	Index of record or keyword, @c SIZE_MAX on failure
  */
 size_t storage_get_index(storage *const stg, const char32_t *const id);
 
