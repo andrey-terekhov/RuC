@@ -26,26 +26,24 @@ static const size_t BUFFER_SIZE = 65536;				/**< Размер буфера дл�
 static const size_t HASH_TABLE_SIZE = 1024;				/**< Размер хеш-таблицы для смещений и регистров */
 static const bool IS_ON_STACK = true;					/**< Хранится ли переменная на стеке */
 
+static const size_t WORD_LENGTH = 4;					/**< Длина слова данных */
+static const size_t HALF_WORD_LENGTH = 2;				/**< Длина половины слова данных */
+
 static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
 
-static const size_t FUNC_DISPL_PRESEREVED = 60;			/**< Смещение в стеке для сохранения оберегаемых регистров,
+static const size_t SP_SIZE = WORD_LENGTH;				/**< Размер регистра R_SP для его сохранения */
+static const size_t RA_SIZE = WORD_LENGTH;				/**< Размер регистра R_RA для его сохранения */
+
+static const size_t FUNC_DISPL_PRESEREVED = SP_SIZE 
+	+ RA_SIZE
+	+ /* fs0-fs10 (одинарная точность): */ 5*WORD_LENGTH
+	+ /* s0-s7: */ 8*WORD_LENGTH;						/**< Смещение в стеке для сохранения оберегаемых регистров,
 															 без учёта оптимизаций */
-// s0-s7: 4 байт * 8 = 32 байта			| 
-// sp: 4 байта							| => 60 байт 
-// ra: 4 байта							| 
-// fs0-fs10: 4 байта * 5 = 20 байт		|
-
-static const size_t SP_SIZE = 4;						/**< Размер регистра R_SP для его сохранения */
-static const size_t RA_SIZE = 4;						/**< Размер регистра R_RA для его сохранения */
-
 
 static const size_t TEMP_FP_REG_AMOUNT = 12;			/**< Количество временных регистров для чисел с плавающей точкой */
 static const size_t TEMP_REG_AMOUNT = 8;				/**< Количество обычных временных регистров */
 static const size_t ARG_REG_AMOUNT = 4;					/**< Количество регистров-аргументов для функций */
-
-static const size_t WORD_LENGTH = 4;					/**< Длина слова данных */
-static const size_t HALF_WORD_LENGTH = 2;				/**< Длина половины слова данных */
 
 
 typedef struct LVALUE
@@ -258,7 +256,9 @@ typedef struct information
 
 	item_t main_label;						/**< Метка функции main */
 
+	size_t curr_displ;						/**< Текущее смещение */
 	size_t max_displ;						/**< Максимальное смещение */
+
 	hash displacements;						/**< Хеш таблица с информацией о расположении идентификаторов:
 													@с key		 - ссылка на таблицу идентификаторов
 													@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре 
@@ -273,7 +273,7 @@ typedef struct information
 
 	bool reverse_logic_command;				/**< Флаг требования противоположной логической операции команды */		
 
-	size_t prev_function_ident;				/**< Стек вызова функций */
+	size_t curr_function_ident;				/**< Идентификатор текущей функций */
 } information;
 
 
@@ -1093,7 +1093,7 @@ static mips_register_t get_reg_rvalue(information *const info, const rvalue rval
  * @param displ				Displacement to store
  * @param base_reg			Base register
 */
-static void store_rvalue(information *const info, const rvalue rval, const size_t displ, const mips_register_t base_reg)
+static void store_rvalue(information *const info, const rvalue rval, const item_t displ, const mips_register_t base_reg)
 {
 	const mips_register_t curr_reg = get_register_amount(info);
 	const mips_register_t curr_float_reg = get_float_register_amount(info);
@@ -1291,16 +1291,20 @@ static rvalue emit_call_expression_rvalue(information *const info, const node *c
 
 			const node arg = expression_call_get_argument(nd, i);
 
-			emit_expression_rvalue(info, &arg);
+			const rvalue arg_rvalue = emit_expression_rvalue(info, &arg);
 
-			uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + i * amount);
-			uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + i * amount);
+			uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i-1) * amount);
+			uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i-1) * amount);
+			//to_code_R_I(info->sx->io, IC_MIPS_LI, R_A1, 0);
+			load_to_reg_rvalue(info->sx->io, R_A1, arg_rvalue);
 			uni_printf(info->sx->io, "\tjal printf\n");
 		}
 
-		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + args_amount * amount);
-		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + args_amount * amount);
+		
+		uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (args_amount-1) * amount);
+		uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (args_amount-1) * amount);
 		uni_printf(info->sx->io, "\tjal printf\n");
+		
 	}
 	// TODO: Лучше бы это единообразно через функцию сделать, как с get_operation()
 	else if (func_ref == BI_SIN)
@@ -1311,8 +1315,6 @@ static rvalue emit_call_expression_rvalue(information *const info, const node *c
 	{
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
-
-		size_t arg_displ_sum = 0;
 
 		uni_printf(info->sx->io, "\t# parameters passing:\n");
 
@@ -1331,10 +1333,7 @@ static rvalue emit_call_expression_rvalue(information *const info, const node *c
 			{
 				store_rvalue(info, arg_rvalue, 0, R_FP);
 
-				// Сдвигаем $fp на WORD_LENGTH
 				to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)WORD_LENGTH);
-
-				arg_displ_sum += WORD_LENGTH;
 
 				free_all_regs(info, curr_reg, curr_float_reg);				
 			}
@@ -1388,11 +1387,11 @@ static rvalue emit_inc_dec_expression_rvalue(information *const info, const node
 	{
 		case UN_PREDEC:
 		case UN_POSTDEC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, -1);
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, result, -1);
 			break;
 		case UN_PREINC:
 		case UN_POSTINC:
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, R_ZERO, 1);
+			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, result, result, 1);
 			break;
 
 		default:
@@ -1742,8 +1741,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 	uni_printf(info->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(info->sx, id));
 
-	info->max_displ += type_size(info->sx, type) * WORD_LENGTH;
-	const size_t value_displ = info->max_displ; 
+	const size_t value_displ = info->curr_displ; 
 
 	// TODO: в глобальных переменных регистр gp
 	// просто эту конструкцию в рекурсивную функцию
@@ -1752,11 +1750,11 @@ static void emit_variable_declaration(information *const info, const node *const
 	item_t parent_type = node_get_type(&parent_node);
 	const mips_register_t value_reg = (type_is_function(info->sx, parent_type)) ? R_SP : R_GP;
 	*/
-	const mips_register_t value_reg = R_FP;
+	const mips_register_t value_reg = R_SP;
 
 	const size_t index = hash_add(&info->displacements, id, 2);
 	hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
-	hash_set_by_index(&info->displacements, index, 1, -(item_t)value_displ);
+	hash_set_by_index(&info->displacements, index, 1, value_displ);
 
 	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
 	{ 
@@ -1775,9 +1773,7 @@ static void emit_variable_declaration(information *const info, const node *const
 			const node initializer = declaration_variable_get_initializer(nd);
 			const rvalue initializer_rvalue = emit_expression_rvalue(info, &initializer);
 
-			store_rvalue(info, initializer_rvalue, 0, value_reg);
-			// Сдвигаем value_reg на WORD_LENGTH
-			to_code_2R_I(info->sx->io, IC_MIPS_ADDI, value_reg, value_reg, -(item_t)WORD_LENGTH);
+			store_rvalue(info, initializer_rvalue, value_displ, value_reg);
 
 			free_all_regs(info, curr_reg, curr_float_reg);
 		}
@@ -1795,8 +1791,28 @@ static void emit_variable_declaration(information *const info, const node *const
 		uni_printf(info->sx->io, "\tjal DEFARR\n");
 		uni_printf(info->sx->io, "\t#addr 0($fp) now contains array size, addr 4($fp) contains first array element\n");
 	}
+
+	info->curr_displ -= WORD_LENGTH;
 	uni_printf(info->sx->io, "\n");
 }
+
+
+static size_t get_static_size(const node *const nd)
+{
+	size_t res = 0;
+	const size_t children_amount = node_get_amount(nd);
+	for (size_t i = 0; i < children_amount; i++)
+	{
+		const node child = node_get_child(nd, i);
+		if (statement_get_class(&child) == STMT_DECL) 
+		{
+			res += WORD_LENGTH;
+		}
+		res += get_static_size(&child);
+	}
+	return res;
+}
+
 
 /**
  * Emit function definition
@@ -1810,12 +1826,14 @@ static void emit_function_definition(information *const info, const node *const 
 	const item_t func_type = ident_get_type(info->sx, ref_ident);
 	const size_t parameters = type_function_get_parameter_amount(info->sx, func_type);
 	
-	info->prev_function_ident = ref_ident;
+	info->curr_function_ident = ref_ident;
 
 	if (ref_ident == info->sx->ref_main)
 	{
 		info->main_label = ref_ident;
 	} 
+
+	printf("%s -> %zu\n", ident_get_spelling(info->sx, ref_ident), get_static_size(nd));
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
@@ -1829,48 +1847,89 @@ static void emit_function_definition(information *const info, const node *const 
 	uni_printf(info->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
 
 	// Сохранение данных перед началом работы функции
-	info->max_displ = FUNC_DISPL_PRESEREVED;
+	info->curr_displ = FUNC_DISPL_PRESEREVED;
 	
 	uni_printf(info->sx->io, "\n\t# data saving:\n");
 	
 	// Под $sp будут располагаться $ra и предыдущее значение $sp
+	uni_printf(info->sx->io, "\t# $sp and $ra:\n");
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_SP, -(item_t)(RA_SIZE + SP_SIZE), R_FP);
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
 	to_code_R_I_R(info->sx->io, IC_MIPS_SW, R_RA, -(item_t)RA_SIZE, R_SP);
 
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
-
-	uni_printf(info->sx->io, "\n");
+	uni_printf(info->sx->io, "\n\t# preserved registers:\n");
 
 	// Сохранение s0-s7
-	for (size_t i = 0; i < 8; i++)
+	for (size_t i = 1; i <= 8; i++)
 	{
 		to_code_R_I_R(info->sx->io
 			, IC_MIPS_SW
 			, /* код регистра -> */ R_S0 + i
-			, -(item_t)(RA_SIZE + SP_SIZE + WORD_LENGTH*(i+1))
+			, -(item_t)(RA_SIZE + SP_SIZE + i*WORD_LENGTH)
 			, R_SP);
 	}
 	
 	uni_printf(info->sx->io, "\n");
 
-	// Сохранение fs0-fs7
-	for (size_t i = 0; i < 5; i++)
+	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
+	for (size_t i = 1; i <= 5; i++)
 	{
 		to_code_R_I_R(info->sx->io
-		, IC_MIPS_S_S
-		, /* код регистра -> */ R_FS0 + 2*i
-		, /* 40 за $ra + $sp + $s0-$s7 + смещение -> */ -(item_t)(RA_SIZE + SP_SIZE + 32 + WORD_LENGTH*(i+1))
-		, R_SP);
+			, IC_MIPS_S_S
+			, /* код регистра -> */ R_FS0 + 2*i
+			, -(item_t)(RA_SIZE + SP_SIZE + /* за s0-s7: */ 32 + i*WORD_LENGTH)
+			, R_SP);
 	}
 
-	uni_printf(info->sx->io, "\n"); 
+	// Узнаём, сколько надо выделить памяти для аргументов функции
+	size_t params_to_store = 0;
+	size_t tmp_float_cnt = 0;
+	size_t tmp_cnt = 0;
+	for (size_t i = 0; i < parameters; i++)
+	{
+		const size_t id = declaration_function_get_param(nd, i);
+		const item_t param_type = ident_get_type(info->sx, id);
+
+		if (type_is_floating(param_type))
+		{
+			if (tmp_float_cnt < ARG_REG_AMOUNT)
+			{
+				params_to_store++;
+			}
+			tmp_float_cnt += 2;
+		} 
+		else
+		{
+			if (tmp_cnt < ARG_REG_AMOUNT)
+			{
+				params_to_store++;
+			}
+			tmp_cnt++;
+		}
+	}
+
+	info->curr_displ += params_to_store*WORD_LENGTH;
+
+	// Выравнивание смещения на 8
+	const size_t padding = info->curr_displ % 8;
+	info->curr_displ += padding;
+
+	uni_printf(info->sx->io, "\n\t# setting up $fp and $sp:\n");
+	const size_t static_size = get_static_size(nd);
+	info->max_displ = static_size + info->curr_displ;
+	info->curr_displ = static_size;
+	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)info->max_displ);
+
+	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)(info->max_displ));
 
 	uni_printf(info->sx->io, "\n\t# function parameters loading:\n"); 
 
 	size_t f_arg_count = 0;
 	size_t arg_count = 0;
-	size_t arg_displ_sum = (parameters-4)*WORD_LENGTH; // Пойдём сверху вниз от первого параметра функции к последнему
+	size_t arg_displ_sum = (params_to_store)*WORD_LENGTH + static_size;
+	size_t params_on_stack = 0;
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
@@ -1881,106 +1940,63 @@ static void emit_function_definition(information *const info, const node *const 
 
 		uni_printf(info->sx->io, "\t# parameter \"%s\":\n", ident_get_spelling(info->sx, id));
 
-		// Первые 4 аргумента в a0-a3 (либо в fa0-fa3), остальные переданы вызывающей функцией над fp 
+		// Первые 4 аргумента в a0-a3 (либо в fa0-fa3), остальные переданы вызывающей функцией 
 		if (type_is_floating(param_type))
-		{ 
-			mips_register_t tmp_reg = get_float_register(info);
-			if (f_arg_count < TEMP_FP_REG_AMOUNT) // количество временных регистров
+		{
+			if (f_arg_count < ARG_REG_AMOUNT * /* т.к. одинарная точность */ 2)
 			{
-				if (f_arg_count < ARG_REG_AMOUNT)
-				{
-					// берём из fa0-fa3
-					to_code_2R(info->sx->io, IC_MIPS_MOV_S, tmp_reg, /* код регистра fa0-fa3 -> */ R_FA0 + f_arg_count);
-				}
-				else
-				{
-					// берём со стека
-					to_code_R_I_R(info->sx->io, IC_MIPS_L_S, tmp_reg, arg_displ_sum, R_SP);
-
-					arg_displ_sum -= WORD_LENGTH;
-				}
-
+				arg_displ_sum -= WORD_LENGTH;
 				// Все переменные обязательно должны быть на стеке
-				info->max_displ+= WORD_LENGTH;
 				to_code_R_I_R(info->sx->io
 					, IC_MIPS_S_S
-					, tmp_reg
-					, -(item_t)info->max_displ
+					, R_FA0 + f_arg_count
+					, arg_displ_sum
 					, R_SP);
 
-				hash_set_by_index(&info->displacements, index, 1, -(item_t)info->max_displ);
-
-				free_float_register(info);
+				hash_set_by_index(&info->displacements, index, 1, arg_displ_sum);
 			}
 			// иначе остаётся на стеке
 			else 
 			{
 				uni_printf(info->sx->io, "\t# stays on stack\n");
 
-				hash_set_by_index(&info->displacements, index, 1, arg_displ_sum);
-
-				arg_displ_sum -= WORD_LENGTH;
+				hash_set_by_index(&info->displacements, index, 1, info->max_displ + params_on_stack);
+				params_on_stack += WORD_LENGTH;
 			}
-
 			f_arg_count += 2; // т.к. в операциях с одинарной точностью использовать необходимо только чётные регистры
-
-			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
 		else 
-		{ 
-			if (arg_count < TEMP_REG_AMOUNT) // количество временных регистров
+		{
+			if (arg_count < ARG_REG_AMOUNT)
 			{
-				mips_register_t tmp_reg = get_register(info);
-				if (arg_count < ARG_REG_AMOUNT)
-				{
-					// берём из a0-a3
-					to_code_2R(info->sx->io, IC_MIPS_MOVE, tmp_reg, /* код регистра a0-a3 -> */ R_A0 + arg_count);
-				}
-				else
-				{
-					// берём со стека
-					to_code_R_I_R(info->sx->io, IC_MIPS_LW, tmp_reg, arg_displ_sum, R_SP);
-
-					arg_displ_sum -= WORD_LENGTH;
-				}
-
+				arg_displ_sum -= WORD_LENGTH;
 				// Все переменные обязательно должны быть на стеке
-				info->max_displ+= WORD_LENGTH;
 				to_code_R_I_R(info->sx->io
 					, IC_MIPS_SW
-					, tmp_reg
-					, -(item_t)info->max_displ
+					, R_A0 + arg_count
+					, arg_displ_sum
 					, R_SP);
 
-				hash_set_by_index(&info->displacements, index, 1, -(item_t)info->max_displ);
-				
-				free_register(info);
+				hash_set_by_index(&info->displacements, index, 1, arg_displ_sum);
 			}
 			// иначе остаётся на стеке
 			else 
 			{
 				uni_printf(info->sx->io, "\t# stays on stack\n");
 
-				hash_set_by_index(&info->displacements, index, 1, arg_displ_sum);
-
-				arg_displ_sum -= WORD_LENGTH;
-			} 
-			
+				hash_set_by_index(&info->displacements, index, 1, info->max_displ + params_on_stack);
+				params_on_stack += WORD_LENGTH;
+			}
 			arg_count++; 
-
-			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 		}
+		hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 
 		uni_printf(info->sx->io, "\n");
 	}
 
 	uni_printf(info->sx->io, "\n\t# function body:\n");
-
 	node body = declaration_function_get_body(nd);
 	emit_statement(info, &body);
-
-	// Выравнивание смещения на 8
-	info->max_displ += info->max_displ % 8;
 
 	// Извлечение буфера с телом функции в старый io
 	char *buffer = out_extract_buffer(info->sx->io);
@@ -1995,39 +2011,38 @@ static void emit_function_definition(information *const info, const node *const 
 	// Восстановление стека после работы функции
 	uni_printf(info->sx->io, "\n\t# data restoring:\n");
 
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -(item_t)RA_SIZE, R_SP);
-
-	uni_printf(info->sx->io, "\n");
+	// Ставим $fp на его положение в предыдущей функции
+	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, (item_t)info->max_displ);
 
 	// Восстановление s0-s7
 	for (size_t i = 0; i < 8; i++)
 	{
 		to_code_R_I_R(info->sx->io
 			, IC_MIPS_LW
-			, /* код регистра -> */ R_S0 + i
-			, -(item_t)(RA_SIZE + SP_SIZE + WORD_LENGTH*(i+1))
-			, R_SP);
+			, R_S0 + i
+			, (item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH)
+			, R_FP);
 	}
-	
+
 	uni_printf(info->sx->io, "\n");
 
 	// Восстановление fs0-fs7
 	for (size_t i = 0; i < 5; i++)
 	{
 		to_code_R_I_R(info->sx->io
-		, IC_MIPS_L_S
-		, /* код регистра -> */ R_FS0 + 2*i
-		, /* 40 за $ra + $sp + $s0-$s7 + смещение -> */ -(item_t)(RA_SIZE + SP_SIZE + 32 + WORD_LENGTH*(i+1))
-		, R_SP);
+			, IC_MIPS_L_S
+			, R_FS0 + 2*i
+			, (item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH + /* за s0-s7 */ 32)
+			, R_FP);
 	}
 
 	uni_printf(info->sx->io, "\n");
 
-	// Ставим $fp на место $sp -- его положение в предыдущей функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, info->max_displ);
-
 	// Возвращаем $sp его положение в предыдущей функции
-	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_SP, -(item_t)(RA_SIZE + SP_SIZE), R_FP);
+
+	to_code_R_I_R(info->sx->io, IC_MIPS_LW, R_RA, -(item_t)RA_SIZE, R_SP);
 
 	// Прыгаем далее
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA);
@@ -2229,7 +2244,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 
 	// Прыжок на следующую метку
 	uni_printf(info->sx->io, "\n");
-	to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->prev_function_ident); 
+	to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident); 
 }
 
 /**
@@ -2438,6 +2453,7 @@ static void postgen(information *const info)
 	to_code_R(info->sx->io, IC_MIPS_JR, R_RA); // прыгаем на это значение
 
 	// вставляем runtime.s в конец файла
+	/*
 	uni_printf(info->sx->io, "\n\n# runtime\n");
 	char *runtime = "../runtimeMIPS/runtime.s"; 
 	FILE *file = fopen(runtime, "r+");
@@ -2455,6 +2471,7 @@ static void postgen(information *const info)
 	uni_printf(info->sx->io, "\t.end\tmain\n");
 	uni_printf(info->sx->io, "\t.size\tmain, .-main\n");
 	// TODO: тут ещё часть вывод таблицы типов должен быть (вроде это для написанных самими функции типа printid)
+	*/
 }
 
 
@@ -2477,7 +2494,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	information info;
 	info.sx = sx;
 	info.main_label = 0;
-	info.max_displ = 0;
+	info.curr_displ = 0;
 	info.next_register = R_T0;
 	info.next_float_register = R_FT0; 
 	info.label_num = 1;
