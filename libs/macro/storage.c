@@ -57,24 +57,6 @@ storage storage_create()
 }
 
 
-size_t storage_add_utf8(storage *const stg, const char32_t *const id, const char32_t *const value)
-{
-	if (!storage_is_correct(stg) || id == NULL)
-	{
-		return SIZE_MAX;
-	}
-
-	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	if (value == NULL)
-	{
-		return hash_add(&stg->hs, (item_t)key, 0);
-	}
-
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
-	return index;
-}
-
 size_t storage_add(storage *const stg, const char32_t *const id, const char *const value)
 {
 	if (!storage_is_correct(stg) || id == NULL)
@@ -93,7 +75,7 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char *con
 	return index;
 }
 
-size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char32_t *const value, const size_t args)
+size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char *const value, const size_t args)
 {
 	if (!storage_is_correct(stg) || id == NULL || value == NULL)
 	{
@@ -103,7 +85,7 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
 	const size_t key = map_reserve_by_utf8(&stg->as, id);
 	const size_t index = hash_add(&stg->hs, (item_t)key, 1 + args);
 
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add_by_utf8(&stg->vec, value));
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
 	return index;
 }
 

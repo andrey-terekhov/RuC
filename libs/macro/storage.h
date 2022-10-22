@@ -52,17 +52,6 @@ storage storage_create();
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_utf8(storage *const stg, const char32_t *const id, const char32_t *const value);
-
-/**
- *	Add new macro
- *
- *	@param	stg			Macro storage
- *	@param	id			Macro name
- *	@param	value		Macro replacement
- *
- *	@return	Index of record, @c SIZE_MAX on failure
- */
 size_t storage_add(storage *const stg, const char32_t *const id, const char *const value);
 
 /**
@@ -75,7 +64,7 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char *con
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char32_t *const value, const size_t args);
+size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char *const value, const size_t args);
 
 
 /**
