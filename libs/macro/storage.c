@@ -22,15 +22,23 @@
 static const size_t MAX_MACRO = 256;
 
 
-extern const char *storage_get(storage *const stg, const char32_t *const id);
-extern size_t storage_get_amount(storage *const stg, const char32_t *const id);
-extern const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index);
+extern const char *storage_get(storage *const stg, const char *const id);
+extern const char *storage_get_by_utf8(storage *const stg, const char32_t *const id);
+extern size_t storage_get_amount(storage *const stg, const char *const id);
+extern size_t storage_get_amount_by_utf8(storage *const stg, const char32_t *const id);
+extern const char *storage_get_arg(storage *const stg, const char *const id, const size_t index);
+extern const char *storage_get_arg_by_utf8(storage *const stg, const char32_t *const id, const size_t index);
 
-extern size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg);
+extern size_t storage_add_arg(storage *const stg, const char *const id
+	, const size_t index, const char *const arg);
+extern size_t storage_add_arg_by_utf8(storage *const stg, const char32_t *const id
+	, const size_t index, const char *const arg);
 
-extern size_t storage_set(storage *const stg, const char32_t *const id, const char *value);
+extern size_t storage_set(storage *const stg, const char *const id, const char *value);
+extern size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, const char *value);
 
-extern int storage_remove(storage *const stg, const char32_t *const id);
+extern int storage_remove(storage *const stg, const char *const id);
+extern int storage_remove_by_utf8(storage *const stg, const char32_t *const id);
 
 
 static inline size_t add(storage *const stg, const void *const id, const char *const value
@@ -172,10 +180,10 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
 }
 
 
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg)
+int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg)
 {
 	return storage_is_correct(stg) && arg != NULL && hash_get_by_index(&stg->hs, id, 1 + index) == 0
-		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add_by_utf8(&stg->vec, arg))
+		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add(&stg->vec, arg))
 		: -1;
 }
 

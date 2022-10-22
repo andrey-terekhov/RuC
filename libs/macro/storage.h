@@ -113,6 +113,32 @@ size_t storage_get_index(storage *const stg, const char *const id);
 size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id);
 
 /**
+ *	Get macro replacement
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *
+ *	@return	Macro replacement, @c NULL on failure
+ */
+inline const char *storage_get(storage *const stg, const char *const id)
+{
+	return storage_get_by_index(stg, storage_get_index(stg, id));
+}
+
+/**
+ *	Get macro replacement by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *
+ *	@return	Macro replacement, @c NULL on failure
+ */
+inline const char *storage_get_by_utf8(storage *const stg, const char32_t *const id)
+{
+	return storage_get_by_index(stg, storage_get_index_by_utf8(stg, id));
+}
+
+/**
  *	Get macro replacement by index
  *
  *	@param	stg			Macro storage
@@ -123,16 +149,29 @@ size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id);
 const char *storage_get_by_index(const storage *const stg, const size_t id);
 
 /**
- *	Get macro replacement
+ *	Get arguments amount
  *
  *	@param	stg			Macro storage
  *	@param	id			Macro name
  *
- *	@return	Macro replacement, @c NULL on failure
+ *	@return	Arguments amount, @c 0 on failure
  */
-inline const char *storage_get(storage *const stg, const char32_t *const id)
+inline size_t storage_get_amount(storage *const stg, const char *const id)
 {
-	return storage_get_by_index(stg, storage_get_index_by_utf8(stg, id));
+	return storage_get_amount_by_index(stg, storage_get_index(stg, id));
+}
+
+/**
+ *	Get arguments amount by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *
+ *	@return	Arguments amount, @c 0 on failure
+ */
+inline size_t storage_get_amount_by_utf8(storage *const stg, const char32_t *const id)
+{
+	return storage_get_amount_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -146,16 +185,31 @@ inline const char *storage_get(storage *const stg, const char32_t *const id)
 size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
 
 /**
- *	Get arguments amount
+ *	Get macro argument
  *
  *	@param	stg			Macro storage
  *	@param	id			Macro name
+ *	@param	index		Argument number
  *
- *	@return	Arguments amount, @c 0 on failure
+ *	@return	Macro argument, @c NULL on failure
  */
-inline size_t storage_get_amount(storage *const stg, const char32_t *const id)
+inline const char *storage_get_arg(storage *const stg, const char *const id, const size_t index)
 {
-	return storage_get_amount_by_index(stg, storage_get_index_by_utf8(stg, id));
+	return storage_get_arg_by_index(stg, storage_get_index(stg, id), index);
+}
+
+/**
+ *	Get macro argument by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	index		Argument number
+ *
+ *	@return	Macro argument, @c NULL on failure
+ */
+inline const char *storage_get_arg_by_utf8(storage *const stg, const char32_t *const id, const size_t index)
+{
+	return storage_get_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index);
 }
 
 /**
@@ -169,32 +223,6 @@ inline size_t storage_get_amount(storage *const stg, const char32_t *const id)
  */
 const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
 
-/**
- *	Get macro argument
- *
- *	@param	stg			Macro storage
- *	@param	id			Macro name
- *	@param	index		Argument number
- *
- *	@return	Macro argument, @c NULL on failure
- */
-inline const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index)
-{
-	return storage_get_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index);
-}
-
-
-/**
- *	Add macro argument by index
- *
- *	@param	stg			Macro storage
- *	@param	id			Index of record
- *	@param	index		Argument number
- *	@param	arg			Argument name
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char32_t *const arg);
 
 /**
  *	Add macro argument
@@ -206,11 +234,68 @@ int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t i
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-inline size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg)
+inline size_t storage_add_arg(storage *const stg, const char *const id
+	, const size_t index, const char *const arg)
+{
+	return storage_add_arg_by_index(stg, storage_get_index(stg, id), index, arg);
+}
+
+/**
+ *	Add macro argument by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	index		Argument number
+ *	@param	arg			Argument name
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+inline size_t storage_add_arg_by_utf8(storage *const stg, const char32_t *const id
+	, const size_t index, const char *const arg)
 {
 	return storage_add_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index, arg);
 }
 
+/**
+ *	Add macro argument by index
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Index of record
+ *	@param	index		Argument number
+ *	@param	arg			Argument name
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg);
+
+
+/**
+ *	Set new macro replacement by existing macro name
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	value		Macro replacement
+ *
+ *	@return	Index of new record, @c SIZE_MAX on failure
+ */
+inline size_t storage_set(storage *const stg, const char *const id, const char *value)
+{
+	return storage_set_by_index(stg, storage_get_index(stg, id), value);
+}
+
+/**
+ *	Set new macro replacement by existing UTF-8 macro name
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	value		Macro replacement
+ *
+ *	@return	Index of new record, @c SIZE_MAX on failure
+ */
+inline size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, const char *value)
+{
+	return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
+}
 
 /**
  *	Set new macro replacement by index
@@ -223,20 +308,32 @@ inline size_t storage_add_arg(storage *const stg, const char32_t *const id, cons
  */
 size_t storage_set_by_index(storage *const stg, const size_t id, const char *value);
 
+
 /**
- *	Set new macro replacement by existing macro name
+ *	Remove macro
  *
  *	@param	stg			Macro storage
  *	@param	id			Macro name
- *	@param	value		Macro replacement
  *
- *	@return	Index of new record, @c SIZE_MAX on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
-inline size_t storage_set(storage *const stg, const char32_t *const id, const char *value)
+inline int storage_remove(storage *const stg, const char *const id)
 {
-	return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
+	return storage_remove_by_index(stg, storage_get_index(stg, id));
 }
 
+/**
+ *	Remove macro by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int storage_remove_by_utf8(storage *const stg, const char32_t *const id)
+{
+	return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
+}
 
 /**
  *	Remove macro by index
@@ -247,19 +344,6 @@ inline size_t storage_set(storage *const stg, const char32_t *const id, const ch
  *	@return	@c 0 on success, @c -1 on failure
  */
 int storage_remove_by_index(storage *const stg, const size_t id);
-
-/**
- *	Remove macro
- *
- *	@param	stg			Macro storage
- *	@param	id			Macro name
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-inline int storage_remove(storage *const stg, const char32_t *const id)
-{
-	return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
-}
 
 
 /**
