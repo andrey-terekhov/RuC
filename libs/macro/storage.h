@@ -52,7 +52,18 @@ storage storage_create();
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add(storage *const stg, const char32_t *const id, const char *const value);
+size_t storage_add(storage *const stg, const char *const id, const char *const value);
+
+/**
+ *	Add new macro by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	value		Macro replacement
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t storage_add_by_utf8(storage *const stg, const char32_t *const id, const char *const value);
 
 /**
  *	Add new macro with arguments
@@ -64,7 +75,21 @@ size_t storage_add(storage *const stg, const char32_t *const id, const char *con
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char *const value, const size_t args);
+size_t storage_add_with_args(storage *const stg, const char *const id
+	, const char *const value, const size_t args);
+
+/**
+ *	Add new macro with arguments by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *	@param	value		Macro replacement
+ *	@param	args		Number of arguments
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t storage_add_with_args_by_utf8(storage *const stg, const char32_t *const id
+	, const char *const value, const size_t args);
 
 
 /**
@@ -75,7 +100,17 @@ size_t storage_add_with_args(storage *const stg, const char32_t *const id, const
  *
  *	@return	Index of record or keyword, @c SIZE_MAX on failure
  */
-size_t storage_get_index(storage *const stg, const char32_t *const id);
+size_t storage_get_index(storage *const stg, const char *const id);
+
+/**
+ *	Get index of record by UTF-8
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Macro name
+ *
+ *	@return	Index of record or keyword, @c SIZE_MAX on failure
+ */
+size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id);
 
 /**
  *	Get macro replacement by index
@@ -97,7 +132,7 @@ const char *storage_get_by_index(const storage *const stg, const size_t id);
  */
 inline const char *storage_get(storage *const stg, const char32_t *const id)
 {
-	return storage_get_by_index(stg, storage_get_index(stg, id));
+	return storage_get_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -120,7 +155,7 @@ size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
  */
 inline size_t storage_get_amount(storage *const stg, const char32_t *const id)
 {
-	return storage_get_amount_by_index(stg, storage_get_index(stg, id));
+	return storage_get_amount_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -145,7 +180,7 @@ const char *storage_get_arg_by_index(const storage *const stg, const size_t id, 
  */
 inline const char *storage_get_arg(storage *const stg, const char32_t *const id, const size_t index)
 {
-	return storage_get_arg_by_index(stg, storage_get_index(stg, id), index);
+	return storage_get_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index);
 }
 
 
@@ -173,7 +208,7 @@ int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t i
  */
 inline size_t storage_add_arg(storage *const stg, const char32_t *const id, const size_t index, const char32_t *const arg)
 {
-	return storage_add_arg_by_index(stg, storage_get_index(stg, id), index, arg);
+	return storage_add_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index, arg);
 }
 
 
@@ -199,7 +234,7 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char *val
  */
 inline size_t storage_set(storage *const stg, const char32_t *const id, const char *value)
 {
-	return storage_set_by_index(stg, storage_get_index(stg, id), value);
+	return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
 }
 
 
@@ -223,7 +258,7 @@ int storage_remove_by_index(storage *const stg, const size_t id);
  */
 inline int storage_remove(storage *const stg, const char32_t *const id)
 {
-	return storage_remove_by_index(stg, storage_get_index(stg, id));
+	return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 

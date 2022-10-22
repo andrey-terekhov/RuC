@@ -346,7 +346,7 @@ static size_t parse_directive(parser *const prs)
 			character = uni_scan_char(prs->io);
 		}
 		directive[i] = '\0';
-		keyword = storage_get_index(prs->stg, directive);
+		keyword = storage_get_index_by_utf8(prs->stg, directive);
 	}
 
 	if (!kw_is_correct(keyword))

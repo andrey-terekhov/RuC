@@ -33,6 +33,56 @@ extern size_t storage_set(storage *const stg, const char32_t *const id, const ch
 extern int storage_remove(storage *const stg, const char32_t *const id);
 
 
+static inline size_t add(storage *const stg, const void *const id, const char *const value
+	, size_t (*reserve)(map *const, const void *const))
+{
+	if (!storage_is_correct(stg) || id == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t key = reserve(&stg->as, id);
+	if (value == NULL)
+	{
+		return hash_add(&stg->hs, (item_t)key, 0);
+	}
+
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
+	return index;
+}
+
+static inline size_t add_with_args(storage *const stg, const void *const id
+	, const char *const value, const size_t args, size_t (*reserve)(map *const, const void *const))
+{
+	if (!storage_is_correct(stg) || id == NULL || value == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t key = reserve(&stg->as, id);
+	const size_t index = hash_add(&stg->hs, (item_t)key, 1 + args);
+
+	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
+	return index;
+}
+
+
+static inline size_t get_index(storage *const stg, const void *const id
+	, size_t (*func)(map *const, const void *const))
+{
+	if (!storage_is_correct(stg) || id == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	const size_t index = func(&stg->as, id);
+	const item_t value = map_get_by_index(&stg->as, index);
+
+	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -57,50 +107,37 @@ storage storage_create()
 }
 
 
-size_t storage_add(storage *const stg, const char32_t *const id, const char *const value)
+size_t storage_add(storage *const stg, const char *const id, const char *const value)
 {
-	if (!storage_is_correct(stg) || id == NULL)
-	{
-		return SIZE_MAX;
-	}
-
-	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	if (value == NULL)
-	{
-		return hash_add(&stg->hs, (item_t)key, 0);
-	}
-
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
-	return index;
+	return add(stg, id, value, (size_t (*)(map *const, const void *const))&map_reserve);
 }
 
-size_t storage_add_with_args(storage *const stg, const char32_t *const id, const char *const value, const size_t args)
+size_t storage_add_by_utf8(storage *const stg, const char32_t *const id, const char *const value)
 {
-	if (!storage_is_correct(stg) || id == NULL || value == NULL)
-	{
-		return SIZE_MAX;
-	}
+	return add(stg, id, value, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
+}
 
-	const size_t key = map_reserve_by_utf8(&stg->as, id);
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1 + args);
+size_t storage_add_with_args(storage *const stg, const char *const id
+	, const char *const value, const size_t args)
+{
+	return add_with_args(stg, id, value, args, (size_t (*)(map *const, const void *const))&map_reserve);
+}
 
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
-	return index;
+size_t storage_add_with_args_by_utf8(storage *const stg, const char32_t *const id
+	, const char *const value, const size_t args)
+{
+	return add_with_args(stg, id, value, args, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
 }
 
 
-size_t storage_get_index(storage *const stg, const char32_t *const id)
+size_t storage_get_index(storage *const stg, const char *const id)
 {
-	if (!storage_is_correct(stg) || id == NULL)
-	{
-		return SIZE_MAX;
-	}
+	return get_index(stg, id, (size_t (*)(map *const, const void *const))&map_get_index);
+}
 
-	const size_t index = map_get_index_by_utf8(&stg->as, id);
-	const item_t value = map_get_by_index(&stg->as, index);
-
-	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
+size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id)
+{
+	return get_index(stg, id, (size_t (*)(map *const, const void *const))&map_get_index_by_utf8);
 }
 
 const char *storage_get_by_index(const storage *const stg, const size_t id)
