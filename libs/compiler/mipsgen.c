@@ -32,8 +32,8 @@ static const size_t HALF_WORD_LENGTH = 2;				/**< Длина половины с
 static const size_t LOW_DYN_BORDER = 0x10010000;		/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;					/**< Смещение кучи относительно глобальной памяти */
 
-static const size_t SP_SIZE = WORD_LENGTH;				/**< Размер регистра R_SP для его сохранения */
-static const size_t RA_SIZE = WORD_LENGTH;				/**< Размер регистра R_RA для его сохранения */
+static const size_t SP_SIZE = 4;						/**< Размер регистра $sp для его сохранения */
+static const size_t RA_SIZE = 4;						/**< Размер регистра $ra для его сохранения */
 
 static const size_t TEMP_FP_REG_AMOUNT = 12;			/**< Количество временных регистров для чисел с плавающей точкой */
 static const size_t TEMP_REG_AMOUNT = 8;				/**< Количество обычных временных регистров */
@@ -353,7 +353,7 @@ static inline mips_register_t get_float_register_amount(information *const info)
  * 
  * @return Minimum register			
 */
-static inline mips_register_t min(const mips_register_t reg1, const mips_register_t reg2)
+static inline mips_register_t (min)(const mips_register_t reg1, const mips_register_t reg2)
 {
 	return (reg1 > reg2) ? reg2 : reg1;
 }
@@ -850,6 +850,19 @@ static void to_code_2R_I(universal_io *const io, const mips_instruction_t instru
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
+// Вид инструкции:	instr	fst_reg, snd_reg, floating point imm
+static void to_code_2R_FPI(universal_io *const io, const mips_instruction_t instruction
+	, const mips_register_t fst_reg, const mips_register_t snd_reg, const double imm)
+{
+	uni_printf(io, "\t");
+	instruction_to_io(io, instruction);
+	uni_printf(io, " ");
+	mips_register_to_io(io, fst_reg);
+	uni_printf(io, ", ");
+	mips_register_to_io(io, snd_reg);
+	uni_printf(io, ", %f\n", imm);
+}
+
 // Вид инструкции:	instr	fst_reg, snd_reg, thd_reg
 static void to_code_3R(universal_io *const io, const mips_instruction_t instruction
 	, const mips_register_t fst_reg, const mips_register_t snd_reg, const mips_register_t thd_reg)
@@ -1061,7 +1074,7 @@ static void emit_load_to_reg_rvalue(universal_io *const io
 	{
 		if (rval.type == TYPE_FLOATING)
 		{
-			to_code_R_FPI(io, IC_MIPS_LI_S, reg_to_store, rval.val.int_val);
+			to_code_R_FPI(io, IC_MIPS_LI_S, reg_to_store, rval.val.float_val);
 		}
 		else
 		{
@@ -1171,7 +1184,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 	if ((rval1.kind == REGISTER) && (rval2.kind == REGISTER))
 	{
 		// В младший из регистров положим результат
-		result = min(rval1.val.reg_num, rval2.val.reg_num);
+		result = (min)(rval1.val.reg_num, rval2.val.reg_num);
 
 		switch (operation)
 		{
@@ -1236,12 +1249,24 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			case BIN_GT:
 			case BIN_LE:
 			case BIN_GE:
-				to_code_2R_I(info->sx->io
-					, IC_MIPS_ADDI
-					, result
-					, rval1.val.reg_num
-					// FIXME: А если TYPE_BOOLEAN?
-					, (-1) * ((type_is_floating(rval2.type)) ? rval2.val.float_val : rval2.val.int_val));
+				if (type_is_floating(rval2.type))
+				{
+					to_code_2R_FPI(info->sx->io
+						, IC_MIPS_ADDI
+						, result
+						, rval1.val.reg_num
+						, (-1) * rval2.val.float_val);
+				}
+				else
+				{
+					to_code_2R_I(info->sx->io
+						, IC_MIPS_ADDI
+						, result
+						, rval1.val.reg_num
+						, (-1) * rval2.val.int_val);
+				}
+
+				// TODO: TYPE_BOOLEAN
 
 				to_code_R_L(info->sx->io
 					, get_instruction(operation, /* Один регистр => 1 в get_instruction() -> */ 1)
@@ -1252,11 +1277,24 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 
 			case BIN_EQ:
 			case BIN_NE:
-				to_code_2R_I(info->sx->io
-					, IC_MIPS_ADDI
-					, result
-					, rval1.val.reg_num
-					, (-1) * ((type_is_floating(rval2.type)) ? rval2.val.float_val : rval2.val.int_val));
+				if (type_is_floating(rval2.type))
+				{
+					to_code_2R_FPI(info->sx->io
+						, IC_MIPS_ADDI
+						, result
+						, rval1.val.reg_num
+						, (-1) * rval2.val.float_val);
+				}
+				else
+				{
+					to_code_2R_I(info->sx->io
+						, IC_MIPS_ADDI
+						, result
+						, rval1.val.reg_num
+						, (-1) * rval2.val.int_val);
+				}
+
+				// TODO: TYPE_BOOLEAN
 
 				to_code_2R_L(info->sx->io
 					, get_instruction(operation, /* Один регистр => 1 в get_instruction() -> */ 1)
@@ -1267,11 +1305,22 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				break;
 
 			default:
-				to_code_2R_I(info->sx->io
-					, get_instruction(operation, /* Один регистр => 1 в get_instruction() -> */ 1)
-					, result
-					, result 
-					, type_is_floating(rval2.type) ? rval2.val.float_val : rval2.val.int_val);
+				if (type_is_floating(rval2.type))
+				{
+					to_code_2R_FPI(info->sx->io
+						, get_instruction(operation, /* Один регистр => 1 в get_instruction() -> */ 1)
+						, result
+						, result 
+						, rval2.val.float_val);
+				}
+				else
+				{
+					to_code_2R_I(info->sx->io
+						, get_instruction(operation, /* Один регистр => 1 в get_instruction() -> */ 1)
+						, result
+						, result 
+						, rval2.val.int_val);
+				}
 		}
 	}
 
@@ -1706,9 +1755,8 @@ static rvalue emit_expression(information *const info, const node *const nd)
 {
 	if (expression_is_lvalue(nd))
 	{
-		lvalue lv = emit_lvalue(info, nd);
-
-		return emit_lvalue_to_rvalue(info, lv); 
+		lvalue lval = emit_lvalue(info, nd);
+		return emit_lvalue_to_rvalue(info, lval); 
 	}
 
 	// Иначе rvalue: 
