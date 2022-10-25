@@ -238,6 +238,7 @@ static char32_t skip_until(parser *const prs, char32_t character)
 				character = uni_scan_char(prs->io);
 			case '\n':
 				loc_line_break(&prs->loc);
+				uni_print_char(prs->io, character);
 			default:
 				return character;
 		}
@@ -318,6 +319,11 @@ static char32_t parse_until(parser *const prs)
 static size_t parse_directive(parser *const prs)
 {
 	char32_t character = skip_until(prs, uni_scan_char(prs->io));
+	while (character == '\n')
+	{
+		character = skip_until(prs, uni_scan_char(prs->io));
+	}
+
 	uni_unscan_char(prs->io, character);
 	if (character != '#')
 	{
