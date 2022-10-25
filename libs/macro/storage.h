@@ -113,6 +113,16 @@ size_t storage_get_index(storage *const stg, const char *const id);
 size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id);
 
 /**
+ *	Get macro replacement by index
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Index of record
+ *
+ *	@return	Macro replacement, @c NULL on failure
+ */
+const char *storage_get_by_index(const storage *const stg, const size_t id);
+
+/**
  *	Get macro replacement
  *
  *	@param	stg			Macro storage
@@ -139,14 +149,14 @@ inline const char *storage_get_by_utf8(storage *const stg, const char32_t *const
 }
 
 /**
- *	Get macro replacement by index
+ *	Get arguments amount by index
  *
  *	@param	stg			Macro storage
  *	@param	id			Index of record
  *
- *	@return	Macro replacement, @c NULL on failure
+ *	@return	Arguments amount, @c 0 on failure
  */
-const char *storage_get_by_index(const storage *const stg, const size_t id);
+size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
 
 /**
  *	Get arguments amount
@@ -175,14 +185,15 @@ inline size_t storage_get_amount_by_utf8(storage *const stg, const char32_t *con
 }
 
 /**
- *	Get arguments amount by index
+ *	Get macro argument by index
  *
  *	@param	stg			Macro storage
  *	@param	id			Index of record
+ *	@param	index		Argument number
  *
- *	@return	Arguments amount, @c 0 on failure
+ *	@return	Macro argument, @c NULL on failure
  */
-size_t storage_get_amount_by_index(const storage *const stg, const size_t id);
+const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
 
 /**
  *	Get macro argument
@@ -212,17 +223,18 @@ inline const char *storage_get_arg_by_utf8(storage *const stg, const char32_t *c
 	return storage_get_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index);
 }
 
+
 /**
- *	Get macro argument by index
+ *	Add macro argument by index
  *
  *	@param	stg			Macro storage
  *	@param	id			Index of record
  *	@param	index		Argument number
+ *	@param	arg			Argument name
  *
- *	@return	Macro argument, @c NULL on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
-const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index);
-
+int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg);
 
 /**
  *	Add macro argument
@@ -256,18 +268,17 @@ inline size_t storage_add_arg_by_utf8(storage *const stg, const char32_t *const 
 	return storage_add_arg_by_index(stg, storage_get_index_by_utf8(stg, id), index, arg);
 }
 
+
 /**
- *	Add macro argument by index
+ *	Set new macro replacement by index
  *
  *	@param	stg			Macro storage
  *	@param	id			Index of record
- *	@param	index		Argument number
- *	@param	arg			Argument name
+ *	@param	value		Macro replacement
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Index of new record, @c SIZE_MAX on failure
  */
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg);
-
+size_t storage_set_by_index(storage *const stg, const size_t id, const char *value);
 
 /**
  *	Set new macro replacement by existing macro name
@@ -297,17 +308,16 @@ inline size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, 
 	return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
 }
 
+
 /**
- *	Set new macro replacement by index
+ *	Remove macro by index
  *
  *	@param	stg			Macro storage
  *	@param	id			Index of record
- *	@param	value		Macro replacement
  *
- *	@return	Index of new record, @c SIZE_MAX on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
-size_t storage_set_by_index(storage *const stg, const size_t id, const char *value);
-
+int storage_remove_by_index(storage *const stg, const size_t id);
 
 /**
  *	Remove macro
@@ -334,16 +344,6 @@ inline int storage_remove_by_utf8(storage *const stg, const char32_t *const id)
 {
 	return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
-
-/**
- *	Remove macro by index
- *
- *	@param	stg			Macro storage
- *	@param	id			Index of record
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-int storage_remove_by_index(storage *const stg, const size_t id);
 
 
 /**
