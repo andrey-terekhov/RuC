@@ -337,29 +337,40 @@ static size_t parse_directive(parser *const prs)
 		character = skip_until(prs, character);
 		out_swap(prs->io, &out);
 
-		char32_t directive[MAX_KEYWORD_SIZE + 1] = U"#";
-		size_t i = 1;
-
-		while (i < MAX_KEYWORD_SIZE && (utf8_is_letter(character) || utf8_is_digit(character)))
+		if (utf8_is_letter(character))
 		{
-			directive[i++] = character;
-			character = uni_scan_char(prs->io);
+			uni_unscan_char(prs->io, character);
+			loc_search_from(&prs->loc);
+			storage_search(prs->stg, prs->io, &character);
+
+			universal_io directive = io_create();
+			out_set_buffer(&directive, MAX_KEYWORD_SIZE);
+			uni_printf(&directive, "#%s", storage_last_read(prs->stg));
+
+			char *buffer = out_extract_buffer(&directive);
+			keyword = storage_get_index(prs->stg, buffer);
+			free(buffer);
 		}
-		directive[i] = '\0';
-		keyword = storage_get_index_by_utf8(prs->stg, directive);
 	}
 
 	if (!kw_is_correct(keyword))
 	{
-		parser_error(prs, &loc, HASH_STRAY);
 		char *buffer = out_extract_buffer(&out);
-
-		uni_unscan_char(prs->io, character);
-		uni_unscan(prs->io, buffer[1] != '\0'
-			? &storage_last_read(prs->stg)[1]
-			: storage_last_read(prs->stg));
-
 		uni_printf(prs->io, "%s", buffer);
+		uni_unscan_char(prs->io, character);
+
+		const char *directive = storage_last_read(prs->stg);
+		if (utf8_is_letter(utf8_convert(&directive[1])))
+		{
+			parser_error(prs, buffer[1] == '\0' ? &loc : &prs->loc, DIRECTIVE_INVALID, directive);
+			uni_printf(prs->io, "%s", &directive[1]);
+		}
+		else
+		{
+			parser_error(prs, &loc, HASH_STRAY);
+			uni_unscan(prs->io, &directive[1]);
+		}
+
 		free(buffer);
 		return SIZE_MAX;
 	}
