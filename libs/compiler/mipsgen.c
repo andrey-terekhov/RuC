@@ -351,10 +351,11 @@ static inline mips_register_t get_float_register_amount(information *const info)
 /**
  * Free all kinds of registers to a certain limits
  * 
+ * @param	info			Codegen info (?)
  * @param	amount			Register to which to free
  * @param	float_amount	Floating point register to which to free 
 */
-static void free_all_regs(information *const info, const mips_register_t amount, const mips_register_t float_amount)
+static void free_regs(information *const info, const mips_register_t amount, const mips_register_t float_amount)
 {
 	while (get_register_amount(info) > amount)
 	{
@@ -971,7 +972,7 @@ static void to_code_label(universal_io *const io, const mips_label_t label, cons
  * @param	info			Codegen info (?)
  * @param	rval			Rvalue to write
 */
-static void rvalue_to_io(information *const info, const rvalue rval)
+static void rvalue_reg_to_io(information *const info, const rvalue rval)
 {
 	const mips_register_t rvalue_reg = get_reg_rvalue(info, rval);
 	mips_register_to_io(info->sx->io, rvalue_reg);
@@ -983,10 +984,8 @@ static void rvalue_to_io(information *const info, const rvalue rval)
  * @param	io			Universal i/o (?)
  * @param	rval		Rvalue whose value is to be printed
 */
-static void rvalue_val_to_io(universal_io *const io, const rvalue rval)
+static void rvalue_const_to_io(universal_io *const io, const rvalue rval)
 {
-	assert(rval.kind == CONST);
-
 	// TODO: Оставшиеся типы
 	switch (rval.type)
 	{
@@ -999,6 +998,26 @@ static void rvalue_val_to_io(universal_io *const io, const rvalue rval)
 		
 		default:
 			break;
+	}
+}
+
+/**
+ * Writes rvalue to io
+ * 
+ * @param	info			Codegen info (?)
+ * @param	rval			Rvalue to write
+*/
+static void rvalue_to_io(information *const info, const rvalue rval)
+{
+	assert(rval.kind != VOID);
+
+	if (rval.kind == CONST)
+	{
+		rvalue_reg_to_io(info, rval);
+	}
+	else
+	{
+		rvalue_const_to_io(info->sx->io, rval);
 	}
 }
 
@@ -1024,7 +1043,7 @@ static void multiply_value_in_rvalue(rvalue rval, const item_t val)
 static void lvalue_to_io(information *const info, const lvalue lval)
 {
 	const rvalue rval = emit_load_of_lvalue(info, lval);
-	rvalue_to_io(info, rval);
+	rvalue_reg_to_io(info, rval);
 }
 */
 
@@ -1116,7 +1135,7 @@ static lvalue emit_store_to_stack_rvalue(information *const info
 		, displ
 		, base_reg);
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 
 	return (lvalue) { .kind = STACK, .loc.displ = displ, .type = rval.type };
 }
@@ -1292,19 +1311,6 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			case BIN_GT:
 			case BIN_LE:
 			case BIN_GE:
-				to_code_3R(info->sx->io
-					, IC_MIPS_SUB
-					, result
-					, rval1.val.reg_num
-					, rval2.val.reg_num);
-
-				to_code_R_L(info->sx->io
-					, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
-					, result
-					, L_ELSE
-					, info->label_else);
-				break;
-
 			case BIN_EQ:
 			case BIN_NE:
 				to_code_3R(info->sx->io
@@ -1313,13 +1319,25 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 					, rval1.val.reg_num
 					, rval2.val.reg_num);
 
-				to_code_2R_L(info->sx->io
-					, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
-					, result
-					, R_ZERO
-					, L_ELSE
-					, info->label_else);
-				break;
+				if ((operation == BIN_NE) || (operation == BIN_EQ))
+				{
+					to_code_2R_L(info->sx->io
+						, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
+						, result
+						, R_ZERO
+						, L_ELSE
+						, info->label_else);
+					break;
+				}
+				else
+				{
+					to_code_R_L(info->sx->io
+						, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
+						, result
+						, L_ELSE
+						, info->label_else);
+					break;		
+				}
 
 			default:
 				to_code_3R(info->sx->io
@@ -1341,7 +1359,10 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			rval2 = tmp_rval;
 		}
 
-		result = reg_is_temporary(rval1.val.reg_num) ? rval1.val.reg_num : get_register(info);
+		// Т.к. может придти регистровая переменная
+		// хотим, чтобы результирующий регистр всегда был временным
+		result = reg_is_temporary(rval1.val.reg_num) ? rval1.val.reg_num 
+			: (type_is_floating(rval1.type) ? get_float_register(info) : get_register(info));
 
 		switch (operation)
 		{
@@ -1349,21 +1370,6 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			case BIN_GT:
 			case BIN_LE:
 			case BIN_GE:
-				// Записываем (-1) * <значение из rval1> в result
-				instruction_to_io(info->sx->io, IC_MIPS_ADDI);
-				mips_register_to_io(info->sx->io, result);
-				rvalue_to_io(info, rval1);
-				multiply_value_in_rvalue(rval1, -1);
-				rvalue_val_to_io(info->sx->io, rval2);
-				multiply_value_in_rvalue(rval1, -1);
-
-				to_code_R_L(info->sx->io
-					, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
-					, result
-					, L_ELSE
-					, info->label_else);
-				break;
-
 			case BIN_EQ:
 			case BIN_NE:
 				// Записываем (-1) * <значение из rval1> в result
@@ -1371,16 +1377,28 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				mips_register_to_io(info->sx->io, result);
 				rvalue_to_io(info, rval1);
 				multiply_value_in_rvalue(rval1, -1);
-				rvalue_val_to_io(info->sx->io, rval2);
+				rvalue_to_io(info, rval2);
 				multiply_value_in_rvalue(rval1, -1);
 
-				to_code_2R_L(info->sx->io
-					, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
-					, result
-					, R_ZERO
-					, L_ELSE
-					, info->label_else);
-				break;
+				if ((operation == BIN_NE) || (operation == BIN_EQ))
+				{
+					to_code_2R_L(info->sx->io
+						, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
+						, result
+						, R_ZERO
+						, L_ELSE
+						, info->label_else);
+					break;
+				}
+				else
+				{
+					to_code_R_L(info->sx->io
+						, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
+						, result
+						, L_ELSE
+						, info->label_else);
+					break;
+				}
 
 			default:
 				// Выписываем операцию, её результат будет записан в result
@@ -1393,9 +1411,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				uni_printf(info->sx->io, ", ");
 				rvalue_to_io(info, rval1);
 				uni_printf(info->sx->io, ", ");
-				multiply_value_in_rvalue(rval1, -1);
-				rvalue_val_to_io(info->sx->io, rval2);
-				multiply_value_in_rvalue(rval1, -1);
+				rvalue_to_io(info, rval2);
 				uni_printf(info->sx->io, "\n");
 		}
 	}
@@ -1525,7 +1541,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 					, R_FP);					 // т.к. первые 4 параметра отправятся в $a0-$a3
 			}
 
-			free_all_regs(info, curr_reg, curr_float_reg);
+			free_regs(info, curr_reg, curr_float_reg);
 
 			if (type_is_floating(arg_rvalue.type))
 			{
@@ -1540,7 +1556,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 		to_code_L(info->sx->io, IC_MIPS_JAL, L_FUNC, func_ref);
 	}
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 
 	return (rvalue){ .kind = REGISTER
 		, .val.reg_num = R_V0
@@ -1765,7 +1781,7 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 		emit_store_to_reg_rvalue(info, lhs_lvalue.loc.reg_num, rhs_rvalue);
 	}
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 	
 	return rhs_rvalue; 
 }
@@ -1827,7 +1843,7 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 
 			to_code_label(info->sx->io, L_ELSE, label_then);
 
-			free_all_regs(info, curr_reg, curr_float_reg);
+			free_regs(info, curr_reg, curr_float_reg);
   
 			return (rvalue) { .kind = VOID };
 		} 
@@ -1980,7 +1996,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 			emit_store_to_stack_rvalue(info, initializer_rvalue, -(item_t)value_displ, value_reg);
 
-			free_all_regs(info, curr_reg, curr_float_reg);
+			free_regs(info, curr_reg, curr_float_reg);
 
 			info->max_displ += WORD_LENGTH;
 		}
@@ -2262,12 +2278,12 @@ static void emit_if_statement(information *const info, const node *const nd)
 	const node condition = statement_if_get_condition(nd);
 	emit_expression(info, &condition);
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 
 	const node then_substmt = statement_if_get_then_substmt(nd);
 	emit_statement(info, &then_substmt);
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 
 	if (statement_if_has_else_substmt(nd))
 	{
@@ -2286,7 +2302,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 
 	uni_printf(info->sx->io, "\n");
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 }
 
 /**
@@ -2317,7 +2333,7 @@ static void emit_while_statement(information *const info, const node *const nd)
 
 	info->label_else = old_label;
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 }
 
 /**
@@ -2348,7 +2364,7 @@ static void emit_do_statement(information *const info, const node *const nd)
 
 	info->label_else = old_label;
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 }
 
 /**
@@ -2395,7 +2411,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 
 	info->label_else = old_label;
 
-	free_all_regs(info, curr_reg, curr_float_reg);
+	free_regs(info, curr_reg, curr_float_reg);
 }  
 
 /**
@@ -2432,7 +2448,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 	uni_printf(info->sx->io, "\n");
 	to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident);
 
-	free_all_regs(info, curr_reg, curr_float_reg); 
+	free_regs(info, curr_reg, curr_float_reg); 
 }
 
 /**
