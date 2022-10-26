@@ -1807,6 +1807,7 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
+		{
 			// TODO: А если это объявление переменной типа bool?
 
 			const mips_register_t curr_reg = get_register_amount(info);
@@ -1849,8 +1850,9 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 			to_code_label(info->sx->io, L_ELSE, label_then);
 
 			free_regs(info, curr_reg, curr_float_reg);
-  
+
 			return (rvalue) { .kind = VOID };
+		}
 
 		default:
 			// TODO: оставшиеся бинарные операторы
