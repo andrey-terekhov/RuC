@@ -57,26 +57,28 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
 /**
  *	Skip single line comment after double slash read.
  *	All line breaks will be replaced by empty lines.
- *	Exit on @c '\n' without backslash or @c EOF character read.
+ *	Exit before @c '\n' without backslash or @c EOF character read.
  *
  *	@param prs			Parser structure
  */
 static void skip_comment(parser *const prs)
 {
-	char32_t character = '\0';
 	bool was_slash = false;
+	char32_t character = uni_scan_char(prs->io);
 
-	do
+	while (character != (char32_t)EOF && (was_slash || character != '\n'))
 	{
-		was_slash = character == '\\' || (was_slash && character == '\r');
-		character = uni_scan_char(prs->io);
-
 		if (character == '\n')
 		{
 			loc_line_break(&prs->loc);
 			uni_print_char(prs->io, character);
 		}
-	} while (character != (char32_t)EOF && (was_slash || character != '\n'));
+
+		was_slash = character == '\\' || (was_slash && character == '\r');
+		character = uni_scan_char(prs->io);
+	}
+
+	uni_unscan_char(prs->io, character);
 }
 
 /**
@@ -205,7 +207,8 @@ static char32_t skip_until(parser *const prs, char32_t character)
 				else if (character == '/')
 				{
 					skip_comment(prs);
-					return '\n';
+					character = uni_scan_char(prs->io);
+					break;
 				}
 				else
 				{
@@ -236,9 +239,6 @@ static char32_t skip_until(parser *const prs, char32_t character)
 
 			case '\r':
 				character = uni_scan_char(prs->io);
-			case '\n':
-				loc_line_break(&prs->loc);
-				uni_print_char(prs->io, character);
 			default:
 				return character;
 		}
@@ -304,12 +304,6 @@ static char32_t parse_until(parser *const prs)
 	{
 		was_backslash = character == '\\';
 		character = uni_scan_char(prs->io);
-		if (was_slash && character == '/')
-		{
-			skip_comment(prs);
-			return '\n';
-		}
-
 		was_slash = parse_character(prs, character, was_slash);
 	}
 
@@ -319,11 +313,6 @@ static char32_t parse_until(parser *const prs)
 static size_t parse_directive(parser *const prs)
 {
 	char32_t character = skip_until(prs, uni_scan_char(prs->io));
-	while (character == '\n')
-	{
-		character = skip_until(prs, uni_scan_char(prs->io));
-	}
-
 	uni_unscan_char(prs->io, character);
 	if (character != '#')
 	{
@@ -358,12 +347,12 @@ static size_t parse_directive(parser *const prs)
 			free(buffer);
 		}
 	}
+	uni_unscan_char(prs->io, character);
 
 	if (!kw_is_correct(keyword))
 	{
 		char *buffer = out_extract_buffer(&out);
 		uni_printf(prs->io, "%s", buffer);
-		uni_unscan_char(prs->io, character);
 
 		const char *directive = storage_last_read(prs->stg);
 		if (utf8_is_letter(utf8_convert(&directive[1])))
@@ -386,13 +375,24 @@ static size_t parse_directive(parser *const prs)
 }
 
 
-static void parse_line(parser *const prs, char32_t character)
+static location parse_location(parser *const prs)
 {
-	uni_unscan_char(prs->io, character);
+	size_t position = in_get_position(prs->io);
 	uni_unscan(prs->io, storage_last_read(prs->stg));
-	loc_search_from(&prs->loc);
-	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
+	if (uni_scan_char(prs->io) == '#')
+	{
+		uni_unscan_char(prs->io, '#');
+	}
 
+	loc_search_from(&prs->loc);
+	in_set_position(prs->io, position);
+	return prs->loc;
+}
+
+static void parse_line(parser *const prs)
+{
+	parse_location(prs);
+	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
 	skip_directive(prs);
 }
 
@@ -438,6 +438,10 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 		skip_directive(prs);
 	}
+	else
+	{
+		loc_line_break(&prs->loc);
+	}
 
 	out_swap(prs->io, &out);
 	universal_io header = linker_add_header(prs->lk, index);
@@ -449,18 +453,13 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	in_clear(&header);
 }
 
-static void parse_include(parser *const prs, char32_t character)
+static void parse_include(parser *const prs)
 {
-	uni_unscan_char(prs->io, character);
-	uni_unscan(prs->io, storage_last_read(prs->stg));
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
-
-	storage_search(prs->stg, prs->io, &character);
+	location loc = parse_location(prs);
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
 
-	character = skip_until(prs, character);
+	char32_t character = skip_until(prs, uni_scan_char(prs->io));
 	switch (character)
 	{
 		case '<':
@@ -472,6 +471,7 @@ static void parse_include(parser *const prs, char32_t character)
 
 		case '\n':
 			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+			loc_line_break(&prs->loc);
 			out_swap(prs->io, &out);
 			break;
 		default:
@@ -535,10 +535,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		switch (keyword)
 		{
 			case KW_LINE:
-				parse_line(prs, character);
+				parse_line(prs);
 				continue;
 			case KW_INCLUDE:
-				parse_include(prs, character);
+				parse_include(prs);
 				continue;
 
 			case KW_DEFINE:
