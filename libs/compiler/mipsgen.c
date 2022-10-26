@@ -2334,7 +2334,13 @@ static void emit_while_statement(information *const info, const node *const nd)
 	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
  
 	const node condition = statement_while_get_condition(nd);
-	emit_expression(info, &condition);
+	const rvalue condition_rvalue = emit_expression(info, &condition);
+
+	to_code_R_L(info->sx->io
+		, IC_MIPS_BLTZ
+		, get_reg_rvalue(info, condition_rvalue)
+		, L_END
+		, label);
 
 	free_regs(info, curr_reg, curr_float_reg);
  
@@ -2372,7 +2378,13 @@ static void emit_do_statement(information *const info, const node *const nd)
 	free_regs(info, curr_reg, curr_float_reg);
 
 	const node condition = statement_do_get_condition(nd);
-	emit_expression(info, &condition);
+	const rvalue condition_rvalue = emit_expression(info, &condition);
+	
+	to_code_R_L(info->sx->io
+		, IC_MIPS_BLTZ
+		, get_reg_rvalue(info, condition_rvalue)
+		, L_END
+		, label);
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
 	to_code_label(info->sx->io, L_ELSE, label);
