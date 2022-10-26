@@ -369,6 +369,28 @@ static void free_regs(information *const info, const mips_register_t amount, con
 }
 
 
+static binary_t reverse_logic_command(const binary_t operation)
+{
+	switch (operation)
+	{
+		case BIN_LT:
+			return BIN_GE;
+		case BIN_GT:
+			return BIN_LE;
+		case BIN_LE:
+			return BIN_GT;
+		case BIN_GE:
+			return BIN_LT;
+		case BIN_EQ:
+			return BIN_NE;
+		case BIN_NE:
+			return BIN_EQ;
+
+		default:
+			return IC_MIPS_NOP;
+	}
+}
+
 /** Get MIPS assembler instuction 
  * 
  * @param	operation_type		Type of operation in AST
@@ -1013,11 +1035,11 @@ static void rvalue_to_io(information *const info, const rvalue rval)
 
 	if (rval.kind == CONST)
 	{
-		rvalue_reg_to_io(info, rval);
+		rvalue_const_to_io(info->sx->io, rval);
 	}
 	else
 	{
-		rvalue_const_to_io(info->sx->io, rval);
+		rvalue_reg_to_io(info, rval);
 	}
 }
 
@@ -1281,13 +1303,15 @@ static mips_register_t reg_is_temporary(const mips_register_t reg)
 */
 static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, rvalue rval2, const binary_t operation)
 {
+	const mips_register_t curr_reg = get_register_amount(info);
+	const mips_register_t curr_float_reg = get_float_register_amount(info);
+
 	assert(operation != BIN_LOG_AND);
 	assert(operation != BIN_LOG_OR);
 
 	assert(rval1.kind != VOID);
 	assert(rval2.kind != VOID);
 
-	// TODO: TYPE_FLOATING
 	mips_register_t result;
 
 	if ((rval1.kind == REGISTER) && (rval2.kind == REGISTER))
@@ -1302,7 +1326,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 		}
 		else
 		{
-			result = get_register(info);
+			result = type_is_floating(rval1.type) ? get_float_register(info) : get_register(info);
 		}
 
 		switch (operation)
@@ -1318,26 +1342,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 					, result
 					, rval1.val.reg_num
 					, rval2.val.reg_num);
-
-				if ((operation == BIN_NE) || (operation == BIN_EQ))
-				{
-					to_code_2R_L(info->sx->io
-						, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
-						, result
-						, R_ZERO
-						, L_ELSE
-						, info->label_else);
-					break;
-				}
-				else
-				{
-					to_code_R_L(info->sx->io
-						, get_bin_instruction(operation, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
-						, result
-						, L_ELSE
-						, info->label_else);
-					break;		
-				}
+				break;
 
 			default:
 				to_code_3R(info->sx->io
@@ -1372,33 +1377,20 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			case BIN_GE:
 			case BIN_EQ:
 			case BIN_NE:
-				// Записываем (-1) * <значение из rval1> в result
+				// Записываем <значение из rval1> + (-1) * <значение из rval2> в result
+				uni_printf(info->sx->io, "\t");
 				instruction_to_io(info->sx->io, IC_MIPS_ADDI);
+				uni_printf(info->sx->io, " ");
 				mips_register_to_io(info->sx->io, result);
-				rvalue_to_io(info, rval1);
-				multiply_value_in_rvalue(rval1, -1);
+				uni_printf(info->sx->io, ", ");
+				rvalue_reg_to_io(info, rval1);
+				uni_printf(info->sx->io, ", ");
+				multiply_value_in_rvalue(rval2, -1);
 				rvalue_to_io(info, rval2);
-				multiply_value_in_rvalue(rval1, -1);
+				multiply_value_in_rvalue(rval2, -1);
+				uni_printf(info->sx->io, "\n");
 
-				if ((operation == BIN_NE) || (operation == BIN_EQ))
-				{
-					to_code_2R_L(info->sx->io
-						, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
-						, result
-						, R_ZERO
-						, L_ELSE
-						, info->label_else);
-					break;
-				}
-				else
-				{
-					to_code_R_L(info->sx->io
-						, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1)
-						, result
-						, L_ELSE
-						, info->label_else);
-					break;
-				}
+				break;
 
 			default:
 				// Выписываем операцию, её результат будет записан в result
@@ -1419,17 +1411,11 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 	// Отбрасываем все регистры, кроме result
 	if (result >= R_FT0)
 	{
-		while(get_float_register_amount(info) > result + 1)
-		{
-			free_float_register(info);
-		}
+		free_regs(info, curr_reg, result);
 	}
 	else // result -- не floating point регистр
 	{
-		while(get_register_amount(info) > result + 1)
-		{
-			free_register(info);
-		}
+		free_regs(info, result, curr_float_reg);
 	}
 
 	return (rvalue){ .kind = REGISTER, .val.reg_num = result, .type = rval1.type };
@@ -1498,7 +1484,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 			uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i-1) * amount);
 			uni_printf(info->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i-1) * amount);
 			//to_code_R_I(info->sx->io, IC_MIPS_LI, R_A1, 0);
-			emit_store_to_reg_rvalue(info->sx->io, R_A1, arg_rvalue);
+			emit_store_to_reg_rvalue(info, R_A1, arg_rvalue);
 			uni_printf(info->sx->io, "\tjal printf\n");
 		}
 
@@ -1655,9 +1641,7 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 		case UN_NOT:
 		{
 			const node operand = expression_unary_get_operand(nd);
-
 			rvalue operand_rvalue = emit_expression(info, &operand);
-
 			mips_register_t result = get_reg_rvalue(info, operand_rvalue);
 
 			if (operator== UN_MINUS)
@@ -1682,6 +1666,12 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 
 			to_code_2R(info->sx->io, IC_MIPS_NOT, result, result);
 
+			to_code_R_L(info->sx->io
+				, IC_MIPS_BLTZ
+				, result
+				, L_ELSE
+				, info->label_else);
+
 			return (rvalue){ .kind = REGISTER, .val.reg_num = result, .type = operand_rvalue.type };
 		}
 
@@ -1704,22 +1694,17 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
  * 
  * @return	Rvalue of the result of logic expression
  */ 
-static rvalue emit_logic_expression_rvalue(information *const info, const node *const nd)
+static rvalue emit_logic_expression(information *const info, const node *const nd)
 {
-	const binary_t operation = expression_binary_get_operator(nd);
+	binary_t operation = expression_binary_get_operator(nd);
 	
 	const node LHS = expression_binary_get_LHS(nd); 
 	const rvalue lhs_rvalue = emit_expression(info, &LHS);
 
-	const item_t label_then = info->label_num++;
-	const item_t old_label_else = info->label_else;
+	operation = reverse_logic_command(operation);
 
 	const node RHS = expression_binary_get_RHS(nd);
 	const rvalue rhs_rvalue = emit_expression(info, &RHS);
-
-	info->label_else = old_label_else;
-
-	to_code_label(info->sx->io, L_ELSE, label_then);
 
 	return apply_bin_operation_rvalue(info, lhs_rvalue, rhs_rvalue, operation);
 } 
@@ -1796,9 +1781,9 @@ static rvalue emit_assignment_expression(information *const info, const node *co
  */ 
 static rvalue emit_binary_expression(information *const info, const node *const nd)
 {
-	const binary_t operator = expression_binary_get_operator(nd);
+	const binary_t operation = expression_binary_get_operator(nd);
 
-	switch (operator)
+	switch (operation)
 	{
 		case BIN_MUL:
 		case BIN_DIV:
@@ -1818,35 +1803,54 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 		case BIN_GE:
 		case BIN_EQ:
 		case BIN_NE:
-			return emit_logic_expression_rvalue(info, nd);
+			return emit_logic_expression(info, nd);
 
 		case BIN_LOG_OR:
 		case BIN_LOG_AND:
-		{
 			// TODO: А если это объявление переменной типа bool?
 
 			const mips_register_t curr_reg = get_register_amount(info);
 			const mips_register_t curr_float_reg = get_float_register_amount(info);
 
-			const item_t label_then = info->label_num++;
+			const item_t label_then = info->label_num;
 			const item_t old_label_else = info->label_else;
 
-			// TODO: замена reverse_logic_command
-
 			const node LHS = expression_binary_get_LHS(nd);
-			emit_expression(info, &LHS);
+			const rvalue lhs_rvalue = emit_expression(info, &LHS);
+
+			if (operation == BIN_LOG_OR)
+			{				
+				to_code_R_L(info->sx->io
+					, IC_MIPS_BGTZ
+					, get_reg_rvalue(info, lhs_rvalue)
+					, L_ELSE
+					, label_then);
+			}
+			else
+			{				
+				to_code_R_L(info->sx->io
+					, IC_MIPS_BLTZ
+					, get_reg_rvalue(info, lhs_rvalue)
+					, L_ELSE
+					, old_label_else);
+			}
 
 			info->label_else = old_label_else;
 
 			const node RHS = expression_binary_get_RHS(nd); 
-			emit_expression(info, &RHS);
+			const rvalue rhs_rvalue = emit_expression(info, &RHS);
+
+			to_code_R_L(info->sx->io
+				, IC_MIPS_BLTZ
+				, get_reg_rvalue(info, rhs_rvalue)
+				, L_ELSE
+				, old_label_else);
 
 			to_code_label(info->sx->io, L_ELSE, label_then);
 
 			free_regs(info, curr_reg, curr_float_reg);
   
 			return (rvalue) { .kind = VOID };
-		} 
 
 		default:
 			// TODO: оставшиеся бинарные операторы
@@ -1935,13 +1939,13 @@ static rvalue emit_void_expression(information *const info, const node *const nd
 	}
 	else
 	{
-		const rvalue res = emit_expression(info, nd);
-		if (res.kind == REGISTER)
-		{
-			free_register(info); // res может остаться только в самом младшем регистре
-		} 
-	}
+		const mips_register_t curr_reg = get_register_amount(info);
+		const mips_register_t curr_float_reg = get_float_register_amount(info);
 
+		emit_expression(info, nd);
+
+		free_regs(info, curr_reg, curr_float_reg);
+	}
 	return (rvalue) { .kind = VOID };
 }
 
@@ -2249,12 +2253,17 @@ static void emit_declaration(information *const info, const node *const nd)
  */
 static void emit_compound_statement(information *const info, const node *const nd)
 {
+	const mips_register_t curr_reg = get_register_amount(info);
+	const mips_register_t curr_float_reg = get_float_register_amount(info);
+
 	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
 		const node sub_stmt = statement_compound_get_substmt(nd, i);
 		emit_statement(info, &sub_stmt);
 	}
+
+	free_regs(info, curr_reg, curr_float_reg);
 }
 
 /**
@@ -2270,10 +2279,8 @@ static void emit_if_statement(information *const info, const node *const nd)
 
 	uni_printf(info->sx->io, "\n\t# \"if\" statement:\n");
 
-	// TODO: Разобраться с тем, что раньше делала reverse_logic_command
 	const item_t old_label = info->label_num;
-	const item_t label = old_label + 1;
-	info->label_else = old_label;
+	info->label_else = info->label_num++;
 
 	const node condition = statement_if_get_condition(nd);
 	emit_expression(info, &condition);
@@ -2287,6 +2294,8 @@ static void emit_if_statement(information *const info, const node *const nd)
 
 	if (statement_if_has_else_substmt(nd))
 	{
+		info->label_else = old_label;
+
 		to_code_L(info->sx->io, IC_MIPS_J, L_END, old_label);
 		to_code_label(info->sx->io, L_ELSE, old_label);
 
@@ -2297,7 +2306,7 @@ static void emit_if_statement(information *const info, const node *const nd)
 	}
 	else
 	{
-		to_code_label(info->sx->io, L_ELSE, label);
+		to_code_label(info->sx->io, L_ELSE, info->label_num);
 	}
 
 	uni_printf(info->sx->io, "\n");
@@ -2324,6 +2333,8 @@ static void emit_while_statement(information *const info, const node *const nd)
  
 	const node condition = statement_while_get_condition(nd);
 	emit_expression(info, &condition);
+
+	free_regs(info, curr_reg, curr_float_reg);
  
 	const node body = statement_while_get_body(nd);
 	emit_statement(info, &body);
@@ -2356,6 +2367,8 @@ static void emit_do_statement(information *const info, const node *const nd)
 	const node body = statement_do_get_body(nd);
 	emit_statement(info, &body);
  
+	free_regs(info, curr_reg, curr_float_reg);
+
 	const node condition = statement_do_get_condition(nd);
 	emit_expression(info, &condition);
 
@@ -2386,6 +2399,8 @@ static void emit_for_statement(information *const info, const node *const nd)
 		// TODO: рассмотреть случаи, если тут объявление
 		const node inition = statement_for_get_inition(nd);
 		emit_statement(info, &inition);
+
+		free_regs(info, curr_reg, curr_float_reg);
 	}
 
 	info->label_else = label;
@@ -2394,11 +2409,21 @@ static void emit_for_statement(information *const info, const node *const nd)
 	if (statement_for_has_condition(nd))
 	{
 		const node condition = statement_for_get_condition(nd);
-		emit_expression(info, &condition);
+		const rvalue condition_rvalue = emit_expression(info, &condition);
+
+		to_code_R_L(info->sx->io
+			, IC_MIPS_BLTZ
+			, get_reg_rvalue(info, condition_rvalue)
+			, L_END
+			, label);
+
+		free_regs(info, curr_reg, curr_float_reg);
 	}
 
 	const node body = statement_for_get_body(nd);
 	emit_statement(info, &body);
+
+	free_regs(info, curr_reg, curr_float_reg);
 
 	if (statement_for_has_increment(nd))
 	{
@@ -2407,7 +2432,7 @@ static void emit_for_statement(information *const info, const node *const nd)
 	}
 
 	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
-	to_code_label(info->sx->io, L_ELSE, label);
+	to_code_label(info->sx->io, L_END, label);
 
 	info->label_else = old_label;
 
@@ -2459,12 +2484,17 @@ static void emit_return_statement(information *const info, const node *const nd)
  */
 static void emit_declaration_statement(information *const info, const node *const nd)
 {
+	const mips_register_t curr_reg = get_register_amount(info);
+	const mips_register_t curr_float_reg = get_float_register_amount(info);
+
 	const size_t size = statement_declaration_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
 		const node decl = statement_declaration_get_declarator(nd, i);
 		emit_declaration(info, &decl);
 	}
+
+	free_regs(info, curr_reg, curr_float_reg);
 }
 
 /**
