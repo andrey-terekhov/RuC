@@ -351,11 +351,10 @@ inline int storage_remove_by_utf8(storage *const stg, const char32_t *const id)
  *
  *	@param	as			Macro storage
  *	@param	io			Universal io structure
- *	@param	last		Next character after macro
  *
  *	@return	Index of record or keyword, @c SIZE_MAX on failure
  */
-size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last);
+size_t storage_search(storage *const stg, universal_io *const io);
 
 /**
  *	Return the last read macro

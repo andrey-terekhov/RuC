@@ -17,6 +17,7 @@
 #include "storage.h"
 #include <assert.h>
 #include "keywords.h"
+#include "uniscanner.h"
 
 
 static const size_t MAX_MACRO = 256;
@@ -233,16 +234,18 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 }
 
 
-size_t storage_search(storage *const stg, universal_io *const io, char32_t *const last)
+size_t storage_search(storage *const stg, universal_io *const io)
 {
 	if (!storage_is_correct(stg))
 	{
 		return SIZE_MAX;
 	}
 
-	const size_t index = map_get_index_by_io(&stg->as, io, last);
+	char32_t last = (char32_t)EOF;
+	const size_t index = map_get_index_by_io(&stg->as, io, &last);
+	uni_unscan_char(io, last);
+
 	const item_t value = map_get_by_index(&stg->as, index);
-	
 	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
 }
 

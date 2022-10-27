@@ -27,7 +27,6 @@ static const size_t MAX_COMMENT_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
 
 
-static bool parse_character(parser *const prs, char32_t character, const bool was_slash);
 static char32_t parse_until(parser *const prs);
 
 
@@ -190,8 +189,9 @@ static void skip_directive(parser *const prs)
 	loc_update(&prs->loc);
 }
 
-static char32_t skip_until(parser *const prs, char32_t character)
+static char32_t skip_until(parser *const prs)
 {
+	char32_t character = uni_scan_char(prs->io);
 	while (true)
 	{
 		switch (character)
@@ -213,6 +213,7 @@ static char32_t skip_until(parser *const prs, char32_t character)
 				else
 				{
 					uni_unscan_char(prs->io, character);
+					uni_unscan_char(prs->io, '/');
 					return '/';
 				}
 
@@ -228,6 +229,7 @@ static char32_t skip_until(parser *const prs, char32_t character)
 				else
 				{
 					uni_unscan_char(prs->io, character);
+					uni_unscan_char(prs->io, '\\');
 					return '\\';
 				}
 
@@ -238,8 +240,9 @@ static char32_t skip_until(parser *const prs, char32_t character)
 				break;
 
 			case '\r':
-				character = uni_scan_char(prs->io);
+				return '\n';
 			default:
+				uni_unscan_char(prs->io, character);
 				return character;
 		}
 	}
@@ -312,9 +315,7 @@ static char32_t parse_until(parser *const prs)
 
 static size_t parse_directive(parser *const prs)
 {
-	char32_t character = skip_until(prs, uni_scan_char(prs->io));
-	uni_unscan_char(prs->io, character);
-	if (character != '#')
+	if (skip_until(prs) != '#')
 	{
 		return SIZE_MAX;
 	}
@@ -323,20 +324,16 @@ static size_t parse_directive(parser *const prs)
 	location loc = prs->loc;
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_COMMENT_SIZE);
-	uni_print_char(&out, character);
+	uni_print_char(&out, '#');
 
-	size_t keyword = storage_search(prs->stg, prs->io, &character);
+	size_t keyword = storage_search(prs->stg, prs->io);
 	if (storage_last_read(prs->stg)[1] == '\0')
 	{
 		out_swap(prs->io, &out);
-		character = skip_until(prs, character);
-		out_swap(prs->io, &out);
-
-		if (utf8_is_letter(character))
+		if (utf8_is_letter(skip_until(prs)))
 		{
-			uni_unscan_char(prs->io, character);
 			loc_search_from(&prs->loc);
-			storage_search(prs->stg, prs->io, &character);
+			storage_search(prs->stg, prs->io);
 
 			universal_io directive = io_create();
 			out_set_buffer(&directive, MAX_KEYWORD_SIZE);
@@ -346,8 +343,8 @@ static size_t parse_directive(parser *const prs)
 			keyword = storage_get_index(prs->stg, buffer);
 			free(buffer);
 		}
+		out_swap(prs->io, &out);
 	}
-	uni_unscan_char(prs->io, character);
 
 	if (!kw_is_correct(keyword))
 	{
@@ -398,7 +395,6 @@ static void parse_line(parser *const prs)
 
 static void parse_include_path(parser *const prs, const char32_t quote)
 {
-	uni_unscan_char(prs->io, quote);
 	loc_search_from(&prs->loc);
 	location loc = prs->loc;
 	uni_scan_char(prs->io);
@@ -430,16 +426,15 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 		return;
 	}
 
-	character = skip_until(prs, uni_scan_char(prs->io));
-	if (character != '\n')
+	if (skip_until(prs) != '\n')
 	{
-		uni_unscan_char(prs->io, character);
 		loc_search_from(&prs->loc);
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 		skip_directive(prs);
 	}
 	else
 	{
+		uni_scan_char(prs->io);
 		loc_line_break(&prs->loc);
 	}
 
@@ -459,7 +454,7 @@ static void parse_include(parser *const prs)
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
 
-	char32_t character = skip_until(prs, uni_scan_char(prs->io));
+	char32_t character = skip_until(prs);
 	switch (character)
 	{
 		case '<':
@@ -471,11 +466,11 @@ static void parse_include(parser *const prs)
 
 		case '\n':
 			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+			uni_scan_char(prs->io);
 			loc_line_break(&prs->loc);
 			out_swap(prs->io, &out);
 			break;
 		default:
-			uni_unscan_char(prs->io, character);
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
 			skip_directive(prs);
