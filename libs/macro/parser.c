@@ -58,7 +58,7 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
  *	All line breaks will be replaced by empty lines.
  *	Exit before @c '\n' without backslash or @c EOF character read.
  *
- *	@param prs			Parser structure
+ *	@param	prs			Parser structure
  */
 static void skip_comment(parser *const prs)
 {
@@ -82,10 +82,10 @@ static void skip_comment(parser *const prs)
 
 /**
  *	Skip multi line comment after slash and star sequence.
- *	If it haven't line break comment will be saved.
+ *	If it haven't line break then the comment will be saved.
  *	Otherwise it will be removed with @c #line mark generation.
  *
- *	@param prs			Parser structure
+ *	@param	prs			Parser structure
  */
 static void skip_multi_comment(parser *const prs)
 {
@@ -138,6 +138,16 @@ static void skip_multi_comment(parser *const prs)
 	loc_update(&prs->loc);
 }
 
+/**
+ *	Write string content to output after quote.
+ *	Stop when read the closing quote, without printing.
+ *	Also stopped after @c '\n' read without backslash.
+ *
+ *	@param	prs			Parser structure
+ *	@param	quote		Expected closing quote
+ *
+ *	@return	Closing quote or other last character read
+ */
 static char32_t skip_string(parser *const prs, const char32_t quote)
 {
 	uni_unscan_char(prs->io, quote);
@@ -170,6 +180,12 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
 	return character;
 }
 
+/**
+ *	Skip the current directive processing until next line.
+ *	All backslash line breaks and multiline comments will be skipped too.
+ *
+ *	@param	prs			Parser structure
+ */
 static void skip_directive(parser *const prs)
 {
 	const bool is_recovery_disabled = prs->is_recovery_disabled;
@@ -189,6 +205,15 @@ static void skip_directive(parser *const prs)
 	loc_update(&prs->loc);
 }
 
+/**
+ *	Skip all comments, space and tab characters until first significant character.
+ *	Line break is also a significant character.
+ *	Stopped without last character read and processed.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	First significant character
+ */
 static char32_t skip_until(parser *const prs)
 {
 	char32_t character = uni_scan_char(prs->io);
