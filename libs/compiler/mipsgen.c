@@ -296,7 +296,6 @@ static const rvalue rvalue_negative_one = { .kind = CONST, .type = TYPE_INTEGER,
 static lvalue emit_lvalue(information *info, const node *const nd);
 static rvalue emit_expression(information *const info, const node *const nd);
 static void emit_statement(information *const info, const node *const nd);
-static mips_register_t get_reg_rvalue(information *const info, const rvalue rval);
 static lvalue emit_store_of_rvalue(information *const info, const rvalue rval, const lvalue lval);
 static rvalue emit_load_of_lvalue(information *const info, const lvalue lval);
 static void emit_store_rvalue_to_rvalue(information *const info, const rvalue destination, const rvalue source);
@@ -1043,8 +1042,7 @@ static void rvalue_to_io(information *const info, const rvalue rval)
 	}
 	else
 	{
-		const mips_register_t rvalue_reg = get_reg_rvalue(info, rval);
-		mips_register_to_io(info->sx->io, rvalue_reg);
+		mips_register_to_io(info->sx->io, rval.val.reg_num);
 	}
 }
 
@@ -1291,35 +1289,6 @@ static rvalue emit_load_of_lvalue(information *const info, const lvalue lval)
 		, .type = lval.type
 		, .val.reg_num = reg_to_load
 		, .from_lvalue = !FROM_LVALUE };
-}
-
-/**
- * Get register where rvalue is stored. If its kind is constant, loads the value to register
- * 
- * @param	info			Codegen info (?)
- * @param	rval			Rvalue
- * 
- * @return	Register where rvalue is stored
-*/
-static mips_register_t get_reg_rvalue(information *const info, const rvalue rval)
-{
-	assert(rval.kind != VOID);
-
-	mips_register_t result;
-
-	if (rval.kind == CONST)
-	{
-		const rvalue tmp = { .kind = REGISTER
-			, .type = rval.type
-			, .val.reg_num = (type_is_floating(rval.type)) ? get_float_register(info) : get_register(info) };
-		emit_store_rvalue_to_rvalue(info, tmp, rval);
-	}
-	else
-	{
-		result = rval.val.reg_num;
-	}
-
-	return result;
 }
 
 /**
