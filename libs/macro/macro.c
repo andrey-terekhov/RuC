@@ -88,13 +88,13 @@ static inline int ws_parse(const workspace *const ws, storage *const stg)
 
 			if (flag[2 + index] != '\0')
 			{
-				if (storage_add_by_utf8(stg, name, &flag[2 + index]) == SIZE_MAX)
+				if (storage_set_by_index(stg, storage_add_by_utf8(stg, name), &flag[2 + index]) == SIZE_MAX)
 				{
 					macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 					return -1;
 				}
 			}
-			else if (storage_add_by_utf8(stg, name, NULL) == SIZE_MAX)
+			else if (storage_add_by_utf8(stg, name) == SIZE_MAX)
 			{
 				macro_system_error(NULL, MACRO_NAME_EXISTS, name);
 				return -1;

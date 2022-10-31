@@ -23,27 +23,21 @@
 static const size_t MAX_MACRO = 256;
 
 
-extern const char *storage_get(storage *const stg, const char *const id);
 extern const char *storage_get_by_utf8(storage *const stg, const char32_t *const id);
-extern size_t storage_get_amount(storage *const stg, const char *const id);
-extern size_t storage_get_amount_by_utf8(storage *const stg, const char32_t *const id);
-extern const char *storage_get_arg(storage *const stg, const char *const id, const size_t index);
-extern const char *storage_get_arg_by_utf8(storage *const stg, const char32_t *const id, const size_t index);
+extern const char *storage_get(storage *const stg, const char *const id);
+extern size_t storage_get_args_by_utf8(storage *const stg, const char32_t *const id);
+extern size_t storage_get_args(storage *const stg, const char *const id);
 
-extern size_t storage_add_arg(storage *const stg, const char *const id
-	, const size_t index, const char *const arg);
-extern size_t storage_add_arg_by_utf8(storage *const stg, const char32_t *const id
-	, const size_t index, const char *const arg);
-
-extern size_t storage_set(storage *const stg, const char *const id, const char *value);
 extern size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, const char *value);
+extern size_t storage_set(storage *const stg, const char *const id, const char *value);
+extern size_t storage_set_args_by_utf8(storage *const stg, const char32_t *const id, const size_t args);
+extern size_t storage_set_args(storage *const stg, const char *const id, const size_t args);
 
 extern int storage_remove(storage *const stg, const char *const id);
 extern int storage_remove_by_utf8(storage *const stg, const char32_t *const id);
 
 
-static inline size_t add(storage *const stg, const void *const id, const char *const value
-	, size_t (*reserve)(map *const, const void *const))
+static inline size_t add(storage *const stg, const void *const id, size_t (*reserve)(map *const, const void *const))
 {
 	if (!storage_is_correct(stg) || id == NULL)
 	{
@@ -51,34 +45,15 @@ static inline size_t add(storage *const stg, const void *const id, const char *c
 	}
 
 	const size_t key = reserve(&stg->as, id);
-	if (value == NULL)
-	{
-		return hash_add(&stg->hs, (item_t)key, 0);
-	}
+	const size_t index = hash_add(&stg->hs, (item_t)key, 2);
 
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
-	return index;
-}
-
-static inline size_t add_with_args(storage *const stg, const void *const id
-	, const char *const value, const size_t args, size_t (*reserve)(map *const, const void *const))
-{
-	if (!storage_is_correct(stg) || id == NULL || value == NULL)
-	{
-		return SIZE_MAX;
-	}
-
-	const size_t key = reserve(&stg->as, id);
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1 + args);
-
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
+	hash_set_by_index(&stg->hs, index, 0, ITEM_MAX);
+	hash_set_by_index(&stg->hs, index, 1, 0);
 	return index;
 }
 
 
-static inline size_t get_index(storage *const stg, const void *const id
-	, size_t (*func)(map *const, const void *const))
+static inline size_t get_index(storage *const stg, const void *const id, size_t (*func)(map *const, const void *const))
 {
 	if (!storage_is_correct(stg) || id == NULL)
 	{
@@ -116,26 +91,14 @@ storage storage_create()
 }
 
 
-size_t storage_add(storage *const stg, const char *const id, const char *const value)
+size_t storage_add(storage *const stg, const char *const id)
 {
-	return add(stg, id, value, (size_t (*)(map *const, const void *const))&map_reserve);
+	return add(stg, id, (size_t (*)(map *const, const void *const))&map_reserve);
 }
 
-size_t storage_add_by_utf8(storage *const stg, const char32_t *const id, const char *const value)
+size_t storage_add_by_utf8(storage *const stg, const char32_t *const id)
 {
-	return add(stg, id, value, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
-}
-
-size_t storage_add_with_args(storage *const stg, const char *const id
-	, const char *const value, const size_t args)
-{
-	return add_with_args(stg, id, value, args, (size_t (*)(map *const, const void *const))&map_reserve);
-}
-
-size_t storage_add_with_args_by_utf8(storage *const stg, const char32_t *const id
-	, const char *const value, const size_t args)
-{
-	return add_with_args(stg, id, value, args, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
+	return add(stg, id, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
 }
 
 
@@ -156,36 +119,15 @@ const char *storage_get_by_index(const storage *const stg, const size_t id)
 		: NULL;
 }
 
-size_t storage_get_amount_by_index(const storage *const stg, const size_t id)
+size_t storage_get_args_by_index(const storage *const stg, const size_t id)
 {
 	if (!storage_is_correct(stg))
 	{
 		return 0;
 	}
 
-	const size_t amount = hash_get_amount_by_index(&stg->hs, id);
-	return amount > 1 ? amount - 1 : 0;
-}
-
-const char *storage_get_arg_by_index(const storage *const stg, const size_t id, const size_t index)
-{
-	if (!storage_is_correct(stg))
-	{
-		return NULL;
-	}
-
-	const item_t ref = hash_get_by_index(&stg->hs, id, 1 + index);
-	return ref != 0 && ref != ITEM_MAX
-		? strings_get(&stg->vec, (size_t)ref)
-		: NULL;
-}
-
-
-int storage_add_arg_by_index(storage *const stg, const size_t id, const size_t index, const char *const arg)
-{
-	return storage_is_correct(stg) && arg != NULL && hash_get_by_index(&stg->hs, id, 1 + index) == 0
-		? hash_set_by_index(&stg->hs, id, 1 + index, (item_t)strings_add(&stg->vec, arg))
-		: -1;
+	const item_t count = hash_get_by_index(&stg->hs, id, 1);
+	return count != ITEM_MAX ? (size_t)count : 0;
 }
 
 
@@ -196,20 +138,24 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char *val
 		return SIZE_MAX;
 	}
 
-	const item_t key = hash_get_key(&stg->hs, id);
-	if (storage_remove_by_index(stg, id))
+	if (hash_get_by_index(&stg->hs, id, 0) == (item_t)strings_size(&stg->vec) - 1)
+	{
+		strings_remove(&stg->vec);
+	}
+
+	hash_set_by_index(&stg->hs, id, 0, (item_t)strings_add(&stg->vec, value));
+	return id;
+}
+
+size_t storage_set_args_by_index(storage *const stg, const size_t id, const size_t args)
+{
+	if (!storage_is_correct(stg))
 	{
 		return SIZE_MAX;
 	}
 
-	if (value == NULL)
-	{
-		return hash_add(&stg->hs, (item_t)key, 0);
-	}
-
-	const size_t index = hash_add(&stg->hs, (item_t)key, 1);
-	hash_set_by_index(&stg->hs, index, 0, (item_t)strings_add(&stg->vec, value));
-	return index;
+	hash_set_by_index(&stg->hs, id, 1, (item_t)args);
+	return id;
 }
 
 
@@ -220,14 +166,9 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 		return 0;
 	}
 
-	item_t size = (item_t)strings_size(&stg->vec);
-	for (size_t i = hash_get_amount_by_index(&stg->hs, id); i > 0; i--)
+	if (hash_get_by_index(&stg->hs, id, 0) == (item_t)strings_size(&stg->vec) - 1)
 	{
-		if (hash_get_by_index(&stg->hs, id, i - 1) == size - 1)
-		{
-			strings_remove(&stg->vec);
-			size--;
-		}
+		strings_remove(&stg->vec);
 	}
 
 	return hash_remove_by_index(&stg->hs, id);
