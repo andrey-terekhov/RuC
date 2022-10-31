@@ -81,6 +81,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case COMMENT_UNTERMINATED:
 			sprintf(msg, "незавершённый комментарий");
 			break;
+		case DIRECTIVE_NAME_NON:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "в директиве %s пропущено имя макроса", directive);
+		}
+		break;
 		case DIRECTIVE_INVALID:
 		{
 			const char *const directive = va_arg(args, char *);

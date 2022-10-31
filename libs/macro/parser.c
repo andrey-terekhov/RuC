@@ -455,14 +455,9 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	{
 		loc_search_from(&prs->loc);
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
-		skip_directive(prs);
-	}
-	else
-	{
-		uni_scan_char(prs->io);
-		loc_line_break(&prs->loc);
 	}
 
+	skip_directive(prs);
 	out_swap(prs->io, &out);
 	universal_io header = linker_add_header(prs->lk, index);
 
@@ -491,8 +486,7 @@ static void parse_include(parser *const prs)
 
 		case '\n':
 			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			uni_scan_char(prs->io);
-			loc_line_break(&prs->loc);
+			skip_directive(prs);
 			out_swap(prs->io, &out);
 			break;
 		default:
