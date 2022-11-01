@@ -1567,6 +1567,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 		size_t displ_for_parameters = 0;
 		for (size_t i = 0; i < params_amount; i++)
 		{
+			// Аргументы рассматриваются в данном случае как регистровые переменные
 			const node arg = expression_call_get_argument(nd, i);
 			rvalue arg_rvalue = emit_expression(info, &arg);
 
@@ -2044,6 +2045,7 @@ static rvalue emit_expression(information *const info, const node *const nd)
 		
 		default: // EXPR_INVALID
 			// TODO: генерация оставшихся выражений
+			assert(expression_get_class(nd) == EXPR_INVALID);
 			return (rvalue) { .kind = VOID };
 		
 	}  
