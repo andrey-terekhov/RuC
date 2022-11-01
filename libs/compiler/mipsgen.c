@@ -2098,6 +2098,7 @@ static void emit_variable_declaration(information *const info, const node *const
 
 	uni_printf(info->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(info->sx, id));
 
+	info->max_displ += WORD_LENGTH;
 	const size_t value_displ = info->max_displ;
 
 	// TODO: в глобальных переменных регистр gp
@@ -2128,8 +2129,6 @@ static void emit_variable_declaration(information *const info, const node *const
 					, .type = initializer_rvalue.type});
 
 			free_rvalue(info, initializer_rvalue);
-
-			info->max_displ += WORD_LENGTH;
 		}
 	}
 	else
@@ -2177,17 +2176,86 @@ static void emit_function_definition(information *const info, const node *const 
 	to_code_L(info->sx->io, IC_MIPS_J, L_NEXT, ref_ident);
 	to_code_label(info->sx->io, L_FUNC, ref_ident);
 
+	uni_printf(info->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
+
+	uni_printf(info->sx->io, "\n\t# saving $sp and $ra:\n");
+	to_code_R_I_R(info->sx->io
+		, IC_MIPS_SW
+		, R_RA
+		, -(item_t)RA_SIZE
+		, R_FP);
+	to_code_R_I_R(info->sx->io
+		, IC_MIPS_SW
+		, R_SP
+		, -(item_t)(RA_SIZE + SP_SIZE)
+		, R_FP);
+	
+	info->max_displ = 0;
+
+	// Сохранение перед началом работы функции
+	uni_printf(info->sx->io, "\n\t# preserved registers:\n");
+
+	// Сохранение s0-s7
+	for (size_t i = 0; i < 8; i++)
+	{
+		to_code_R_I_R(info->sx->io
+			, IC_MIPS_SW
+			, R_S0 + i
+			, -(item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH)
+			, R_FP);
+	}
+
+	uni_printf(info->sx->io, "\n");
+
+	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
+	for (size_t i = 0; i < 5; i++)
+	{
+		to_code_R_I_R(info->sx->io
+			, IC_MIPS_S_S
+			, R_FS0 + 2*i
+			, -(item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH + 8*WORD_LENGTH /* за $s0-$s7 */)
+			, R_FP);
+	}
+
+	info->max_displ = FUNC_DISPL_PRESEREVED;
+
+	// Выравнивание смещения на 8
+	if (info->max_displ % 8)
+	{
+		const size_t padding = 8 - (info->max_displ % 8);
+		info->max_displ += padding;
+		if (padding)
+		{
+			uni_printf(info->sx->io, "\n\t# padding -- max displacement == %zu\n", info->max_displ);
+		}
+	}
+
 	// Создание буфера для тела функции
 	universal_io *old_io = info->sx->io;
 	universal_io new_io = io_create();
   	out_set_buffer(&new_io, BUFFER_SIZE);
 	info->sx->io = &new_io;
+	const size_t max_displ_prev = info->max_displ;
 	info->max_displ = 0;
 
-	uni_printf(info->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(info->sx, ref_ident));
+	uni_printf(info->sx->io, "\n\t# function body:\n");
+	node body = declaration_function_get_body(nd);
+	emit_statement(info, &body);
+
+	// Извлечение буфера с телом функции в старый io
+	char *buffer = out_extract_buffer(info->sx->io);
+	info->sx->io = old_io;
+
+	uni_printf(info->sx->io, "\n\t# setting up $fp:\n");
+	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)(info->max_displ + max_displ_prev + WORD_LENGTH));
+
+	uni_printf(info->sx->io, "\n\t# setting up $sp:\n");
+	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
+	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
 
 	uni_printf(info->sx->io, "\n\t# function parameters:\n"); 
-
+	
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_param(nd, i);
@@ -2223,73 +2291,6 @@ static void emit_function_definition(information *const info, const node *const 
 		}
 	}
 
-	// Сохранение перед началом работы функции
-	uni_printf(info->sx->io, "\n\t# preserved registers:\n");
-
-	// Сохранение s0-s7
-	for (size_t i = 0; i < 8; i++)
-	{
-		info->max_displ += WORD_LENGTH;
-
-		to_code_R_I_R(info->sx->io
-			, IC_MIPS_SW
-			, R_S0 + i
-			, (item_t)info->max_displ
-			, R_SP);
-	}
-
-	uni_printf(info->sx->io, "\n");
-
-	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
-	for (size_t i = 0; i < 5; i++)
-	{
-		info->max_displ += WORD_LENGTH;
-
-		to_code_R_I_R(info->sx->io
-			, IC_MIPS_S_S
-			, R_FS0 + 2*i
-			, (item_t)info->max_displ
-			, R_SP);
-	}
-
-	info->max_displ += RA_SIZE + SP_SIZE;
-
-	// Выравнивание смещения на 8
-	const size_t padding = 8 - (info->max_displ % 8);
-	info->max_displ += padding;
-	if (padding)
-	{
-		uni_printf(info->sx->io, "\n\t# padding -- max displacement == %zu\n", info->max_displ);
-	}
-
-	uni_printf(info->sx->io, "\n\t# function body:\n");
-	node body = declaration_function_get_body(nd);
-	emit_statement(info, &body);
-
-	// Извлечение буфера с телом функции в старый io
-	char *buffer = out_extract_buffer(info->sx->io);
-	info->sx->io = old_io;
-
-	uni_printf(info->sx->io, "\n\t# saving $sp and $ra:\n");
-	to_code_R_I_R(info->sx->io
-		, IC_MIPS_SW
-		, R_RA
-		, -(item_t)RA_SIZE
-		, R_FP);
-	to_code_R_I_R(info->sx->io
-		, IC_MIPS_SW
-		, R_SP
-		, -(item_t)(RA_SIZE + SP_SIZE)
-		, R_FP);
-
-	uni_printf(info->sx->io, "\n\t# setting up $fp:\n");
-	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)info->max_displ);
-
-	uni_printf(info->sx->io, "\n\t# setting up $sp:\n");
-	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
-	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
-
 	// Выделение на стеке памяти для тела функции  
 	uni_printf(info->sx->io, "%s", buffer);
 	free(buffer);
@@ -2299,14 +2300,19 @@ static void emit_function_definition(information *const info, const node *const 
 	// Восстановление стека после работы функции
 	uni_printf(info->sx->io, "\n\t# data restoring:\n");
 
+	// Ставим $fp на его положение в предыдущей функции
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, (item_t)(info->max_displ + max_displ_prev + WORD_LENGTH));
+
+	uni_printf(info->sx->io, "\n");
+
 	// Восстановление s0-s7
 	for (size_t i = 0; i < 8; i++)
 	{
 		to_code_R_I_R(info->sx->io
 			, IC_MIPS_LW
 			, R_S0 + i
-			, (item_t)((i+1)*WORD_LENGTH)
-			, R_SP);
+			, -(item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH)
+			, R_FP);
 	}
 
 	uni_printf(info->sx->io, "\n");
@@ -2317,14 +2323,9 @@ static void emit_function_definition(information *const info, const node *const 
 		to_code_R_I_R(info->sx->io
 			, IC_MIPS_L_S
 			, R_FS0 + 2*i
-			, (item_t)((i+1)*WORD_LENGTH + /* за s0-s7 */ 8*WORD_LENGTH)
-			, R_SP);
+			, -(item_t)(RA_SIZE + SP_SIZE + (i+1)*WORD_LENGTH + /* за s0-s7 */ 8*WORD_LENGTH)
+			, R_FP);
 	}
-
-	uni_printf(info->sx->io, "\n");
-
-	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, (item_t)info->max_displ);
 
 	uni_printf(info->sx->io, "\n");
 
