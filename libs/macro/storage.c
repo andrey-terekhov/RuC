@@ -101,6 +101,23 @@ size_t storage_add_by_utf8(storage *const stg, const char32_t *const id)
 	return add(stg, id, (size_t (*)(map *const, const void *const))&map_reserve_by_utf8);
 }
 
+size_t storage_add_by_io(storage *const stg, universal_io *const io)
+{
+	if (!storage_is_correct(stg) || io == NULL)
+	{
+		return SIZE_MAX;
+	}
+
+	char32_t last = (char32_t)EOF;
+	const size_t key = map_reserve_by_io(&stg->as, io, &last);
+	uni_unscan_char(io, last);
+
+	const size_t index = hash_add(&stg->hs, (item_t)key, 2);
+	hash_set_by_index(&stg->hs, index, 0, ITEM_MAX);
+	hash_set_by_index(&stg->hs, index, 1, 0);
+	return index;
+}
+
 
 size_t storage_get_index(storage *const stg, const char *const id)
 {

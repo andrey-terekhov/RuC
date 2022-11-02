@@ -63,6 +63,16 @@ size_t storage_add(storage *const stg, const char *const id);
  */
 size_t storage_add_by_utf8(storage *const stg, const char32_t *const id);
 
+/**
+ *	Add new macro by universal io
+ *
+ *	@param	stg			Macro storage
+ *	@param	io			Universal io structure
+ *
+ *	@return	Index of record, @c SIZE_MAX on failure
+ */
+size_t storage_add_by_io(storage *const stg, universal_io *const io);
+
 
 /**
  *	Get index of record
@@ -277,7 +287,7 @@ inline int storage_remove(storage *const stg, const char *const id)
 /**
  *	Get index of record by reading macro from io
  *
- *	@param	as			Macro storage
+ *	@param	stg			Macro storage
  *	@param	io			Universal io structure
  *
  *	@return	Index of record or keyword, @c SIZE_MAX on failure
@@ -287,7 +297,7 @@ size_t storage_search(storage *const stg, universal_io *const io);
 /**
  *	Return the last read macro
  *
- *	@param	as			Macro storage
+ *	@param	stg			Macro storage
  *
  *	@return	Macro, @c NULL on failure
  */
