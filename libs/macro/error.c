@@ -63,9 +63,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const char32_t *const name = va_arg(args, char32_t *);
 
-			size_t index = sprintf(msg, "макрос '");
+			size_t index = sprintf(msg, "макрос \"");
 			index += utf8_to_buffer(name, &msg[index]);
-			sprintf(&msg[index], "' уже существует");
+			sprintf(&msg[index], "\" уже существует");
+		}
+		break;
+		case MACRO_NAME_REDEFINE:
+		{
+			const char *const name = va_arg(args, char *);
+			sprintf(msg, "переопределение \"%s\"", name);
 		}
 		break;
 
@@ -105,6 +111,34 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		break;
 		case INCLUDE_NO_SUCH_FILE:
 			sprintf(msg, "нет такого файла или каталога");
+			break;
+
+		case ARGS_DUPLICATE:
+		{
+			const char *const name = va_arg(args, char *);
+			sprintf(msg, "дублирующий макро параметр \"%s\"", name);
+		}
+		break;
+		case ARGS_EXPECTED_NAME:
+		{
+			const char32_t character = va_arg(args, char32_t);
+
+			size_t index = sprintf(msg, "ожидалось имя параметра, найден '");
+			index += utf8_to_string(&msg[index], character);
+			utf8_to_string(&msg[index], '\'');
+		}
+		break;
+		case ARGS_EXPECTED_COMMA:
+		{
+			const char32_t character = va_arg(args, char32_t);
+
+			size_t index = sprintf(msg, "ожидалась ',' или ')', найден '");
+			index += utf8_to_string(&msg[index], character);
+			utf8_to_string(&msg[index], '\'');
+		}
+		break;
+		case ARGS_EXPECTED_BRACKET:
+			sprintf(msg, "ожидалась ')' до завершения строки");
 			break;
 
 		default:
