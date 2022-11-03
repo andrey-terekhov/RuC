@@ -22,6 +22,13 @@
 #include "uniscanner.h"
 #include "utf8.h"
 
+#define MAX_INDEX_SIZE 21
+
+#define MASK_ARGUMENT		"__ARG_%zu_%zu__"
+#define MASK_STRING			"__STR_%zu_%zu__"
+#define MASK_CHARACTER		"__CHR_%zu_%zu__"
+#define MASK_TOKEN_PASTE	"#__TKP_%zu_%zu__"
+
 
 static const size_t MAX_COMMENT_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
@@ -399,7 +406,7 @@ static size_t parse_directive(parser *const prs)
 
 static location parse_location(parser *const prs)
 {
-	size_t position = in_get_position(prs->io);
+	const size_t position = in_get_position(prs->io);
 	uni_unscan(prs->io, storage_last_read(prs->stg));
 	if (uni_scan_char(prs->io) == '#')
 	{
@@ -501,6 +508,114 @@ static void parse_include(parser *const prs)
 	loc_update(&prs->loc);
 }
 
+static int parse_name(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char32_t character = skip_until(prs);
+	if (utf8_is_letter(character))
+	{
+		return 0;
+	}
+
+	if (character == '\n')
+	{
+		parser_error(prs, &loc, DIRECTIVE_NAME_NON, storage_last_read(prs->stg));
+	}
+	else
+	{
+		loc_search_from(&prs->loc);
+		parser_error(prs, &prs->loc, MACRO_NAME_FIRST_CHARACTER);
+	}
+
+	skip_directive(prs);
+	return -1;
+}
+
+static int parse_args(parser *const prs)
+{
+	const size_t position = in_get_position(prs->io);
+	char32_t character = skip_until(prs);
+	if (character != '(' || position != in_get_position(prs->io))
+	{
+		return 0;
+	}
+
+	character = skip_until(prs);
+	for (size_t i = 0; character != ')'; i++)
+	{
+		if (!utf8_is_letter(character))
+		{
+			loc_search_from(&prs->loc);
+			parser_error(prs, &prs->loc, ARGS_EXPECTED_NAME, character);
+			skip_directive(prs);
+			return -1;
+		}
+
+		loc_search_from(&prs->loc);
+		const size_t index = storage_add_by_io(prs->stg, prs->io);
+		if (index == SIZE_MAX)
+		{
+			parser_error(prs, &prs->loc, ARGS_DUPLICATE, storage_last_read(prs->stg));
+			skip_directive(prs);
+			return -1;
+		}
+
+		char buffer[MAX_INDEX_SIZE];
+		sprintf(buffer, "%zu", i);
+		storage_set_by_index(prs->stg, index, buffer);
+
+		character = skip_until(prs);
+		if (character == ',')
+		{
+			character = skip_until(prs);
+		}
+		else if (character == '\n')
+		{
+			parser_error(prs, &prs->loc, ARGS_EXPECTED_BRACKET);
+			skip_directive(prs);
+			return -1;
+		}
+		else if (character != ')')
+		{
+			parser_error(prs, &prs->loc, ARGS_EXPECTED_COMMA, character);
+			skip_directive(prs);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static void parse_context(parser *const prs)
+{
+
+}
+
+static void parse_define(parser *const prs)
+{
+	universal_io out = io_create();
+	out_swap(prs->io, &out);
+
+	if (!parse_name(prs))
+	{
+		loc_search_from(&prs->loc);
+		const size_t index = storage_add_by_io(prs->stg, prs->io);
+		if (index == SIZE_MAX)
+		{
+			parser_error(prs, &prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			skip_directive(prs);
+		}
+		else
+		{
+			parse_context(prs);
+		}
+	}
+
+	out_swap(prs->io, &out);
+	uni_print_char(prs->io, '\n');
+	loc_update(&prs->loc);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -556,6 +671,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				continue;
 
 			case KW_DEFINE:
+				parse_define(prs);
+				continue;
 			case KW_SET:
 			case KW_UNDEF:
 
