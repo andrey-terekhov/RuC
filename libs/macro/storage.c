@@ -47,23 +47,22 @@ static inline size_t add(storage *const stg, const void *const id, size_t (*rese
 	const size_t key = reserve(&stg->as, id);
 	const size_t index = hash_add(&stg->hs, (item_t)key, 2);
 
+	map_set_by_index(&stg->as, key, (item_t)index);
 	hash_set_by_index(&stg->hs, index, 0, ITEM_MAX);
 	hash_set_by_index(&stg->hs, index, 1, 0);
 	return index;
 }
 
 
-static inline size_t get_index(storage *const stg, const void *const id, size_t (*func)(map *const, const void *const))
+static inline size_t get_index(storage *const stg, const void *const id, item_t (*get)(map *const, const void *const))
 {
 	if (!storage_is_correct(stg) || id == NULL)
 	{
 		return SIZE_MAX;
 	}
 
-	const size_t index = func(&stg->as, id);
-	const item_t value = map_get_by_index(&stg->as, index);
-
-	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
+	const item_t index = get(&stg->as, id);
+	return index != ITEM_MAX ? (size_t)index : SIZE_MAX;
 }
 
 
@@ -113,6 +112,8 @@ size_t storage_add_by_io(storage *const stg, universal_io *const io)
 	uni_unscan_char(io, last);
 
 	const size_t index = hash_add(&stg->hs, (item_t)key, 2);
+	map_set_by_index(&stg->as, key, (item_t)index);
+
 	hash_set_by_index(&stg->hs, index, 0, ITEM_MAX);
 	hash_set_by_index(&stg->hs, index, 1, 0);
 	return index;
@@ -121,12 +122,12 @@ size_t storage_add_by_io(storage *const stg, universal_io *const io)
 
 size_t storage_get_index(storage *const stg, const char *const id)
 {
-	return get_index(stg, id, (size_t (*)(map *const, const void *const))&map_get_index);
+	return get_index(stg, id, (item_t (*)(map *const, const void *const))&map_get);
 }
 
 size_t storage_get_index_by_utf8(storage *const stg, const char32_t *const id)
 {
-	return get_index(stg, id, (size_t (*)(map *const, const void *const))&map_get_index_by_utf8);
+	return get_index(stg, id, (item_t (*)(map *const, const void *const))&map_get_by_utf8);
 }
 
 const char *storage_get_by_index(const storage *const stg, const size_t id)
@@ -183,6 +184,7 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 		return 0;
 	}
 
+	map_set_by_index(&stg->as, hash_get_key(&stg->hs, id), ITEM_MAX);
 	if (hash_get_by_index(&stg->hs, id, 0) == (item_t)strings_size(&stg->vec) - 1)
 	{
 		strings_remove(&stg->vec);
