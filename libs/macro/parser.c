@@ -228,14 +228,19 @@ static void skip_directive(parser *const prs)
  *	Stopped without last character read and processed.
  *
  *	@param	prs			Parser structure
+ *	@param	fill		Set to produce output
  *
  *	@return	First significant character
  */
-static char32_t skip_until(parser *const prs)
+static char32_t skip_until(parser *const prs, const bool fill)
 {
-	char32_t character = uni_scan_char(prs->io);
+	universal_io out = io_create();
+	out_swap(prs->io, fill ? NULL : &out);
+
+	char32_t character = '\0';
 	while (true)
 	{
+		character = uni_scan_char(prs->io);
 		switch (character)
 		{
 			case '/':
@@ -243,20 +248,18 @@ static char32_t skip_until(parser *const prs)
 				if (character == '*')
 				{
 					skip_multi_comment(prs);
-					character = uni_scan_char(prs->io);
-					break;
+					continue;
 				}
 				else if (character == '/')
 				{
 					skip_comment(prs);
-					character = uni_scan_char(prs->io);
-					break;
+					continue;
 				}
 				else
 				{
 					uni_unscan_char(prs->io, character);
-					uni_unscan_char(prs->io, '/');
-					return '/';
+					character = '/';
+					break;
 				}
 
 			case '\\':
@@ -265,29 +268,30 @@ static char32_t skip_until(parser *const prs)
 				if (character == '\n')
 				{
 					loc_line_break(&prs->loc);
-					character = uni_scan_char(prs->io);
-					break;
+					continue;
 				}
 				else
 				{
 					uni_unscan_char(prs->io, character);
-					uni_unscan_char(prs->io, '\\');
-					return '\\';
+					character = '\\';
+					break;
 				}
 
 			case ' ':
 			case '\t':
 				uni_print_char(prs->io, character);
-				character = uni_scan_char(prs->io);
-				break;
+				continue;
 
 			case '\r':
-				return '\n';
-			default:
-				uni_unscan_char(prs->io, character);
-				return character;
+				character = uni_scan_char(prs->io);
+				break;
 		}
+		break;
 	}
+
+	uni_unscan_char(prs->io, character);
+	out_swap(prs->io, fill ? NULL : &out);
+	return character;
 }
 
 
@@ -357,7 +361,7 @@ static char32_t parse_until(parser *const prs)
 
 static size_t parse_directive(parser *const prs)
 {
-	if (skip_until(prs) != '#')
+	if (skip_until(prs, true) != '#')
 	{
 		return SIZE_MAX;
 	}
@@ -372,7 +376,7 @@ static size_t parse_directive(parser *const prs)
 	if (storage_last_read(prs->stg)[1] == '\0')
 	{
 		out_swap(prs->io, &out);
-		if (utf8_is_letter(skip_until(prs)))
+		if (utf8_is_letter(skip_until(prs, true)))
 		{
 			loc_search_from(&prs->loc);
 			storage_search(prs->stg, prs->io);
@@ -444,17 +448,17 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_PATH_SIZE);
 	out_swap(prs->io, &out);
-
 	char32_t character = skip_string(prs, quote);
+	out_swap(prs->io, &out);
+
 	if (character != quote)
 	{
 		parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-		out_swap(prs->io, &out);
 		out_clear(&out);
 		return;
 	}
 
-	char *path = out_extract_buffer(prs->io);
+	char *path = out_extract_buffer(&out);
 	size_t index = quote == '"'
 		? linker_search_internal(prs->lk, path)
 		: linker_search_external(prs->lk, path);
@@ -463,35 +467,26 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (index == SIZE_MAX)
 	{
 		parser_error(prs, &loc, INCLUDE_NO_SUCH_FILE);
-		out_swap(prs->io, &out);
 		return;
 	}
 
-	if (skip_until(prs) != '\n')
+	if (skip_until(prs, false) != '\n')
 	{
 		loc_search_from(&prs->loc);
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 	}
 
-	out_swap(prs->io, &out);
-	universal_io header = linker_add_header(prs->lk, index);
-
 	loc = prs->loc;
+	universal_io header = linker_add_header(prs->lk, index);
 	parser_preprocess(prs, &header);
-	prs->loc = loc;
-
 	in_clear(&header);
+	prs->loc = loc;
 }
 
 static void parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
-	universal_io out = io_create();
-
-	out_swap(prs->io, &out);
-	char32_t character = skip_until(prs);
-	out_swap(prs->io, &out);
-
+	char32_t character = skip_until(prs, false);
 	switch (character)
 	{
 		case '<':
@@ -515,7 +510,7 @@ static void parse_include(parser *const prs)
 static bool parse_name(parser *const prs)
 {
 	location loc = parse_location(prs);
-	char32_t character = skip_until(prs);
+	char32_t character = skip_until(prs, false);
 	if (utf8_is_letter(character))
 	{
 		return true;
@@ -537,7 +532,7 @@ static bool parse_name(parser *const prs)
 static size_t parse_args(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
-	if (skip_until(prs) != '(' || position != in_get_position(prs->io))
+	if (skip_until(prs, false) != '(' || position != in_get_position(prs->io))
 	{
 		return 0;
 	}
@@ -545,7 +540,7 @@ static size_t parse_args(parser *const prs)
 	loc_search_from(&prs->loc);
 	location loc = prs->loc;
 	uni_scan_char(prs->io);
-	char32_t character = skip_until(prs);
+	char32_t character = skip_until(prs, false);
 
 	for (size_t i = 0; ; i++)
 	{
@@ -578,11 +573,11 @@ static size_t parse_args(parser *const prs)
 		sprintf(buffer, "%zu", i);
 		storage_set_by_index(prs->stg, index, buffer);
 
-		character = skip_until(prs);
+		character = skip_until(prs, false);
 		if (character == ',')
 		{
 			uni_scan_char(prs->io);
-			character = skip_until(prs);
+			character = skip_until(prs, false);
 		}
 		else if (character != ')' && character != '\n' && character != (char32_t)EOF)
 		{
@@ -600,7 +595,7 @@ static char *parse_value(parser *const prs, const size_t index)
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
 
-	char32_t character = skip_until(prs);
+	char32_t character = skip_until(prs, false);
 	size_t position = in_get_position(prs->io);
 
 	while (character != '\n' && character != (char32_t)EOF)
@@ -614,7 +609,7 @@ static char *parse_value(parser *const prs, const size_t index)
 			character = uni_scan_char(prs->io);
 			if (character == '#')
 			{
-				character = skip_until(prs);
+				character = skip_until(prs, false);
 				if (character == '\n')
 				{
 					parser_error(prs, &loc, HASH_ON_EDGE);
@@ -635,7 +630,7 @@ static char *parse_value(parser *const prs, const size_t index)
 				continue;
 			}
 
-			character = skip_until(prs);
+			character = skip_until(prs, false);
 			/* ... */
 		}
 
@@ -678,7 +673,7 @@ static void parse_context(parser *const prs, const size_t index)
 	{
 		storage_set_args_by_index(origin, index, args);
 
-		if (skip_until(prs) == '#')
+		if (skip_until(prs, false) == '#')
 		{
 			loc_search_from(&prs->loc);
 			uni_scan_char(prs->io);
@@ -717,9 +712,6 @@ static void parse_context(parser *const prs, const size_t index)
 
 static void parse_define(parser *const prs)
 {
-	universal_io out = io_create();
-	out_swap(prs->io, &out);
-
 	if (parse_name(prs))
 	{
 		loc_search_from(&prs->loc);
@@ -734,7 +726,6 @@ static void parse_define(parser *const prs)
 		}
 	}
 
-	out_swap(prs->io, &out);
 	skip_directive(prs);
 }
 
