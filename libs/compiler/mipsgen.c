@@ -1372,15 +1372,15 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				freeing_rvalue = rval2;
 			}
 		} // В противном случае никакой регистр освобождать не требуется, т.к. в нём будет записан результат
-		else if (rval1.from_lvalue)
+		else if ((rval1.from_lvalue) && (!rval2.from_lvalue))
 		{
 			result = rval2.val.reg_num;
 		}
-		else if (rval2.from_lvalue) 
+		else if ((rval2.from_lvalue) && (!rval1.from_lvalue))
 		{
 			result = rval1.val.reg_num;
 		}
-		else
+		else // Оба rvalue -- регистровые переменные
 		{
 			result = type_is_floating(rval1.type) ? get_float_register(info) : get_register(info);
 		}
@@ -1570,7 +1570,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 		const lvalue a0_lval = emit_store_of_rvalue(info
 			, (rvalue) { .kind = REGISTER
 				, .val.reg_num = R_A0
-				, .type = arg_rvalue.type
+				, .type = TYPE_INTEGER // Не уверен
 				, .from_lvalue = !FROM_LVALUE }
 			, (lvalue) { .base_reg = R_FP
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
@@ -1581,7 +1581,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 		const lvalue a1_lval = emit_store_of_rvalue(info
 			, (rvalue) { .kind = REGISTER
 				, .val.reg_num = R_A1
-				, .type = arg_rvalue.type
+				, .type = TYPE_INTEGER // Не уверен
 				, .from_lvalue = !FROM_LVALUE }
 			, (lvalue) { .base_reg = R_FP
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
@@ -1593,7 +1593,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 		{
 			uni_printf(info->sx->io, "\n");
 			emit_store_rvalue_to_rvalue(info
-				, (rvalue) { .type = arg_rvalue.type
+				, (rvalue) { .type = TYPE_INTEGER // Не уверен
 					, .val.reg_num = R_A1
 					, .kind = REGISTER
 					, .from_lvalue = FROM_LVALUE }
@@ -1614,13 +1614,13 @@ static void emit_printf_expression(information *const info, const node *const nd
 			const lvalue a2_lval = emit_store_of_rvalue(info
 				, (rvalue) { .kind = REGISTER
 					, .val.reg_num = R_A2
-					, .type = arg_rvalue.type
+					, .type = TYPE_INTEGER // Не уверен
 					, .from_lvalue = !FROM_LVALUE }
 				, (lvalue) { .base_reg = R_FP
 					// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
 					, .loc.displ = 2*WORD_LENGTH
-					, .kind = STACK
-					, .type = arg_rvalue.type });
+					, .type = TYPE_INTEGER // Не уверен
+					, .kind = STACK });
 			uni_printf(info->sx->io, "\n");
 
 			// Конвертируем single to double
@@ -1640,7 +1640,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 			uni_printf(info->sx->io, " ");
 			rvalue_to_io(info, (rvalue) { .from_lvalue = !FROM_LVALUE
 				, .kind = REGISTER
-				, .type = arg_rvalue.type
+				, .type = TYPE_INTEGER // Не уверен
 				, .val.reg_num = R_A1});
 			uni_printf(info->sx->io, ", ");
 			rvalue_to_io(info, arg_rvalue);
@@ -1652,7 +1652,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 			uni_printf(info->sx->io, " ");
 			rvalue_to_io(info, (rvalue) { .from_lvalue = !FROM_LVALUE
 				, .kind = REGISTER
-				, .type = arg_rvalue.type
+				, .type = TYPE_INTEGER // Не уверен
 				, .val.reg_num = R_A2});
 			uni_printf(info->sx->io, ", ");
 			rvalue_to_io(info, arg_rvalue);
@@ -1708,13 +1708,13 @@ static void emit_printf_expression(information *const info, const node *const nd
 	const lvalue a0_lval = emit_store_of_rvalue(info
 		, (rvalue) { .kind = REGISTER
 			, .val.reg_num = R_A0
-			, .type = /* Так можно оставлять? */ TYPE_INTEGER
+			, .type = TYPE_INTEGER
 			, .from_lvalue = !FROM_LVALUE }
 		, (lvalue) { .base_reg = R_FP
 			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
 			, .loc.displ = 0
 			, .kind = STACK
-			, .type = /* Так можно оставлять? */ TYPE_INTEGER });
+			, .type = TYPE_INTEGER });
 	uni_printf(info->sx->io, "\n");
 
 	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount-1) * amount);
@@ -2532,7 +2532,7 @@ static void emit_function_definition(information *const info, const node *const 
 
 	uni_printf(info->sx->io, "\n\t# setting up $fp:\n");
 	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)(info->max_displ + max_displ_prev + WORD_LENGTH));
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)(info->max_displ + max_displ_prev));
 
 	uni_printf(info->sx->io, "\n\t# setting up $sp:\n");
 	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
@@ -2566,16 +2566,14 @@ static void emit_function_definition(information *const info, const node *const 
 			uni_printf(info->sx->io
 				, "stays on stack and has displacement %zu from $sp\n"
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
-				// Но в первых четырёх будут предыдущие значения, так что ещё плюс ARG_REG_AMOUNT*WORD_LENGTH
-				, (info->max_displ + max_displ_prev + WORD_LENGTH + (i + 1)*WORD_LENGTH));
+				, (info->max_displ + max_displ_prev + i*WORD_LENGTH));
 
 			hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 			hash_set_by_index(&info->displacements
 				, index
 				, 1
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp, второй на 2*WORD_LENGTH и т.д.
-				// Но в первых четырёх будут предыдущие значения, так что ещё плюс ARG_REG_AMOUNT*WORD_LENGTH
-				, (item_t)(info->max_displ + max_displ_prev + WORD_LENGTH + (i + 1)*WORD_LENGTH));
+				, (item_t)(info->max_displ + max_displ_prev + i*WORD_LENGTH));
 		}
 	}
 
@@ -2589,7 +2587,7 @@ static void emit_function_definition(information *const info, const node *const 
 	uni_printf(info->sx->io, "\n\t# data restoring:\n");
 
 	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, (item_t)(info->max_displ + max_displ_prev + WORD_LENGTH));
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_SP, (item_t)(info->max_displ + max_displ_prev));
 
 	uni_printf(info->sx->io, "\n");
 
