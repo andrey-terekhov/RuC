@@ -99,12 +99,19 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "неизвестная директива препроцессора %s", directive);
 		}
 		break;
-		case HASH_NOT_FOLLOWED:
-			sprintf(msg, "'#' не сопровождается параметром макроса");
-			break;
+
 		case HASH_STRAY:
 			sprintf(msg, "потерянный '#' в программе");
 			break;
+		case HASH_ON_EDGE:
+			sprintf(msg, "'##' не может стоять по краям макроса");
+			break;
+		case HASH_NOT_FOLLOWED:
+		{
+			const char *const hash = va_arg(args, char *);
+			sprintf(msg, "'%s' не сопровождается параметром макроса", hash);
+		}
+		break;
 
 		case INCLUDE_EXPECTS_FILENAME:
 		{
