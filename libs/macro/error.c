@@ -63,15 +63,15 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const char32_t *const name = va_arg(args, char32_t *);
 
-			size_t index = sprintf(msg, "макрос \"");
+			size_t index = sprintf(msg, "макрос '");
 			index += utf8_to_buffer(name, &msg[index]);
-			sprintf(&msg[index], "\" уже существует");
+			sprintf(&msg[index], "' уже существует");
 		}
 		break;
 		case MACRO_NAME_REDEFINE:
 		{
 			const char *const name = va_arg(args, char *);
-			sprintf(msg, "переопределение \"%s\"", name);
+			sprintf(msg, "переопределение '%s'", name);
 		}
 		break;
 
@@ -126,7 +126,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case ARGS_DUPLICATE:
 		{
 			const char *const name = va_arg(args, char *);
-			sprintf(msg, "дублирующий макро параметр \"%s\"", name);
+			sprintf(msg, "дублирующий макро параметр '%s'", name);
 		}
 		break;
 		case ARGS_EXPECTED_NAME:
@@ -166,6 +166,12 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		case MACRO_CONSOLE_SEPARATOR:
 			sprintf(msg, "следует использовать разделитель '=' после имени макроса");
 			break;
+		case MACRO_NAME_UNDEFINED:
+		{
+			const char *const name = va_arg(args, char *);
+			sprintf(msg, "макрос '%s' не определён", name);
+		}
+		break;
 
 		case DIRECTIVE_EXTRA_TOKENS:
 		{
