@@ -28,11 +28,12 @@
 #define MASK_POSTFIX		"__"
 #define MASK_ARGUMENT		"__ARG_%zu_"
 #define MASK_STRING			"__STR_%zu_"
-#define MASK_CHARACTER		"__CHR_%zu_"
+// #define MASK_CHARACTER		"__CHR_%zu_"
 #define MASK_TOKEN_PASTE	"#__TKP_%zu_"
 
 
 static const size_t MAX_COMMENT_SIZE = 4096;
+static const size_t MAX_VALUE_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
 
 
@@ -455,7 +456,6 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (index == SIZE_MAX)
 	{
 		parser_error(prs, &loc, INCLUDE_NO_SUCH_FILE);
-		skip_directive(prs);
 		out_swap(prs->io, &out);
 		return;
 	}
@@ -466,7 +466,6 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 	}
 
-	skip_directive(prs);
 	out_swap(prs->io, &out);
 	universal_io header = linker_add_header(prs->lk, index);
 
@@ -481,33 +480,29 @@ static void parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
 	universal_io out = io_create();
+
+	out_swap(prs->io, &out);
+	char32_t character = skip_until(prs);
 	out_swap(prs->io, &out);
 
-	char32_t character = skip_until(prs);
 	switch (character)
 	{
 		case '<':
 			character = '>';
 		case '"':
-			out_swap(prs->io, &out);
 			parse_include_path(prs, character);
 			break;
 
 		case '\n':
 			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			skip_directive(prs);
-			out_swap(prs->io, &out);
 			break;
 		default:
 			loc_search_from(&prs->loc);
 			parser_error(prs, &prs->loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			skip_directive(prs);
-			out_swap(prs->io, &out);
 			break;
 	}
 
-	uni_print_char(prs->io, '\n');
-	loc_update(&prs->loc);
+	skip_directive(prs);
 }
 
 static bool parse_name(parser *const prs)
@@ -529,7 +524,6 @@ static bool parse_name(parser *const prs)
 		parser_error(prs, &prs->loc, MACRO_NAME_FIRST_CHARACTER);
 	}
 
-	skip_directive(prs);
 	return false;
 }
 
@@ -549,15 +543,15 @@ static size_t parse_args(parser *const prs)
 	size_t i = 0;
 	while (true)
 	{
-		if (character == '\n' || character == (char32_t)EOF)
-		{
-			parser_error(prs, &loc, ARGS_EXPECTED_BRACKET);
-			break;
-		}
-		else if (character == ')')
+		if (character == ')')
 		{
 			uni_scan_char(prs->io);
 			return i;
+		}
+		else if (character == '\n' || character == (char32_t)EOF)
+		{
+			parser_error(prs, &loc, ARGS_EXPECTED_BRACKET);
+			break;
 		}
 
 		loc_search_from(&prs->loc);
@@ -592,14 +586,16 @@ static size_t parse_args(parser *const prs)
 		}
 	}
 
-	skip_directive(prs);
 	return SIZE_MAX;
 }
 
 static void parse_context(parser *const prs, const size_t macro)
 {
 	storage stg = storage_create();
+	storage *old = prs->stg;
+	prs->stg = &stg;
 
+	prs->stg = old;
 	storage_clear(&stg);
 }
 
@@ -615,7 +611,6 @@ static void parse_define(parser *const prs)
 		if (index == SIZE_MAX)
 		{
 			parser_error(prs, &prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
-			skip_directive(prs);
 		}
 		else
 		{
@@ -624,8 +619,7 @@ static void parse_define(parser *const prs)
 	}
 
 	out_swap(prs->io, &out);
-	uni_print_char(prs->io, '\n');
-	loc_update(&prs->loc);
+	skip_directive(prs);
 }
 
 
