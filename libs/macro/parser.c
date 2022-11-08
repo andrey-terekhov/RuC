@@ -752,6 +752,37 @@ static void parse_define(parser *const prs)
 	skip_directive(prs);
 }
 
+static void parse_set(parser *const prs)
+{
+	if (parse_name(prs))
+	{
+		loc_search_from(&prs->loc);
+		const size_t position = in_get_position(prs->io);
+		size_t index = storage_search(prs->stg, prs->io);
+
+		if (index == SIZE_MAX)
+		{
+			macro_warning(&prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
+			in_set_position(prs->io, position);
+			index = storage_add_by_io(prs->stg, prs->io);
+		}
+
+		parse_context(prs, index);
+	}
+
+	skip_directive(prs);
+}
+
+static void parse_undef(parser *const prs)
+{
+	if (parse_name(prs))
+	{
+		storage_remove_by_index(prs->stg, storage_search(prs->stg, prs->io));
+	}
+
+	skip_directive(prs);
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -810,7 +841,11 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 				parse_define(prs);
 				continue;
 			case KW_SET:
+				parse_set(prs);
+				continue;
 			case KW_UNDEF:
+				parse_undef(prs);
+				continue;
 
 			case KW_EVAL:
 
