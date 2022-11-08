@@ -133,7 +133,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const char32_t character = va_arg(args, char32_t);
 
-			size_t index = sprintf(msg, "ожидалось имя параметра, найден '");
+			size_t index = sprintf(msg, "ожидалось имя параметра, найдено '");
 			index += utf8_to_string(&msg[index], character);
 			utf8_to_string(&msg[index], '\'');
 		}
@@ -142,7 +142,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const char32_t character = va_arg(args, char32_t);
 
-			size_t index = sprintf(msg, "ожидалась ',' или ')', найден '");
+			size_t index = sprintf(msg, "ожидалась ',' или ')', найдено '");
 			index += utf8_to_string(&msg[index], character);
 			utf8_to_string(&msg[index], '\'');
 		}

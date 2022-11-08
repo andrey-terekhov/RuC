@@ -590,10 +590,52 @@ static size_t parse_args(parser *const prs)
 	return SIZE_MAX;
 }
 
+static bool parse_operator(parser *const prs, const size_t index, const bool was_space)
+{
+	loc_search_from(&prs->loc);
+	location loc = prs->loc;
+	uni_scan_char(prs->io);
+
+	char32_t character = uni_scan_char(prs->io);
+	if (character == '#')
+	{
+		character = skip_until(prs, false);
+		if (character == '\n')
+		{
+			parser_error(prs, &loc, HASH_ON_EDGE);
+			return false;
+		}
+
+		const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+		if (value == NULL)
+		{
+			parser_error(prs, &loc, HASH_NOT_FOLLOWED, "##");
+			return false;
+		}
+
+		uni_printf(prs->io, MASK_TOKEN_PASTE "%s" MASK_POSTFIX, index, value);
+		return true;
+	}
+
+	uni_unscan_char(prs->io, character);
+	character = skip_until(prs, false);
+
+	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+	if (value == NULL)
+	{
+		parser_error(prs, &loc, HASH_NOT_FOLLOWED, "#");
+		return false;
+	}
+
+	uni_printf(prs->io, "%s" MASK_STRING "%s" MASK_POSTFIX, was_space ? " " : "", index, value);
+	return true;
+}
+
 static char *parse_value(parser *const prs, const size_t index)
 {
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
+	out_swap(prs->io, &out);
 
 	char32_t character = skip_until(prs, false);
 	size_t position = in_get_position(prs->io);
@@ -602,63 +644,44 @@ static char *parse_value(parser *const prs, const size_t index)
 	{
 		if (character == '#')
 		{
-			loc_search_from(&prs->loc);
-			location loc = prs->loc;
-			uni_scan_char(prs->io);
-
-			character = uni_scan_char(prs->io);
-			if (character == '#')
+			if (!parse_operator(prs, index, in_get_position(prs->io) != position))
 			{
-				character = skip_until(prs, false);
-				if (character == '\n')
-				{
-					parser_error(prs, &loc, HASH_ON_EDGE);
-					out_clear(&out);
-					return NULL;
-				}
-
-				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-				if (value == NULL)
-				{
-					parser_error(prs, &loc, HASH_NOT_FOLLOWED, "##");
-					out_clear(&out);
-					return NULL;
-				}
-
-				uni_printf(&out, MASK_TOKEN_PASTE "%s" MASK_POSTFIX, index, value);
-				position = in_get_position(prs->io);
-				continue;
+				out_swap(prs->io, &out);
+				out_clear(&out);
+				return NULL;
 			}
-
-			character = skip_until(prs, false);
-			/* ... */
-		}
-
-		if (utf8_is_letter(character))
-		{
-			const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-			if (value != NULL)
-			{
-				uni_printf(&out, MASK_ARGUMENT "%s" MASK_POSTFIX, index, value);
-			}
-			else
-			{
-				uni_printf(&out, "%s", storage_last_read(prs->stg));
-			}
-		}
-		else if (character == '\'' || character == '"')
-		{
-			out_swap(prs->io, &out);
-			uni_print_char(prs->io, uni_scan_char(prs->io));
-			uni_print_char(prs->io, skip_string(prs, character));
-			out_swap(prs->io, &out);
 		}
 		else
 		{
-			uni_print_char(&out, uni_scan_char(prs->io));
+			uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
+			if (utf8_is_letter(character))
+			{
+				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+				if (value != NULL)
+				{
+					uni_printf(prs->io, MASK_ARGUMENT "%s" MASK_POSTFIX, index, value);
+				}
+				else
+				{
+					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+				}
+			}
+			else if (character == '\'' || character == '"')
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+				uni_print_char(prs->io, skip_string(prs, character));
+			}
+			else
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+			}
 		}
+
+		position = in_get_position(prs->io);
+		character = skip_until(prs, false);
 	}
 
+	out_swap(prs->io, &out);
 	return out_extract_buffer(&out);
 }
 
