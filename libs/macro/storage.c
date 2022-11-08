@@ -161,7 +161,11 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char *val
 		strings_remove(&stg->vec);
 	}
 
-	hash_set_by_index(&stg->hs, id, 0, (item_t)strings_add(&stg->vec, value));
+	const size_t index = strings_add(&stg->vec, value);
+	if (index != SIZE_MAX)
+	{
+		hash_set_by_index(&stg->hs, id, 0, (item_t)index);
+	}
 	return id;
 }
 

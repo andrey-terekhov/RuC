@@ -99,6 +99,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "неизвестная директива препроцессора %s", directive);
 		}
 		break;
+		case HASH_NOT_FOLLOWED:
+			sprintf(msg, "'#' не сопровождается параметром макроса");
+			break;
 		case HASH_STRAY:
 			sprintf(msg, "потерянный '#' в программе");
 			break;
