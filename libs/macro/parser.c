@@ -127,6 +127,7 @@ static void skip_multi_comment(parser *const prs)
 	} while (character != '\r' && character != '\n' && character != (char32_t)EOF);
 
 	out_clear(&out);
+	size_t begin = 0;
 
 	while (!was_star || character != '/')
 	{
@@ -138,14 +139,20 @@ static void skip_multi_comment(parser *const prs)
 		else if (character == '\n')
 		{
 			loc_line_break(&prs->loc);
+			uni_print_char(prs->io, character);
+			begin = in_get_position(prs->io);
 		}
 
 		was_star = character == '*';
 		character = uni_scan_char(prs->io);
 	}
 
-	uni_print_char(prs->io, '\n');
-	loc_update(&prs->loc);
+	const size_t end = in_get_position(prs->io);
+	in_set_position(prs->io, begin);
+	while (in_get_position(prs->io) != end)
+	{
+		uni_print_char(prs->io, uni_scan_char(prs->io) == '\t' ? '\t' : ' ');
+	}
 }
 
 /**
