@@ -237,10 +237,9 @@ static char32_t skip_until(parser *const prs, const bool fill)
 	universal_io out = io_create();
 	out_swap(prs->io, fill ? NULL : &out);
 
-	char32_t character = '\0';
 	while (true)
 	{
-		character = uni_scan_char(prs->io);
+		char32_t character = uni_scan_char(prs->io);
 		switch (character)
 		{
 			case '/':
@@ -267,6 +266,7 @@ static char32_t skip_until(parser *const prs, const bool fill)
 				character = character == '\r' ? uni_scan_char(prs->io) : character;
 				if (character == '\n')
 				{
+					uni_printf(prs->io, "\\\n");
 					loc_line_break(&prs->loc);
 					continue;
 				}
@@ -286,76 +286,33 @@ static char32_t skip_until(parser *const prs, const bool fill)
 				character = uni_scan_char(prs->io);
 				break;
 		}
-		break;
-	}
 
-	uni_unscan_char(prs->io, character);
-	out_swap(prs->io, fill ? NULL : &out);
-	return character;
-}
-
-
-static bool parse_character(parser *const prs, char32_t character, const bool was_slash)
-{
-	if (was_slash && character == '/')
-	{
-		skip_comment(prs);
-		return false;
-	}
-	else if (was_slash && character == '*')
-	{
-		skip_multi_comment(prs);
-		return false;
-	}
-	else if (was_slash)
-	{
-		uni_print_char(prs->io, '/');
-	}
-
-	switch (character)
-	{
-		case '#':
-			uni_unscan_char(prs->io, character);
-			loc_search_from(&prs->loc);
-			parser_error(prs, &prs->loc, HASH_STRAY);
-			uni_print_char(prs->io, uni_scan_char(prs->io));
-			return false;
-
-		case '/':
-			return true;
-
-		case '\'':
-			uni_print_char(prs->io, character);
-			uni_print_char(prs->io, skip_string(prs, character));
-			return false;
-		case '"':
-			uni_print_char(prs->io, character);
-			uni_print_char(prs->io, skip_string(prs, character));
-			return false;
-
-		case '\r':
-			character = uni_scan_char(prs->io);
-		case '\n':
-			loc_line_break(&prs->loc);
-		default:
-			uni_print_char(prs->io, character);
-			return false;
+		uni_unscan_char(prs->io, character);
+		out_swap(prs->io, fill ? NULL : &out);
+		return character;
 	}
 }
+
 
 static char32_t parse_until(parser *const prs)
 {
-	char32_t character = uni_scan_char(prs->io);
-	bool was_slash = parse_character(prs, character, false);
-	bool was_backslash = false;
-
-	while (was_backslash || (character != '\r' && character != '\n' && character != (char32_t)EOF))
+	char32_t character = '\0';
+	while (character != '\n' && character != (char32_t)EOF)
 	{
-		was_backslash = character == '\\';
-		character = uni_scan_char(prs->io);
-		was_slash = parse_character(prs, character, was_slash);
+		character = skip_until(prs, true);
+
+		if (character == '\'' || character == '"')
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+			uni_print_char(prs->io, skip_string(prs, character));
+		}
+		else
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+		}
 	}
 
+	loc_line_break(&prs->loc);
 	return character;
 }
 
@@ -506,6 +463,7 @@ static void parse_include(parser *const prs)
 
 	skip_directive(prs);
 }
+
 
 static bool parse_name(parser *const prs)
 {
