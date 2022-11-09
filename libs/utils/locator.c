@@ -331,7 +331,7 @@ int loc_search_from(location *const loc)
 				&& in_get_position(loc->io) != 0);
 			
 			loc->path = path;
-			loc->code = diff == 0 && comment != SIZE_MAX ? comment : code;
+			loc->code = loc->line == line && comment != SIZE_MAX ? comment : code;
 			in_set_position(loc->io, position);
 			return 0;
 		}
