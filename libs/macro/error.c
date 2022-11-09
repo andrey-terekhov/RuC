@@ -22,6 +22,7 @@
 
 
 #define TAG_MACRO		"macro"
+#define QUOTE			"\""
 
 #define MAX_TAG_SIZE	1024
 #define MAX_MSG_SIZE	4096
@@ -63,18 +64,27 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		{
 			const char32_t *const name = va_arg(args, char32_t *);
 
-			size_t index = sprintf(msg, "макрос '");
+			size_t index = sprintf(msg, "макрос " QUOTE);
 			index += utf8_to_buffer(name, &msg[index]);
-			sprintf(&msg[index], "' уже существует");
+			sprintf(&msg[index], QUOTE " уже существует");
 		}
 		break;
 		case MACRO_NAME_REDEFINE:
 		{
 			const char *const name = va_arg(args, char *);
-			sprintf(msg, "переопределение '%s'", name);
+			sprintf(msg, "макрос " QUOTE "%s" QUOTE " уже существует", name);
 		}
 		break;
 
+		case CHARACTER_STRAY:
+		{
+			const char32_t character = va_arg(args, char32_t);
+
+			size_t index = sprintf(msg, "потерянный '");
+			index += utf8_to_string(&msg[index], character);
+			sprintf(&msg[index], "' в программе");
+		}
+		break;
 		case STRING_UNTERMINATED:
 		{
 			const char32_t quote = va_arg(args, char32_t);
@@ -87,6 +97,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case COMMENT_UNTERMINATED:
 			sprintf(msg, "незавершённый комментарий");
 			break;
+
 		case DIRECTIVE_NAME_NON:
 		{
 			const char *const directive = va_arg(args, char *);
@@ -100,9 +111,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
-		case HASH_STRAY:
-			sprintf(msg, "потерянный '#' в программе");
-			break;
 		case HASH_ON_EDGE:
 			sprintf(msg, "'##' не может стоять по краям макроса");
 			break;
@@ -126,30 +134,68 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case ARGS_DUPLICATE:
 		{
 			const char *const name = va_arg(args, char *);
-			sprintf(msg, "дублирующий макро параметр '%s'", name);
+			sprintf(msg, "дублирующий макро параметр " QUOTE "%s" QUOTE, name);
 		}
 		break;
 		case ARGS_EXPECTED_NAME:
 		{
 			const char32_t character = va_arg(args, char32_t);
 
-			size_t index = sprintf(msg, "ожидалось имя параметра, найдено '");
+			size_t index = sprintf(msg, "ожидалось имя параметра, найдено " QUOTE);
 			index += utf8_to_string(&msg[index], character);
-			utf8_to_string(&msg[index], '\'');
+			sprintf(&msg[index], QUOTE);
 		}
 		break;
 		case ARGS_EXPECTED_COMMA:
 		{
 			const char32_t character = va_arg(args, char32_t);
 
-			size_t index = sprintf(msg, "ожидалась ',' или ')', найдено '");
+			size_t index = sprintf(msg, "ожидалась ',' или ')', найдено " QUOTE);
 			index += utf8_to_string(&msg[index], character);
-			utf8_to_string(&msg[index], '\'');
+			sprintf(&msg[index], QUOTE);
 		}
 		break;
 		case ARGS_EXPECTED_BRACKET:
 			sprintf(msg, "ожидалась ')' до завершения строки");
 			break;
+		case ARGS_UNTERMINATED:
+		{
+			const char *const name = va_arg(args, char *);
+			sprintf(msg, "незавершённый список аргументов, вызываемый макрос " QUOTE "%s" QUOTE, name);
+		}
+		break;
+		case ARGS_REQUIRES:
+		{
+			const char *const name = va_arg(args, char *);
+			const size_t expected = va_arg(args, size_t);
+			const size_t actual = va_arg(args, size_t);
+
+			const bool one = expected % 10 == 1 && expected != 11;
+			const bool many = expected % 10 == 0 || expected % 10 >= 5 || (expected >= 11 && expected <= 14);
+
+			sprintf(msg, "макросу " QUOTE "%s" QUOTE " требуется %zu аргумент%s, но передан только %zu"
+				, name, expected, one ? "" : many ? "ов" : "а", actual);
+		}
+		break;
+		case ARGS_PASSED:
+		{
+			const char *const name = va_arg(args, char *);
+			const size_t actual = va_arg(args, size_t);
+			const size_t expected = va_arg(args, size_t);
+
+			const bool one = actual % 10 == 1 && actual != 11;
+			const bool many = actual % 10 == 0 || actual % 10 >= 5 || (actual >= 11 && actual <= 14);
+
+			sprintf(msg, "макросу " QUOTE "%s" QUOTE " передан%s %zu аргумент%s, но принимает он только %zu"
+				, name, one ? "" : "о", actual, one ? "" : many ? "ов" : "а", expected);
+		}
+		break;
+		case ARGS_NON:
+		{
+			const char *const name = va_arg(args, char *);
+			sprintf(msg, "макросу " QUOTE "%s" QUOTE " не передано аргументов", name);
+		}
+		break;
 
 		default:
 			sprintf(msg, "неизвестная ошибка");
@@ -169,7 +215,7 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		case MACRO_NAME_UNDEFINED:
 		{
 			const char *const name = va_arg(args, char *);
-			sprintf(msg, "макрос '%s' не определён", name);
+			sprintf(msg, "макрос " QUOTE "%s" QUOTE " не определён", name);
 		}
 		break;
 

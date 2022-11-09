@@ -294,6 +294,25 @@ static char32_t skip_until(parser *const prs, const bool fill)
 }
 
 
+static void parce_replace(parser *const prs)
+{
+	loc_search_from(&prs->loc);
+	const size_t index = storage_search(prs->stg, prs->io);
+	if (storage_last_read(prs->stg)[0] == '#'
+		&& (index == SIZE_MAX || kw_is_correct(index) || in_is_file(prs->io)))
+	{
+		parser_error(prs, &prs->loc, CHARACTER_STRAY, '#');
+		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+		return;
+	}
+
+	if (index == SIZE_MAX)
+	{
+		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+		return;
+	}
+}
+
 static char32_t parse_until(parser *const prs)
 {
 	char32_t character = '\0';
@@ -301,7 +320,11 @@ static char32_t parse_until(parser *const prs)
 	{
 		character = skip_until(prs, true);
 
-		if (character == '\'' || character == '"')
+		if ((character == '#' || utf8_is_letter(character)) && out_is_correct(prs->io))
+		{
+			parce_replace(prs);
+		}
+		else if (character == '\'' || character == '"')
 		{
 			uni_print_char(prs->io, uni_scan_char(prs->io));
 			uni_print_char(prs->io, skip_string(prs, character));
@@ -362,7 +385,7 @@ static size_t parse_directive(parser *const prs)
 		}
 		else
 		{
-			parser_error(prs, &loc, HASH_STRAY);
+			parser_error(prs, &loc, CHARACTER_STRAY, '#');
 			uni_unscan(prs->io, &directive[1]);
 		}
 
@@ -516,7 +539,7 @@ static size_t parse_args(parser *const prs)
 		loc_search_from(&prs->loc);
 		if (!utf8_is_letter(character))
 		{
-			parser_error(prs, &prs->loc, ARGS_EXPECTED_NAME, character);
+			parser_error(prs, &prs->loc, ARGS_EXPECTED_NAME, character, prs->io);
 			break;
 		}
 
@@ -540,7 +563,7 @@ static size_t parse_args(parser *const prs)
 		else if (character != ')' && character != '\n' && character != (char32_t)EOF)
 		{
 			loc_search_from(&prs->loc);
-			parser_error(prs, &prs->loc, ARGS_EXPECTED_COMMA, character);
+			parser_error(prs, &prs->loc, ARGS_EXPECTED_COMMA, character, prs->io);
 			break;
 		}
 	}
@@ -589,7 +612,7 @@ static bool parse_operator(parser *const prs, const size_t index, const bool was
 	return true;
 }
 
-static char *parse_value(parser *const prs, const size_t index)
+static char *parse_content(parser *const prs, const size_t index)
 {
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
@@ -674,7 +697,7 @@ static void parse_context(parser *const prs, const size_t index)
 			}
 		}
 
-		char *value = parse_value(prs, index);
+		char *value = parse_content(prs, index);
 		if (value != NULL)
 		{
 			storage_set_by_index(origin, index, value);
