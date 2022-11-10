@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "dll.h"
 #include "uniio.h"
 
@@ -48,6 +49,26 @@ EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...)
  *	@return	UTF-8 character
  */
 EXPORTED char32_t uni_scan_char(universal_io *const io);
+
+/**
+ *	Universal function for scanning numbers
+ *
+ *	@param	io			Universal io structure
+ *	@param	buffer		Output string
+ *
+ *	@return	Size of number in string
+ */
+EXPORTED size_t uni_scan_number(universal_io *const io, char *const buffer);
+
+/**
+ *	Universal function for scanning identifiers
+ *
+ *	@param	io			Universal io structure
+ *	@param	buffer		Output string
+ *
+ *	@return	Size of identifier in string
+ */
+EXPORTED size_t uni_scan_identifier(universal_io *const io, char *const buffer);
 
 /**
  *	Universal function for discarding UTF-8 characters

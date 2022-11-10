@@ -18,6 +18,7 @@
 #include "error.h"
 #include <stdio.h>
 #include "logger.h"
+#include "uniscanner.h"
 #include "utf8.h"
 
 
@@ -140,18 +141,31 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case ARGS_EXPECTED_NAME:
 		{
 			const char32_t character = va_arg(args, char32_t);
+			universal_io *io = va_arg(args, universal_io *);
 
 			size_t index = sprintf(msg, "ожидалось имя параметра, найдено " QUOTE);
-			index += utf8_to_string(&msg[index], character);
+
+			const size_t position = in_get_position(io);
+			index += utf8_is_digit(character) ? uni_scan_number(io, &msg[index])
+					: utf8_to_string(&msg[index], character);
+			in_set_position(io, position);
+
 			sprintf(&msg[index], QUOTE);
 		}
 		break;
 		case ARGS_EXPECTED_COMMA:
 		{
 			const char32_t character = va_arg(args, char32_t);
+			universal_io *io = va_arg(args, universal_io *);
 
 			size_t index = sprintf(msg, "ожидалась ',' или ')', найдено " QUOTE);
-			index += utf8_to_string(&msg[index], character);
+
+			const size_t position = in_get_position(io);
+			index += utf8_is_letter(character) ? uni_scan_identifier(io, &msg[index])
+					: utf8_is_digit(character) ? uni_scan_number(io, &msg[index])
+						: utf8_to_string(&msg[index], character);
+			in_set_position(io, position);
+
 			sprintf(&msg[index], QUOTE);
 		}
 		break;
@@ -174,7 +188,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			const bool many = expected % 10 == 0 || expected % 10 >= 5 || (expected >= 11 && expected <= 14);
 
 			sprintf(msg, "макросу " QUOTE "%s" QUOTE " требуется %zu аргумент%s, но передан только %zu"
-				, name, expected, one ? "" : many ? "ов" : "а", actual);
+					, name, expected, one ? "" : many ? "ов" : "а", actual);
 		}
 		break;
 		case ARGS_PASSED:
@@ -187,7 +201,7 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			const bool many = actual % 10 == 0 || actual % 10 >= 5 || (actual >= 11 && actual <= 14);
 
 			sprintf(msg, "макросу " QUOTE "%s" QUOTE " передан%s %zu аргумент%s, но принимает он только %zu"
-				, name, one ? "" : "о", actual, one ? "" : many ? "ов" : "а", expected);
+					, name, one ? "" : "о", actual, one ? "" : many ? "ов" : "а", expected);
 		}
 		break;
 		case ARGS_NON:
