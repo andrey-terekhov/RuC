@@ -650,7 +650,13 @@ static char *parse_content(parser *const prs, const size_t index)
 			else if (character == '\'' || character == '"')
 			{
 				uni_print_char(prs->io, uni_scan_char(prs->io));
-				uni_print_char(prs->io, skip_string(prs, character));
+				if (skip_string(prs, character) != character)
+				{
+					out_swap(prs->io, &out);
+					out_clear(&out);
+					return NULL;
+				}
+				uni_print_char(prs->io, character);
 			}
 			else
 			{
