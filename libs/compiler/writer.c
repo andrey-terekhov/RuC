@@ -36,6 +36,7 @@ typedef struct writer
 
 static void write_expression(writer *const wrt, const node *const nd);
 static void write_statement(writer *const wrt, const node *const nd);
+static void write_declaration(writer *const wrt, const node *const nd);
 
 
 /*
@@ -538,6 +539,25 @@ static void write_initializer(writer *const wrt, const node *const nd)
 }
 
 /**
+ *	Write inline expression
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_inline_expression(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "EXPR_INLINE");
+	write_expression_metadata(wrt, nd); 
+	 
+	const size_t size = expression_inline_get_size(nd);  
+	for (size_t i = 0; i < size; i++)
+	{ 
+		const node sub = expression_inline_get_substmt(nd, i);
+		write_statement(wrt, &sub);
+	} 
+}
+
+/**
  *	Write expression
  *
  *	@param	wrt			Writer
@@ -591,9 +611,17 @@ static void write_expression(writer *const wrt, const node *const nd)
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
 			break;
+		
+		case EXPR_INLINE:
+			write_inline_expression(wrt, nd);
+			break;
+
+		case EXPR_EMPTY_BOUND:
+			write_line(wrt, "EXPR_EMPTY_BOUND\n");
+			break;
 
 		case EXPR_INVALID:
-			write(wrt, "EXPR_INVALID\n");
+			write_line(wrt, "EXPR_INVALID\n");
 			break;
 	}
 
@@ -609,6 +637,49 @@ static void write_expression(writer *const wrt, const node *const nd)
  *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
+
+/**
+ *	Write member declaration
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_member_declaration(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "DECL_MEMBER");
+
+	const size_t name = declaration_member_get_name(nd);
+	const item_t type = declaration_member_get_type(nd);
+
+	uni_printf(wrt->io, " declaring member named \'%s\' of type '", repr_get_name(wrt->sx, name));
+	write_type(wrt, type);
+	write(wrt, "'\n");
+
+	const size_t amount = declaration_member_get_bounds_amount(nd);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node bound = declaration_member_get_bound(nd, i);
+		write_expression(wrt, &bound);
+	}
+}
+
+/**
+ *	Write struct declaration
+ *
+ *	@param	wrt			Writer
+ *	@param	nd			Node in AST
+ */
+static void write_struct_declaration(writer *const wrt, const node *const nd)
+{
+	write_line(wrt, "DECL_STRUCT\n");
+
+	const size_t amount = declaration_struct_get_size(nd);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node member = declaration_struct_get_member(nd, i);
+		write_declaration(wrt, &member);
+	}
+}
 
 /**
  *	Write variable declaration
@@ -628,44 +699,18 @@ static void write_variable_declaration(writer *const wrt, const node *const nd)
 	write_type(wrt, type);
 	write(wrt, "'\n");
 
+	const size_t amount = declaration_variable_get_bounds_amount(nd);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node bound = declaration_variable_get_bound(nd, i);
+		write_expression(wrt, &bound);
+	}
+
 	if (declaration_variable_has_initializer(nd))
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
 		write_expression(wrt, &initializer);
 	}
-}
-
-/**
- *	Write type declaration
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_type_declaration(writer *const wrt, const node *const nd)
-{
-	const char *spelling = NULL;
-	item_t type = ITEM_MAX;
-
-	write_line(wrt, "DECL_TYPE");
-
-	const size_t ident = declaration_type_get_id(nd);
-	if (ident != SIZE_MAX)
-	{
-		type = ident_get_type(wrt->sx, ident);
-		spelling = ident_get_spelling(wrt->sx, ident);
-	}
-
-	if (spelling == NULL)
-	{
-		spelling = "<unnamed>";
-	}
-
-	uni_printf(wrt->io, " declaring type named \'%s\' with id %zu: '", spelling, ident);
-	if (type != ITEM_MAX)
-	{
-		write_type(wrt, type);
-	}
-	write(wrt, "'\n");
 }
 
 /**
@@ -710,8 +755,12 @@ static void write_declaration(writer *const wrt, const node *const nd)
 			write_variable_declaration(wrt, nd);
 			break;
 
-		case DECL_TYPE:
-			write_type_declaration(wrt, nd);
+		case DECL_MEMBER:
+			write_member_declaration(wrt, nd);
+			break;
+
+		case DECL_STRUCT:
+			write_struct_declaration(wrt, nd);
 			break;
 
 		case DECL_FUNC:
@@ -1252,14 +1301,6 @@ static size_t elem_get_name(const instruction_t elem, const size_t num, char *co
 			sprintf(buffer, "GETNUMC");
 			break;
 
-		case IC_PRINT:
-			argc = 1;
-			sprintf(buffer, "PRINT");
-			break;
-		case IC_PRINTID:
-			argc = 1;
-			sprintf(buffer, "PRINTID");
-			break;
 		case IC_PRINTF:
 			argc = 1;
 			sprintf(buffer, "PRINTF");
