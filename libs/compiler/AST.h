@@ -48,7 +48,6 @@ typedef enum EXPRESSION
 	EXPR_TERNARY,		/**< Ternary expression */
 	EXPR_ASSIGNMENT,	/**< Assignment expression */
 	EXPR_INITIALIZER,	/**< Initializer */
-	EXPR_INLINE,		/**< Inline expression */
 	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
 	EXPR_INVALID,		/**< Invalid expression */
 } expression_t;
@@ -617,37 +616,6 @@ size_t expression_initializer_get_size(const node *const nd);
  *	@return	Expression
  */
 node expression_initializer_get_subexpr(const node *const nd, const size_t index);
-
-
-/**
- *  Create new inline expression
- *
- *  @param  type            Value type
- *  @param  substmts        Expression substatements
- *  @param  loc             Expression location
- *
- *  @return Inline expression
- */
-node expression_inline(const item_t type, node_vector *const substmts, const location loc);
-
-/**
- *	Get size of inline expression
- *
- *	@param	nd				Expression
- *
- *	@return	Size
- */
-size_t expression_inline_get_size(const node *const nd);
-
-/**
- *	Get substatement of inline expression by index
- *
- *	@param	nd				Expression
- *	@param	index			Substatement index
- *
- *	@return	Substatement
- */
-node expression_inline_get_substmt(const node *const nd, const size_t index);
 
 
 /**

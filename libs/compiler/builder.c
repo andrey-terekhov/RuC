@@ -16,7 +16,7 @@
 
 #include "builder.h"
 #include "AST.h"
-#include "inline_expression.h"
+
 
 #define MAX_PRINTF_ARGS 20
 
@@ -281,11 +281,6 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 					format_types[args++] = type_string(bldr->sx);
 					break;
 
-				case 'p':
-				case U'у':
-					format_types[args++] = type_pointer(bldr->sx, TYPE_UNDEFINED);
-					break;
-
 				case '%':
 					break;
 
@@ -351,397 +346,50 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
-static node build_print_expression(builder *const bldr, node *const callee
-	, node_vector *const args, const location r_loc)
+static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
-	const location loc = { node_get_location(callee).begin, r_loc.end };
-
-	node_vector stmts = node_vector_create();
-
-	node_vector args_to_print = node_vector_create();
-
 	size_t argc;
 	if (args == NULL || (argc = node_vector_size(args)) == 0)
 	{
 		semantic_error(bldr, r_loc, expected_expression);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
 		return node_broken();
 	}
-
-	bool complicated_type_in_args = 0;
-
-	size_t last_scalar_argument_index = 0;
-	size_t first_scalar_argument_index = 0;
-	size_t last_argument_index = 0;
-
-	vector str = vector_create(1);
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		node argument = node_vector_get(args, i);
-
-		location curr_loc = node_get_location(&argument);
-
-		node last_argument = *callee;
-		if (i > 0)
+		const node argument = node_vector_get(args, i);
+		if (type_is_pointer(bldr->sx, expression_get_type(&argument)))
 		{
-			last_argument_index = i - 1;
-			last_argument = node_vector_get(args, last_argument_index);
-		}
-		location last_argument_loc = node_get_location(&last_argument);
-
-		item_t argument_type = expression_get_type(&argument);
-		if (type_is_complicated(bldr->sx, argument_type))
-		{
-			complicated_type_in_args = 1;
-
-			if (type_is_aggregate(bldr->sx, argument_type))
-			{
-				if (!vector_add_str(&str, "{"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			} 
-
-			// корректно определяем location
-			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
-			location fs_arg_loc = node_get_location(&first_scalar_argument);
-			node last_scalar_argument = node_vector_get(args, last_scalar_argument_index);
-			location ls_arg_loc = node_get_location(&last_scalar_argument);
-
-			// разворачиваемся в printf для имеющейся на данный момент строки
-			if (vector_size(&str))
-			{
-				node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, fs_arg_loc, ls_arg_loc);
-				// запоминаем узел
-				node_vector_add(&stmts, &printf_node);
-			}
-
-			vector_clear(&str);
-
-			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = vector_create(1);
-			// избавляемся от предыдущих запомненных аргументов
-			node_vector_clear(&args_to_print);
-			args_to_print = node_vector_create();
-			first_scalar_argument_index = 0;
-			last_scalar_argument_index = 0;
-
-			const size_t creating_res = create_complicated_type_str(bldr, &argument, &stmts, last_argument_loc, curr_loc, 1);
-			if (creating_res == SIZE_MAX)
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}			
-
-			if ((type_is_array(bldr->sx, argument_type)) || (type_is_structure(bldr->sx, argument_type)))
-			{
-				if (!vector_add_str(&str, "}"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			}
-			
-			if ((type_is_structure(bldr->sx, argument_type)) && (i != argc - 1))
-			{
-				if (!vector_add_str(&str, "\n"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			}
-		}
-		else
-		{
-			if (last_scalar_argument_index == 0)
-			{
-				first_scalar_argument_index = i;
-			}
-
-			last_scalar_argument_index = i;
-
-			if (!type_is_null_pointer(argument_type))
-			{
-				node_vector_add(&args_to_print, &argument);
-			}
-			else
-			{
-				node_remove(&argument);
-			}
-
-			const item_t argument_type_class = type_get_class(bldr->sx, argument_type);
-			const char *tmp = create_simple_type_str(argument_type_class);
-			if (!tmp)
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}
-			if (!vector_add_str(&str, tmp))
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}
+			semantic_error(bldr, node_get_location(&argument), pointer_in_print);
+			return node_broken();
 		}
 	}
-	node last_argument = node_vector_get(args, first_scalar_argument_index);
-	location last_argument_loc = node_get_location(&last_argument);
 
-	node_remove(callee);
-
-	if (!vector_add_str(&str, "\n"))
-	{
-		vector_clear(&str);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
-		return node_broken();
-	}
-
-	// разворачиваемся в printf для имеющейся на данный момент строки
-	node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
-
-	if (!complicated_type_in_args)
-	{
-		vector_clear(&str);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
-		return printf_node;
-	}
-
-	node_vector_add(&stmts, &printf_node);
-
-	vector_clear(&str);
-
-	node res = expression_inline(TYPE_VOID, &stmts, loc);
-
-	node_vector_clear(&stmts);
-	node_vector_clear(&args_to_print);
-
-	return res;
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-static node build_printid_expression(builder *const bldr, node *const callee
-	, node_vector *const args, const location r_loc)
+static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
 {
-	const location loc = { node_get_location(callee).begin, r_loc.end };
-
-	node_vector stmts = node_vector_create();
-
-	node_vector args_to_print = node_vector_create();
-
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
 	{
 		semantic_error(bldr, r_loc, expected_identifier_in_printid);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
 		return node_broken();
 	}
-
-	bool complicated_type_in_args = 0;
-
-	size_t last_scalar_argument_index = 0;
-	size_t first_scalar_argument_index = 0;
-	size_t last_argument_index = 0;
-
-	vector str = vector_create(1);
 
 	for (size_t i = 0; i < argc; i++)
 	{
-		node argument = node_vector_get(args, i);
+		const node argument = node_vector_get(args, i);
 		if (node_is_correct(&argument) && expression_get_class(&argument) != EXPR_IDENTIFIER)
 		{
 			semantic_error(bldr, node_get_location(&argument), expected_identifier_in_printid);
-			node_vector_clear(&stmts);
-			node_vector_clear(&args_to_print);
 			return node_broken();
-		}
-		// аргумент -- идентификатор, а узел -- нет => идентификатор не объявлен, но
-		// об этом уже объявлено => можем выходить из цикла
-		if (node_get_type(&argument) != OP_IDENTIFIER)
-		{
-			break;
-		}
-
-		location curr_loc = node_get_location(&argument);
-
-		node last_argument = *callee;
-		if (i > 0)
-		{
-			last_argument_index = i - 1;
-			last_argument = node_vector_get(args, last_argument_index);
-		}
-		location last_argument_loc = node_get_location(&last_argument);
-
-		// добавляем строку "имя_аргумента = "
-		const size_t argument_identifier_index = expression_identifier_get_id(&argument);
-		const char *tmp_argument_name = ident_get_spelling(bldr->sx, argument_identifier_index);
-		if (!vector_add_str(&str, tmp_argument_name))
-		{
-			vector_clear(&str);
-			node_vector_clear(&stmts);
-			node_vector_clear(&args_to_print);
-			vector_clear(&str);
-			return node_broken();
-		}
-		if (!vector_add_str(&str, " = "))
-		{
-			vector_clear(&str);
-			node_vector_clear(&stmts);
-			node_vector_clear(&args_to_print);
-			vector_clear(&str);
-			return node_broken();
-		}
-
-		item_t argument_type = expression_get_type(&argument);
-		if (type_is_complicated(bldr->sx, argument_type))
-		{
-			complicated_type_in_args = 1;
-
-			if (type_is_aggregate(bldr->sx, argument_type))
-			{
-				if (!vector_add_str(&str, "{"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			} 
-
-			// корректно определяем location
-			node first_scalar_argument = node_vector_get(args, first_scalar_argument_index);
-			location fs_arg_loc = node_get_location(&first_scalar_argument);
-			node last_scalar_argument = node_vector_get(args, last_scalar_argument_index);
-			location ls_arg_loc = node_get_location(&last_scalar_argument);
-
-			// разворачиваемся в printf для имеющейся на данный момент строки
-			if (vector_size(&str))
-			{
-				node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, fs_arg_loc, ls_arg_loc);
-				// запоминаем узел
-				node_vector_add(&stmts, &printf_node);
-			}
-
-			vector_clear(&str);
-
-			// дальнейшая строка и аргументы не будут иметь к только что построенному узлу никакого отношения
-			str = vector_create(1);
-			// избавляемся от предыдущих запомненных аргументов
-			node_vector_clear(&args_to_print);
-			args_to_print = node_vector_create();
-			first_scalar_argument_index = 0;
-			last_scalar_argument_index = 0;
-
-			const size_t creating_res = create_complicated_type_str(bldr, &argument, &stmts, last_argument_loc, curr_loc, 1);
-			if (creating_res == SIZE_MAX)
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}
-
-			if ((type_is_array(bldr->sx, argument_type)) || (type_is_structure(bldr->sx, argument_type)))
-			{
-				if (!vector_add_str(&str, "}"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			}
-
-			if ((type_is_structure(bldr->sx, argument_type)) && (i != argc - 1))
-			{
-				if (!vector_add_str(&str, "\n"))
-				{
-					vector_clear(&str);
-					node_vector_clear(&stmts);
-					node_vector_clear(&args_to_print);
-					return node_broken();
-				}
-			}
-		}
-		else
-		{
-			if (last_scalar_argument_index == 0)
-			{
-				first_scalar_argument_index = i;
-			}
-
-			last_scalar_argument_index = i;
-
-			node_vector_add(&args_to_print, &argument);
-
-			const item_t argument_type_class = type_get_class(bldr->sx, argument_type);
-			const char *tmp = create_simple_type_str(argument_type_class);
-			if (!tmp)
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}
-			if (!vector_add_str(&str, tmp))
-			{
-				vector_clear(&str);
-				node_vector_clear(&stmts);
-				node_vector_clear(&args_to_print);
-				return node_broken();
-			}
 		}
 	}
 
-	if (!vector_add_str(&str, "\n"))
-	{
-		vector_clear(&str);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
-		return node_broken();
-	}
-
-	node last_argument = node_vector_get(args, first_scalar_argument_index);
-	location last_argument_loc = node_get_location(&last_argument);
-
-	node_remove(callee);
-
-	// разворачиваемся в printf для имеющейся на данный момент строки
-	node printf_node = create_printf_node_by_vector(bldr, &str, &args_to_print, last_argument_loc, r_loc);
-
-	if (!complicated_type_in_args)
-	{
-		vector_clear(&str);
-		node_vector_clear(&stmts);
-		node_vector_clear(&args_to_print);
-		return printf_node;
-	}
-
-	node_vector_add(&stmts, &printf_node);
-	
-	vector_clear(&str);
-
-	node res = expression_inline(TYPE_VOID, &stmts, loc);
-
-	node_vector_clear(&stmts);
-	node_vector_clear(&args_to_print);
-
-	return res;
+	const location loc = { node_get_location(callee).begin, r_loc.end };
+	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
 static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
@@ -872,14 +520,6 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return true;
 	}
 
-	if (type_is_pointer(sx, expected_type) && type_is_pointer(sx, actual_type))
-	{
-		if (type_pointer_get_element_type(sx, actual_type) == TYPE_UNDEFINED)
-		{
-			return true;
-		}
-	}
-
 	if (expected_type == actual_type)
 	{
 		return true;
@@ -968,8 +608,8 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
 	return expression_subscript(element_type, base, index, loc);
 }
 
-node build_call_expression(builder *const bldr, node *const callee, node_vector *const args
-	, const location l_loc, const location r_loc)
+node build_call_expression(builder *const bldr, node *const callee
+	, node_vector *const args, const location l_loc, const location r_loc)
 {
 	if (!node_is_correct(callee))
 	{
@@ -1311,7 +951,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			}
 
 			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
-				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type)) 
+				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type))
 				|| left_type == right_type)
 			{
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
@@ -1416,7 +1056,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 		return expression_ternary(LHS_type, cond, LHS, RHS, loc);
 	}
 
-	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bldr->sx, RHS_type)) 
+	if ((type_is_null_pointer(LHS_type) && type_is_pointer(bldr->sx, RHS_type))
 		|| (LHS_type == RHS_type))
 	{
 		return expression_ternary(RHS_type, cond, LHS, RHS, loc);
@@ -1466,8 +1106,8 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 }
 
 
-node build_member_declaration(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, node_vector *const bounds, const location loc)
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
@@ -1532,7 +1172,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 }
 
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
+   , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
@@ -1662,8 +1302,8 @@ node build_null_statement(builder *const bldr, const location semi_loc)
 	return statement_null(&bldr->context, semi_loc);
 }
 
-node build_if_statement(builder *const bldr, node *const cond, node *const then_stmt
-	, node *const else_stmt, const location if_loc)
+node build_if_statement(builder *const bldr, node *const cond
+	, node *const then_stmt, node *const else_stmt, const location if_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(then_stmt) || (else_stmt && !node_is_correct(else_stmt)))
 	{
@@ -1731,10 +1371,10 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
 	return statement_do(body, cond, loc);
 }
 
-node build_for_statement(builder *const bldr, node *const init, node *const cond
-	, node *const incr, node *const body, const location for_loc)
+node build_for_statement(builder *const bldr, node *const init
+	, node *const cond, node *const incr, node *const body, const location for_loc)
 {
-	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond)) 
+	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond))
 		|| (incr && !node_is_correct(incr)) || !node_is_correct(body))
 	{
 		return node_broken();

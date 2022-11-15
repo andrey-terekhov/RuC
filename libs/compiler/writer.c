@@ -539,25 +539,6 @@ static void write_initializer(writer *const wrt, const node *const nd)
 }
 
 /**
- *	Write inline expression
- *
- *	@param	wrt			Writer
- *	@param	nd			Node in AST
- */
-static void write_inline_expression(writer *const wrt, const node *const nd)
-{
-	write_line(wrt, "EXPR_INLINE");
-	write_expression_metadata(wrt, nd); 
-	 
-	const size_t size = expression_inline_get_size(nd);  
-	for (size_t i = 0; i < size; i++)
-	{ 
-		const node sub = expression_inline_get_substmt(nd, i);
-		write_statement(wrt, &sub);
-	} 
-}
-
-/**
  *	Write expression
  *
  *	@param	wrt			Writer
@@ -610,10 +591,6 @@ static void write_expression(writer *const wrt, const node *const nd)
 
 		case EXPR_INITIALIZER:
 			write_initializer(wrt, nd);
-			break;
-		
-		case EXPR_INLINE:
-			write_inline_expression(wrt, nd);
 			break;
 
 		case EXPR_EMPTY_BOUND:
@@ -1301,6 +1278,14 @@ static size_t elem_get_name(const instruction_t elem, const size_t num, char *co
 			sprintf(buffer, "GETNUMC");
 			break;
 
+		case IC_PRINT:
+			argc = 1;
+			sprintf(buffer, "PRINT");
+			break;
+		case IC_PRINTID:
+			argc = 1;
+			sprintf(buffer, "PRINTID");
+			break;
 		case IC_PRINTF:
 			argc = 1;
 			sprintf(buffer, "PRINTF");
