@@ -66,7 +66,7 @@ SLICE4:
 SLICE4ERR:
     addi $a0, $0, 5   # wrong index
     add $a2, $0, $t0  # N, в a1 index
-    jal ERROR
+    jal error
 	nop
 SLICE4OK:
 	sll $t0, $a1, 2
@@ -86,7 +86,7 @@ SLICE2:
 SLICE1ERR:
     addi $a0, $0, 5   # wrong index
     add $a2, $0, $t0  # N, в a1 index
-	jal ERROR
+	jal error
 	nop
 SLICE1OK:
 	add $a1, $a1, $a1
@@ -106,7 +106,7 @@ SLICE:
 SLICEERR:
     addi $a0, $0, 5           # wrong index
     add $a2, $0, $t0          # N, в a1 index
-    jal ERROR
+    jal error
 	nop
 SLICEOK:
 	mul $t0, $a1, $a2
@@ -171,7 +171,7 @@ prEND2:
 
 
 
-ERROR:
+error:
 	addi $fp, $fp, -32
 	sw $sp, 20($fp)
 	move $sp, $fp
@@ -570,7 +570,7 @@ DEFMDSP1:
     sub $t2, $t2, $sp
     bltz $t2, DEFARR3
     addi $a0, $0, 6      # memory overflow
-    jal ERROR
+    jal error
     nop
 
 DEFARR3:
@@ -610,7 +610,7 @@ DEFARR7:
     sub $t3, $t3, $sp
     bltz $t3, DEFARR8
     addi $a0, 6          # memory overflow
-    jal ERROR
+    jal error
     nop
 DEFARR8:
     addi $t1, $t1, 1     # ++curdim
@@ -645,7 +645,7 @@ ARASSNI1:
     lw $t4, -4($a1)      # N правого массива
     beq $t3, $t4, ARASSNI2
     addi $a0, $0, 13    # не совпадает количество элементов при присваивании массивов
-    jal ERROR
+    jal error
     nop
 ARASSNI2:
     sub $t0, $t1, $a2    # curdim < D  ?
