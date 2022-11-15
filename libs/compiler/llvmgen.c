@@ -1167,24 +1167,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		uni_printf(info->sx->io, " %%.%zu = fptosi double %%.%zu to i32\n", info->register_num, info->answer_reg);
 		info->answer_reg = info->register_num++;
 	}
-} 
-
-/**
- *	Emit inline expression
- *
- *	@param	info	Encoder
- *	@param	nd		Node in AST
- */
-static void emit_inline_expression(information *const info, const node *const nd)
-{  
-	// FIXME: inline expression cannot return value at the moment
-	const size_t substms = expression_inline_get_size(nd);
-	for (size_t i = 0; i < substms; i++)
-	{
-		const node stmt = expression_inline_get_substmt(nd, i);
-		emit_statement(info, &stmt); 
-	}
-} 
+}
 
 /**
  *	Emit member expression
@@ -1995,10 +1978,6 @@ static void emit_expression(information *const info, const node *const nd)
 
 		case EXPR_INITIALIZER:
 			emit_initializer_expression(info, nd);
-			return;
-		
-		case EXPR_INLINE:
-			emit_inline_expression(info, nd);
 			return;
 
 		default:
