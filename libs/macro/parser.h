@@ -34,6 +34,7 @@ typedef struct parser
 	storage *stg;					/**< Macro storage */
 
 	universal_io *io;				/**< Universal IO structure */
+	location prev;					/**< Parent macro location */
 	location loc;					/**< Current location */
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */

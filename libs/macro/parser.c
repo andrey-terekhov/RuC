@@ -56,7 +56,7 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
 	va_list args;
 	va_start(args, num);
 
-	macro_verror(loc, num, args);
+	macro_verror(!in_is_file(prs->io) ? &prs->prev : loc, num, args);
 	prs->was_error = true;
 
 	va_end(args);
@@ -320,6 +320,7 @@ static char32_t parse_until(parser *const prs)
 
 		if ((character == '#' || utf8_is_letter(character)) && out_is_correct(prs->io))
 		{
+			prs->prev = in_is_file(prs->io) ? loc_copy(&prs->loc) : prs->prev;
 			parce_replace(prs);
 		}
 		else if (character == '\'' || character == '"')
@@ -448,7 +449,7 @@ static location parse_location(parser *const prs)
 static void parse_line(parser *const prs)
 {
 	parse_location(prs);
-	macro_warning(&prs->loc, DIRECTIVE_LINE_SKIPED);
+	macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev, DIRECTIVE_LINE_SKIPED);
 	skip_directive(prs);
 }
 
@@ -485,7 +486,8 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (skip_until(prs, false) != '\n')
 	{
 		loc_search_from(&prs->loc);
-		macro_warning(&prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
+		macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev
+					, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 	}
 
 	loc = prs->loc;
@@ -779,7 +781,8 @@ static void parse_set(parser *const prs)
 
 		if (index == SIZE_MAX)
 		{
-			macro_warning(&prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
+			macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev
+						, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
 			in_set_position(prs->io, position);
 			index = storage_add_by_io(prs->stg, prs->io);
 		}
