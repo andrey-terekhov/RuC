@@ -351,6 +351,16 @@ int loc_search_from(location *const loc)
 }
 
 
+location loc_copy(location *const loc)
+{
+	if (loc_search_from(loc))
+	{
+		return (location){ .io = NULL };
+	}
+
+	return *loc;
+}
+
 int loc_line_break(location *const loc)
 {
 	if (!loc_is_correct(loc))

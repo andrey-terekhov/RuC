@@ -101,8 +101,7 @@ static void skip_multi_comment(parser *const prs)
 {
 	uni_unscan_char(prs->io, '*');
 	uni_unscan_char(prs->io, '/');
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_COMMENT_SIZE);
@@ -168,8 +167,7 @@ static void skip_multi_comment(parser *const prs)
 static char32_t skip_string(parser *const prs, const char32_t quote)
 {
 	uni_unscan_char(prs->io, quote);
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 	uni_scan_char(prs->io);
 
 	char32_t character = uni_scan_char(prs->io);
@@ -384,8 +382,7 @@ static size_t parse_directive(parser *const prs)
 		return SIZE_MAX;
 	}
 
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 	uni_print_char(&out, '#');
 
 	size_t keyword = storage_search(prs->stg, prs->io);
@@ -394,8 +391,7 @@ static size_t parse_directive(parser *const prs)
 		out_swap(prs->io, &out);
 		if (utf8_is_letter(skip_until(prs, true)))
 		{
-			loc_search_from(&prs->loc);
-			loc = prs->loc;
+			loc = loc_copy(&prs->loc);
 			storage_search(prs->stg, prs->io);
 
 			universal_io directive = io_create();
@@ -444,9 +440,9 @@ static location parse_location(parser *const prs)
 		uni_unscan_char(prs->io, '#');
 	}
 
-	loc_search_from(&prs->loc);
+	location loc = loc_copy(&prs->loc);
 	in_set_position(prs->io, position);
-	return prs->loc;
+	return loc;
 }
 
 static void parse_line(parser *const prs)
@@ -458,8 +454,7 @@ static void parse_line(parser *const prs)
 
 static void parse_include_path(parser *const prs, const char32_t quote)
 {
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 	uni_scan_char(prs->io);
 
 	universal_io out = io_create();
@@ -555,8 +550,7 @@ static size_t parse_args(parser *const prs)
 		return 0;
 	}
 
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 	uni_scan_char(prs->io);
 	char32_t character = skip_until(prs, false);
 
@@ -610,8 +604,7 @@ static size_t parse_args(parser *const prs)
 
 static bool parse_operator(parser *const prs, const size_t index, const bool was_space)
 {
-	loc_search_from(&prs->loc);
-	location loc = prs->loc;
+	location loc = loc_copy(&prs->loc);
 	uni_scan_char(prs->io);
 
 	char32_t character = uni_scan_char(prs->io);

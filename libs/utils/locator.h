@@ -113,6 +113,15 @@ EXPORTED int loc_search_from(location *const loc);
 
 
 /**
+ *	Copy location after refreshing
+ *
+ *	@param	loc			Location to copy
+ *
+ *	@return	Location statement
+ */
+EXPORTED location loc_copy(location *const loc);
+
+/**
  *	Append line number when @c '\\n' character scanned
  *	@note Unsafe, only for unprocessed files
  *
