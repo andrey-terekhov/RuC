@@ -54,6 +54,9 @@ llvm-baikal:
   tags:
   - R2LIN
 
+  tags:
+  - R2LIN
+
 mips-uemu:
   stage: mips
   before_script:

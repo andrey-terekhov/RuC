@@ -131,6 +131,7 @@ typedef enum OPERATION
 	OP_TERNARY,				/**< Ternary operator node */
 	OP_ASSIGNMENT,			/**< Assignment operator node */
 	OP_INITIALIZER,			/**< Initializer node */
+	OP_INLINE,				/**< Inline operation node */
 
 	// Statements
 	OP_CASE,				/**< Case statement node */
@@ -148,8 +149,12 @@ typedef enum OPERATION
 
 	// Declarations
 	OP_DECL_VAR,			/**< Variable declaration node */
-	OP_DECL_TYPE,			/**< Type declaration node */
+	OP_DECL_MEMBER,			/**< Member declaration node */
+	OP_DECL_STRUCT,			/**< Struct declaration node */
 	OP_FUNC_DEF,			/**< Function definition node */
+
+	// For internal use
+	OP_EMPTY_BOUND,			/**< Empty array size expression */
 } operation_t;
 
 typedef enum builtin
