@@ -62,6 +62,27 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
 	va_end(args);
 }
 
+/**
+ *	Emit a warning from parser
+ *
+ *	@param	prs			Parser structure
+ *	@param	num			Warning code
+ */
+static void parser_warning(parser *const prs, location *const loc, warning_t num, ...)
+{
+	if (prs->is_recovery_disabled)
+	{
+		return;
+	}
+
+	va_list args;
+	va_start(args, num);
+
+	macro_vwarning(!in_is_file(prs->io) ? &prs->prev : loc, num, args);
+
+	va_end(args);
+}
+
 
 /**
  *	Skip single line comment after double slash read.
@@ -449,7 +470,7 @@ static location parse_location(parser *const prs)
 static void parse_line(parser *const prs)
 {
 	parse_location(prs);
-	macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev, DIRECTIVE_LINE_SKIPED);
+	parser_warning(prs, &prs->loc, DIRECTIVE_LINE_SKIPED);
 	skip_directive(prs);
 }
 
@@ -486,8 +507,7 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	if (skip_until(prs, false) != '\n')
 	{
 		loc_search_from(&prs->loc);
-		macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev
-					, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
+		parser_warning(prs, &prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 	}
 
 	loc = prs->loc;
@@ -781,8 +801,7 @@ static void parse_set(parser *const prs)
 
 		if (index == SIZE_MAX)
 		{
-			macro_warning(in_is_file(prs->io) ? &prs->loc : &prs->prev
-						, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
+			parser_warning(prs, &prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
 			in_set_position(prs->io, position);
 			index = storage_add_by_io(prs->stg, prs->io);
 		}
