@@ -340,11 +340,12 @@ static char32_t parse_until(parser *const prs)
 static char32_t parse_hash(parser *const prs, universal_io *const out)
 {
 	out_swap(prs->io, out);
+	out_set_buffer(prs->io, MAX_COMMENT_SIZE);
+
 	while (true) {
-		out_set_buffer(prs->io, MAX_COMMENT_SIZE);
 		if (prs->is_line_required)
 		{
-			uni_print_char(prs->io, '\n');
+			out_set_buffer(prs->io, MAX_COMMENT_SIZE);
 			loc_update(&prs->loc);
 		}
 
@@ -363,7 +364,7 @@ static char32_t parse_hash(parser *const prs, universal_io *const out)
 			return character;
 		}
 
-		uni_scan_char(prs->io);
+		uni_print_char(prs->io, uni_scan_char(prs->io));
 		loc_line_break(&prs->loc);
 	}
 }
@@ -839,7 +840,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	}
 
 	in_swap(prs->io, in);
-	prs->loc = loc_create(prs->io);
+	prs->loc = loc_search(prs->io);
+	prs->is_line_required = true;
 
 	char32_t character = '\0';
 	while (character != (char32_t)EOF)
