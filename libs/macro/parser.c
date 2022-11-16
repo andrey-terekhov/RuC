@@ -313,7 +313,9 @@ static void parce_replace(parser *const prs)
 
 static char32_t parse_until(parser *const prs)
 {
+	const size_t position = in_get_position(prs->io);
 	char32_t character = '\0';
+
 	while (character != '\n' && character != (char32_t)EOF)
 	{
 		character = skip_until(prs, true);
@@ -331,6 +333,11 @@ static char32_t parse_until(parser *const prs)
 		{
 			uni_print_char(prs->io, uni_scan_char(prs->io));
 		}
+	}
+
+	if (position != in_get_position(prs->io) && character == (char32_t)EOF)
+	{
+		uni_print_char(prs->io, '\n');
 	}
 
 	loc_line_break(&prs->loc);
