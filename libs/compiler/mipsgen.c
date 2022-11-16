@@ -254,10 +254,14 @@ typedef struct information
 
 	item_t label_num;						/**< Номер метки */
 	item_t label_else;						/**< Метка перехода на else */
+	item_t label_continue;					/**< Метка continue */
+	item_t label_break;						/**< Метка break */
 
 	size_t curr_function_ident;				/**< Идентификатор текущей функций */
 
 	bool registers[24];						/**< Информация о занятых регистрах */
+
+	item_t displ;							/**< Смещение */
 } information;
 
 /** Kinds of lvalue */
@@ -1071,6 +1075,83 @@ static void rvalue_to_io(information *const info, const rvalue rval)
 	else
 	{
 		mips_register_to_io(info->sx->io, rval.val.reg_num);
+	}
+}
+
+/**
+ * Emit label
+ *
+ * @param	info			Codegen info (?)
+ * @param	label			Label for emitting
+ */
+static void emit_label(information *const info, const item_t label)
+{
+	uni_printf(info->sx->io, "label" PRIitem, label);
+}
+
+/**
+ * Emit label declaration
+ *
+ * @param	info			Codegen info (?)
+ * @param	label			Declared label
+ */
+static void emit_label_declaration(information *const info, const item_t label)
+{
+	emit_label(info, label);
+	uni_printf(info->sx->io, ":\n");
+}
+
+/**
+ * Emit unconditional branch
+ *
+ * @param	info			Codegen info (?)
+ * @param	label			Label for unconditional jump
+ */
+static void emit_unconditional_branch(information *const info, const item_t label)
+{
+	uni_printf(info->sx->io, "\t");
+	instruction_to_io(info->sx->io, IC_MIPS_J);
+	uni_printf(info->sx->io, " ");
+	emit_label(info, label);
+	uni_printf(info->sx->io, "\n");
+}
+
+/**
+ * Emit conditional branch
+ *
+ * @param	info			Codegen info (?)
+ * @param	label			Label for conditional jump
+ */
+static void emit_conditional_branch(information *const info, const rvalue value, const item_t label)
+{
+	if (value.kind == CONST)
+	{
+		bool is_zero = false;
+		switch (type_get_class(info->sx, value.type))
+		{
+			case TYPE_INTEGER:
+				is_zero = value.val.int_val == 0;
+				break;
+
+			case TYPE_FLOATING:
+				is_zero = value.val.float_val == 0.0;
+				break;
+		}
+
+		if (is_zero)
+		{
+			emit_unconditional_branch(info, label);
+		}
+	}
+	else
+	{
+		uni_printf(info->sx->io, "\t");
+		instruction_to_io(info->sx->io, IC_MIPS_BEQ);
+		uni_printf(info->sx->io, " ");
+		rvalue_to_io(info, value);
+		uni_printf(info->sx->io, ", $0, ");
+		emit_label(info, label);
+		uni_printf(info->sx->io, "\n");
 	}
 }
 
@@ -3279,6 +3360,22 @@ static void emit_declaration(information *const info, const node *const nd)
 
 
 /**
+ *	Emit declaration statement
+ *
+ *	@param	info		Information
+ *	@param	nd			Node in AST
+ */
+static void emit_declaration_statement(information *const info, const node *const nd)
+{
+	const size_t size = statement_declaration_get_size(nd);
+	for (size_t i = 0; i < size; i++)
+	{
+		const node decl = statement_declaration_get_declarator(nd, i);
+		emit_declaration(info, &decl);
+	}
+}
+
+/**
  * Emit compound statement
  *
  * @param	info			Encoder
@@ -3286,12 +3383,16 @@ static void emit_declaration(information *const info, const node *const nd)
  */
 static void emit_compound_statement(information *const info, const node *const nd)
 {
+	const item_t scope_displacement = info->displ;
+
 	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
-		const node sub_stmt = statement_compound_get_substmt(nd, i);
-		emit_statement(info, &sub_stmt);
+		const node substmt = statement_compound_get_substmt(nd, i);
+		emit_statement(info, &substmt);
 	}
+
+	info->displ = scope_displacement;
 }
 
 /**
@@ -3302,46 +3403,28 @@ static void emit_compound_statement(information *const info, const node *const n
  */
 static void emit_if_statement(information *const info, const node *const nd)
 {
-	uni_printf(info->sx->io, "\n\t# \"if\" statement:\n");
-
-	const item_t old_label = info->label_num;
-	info->label_else = info->label_num++;
-
 	const node condition = statement_if_get_condition(nd);
-	const rvalue condition_rvalue = emit_expression(info, &condition);
+	const rvalue value = emit_expression(info, &condition);
 
-	// if <значение из condition_rvalue> == 0 -- прыжок в else
-	uni_printf(info->sx->io, "\n\t");
-	instruction_to_io(info->sx->io, IC_MIPS_BEQ);
-	uni_printf(info->sx->io, " ");
-	rvalue_to_io(info, condition_rvalue);
-	uni_printf(info->sx->io, ", $0, ");
-	mips_label_to_io(info->sx->io, L_ELSE);
-	uni_printf(info->sx->io, "%" PRIitem "\n", old_label);
+	const bool has_else = statement_if_has_else_substmt(nd);
 
-	free_rvalue(info, condition_rvalue);
+	const item_t label_else = info->label_num++;
+	const item_t label_end = has_else ? info->label_num++ : label_else;
+	emit_conditional_branch(info, value, label_else);
 
-	const node then = statement_if_get_then_substmt(nd);
-	emit_statement(info, &then);
+	const node then_substmt = statement_if_get_then_substmt(nd);
+	emit_statement(info, &then_substmt);
+	emit_unconditional_branch(info, label_end);
 
-	if (statement_if_has_else_substmt(nd))
+	if (has_else)
 	{
-		info->label_else = old_label;
-
-		to_code_L(info->sx->io, IC_MIPS_J, L_END, old_label);
-		to_code_label(info->sx->io, L_ELSE, old_label);
-
+		emit_label_declaration(info, label_else);
 		const node else_substmt = statement_if_get_else_substmt(nd);
 		emit_statement(info, &else_substmt);
-
-		to_code_label(info->sx->io, L_END, old_label);
-	}
-	else
-	{
-		to_code_label(info->sx->io, L_ELSE, old_label);
+		emit_unconditional_branch(info, label_end);
 	}
 
-	uni_printf(info->sx->io, "\n");
+	emit_label_declaration(info, label_end);
 }
 
 /**
@@ -3352,43 +3435,29 @@ static void emit_if_statement(information *const info, const node *const nd)
  */
 static void emit_while_statement(information *const info, const node *const nd)
 {
-	const item_t label = info->label_num++;
-	const item_t old_label = info->label_else;
+	const item_t old_continue = info->label_continue;
+	const item_t old_break = info->label_break;
 
-	info->label_else = label;
-	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
- 
+	const item_t label_begin = info->label_num++;
+	const item_t label_end = info->label_num++;
+	info->label_continue = label_begin;
+	info->label_break = label_end;
+
+	emit_label_declaration(info, label_begin);
+
 	const node condition = statement_while_get_condition(nd);
-	rvalue condition_rvalue = emit_expression(info, &condition);
+	const rvalue value = emit_expression(info, &condition);
 
-	if (condition_rvalue.kind == CONST)
-	{
-		// Предварительно загружаем константу в rvalue вида REGISTER
-		const rvalue tmp_rval = condition_rvalue;
-		condition_rvalue = (rvalue) { .kind = REGISTER
-			, .val.reg_num = type_is_floating(tmp_rval.type) ? get_float_register(info) : get_register(info)
-			, .type = tmp_rval.type
-			, .from_lvalue = !FROM_LVALUE };
-		emit_store_rvalue_to_rvalue(info, condition_rvalue, tmp_rval);
-	}
+	emit_conditional_branch(info, value, label_end);
 
-	uni_printf(info->sx->io, "\t");
-	instruction_to_io(info->sx->io, IC_MIPS_BLTZ);
-	uni_printf(info->sx->io, " ");
-	rvalue_to_io(info, condition_rvalue);
-	uni_printf(info->sx->io, ", ");
-	mips_label_to_io(info->sx->io, L_END);
-	uni_printf(info->sx->io, "%" PRIitem "\n", label);
-
-	free_rvalue(info, condition_rvalue);
- 
 	const node body = statement_while_get_body(nd);
 	emit_statement(info, &body);
 
-	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
-	to_code_label(info->sx->io, L_ELSE, label);
+	emit_unconditional_branch(info, label_begin);
+	emit_label_declaration(info, label_end);
 
-	info->label_else = old_label;
+	info->label_continue = old_continue;
+	info->label_break = old_break;
 }
 
 /**
@@ -3399,32 +3468,29 @@ static void emit_while_statement(information *const info, const node *const nd)
  */
 static void emit_do_statement(information *const info, const node *const nd)
 {
-	const item_t label = info->label_num++;
-	const item_t old_label = info->label_else;
+	const item_t old_continue = info->label_continue;
+	const item_t old_break = info->label_break;
 
-	info->label_else = label;
-	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
- 
+	const item_t label_begin = info->label_num++;
+	emit_label_declaration(info, label_begin);
+
+	const item_t label_condition = info->label_num++;
+	const item_t label_end = info->label_num++;
+	info->label_continue = label_condition;
+	info->label_break = label_end;
+
 	const node body = statement_do_get_body(nd);
 	emit_statement(info, &body);
 
+	emit_label_declaration(info, label_condition);
 	const node condition = statement_do_get_condition(nd);
-	const rvalue condition_rvalue = emit_expression(info, &condition);
+	const rvalue value = emit_expression(info, &condition);
 
-	uni_printf(info->sx->io, "\t");
-	instruction_to_io(info->sx->io, IC_MIPS_BLTZ);
-	uni_printf(info->sx->io, " ");
-	rvalue_to_io(info, condition_rvalue);
-	uni_printf(info->sx->io, ", ");
-	mips_label_to_io(info->sx->io, L_END);
-	uni_printf(info->sx->io, "%" PRIitem "\n", label);
+	emit_conditional_branch(info, value, label_begin); // fixme в другую сторону
+	emit_label_declaration(info, label_end);
 
-	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
-	to_code_label(info->sx->io, L_ELSE, label);
-
-	info->label_else = old_label;
-
-	free_rvalue(info, condition_rvalue);
+	info->label_continue = old_continue;
+	info->label_break = old_break;
 }
 
 /**
@@ -3435,33 +3501,28 @@ static void emit_do_statement(information *const info, const node *const nd)
  */
 static void emit_for_statement(information *const info, const node *const nd)
 {
-	const item_t label = info->label_num++;
-	const item_t old_label = info->label_else;
+	const item_t scope_displacement = info->displ;
+	const item_t old_continue = info->label_continue;
+	const item_t old_break = info->label_break;
 
 	if (statement_for_has_inition(nd))
 	{
-		// TODO: рассмотреть случаи, если тут объявление
 		const node inition = statement_for_get_inition(nd);
 		emit_statement(info, &inition);
 	}
 
-	info->label_else = label;
-	to_code_label(info->sx->io, L_BEGIN_CYCLE, label);
+	const item_t label_begin = info->label_num++;
+	emit_label_declaration(info, label_begin);
+	info->label_continue = label_begin;
+
+	const item_t label_end = info->label_num++;
+	info->label_break = label_end;
 
 	if (statement_for_has_condition(nd))
 	{
 		const node condition = statement_for_get_condition(nd);
-		const rvalue condition_rvalue = emit_expression(info, &condition);
-
-		uni_printf(info->sx->io, "\t");
-		instruction_to_io(info->sx->io, IC_MIPS_BLTZ);
-		uni_printf(info->sx->io, " ");
-		rvalue_to_io(info, condition_rvalue);
-		uni_printf(info->sx->io, ", ");
-		mips_label_to_io(info->sx->io, L_END);
-		uni_printf(info->sx->io, "%" PRIitem "\n", label);
-
-		free_rvalue(info, condition_rvalue);
+		rvalue value = emit_expression(info, &condition);
+		emit_conditional_branch(info, value, label_end);
 	}
 
 	const node body = statement_for_get_body(nd);
@@ -3470,15 +3531,36 @@ static void emit_for_statement(information *const info, const node *const nd)
 	if (statement_for_has_increment(nd))
 	{
 		const node increment = statement_for_get_increment(nd);
-		const rvalue increment_rvalue = emit_expression(info, &increment);
-		free_rvalue(info, increment_rvalue);
+		emit_void_expression(info, &increment);
 	}
 
-	to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, label);
-	to_code_label(info->sx->io, L_END, label);
+	emit_unconditional_branch(info, label_begin);
+	emit_label_declaration(info, label_end);
 
-	info->label_else = old_label;
-}  
+	info->label_continue = old_continue;
+	info->label_break = old_break;
+	info->displ = scope_displacement;
+}
+
+/**
+ *	Emit continue statement
+ *
+ *	@param	info		Information
+ */
+static void emit_continue_statement(information *const info)
+{
+	emit_unconditional_branch(info, info->label_continue);
+}
+
+/**
+ *	Emit break statement
+ *
+ *	@param	info		Information
+ */
+static void emit_break_statement(information *const info)
+{
+	emit_unconditional_branch(info, info->label_break);
+}
 
 /**
  * Emit return statement
@@ -3488,43 +3570,21 @@ static void emit_for_statement(information *const info, const node *const nd)
  */
 static void emit_return_statement(information *const info, const node *const nd)
 {
-	// имеет ли функция возвращаемое значение
-	if (node_get_amount(nd))
+	if (statement_return_has_expression(nd))
 	{
-		uni_printf(info->sx->io, "\n\t# return:\n"); 
-		const node returning = node_get_child(nd, 0);
-		const rvalue returning_rvalue = emit_expression(info, &returning);
+		const node expression = statement_return_get_expression(nd);
+		const rvalue value = emit_expression(info, &expression);
 
-		// TODO: кидать нормальные ошибки
-		assert(returning_rvalue.kind != VOID);
-		assert(!type_is_structure(info->sx, type_get_class(info->sx, returning_rvalue.type)));
-		assert(!type_is_array(info->sx, type_get_class(info->sx, returning_rvalue.type)));
+		const item_t type = expression_get_type(nd);
+		const lvalue return_lval = { .kind = REG, .loc.reg_num = R_V0, .type = type };
 
-		const rvalue tmp = { .kind = REGISTER, .type = returning_rvalue.type, .val.reg_num = R_V0 };
-		emit_store_rvalue_to_rvalue(info, tmp, returning_rvalue);
+		emit_store_of_rvalue(info, value, return_lval);
 
-		free_rvalue(info, returning_rvalue);
+		free_rvalue(info, value);
 	}
 
-	// Прыжок на следующую метку
-	uni_printf(info->sx->io, "\n");
-	to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident);
-}
-
-/**
- * Emit declaration statement
- *
- * @param	info			Encoder
- * @param	nd				Node in AST
- */
-static void emit_declaration_statement(information *const info, const node *const nd)
-{
-	const size_t size = statement_declaration_get_size(nd);
-	for (size_t i = 0; i < size; i++)
-	{
-		const node decl = statement_declaration_get_declarator(nd, i);
-		emit_declaration(info, &decl);
-	}
+	// to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident);
+	emit_unconditional_branch(info, info->label_func);
 }
 
 /**
@@ -3581,18 +3641,17 @@ static void emit_statement(information *const info, const node *const nd)
 			break;
 
 		case STMT_CONTINUE:
-			to_code_L(info->sx->io, IC_MIPS_J, L_BEGIN_CYCLE, info->label_else);
+			emit_continue_statement(info);
 			break;
 
 		case STMT_BREAK:
-			to_code_L(info->sx->io, IC_MIPS_J, L_ELSE, info->label_else);
+			emit_break_statement(info);
 			break;
 
 		case STMT_RETURN:
 			emit_return_statement(info, nd); 
 			break;
 
-		// Printid и Getid, которые будут сделаны парсере
 		default:
 			break;
 	}
