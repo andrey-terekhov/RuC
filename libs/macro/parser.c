@@ -217,9 +217,7 @@ static void skip_directive(parser *const prs)
 
 	prs->was_error = was_error;
 	prs->is_recovery_disabled = is_recovery_disabled;
-
-	uni_print_char(prs->io, '\n');
-	loc_update(&prs->loc);
+	prs->is_line_required = true;
 }
 
 /**
@@ -339,17 +337,47 @@ static char32_t parse_until(parser *const prs)
 	return character;
 }
 
+static char32_t parse_hash(parser *const prs, universal_io *const out)
+{
+	out_swap(prs->io, out);
+	while (true) {
+		out_set_buffer(prs->io, MAX_COMMENT_SIZE);
+		if (prs->is_line_required)
+		{
+			uni_print_char(prs->io, '\n');
+			loc_update(&prs->loc);
+		}
+
+		char32_t character = skip_until(prs, true);
+		if (character != '\n')
+		{
+			out_swap(prs->io, out);
+			if (character != '#')
+			{
+				char *buffer = out_extract_buffer(out);
+				uni_printf(prs->io, "%s", buffer);
+				free(buffer);
+			}
+
+			prs->is_line_required = false;
+			return character;
+		}
+
+		uni_scan_char(prs->io);
+		loc_line_break(&prs->loc);
+	}
+}
+
 static size_t parse_directive(parser *const prs)
 {
-	if (skip_until(prs, true) != '#')
+	universal_io out = io_create();
+	if (parse_hash(prs, &out) != '#')
 	{
 		return SIZE_MAX;
 	}
 
 	loc_search_from(&prs->loc);
 	location loc = prs->loc;
-	universal_io out = io_create();
-	out_set_buffer(&out, MAX_COMMENT_SIZE);
 	uni_print_char(&out, '#');
 
 	size_t keyword = storage_search(prs->stg, prs->io);
@@ -359,6 +387,7 @@ static size_t parse_directive(parser *const prs)
 		if (utf8_is_letter(skip_until(prs, true)))
 		{
 			loc_search_from(&prs->loc);
+			loc = prs->loc;
 			storage_search(prs->stg, prs->io);
 
 			universal_io directive = io_create();
@@ -380,7 +409,7 @@ static size_t parse_directive(parser *const prs)
 		const char *directive = storage_last_read(prs->stg);
 		if (utf8_is_letter(utf8_convert(&directive[1])))
 		{
-			parser_error(prs, buffer[1] == '\0' ? &loc : &prs->loc, DIRECTIVE_INVALID, directive);
+			parser_error(prs, &loc, DIRECTIVE_INVALID, directive);
 			uni_printf(prs->io, "%s", &directive[1]);
 		}
 		else
@@ -794,6 +823,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.io = out;
 
 	prs.is_recovery_disabled = false;
+	prs.is_line_required = false;
 	prs.is_if_block = false;
 	prs.was_error = false;
 
