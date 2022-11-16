@@ -314,6 +314,7 @@ static rvalue emit_load_of_lvalue(information *const info, const lvalue lval);
 static void emit_store_rvalue_to_rvalue(information *const info, const rvalue destination, const rvalue source);
 static lvalue emit_subscript_expression(information *const info, const node *const nd);
 static rvalue emit_unary_expression_rvalue(information *const info, const node *const nd);
+static lvalue emit_member_expression(information *const info, const node *const nd);
 
 
 // TODO: это есть в кодогенераторе llvm, не хотелось бы копипастить
@@ -1127,7 +1128,7 @@ static lvalue emit_lvalue(information *const info, const node *const nd)
 			return emit_subscript_expression(info, nd);
 
 		case EXPR_MEMBER:
-			//return emit_member_expression(info, nd);
+			return emit_member_expression(info, nd);
 
 		case EXPR_UNARY: // Только UN_INDIRECTION
 		{
@@ -1184,15 +1185,46 @@ static lvalue emit_store_of_rvalue(information *const info, rvalue rval, const l
 	}
 	else
 	{
-		instruction_to_io(info->sx->io, type_is_floating(rval.type) ? IC_MIPS_S_S : IC_MIPS_SW);
-		uni_printf(info->sx->io, " ");
-		rvalue_to_io(info, rval);
-		uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-		mips_register_to_io(info->sx->io, lval.base_reg);
-		uni_printf(info->sx->io, ")\n");
-	}
+		if ((!type_is_structure(info->sx, type_get_class(info->sx, lval.type)))
+			&& (!type_is_array(info->sx, type_get_class(info->sx, lval.type))))
+		{
+			instruction_to_io(info->sx->io, type_is_floating(rval.type) ? IC_MIPS_S_S : IC_MIPS_SW);
+			uni_printf(info->sx->io, " ");
+			rvalue_to_io(info, rval);
+			uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
+			mips_register_to_io(info->sx->io, lval.base_reg);
+			uni_printf(info->sx->io, ")\n");
+		}
+		else
+		{
+			// Делаем store для каждого отдельного элемента переданного lval
+			const size_t amount = type_structure_get_member_amount(info->sx, lval.type);
+			for(size_t i = 0; i < amount; i++)
+			{
+				const item_t member_type = type_structure_get_member_type(info->sx, lval.type, i);
+				size_t member_size = WORD_LENGTH*type_size(info->sx, member_type);
+				// FIXME: type_size для floating вернёт 2, но у нас single precision => под них нужно 1
+				if (type_is_floating(member_type))
+				{
+					member_size -= WORD_LENGTH;
+				}
+				const rvalue displ_rval = emit_load_of_lvalue(info
+						, (lvalue) { .loc.displ = i*member_size
+							, .base_reg = rval.val.reg_num // Здесь смещение, по которому лежит массив/структура
+							, .type = member_type
+							, .kind = STACK });
 
-	free_rvalue(info, rval);
+				emit_store_of_rvalue(info
+					, displ_rval
+					, (lvalue) { .base_reg = lval.base_reg
+						, .kind = STACK
+						, .loc.displ = lval.loc.displ + i*member_size
+						, .type = member_type });
+
+				free_rvalue(info, displ_rval);
+			}
+		}
+	}
 
 	return lval;
 }
@@ -1214,7 +1246,7 @@ static void emit_store_rvalue_to_rvalue(information *const info
 	{
 		uni_printf(info->sx->io, "\t");
 		(type_is_floating(source.type))
-			? instruction_to_io(info->sx->io, IC_MIPS_L_S)
+			? instruction_to_io(info->sx->io, IC_MIPS_LI_S)
 			: instruction_to_io(info->sx->io, IC_MIPS_LI);
 		uni_printf(info->sx->io, " ");
 		rvalue_to_io(info, destination);
@@ -1289,53 +1321,32 @@ static rvalue emit_load_of_lvalue(information *const info, const lvalue lval)
 		, .val.reg_num = (type_is_floating(lval.type)) ? get_float_register(info) : get_register(info)
 		, .from_lvalue = !FROM_LVALUE };
 
-	switch (type_get_class(info->sx, lval.type))
+	if (type_is_floating(type_get_class(info->sx, lval.type)))
 	{
-		case TYPE_BOOLEAN:
-		case TYPE_CHARACTER:
-		case TYPE_INTEGER:
-		case TYPE_POINTER:
-			uni_printf(info->sx->io, "\t");
-			instruction_to_io(info->sx->io, IC_MIPS_LW);
-			uni_printf(info->sx->io, " ");
-			rvalue_to_io(info, tmp);
-			uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-			mips_register_to_io(info->sx->io, lval.base_reg);
-			uni_printf(info->sx->io, ")\n");
+		uni_printf(info->sx->io, "\t");
+		instruction_to_io(info->sx->io, IC_MIPS_L_S);
+		uni_printf(info->sx->io, " ");
+		rvalue_to_io(info, tmp);
+		uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
+		mips_register_to_io(info->sx->io, lval.base_reg);
+		uni_printf(info->sx->io, ")\n");
+	}
+	else
+	{
+		uni_printf(info->sx->io, "\t");
+		instruction_to_io(info->sx->io, IC_MIPS_LW);
+		uni_printf(info->sx->io, " ");
+		rvalue_to_io(info, tmp);
+		uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
+		mips_register_to_io(info->sx->io, lval.base_reg);
+		uni_printf(info->sx->io, ")\n");
 
-			// Для любых типов, кроме pointer, ничего не произойдёт, а для указателей освобождается base_reg
-			free_rvalue(info, (rvalue) { .from_lvalue = !FROM_LVALUE
-				, .kind = REGISTER
-				, .type = TYPE_POINTER
-				, .val.reg_num = lval.base_reg });
-			break;
-
-		case TYPE_FLOATING:
-			uni_printf(info->sx->io, "\t");
-			instruction_to_io(info->sx->io, IC_MIPS_L_S);
-			uni_printf(info->sx->io, " ");
-			rvalue_to_io(info, tmp);
-			uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-			mips_register_to_io(info->sx->io, lval.base_reg);
-			uni_printf(info->sx->io, ")\n");
-			break;
-
-		case TYPE_STRUCTURE:
-			break;
-
-		case TYPE_ARRAY:
-			uni_printf(info->sx->io, "\t");
-			instruction_to_io(info->sx->io, IC_MIPS_LW);
-			uni_printf(info->sx->io, " ");
-			rvalue_to_io(info, tmp);
-			uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-			mips_register_to_io(info->sx->io, lval.base_reg);
-			uni_printf(info->sx->io, ")\n");
-			break;
-
-		default:
-			assert(false);
-			break;
+		// Для любых скалярных типов ничего не произойдёт, 
+		// а для остальных освобождается base_reg, в котором хранилось смещение
+		free_rvalue(info, (rvalue) { .from_lvalue = !FROM_LVALUE
+			, .kind = REGISTER
+			, .type = TYPE_POINTER
+			, .val.reg_num = lval.base_reg });
 	}
 
 	return tmp;
@@ -1515,6 +1526,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			case BIN_GE:
 			case BIN_EQ:
 			case BIN_NE:
+			{
 				const item_t curr_label_num = info->label_num++;
 
 				// TODO: Оптимизации с умножением на (-1)
@@ -1586,11 +1598,17 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 
 				uni_printf(info->sx->io, "\n");
 				break;
+			}
 
 			default:
-				if (operation == BIN_SUB)
+				// TODO: Оптимизации
+				// Предварительно загружаем константу из rval2 в rvalue вида REGISTER
+				if ((operation == BIN_SUB) 
+					|| (operation == BIN_DIV) 
+					|| (operation == BIN_MUL)
+					|| (operation == BIN_REM)
+					|| (operation == BIN_DIV))
 				{
-					// Предварительно загружаем константу в rvalue вида REGISTER, чтобы умножить на (-1)
 					const rvalue tmp_rval = rval2;
 					rval2 = (rvalue) { .kind = REGISTER
 						, .val.reg_num = type_is_floating(tmp_rval.type) 
@@ -1599,14 +1617,20 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 						, .type = tmp_rval.type
 						, .from_lvalue = !FROM_LVALUE };
 					emit_store_rvalue_to_rvalue(info, rval2, tmp_rval);
+				}
+				// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
+				if (operation == BIN_SUB)
+				{
 					apply_bin_operation_rvalue(info
 						, rval2
 						, rvalue_negative_one
 						, BIN_MUL);
 				}
+
 				// Выписываем операцию, её результат будет записан в result
 				uni_printf(info->sx->io, "\t");
-				instruction_to_io(info->sx->io 
+				instruction_to_io(info->sx->io
+				// FIXME:
 					, get_bin_instruction(operation, /* Один регистр => 1 в get_bin_instruction() -> */ 1));
 				uni_printf(info->sx->io, " ");
 				rvalue_to_io(info, result_rvalue);
@@ -1615,6 +1639,8 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				uni_printf(info->sx->io, ", ");
 				rvalue_to_io(info, rval2);
 				uni_printf(info->sx->io, "\n");
+
+				free_rvalue(info, rval2);
 		}
 	}
 
@@ -1652,7 +1678,7 @@ static rvalue emit_cast_expression(information *const info, const node *const nd
 			, .type = TYPE_FLOATING
 			, .val.reg_num = get_float_register(info) };
 
-		// TODO: переделать
+		// FIXME: избавится от to_code функций
 		to_code_2R(info->sx->io, IC_MIPS_MFC_1, operand_rval.val.reg_num, result.val.reg_num);
 		to_code_2R(info->sx->io, IC_MIPS_CVT_S_W, result.val.reg_num, result.val.reg_num);
 
@@ -1953,7 +1979,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
 		size_t displ_for_parameters = (params_amount - 1)*WORD_LENGTH;
-		lvalue prev_arg_displ[TEMP_REG_AMOUNT /* за $a0-$a3 */ 
+		lvalue prev_arg_displ[TEMP_REG_AMOUNT /* за $a0-$a3 */
 			+ TEMP_REG_AMOUNT/2 /* за $fa0, $fa2 (т.к. single precision)*/];
 
 		uni_printf(info->sx->io, "\t# setting up $fp:\n");
@@ -2129,8 +2155,11 @@ static rvalue emit_inc_dec_expression(information *const info, const node *const
 
 	if (operation == UN_POSTDEC || operation == UN_POSTINC)
 	{
+		free_rvalue(info, identifier_rvalue);
 		return post_result_rvalue;
 	}
+
+	free_rvalue(info, post_result_rvalue);
 	return identifier_rvalue;
 } 
 
@@ -2393,7 +2422,7 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 		emit_store_of_rvalue(info, rhs_rvalue, lhs_lvalue);
 	}
 	// Иначе всё и так будет в rhs_rvalue
-	
+
 	return rhs_rvalue; 
 }
 
@@ -2559,39 +2588,6 @@ static rvalue emit_inline_expression(information *const info, const node *const 
 }
 
 /**
- * Emit initializer expression
- *
- * @param	info			Codegen info (?)
- * @param	nd				Node in AST
- */
-static void emit_initializer_expression(information *const info, const node *const nd)
-{
-	// TODO: структуры
-	if (type_is_structure(info->sx, expression_get_type(nd)))
-	{
-		//const size_t size = expression_initializer_get_size(nd);
-	}
-	else if (type_is_array(info->sx, expression_get_type(nd)))
-	{
-		const size_t amount = expression_initializer_get_size(nd);
-		for(size_t i = 0; i < amount; i++)
-		{
-			const node subexpr = expression_initializer_get_subexpr(nd, i);
-			const rvalue subexpr_rval = emit_expression(info, &subexpr);
-
-			emit_store_of_rvalue(info, subexpr_rval
-				, (lvalue) { .kind = STACK
-					, .base_reg = R_FP 
-					, .type = expression_get_type(&subexpr)
-					, .loc.displ = /* записано в стеке. как узнать? 
-						Из идей -- а можно ли всегда говорить, что initializer идёт после 
-						объявления массива/структуры? Если да, то можем высчитать, где лежит адрес
-						объявленного массива/структуры -- на WORD_LENGTH выше $sp */ WORD_LENGTH });
-		}
-	}
-}
-
-/**
  * Places correct array subscript on register
  * 
  * @param	info				Codegen info (?)
@@ -2621,15 +2617,29 @@ static rvalue get_subs_displ_on_rvalue(information *const info, const lvalue bas
 			, .loc.displ = 0
 			, .type = TYPE_INTEGER });
 
+	// Проверка на выход за границы массива
+	uni_printf(info->sx->io, "\n\t# out-of-bounds check:\n");
+
+	// Чтобы результат следующей операции записался в base_size_rval
+	index_rval.from_lvalue = FROM_LVALUE;
+	apply_bin_operation_rvalue(info, base_size_rval, index_rval, BIN_SUB);
+	index_rval.from_lvalue = !FROM_LVALUE;
+
+	uni_printf(info->sx->io, "\tbltz ");
+	rvalue_to_io(info, base_size_rval);
+	uni_printf(info->sx->io, ", error\n");
+
+	free_rvalue(info, base_size_rval);
+
 	uni_printf(info->sx->io, "\n\t# calculating subscript displacement in dynamic:\n");
-	// <регистр index_rval> = (<регистр index_rval> + 1)*WORD_LENGTH + <регистр base_addr_rval.val.reg_num>
+	// <регистр index_rval> = <регистр base_addr_rval.val.reg_num> - (<регистр index_rval> + 1)*WORD_LENGTH
 	uni_printf(info->sx->io, "\t# ");
 	rvalue_to_io(info, index_rval);
-	uni_printf(info->sx->io, " = (");
-	rvalue_to_io(info, index_rval);
-	uni_printf(info->sx->io, " + 1) * %zu (== \"WORD_LENGTH\" * type_size()) + ", WORD_LENGTH);
+	uni_printf(info->sx->io, " = ");
 	rvalue_to_io(info, base_addr_rval);
-	uni_printf(info->sx->io, " (== base address):\n");
+	uni_printf(info->sx->io, " (== base address) - (");
+	rvalue_to_io(info, index_rval);
+	uni_printf(info->sx->io, " + 1) * %zu (== \"WORD_LENGTH\" * type_size()):\n", WORD_LENGTH);
 
 	apply_bin_operation_rvalue(info
 		, index_rval
@@ -2645,23 +2655,9 @@ static rvalue get_subs_displ_on_rvalue(information *const info, const lvalue bas
 
 	// Чтобы результат записался в index_rval
 	base_addr_rval.from_lvalue = FROM_LVALUE;
-	apply_bin_operation_rvalue(info, index_rval, base_addr_rval, BIN_ADD);
+	apply_bin_operation_rvalue(info, base_addr_rval, index_rval, BIN_SUB);
 
 	free_rvalue(info, base_addr_rval);
-
-	// Проверка на выход за границы массива
-	uni_printf(info->sx->io, "\n\t# out-of-bounds check:\n");
-
-	// Чтобы результат следующей операции записался в base_size_rval
-	index_rval.from_lvalue = FROM_LVALUE;
-	apply_bin_operation_rvalue(info, base_size_rval, index_rval, BIN_SUB);
-	index_rval.from_lvalue = !FROM_LVALUE;
-
-	uni_printf(info->sx->io, "\tbltz ");
-	rvalue_to_io(info, base_size_rval); // TODO: проверить при равенстве нулю
-	uni_printf(info->sx->io, ", error\n");
-
-	free_rvalue(info, base_size_rval);
 
 	uni_printf(info->sx->io, "\n");
 
@@ -2693,9 +2689,38 @@ static lvalue emit_subscript_expression(information *const info, const node *con
 }
 
 /**
+ * Emit member expression
+ * 
+ * @param	info			Codegen info (?)
+ * @param	nd				Node in AST
+ * 
+ * @return	Created lvalue
+*/
+static lvalue emit_member_expression(information *const info, const node *const nd)
+{
+	if (!expression_member_is_arrow(nd))
+	{
+		const node base = expression_member_get_base(nd);
+		const lvalue base_lvalue = emit_lvalue(info, &base);
+
+		const size_t index = expression_member_get_member_index(nd);
+
+		return (lvalue) { .base_reg = base_lvalue.base_reg
+			, .kind = STACK
+			// FIXME: структуры внутри структур
+			, .loc.displ = base_lvalue.loc.displ + WORD_LENGTH*index
+			, .type = expression_get_type(nd) };
+	}
+	else
+	{
+		return (lvalue) {};
+	}
+}
+
+/**
  * Emit expression
  *
- * @param	info			Encoder
+ * @param	info			Codegen info (?)
  * @param	nd				Node in AST
  * 
  * @return	Rvalue of the expression
@@ -2719,10 +2744,7 @@ static rvalue emit_expression(information *const info, const node *const nd)
 
 		case EXPR_CALL:
 			return emit_call_expression(info, nd);
-		/*
-		case EXPR_MEMBER:
-			return emit_member_expression(info, nd);
-		*/
+
 		case EXPR_UNARY:
 			return emit_unary_expression_rvalue(info, nd);
 
@@ -2739,13 +2761,14 @@ static rvalue emit_expression(information *const info, const node *const nd)
 			return emit_inline_expression(info, nd);
 
 		case EXPR_INITIALIZER:
-			return emit_initializer_expression(info, nd); 
+			// FIXME: кидать соответствующую ошибку
+			assert(expression_get_class(nd) != EXPR_INITIALIZER);
+			return (rvalue) { .kind = VOID }; 
 
 		default: // EXPR_INVALID
 			// TODO: генерация оставшихся выражений
-			assert(expression_get_class(nd) == EXPR_INVALID);
+			assert(expression_get_class(nd) != EXPR_INVALID);
 			return (rvalue) { .kind = VOID };
-		
 	}  
 }
 
@@ -2793,7 +2816,7 @@ static void emit_array_declaration(information *const info, const node *const nd
 	const size_t identifier = declaration_variable_get_id(nd);
 	item_t type = ident_get_type(info->sx, identifier);
 	item_t dimensions = 0;
-	//const size_t value_displ = info->max_displ;
+	const size_t arr_displ = hash_get(&info->displacements, identifier, 1);
 	bool has_empty_bounds = false;
 
 	// Сохраняем адрес начала массива
@@ -2804,14 +2827,14 @@ static void emit_array_declaration(information *const info, const node *const nd
 			, .type = TYPE_INTEGER }
 		, (lvalue) { .base_reg = R_SP
 			, .kind = STACK
-			, .loc.displ = info->max_displ
+			, .loc.displ = arr_displ
 			, .type = TYPE_ARRAY });
 
 	while (type_is_array(info->sx, type))
 	{
 		type = type_array_get_element_type(info->sx, type);
 		const node bound = declaration_variable_get_bound(nd, (size_t)dimensions);
-		if (expression_get_class(&bound) == EXPR_EMPTY_BOUND) // TODO: Пока не поддержано в EXPR_INITIALIZER
+		if (expression_get_class(&bound) == EXPR_EMPTY_BOUND)
 		{
 			if (type_is_array(info->sx, type))
 			{
@@ -2833,11 +2856,6 @@ static void emit_array_declaration(information *const info, const node *const nd
 					, .from_lvalue = !FROM_LVALUE };
 				emit_store_rvalue_to_rvalue(info, bound_rvalue, tmp_rval);
 			}
-			// Смещаем на один, чтобы разместить размер текущего измерения
-			apply_bin_operation_rvalue(info
-				, bound_rvalue
-				, rvalue_one
-				, BIN_ADD);
 
 			// Размещаем размер текущего измерения
 			emit_store_of_rvalue(info
@@ -2846,6 +2864,21 @@ static void emit_array_declaration(information *const info, const node *const nd
 					, .kind = STACK
 					, .loc.displ = 0
 					, .type = TYPE_INTEGER });
+
+			// Смещаем на один (за размер)
+			apply_bin_operation_rvalue(info
+				, bound_rvalue
+				, rvalue_one
+				, BIN_ADD);
+
+			// Умножаем на WORD_LENGTH
+			apply_bin_operation_rvalue(info
+				, bound_rvalue
+				, (rvalue) { .kind = !FROM_LVALUE
+					, .kind = CONST
+					, .type = TYPE_INTEGER
+					, .val.int_val = WORD_LENGTH }
+				, BIN_MUL);
 
 			bound_rvalue.from_lvalue = FROM_LVALUE; // Чтобы в bound_rvalue не записался результат следующей функции
 			// Сдвигаем $fp
@@ -2856,31 +2889,48 @@ static void emit_array_declaration(information *const info, const node *const nd
 					, .val.reg_num = R_FP }
 				, bound_rvalue
 				, BIN_SUB);
+
+			free_rvalue(info, bound_rvalue);
 		}
 
 		dimensions++;
 	}
 
-	//const bool has_init = declaration_variable_has_initializer(nd);
-/*
-	const item_t element_type = array_get_type(info, type);
-	const item_t usual = (has_empty_bounds) ? 0 : 1; // предстоит выяснить, что это такое
-
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A0, R_ZERO, has_init ? dimensions - 1 : dimensions); // размерность
-
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A1, R_ZERO, type_size(info->sx, element_type) * 4); // размер элемента
-
-	// передаём смещение относительно fp (положительное значение) или gp (отрицательное значение)
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A2, R_ZERO, (item_t)value_displ);
-
-	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_A3, R_ZERO, 4 * has_init + usual);
-
-	uni_printf(info->sx->io, "\tjal DEFARR\n");
-	uni_printf(info->sx->io, "\t# addr 0($fp) now contains array size, addr 4($fp) contains first array element\n");
-*/
 	// Смещаемся, чтобы $fp ни на что не указывал
 	uni_printf(info->sx->io, "\n\t# setting up $fp:\n");
 	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)WORD_LENGTH);
+	uni_printf(info->sx->io, "\n");
+
+	if (declaration_variable_has_initializer(nd))
+	{
+		const item_t displ = hash_get(&info->displacements, identifier, 1); // смещение от $sp, где хранится адрес массива
+		const rvalue array_address_rvalue = emit_load_of_lvalue(info
+			, (lvalue) { .base_reg = R_SP
+				, .kind = STACK
+				, .loc.displ = displ
+				, .type = type });
+		// Теперь имеем адрес начала массива
+
+		node init = declaration_variable_get_initializer(nd);
+		const size_t amount = expression_initializer_get_size(&init);
+		// TODO: многомерные массивы
+		for(size_t i = 0; i < amount; i++)
+		{
+			const node subexpr = expression_initializer_get_subexpr(&init, i);
+			const rvalue subexpr_rval = emit_expression(info, &subexpr);
+
+			emit_store_of_rvalue(info
+				, subexpr_rval
+				, (lvalue) { .kind = STACK
+					, .base_reg = array_address_rvalue.val.reg_num // Гарантируется, что rvalue типа регистр
+					, .type = expression_get_type(&subexpr)
+					, .loc.displ = -(item_t)(i + 1)*WORD_LENGTH });
+
+			free_rvalue(info, subexpr_rval);
+		}
+
+		free_rvalue(info, array_address_rvalue);
+	}
 }
 
 /**
@@ -2897,45 +2947,71 @@ static void emit_variable_declaration(information *const info, const node *const
 
 	uni_printf(info->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(info->sx, id));
 
-	mips_register_t value_reg;
-	size_t value_displ;
+	mips_register_t value_reg = (ident_is_local(info->sx, id)) ? R_SP : R_GP;
 
-	if (ident_is_local(info->sx, id))
+	// FIXME: наверняка можно обойтись без этого
+	//const size_t prev_value_displ = info->max_displ;
+	const size_t value_displ = info->max_displ;
+
+	info->max_displ += WORD_LENGTH*type_size(info->sx, type);
+	// FIXME: type_size для floating вернёт 2, но у нас single precision => под них нужно 1
+	if (type_is_floating(type))
 	{
-		info->max_displ += WORD_LENGTH*type_size(info->sx, type);
-		value_displ = info->max_displ;
-		value_reg = R_SP;
+		info->max_displ -= WORD_LENGTH;
 	}
-	else
-	{
-		// TODO: кидать ошибку, если регистровая переменная
-		info->global_displ += WORD_LENGTH*type_size(info->sx, type);
-		value_displ = info->global_displ;
-		value_reg = R_GP;
-	}
+
+	// TODO: кидать ошибку, если глобальная регистровая переменная
 
 	const size_t index = hash_add(&info->displacements, id, 3);
 	hash_set_by_index(&info->displacements, index, 0, IS_ON_STACK);
 	hash_set_by_index(&info->displacements, index, 1, (item_t)value_displ);
 	hash_set_by_index(&info->displacements, index, 2, (item_t)value_reg);
 
-	if (!type_is_array(info->sx, type)) // обычная переменная int a; или struct point p;
+	if (!type_is_array(info->sx, type))
 	{
-		// TODO: структуры 
-
 		if (has_init)
 		{
 			const node initializer = declaration_variable_get_initializer(nd);
-			const rvalue initializer_rvalue = emit_expression(info, &initializer);
 
-			emit_store_of_rvalue(info
-				, initializer_rvalue
-				, (lvalue) { .base_reg = value_reg
-					, .kind = STACK
-					, .loc.displ = value_displ
-					, .type = initializer_rvalue.type });
+			if (!type_is_structure(info->sx, type))
+			{
+				const rvalue initializer_rvalue = emit_expression(info, &initializer);
 
-			free_rvalue(info, initializer_rvalue);
+				emit_store_of_rvalue(info
+					, initializer_rvalue
+					, (lvalue) { .base_reg = value_reg
+						, .kind = STACK
+						, .loc.displ = value_displ
+						, .type = initializer_rvalue.type });
+
+				free_rvalue(info, initializer_rvalue);
+			}
+			else
+			{
+				// FIXME: структуры внутри структур
+				const size_t initializer_size = expression_initializer_get_size(&initializer);
+				for (size_t i = 0; i < initializer_size; i++)
+				{
+					const node initializer_subexpr = expression_initializer_get_subexpr(&initializer, i);
+					const rvalue initializer_subexpr_rvalue = emit_expression(info, &initializer_subexpr);
+
+					const item_t member_type = type_structure_get_member_type(info->sx, nd, i);
+					size_t member_size = WORD_LENGTH*type_size(info->sx, member_type);
+					// FIXME: type_size для floating вернёт 2, но у нас single precision => под них нужно 1
+					if (type_is_floating(member_type))
+					{
+						member_size -= WORD_LENGTH;
+					}
+
+					emit_store_of_rvalue(info, initializer_subexpr_rvalue
+						, (lvalue) { .kind = STACK
+							, .loc.displ = value_displ + i*member_size
+							, .type = expression_get_type(&initializer_subexpr)
+							, .base_reg = value_reg });
+
+					free_rvalue(info, initializer_subexpr_rvalue);
+				}
+			}
 		}
 	}
 	else
@@ -2944,7 +3020,6 @@ static void emit_variable_declaration(information *const info, const node *const
 	}
 	uni_printf(info->sx->io, "\n");
 }
-
 
 /**
  * Emit function definition
@@ -3063,6 +3138,10 @@ static void emit_function_definition(information *const info, const node *const 
 	uni_printf(info->sx->io, "\n\t# setting up $sp:\n");
 	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
 	to_code_2R(info->sx->io, IC_MIPS_MOVE, R_SP, R_FP);
+
+	// Смещаем $fp ниже конца статики (чтобы он не совпадал с $sp)
+	to_code_2R_I(info->sx->io, IC_MIPS_ADDI, R_FP, R_FP, -(item_t)WORD_LENGTH);
+
 
 	uni_printf(info->sx->io, "\n\t# function parameters:\n"); 
 
@@ -3416,7 +3495,10 @@ static void emit_return_statement(information *const info, const node *const nd)
 		const node returning = node_get_child(nd, 0);
 		const rvalue returning_rvalue = emit_expression(info, &returning);
 
+		// TODO: кидать нормальные ошибки
 		assert(returning_rvalue.kind != VOID);
+		assert(!type_is_structure(info->sx, type_get_class(info->sx, returning_rvalue.type)));
+		assert(!type_is_array(info->sx, type_get_class(info->sx, returning_rvalue.type)));
 
 		const rvalue tmp = { .kind = REGISTER, .type = returning_rvalue.type, .val.reg_num = R_V0 };
 		emit_store_rvalue_to_rvalue(info, tmp, returning_rvalue);
