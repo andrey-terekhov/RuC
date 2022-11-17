@@ -257,7 +257,6 @@ typedef struct information
 	mips_register_t next_float_register; /**< Следующий регистр с плавающей точкой для выделения */
 
 	size_t label_num;	  /**< Номер метки */
-	label label_else;	  /**< Метка перехода на else */
 	label label_continue; /**< Метка continue */
 	label label_break;	  /**< Метка break */
 
@@ -2773,7 +2772,10 @@ static lvalue emit_member_expression(information *const info, const node *const 
 	}
 	else
 	{
-		return (lvalue){};
+		return (lvalue){ .kind = STACK,
+						 .base_reg = emit_expression(info, &operand).val.reg_num,
+						 .type = type_pointer_get_element_type(info->sx, expression_get_type(&operand)),
+						 .loc.displ = 0 };
 	}
 }
 
@@ -3357,26 +3359,27 @@ static void emit_compound_statement(information *const info, const node *const n
 static void emit_if_statement(information *const info, const node *const nd)
 {
 	const node condition = statement_if_get_condition(nd);
-	const rvalue value = emit_expression(info, &condition);
+	const rvalue value = emit_boolean_expression(info, &condition);
+
+	const size_t label_num = info->label_num++;
+	const label label_else = { .kind = L_ELSE, .num = label_num };
+	const label label_end = { .kind = L_END, .num = label_num };
 
 	const bool has_else = statement_if_has_else_substmt(nd);
-
-	const item_t label_else = info->label_num++;
-	const item_t label_end = has_else ? info->label_num++ : label_else;
-	emit_conditional_branch(info, value, label_else);
+	emit_conditional_branch(info, value, has_else ? label_else : label_end);
 
 	const node then_substmt = statement_if_get_then_substmt(nd);
 	emit_statement(info, &then_substmt);
-	emit_unconditional_branch(info, label_end);
 
 	if (has_else)
 	{
+		emit_unconditional_branch(info, label_end);
 		emit_label_declaration(info, label_else);
+
 		const node else_substmt = statement_if_get_else_substmt(nd);
 		emit_statement(info, &else_substmt);
-		emit_unconditional_branch(info, label_end);
 	}
-
+	
 	emit_label_declaration(info, label_end);
 }
 
@@ -3388,18 +3391,20 @@ static void emit_if_statement(information *const info, const node *const nd)
  */
 static void emit_while_statement(information *const info, const node *const nd)
 {
-	const item_t old_continue = info->label_continue;
-	const item_t old_break = info->label_break;
+	const size_t label_num = info->label_num++;
+	const label label_begin = { .kind = L_BEGIN_CYCLE, .num = label_num };
+	const label label_end = { .kind = L_END, .num = label_num };
 
-	const item_t label_begin = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const label old_continue = info->label_continue;
+	const label old_break = info->label_break;
+
 	info->label_continue = label_begin;
 	info->label_break = label_end;
 
 	emit_label_declaration(info, label_begin);
 
 	const node condition = statement_while_get_condition(nd);
-	const rvalue value = emit_expression(info, &condition);
+	const rvalue value = emit_boolean_expression(info, &condition);
 
 	emit_conditional_branch(info, value, label_end);
 
@@ -3421,25 +3426,26 @@ static void emit_while_statement(information *const info, const node *const nd)
  */
 static void emit_do_statement(information *const info, const node *const nd)
 {
-	const item_t old_continue = info->label_continue;
-	const item_t old_break = info->label_break;
-
-	const item_t label_begin = info->label_num++;
+	const size_t label_num = info->label_num++;
+	const label label_begin = { .kind = L_BEGIN_CYCLE, .num = label_num };
 	emit_label_declaration(info, label_begin);
 
-	const item_t label_condition = info->label_num++;
-	const item_t label_end = info->label_num++;
+	const label label_condition = { .kind = L_NEXT, .num = label_num };
+	const label label_end = { .kind = L_END, .num = label_num };
+	
+	const label old_continue = info->label_continue;
+	const label old_break = info->label_break;
 	info->label_continue = label_condition;
 	info->label_break = label_end;
 
 	const node body = statement_do_get_body(nd);
 	emit_statement(info, &body);
-
 	emit_label_declaration(info, label_condition);
-	const node condition = statement_do_get_condition(nd);
-	const rvalue value = emit_expression(info, &condition);
 
-	emit_conditional_branch(info, value, label_begin); // fixme в другую сторону
+	const node condition = statement_do_get_condition(nd);
+	const rvalue value = emit_boolean_expression(info, &condition);
+
+	emit_conditional_branch(info, value, label_begin); // FIXME: в другую сторону
 	emit_label_declaration(info, label_end);
 
 	info->label_continue = old_continue;
@@ -3455,26 +3461,26 @@ static void emit_do_statement(information *const info, const node *const nd)
 static void emit_for_statement(information *const info, const node *const nd)
 {
 	const item_t scope_displacement = info->displ;
-	const item_t old_continue = info->label_continue;
-	const item_t old_break = info->label_break;
-
 	if (statement_for_has_inition(nd))
 	{
 		const node inition = statement_for_get_inition(nd);
 		emit_statement(info, &inition);
 	}
 
-	const item_t label_begin = info->label_num++;
-	emit_label_declaration(info, label_begin);
-	info->label_continue = label_begin;
+	const size_t label_num = info->label_num++;
+	const label label_begin = { .kind = L_BEGIN_CYCLE, .num = label_num };
+	const label label_end = { .kind = L_END, .num = label_num };
 
-	const item_t label_end = info->label_num++;
+	const label old_continue = info->label_continue;
+	const label old_break = info->label_break;
+	info->label_continue = label_begin;
 	info->label_break = label_end;
 
+	emit_label_declaration(info, label_begin);
 	if (statement_for_has_condition(nd))
 	{
 		const node condition = statement_for_get_condition(nd);
-		rvalue value = emit_expression(info, &condition);
+		const rvalue value = emit_boolean_expression(info, &condition);
 		emit_conditional_branch(info, value, label_end);
 	}
 
@@ -3518,7 +3524,7 @@ static void emit_break_statement(information *const info)
 /**
  * Emit return statement
  *
- * @param	info			Encoder
+ * @param	info			Codegen info (?)
  * @param	nd				Node in AST
  */
 static void emit_return_statement(information *const info, const node *const nd)
@@ -3536,14 +3542,14 @@ static void emit_return_statement(information *const info, const node *const nd)
 		free_rvalue(info, value);
 	}
 
-	// to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident);
-	emit_unconditional_branch(info, info->curr_function_ident);
+	const label label_end = { .kind = L_FUNCEND, .num = info->curr_function_ident };
+	emit_unconditional_branch(info, label_end);
 }
 
 /**
  * Emit statement
  *
- * @param	info			Encoder
+ * @param	info			Codegen info (?)
  * @param	nd				Node in AST
  */
 static void emit_statement(information *const info, const node *const nd)
@@ -3767,7 +3773,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	info.next_register = R_T0;
 	info.next_float_register = R_FT0;
 	info.label_num = 1;
-	info.label_else = 1;
 
 	info.displacements = hash_create(HASH_TABLE_SIZE);
 
