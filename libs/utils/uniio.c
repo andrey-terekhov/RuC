@@ -312,7 +312,7 @@ int in_set_position(universal_io *const io, const size_t position)
 {
 	if (in_is_buffer(io))
 	{
-		if (position < io->in_size)
+		if (position <= io->in_size)
 		{
 			io->in_position = position;
 			return 0;
