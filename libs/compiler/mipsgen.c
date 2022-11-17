@@ -219,6 +219,7 @@ typedef enum INSTRUCTION
 
 	IC_MIPS_CVT_D_S,				/**< To convert an FP value to double FP. */
 	IC_MIPS_CVT_S_W,				/**< To convert fixed point value to single FP. */
+	IC_MIPS_CVT_W_S,				/**< To convert single FP to fixed point value */
 } mips_instruction_t;
 
 
@@ -231,7 +232,6 @@ typedef enum LABEL
 	L_ELSE,							/**< Тип метки -- переход по else */
 	L_END,							/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,					/**< Тип метки -- переход в начало цикла */
-	L_USER_LABEL,					/**< Тип метки -- метка, заданная пользователем */
 } mips_label_t;
 
 
@@ -271,7 +271,7 @@ typedef enum LVALUE_KIND
 	REG,
 } lvalue_kind_t;
 
-typedef struct LVALUE
+typedef struct lvalue
 { 
 	lvalue_kind_t kind;				/**< Value kind */
 	mips_register_t base_reg;		/**< Base register */
@@ -291,7 +291,7 @@ typedef enum RVALUE_KIND
 	VOID,
 } rvalue_kind_t;
 
-typedef struct RVALUE
+typedef struct rvalue
 {
 	rvalue_kind_t kind;				/**< Value kind */
 	item_t type;					/**< Value type */
@@ -305,6 +305,12 @@ typedef struct RVALUE
 		// TODO: остальные типы (включая сложные: массивы/структуры)
 	} val; 
 } rvalue;
+
+typedef struct label
+{
+	mips_label_t label_type;
+	size_t label_num;
+} label;
 
 static const rvalue rvalue_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = 1 };
 static const rvalue rvalue_negative_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = -1 };
@@ -917,6 +923,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			break;
 		case IC_MIPS_CVT_S_W:
 			uni_printf(io, "cvt.s.w");
+			break;
+		case IC_MIPS_CVT_W_S:
+			uni_printf(io, "cvt.w.s");
 			break;
 	}
 }
@@ -2874,6 +2883,37 @@ static rvalue emit_void_expression(information *const info, const node *const nd
 		free_rvalue(info, result);
 	}
 	return (rvalue) { .kind = VOID };
+}
+
+static rvalue emit_boolean_expression(information *const info, const node *const nd)
+{
+	const rvalue value = emit_expression(info, nd);
+	assert(type_is_scalar(info->sx, value.type));
+
+	const bool is_integer = !type_is_floating(value.type);
+
+	if (is_integer)
+	{
+		return value;
+	}
+
+	if (value.kind == CONST)
+	{
+		return (rvalue){ .kind = CONST, .type = TYPE_INTEGER, .val.int_val = value.val.float_val ? 1 : 0 };
+	}
+
+	// Only register kind and floating point type remains
+	// TODO: проверить!
+	const rvalue result = { .from_lvalue = !FROM_LVALUE
+		, .kind = REGISTER
+		, .val.reg_num = get_register(info)
+		, .type = TYPE_INTEGER };
+	to_code_2R(info->sx->io, IC_MIPS_CVT_W_S, value.val.reg_num, value.val.reg_num);
+	to_code_2R(info->sx->io, IC_MIPS_MFC_1, value.val.reg_num, result.val.reg_num);
+
+	free_rvalue(info, value);
+
+	return result;
 }
 
 
