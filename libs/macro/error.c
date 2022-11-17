@@ -77,6 +77,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		case CALL_DEPTH:
+			sprintf(msg, "превышена максимальная глубина вызова");
+			break;
+		case ITERATION_MAX:
+			sprintf(msg, "превышено максимальное количество итераций");
+			break;
 		case CHARACTER_STRAY:
 		{
 			const char32_t character = va_arg(args, char32_t);
@@ -130,6 +136,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		break;
 		case INCLUDE_NO_SUCH_FILE:
 			sprintf(msg, "нет такого файла или каталога");
+			break;
+		case INCLUDE_DEPTH:
+			sprintf(msg, "превышена максимальная глубина подключения");
 			break;
 
 		case ARGS_DUPLICATE:
