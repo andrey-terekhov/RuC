@@ -37,6 +37,9 @@ typedef struct parser
 	location prev;					/**< Parent macro location */
 	location loc;					/**< Current location */
 
+	size_t include;					/**< Current include depth */
+	size_t call;					/**< Current macro call depth */
+
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 	bool is_line_required;			/**< Set, if position directive required */
 	bool is_if_block;				/**< Set, if condition block processing */

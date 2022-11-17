@@ -32,6 +32,10 @@
 #define MASK_TOKEN_PASTE	"#__TKP_%zu_"
 
 
+static const size_t MAX_INCLUDE_DEPTH = 32;
+static const size_t MAX_CALL_DAPTH = 256;
+static const size_t MAX_ITERATION = 32768;
+
 static const size_t MAX_COMMENT_SIZE = 4096;
 static const size_t MAX_VALUE_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
@@ -311,10 +315,36 @@ static char32_t skip_until(parser *const prs, const bool fill)
 }
 
 
+static void parse_values(parser *const prs, const size_t index)
+{
+	const size_t position = in_get_position(prs->io);
+	const size_t args = storage_get_args_by_index(prs->stg, index);
+	if (args == 0)
+	{
+		if (skip_until(prs, false) != '(' || uni_scan_char(prs->io) != '('
+			|| skip_until(prs, false) != ')' || uni_scan_char(prs->io) != ')')
+		{
+			in_set_position(prs->io, position);
+		}
+
+		location loc = prs->loc;
+		universal_io macro = io_create();
+		in_set_buffer(&macro, storage_get_by_index(prs->stg, index));
+		parser_preprocess(prs, &macro);
+		in_clear(&macro);
+		prs->loc = loc;
+		return;
+	}
+
+	uni_print_char(prs->io, '\n');
+}
+
 static void parce_replace(parser *const prs)
 {
-	loc_search_from(&prs->loc);
+	const size_t begin = in_get_position(prs->io);
+	prs->prev = in_is_file(prs->io) ? loc_copy(&prs->loc) : prs->prev;
 	const size_t index = storage_search(prs->stg, prs->io);
+
 	if (storage_last_read(prs->stg)[0] == '#'
 		&& (index == SIZE_MAX || kw_is_correct(index) || in_is_file(prs->io)))
 	{
@@ -328,6 +358,26 @@ static void parce_replace(parser *const prs)
 		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 		return;
 	}
+
+	if (prs->call >= MAX_CALL_DAPTH)
+	{
+		parser_error(prs, &prs->loc, CALL_DEPTH);
+		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+		return;
+	}
+
+	const size_t end = in_get_position(prs->io);
+	in_set_position(prs->io, begin);
+	uni_printf(prs->io, "%s", in_is_file(prs->io) ? "\n" : "");
+	loc_update_begin(&prs->loc);
+	in_set_position(prs->io, end);
+
+	prs->call++;
+	parse_values(prs, index);
+	prs->call--;
+
+	uni_printf(prs->io, "%s", in_is_file(prs->io) ? "\n" : "");
+	loc_update_end(&prs->loc);
 }
 
 static char32_t parse_until(parser *const prs)
@@ -341,7 +391,6 @@ static char32_t parse_until(parser *const prs)
 
 		if ((character == '#' || utf8_is_letter(character)) && out_is_correct(prs->io))
 		{
-			prs->prev = in_is_file(prs->io) ? loc_copy(&prs->loc) : prs->prev;
 			parce_replace(prs);
 		}
 		else if (character == '\'' || character == '"')
@@ -355,7 +404,7 @@ static char32_t parse_until(parser *const prs)
 		}
 	}
 
-	if (position != in_get_position(prs->io) && character == (char32_t)EOF)
+	if (character == (char32_t)EOF && in_is_file(prs->io) && in_get_position(prs->io) != position)
 	{
 		uni_print_char(prs->io, '\n');
 	}
@@ -520,6 +569,14 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 static void parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
+	if (prs->include >= MAX_INCLUDE_DEPTH)
+	{
+		parser_error(prs, &loc, INCLUDE_DEPTH);
+		skip_directive(prs);
+		return;
+	}
+
+	prs->include++;
 	char32_t character = skip_until(prs, false);
 	switch (character)
 	{
@@ -538,6 +595,7 @@ static void parse_include(parser *const prs)
 			break;
 	}
 
+	prs->include--;
 	skip_directive(prs);
 }
 
@@ -845,6 +903,9 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 	prs.stg = stg;
 	prs.io = out;
 
+	prs.include = 0;
+	prs.call = 0;
+
 	prs.is_recovery_disabled = false;
 	prs.is_line_required = false;
 	prs.is_if_block = false;
@@ -861,7 +922,10 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		return -1;
 	}
 
-	in_swap(prs->io, in);
+	universal_io *io = prs->io;
+	out_swap(io, in);
+	prs->io = in;
+
 	prs->loc = loc_search(prs->io);
 	prs->is_line_required = true;
 
@@ -914,7 +978,8 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 		character = parse_until(prs);
 	}
 
-	in_swap(prs->io, in);
+	prs->io = io;
+	out_swap(io, in);
 	return 0;
 }
 
