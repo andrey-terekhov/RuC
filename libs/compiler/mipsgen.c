@@ -234,6 +234,11 @@ typedef enum LABEL
 	L_BEGIN_CYCLE,					/**< Тип метки -- переход в начало цикла */
 } mips_label_t;
 
+typedef struct label
+{
+	mips_label_t kind;
+	size_t num;
+} label;
 
 typedef struct information
 {
@@ -252,10 +257,10 @@ typedef struct information
 	mips_register_t next_register;			/**< Следующий обычный регистр для выделения */
 	mips_register_t next_float_register;	/**< Следующий регистр с плавающей точкой для выделения */
 
-	item_t label_num;						/**< Номер метки */
-	item_t label_else;						/**< Метка перехода на else */
-	item_t label_continue;					/**< Метка continue */
-	item_t label_break;						/**< Метка break */
+	size_t label_num;						/**< Номер метки */
+	label label_else;						/**< Метка перехода на else */
+	label label_continue;					/**< Метка continue */
+	label label_break;						/**< Метка break */
 
 	size_t curr_function_ident;				/**< Идентификатор текущей функций */
 
@@ -306,12 +311,6 @@ typedef struct rvalue
 	} val; 
 } rvalue;
 
-typedef struct label
-{
-	mips_label_t label_type;
-	size_t label_num;
-} label;
-
 static const rvalue rvalue_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = 1 };
 static const rvalue rvalue_negative_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = -1 };
 
@@ -325,8 +324,10 @@ static void emit_store_rvalue_to_rvalue(information *const info, const rvalue de
 static lvalue emit_subscript_expression(information *const info, const node *const nd);
 static rvalue emit_unary_expression_rvalue(information *const info, const node *const nd);
 static lvalue emit_member_expression(information *const info, const node *const nd);
+static void emit_label(information *const info, const label lbl);
 
 
+/*
 // TODO: это есть в кодогенераторе llvm, не хотелось бы копипастить
 static item_t array_get_type(information *const info, const item_t array_type)
 {
@@ -351,6 +352,7 @@ static size_t array_get_dim(information *const info, const item_t array_type)
 
 	return i;
 }
+*/
 
 
 /**
@@ -930,38 +932,6 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 	}
 }
 
-static void mips_label_to_io(universal_io *const io, const mips_label_t label)
-{
-	switch (label)
-	{
-		case L_FUNC:
-			uni_printf(io, "FUNC");
-			break;
-		case L_NEXT:
-			uni_printf(io, "NEXT");
-			break;
-		case L_FUNCEND:
-			uni_printf(io, "FUNCEND");
-			break;
-		case L_STRING:
-			uni_printf(io, "STRING");
-			break;
-		case L_ELSE:
-			uni_printf(io, "ELSE");
-			break;
-		case L_END:
-			uni_printf(io, "END");
-			break;
-		case L_BEGIN_CYCLE:
-			uni_printf(io, "BEGIN_CYCLE");
-			break;
-		case L_USER_LABEL:
-			uni_printf(io, "USER_LABEL");
-			break;
-	}
-}
-
-
 // Вид инструкции:	instr	fst_reg, snd_reg
 static void to_code_2R(universal_io *const io, const mips_instruction_t instruction
 	, const mips_register_t fst_reg, const mips_register_t snd_reg)
@@ -1025,19 +995,19 @@ static void to_code_R(universal_io *const io, const mips_instruction_t instructi
 
 // Вид инструкции:	instr	label
 static void to_code_L(universal_io *const io, const mips_instruction_t instruction
-	, const mips_label_t label, const item_t label_num)
+	, const mips_label_t lbl, const item_t label_num)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_label_to_io(io, label);
+	//emit_label(io, (label){ .kind = lbl, .num = label_num });
 	uni_printf(io, "%" PRIitem "\n", label_num);
 }
 
 // Вид инструкции:	label:
 static void to_code_label(universal_io *const io, const mips_label_t label, const item_t label_num)
 {
-	mips_label_to_io(io, label);
+	//mips_label_to_io(io, label);
 	uni_printf(io, "%" PRIitem ":\n", label_num);
 }
 
@@ -1093,9 +1063,35 @@ static void rvalue_to_io(information *const info, const rvalue rval)
  * @param	info			Codegen info (?)
  * @param	label			Label for emitting
  */
-static void emit_label(information *const info, const item_t label)
+static void emit_label(information *const info, const label lbl)
 {
-	uni_printf(info->sx->io, "label" PRIitem, label);
+	universal_io *const io = info->sx->io;
+	switch (lbl.kind)
+	{
+		case L_FUNC:
+			uni_printf(io, "FUNC");
+			break;
+		case L_NEXT:
+			uni_printf(io, "NEXT");
+			break;
+		case L_FUNCEND:
+			uni_printf(io, "FUNCEND");
+			break;
+		case L_STRING:
+			uni_printf(io, "STRING");
+			break;
+		case L_ELSE:
+			uni_printf(io, "ELSE");
+			break;
+		case L_END:
+			uni_printf(io, "END");
+			break;
+		case L_BEGIN_CYCLE:
+			uni_printf(io, "BEGIN_CYCLE");
+			break;
+	}
+
+	uni_printf(io, "%" PRIitem, lbl.num);
 }
 
 /**
@@ -1104,9 +1100,9 @@ static void emit_label(information *const info, const item_t label)
  * @param	info			Codegen info (?)
  * @param	label			Declared label
  */
-static void emit_label_declaration(information *const info, const item_t label)
+static void emit_label_declaration(information *const info, const label lbl)
 {
-	emit_label(info, label);
+	emit_label(info, lbl);
 	uni_printf(info->sx->io, ":\n");
 }
 
@@ -1116,12 +1112,12 @@ static void emit_label_declaration(information *const info, const item_t label)
  * @param	info			Codegen info (?)
  * @param	label			Label for unconditional jump
  */
-static void emit_unconditional_branch(information *const info, const item_t label)
+static void emit_unconditional_branch(information *const info, const label lbl)
 {
 	uni_printf(info->sx->io, "\t");
 	instruction_to_io(info->sx->io, IC_MIPS_J);
 	uni_printf(info->sx->io, " ");
-	emit_label(info, label);
+	emit_label(info, lbl);
 	uni_printf(info->sx->io, "\n");
 }
 
@@ -1131,11 +1127,11 @@ static void emit_unconditional_branch(information *const info, const item_t labe
  * @param	info			Codegen info (?)
  * @param	label			Label for conditional jump
  */
-static void emit_conditional_branch(information *const info, const rvalue value, const item_t label)
+static void emit_conditional_branch(information *const info, const rvalue value, const label lbl)
 {
 	if (value.kind == CONST)
 	{
-		bool is_zero = false;
+		bool is_zero;
 		switch (type_get_class(info->sx, value.type))
 		{
 			case TYPE_INTEGER:
@@ -1149,7 +1145,7 @@ static void emit_conditional_branch(information *const info, const rvalue value,
 
 		if (is_zero)
 		{
-			emit_unconditional_branch(info, label);
+			emit_unconditional_branch(info, lbl);
 		}
 	}
 	else
@@ -1159,7 +1155,7 @@ static void emit_conditional_branch(information *const info, const rvalue value,
 		uni_printf(info->sx->io, " ");
 		rvalue_to_io(info, value);
 		uni_printf(info->sx->io, ", $0, ");
-		emit_label(info, label);
+		emit_label(info, lbl);
 		uni_printf(info->sx->io, "\n");
 	}
 }
@@ -2316,7 +2312,7 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 			instruction_to_io(info->sx->io, IC_MIPS_BNE);
 			uni_printf(info->sx->io, " ");
 			rvalue_to_io(info, operand_rvalue);
-			uni_printf(info->sx->io, ", ");
+			uni_printf(info->sx->io, ", $0, ");
 			mips_label_to_io(info->sx->io, L_ELSE);
 			uni_printf(info->sx->io, "%" PRIitem "\n", curr_label_num);
 			
@@ -2338,7 +2334,7 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 
 			uni_printf(info->sx->io, "\n");
 
-			return operand_rvalue;
+			return result_rvalue;
 		}
 
 		case UN_ABS:
@@ -2995,7 +2991,7 @@ static void emit_array_declaration(information *const info, const node *const nd
 			// Умножаем на WORD_LENGTH
 			apply_bin_operation_rvalue(info
 				, bound_rvalue
-				, (rvalue) { .kind = !FROM_LVALUE
+				, (rvalue) { .from_lvalue = !FROM_LVALUE
 					, .kind = CONST
 					, .type = TYPE_INTEGER
 					, .val.int_val = WORD_LENGTH }
@@ -3111,12 +3107,13 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				// FIXME: структуры внутри структур
 				const size_t initializer_size = expression_initializer_get_size(&initializer);
+				const item_t struct_type = expression_get_type(nd);
 				for (size_t i = 0; i < initializer_size; i++)
 				{
 					const node initializer_subexpr = expression_initializer_get_subexpr(&initializer, i);
 					const rvalue initializer_subexpr_rvalue = emit_expression(info, &initializer_subexpr);
 
-					const item_t member_type = type_structure_get_member_type(info->sx, nd, i);
+					const item_t member_type = type_structure_get_member_type(info->sx, struct_type, i);
 					size_t member_size = WORD_LENGTH*type_size(info->sx, member_type);
 					// FIXME: type_size для floating вернёт 2, но у нас single precision => под них нужно 1
 					if (type_is_floating(member_type))
@@ -3624,7 +3621,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 	}
 
 	// to_code_L(info->sx->io, IC_MIPS_J, L_FUNCEND, info->curr_function_ident);
-	emit_unconditional_branch(info, info->label_func);
+	emit_unconditional_branch(info, info->curr_function_ident);
 }
 
 /**
