@@ -52,7 +52,7 @@ static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 
 											/* a0-a3: */ 4 * 4;
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
-typedef enum REGISTER
+typedef enum MIPS_REGISTER
 {
 	R_ZERO, /**< Always has the value 0 */
 	R_AT,	/**< Temporary, generally used by assembler */
@@ -271,8 +271,8 @@ typedef struct information
 /** Kinds of lvalue */
 typedef enum LVALUE_KIND
 {
-	STACK,
-	REG,
+	LVALUE_KIND_STACK,
+	LVALUE_KIND_REGISTER,
 } lvalue_kind_t;
 
 typedef struct lvalue
@@ -290,9 +290,9 @@ typedef struct lvalue
 /** Kinds of rvalue */
 typedef enum RVALUE_KIND
 {
-	CONST, // Значит, запомнили константу и потом обработали её
-	REGISTER,
-	VOID,
+	RVALUE_KIND_CONST, // Значит, запомнили константу и потом обработали её
+	RVALUE_KIND_REGISTER,
+	RVALUE_KIND_VOID,
 } rvalue_kind_t;
 
 typedef struct rvalue
@@ -310,8 +310,8 @@ typedef struct rvalue
 	} val;
 } rvalue;
 
-static const rvalue rvalue_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = 1 };
-static const rvalue rvalue_negative_one = { .kind = CONST, .type = TYPE_INTEGER, .val.int_val = -1 };
+static const rvalue rvalue_one = { .kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .val.int_val = 1 };
+static const rvalue rvalue_negative_one = { .kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .val.int_val = -1 };
 
 
 static lvalue emit_lvalue(information *const info, const node *const nd);
@@ -322,7 +322,7 @@ static rvalue emit_load_of_lvalue(information *const info, const lvalue lval);
 static void emit_store_rvalue_to_rvalue(information *const info, const rvalue destination, const rvalue source);
 static rvalue emit_unary_expression_rvalue(information *const info, const node *const nd);
 static void emit_label(information *const info, const label lbl);
-static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, rvalue rval2, const binary_t operation);
+static rvalue emit_binary_operation(information *const info, rvalue rval1, rvalue rval2, const binary_t operation);
 
 
 /**
@@ -380,6 +380,63 @@ static mips_register_t get_float_register(information *const info)
 }
 
 /**
+ * Free register
+ * 
+ * 
+*/
+static void free_register(information *const info, const mips_register_t reg)
+{
+	switch (reg)
+	{
+		case R_T0:
+		case R_T1:
+		case R_T2:
+		case R_T3:
+		case R_T4:
+		case R_T5:
+		case R_T6:
+		case R_T7:
+			if (info->registers[reg - R_T0])
+			{
+				// Регистр занят => освобождаем
+				info->registers[reg - R_T0] = false;
+			}
+			return;
+
+		case R_T8:
+		case R_T9:
+			if (info->registers[reg - R_T8 + /* индекс R_T8 в info->registers */ 8])
+			{
+				// Регистр занят => освобождаем
+				info->registers[reg - R_T8 + 8] = false;
+			}
+			return;
+
+		case R_FT0:
+		case R_FT1:
+		case R_FT2:
+		case R_FT3:
+		case R_FT4:
+		case R_FT5:
+		case R_FT6:
+		case R_FT7:
+		case R_FT8:
+		case R_FT9:
+		case R_FT10:
+		case R_FT11:
+			if (info->registers[reg - R_FT0 + /* индекс R_FT0 в info->registers */ 10])
+			{
+				// Регистр занят => освобождаем
+				info->registers[reg - R_FT0 + 10] = false;
+			}
+			return;
+
+		default: // Не временный регистр => освобождать не надо
+			return;
+	}
+}
+
+/**
  * Free register occupied by rvalue
  *
  * @param	info				Codegen info (?)
@@ -387,56 +444,9 @@ static mips_register_t get_float_register(information *const info)
  */
 static void free_rvalue(information *const info, const rvalue rval)
 {
-	if (rval.kind == REGISTER)
+	if ((rval.kind == RVALUE_KIND_REGISTER) && (!rval.from_lvalue))
 	{
-		switch (rval.val.reg_num)
-		{
-			case R_T0:
-			case R_T1:
-			case R_T2:
-			case R_T3:
-			case R_T4:
-			case R_T5:
-			case R_T6:
-			case R_T7:
-				if (info->registers[rval.val.reg_num - R_T0])
-				{
-					// Регистр занят => освобождаем
-					info->registers[rval.val.reg_num - R_T0] = false;
-				}
-				return;
-
-			case R_T8:
-			case R_T9:
-				if (info->registers[rval.val.reg_num - R_T8 + /* индекс R_T8 в info->registers */ 8])
-				{
-					// Регистр занят => освобождаем
-					info->registers[rval.val.reg_num - R_T8 + 8] = false;
-				}
-				return;
-
-			case R_FT0:
-			case R_FT1:
-			case R_FT2:
-			case R_FT3:
-			case R_FT4:
-			case R_FT5:
-			case R_FT6:
-			case R_FT7:
-			case R_FT8:
-			case R_FT9:
-			case R_FT10:
-			case R_FT11:
-				if (info->registers[rval.val.reg_num - R_FT0 + /* индекс R_FT0 в info->registers */ 10])
-				{
-					// Регистр занят => освобождаем
-					info->registers[rval.val.reg_num - R_FT0 + 10] = false;
-				}
-				break;
-
-			default: // Не временный регистр => освобождать не надо
-				return;
-		}
+		free_register(info, rval.val.reg_num);
 	}
 }
 
@@ -996,9 +1006,9 @@ static void rvalue_const_to_io(universal_io *const io, const rvalue rval)
 */
 static void rvalue_to_io(information *const info, const rvalue rval)
 {
-	assert(rval.kind != VOID);
+	assert(rval.kind != RVALUE_KIND_VOID);
 
-	if (rval.kind == CONST)
+	if (rval.kind == RVALUE_KIND_CONST)
 	{
 		rvalue_const_to_io(info->sx->io, rval);
 	}
@@ -1023,11 +1033,11 @@ static lvalue displacements_add(information *const info, const size_t identifier
 	const item_t type = ident_get_type(info->sx, identifier);
 
 	const size_t index = hash_add(&info->displacements, identifier, 3);
-	hash_set_by_index(&info->displacements, index, 0, STACK); // TODO: регистровые переменные
+	hash_set_by_index(&info->displacements, index, 0, LVALUE_KIND_STACK); // TODO: регистровые переменные
 	hash_set_by_index(&info->displacements, index, 1, displacement);
 	hash_set_by_index(&info->displacements, index, 2, base_reg);
 
-	return (lvalue){ .kind = STACK, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+	return (lvalue){ .kind = LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = displacement, .type = type };
 }
 
 /**
@@ -1120,18 +1130,16 @@ static void emit_unconditional_branch(information *const info, const label lbl)
  */
 static void emit_conditional_branch(information *const info, const rvalue value, const label lbl)
 {
-	if (value.kind == CONST)
+	if (value.kind == RVALUE_KIND_CONST)
 	{
 		bool is_zero;
-		switch (type_get_class(info->sx, value.type))
+		if (type_is_floating(type_get_class(info->sx, value.type)))
 		{
-			case TYPE_INTEGER:
-				is_zero = value.val.int_val == 0;
-				break;
-
-			case TYPE_FLOATING:
-				is_zero = value.val.float_val == 0.0;
-				break;
+			is_zero = value.val.float_val == 0.0;
+		}
+		else
+		{
+			is_zero = value.val.int_val == 0;
 		}
 
 		if (is_zero)
@@ -1162,6 +1170,52 @@ static void emit_conditional_branch(information *const info, const rvalue value,
 
 
 /**
+ * Loads lvalue to register and forms rvalue
+ *
+ * @param	info			Codegen info (?)
+ * @param	lval			Lvalue to load
+ *
+ * @return	Formed rvalue
+ */
+static rvalue emit_load_of_lvalue(information *const info, const lvalue lval)
+{
+	if (lval.kind == LVALUE_KIND_REGISTER)
+	{
+		return (rvalue) { 
+			.kind = RVALUE_KIND_REGISTER, 
+			.val.reg_num = lval.loc.reg_num, 
+			.from_lvalue = FROM_LVALUE,
+			.type = lval.type
+		};
+	}
+
+	const bool is_floating = type_is_floating(lval.type);
+	const mips_register_t reg = is_floating ? get_float_register(info) : get_register(info);
+	const mips_instruction_t instruction = is_floating ? IC_MIPS_L_S : IC_MIPS_LW;
+
+	const rvalue result = { 
+		.kind = RVALUE_KIND_REGISTER,
+		.val.reg_num = reg,
+		.from_lvalue = !FROM_LVALUE,
+		.type = lval.type,
+	};
+
+	uni_printf(info->sx->io, "\t");
+	instruction_to_io(info->sx->io, IC_MIPS_L_S);
+	uni_printf(info->sx->io, " ");
+	rvalue_to_io(info, result);
+	uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
+	mips_register_to_io(info->sx->io, lval.base_reg);
+	uni_printf(info->sx->io, ")\n");
+
+	// Для любых скалярных типов ничего не произойдёт,
+	// а для остальных освобождается base_reg, в котором хранилось смещение
+	free_register(info, lval.base_reg);
+
+	return result;
+}
+
+/**
  * Emit identifier lvalue
  *
  * @param	info			Codegen info (?)
@@ -1190,11 +1244,12 @@ static lvalue emit_subscript_lvalue(information *const info, const node *const n
 	const node index = expression_subscript_get_index(nd);
 	const rvalue index_value = emit_expression(info, &index);
 
-	// base_value гарантированно имеет kind == REGISTER
-	const rvalue result = apply_bin_operation_rvalue(info, base_value, index_value, BIN_ADD);
+	// base_value гарантированно имеет kind == RVALUE_KIND_REGISTER
+	// TODO: константу можно сразу записывать в loc.displ
+	const rvalue result = emit_binary_operation(info, base_value, index_value, BIN_ADD);
 
 	const item_t type = expression_get_type(nd);
-	return (lvalue){ .type = type, .kind = STACK, .base_reg = result.val.reg_num, .loc.displ = 0 };
+	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = result.val.reg_num, .loc.displ = 0, .type = type };
 }
 
 /**
@@ -1210,30 +1265,66 @@ static lvalue emit_member_lvalue(information *const info, const node *const nd)
 	const node base = expression_member_get_base(nd);
 	const item_t base_type = expression_get_type(&base);
 
+	const bool is_arrow = expression_member_is_arrow(nd);
+	const item_t struct_type = is_arrow ? type_pointer_get_element_type(info->sx, base_type) : base_type;
+
 	size_t member_displ = 0;
 	const size_t member_index = expression_member_get_member_index(nd);
 	for (size_t i = 0; i < member_index; i++)
 	{
-		const item_t member_type = type_structure_get_member_type(info->sx, base_type, i);
+		const item_t member_type = type_structure_get_member_type(info->sx, struct_type, i);
 		member_displ += type_size(info->sx, member_type);
 	}
 
-	if (expression_member_is_arrow(nd))
+	const item_t type = expression_get_type(nd);
+
+	if (is_arrow)
 	{
-		const rvalue struct_pointer = emit_expression(info, &base); // Гарантированно на регистре
-		return (lvalue){ .kind = STACK,
-						 .base_reg = struct_pointer.val.reg_num,
-						 .type = type_pointer_get_element_type(info->sx, expression_get_type(nd)),
-						 .loc.displ = member_displ };
+		const rvalue struct_pointer = emit_expression(info, &base);
+		// FIXME: грузить константу на регистр в случае константных указателей
+		return (lvalue) {
+			.kind = LVALUE_KIND_STACK, 
+			.base_reg = struct_pointer.val.reg_num,
+			.loc.displ = member_displ, 
+			.type = type
+		};
 	}
 	else
 	{
 		const lvalue base_lvalue = emit_lvalue(info, &base);
-		return (lvalue){ .base_reg = base_lvalue.base_reg
-						 , .kind = STACK
-						 , .loc.displ = base_lvalue.loc.displ + member_displ
-						 , .type = expression_get_type(nd) };
+		const size_t displ = base_lvalue.loc.displ + member_displ;
+		return (lvalue) { 
+			.kind = LVALUE_KIND_STACK,
+			.base_reg = base_lvalue.base_reg, 
+			.loc.displ = displ, 
+			.type = type 
+		};
 	}
+}
+
+/**
+ * Emit indirection lvalue
+ * 
+ * @param	info			Codegen info (?)
+ * @param	nd				Node in AST
+ * 
+ * @return	Indirected lvalue
+*/
+static lvalue emit_indirection_lvalue(information *const info, const node *const nd)
+{
+	assert(expression_unary_get_operator(nd) == UN_INDIRECTION);
+
+	const node operand = expression_unary_get_operand(nd);
+	const rvalue base = emit_expression(info, &operand);
+	// FIXME: грузить константу на регистр в случае константных указателей
+	const item_t type = expression_get_type(nd);
+
+	return (lvalue) {
+		.kind = LVALUE_KIND_STACK,
+		.base_reg = base.val.reg_num,
+		.loc.displ = 0,
+		.type = type
+	};
 }
 
 /**
@@ -1246,6 +1337,7 @@ static lvalue emit_member_lvalue(information *const info, const node *const nd)
  */
 static lvalue emit_lvalue(information *const info, const node *const nd)
 {
+	// TODO: ассерты
 	switch (expression_get_class(nd))
 	{
 		case EXPR_IDENTIFIER:
@@ -1258,14 +1350,7 @@ static lvalue emit_lvalue(information *const info, const node *const nd)
 			return emit_member_lvalue(info, nd);
 
 		case EXPR_UNARY: // Только UN_INDIRECTION
-		{
-			const node operand = expression_unary_get_operand(nd);
-
-			return (lvalue){ .kind = STACK,
-							 .base_reg = emit_expression(info, &operand).val.reg_num,
-							 .type = type_pointer_get_element_type(info->sx, expression_get_type(&operand)),
-							 .loc.displ = 0 };
-		}
+			return emit_indirection_lvalue(info, nd);
 
 		default:
 			// Не может быть lvalue
@@ -1286,13 +1371,13 @@ static lvalue emit_lvalue(information *const info, const node *const nd)
  */
 static lvalue emit_store_of_rvalue(information *const info, rvalue rval, const lvalue lval)
 {
-	assert(rval.kind != VOID);
+	assert(rval.kind != RVALUE_KIND_VOID);
 
-	if (rval.kind == CONST)
+	if (rval.kind == RVALUE_KIND_CONST)
 	{
-		// Предварительно загружаем константу в rvalue вида REGISTER
+		// Предварительно загружаем константу в rvalue вида RVALUE_KIND_REGISTER
 		const rvalue tmp_rval = rval;
-		rval = (rvalue){ .kind = REGISTER,
+		rval = (rvalue){ .kind = RVALUE_KIND_REGISTER,
 						 .val.reg_num = type_is_floating(tmp_rval.type) ? get_float_register(info) : get_register(info),
 						 .type = tmp_rval.type,
 						 .from_lvalue = !FROM_LVALUE };
@@ -1301,7 +1386,7 @@ static lvalue emit_store_of_rvalue(information *const info, rvalue rval, const l
 
 	uni_printf(info->sx->io, "\t");
 
-	if (lval.kind == REG)
+	if (lval.kind == LVALUE_KIND_REGISTER)
 	{
 		instruction_to_io(info->sx->io, type_is_floating(rval.type) ? IC_MIPS_MOV_S : IC_MIPS_MOVE);
 		uni_printf(info->sx->io, " ");
@@ -1340,11 +1425,11 @@ static lvalue emit_store_of_rvalue(information *const info, rvalue rval, const l
 									.base_reg = rval.val.reg_num // Здесь смещение, по которому лежит массив/структура
 									,
 									.type = member_type,
-									.kind = STACK });
+									.kind = LVALUE_KIND_STACK });
 
 				emit_store_of_rvalue(info, displ_rval,
 									 (lvalue){ .base_reg = lval.base_reg,
-											   .kind = STACK,
+											   .kind = LVALUE_KIND_STACK,
 											   .loc.displ = lval.loc.displ + i * member_size,
 											   .type = member_type });
 
@@ -1365,10 +1450,10 @@ static lvalue emit_store_of_rvalue(information *const info, rvalue rval, const l
  */
 static void emit_store_rvalue_to_rvalue(information *const info, const rvalue destination, const rvalue source)
 {
-	assert(source.kind != VOID);
-	assert(destination.kind == REGISTER);
+	assert(source.kind != RVALUE_KIND_VOID);
+	assert(destination.kind == RVALUE_KIND_REGISTER);
 
-	if (source.kind == CONST)
+	if (source.kind == RVALUE_KIND_CONST)
 	{
 		uni_printf(info->sx->io, "\t");
 		(type_is_floating(source.type)) ? instruction_to_io(info->sx->io, IC_MIPS_LI_S)
@@ -1422,61 +1507,7 @@ static void emit_store_rvalue_to_rvalue(information *const info, const rvalue de
 }
 
 /**
- * Loads lvalue to register and forms rvalue
- *
- * @param	info			Codegen info (?)
- * @param	lval			Lvalue to load
- *
- * @return	Formed rvalue
- */
-static rvalue emit_load_of_lvalue(information *const info, const lvalue lval)
-{
-	if (lval.kind == REG)
-	{
-		return (
-			rvalue){ .kind = REGISTER, .type = lval.type, .val.reg_num = lval.loc.reg_num, .from_lvalue = FROM_LVALUE };
-	}
-
-	const rvalue tmp = { .kind = REGISTER,
-						 .type = type_is_pointer(info->sx, lval.type)
-									 ? type_pointer_get_element_type(info->sx, lval.type)
-									 : lval.type,
-						 .val.reg_num = (type_is_floating(lval.type)) ? get_float_register(info) : get_register(info),
-						 .from_lvalue = !FROM_LVALUE };
-
-	if (type_is_floating(type_get_class(info->sx, lval.type)))
-	{
-		uni_printf(info->sx->io, "\t");
-		instruction_to_io(info->sx->io, IC_MIPS_L_S);
-		uni_printf(info->sx->io, " ");
-		rvalue_to_io(info, tmp);
-		uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-		mips_register_to_io(info->sx->io, lval.base_reg);
-		uni_printf(info->sx->io, ")\n");
-	}
-	else
-	{
-		uni_printf(info->sx->io, "\t");
-		instruction_to_io(info->sx->io, IC_MIPS_LW);
-		uni_printf(info->sx->io, " ");
-		rvalue_to_io(info, tmp);
-		uni_printf(info->sx->io, ", %" PRIitem "(", lval.loc.displ);
-		mips_register_to_io(info->sx->io, lval.base_reg);
-		uni_printf(info->sx->io, ")\n");
-
-		// Для любых скалярных типов ничего не произойдёт,
-		// а для остальных освобождается base_reg, в котором хранилось смещение
-		free_rvalue(info, (rvalue){ .from_lvalue = !FROM_LVALUE,
-									.kind = REGISTER,
-									.type = TYPE_POINTER,
-									.val.reg_num = lval.base_reg });
-	}
-
-	return tmp;
-}
-
-/**
- * Apply operation to two rvalue values
+ * Emit binary operation with two rvalues
  *
  * @param	info			Codegen info (?)
  * @param	first_rval1		First rvalue
@@ -1485,19 +1516,19 @@ static rvalue emit_load_of_lvalue(information *const info, const lvalue lval)
  *
  * @return	Result rvalue
  */
-static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, rvalue rval2, const binary_t operation)
+static rvalue emit_binary_operation(information *const info, rvalue rval1, rvalue rval2, const binary_t operation)
 {
 	assert(operation != BIN_LOG_AND);
 	assert(operation != BIN_LOG_OR);
 
-	assert(rval1.kind != VOID);
-	assert(rval2.kind != VOID);
+	assert(rval1.kind != RVALUE_KIND_VOID);
+	assert(rval2.kind != RVALUE_KIND_VOID);
 
 	mips_register_t result;
 	rvalue result_rvalue;
-	rvalue freeing_rvalue = (rvalue){ .kind = VOID };
+	rvalue freeing_rvalue = (rvalue){ .kind = RVALUE_KIND_VOID };
 
-	if ((rval1.kind == REGISTER) && (rval2.kind == REGISTER))
+	if ((rval1.kind == RVALUE_KIND_REGISTER) && (rval2.kind == RVALUE_KIND_REGISTER))
 	{
 		if (!rval1.from_lvalue && !rval2.from_lvalue) // Оба rvalue -- не регистровые переменные
 		{
@@ -1526,7 +1557,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 			result = type_is_floating(rval1.type) ? get_float_register(info) : get_register(info);
 		}
 
-		result_rvalue = (rvalue){ .kind = REGISTER
+		result_rvalue = (rvalue){ .kind = RVALUE_KIND_REGISTER
 			, .val.reg_num = result
 			, .type = rval1.type
 			, .from_lvalue = !FROM_LVALUE };
@@ -1621,7 +1652,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
 
 		// Сделаем так, чтобы константа гарантированно лежала в rval2
-		if (rval2.kind != CONST)
+		if (rval2.kind != RVALUE_KIND_CONST)
 		{
 			const rvalue tmp_rval = rval1;
 			rval1 = rval2;
@@ -1638,7 +1669,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 		}
 
 		result_rvalue =
-			(rvalue){ .kind = REGISTER, .val.reg_num = result, .type = rval1.type, .from_lvalue = !FROM_LVALUE };
+			(rvalue){ .kind = RVALUE_KIND_REGISTER, .val.reg_num = result, .type = rval1.type, .from_lvalue = !FROM_LVALUE };
 
 		switch (operation)
 		{
@@ -1656,7 +1687,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				// TODO: Оптимизации с умножением на (-1)
 				// Загружаем <значение из rval2> на регистр
 				const rvalue tmp_rval = rval2;
-				rval2 = (rvalue){ .kind = REGISTER,
+				rval2 = (rvalue){ .kind = RVALUE_KIND_REGISTER,
 								  .val.reg_num =
 									  type_is_floating(tmp_rval.type) ? get_float_register(info) : get_register(info),
 								  .type = tmp_rval.type,
@@ -1726,12 +1757,12 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 
 			default:
 				// TODO: Оптимизации
-				// Предварительно загружаем константу из rval2 в rvalue вида REGISTER
+				// Предварительно загружаем константу из rval2 в rvalue вида RVALUE_KIND_REGISTER
 				if ((operation == BIN_SUB) || (operation == BIN_DIV) || (operation == BIN_MUL) ||
 					(operation == BIN_REM) || (operation == BIN_DIV))
 				{
 					const rvalue tmp_rval = rval2;
-					rval2 = (rvalue){ .kind = REGISTER,
+					rval2 = (rvalue){ .kind = RVALUE_KIND_REGISTER,
 									  .val.reg_num = type_is_floating(tmp_rval.type) ? get_float_register(info)
 																					 : get_register(info),
 									  .type = tmp_rval.type,
@@ -1741,7 +1772,7 @@ static rvalue apply_bin_operation_rvalue(information *const info, rvalue rval1, 
 				// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
 				if (operation == BIN_SUB)
 				{
-					apply_bin_operation_rvalue(info, rval2, rvalue_negative_one, BIN_MUL);
+					emit_binary_operation(info, rval2, rvalue_negative_one, BIN_MUL);
 				}
 
 				// Выписываем операцию, её результат будет записан в result
@@ -1792,7 +1823,7 @@ static rvalue emit_cast_expression(information *const info, const node *const nd
 		// int -> float
 
 		const rvalue result = (rvalue){ .from_lvalue = !FROM_LVALUE
-			, .kind = REGISTER
+			, .kind = RVALUE_KIND_REGISTER
 			, .type = TYPE_FLOATING
 			, .val.reg_num = get_float_register(info) };
 
@@ -1822,37 +1853,37 @@ static rvalue emit_literal_expression(const syntax *const sx, const node *const 
 	switch (type_get_class(sx, type))
 	{
 		case TYPE_BOOLEAN:
-			return (rvalue) { .kind = CONST
+			return (rvalue) { .kind = RVALUE_KIND_CONST
 				, .type = type
 				, .val.int_val = (expression_literal_get_boolean(nd)) ? 1 : 0
 				, .from_lvalue = !FROM_LVALUE };
 
 		case TYPE_CHARACTER:
-			return (rvalue) { .kind = CONST
+			return (rvalue) { .kind = RVALUE_KIND_CONST
 				, .type = type
 				, .val.int_val = expression_literal_get_character(nd)
 				, .from_lvalue = !FROM_LVALUE };
 
 		case TYPE_INTEGER:
-			return (rvalue) { .kind = CONST,
+			return (rvalue) { .kind = RVALUE_KIND_CONST,
 							 .type = type,
 							 .val.int_val = expression_literal_get_integer(nd),
 							 .from_lvalue = !FROM_LVALUE };
 
 		case TYPE_FLOATING:
-			return (rvalue) { .kind = CONST
+			return (rvalue) { .kind = RVALUE_KIND_CONST
 				, .type = type
 				, .val.float_val = expression_literal_get_floating(nd)
 				, .from_lvalue = !FROM_LVALUE };
 
 		case TYPE_ARRAY: // Только строка
-			return (rvalue) { .kind = CONST
+			return (rvalue) { .kind = RVALUE_KIND_CONST
 				, .type = type
 				, .val.str_index = expression_literal_get_string(nd)
 				, .from_lvalue = !FROM_LVALUE };
 
 		default:
-			return (rvalue){ .kind = VOID };
+			return (rvalue){ .kind = RVALUE_KIND_VOID };
 	}
 }
 
@@ -1876,11 +1907,11 @@ static void emit_printf_expression(information *const info, const node *const nd
 		rvalue arg_rvalue = emit_expression(info, &arg);
 		const item_t arg_rvalue_type = arg_rvalue.type;
 
-		if (arg_rvalue.kind == CONST)
+		if (arg_rvalue.kind == RVALUE_KIND_CONST)
 		{
-			// Предварительно загружаем константу в rvalue вида REGISTER
+			// Предварительно загружаем константу в rvalue вида RVALUE_KIND_REGISTER
 			const rvalue tmp_rval = arg_rvalue;
-			arg_rvalue = (rvalue){ .kind = REGISTER,
+			arg_rvalue = (rvalue){ .kind = RVALUE_KIND_REGISTER,
 								   .val.reg_num =
 									   type_is_floating(tmp_rval.type) ? get_float_register(info) : get_register(info),
 								   .type = tmp_rval.type,
@@ -1896,7 +1927,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 
 		const lvalue a0_lval =
 			emit_store_of_rvalue(info,
-								 (rvalue){ .kind = REGISTER,
+								 (rvalue){ .kind = RVALUE_KIND_REGISTER,
 										   .val.reg_num = R_A0,
 										   .type = TYPE_INTEGER // Не уверен
 										   ,
@@ -1906,12 +1937,12 @@ static void emit_printf_expression(information *const info, const node *const nd
 										   // второй на 2*WORD_LENGTH и т.д.
 										   ,
 										   .loc.displ = 0,
-										   .kind = STACK,
+										   .kind = LVALUE_KIND_STACK,
 										   .type = arg_rvalue.type });
 
 		const lvalue a1_lval =
 			emit_store_of_rvalue(info,
-								 (rvalue){ .kind = REGISTER,
+								 (rvalue){ .kind = RVALUE_KIND_REGISTER,
 										   .val.reg_num = R_A1,
 										   .type = TYPE_INTEGER // Не уверен
 										   ,
@@ -1921,7 +1952,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 										   // второй на 2*WORD_LENGTH и т.д.
 										   ,
 										   .loc.displ = WORD_LENGTH,
-										   .kind = STACK,
+										   .kind = LVALUE_KIND_STACK,
 										   .type = arg_rvalue.type });
 
 		if (!type_is_floating(arg_rvalue.type))
@@ -1930,7 +1961,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 			emit_store_rvalue_to_rvalue(info
 				, (rvalue) { .type = TYPE_INTEGER
 					, .val.reg_num = R_A1
-					, .kind = REGISTER
+					, .kind = RVALUE_KIND_REGISTER
 					, .from_lvalue = FROM_LVALUE }
 				, arg_rvalue);
 
@@ -1948,21 +1979,17 @@ static void emit_printf_expression(information *const info, const node *const nd
 		}
 		else
 		{
-			const lvalue a2_lval =
-				emit_store_of_rvalue(info,
-									 (rvalue){ .kind = REGISTER,
-											   .val.reg_num = R_A2,
-											   .type = TYPE_INTEGER // Не уверен
-											   ,
-											   .from_lvalue = !FROM_LVALUE },
-									 (lvalue){ .base_reg = R_FP
-											   // по call convention: первый на WORD_LENGTH выше предыдущего положения
-											   // $fp, второй на 2*WORD_LENGTH и т.д.
-											   ,
-											   .loc.displ = 2 * WORD_LENGTH,
-											   .type = TYPE_INTEGER // Не уверен
-											   ,
-											   .kind = STACK });
+			const lvalue a2_lval = emit_store_of_rvalue(info
+				, (rvalue) { .kind = RVALUE_KIND_REGISTER
+					, .val.reg_num = R_A2
+					, .type = TYPE_INTEGER
+					, .from_lvalue = !FROM_LVALUE }
+				, (lvalue) { .base_reg = R_FP
+					// по call convention: первый на WORD_LENGTH выше предыдущего положения
+					// $fp, второй на 2*WORD_LENGTH и т.д.
+					, .loc.displ = 2 * WORD_LENGTH
+					, .type = TYPE_INTEGER
+					, .kind = LVALUE_KIND_STACK });
 			uni_printf(info->sx->io, "\n");
 
 			// Конвертируем single to double
@@ -1981,7 +2008,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 			instruction_to_io(info->sx->io, IC_MIPS_MFC_1);
 			uni_printf(info->sx->io, " ");
 			rvalue_to_io(info, (rvalue){ .from_lvalue = !FROM_LVALUE,
-										 .kind = REGISTER,
+										 .kind = RVALUE_KIND_REGISTER,
 										 .type = TYPE_INTEGER // Не уверен
 										 ,
 										 .val.reg_num = R_A1 });
@@ -1994,7 +2021,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 			instruction_to_io(info->sx->io, IC_MIPS_MFHC_1);
 			uni_printf(info->sx->io, " ");
 			rvalue_to_io(info, (rvalue) { .from_lvalue = !FROM_LVALUE
-				, .kind = REGISTER
+				, .kind = RVALUE_KIND_REGISTER
 				, .type = TYPE_INTEGER
 				, .val.reg_num = R_A2 });
 			uni_printf(info->sx->io, ", ");
@@ -2014,20 +2041,20 @@ static void emit_printf_expression(information *const info, const node *const nd
 
 			const rvalue a2_rval = emit_load_of_lvalue(info, a2_lval);
 			emit_store_rvalue_to_rvalue(
-				info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = REGISTER, .val.reg_num = R_A2 }, a2_rval);
+				info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_A2 }, a2_rval);
 			free_rvalue(info, a2_rval);
 			free_rvalue(info, arg_rvalue);
 			uni_printf(info->sx->io, "\n");
 		}
 
 		const rvalue a0_rval = emit_load_of_lvalue(info, a0_lval);
-		emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = REGISTER, .val.reg_num = R_A0 },
+		emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_A0 },
 									a0_rval);
 		free_rvalue(info, a0_rval);
 		uni_printf(info->sx->io, "\n");
 
 		const rvalue a1_rval = emit_load_of_lvalue(info, a1_lval);
-		emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = REGISTER, .val.reg_num = R_A1 },
+		emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_A1 },
 									a1_rval);
 		free_rvalue(info, a1_rval);
 		uni_printf(info->sx->io, "\n");
@@ -2039,13 +2066,13 @@ static void emit_printf_expression(information *const info, const node *const nd
 	}
 
 	const lvalue a0_lval = emit_store_of_rvalue(
-		info, (rvalue){ .kind = REGISTER, .val.reg_num = R_A0, .type = TYPE_INTEGER, .from_lvalue = !FROM_LVALUE },
+		info, (rvalue){ .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_A0, .type = TYPE_INTEGER, .from_lvalue = !FROM_LVALUE },
 		(lvalue){ .base_reg = R_FP
 				  // по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
 				  // второй на 2*WORD_LENGTH и т.д.
 				  ,
 				  .loc.displ = 0,
-				  .kind = STACK,
+				  .kind = LVALUE_KIND_STACK,
 				  .type = TYPE_INTEGER });
 
 	uni_printf(info->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
@@ -2057,7 +2084,7 @@ static void emit_printf_expression(information *const info, const node *const nd
 
 	uni_printf(info->sx->io, "\n\t# data restoring:\n");
 	const rvalue a0_rval = emit_load_of_lvalue(info, a0_lval);
-	emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = REGISTER, .val.reg_num = R_A0 },
+	emit_store_rvalue_to_rvalue(info, (rvalue){ .from_lvalue = FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_A0 },
 								a0_rval);
 	free_rvalue(info, a0_rval);
 
@@ -2127,27 +2154,26 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
 				// второй на 2*WORD_LENGTH и т.д.
 				, .loc.displ = i * WORD_LENGTH
-				, .kind = STACK
+				, .kind = LVALUE_KIND_STACK
 				, .type = /* TODO: структуры/массивы здесь некорректно обработаются: */ arg_rvalue.type };
 
 			// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
 			emit_store_of_rvalue(info
 				, (type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
-					? (rvalue){ .kind = REGISTER
+					? (rvalue){ .kind = RVALUE_KIND_REGISTER
 						, .val.reg_num = (type_is_floating(arg_rvalue.type) 
 							? R_FA0 + f_arg_count 
 							: R_A0 + arg_count)
-						, .type = /* TODO: структуры/массивы здесь некорректно обработаются: */ arg_rvalue.type
+						, .type = arg_rvalue.type
 						, .from_lvalue = !FROM_LVALUE } // Сохранение значения в регистре-аргументе
 					: arg_rvalue // Передача аргумента
 				, tmp_arg_lvalue);
-			// TODO: 
 
-			// в регистры-аргументы
+			// если это передача параметров в регистры-аргументы
 			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
 			{
 				// Аргументы рассматриваются в данном случае как регистровые переменные
-				const rvalue tmp = { .kind = REGISTER
+				const rvalue tmp = { .kind = RVALUE_KIND_REGISTER
 					, .val.reg_num = type_is_floating(arg_rvalue.type) 
 						? (R_FA0 + f_arg_count) 
 						: (R_A0 + arg_count)
@@ -2199,7 +2225,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 			const rvalue tmp_rval = emit_load_of_lvalue(info, prev_arg_displ[i + j]);
 			emit_store_rvalue_to_rvalue(info
 				, (rvalue){ .from_lvalue = FROM_LVALUE
-					, .kind = REGISTER
+					, .kind = RVALUE_KIND_REGISTER
 					, .val.reg_num = type_is_floating(prev_arg_displ[i + j].type)
 						? (R_FA0 + 2 * j++)
 						: (R_A0 + i++) }
@@ -2216,7 +2242,7 @@ static rvalue emit_call_expression(information *const info, const node *const nd
 		uni_printf(info->sx->io, "\n");
 	}
 
-	return (rvalue){ .kind = REGISTER,
+	return (rvalue){ .kind = RVALUE_KIND_REGISTER,
 					 .type = return_type,
 					 .val.reg_num = type_is_floating(return_type) ? R_FV0 : R_V0,
 					 .from_lvalue = !FROM_LVALUE };
@@ -2242,7 +2268,7 @@ static rvalue emit_inc_dec_expression(information *const info, const node *const
 
 	const mips_register_t post_result_reg = get_register(info);
 	const rvalue post_result_rvalue = {
-		.kind = REGISTER, .val.reg_num = post_result_reg, .type = identifier_lvalue.type, .from_lvalue = FROM_LVALUE
+		.kind = RVALUE_KIND_REGISTER, .val.reg_num = post_result_reg, .type = identifier_lvalue.type, .from_lvalue = FROM_LVALUE
 	};
 
 	if (operation == UN_POSTDEC || operation == UN_POSTINC)
@@ -2254,18 +2280,18 @@ static rvalue emit_inc_dec_expression(information *const info, const node *const
 	{
 		case UN_PREDEC:
 		case UN_POSTDEC:
-			apply_bin_operation_rvalue(info, identifier_rvalue, rvalue_negative_one, BIN_ADD);
+			emit_binary_operation(info, identifier_rvalue, rvalue_negative_one, BIN_ADD);
 			break;
 		case UN_PREINC:
 		case UN_POSTINC:
-			apply_bin_operation_rvalue(info, identifier_rvalue, rvalue_one, BIN_ADD);
+			emit_binary_operation(info, identifier_rvalue, rvalue_one, BIN_ADD);
 			break;
 
 		default:
 			break;
 	}
 
-	if (identifier_lvalue.kind == STACK)
+	if (identifier_lvalue.kind == LVALUE_KIND_STACK)
 	{
 		emit_store_of_rvalue(info, identifier_rvalue, identifier_lvalue);
 	}
@@ -2311,15 +2337,15 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 
 			if (operator== UN_MINUS)
 			{
-				return apply_bin_operation_rvalue(
+				return emit_binary_operation(
 					info,
 					(rvalue){
-						.kind = REGISTER, .val.reg_num = R_ZERO, .type = TYPE_INTEGER, .from_lvalue = FROM_LVALUE },
+						.kind = RVALUE_KIND_REGISTER, .val.reg_num = R_ZERO, .type = TYPE_INTEGER, .from_lvalue = FROM_LVALUE },
 					operand_rvalue, BIN_SUB);
 			}
 			else
 			{
-				return apply_bin_operation_rvalue(info, operand_rvalue, rvalue_negative_one, BIN_XOR);
+				return emit_binary_operation(info, operand_rvalue, rvalue_negative_one, BIN_XOR);
 			}
 		}
 
@@ -2333,7 +2359,7 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 			const label label_end = { .kind = L_END, .num = curr_label_num };
 
 			const rvalue result_rvalue = (rvalue){
-				.kind = REGISTER, .val.reg_num = get_register(info), .type = TYPE_BOOLEAN, .from_lvalue = !FROM_LVALUE
+				.kind = RVALUE_KIND_REGISTER, .val.reg_num = get_register(info), .type = TYPE_BOOLEAN, .from_lvalue = !FROM_LVALUE
 			};
 
 			uni_printf(info->sx->io, "\t");
@@ -2380,8 +2406,8 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 			uni_printf(info->sx->io, ", ");
 			emit_label(info, label_else);
 
-			const rvalue result_rvalue = apply_bin_operation_rvalue(info
-				, (rvalue){ .kind = REGISTER
+			const rvalue result_rvalue = emit_binary_operation(info
+				, (rvalue){ .kind = RVALUE_KIND_REGISTER
 					, .val.reg_num = R_ZERO
 					, .type = TYPE_INTEGER
 					, .from_lvalue = FROM_LVALUE }
@@ -2397,10 +2423,10 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 			const node operand = expression_unary_get_operand(nd);
 			const lvalue operand_lvalue = emit_lvalue(info, &operand);
 
-			assert(operand_lvalue.kind != REG);
+			assert(operand_lvalue.kind != LVALUE_KIND_REGISTER);
 
 			const rvalue result_rvalue = (rvalue){
-				.from_lvalue = !FROM_LVALUE, .kind = REGISTER, .type = TYPE_INTEGER, .val.reg_num = get_register(info)
+				.from_lvalue = !FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .type = TYPE_INTEGER, .val.reg_num = get_register(info)
 			};
 
 			uni_printf(info->sx->io, "\n\t");
@@ -2416,7 +2442,7 @@ static rvalue emit_unary_expression_rvalue(information *const info, const node *
 
 		default:
 			// TODO: оставшиеся унарные операторы
-			return (rvalue){ .kind = VOID };
+			return (rvalue){ .kind = RVALUE_KIND_VOID };
 	}
 }
 
@@ -2440,7 +2466,7 @@ static rvalue emit_logic_expression(information *const info, const node *const n
 	const node RHS = expression_binary_get_RHS(nd);
 	const rvalue rhs_rvalue = emit_expression(info, &RHS);
 
-	return apply_bin_operation_rvalue(info, lhs_rvalue, rhs_rvalue, operation);
+	return emit_binary_operation(info, lhs_rvalue, rhs_rvalue, operation);
 }
 
 /**
@@ -2459,7 +2485,7 @@ static rvalue emit_integral_expression_rvalue(information *const info, const nod
 	const node RHS = expression_binary_get_RHS(nd);
 	rvalue rhs_rvalue = emit_expression(info, &RHS);
 
-	const rvalue res = apply_bin_operation_rvalue(info, lhs_rvalue, rhs_rvalue, operator);
+	const rvalue res = emit_binary_operation(info, lhs_rvalue, rhs_rvalue, operator);
 
 	return res;
 }
@@ -2524,12 +2550,12 @@ static rvalue emit_assignment_expression(information *const info, const node *co
 			default: // BIN_OR_ASSIGN
 				correct_operation = BIN_OR;
 		}
-		rhs_rvalue = apply_bin_operation_rvalue(info, lhs_rvalue, rhs_rvalue, correct_operation);
+		rhs_rvalue = emit_binary_operation(info, lhs_rvalue, rhs_rvalue, correct_operation);
 
 		free_rvalue(info, lhs_rvalue);
 	}
 
-	if (lhs_lvalue.kind == STACK)
+	if (lhs_lvalue.kind == LVALUE_KIND_STACK)
 	{
 		emit_store_of_rvalue(info, rhs_rvalue, lhs_lvalue);
 	}
@@ -2581,11 +2607,11 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 			const node LHS = expression_binary_get_LHS(nd);
 			rvalue result_rvalue = emit_expression(info, &LHS);
 
-			if (result_rvalue.kind == CONST)
+			if (result_rvalue.kind == RVALUE_KIND_CONST)
 			{
-				// Предварительно загружаем константу в rvalue вида REGISTER
+				// Предварительно загружаем константу в rvalue вида RVALUE_KIND_REGISTER
 				const rvalue tmp_rval = result_rvalue;
-				result_rvalue = (rvalue){ .kind = REGISTER
+				result_rvalue = (rvalue){ .kind = RVALUE_KIND_REGISTER
 					, .val.reg_num = type_is_floating(tmp_rval.type) 
 						? get_float_register(info) 
 						: get_register(info)
@@ -2615,7 +2641,7 @@ static rvalue emit_binary_expression(information *const info, const node *const 
 
 		default:
 			// TODO: оставшиеся бинарные операторы
-			return (rvalue){ .kind = VOID };
+			return (rvalue){ .kind = RVALUE_KIND_VOID };
 	}
 }
 
@@ -2649,7 +2675,7 @@ static rvalue emit_ternary_expression(information *const info, const node *const
 
 	free_rvalue(info, condition_rvalue);
 
-	const rvalue result_rvalue = (rvalue) { .kind = REGISTER
+	const rvalue result_rvalue = (rvalue) { .kind = RVALUE_KIND_REGISTER
 		, .val.reg_num = type_is_floating(expression_get_type(nd)) ? get_float_register(info) : get_register(info)
 		, .type = expression_get_type(nd)
 		, .from_lvalue = !FROM_LVALUE };
@@ -2699,7 +2725,7 @@ static rvalue emit_inline_expression(information *const info, const node *const 
 		emit_statement(info, &substmt);
 	}
 
-	return (rvalue){ .kind = VOID };
+	return (rvalue){ .kind = RVALUE_KIND_VOID };
 }
 
 /**
@@ -2748,12 +2774,12 @@ static rvalue emit_expression(information *const info, const node *const nd)
 		case EXPR_INITIALIZER:
 			// FIXME: кидать соответствующую ошибку
 			assert(expression_get_class(nd) != EXPR_INITIALIZER);
-			return (rvalue){ .kind = VOID };
+			return (rvalue){ .kind = RVALUE_KIND_VOID };
 
 		default: // EXPR_INVALID
 			// TODO: генерация оставшихся выражений
 			assert(expression_get_class(nd) != EXPR_INVALID);
-			return (rvalue){ .kind = VOID };
+			return (rvalue){ .kind = RVALUE_KIND_VOID };
 	}
 }
 
@@ -2777,7 +2803,7 @@ static rvalue emit_void_expression(information *const info, const node *const nd
 
 		free_rvalue(info, result);
 	}
-	return (rvalue){ .kind = VOID };
+	return (rvalue){ .kind = RVALUE_KIND_VOID };
 }
 
 static rvalue emit_boolean_expression(information *const info, const node *const nd)
@@ -2792,15 +2818,15 @@ static rvalue emit_boolean_expression(information *const info, const node *const
 		return value;
 	}
 
-	if (value.kind == CONST)
+	if (value.kind == RVALUE_KIND_CONST)
 	{
-		return (rvalue){ .kind = CONST, .type = TYPE_INTEGER, .val.int_val = value.val.float_val ? 1 : 0 };
+		return (rvalue){ .kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .val.int_val = value.val.float_val ? 1 : 0 };
 	}
 
 	// Only register kind and floating point type remains
 	// TODO: проверить!
 	const rvalue result = {
-		.from_lvalue = !FROM_LVALUE, .kind = REGISTER, .val.reg_num = get_register(info), .type = TYPE_INTEGER
+		.from_lvalue = !FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = get_register(info), .type = TYPE_INTEGER
 	};
 	to_code_2R(info->sx->io, IC_MIPS_CVT_W_S, value.val.reg_num, value.val.reg_num);
 	to_code_2R(info->sx->io, IC_MIPS_MFC_1, value.val.reg_num, result.val.reg_num);
@@ -2812,16 +2838,11 @@ static rvalue emit_boolean_expression(information *const info, const node *const
 
 
 /*
- *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __
- *______
- *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __
- *\   /\ "-.\ \   /\  ___\
- *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.
- *\  \ \___  \
- *	 \ \____-
- *\ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
- *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/
- *\/_____/
+ *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
+ *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
+ *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
+ *	 \ \____-  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
 
@@ -2841,8 +2862,8 @@ static void emit_array_declaration(information *const info, const node *const nd
 
 	// Сохраняем адрес начала массива
 	emit_store_of_rvalue(info
-		, (rvalue){ .from_lvalue = !FROM_LVALUE, .kind = REGISTER, .val.reg_num = R_FP, .type = TYPE_INTEGER }
-		, (lvalue){ .base_reg = R_SP, .kind = STACK, .loc.displ = arr_displ, .type = TYPE_ARRAY });
+		, (rvalue){ .from_lvalue = !FROM_LVALUE, .kind = RVALUE_KIND_REGISTER, .val.reg_num = R_FP, .type = TYPE_INTEGER }
+		, (lvalue){ .base_reg = R_SP, .kind = LVALUE_KIND_STACK, .loc.displ = arr_displ, .type = TYPE_ARRAY });
 
 	while (type_is_array(info->sx, type))
 	{
@@ -2860,11 +2881,11 @@ static void emit_array_declaration(information *const info, const node *const nd
 		else
 		{
 			rvalue bound_rvalue = emit_expression(info, &bound);
-			if (bound_rvalue.kind == CONST)
+			if (bound_rvalue.kind == RVALUE_KIND_CONST)
 			{
-				// Предварительно загружаем константу в rvalue вида REGISTER
+				// Предварительно загружаем константу в rvalue вида RVALUE_KIND_REGISTER
 				const rvalue tmp_rval = bound_rvalue;
-				bound_rvalue = (rvalue){ .kind = REGISTER
+				bound_rvalue = (rvalue){ .kind = RVALUE_KIND_REGISTER
 					, .val.reg_num = type_is_floating(tmp_rval.type) 
 						? get_float_register(info)
 						: get_register(info)
@@ -2876,25 +2897,25 @@ static void emit_array_declaration(information *const info, const node *const nd
 			// Размещаем размер текущего измерения
 			emit_store_of_rvalue(info
 				, bound_rvalue
-				, (lvalue){ .base_reg = R_FP, .kind = STACK, .loc.displ = 0, .type = TYPE_INTEGER });
+				, (lvalue){ .base_reg = R_FP, .kind = LVALUE_KIND_STACK, .loc.displ = 0, .type = TYPE_INTEGER });
 
 			// Смещаем на один (за размер)
-			apply_bin_operation_rvalue(info, bound_rvalue, rvalue_one, BIN_ADD);
+			emit_binary_operation(info, bound_rvalue, rvalue_one, BIN_ADD);
 
 			// Умножаем на WORD_LENGTH
-			apply_bin_operation_rvalue(info
+			emit_binary_operation(info
 				, bound_rvalue
 				, (rvalue){ .from_lvalue = !FROM_LVALUE
-					, .kind = CONST
+					, .kind = RVALUE_KIND_CONST
 					, .type = TYPE_INTEGER
 					, .val.int_val = WORD_LENGTH }
 				, BIN_MUL);
 
 			bound_rvalue.from_lvalue = FROM_LVALUE; // Чтобы в bound_rvalue не записался результат следующей функции
 			// Сдвигаем $fp
-			apply_bin_operation_rvalue(info
+			emit_binary_operation(info
 				, (rvalue){ .from_lvalue = !FROM_LVALUE
-					, .kind = REGISTER
+					, .kind = RVALUE_KIND_REGISTER
 					, .type = TYPE_INTEGER
 					, .val.reg_num = R_FP }
 				, bound_rvalue, BIN_SUB);
@@ -2915,7 +2936,7 @@ static void emit_array_declaration(information *const info, const node *const nd
 		// смещение от $sp, где хранится адрес массива
 		const item_t displ = hash_get(&info->displacements, identifier, 1);
 		const rvalue array_address_rvalue = emit_load_of_lvalue(info
-			, (lvalue){ .base_reg = R_SP, .kind = STACK, .loc.displ = displ, .type = type });
+			, (lvalue){ .base_reg = R_SP, .kind = LVALUE_KIND_STACK, .loc.displ = displ, .type = type });
 		// Теперь имеем адрес начала массива
 
 		node init = declaration_variable_get_initializer(nd);
@@ -2928,7 +2949,7 @@ static void emit_array_declaration(information *const info, const node *const nd
 
 			emit_store_of_rvalue(info
 				, subexpr_rval
-				, (lvalue){ .kind = STACK
+				, (lvalue){ .kind = LVALUE_KIND_STACK
 					, .base_reg = array_address_rvalue.val.reg_num // Гарантируется, что rvalue типа регистр
 					, .type = expression_get_type(&subexpr)
 					, .loc.displ = -(item_t)(i + 1) * WORD_LENGTH });
@@ -3413,7 +3434,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 		const rvalue value = emit_expression(info, &expression);
 
 		const item_t type = expression_get_type(nd);
-		const lvalue return_lval = { .kind = REG, .loc.reg_num = R_V0, .type = type };
+		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = type };
 
 		emit_store_of_rvalue(info, value, return_lval);
 
