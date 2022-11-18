@@ -34,8 +34,8 @@ typedef struct parser
 	storage *stg;					/**< Macro storage */
 
 	universal_io *io;				/**< Universal IO structure */
-	location prev;					/**< Parent macro location */
-	location loc;					/**< Current location */
+	location *prev;					/**< Parent macro location */
+	location *loc;					/**< Current location */
 
 	size_t include;					/**< Current include depth */
 	size_t call;					/**< Current macro call depth */
