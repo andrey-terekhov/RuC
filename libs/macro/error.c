@@ -193,11 +193,13 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			const size_t expected = va_arg(args, size_t);
 			const size_t actual = va_arg(args, size_t);
 
-			const bool one = expected % 10 == 1 && expected != 11;
-			const bool many = expected % 10 == 0 || expected % 10 >= 5 || (expected >= 11 && expected <= 14);
+			const bool one = expected % 10 == 1 && expected % 100 != 11;
+			const bool many = expected % 10 == 0 || expected % 10 >= 5
+				|| (expected % 100 >= 11 && expected % 100 <= 14);
 
-			sprintf(msg, "макросу " QUOTE "%s" QUOTE " требуется %zu аргумент%s, но передан только %zu"
-					, name, expected, one ? "" : many ? "ов" : "а", actual);
+			sprintf(msg, "макросу " QUOTE "%s" QUOTE " требуется %zu аргумент%s, но передан%s только %zu"
+					, name, expected, one ? "" : many ? "ов" : "а"
+					, actual % 10 == 1 && actual % 100 != 11 ? "" : "о", actual);
 		}
 		break;
 		case ARGS_PASSED:
@@ -206,8 +208,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			const size_t actual = va_arg(args, size_t);
 			const size_t expected = va_arg(args, size_t);
 
-			const bool one = actual % 10 == 1 && actual != 11;
-			const bool many = actual % 10 == 0 || actual % 10 >= 5 || (actual >= 11 && actual <= 14);
+			const bool one = actual % 10 == 1 && actual % 100 != 11;
+			const bool many = actual % 10 == 0 || actual % 10 >= 5
+				|| (actual % 100 >= 11 && actual % 100 <= 14);
 
 			sprintf(msg, "макросу " QUOTE "%s" QUOTE " передан%s %zu аргумент%s, но принимает он только %zu"
 					, name, one ? "" : "о", actual, one ? "" : many ? "ов" : "а", expected);
