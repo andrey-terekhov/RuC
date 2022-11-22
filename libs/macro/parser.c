@@ -356,7 +356,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 		if (ch == '\\')
 		{
 			ch = uni_scan_char(&io);
-			uni_printf(&io, "%s", ch == '"' ? "\\\\" : ch == '\\' ? "\\" : "");
+			uni_printf(&io, "%s", ch == '"' ? "\\\\" : "\\");
 		}
 
 		uni_printf(&io, "%s", ch == '"' ? "\\" : "");
@@ -372,7 +372,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 
 static size_t parse_brackets(parser *const prs, const size_t index, storage *const stg)
 {
-	size_t read = 0;
+	size_t arg = 0;
 	char32_t character = '\0';
 	location loc = loc_copy(prs->loc);
 
@@ -402,27 +402,27 @@ static size_t parse_brackets(parser *const prs, const size_t index, storage *con
 			character = skip_lines(prs);
 			if (character == (char32_t)EOF)
 			{
-				out_clear(&out);
 				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_last_read(prs->stg));
+				out_clear(&out);
 				return 0;
 			}
 		}
 
 		char *buffer = out_extract_buffer(&out);
-		parse_values(prs, index, stg, buffer, read++);
+		parse_values(prs, index, stg, buffer, arg++);
 		free(buffer);
 	}
 
-	return read;
+	return arg;
 }
 
 static void parse_replacement(parser *const prs, const size_t index)
 {
-	const size_t args = storage_get_args_by_index(prs->stg, index);
+	const size_t expected = storage_get_args_by_index(prs->stg, index);
 	const size_t position = in_get_position(prs->io);
 	location loc = loc_copy(prs->loc);
 
-	if (args == 0)
+	if (expected == 0)
 	{
 		if (skip_lines(prs) != '(' || uni_scan_char(prs->io) != '('
 			|| skip_lines(prs) != ')' || uni_scan_char(prs->io) != ')')
@@ -447,13 +447,20 @@ static void parse_replacement(parser *const prs, const size_t index)
 	}
 
 	storage stg = storage_create();
-	if (parse_brackets(prs, index, &stg) == 0)
+	const size_t actual = parse_brackets(prs, index, &stg);
+	if (expected == actual)
 	{
-		storage_clear(&stg);
-		return;
+
+	}
+	else if (actual != 0)
+	{
+		loc_search_from(prs->loc);
+		parser_error(prs, prs->loc, expected > actual ? ARGS_REQUIRES : ARGS_PASSED
+			, storage_last_read(prs->stg), expected, actual);
 	}
 
 	uni_scan_char(prs->io);
+	storage_clear(&stg);
 }
 
 static void parce_identifier(parser *const prs)

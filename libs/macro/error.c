@@ -205,8 +205,8 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case ARGS_PASSED:
 		{
 			const char *const name = va_arg(args, char *);
-			const size_t actual = va_arg(args, size_t);
 			const size_t expected = va_arg(args, size_t);
+			const size_t actual = va_arg(args, size_t);
 
 			const bool one = actual % 10 == 1 && actual % 100 != 11;
 			const bool many = actual % 10 == 0 || actual % 10 >= 5
