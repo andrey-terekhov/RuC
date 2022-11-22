@@ -421,6 +421,46 @@ static size_t parse_brackets(parser *const prs, const size_t index, storage *con
 	return arg;
 }
 
+static void parse_observation(parser *const prs, const size_t index, storage *const stg)
+{
+	universal_io *io = prs->io;
+	universal_io value = io_create();
+	in_set_buffer(&value, storage_get_by_index(prs->stg, index));
+	out_set_buffer(&value, MAX_VALUE_SIZE);
+	prs->io = &value;
+
+	location *loc = prs->loc;
+	prs->loc = NULL;
+
+	for (char32_t ch = skip_until(prs, true); ch != (char32_t)EOF; ch = skip_until(prs, true))
+	{
+		if (ch == '#' || utf8_is_letter(ch))
+		{
+			const size_t current = storage_search(stg, prs->io);
+			uni_printf(prs->io, "%s", kw_is_correct(current) || current == SIZE_MAX
+				? storage_last_read(stg) : storage_get_by_index(stg, current));
+		}
+		else if (ch == '\'' || ch == '"')
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+			uni_print_char(prs->io, skip_string(prs, ch));
+		}
+		else
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+		}
+	}
+
+	prs->loc = loc;
+	prs->io = io;
+
+	char *buffer = out_extract_buffer(&value);
+	in_set_buffer(&value, buffer);
+	parser_preprocess(prs, &value);
+	in_clear(&value);
+	free(buffer);
+}
+
 static void parse_replacement(parser *const prs, const size_t index)
 {
 	const size_t expected = storage_get_args_by_index(prs->stg, index);
@@ -455,45 +495,7 @@ static void parse_replacement(parser *const prs, const size_t index)
 	const size_t actual = parse_brackets(prs, index, &stg);
 	if (expected == actual)
 	{
-		universal_io *io = prs->io;
-		universal_io value = io_create();
-		in_set_buffer(&value, storage_get_by_index(prs->stg, index));
-		out_set_buffer(&value, MAX_VALUE_SIZE);
-		prs->io = &value;
-
-		char32_t character = '\0';
-		location *loc = prs->loc;
-		prs->loc = NULL;
-
-		while (character != (char32_t)EOF)
-		{
-			character = skip_until(prs, true);
-
-			if (character == '#' || utf8_is_letter(character))
-			{
-				const size_t current = storage_search(&stg, prs->io);
-				uni_printf(prs->io, "%s", kw_is_correct(current) || current == SIZE_MAX
-					? storage_last_read(&stg) : storage_get_by_index(&stg, current));
-			}
-			else if (character == '\'' || character == '"')
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-				uni_print_char(prs->io, skip_string(prs, character));
-			}
-			else
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-			}
-		}
-
-		prs->loc = loc;
-		prs->io = io;
-
-		char *buffer = out_extract_buffer(&value);
-		in_set_buffer(&value, buffer);
-		parser_preprocess(prs, &value);
-		in_clear(&value);
-		free(buffer);
+		parse_observation(prs, index, &stg);
 	}
 	else if (actual != SIZE_MAX)
 	{
