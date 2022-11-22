@@ -314,16 +314,32 @@ static char32_t skip_until(parser *const prs, const bool fill)
 	}
 }
 
+static char32_t skip_lines(parser *const prs)
+{
+	char32_t character = skip_until(prs, false);
+	while (character == '\n')
+	{
+		uni_scan_char(prs->io);
+		loc_line_break(prs->loc);
+		character = skip_until(prs, false);
+	}
+
+	return character;
+}
+
 
 static void parse_values(parser *const prs, const size_t index)
 {
-	const size_t position = in_get_position(prs->io);
 	const size_t args = storage_get_args_by_index(prs->stg, index);
+	size_t position = in_get_position(prs->io);
+	location loc = loc_copy(prs->loc);
+
 	if (args == 0)
 	{
-		if (skip_until(prs, false) != '(' || uni_scan_char(prs->io) != '('
-			|| skip_until(prs, false) != ')' || uni_scan_char(prs->io) != ')')
+		if (skip_lines(prs) != '(' || uni_scan_char(prs->io) != '('
+			|| skip_lines(prs) != ')' || uni_scan_char(prs->io) != ')')
 		{
+			*prs->loc = loc;
 			in_set_position(prs->io, position);
 		}
 
@@ -334,7 +350,56 @@ static void parse_values(parser *const prs, const size_t index)
 		return;
 	}
 
-	uni_print_char(prs->io, '\n');
+	if (skip_lines(prs) != '(')
+	{
+		*prs->loc = loc;
+		in_set_position(prs->io, position);
+		parser_error(prs, prs->prev, ARGS_NON, storage_last_read(prs->stg));
+		return;
+	}
+
+	size_t read = 0;
+	char32_t character = '\0';
+	storage stg = storage_create();
+	loc = loc_copy(prs->loc);
+
+	while (character != ')')
+	{
+		universal_io out = io_create();
+		out_set_buffer(&out, MAX_VALUE_SIZE);
+
+		uni_scan_char(prs->io);
+		character = skip_lines(prs);
+		position = in_get_position(prs->io);
+		while (character != ',' && character != ')')
+		{
+			uni_printf(&out, "%s", in_get_position(prs->io) != position ? " " : "");
+			uni_print_char(&out, uni_scan_char(prs->io));
+			if (character == '\'' || character == '"')
+			{
+				out_swap(prs->io, &out);
+				uni_print_char(prs->io, skip_string(prs, character));
+				out_swap(prs->io, &out);
+			}
+
+			position = in_get_position(prs->io);
+			character = skip_lines(prs);
+			if (character == (char32_t)EOF)
+			{
+				out_clear(&out);
+				storage_clear(&stg);
+				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_last_read(prs->stg));
+				return;
+			}
+		}
+
+		char *buffer = out_extract_buffer(&out);
+		printf("\"%s\"\n", buffer);
+		free(buffer);
+		read++;
+	}
+
+	uni_scan_char(prs->io);
 }
 
 static void parce_replace(parser *const prs)
