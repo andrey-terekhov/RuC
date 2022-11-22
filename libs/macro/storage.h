@@ -294,6 +294,17 @@ inline int storage_remove(storage *const stg, const char *const id)
  */
 size_t storage_search(storage *const stg, universal_io *const io);
 
+
+/**
+ *	Return macro name by index
+ *
+ *	@param	stg			Macro storage
+ *	@param	id			Index of record
+ *
+ *	@return	Macro, @c NULL on failure
+ */
+const char *storage_to_string(const storage *const stg, const size_t id);
+
 /**
  *	Return the last read macro
  *

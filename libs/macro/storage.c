@@ -213,6 +213,11 @@ size_t storage_search(storage *const stg, universal_io *const io)
 	return kw_is_correct(value) ? (size_t)value : hash_get_index(&stg->hs, (item_t)index);
 }
 
+const char *storage_to_string(const storage *const stg, const size_t id)
+{
+	return storage_is_correct(stg) ? map_to_string(&stg->as, hash_get_key(&stg->hs, id)) : NULL;
+}
+
 const char *storage_last_read(const storage *const stg)
 {
 	return storage_is_correct(stg) ? map_last_read(&stg->as) : NULL;

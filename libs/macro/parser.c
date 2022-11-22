@@ -61,7 +61,7 @@ static void parser_error(parser *const prs, location *const loc, error_t num, ..
 	va_list args;
 	va_start(args, num);
 
-	macro_verror(prs->prev != NULL ? prs->prev : loc, num, args);
+	macro_verror(in_is_file(prs->io) ? loc : prs->prev, num, args);
 	prs->was_error = true;
 
 	va_end(args);
@@ -83,7 +83,7 @@ static void parser_warning(parser *const prs, location *const loc, warning_t num
 	va_list args;
 	va_start(args, num);
 
-	macro_vwarning(prs->prev != NULL ? prs->prev : loc, num, args);
+	macro_vwarning(in_is_file(prs->io) ? loc : prs->prev, num, args);
 
 	va_end(args);
 }
@@ -402,7 +402,7 @@ static size_t parse_brackets(parser *const prs, const size_t index, storage *con
 			character = skip_lines(prs);
 			if (character == (char32_t)EOF)
 			{
-				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_last_read(prs->stg));
+				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_to_string(prs->stg, index));
 				out_clear(&out);
 				return 0;
 			}
@@ -442,7 +442,7 @@ static void parse_replacement(parser *const prs, const size_t index)
 	{
 		*prs->loc = loc;
 		in_set_position(prs->io, position);
-		parser_error(prs, prs->prev, ARGS_NON, storage_last_read(prs->stg));
+		parser_error(prs, prs->prev, ARGS_NON, storage_to_string(prs->stg, index));
 		return;
 	}
 
@@ -456,7 +456,7 @@ static void parse_replacement(parser *const prs, const size_t index)
 	{
 		loc_search_from(prs->loc);
 		parser_error(prs, prs->loc, expected > actual ? ARGS_REQUIRES : ARGS_PASSED
-			, storage_last_read(prs->stg), expected, actual);
+			, storage_to_string(prs->stg, index), expected, actual);
 	}
 
 	uni_scan_char(prs->io);
