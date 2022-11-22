@@ -24,6 +24,7 @@
 
 
 #define MAX_INDEX_SIZE 21
+#define MAX_MASK_SIZE 51
 
 #define MASK_POSTFIX		"__"
 #define MASK_ARGUMENT		"__ARG_%zu_"
@@ -328,10 +329,97 @@ static char32_t skip_lines(parser *const prs)
 }
 
 
-static void parse_values(parser *const prs, const size_t index)
+static void parse_values(parser *const prs, const size_t index, storage *const stg
+	, char *const value, const size_t arg)
+{
+	char mask[MAX_MASK_SIZE];
+	sprintf(mask, MASK_TOKEN_PASTE "%zu" MASK_POSTFIX, index, arg);
+	storage_set_by_index(stg, storage_add(stg, mask), value);
+
+	universal_io io = io_create();
+	in_set_buffer(&io, value);
+	out_set_buffer(&io, MAX_VALUE_SIZE);
+	out_swap(prs->io, &io);
+	parser_preprocess(prs, &io);
+	out_swap(prs->io, &io);
+
+	char *buffer = out_extract_buffer(&io);
+	sprintf(mask, MASK_ARGUMENT "%zu" MASK_POSTFIX, index, arg);
+	storage_set_by_index(stg, storage_add(stg, mask), buffer);
+	free(buffer);
+
+	in_set_position(&io, 0);
+	out_set_buffer(&io, MAX_VALUE_SIZE);
+	uni_print_char(&io, '"');
+	for (char32_t ch = uni_scan_char(&io); ch != (char32_t)EOF; ch = uni_scan_char(&io))
+	{
+		if (ch == '\\')
+		{
+			ch = uni_scan_char(&io);
+			uni_printf(&io, "%s", ch == '"' ? "\\\\" : ch == '\\' ? "\\" : "");
+		}
+
+		uni_printf(&io, "%s", ch == '"' ? "\\" : "");
+		uni_print_char(&io, ch);
+	}
+	uni_print_char(&io, '"');
+
+	buffer = out_extract_buffer(&io);
+	sprintf(mask, MASK_STRING "%zu" MASK_POSTFIX, index, arg);
+	storage_set_by_index(stg, storage_add(stg, mask), buffer);
+	free(buffer);
+}
+
+static size_t parse_brackets(parser *const prs, const size_t index, storage *const stg)
+{
+	size_t read = 0;
+	char32_t character = '\0';
+	location loc = loc_copy(prs->loc);
+
+	while (character != ')')
+	{
+		universal_io out = io_create();
+		out_set_buffer(&out, MAX_VALUE_SIZE);
+
+		uni_scan_char(prs->io);
+		character = skip_lines(prs);
+		size_t position = in_get_position(prs->io);
+		size_t brackets = 0;
+
+		while (brackets != 0 || (character != ',' && character != ')'))
+		{
+			uni_printf(&out, "%s", in_get_position(prs->io) != position ? " " : "");
+			uni_print_char(&out, uni_scan_char(prs->io));
+			if (character == '\'' || character == '"')
+			{
+				out_swap(prs->io, &out);
+				uni_print_char(prs->io, skip_string(prs, character));
+				out_swap(prs->io, &out);
+			}
+
+			brackets += character != '(' ? character == ')' ? -1 : 0 : 1;
+			position = in_get_position(prs->io);
+			character = skip_lines(prs);
+			if (character == (char32_t)EOF)
+			{
+				out_clear(&out);
+				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_last_read(prs->stg));
+				return 0;
+			}
+		}
+
+		char *buffer = out_extract_buffer(&out);
+		parse_values(prs, index, stg, buffer, read++);
+		free(buffer);
+	}
+
+	return read;
+}
+
+static void parse_replacement(parser *const prs, const size_t index)
 {
 	const size_t args = storage_get_args_by_index(prs->stg, index);
-	size_t position = in_get_position(prs->io);
+	const size_t position = in_get_position(prs->io);
 	location loc = loc_copy(prs->loc);
 
 	if (args == 0)
@@ -358,51 +446,17 @@ static void parse_values(parser *const prs, const size_t index)
 		return;
 	}
 
-	size_t read = 0;
-	char32_t character = '\0';
 	storage stg = storage_create();
-	loc = loc_copy(prs->loc);
-
-	while (character != ')')
+	if (parse_brackets(prs, index, &stg) == 0)
 	{
-		universal_io out = io_create();
-		out_set_buffer(&out, MAX_VALUE_SIZE);
-
-		uni_scan_char(prs->io);
-		character = skip_lines(prs);
-		position = in_get_position(prs->io);
-		while (character != ',' && character != ')')
-		{
-			uni_printf(&out, "%s", in_get_position(prs->io) != position ? " " : "");
-			uni_print_char(&out, uni_scan_char(prs->io));
-			if (character == '\'' || character == '"')
-			{
-				out_swap(prs->io, &out);
-				uni_print_char(prs->io, skip_string(prs, character));
-				out_swap(prs->io, &out);
-			}
-
-			position = in_get_position(prs->io);
-			character = skip_lines(prs);
-			if (character == (char32_t)EOF)
-			{
-				out_clear(&out);
-				storage_clear(&stg);
-				parser_error(prs, &loc, ARGS_UNTERMINATED, storage_last_read(prs->stg));
-				return;
-			}
-		}
-
-		char *buffer = out_extract_buffer(&out);
-		printf("\"%s\"\n", buffer);
-		free(buffer);
-		read++;
+		storage_clear(&stg);
+		return;
 	}
 
 	uni_scan_char(prs->io);
 }
 
-static void parce_replace(parser *const prs)
+static void parce_identifier(parser *const prs)
 {
 	loc_search_from(prs->loc);
 	const size_t begin = in_get_position(prs->io);
@@ -442,7 +496,7 @@ static void parce_replace(parser *const prs)
 		loc_update_begin(prs->loc);
 		in_set_position(prs->io, end);
 
-		parse_values(prs, index);
+		parse_replacement(prs, index);
 		prs->prev = NULL;
 
 		uni_print_char(prs->io, '\n');
@@ -450,7 +504,7 @@ static void parce_replace(parser *const prs)
 	}
 	else
 	{
-		parse_values(prs, index);
+		parse_replacement(prs, index);
 	}
 	prs->call--;
 }
@@ -466,7 +520,7 @@ static char32_t parse_until(parser *const prs)
 
 		if ((character == '#' || utf8_is_letter(character)) && out_is_correct(prs->io))
 		{
-			parce_replace(prs);
+			parce_identifier(prs);
 		}
 		else if (character == '\'' || character == '"')
 		{
