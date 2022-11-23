@@ -2982,11 +2982,11 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_V0);
 		// Загрузка размера массива в $a1
 		const node try_dim_size = declaration_variable_get_bound(nd, j);
-		const rvalue second_arg_rvalue = emit_empty_bound(enc, &try_dim_size, nd);
+		const rvalue bound = emit_empty_bound(enc, &try_dim_size, nd);
 		// TODO: оптимизировать обращение к регистрам
-		emit_move_rvalue_to_register(enc, R_A1, &second_arg_rvalue);
+		emit_move_rvalue_to_register(enc, R_A1, &bound);
 
-		free_rvalue(enc, &second_arg_rvalue);
+		free_rvalue(enc, &bound);
 
 		// FIXME:
 		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S5, R_A0);
