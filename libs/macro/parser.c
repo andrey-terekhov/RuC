@@ -315,6 +315,15 @@ static char32_t skip_until(parser *const prs, const bool fill)
 	}
 }
 
+/**
+ *	Skip lines without output until significant character.
+ *	Works like @c skip_until but exclude line breaks.
+ *	Stopped without last character read and processed.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	First significant character
+ */
 static char32_t skip_lines(parser *const prs)
 {
 	char32_t character = skip_until(prs, false);
@@ -329,6 +338,17 @@ static char32_t skip_lines(parser *const prs)
 }
 
 
+/**
+ *	Parse read value of macro argument.
+ *	Produce masked arguments for preprocessor operators.
+ *	Creates preprocessed value, stringizing and token-pasting operators.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *	@param	stg			Storage for values
+ *	@param	value		Read argument
+ *	@param	arg			Argument number
+ */
 static void parse_values(parser *const prs, const size_t index, storage *const stg
 	, char *const value, const size_t arg)
 {
