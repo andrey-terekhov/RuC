@@ -260,6 +260,8 @@ typedef struct encoder
 	size_t max_displ;	 /**< Максимальное смещение от $sp */
 	size_t global_displ; /**< Смещение от $gp */
 
+	item_t main_label_num; /**< Номер метки функции main */
+
 	hash displacements; /**< Хеш таблица с информацией о расположении идентификаторов:
 							@c key		 - ссылка на таблицу идентификаторов
 							@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре
@@ -1458,7 +1460,7 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 	assert(value->kind == RVALUE_KIND_CONST);
 
 	const mips_register_t reg = (type_is_floating(value->type)) ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = (type_is_floating(value->type)) ? IC_MIPS_L_S : IC_MIPS_LI;
+	const mips_instruction_t instruction = (type_is_floating(value->type)) ? IC_MIPS_LI_S : IC_MIPS_LI;
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1499,7 +1501,7 @@ static void emit_move_rvalue_to_register(encoder *const enc,
 	else
 	{
 		uni_printf(enc->sx->io, "\t");
-		instruction_to_io(enc->sx->io, !type_is_floating(value->type) ? IC_MIPS_MOVE : IC_MIPS_CVT_S_W);
+		instruction_to_io(enc->sx->io, !type_is_floating(value->type) ? IC_MIPS_MOVE : IC_MIPS_MFC_1);
 		uni_printf(enc->sx->io, " ");
 		mips_register_to_io(enc->sx->io, target);
 		uni_printf(enc->sx->io, ", ");
@@ -2146,6 +2148,8 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 		.type = TYPE_INTEGER 
 	};
 	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
+
+	uni_printf(enc->sx->io, "# im'here!\n");
 
 	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
 	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
@@ -3123,10 +3127,17 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	const size_t ref_ident = declaration_function_get_id(nd);
 	const label func_label = { .kind = L_FUNC, .num = ref_ident };
 	emit_label_declaration(enc, &func_label);
-	uni_printf(enc->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(enc->sx, ref_ident));
 
 	const item_t func_type = ident_get_type(enc->sx, ref_ident);
 	const size_t parameters = type_function_get_parameter_amount(enc->sx, func_type);
+
+	if (ref_ident == enc->sx->ref_main)
+	{
+		enc->main_label_num = ref_ident;
+		uni_printf(enc->sx->io, "MAIN:\n");
+	}
+
+	uni_printf(enc->sx->io, "\t# \"%s\" function:\n", ident_get_spelling(enc->sx, ref_ident));
 
 	enc->curr_function_ident = ref_ident;
 	enc->max_displ = 0;
@@ -3782,6 +3793,10 @@ static void strings_declaration(encoder *const enc)
 	}
 	uni_printf(enc->sx->io, "\t.text\n");
 	uni_printf(enc->sx->io, "\t.align 2\n\n");
+
+	// Прыжок на главную метку
+	// FIXME:
+	uni_printf(enc->sx->io, "j MAIN\n\n");
 }
 
 // TODO: подписать, что значит каждая директива и команда
