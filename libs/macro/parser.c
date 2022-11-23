@@ -510,17 +510,8 @@ static void parse_replacement(parser *const prs, const size_t index)
 
 static void parce_identifier(parser *const prs)
 {
-	loc_search_from(prs->loc);
 	const size_t begin = in_get_position(prs->io);
 	const size_t index = storage_search(prs->stg, prs->io);
-
-	if (storage_last_read(prs->stg)[0] == '#'
-		&& (index == SIZE_MAX || kw_is_correct(index) || prs->prev == NULL))
-	{
-		parser_error(prs, prs->loc, CHARACTER_STRAY, '#');
-		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
-		return;
-	}
 
 	if (index == SIZE_MAX)
 	{
@@ -530,6 +521,7 @@ static void parce_identifier(parser *const prs)
 
 	if (prs->call >= MAX_CALL_DAPTH)
 	{
+		loc_search_from(prs->loc);
 		parser_error(prs, prs->loc, CALL_DEPTH);
 		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 		return;
@@ -570,9 +562,15 @@ static char32_t parse_until(parser *const prs)
 	{
 		character = skip_until(prs, true);
 
-		if ((character == '#' || utf8_is_letter(character)) && out_is_correct(prs->io))
+		if (utf8_is_letter(character) && out_is_correct(prs->io))
 		{
 			parce_identifier(prs);
+		}
+		else if (character == '#')
+		{
+			loc_search_from(prs->loc);
+			parser_error(prs, prs->loc, CHARACTER_STRAY, '#');
+			uni_print_char(prs->io, uni_scan_char(prs->io));
 		}
 		else if (character == '\'' || character == '"')
 		{
