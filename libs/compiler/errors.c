@@ -124,6 +124,19 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			sprintf(msg, "оператор 'выход' не в цикле и не в операторе 'выбор'");
 			break;
 
+		case main_should_return_int_or_void:
+			sprintf(msg, "главная функция должна возвращать цел или пусто");
+			break;
+		case main_should_be_defined:
+			sprintf(msg, "главная функция должна быть описана");
+			break;
+		case wrong_main_parameters:
+			sprintf(msg, "главная функция должна иметь не больше одного параметра");
+			break;
+		case wrong_main_parameter_type:
+			sprintf(msg, "единственный параметр главной функции должен иметь тип char[][]");
+			break;
+
 		// Semantics errors
 		case use_of_undeclared_identifier:
 			sprintf(msg, "использование не объявленного идентификатора");
@@ -184,6 +197,19 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			break;
 		case incompatible_cond_operands:
 			sprintf(msg, "несовместимые типы операндов условного оператора");
+			break;
+
+		case expected_member_name:
+			sprintf(msg, "ожидалось имя поля структуры");
+			break;
+		case array_member_must_have_bounds:
+			sprintf(msg, "поля-массивы должны иметь границы");
+			break;
+		case expected_identifier_in_declarator:
+			sprintf(msg, "ожидалось имя объявляемой переменной");
+			break;
+		case declaration_does_not_declare_anything:
+			sprintf(msg, "объявление ничего не объявляет");
 			break;
 		case case_expr_not_integer:
 			sprintf(msg, "выражение оператора 'случай' должно иметь целочисленный тип");
@@ -412,6 +438,9 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 	(void)args;
 	switch (num)
 	{
+		case result_of_assignment_as_condition:
+			sprintf(msg, "результат присваивания используется в качестве условия");
+			break;
 		case too_long_int:
 			sprintf(msg, "слишком большая целая константа, преобразована в ДЛИН (DOUBLE)");
 			break;
