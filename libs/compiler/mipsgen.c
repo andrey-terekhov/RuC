@@ -332,12 +332,8 @@ static const rvalue rvalue_void = { .kind = RVALUE_KIND_CONST }; // TODO: Зам
 // Разнести по порядку появления функции
 
 static lvalue emit_lvalue(encoder *const enc, const node *const nd);
-static rvalue emit_binary_operation(
-	encoder *const enc, 
-	const rvalue *const rval1, 
-	const rvalue *const rval2, 
-	const binary_t operator
-);
+static rvalue emit_binary_operation(encoder *const enc, const rvalue *const rval1
+	, const rvalue *const rval2, const binary_t operator);
 static rvalue emit_expression(encoder *const enc, const node *const nd);
 static rvalue emit_void_expression(encoder *const enc, const node *const nd);
 static void emit_statement(encoder *const enc, const node *const nd);
@@ -1184,10 +1180,12 @@ static void emit_label_declaration(encoder *const enc, const label *const lbl)
  * @param	enc				Encoder
  * @param	label			Label for unconditional jump
  */
-static void emit_unconditional_branch(encoder *const enc, const label *const lbl)
+static void emit_unconditional_branch(encoder *const enc, const mips_instruction_t instruction, const label *const lbl)
 {
+	assert(instruction == IC_MIPS_J || instruction == IC_MIPS_JAL);
+
 	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_J);
+	instruction_to_io(enc->sx->io, instruction);
 	uni_printf(enc->sx->io, " ");
 	emit_label(enc, lbl);
 	uni_printf(enc->sx->io, "\n");
@@ -1199,17 +1197,14 @@ static void emit_unconditional_branch(encoder *const enc, const label *const lbl
  * @param	enc				Encoder
  * @param	label			Label for conditional jump
  */
-static void emit_conditional_branch(encoder *const enc,
-	const mips_instruction_t instruction,
-	const rvalue *const value,
-	const label *const lbl
-)
+static void emit_conditional_branch(encoder *const enc, const mips_instruction_t instruction
+	, const rvalue *const value, const label *const lbl)
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
 		if (value->val.int_val == 0)
 		{
-			emit_unconditional_branch(enc, lbl);
+			emit_unconditional_branch(enc, IC_MIPS_J, lbl);
 		}
 	}
 	else
@@ -1224,6 +1219,27 @@ static void emit_conditional_branch(encoder *const enc,
 		emit_label(enc, lbl);
 		uni_printf(enc->sx->io, "\n");
 	}
+}
+
+/**
+ * Emit branching with register
+ * 
+ * @param	enc				Encoder
+ * @param	reg				Register			
+ * @param	lbl				Label for jump
+*/
+static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction
+	, const mips_register_t reg, const label *const lbl)
+{
+	assert(instruction == IC_MIPS_JR);
+
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, instruction);
+	uni_printf(enc->sx->io, " ");
+	mips_register_to_io(enc->sx->io, reg);
+	uni_printf(enc->sx->io, ", ");
+	emit_label(enc, lbl);
+	uni_printf(enc->sx->io, "\n");
 }
 
 
@@ -1485,10 +1501,8 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
  * @param	target			Target register
  * @param	value			Rvalue to store
 */
-static void emit_move_rvalue_to_register(encoder *const enc,
-	const mips_register_t target,
-	const rvalue *const value
-)
+static void emit_move_rvalue_to_register(encoder *const enc
+	, const mips_register_t target, const rvalue *const value)
 {
 	assert(value->kind == RVALUE_KIND_REGISTER);
 
@@ -1557,7 +1571,6 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 				free_rvalue(enc, &reg_value);
 			}
 
-			// test, FIXME, TODO, возможно убрать, пока неясно:
 			free_register(enc, target->base_reg);
 		}
 		else
@@ -1616,12 +1629,8 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
  *
  * @return	Result rvalue
  */
-static rvalue emit_binary_operation(
-	encoder *const enc,
-	const rvalue *const rval1,
-	const rvalue *const rval2,
-	const binary_t operator
-)
+static rvalue emit_binary_operation(encoder *const enc
+	, const rvalue *const rval1, const rvalue *const rval2, const binary_t operator)
 {
 	assert(operator != BIN_LOG_AND);
 	assert(operator != BIN_LOG_OR);
@@ -1629,6 +1638,7 @@ static rvalue emit_binary_operation(
 	assert(rval1->kind != RVALUE_KIND_VOID);
 	assert(rval2->kind != RVALUE_KIND_VOID);
 
+	item_t result_type;
 	mips_register_t result;
 	const rvalue *freeing_rvalue = &rvalue_void;
 
@@ -1641,30 +1651,35 @@ static rvalue emit_binary_operation(
 			{
 				result = rval2->val.reg_num;
 				freeing_rvalue = rval1;
+				result_type = rval2->type;
 			}
 			else
 			{
 				result = rval1->val.reg_num;
 				freeing_rvalue = rval2;
+				result_type = rval1->type;
 			}
 		} // В противном случае никакой регистр освобождать не требуется, т.к. в нём будет записан результат
 		else if ((rval1->from_lvalue) && (!rval2->from_lvalue))
 		{
 			result = rval2->val.reg_num;
+			result_type = rval2->type;
 		}
 		else if ((rval2->from_lvalue) && (!rval1->from_lvalue))
 		{
 			result = rval1->val.reg_num;
+			result_type = rval1->type;
 		}
 		else
 		{
 			result = type_is_floating(rval1->type) ? get_float_register(enc) : get_register(enc);
+			result_type = rval1->type;
 		}
 
 		const rvalue result_rvalue = (rvalue) {
 			.kind = RVALUE_KIND_REGISTER
 			, .val.reg_num = result
-			, .type = rval1->type // FIXME
+			, .type = result_type
 			, .from_lvalue = !FROM_LVALUE
 		};
 
@@ -1854,7 +1869,7 @@ static rvalue emit_binary_operation(
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, &result_rvalue);
 				uni_printf(enc->sx->io, ", 1\n");
-				emit_unconditional_branch(enc, &label_end);
+				emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 
 				emit_label_declaration(enc, &label_else);
 				uni_printf(enc->sx->io, "\t");
@@ -1892,7 +1907,6 @@ static rvalue emit_binary_operation(
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(
 					enc->sx->io,
-					// FIXME:
 					get_bin_instruction(operator,
 						/* Один регистр => true в get_bin_instruction() -> */ !in_reg));
 				uni_printf(enc->sx->io, " ");
@@ -1963,7 +1977,6 @@ static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
 			return (rvalue){ .kind = RVALUE_KIND_VOID };
 	}
 }
-
 
 /**
  * Emit printf expression
@@ -2149,8 +2162,6 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 	};
 	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-	uni_printf(enc->sx->io, "# im'here!\n");
-
 	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
 	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
 	uni_printf(enc->sx->io, "\tjal printf\n");
@@ -2298,8 +2309,8 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			free_rvalue(enc, &arg_rvalue);
 		}
 
-		// FIXME:
-		uni_printf(enc->sx->io, "\n\tjal FUNC%zu\n", func_ref);
+		const label label_func = { .kind = L_FUNC, .num = func_ref };
+		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
 
 		// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
 		uni_printf(enc->sx->io, "\n\t# data restoring:\n");
@@ -2636,7 +2647,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	free_rvalue(enc, &LHS_rvalue);
 
 	const label label_end = { .kind = L_END, .num = label_num };
-	emit_unconditional_branch(enc, &label_end);
+	emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 	emit_label_declaration(enc, &label_else);
 
 	const node RHS = expression_ternary_get_RHS(nd);
@@ -3408,7 +3419,7 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 
 	if (has_else)
 	{
-		emit_unconditional_branch(enc, &label_end);
+		emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 		emit_label_declaration(enc, &label_else);
 
 		const node else_substmt = statement_if_get_else_substmt(nd);
@@ -3447,7 +3458,7 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 	const node body = statement_while_get_body(nd);
 	emit_statement(enc, &body);
 
-	emit_unconditional_branch(enc, &label_begin);
+	emit_unconditional_branch(enc, IC_MIPS_J, &label_begin);
 	emit_label_declaration(enc, &label_end);
 
 	enc->label_continue = old_continue;
@@ -3548,7 +3559,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 		emit_void_expression(enc, &increment);
 	}
 
-	emit_unconditional_branch(enc, &label_begin);
+	emit_unconditional_branch(enc, IC_MIPS_J, &label_begin);
 	emit_label_declaration(enc, &label_end);
 
 	enc->label_continue = old_continue;
@@ -3583,7 +3594,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
  */
 static void emit_continue_statement(encoder *const enc)
 {
-	emit_unconditional_branch(enc, &enc->label_continue);
+	emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_continue);
 }
 
 /**
@@ -3593,7 +3604,7 @@ static void emit_continue_statement(encoder *const enc)
  */
 static void emit_break_statement(encoder *const enc)
 {
-	emit_unconditional_branch(enc, &enc->label_break);
+	emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
 }
 
 /**
@@ -3617,7 +3628,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 	}
 
 	const label label_end = { .kind = L_END, .num = enc->curr_function_ident };
-	emit_unconditional_branch(enc, &label_end);
+	emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 }
 
 /**
@@ -3802,8 +3813,6 @@ static void strings_declaration(encoder *const enc)
 // TODO: подписать, что значит каждая директива и команда
 static void postgen(encoder *const enc)
 {
-	// FIXME:
-	uni_printf(enc->sx->io, "\n\tjal FUNC%zu\n", enc->sx->ref_main);
 	to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_RA, 0, R_SP);
 	to_code_R(enc->sx->io, IC_MIPS_JR, R_RA);
 
