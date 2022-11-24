@@ -526,111 +526,31 @@ auxprELSE13:
 	nop
 
 
-
-
-DEFARR:
-    # a0 это N -- размерность
-	# a1 это d -- размер элемента (в последнем измерении -- размер типа, в не последних 4 байта)
-	# a2 это curdsp -- смещение относительно fp (положительное значение) или gp (отрицательное значение),
-	# где хранится смещение относительно gp адреса нулевого элемента
-	# a3 это all*4+usual -- all -- количество элементов инициализации (int a[] = {1, 2, 3, 4, 5}; all = 5)
-	# usual -- граница внутри (int b[] usual=0 b[3] usual=1, для инициализации строками соответственно 2 и 3)
-# globinit = -8000, соответственно, bounds = -8000 от gp, stackC0 = -8020, stacki = -8040 от gp
-# DISP0 = 80
-
-    srl $t0, $a3, 2      # all в t0
-    andi $a3, $a3, 3     # usual в a3
-    addi $t1, $0, 1      # curdim в t1
-    addi $t2, $a3, -2    # if (usual >= 2)
-    bltz $t2, DEFARR1
-    addi $a3, $a3, -2    # usual -= 2
+# объявление одномерного массива
+# $a0 -- адрес первого элемента
+# $a1 -- размер измерения
 DEFARR1:
-    sw $0, -8040($gp)    # stacki[1] = 0
-    lw $t3, -8000($gp)   # t3 это bounds[1]
-    addi $t4, $0, 4
-    sub $t2, $t1, $a0    # curdim - N
-    bltz $t2, DEFARR2
-    move $t4, $a1        # t4 = curdim < N ? 4 : d
-DEFARR2:
-    mul $t4, $t3, $t4    # t4 = bounds[1] * t4
-    sub $fp, $fp, $t4    # захват памяти под массив верхнего уровня
-    sw $fp, -8020($gp)   # stackC0[1] = C0 массива верхнего уровня
-    bgez $a2, DEFMDSP    # curdsp
-    sub $t2, $gp, $a2
-    sw $sp, -7992($t2)
-    j DEFMDSP1
-    nop
-DEFMDSP:
-    add $t2, $a2, $sp
-    sw $fp, 80($t2)
-DEFMDSP1:
-    addi $fp, $fp, -4
-    sw $t3, 0($fp)       # разместить кол-во элементов перед массивом
-    lw $t2, -8060($gp)   # это heap
-    sub $t2, $t2, $sp
-    bltz $t2, DEFARR3
-    addi $a0, $0, 6      # memory overflow
-    jal error
-    nop
-
-DEFARR3:
-	addi $t2, $a0, -1
-    blez $t2, DEFARR10   # if (N > 1)
-DEFARR4:
-    beq $t1, $0, DEFARR10# while (curdim != 0)
-DEFARR5:                 # while (stacki[curdim] < bounds[curdim])
-    sll $t3, $t1, 2      # t3 = curdim * 4
-    sub $t4, $gp, $t3    # t4 = gp - curdim * 4
-    lw $t2, -8036($t4)   # stacki[curdim]
-    lw $t5, -7996($t4)   # bounds[curdim]
-    sub $t2, $t2, $t5
-    bgez $t2, DEFARR9
-DEFARR6:                 # do
-    addi $t5, $0, 4
-    addi $t2, $a0, -1    # N-1
-    bne $t1, $t2, DEFARR7
-    move $t5, $a1        # t5 = curdim == N-1 ? d : 4
-DEFARR7:
-    sll $t3, $t1, 2      # t3 = curdim * 4
-    sub $t4, $gp, $t3    # t4 = gp - curdim * 4
-    lw $t3, -8000($t4)   # t3 = bounds[curdim+1]
-    mul $t5, $t3, $t5    # t5 = bounds[curdim+1] * t5
-    sub $fp, $fp, $t5    # захват памяти под массив следующего уровня
-    lw $t5, -8016($t4)   # t5 = stackC0[curdim]
-    lw $t6, -8036($t4)   # t6 = stacki[curdim]
-    sll $t7, $t6, 2      # t7 = stacki[curdim] * 4
-    add $t5, $t5, $t7
-    sw $fp, 0($t5)
-    sw $fp, -8020($t4)   # stackC0[curdim+1] = sp
-    addi $fp, $fp, -4
-    sw $t3, 0($fp)       # разместить кол-во элементов перед массивом
-    addi $t6, $t6, 1
-    sw $t6, -8036($t4)   # stacki[curdim]++
-    lw $t3, -8060($gp)   # это heap
-    sub $t3, $t3, $sp
-    bltz $t3, DEFARR8
-    addi $a0, 6          # memory overflow
-    jal error
-    nop
-DEFARR8:
-    addi $t1, $t1, 1     # ++curdim
-    sll $t3, $t1, 2      # curdim *= 4 в t3
-    sub $t4, $gp, $t3
-    sw $0, -8036($t4)    # stacki[curdim] = 0
-    sub $t4, $t1, $a0
-    bltz $t4, DEFARR6    # while(curdim < N)
-    addi $t1, $t1, -1
-    j DEFARR5
-    nop
-DEFARR9:
-    addi $t1, $t1, -1
-    j DEFARR4
-    nop
-DEFARR10:
+	sw $a1, 4($a0)			# Сохранение границы
+	li $v0, 4				# Загрузка размера слова
+	mul $v0, $v0, $a1		# Подсчёт размера первого измерения массива в байтах
+	sub $v0, $a0, $v0		# Считаем адрес после конца массива, т.е. $v0 -- на слово ниже последнего элемента
 	jr $ra
-	nop
 
-
+# объявление многомерного массива, но сначала обязана вызываться процедура DEFARR1
+# $a0 -- адрес первого элемента
+# $a1 -- размер измерения
+# $a2 -- адрес первого элемента предыдущего измерения
+# $a3 -- размер предыдущего измерения
+DEFARR2:
+	sw $a0, 0($a2)			# Сохраняем адрес в элементе предыдущего измерения
+	move $t0, $ra			# Запоминаем $ra, чтобы он не затёрся
+	jal DEFARR1				# Выделение памяти под массив
+	move $ra, $t0			# Восстанавливаем $ra
+	addi $a2, $a2, -4		# В $a2 следующий элемент в предыдущем измерении
+	addi $a0, $v0, -4		# В $a0 первый элемент массива в текущем измерении
+	addi $a3, $a3, -1		# Уменьшаем счётчик
+	bne $a3, $0, DEFARR2	# Прыгаем, если ещё не всё выделили
+	jr $ra
 
 ARASSNI:                 # присваивание целых массивов произвольной размерности
     # a0 куда (адрес 0-го элемента)
