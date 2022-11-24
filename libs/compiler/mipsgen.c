@@ -2416,7 +2416,7 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 
 		case UN_UPB:
 		{
-			// FIXME -- сейчас некорректна :(
+			// FIXME -- сейчас некорректна
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue arr_displ_rvalue = emit_expression(enc, &operand);
 			const rvalue word_size_rvalue = {
@@ -2936,7 +2936,6 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	{
 		uni_printf(enc->sx->io, "\n");
 
-		const size_t identifier = declaration_variable_get_id(nd);
 		const rvalue variable_value = emit_load_of_lvalue(enc, &variable);
 
 		const node init = declaration_variable_get_initializer(nd);
@@ -3395,7 +3394,7 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 	const rvalue value = emit_expression(enc, &condition);
 
 	const mips_instruction_t instruction = IC_MIPS_BNE;
-	emit_conditional_branch(enc, instruction, &value, &label_begin); // FIXME: в другую сторону
+	emit_conditional_branch(enc, instruction, &value, &label_begin);
 	emit_label_declaration(enc, &label_end);
 
 	enc->label_continue = old_continue;
