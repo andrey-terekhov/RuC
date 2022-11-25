@@ -2065,7 +2065,10 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 /**
  * Emit builtin function call
  * 
- * @param
+ * @param	enc					Encoder
+ * @param	nd					Node in AST
+ * 
+ * @return	Rvalue of builtin function call expression
 */
 static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 {
