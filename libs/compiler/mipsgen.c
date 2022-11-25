@@ -327,8 +327,6 @@ static const rvalue RVALUE_NEGATIVE_ONE = { .kind = RVALUE_KIND_CONST, .type = T
 static const rvalue RVALUE_ZERO = { .kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .val.int_val = 0 };
 static const rvalue RVALUE_VOID = { .kind = RVALUE_KIND_CONST };
 
-// Разнести по смыслу функции относящиеся к label и т.п.
-// Разнести по порядку появления функции
 
 static lvalue emit_lvalue(encoder *const enc, const node *const nd);
 static rvalue emit_binary_operation(encoder *const enc, const rvalue *const rval1
@@ -362,7 +360,7 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
  *
  * @param	enc					Encoder
  *
- * @return	Register
+ * @return	General purpose register
  */
 static mips_register_t get_register(encoder *const enc)
 {
@@ -386,7 +384,7 @@ static mips_register_t get_register(encoder *const enc)
  *
  * @param	enc					Encoder
  *
- * @return	Register			Register to set as free
+ * @return	Register			Floating point register
  */
 static mips_register_t get_float_register(encoder *const enc)
 {
@@ -409,7 +407,7 @@ static mips_register_t get_float_register(encoder *const enc)
  * Free register
  * 
  * @param	enc					Encoder
- * @param	reg					Re
+ * @param	reg					Register to set as free
 */
 static void free_register(encoder *const enc, const mips_register_t reg)
 {
