@@ -71,6 +71,15 @@ EXPORTED status_t compile_to_vm(workspace *const ws);
  */
 EXPORTED status_t compile_to_llvm(workspace *const ws);
 
+/**
+ *	Compile MIPS code from workspace
+ *
+ *	@param	ws		Compiler workspace
+ *
+ *	@return	Status code
+ */
+EXPORTED int compile_to_mips(workspace *const ws);
+
 
 /**
  *	Compile code from terminal arguments
@@ -102,6 +111,16 @@ EXPORTED int auto_compile_to_vm(const int argc, const char *const *const argv);
  */
 EXPORTED int auto_compile_to_llvm(const int argc, const char *const *const argv);
 
+/**
+ *	Compile MIPS code from terminal arguments
+ *
+ *	@param	argc	Number of command line arguments
+ *	@param	argv	Command line arguments
+ *
+ *	@return	Status code
+ */
+EXPORTED int auto_compile_to_mips(const int argc, const char *const *const argv);
+
 
 /**
  *	Compile RuC virtual machine code with no macro
@@ -120,6 +139,15 @@ EXPORTED int no_macro_compile_to_vm(const char *const path);
  *	@return	Status code
  */
 EXPORTED int no_macro_compile_to_llvm(const char *const path);
+
+/**
+ *	Compile MIPS code with no macro
+ *
+ *	@param	path	File path
+ *
+ *	@return	Status code
+ */
+EXPORTED int no_macro_compile_to_mips(const char *const path);
 
 #ifdef __cplusplus
 } /* extern "C" */
