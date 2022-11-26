@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "operations.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +31,9 @@ typedef enum INSTURCTION
 	IC_PRINT,					/**< 'PRINT' instruction code */
 	IC_PRINTID,					/**< 'PRINTID' instruction code */
 
-	IC_REM_ASSIGN = 9001,		/**< '%=' instruction code */
+	MIN_INSTRUCTION_CODE = 9000,
+
+	IC_REM_ASSIGN,				/**< '%=' instruction code */
 	IC_SHL_ASSIGN,				/**< '<<=' instruction code */
 	IC_SHR_ASSIGN,				/**< '>>=' instruction code */
 	IC_AND_ASSIGN,				/**< '&=' instruction code */
@@ -205,9 +209,6 @@ typedef enum INSTURCTION
 	IC_COPY1ST_ASSIGN,			/**< 'COPY1STASS' instruction code */
 	IC_COPYST,					/**< 'COPYST' instruction code */
 
-	IC_CREATE_DIRECT = 9528,	/**< 'CREATEDIRECT' instruction code */
-	IC_EXIT_DIRECT,				/**< 'EXITDIRECT' instruction code */
-
 	IC_ABS	= 9534,				/**< 'ABS' instruction code */
 	IC_SQRT,					/**< 'SQRT' instruction code */
 	IC_EXP,						/**< 'EXP' instruction code */
@@ -258,6 +259,62 @@ typedef enum INSTURCTION
 
 	MAX_INSTRUCTION_CODE,
 } instruction_t;
+
+
+/**
+ *	Convert standard function id to corresponding function instruction
+ *
+ *	@param	func			Function id
+ *
+ *	@return	Function instruction
+ */
+instruction_t builtin_to_instruction(const builtin_t func);
+
+/**
+ *	Convert unary operator to corresponding instruction
+ *
+ *	@param	op				Unary operator
+ *
+ *	@return	Instruction
+ */
+instruction_t unary_to_instruction(const unary_t op);
+
+/**
+ *	Convert binary operator to corresponding instruction
+ *
+ *	@param	op				Binary operator
+ *
+ *	@return	Instruction
+ */
+instruction_t binary_to_instruction(const binary_t op);
+
+
+/**
+ *	Convert instruction to corresponding address version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Address version of instruction
+ */
+instruction_t instruction_to_address_ver(const instruction_t instruction);
+
+/**
+ *	Convert instruction to corresponding floating version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Floating version of instruction
+ */
+instruction_t instruction_to_floating_ver(const instruction_t instruction);
+
+/**
+ *	Convert instruction to corresponding void version
+ *
+ *	@param	instruction		Instruction
+ *
+ *	@return	Void version of instruction
+ */
+instruction_t instruction_to_void_ver(const instruction_t instruction);
 
 #ifdef __cplusplus
 } /* extern "C" */

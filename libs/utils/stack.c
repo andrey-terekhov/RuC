@@ -20,8 +20,16 @@
 extern stack stack_create(const size_t alloc);
 
 extern int stack_push(stack *const stk, const item_t value);
+extern int stack_push_double(stack *const stk, const double value);
+extern int stack_push_int64(stack *const stk, const int64_t value);
+
 extern item_t stack_pop(stack *const stk);
+extern double stack_pop_double(stack *const stk);
+extern int64_t stack_pop_int64(stack *const stk);
+
 extern item_t stack_peek(const stack *const stk);
+extern double stack_peek_double(const stack *const stk);
+extern int64_t stack_peek_int64(const stack *const stk);
 
 extern int stack_reset(stack *const stk);
 extern size_t stack_size(const stack *const stk);

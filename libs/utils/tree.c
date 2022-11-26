@@ -48,13 +48,19 @@ static inline size_t ref_get_next(const node *const nd)
 
 static inline size_t ref_get_amount(const node *const nd)
 {
-	return nd->index + 1 + (size_t)vector_get(nd->tree, nd->index);
+	return nd->index;
 }
 
 static inline size_t ref_get_children(const node *const nd)
 {
-	return nd->index + 2 + (size_t)vector_get(nd->tree, nd->index);
+	return nd->index + 1;
 }
+
+static inline size_t ref_get_argc(const node *const nd)
+{
+	return nd->index + 2;
+}
+
 
 static inline int ref_set_next(const node *const nd, const item_t value)
 {
@@ -65,10 +71,17 @@ static inline int ref_set_amount(const node *const nd, const item_t value)
 {
 	return vector_set(nd->tree, ref_get_amount(nd), value);
 }
+
 static inline int ref_set_children(const node *const nd, const item_t value)
 {
 	return vector_set(nd->tree, ref_get_children(nd), value);
 }
+
+static inline int ref_set_argc(const node *const nd, const item_t value)
+{
+	return vector_set(nd->tree, ref_get_argc(nd), value);
+}
+
 
 static inline node node_broken()
 {
@@ -116,11 +129,9 @@ node node_get_root(vector *const tree)
 	const size_t size = vector_size(tree);
 	if (size == 0)
 	{
-		vector_add(tree, 0);
-		vector_add(tree, 0);
-		vector_add(tree, 5);
+		vector_increase(tree, 3);
 	}
-	else if (size == SIZE_MAX || size < 3 || vector_get(tree, 0) < 0)
+	else if (size == SIZE_MAX || size < 3 || vector_get(tree, 2) < 0)
 	{
 		return node_broken();
 	}
@@ -159,12 +170,22 @@ item_t node_get_type(const node *const nd)
 
 size_t node_get_argc(const node *const nd)
 {
-	return node_is_correct(nd) ? (size_t)vector_get(nd->tree, nd->index) : 0;
+	return node_is_correct(nd) ? (size_t)vector_get(nd->tree, ref_get_argc(nd)) : 0;
 }
 
 item_t node_get_arg(const node *const nd, const size_t index)
 {
-	return index < node_get_argc(nd) ? vector_get(nd->tree, nd->index + 1 + index) : ITEM_MAX;
+	return index < node_get_argc(nd) ? vector_get(nd->tree, ref_get_argc(nd) + 1 + index) : ITEM_MAX;
+}
+
+double node_get_arg_double(const node *const nd, const size_t index)
+{
+	return index + DOUBLE_SIZE <= node_get_argc(nd) ? vector_get_double(nd->tree, ref_get_argc(nd) + 1 + index) : DBL_MAX;
+}
+
+int64_t node_get_arg_int64(const node *const nd, const size_t index)
+{
+	return index + INT64_SIZE <= node_get_argc(nd) ? vector_get_int64(nd->tree, ref_get_argc(nd) + 1 + index) : LLONG_MAX;
 }
 
 size_t node_get_amount(const node *const nd)
@@ -220,20 +241,19 @@ node node_add_child(const node *const nd, const item_t type)
 	vector_add(nd->tree, to_negative(nd->index));
 	vector_add(nd->tree, type);
 	node child = { nd->tree, vector_add(nd->tree, 0) };
-	vector_add(nd->tree, 0);
-	vector_add(nd->tree, 0);
+	vector_increase(nd->tree, 2);
 
 	const size_t amount = node_get_amount(nd);
-	ref_set_amount(nd, amount + 1);
+	ref_set_amount(nd, (item_t)(amount + 1));
 
 	if (amount == 0)
 	{
-		ref_set_children(nd, child.index);
+		ref_set_children(nd, (item_t)child.index);
 	}
 	else
 	{
 		node prev = node_get_child(nd, amount - 1);
-		ref_set_next(&prev, child.index);
+		ref_set_next(&prev, (item_t)child.index);
 	}
 
 	return child;
@@ -265,22 +285,77 @@ int node_add_arg(const node *const nd, const item_t arg)
 	{
 		return -2;
 	}
+	
+	vector_add(nd->tree, arg);
+	ref_set_argc(nd, (item_t)node_get_argc(nd) + 1);
 
-	ref_set_amount(nd, arg);
+	return 0;
+}
 
-	vector_add(nd->tree, 0);
-	vector_set(nd->tree, nd->index, vector_get(nd->tree, nd->index) + 1);
+int node_add_arg_double(const node *const nd, const double arg)
+{
+	if (!node_is_correct(nd))
+	{
+		return -1;
+	}
+
+	if (node_get_amount(nd) != 0)
+	{
+		return -2;
+	}
+	
+	vector_add_double(nd->tree, arg);
+	ref_set_argc(nd, (item_t)(node_get_argc(nd) + DOUBLE_SIZE));
+
+	return 0;
+}
+
+int node_add_arg_int64(const node *const nd, const int64_t arg)
+{
+	if (!node_is_correct(nd))
+	{
+		return -1;
+	}
+
+	if (node_get_amount(nd) != 0)
+	{
+		return -2;
+	}
+	
+	vector_add_int64(nd->tree, arg);
+	ref_set_argc(nd, (item_t)(node_get_argc(nd) + INT64_SIZE));
+
 	return 0;
 }
 
 int node_set_arg(const node *const nd, const size_t index, const item_t arg)
 {
-	if (!node_is_correct(nd) || index >= node_get_argc(nd))
+	if (index >= node_get_argc(nd))
 	{
 		return -1;
 	}
 
-	return vector_set(nd->tree, nd->index + 1 + index, arg);
+	return vector_set(nd->tree, ref_get_argc(nd) + 1 + index, arg);
+}
+
+size_t node_set_arg_double(const node *const nd, const size_t index, const double arg)
+{
+	if (index + DOUBLE_SIZE > node_get_argc(nd))
+	{
+		return SIZE_MAX;
+	}
+
+	return vector_set_double(nd->tree, ref_get_argc(nd) + 1 + index, arg);
+}
+
+size_t node_set_arg_int64(const node *const nd, const size_t index, const int64_t arg)
+{
+	if (index + INT64_SIZE > node_get_argc(nd))
+	{
+		return SIZE_MAX;
+	}
+
+	return vector_set_int64(nd->tree, ref_get_argc(nd) + 1 + index, arg);
 }
 
 
@@ -304,7 +379,7 @@ size_t node_save(const node *const nd)
 
 node node_load(vector *const tree, const size_t index)
 {
-	if (!vector_is_correct(tree) || vector_get(tree, index) >= (item_t)(vector_size(tree) - index - 2))
+	if (!vector_is_correct(tree) || vector_get(tree, index + 2) >= (item_t)(vector_size(tree) - index - 2))
 	{
 		return node_broken();
 	}
@@ -335,10 +410,10 @@ node node_insert(const node *const nd, const item_t type, const size_t argc)
 
 	vector_add(nd->tree, vector_get(nd->tree, ref_get_next(nd)));
 	vector_add(nd->tree, type);
-	node child = { nd->tree, vector_add(nd->tree, argc) };
-	vector_resize(nd->tree, vector_size(nd->tree) + argc);
-	vector_add(nd->tree, 1);
-	vector_add(nd->tree, nd->index);
+	node child = { nd->tree, vector_add(nd->tree, 1) };
+	vector_add(nd->tree, (item_t)nd->index);
+	vector_add(nd->tree, (item_t)argc);
+	vector_increase(nd->tree, argc);
 
 	vector_set(nd->tree, reference, (item_t)child.index);
 	ref_set_next(nd, to_negative(child.index));
@@ -439,7 +514,7 @@ int node_remove(node *const nd)
 		ref_set_amount(&parent, (item_t)node_get_amount(&parent) - 1);
 	}
 
-	if (node_get_amount(nd) == 0 && ref_get_children(nd) == vector_size(nd->tree) - 1)
+	if (node_get_amount(nd) == 0 && (ref_get_argc(nd) + node_get_argc(nd)) == vector_size(nd->tree) - 1)
 	{
 		vector_resize(nd->tree, ref_get_next(nd));
 	}
@@ -450,5 +525,5 @@ int node_remove(node *const nd)
 
 bool node_is_correct(const node *const nd)
 {
-	return nd != NULL && vector_is_correct(nd->tree);
+	return nd != NULL && vector_is_correct(nd->tree) && nd->index != SIZE_MAX;
 }

@@ -81,7 +81,7 @@ struct universal_io
  *
  *	@return	Universal io structure
  */
-EXPORTED universal_io io_create();
+EXPORTED universal_io io_create(void);
 
 
 /**
@@ -233,7 +233,7 @@ EXPORTED int out_set_file(universal_io *const io, const char *const path);
  *	Set output buffer
  *
  *	@param	io			Universal io structure
- *	@param	buffer		Output buffer
+ *	@param	size		Output buffer size
  *
  *	@return	@c 0 on success, @c -1 on failure
  */

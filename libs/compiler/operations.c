@@ -18,43 +18,19 @@
 #include "errors.h"
 
 
-static const size_t DISPL_TO_FLOAT = 50;
-static const size_t DISPL_TO_VOID = 200;
-
-
-operation_t token_to_binary(const token_t token)
+unary_t token_to_unary(const token_t token)
 {
 	switch (token)
 	{
-		case TK_PLUS:					return OP_ADD;
-		case TK_MINUS:					return OP_SUB;
-		case TK_STAR:					return OP_MUL;
-		case TK_SLASH:					return OP_DIV;
-		case TK_PERCENT:				return OP_REM;
-		case TK_CARET:					return OP_XOR;
-		case TK_PIPE:					return OP_OR;
-		case TK_AMP:					return OP_AND;
-		case TK_EQUAL:					return OP_ASSIGN;
-		case TK_LESS:					return OP_LT;
-		case TK_GREATER:				return OP_GT;
-		case TK_PLUS_EQUAL:				return OP_ADD_ASSIGN;
-		case TK_MINUS_EQUAL:			return OP_SUB_ASSIGN;
-		case TK_STAR_EQUAL:				return OP_MUL_ASSIGN;
-		case TK_SLASH_EQUAL:			return OP_DIV_ASSIGN;
-		case TK_PERCENT_EQUAL:			return OP_REM_ASSIGN;
-		case TK_EXCLAIM_EQUAL:			return OP_NE;
-		case TK_CARET_EQUAL:			return OP_XOR_ASSIGN;
-		case TK_PIPE_EQUAL:				return OP_OR_ASSIGN;
-		case TK_PIPE_PIPE:				return OP_LOG_OR;
-		case TK_AMP_EQUAL:				return OP_AND_ASSIGN;
-		case TK_AMP_AMP:				return OP_LOG_AND;
-		case TK_EQUAL_EQUAL:			return OP_EQ;
-		case TK_LESS_EQUAL:				return OP_LE;
-		case TK_LESS_LESS:				return OP_SHL;
-		case TK_GREATER_EQUAL:			return OP_GE;
-		case TK_GREATER_GREATER:		return OP_SHR;
-		case TK_LESS_LESS_EQUAL:		return OP_SHL_ASSIGN;
-		case TK_GREATER_GREATER_EQUAL:	return OP_SHR_ASSIGN;
+		case TK_PLUS_PLUS:		return UN_PREINC;
+		case TK_MINUS_MINUS:	return UN_PREDEC;
+		case TK_AMP:			return UN_ADDRESS;
+		case TK_STAR:			return UN_INDIRECTION;
+		case TK_MINUS:			return UN_MINUS;
+		case TK_TILDE:			return UN_NOT;
+		case TK_EXCLAIM:		return UN_LOGNOT;
+		case TK_ABS:			return UN_ABS;
+		case TK_UPB:			return UN_UPB;
 
 		default:
 			system_error(node_unexpected);
@@ -62,14 +38,40 @@ operation_t token_to_binary(const token_t token)
 	}
 }
 
-operation_t token_to_unary(const token_t token)
+binary_t token_to_binary(const token_t token)
 {
 	switch (token)
 	{
-		case TK_TILDE:					return OP_NOT;
-		case TK_EXCLAIM:				return OP_LOG_NOT;
-		case TK_PLUS_PLUS:				return OP_PRE_INC;
-		case TK_MINUS_MINUS:			return OP_PRE_DEC;
+		case TK_PLUS:					return BIN_ADD;
+		case TK_MINUS:					return BIN_SUB;
+		case TK_STAR:					return BIN_MUL;
+		case TK_SLASH:					return BIN_DIV;
+		case TK_PERCENT:				return BIN_REM;
+		case TK_CARET:					return BIN_XOR;
+		case TK_PIPE:					return BIN_OR;
+		case TK_AMP:					return BIN_AND;
+		case TK_EQUAL:					return BIN_ASSIGN;
+		case TK_LESS:					return BIN_LT;
+		case TK_GREATER:				return BIN_GT;
+		case TK_PLUS_EQUAL:				return BIN_ADD_ASSIGN;
+		case TK_MINUS_EQUAL:			return BIN_SUB_ASSIGN;
+		case TK_STAR_EQUAL:				return BIN_MUL_ASSIGN;
+		case TK_SLASH_EQUAL:			return BIN_DIV_ASSIGN;
+		case TK_PERCENT_EQUAL:			return BIN_REM_ASSIGN;
+		case TK_EXCLAIM_EQUAL:			return BIN_NE;
+		case TK_CARET_EQUAL:			return BIN_XOR_ASSIGN;
+		case TK_PIPE_EQUAL:				return BIN_OR_ASSIGN;
+		case TK_PIPE_PIPE:				return BIN_LOG_OR;
+		case TK_AMP_EQUAL:				return BIN_AND_ASSIGN;
+		case TK_AMP_AMP:				return BIN_LOG_AND;
+		case TK_EQUAL_EQUAL:			return BIN_EQ;
+		case TK_LESS_EQUAL:				return BIN_LE;
+		case TK_LESS_LESS:				return BIN_SHL;
+		case TK_GREATER_EQUAL:			return BIN_GE;
+		case TK_GREATER_GREATER:		return BIN_SHR;
+		case TK_LESS_LESS_EQUAL:		return BIN_SHL_ASSIGN;
+		case TK_GREATER_GREATER_EQUAL:	return BIN_SHR_ASSIGN;
+		case TK_COMMA:					return BIN_COMMA;
 
 		default:
 			system_error(node_unexpected);
@@ -77,122 +79,90 @@ operation_t token_to_unary(const token_t token)
 	}
 }
 
-instruction_t builtin_to_instruction(const builtin_t func)
+precedence_t get_operator_precedence(const token_t token)
 {
-	switch (func)
+	switch (token)
 	{
-		case BI_SQRT:					return IC_SQRT;
-		case BI_EXP:					return IC_EXP;
-		case BI_SIN:					return IC_SIN;
-		case BI_COS:					return IC_COS;
-		case BI_LOG:					return IC_LOG;
-		case BI_LOG10:					return IC_LOG10;
-		case BI_ASIN:					return IC_ASIN;
-		case BI_RAND:					return IC_RAND;
-		case BI_ROUND:					return IC_ROUND;
-		case BI_STRCPY:					return IC_STRCPY;
-		case BI_STRNCPY:				return IC_STRNCPY;
-		case BI_STRCAT:					return IC_STRCAT;
-		case BI_STRNCAT:				return IC_STRNCAT;
-		case BI_STRCMP:					return IC_STRCMP;
-		case BI_STRNCMP:				return IC_STRNCMP;
-		case BI_STRSTR:					return IC_STRSTR;
-		case BI_STRLEN:					return IC_STRLEN;
-		case BI_ASSERT:					return IC_ASSERT;
-		case BI_MSG_SEND:				return IC_MSG_SEND;
-		case BI_MSG_RECEIVE:			return IC_MSG_RECEIVE;
-		case BI_JOIN:					return IC_JOIN;
-		case BI_SLEEP:					return IC_SLEEP;
-		case BI_SEM_CREATE:				return IC_SEM_CREATE;
-		case BI_SEM_WAIT:				return IC_SEM_WAIT;
-		case BI_SEM_POST:				return IC_SEM_POST;
-		case BI_CREATE:					return IC_CREATE;
-		case BI_INIT:					return IC_INIT;
-		case BI_DESTROY:				return IC_DESTROY;
-		case BI_EXIT:					return IC_EXIT;
-		case BI_GETNUM:					return IC_GETNUM;
-		case BI_ROBOT_SEND_INT:			return IC_ROBOT_SEND_INT;
-		case BI_ROBOT_SEND_FLOAT:		return IC_ROBOT_SEND_FLOAT;
-		case BI_ROBOT_SEND_STRING:		return IC_ROBOT_SEND_STRING;
-		case BI_ROBOT_RECEIVE_INT:		return IC_ROBOT_RECEIVE_INT;
-		case BI_ROBOT_RECEIVE_FLOAT:	return IC_ROBOT_RECEIVE_FLOAT;
-		case BI_ROBOT_RECEIVE_STRING:	return IC_ROBOT_RECEIVE_STRING;
-		case BI_FOPEN:					return IC_FOPEN;
-		case BI_FGETC:					return IC_FGETC;
-		case BI_FPUTC:					return IC_FPUTC;
-		case BI_FCLOSE:					return IC_FCLOSE;
+		case TK_COMMA:
+			return PREC_COMMA;
+
+		case TK_EQUAL:
+		case TK_STAR_EQUAL:
+		case TK_SLASH_EQUAL:
+		case TK_PERCENT_EQUAL:
+		case TK_PLUS_EQUAL:
+		case TK_MINUS_EQUAL:
+		case TK_LESS_LESS_EQUAL:
+		case TK_GREATER_GREATER_EQUAL:
+		case TK_AMP_EQUAL:
+		case TK_CARET_EQUAL:
+		case TK_PIPE_EQUAL:
+			return PREC_ASSIGNMENT;
+
+		case TK_QUESTION:
+			return PREC_CONDITIONAL;
+
+		case TK_PIPE_PIPE:
+			return PREC_LOGICAL_OR;
+
+		case TK_AMP_AMP:
+			return PREC_LOGICAL_AND;
+
+		case TK_PIPE:
+			return PREC_OR;
+
+		case TK_CARET:
+			return PREC_XOR;
+
+		case TK_AMP:
+			return PREC_AND;
+
+		case TK_EQUAL_EQUAL:
+		case TK_EXCLAIM_EQUAL:
+			return PREC_EQUALITY;
+
+		case TK_GREATER_EQUAL:
+		case TK_LESS_EQUAL:
+		case TK_GREATER:
+		case TK_LESS:
+			return PREC_RELATIONAL;
+
+		case TK_LESS_LESS:
+		case TK_GREATER_GREATER:
+			return PREC_SHIFT;
+
+		case TK_PLUS:
+		case TK_MINUS:
+			return PREC_ADDITIVE;
+
+		case TK_STAR:
+		case TK_SLASH:
+		case TK_PERCENT:
+			return PREC_MULTIPLICATIVE;
 
 		default:
-			system_error(node_unexpected);
-			return 0;
+			return PREC_UNKNOWN;
 	}
 }
 
-operation_t operation_to_address_ver(const operation_t operation)
+bool operation_is_assignment(const binary_t op)
 {
-	switch (operation)
+	switch (op)
 	{
-		case OP_PRE_INC:	return OP_PRE_INC_AT;
-		case OP_PRE_DEC:	return OP_PRE_DEC_AT;
-		case OP_POST_INC:	return OP_POST_INC_AT;
-		case OP_POST_DEC:	return OP_POST_DEC_AT;
-		case OP_REM_ASSIGN:	return OP_REM_ASSIGN_AT;
-		case OP_SHL_ASSIGN:	return OP_SHL_ASSIGN_AT;
-		case OP_SHR_ASSIGN:	return OP_SHR_ASSIGN_AT;
-		case OP_AND_ASSIGN:	return OP_AND_ASSIGN_AT;
-		case OP_XOR_ASSIGN:	return OP_XOR_ASSIGN_AT;
-		case OP_OR_ASSIGN:	return OP_OR_ASSIGN_AT;
-		case OP_ASSIGN:		return OP_ASSIGN_AT;
-		case OP_ADD_ASSIGN:	return OP_ADD_ASSIGN_AT;
-		case OP_SUB_ASSIGN:	return OP_SUB_ASSIGN_AT;
-		case OP_MUL_ASSIGN:	return OP_MUL_ASSIGN_AT;
-		case OP_DIV_ASSIGN:	return OP_DIV_ASSIGN_AT;
+		case BIN_ASSIGN:
+		case BIN_ADD_ASSIGN:
+		case BIN_SUB_ASSIGN:
+		case BIN_MUL_ASSIGN:
+		case BIN_DIV_ASSIGN:
+		case BIN_REM_ASSIGN:
+		case BIN_XOR_ASSIGN:
+		case BIN_OR_ASSIGN:
+		case BIN_AND_ASSIGN:
+		case BIN_SHL_ASSIGN:
+		case BIN_SHR_ASSIGN:
+			return true;
 
 		default:
-			return operation;
+			return false;
 	}
-}
-
-operation_t operation_to_void_ver(const operation_t operation)
-{
-	return (operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN_AT)
-		|| (operation >= OP_POST_INC && operation <= OP_PRE_DEC_AT)
-		|| (operation >= OP_ASSIGN_R && operation <= OP_DIV_ASSIGN_AT_R)
-		|| (operation >= OP_POST_INC_R && operation <= OP_PRE_DEC_AT_R)
-			? operation + DISPL_TO_VOID
-			: operation;
-}
-
-operation_t operation_to_float_ver(const operation_t operation)
-{
-	switch (operation)
-	{
-		case OP_STRING:
-			return OP_STRING_D;
-		case OP_IDENT_TO_VAL:
-			return OP_IDENT_TO_VAL_D;
-		case OP_ADDR_TO_VAL:
-			return OP_ADDR_TO_VAL_D;
-		case OP_CONST:
-			return OP_CONST_D;
-
-		default:
-			return (operation >= OP_ASSIGN && operation <= OP_DIV_ASSIGN)
-				|| (operation >= OP_ASSIGN_AT && operation <= OP_DIV_ASSIGN_AT)
-				|| (operation >= OP_EQ && operation <= OP_UNMINUS)
-					? operation + DISPL_TO_FLOAT
-					: operation;
-	}
-}
-
-bool operation_is_assignment(const operation_t op)
-{
-	return (op >= OP_REM_ASSIGN && op <= OP_DIV_ASSIGN)
-		|| (op >= OP_REM_ASSIGN_V && op <= OP_DIV_ASSIGN_V)
-		|| (op >= OP_ASSIGN_R && op <= OP_DIV_ASSIGN_R)
-		|| (op >= OP_ASSIGN_R_V && op <= OP_DIV_ASSIGN_R_V)
-		|| (op >= OP_POST_INC && op <= OP_PRE_DEC)
-		|| (op >= OP_POST_INC_V && op <= OP_PRE_DEC_V)
-		|| (op >= OP_POST_INC_R && op <= OP_PRE_DEC_R)
-		|| (op >= OP_POST_INC_R_V && op <= OP_PRE_DEC_R_V);
 }

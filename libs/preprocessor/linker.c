@@ -245,6 +245,11 @@ int lk_preprocess_all(environment *const env)
 		in_clear(&input);
 	}
 
+	if (env->was_error)
+	{
+		return -1;
+	}
+
 	return 0;
 }
 

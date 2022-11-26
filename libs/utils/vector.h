@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <stdbool.h>
-#include <stddef.h>
 #include "dll.h"
 #include "item.h"
 
@@ -46,16 +44,6 @@ EXPORTED vector vector_create(const size_t alloc);
 
 
 /**
- *	Increase vector size
- *
- *	@param	vec				Vector structure
- *	@param	size			Size to increase
- *
- *	@return	@c 0 on success, @c -1 on failure
- */
-EXPORTED int vector_increase(vector *const vec, const size_t size);
-
-/**
  *	Add new value
  *
  *	@param	vec				Vector structure
@@ -64,6 +52,27 @@ EXPORTED int vector_increase(vector *const vec, const size_t size);
  *	@return	Index, @c SIZE_MAX on failure
  */
 EXPORTED size_t vector_add(vector *const vec, const item_t value);
+
+/**
+ *	Add new double value
+ *
+ *	@param	vec				Vector structure
+ *	@param	value			Double value
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+EXPORTED size_t vector_add_double(vector *const vec, const double value);
+
+/**
+ *	Add new 64-bit value
+ *
+ *	@param	vec				Vector structure
+ *	@param	value			64-bit value
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+EXPORTED size_t vector_add_int64(vector *const vec, const int64_t value);
+
 
 /**
  *	Set new value
@@ -77,6 +86,29 @@ EXPORTED size_t vector_add(vector *const vec, const item_t value);
 EXPORTED int vector_set(vector *const vec, const size_t index, const item_t value);
 
 /**
+ *	Set new double value
+ *
+ *	@param	vec				Vector structure
+ *	@param	index			Index
+ *	@param	value			New double value
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t vector_set_double(vector *const vec, const size_t index, const double value);
+
+/**
+ *	Set new 64-bit value
+ *
+ *	@param	vec				Vector structure
+ *	@param	index			Index
+ *	@param	value			New 64-bit value
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t vector_set_int64(vector *const vec, const size_t index, const int64_t value);
+
+
+/**
  *	Get value
  *
  *	@param	vec				Vector structure
@@ -87,6 +119,27 @@ EXPORTED int vector_set(vector *const vec, const size_t index, const item_t valu
 EXPORTED item_t vector_get(const vector *const vec, const size_t index);
 
 /**
+ *	Get double value
+ *
+ *	@param	vec				Vector structure
+ *	@param	index			Index
+ *
+ *	@return	Value, @c DBL_MAX on failure
+ */
+EXPORTED double vector_get_double(const vector *const vec, const size_t index);
+
+/**
+ *	Get 64-bit value
+ *
+ *	@param	vec				Vector structure
+ *	@param	index			Index
+ *
+ *	@return	Value, @c LLONG_MAX on failure
+ */
+EXPORTED int64_t vector_get_int64(const vector *const vec, const size_t index);
+
+
+/**
  *	Remove last value
  *
  *	@param	vec				Vector structure
@@ -95,6 +148,34 @@ EXPORTED item_t vector_get(const vector *const vec, const size_t index);
  */
 EXPORTED item_t vector_remove(vector *const vec);
 
+/**
+ *	Remove last double value
+ *
+ *	@param	vec				Vector structure
+ *
+ *	@return	Deleted value, @c DBL_MAX on failure
+ */
+EXPORTED double vector_remove_double(vector *const vec);
+
+/**
+ *	Remove last 64-bit value
+ *
+ *	@param	vec				Vector structure
+ *
+ *	@return	Deleted value, @c LLONG_MAX on failure
+ */
+EXPORTED int64_t vector_remove_int64(vector *const vec);
+
+
+/**
+ *	Increase vector size
+ *
+ *	@param	vec				Vector structure
+ *	@param	size			Size to increase
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+EXPORTED int vector_increase(vector *const vec, const size_t size);
 
 /**
  *	Change vector size

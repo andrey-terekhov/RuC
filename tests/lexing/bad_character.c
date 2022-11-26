@@ -1,0 +1,5 @@
+// Bad character
+void main()
+{
+	\;
+}

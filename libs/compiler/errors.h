@@ -26,40 +26,93 @@ extern "C" {
 /** Errors codes */
 typedef enum ERROR
 {
-	// Lexer errors
-	bad_character,						/**< Bad character in source */
-	empty_character,					/**< Empty character constant */
-	unknown_escape_sequence,			/**< Unknown escape sequence */
-	expected_apost_after_char_const,	/**< Missing terminating ' character */
-	missing_terminating_quote_char,		/**< Missing terminating '"' character */
-	string_too_long,					/**< String literal exceeds maximum length */
-	unterminated_block_comment,			/**< Unterminated block comment */
+	// Lexing errors
+	bad_character,							/**< Bad character */
+	digit_of_another_base,					/**< Digit of another base */
+	exponent_has_no_digits,					/**< Exponent has no digits */
+	empty_character_literal,				/**< Empty character literal */
+	unknown_escape_sequence,				/**< Unknown escape sequence */
+	missing_terminating_apost_char,			/**< Missing terminating ' character */
+	missing_terminating_quote_char,			/**< Missing terminating " character */
+	unterminated_block_comment,				/**< Unterminated block comment */
 
-	// Statement errors
-	expected_semi_after_stmt,			/**< Expected ';' after statement */
-	case_not_in_switch,					/**< 'case' statement not in switch statement */
-	float_in_switch,
-	expected_colon_after_case,			/**< Expected ':' after 'case' */
-	default_not_in_switch,				/**< 'default' statement not in switch statement */
-	expected_colon_after_default,		/**< Expected ':' after 'default' */
-	expected_while,						/**< Expected 'while' in do/while loop */
-	no_leftbr_in_for,
-	no_semicolon_in_for,
-	no_rightbr_in_for,
-	no_ident_after_goto,
-	continue_not_in_loop,				/**< 'continue' statement not in loop statement */
-	break_not_in_loop_or_switch,		/**< 'break' statement not in loop or switch statement */
-	no_ret_in_func,
+	// Syntax errors
+	extraneous_bracket_before_semi,			/**< Extraneous bracket before ';' */
+	expected_r_paren,						/**< Expected ')' */
+	expected_r_square,						/**< Expected ']' */
+	expected_r_brace,						/**< Expected '}' */
+	expected_expression,					/**< Expected expression */
+	expected_identifier_in_member_expr,		/**< Expected identifier in member expression */
+	expected_colon_in_conditional_expr,		/**< Expected ':' in conditional expression */
+	empty_initializer,						/**< Empty initializer */
+	expected_l_paren_in_condition,			/**< Expected '(' in condition */
+	case_not_in_switch,						/**< 'case' statement not in switch statement */
+	default_not_in_switch,					/**< 'default' statement not in switch statement */
+	expected_colon_after_case,				/**< Expected ':' after 'case' */
+	expected_colon_after_default,			/**< Expected ':' after 'default' */
+	expected_semi_after_expr,				/**< Expected ';' after expression */
+	expected_semi_after_stmt,				/**< Expected ';' after statement */
+	expected_while,							/**< Expected 'while' in do/while loop */
+	expected_l_paren_after_for,				/**< Expected '(' after 'for' */
+	expected_semi_in_for_specifier,			/**< Expected ';' in 'for' statement specifier */
+	continue_not_in_loop,					/**< 'continue' statement not in loop statement */
+	break_not_in_loop_or_switch,			/**< 'break' statement not in loop or switch statement */
+
+	// Semantics errors
+	use_of_undeclared_identifier,			/**< Use of undeclared identifier */
+	subscripted_expr_not_array,				/**< Subscripted expression is not an array */
+	array_subscript_not_integer,			/**< Array subscript is not an integer */
+	called_expr_not_function,				/**< Called expression is not a function */
+	wrong_argument_amount,					/**< Wrong argument amount in call expression */
+	member_reference_not_struct,			/**< Member reference base type is not a structure */
+	member_reference_not_struct_pointer,	/**< Member reference type is not a structure pointer */
+	no_such_member,							/**< No such member */
+	unassignable_expression,				/**< Expression is not assignable */
+	increment_operand_not_arithmetic,		/**< Operand of increment/decrement must be of arithmetic type */
+	addrof_operand_not_lvalue,				/**< Cannot take the address of an rvalue */
+	indirection_operand_not_pointer,		/**< Indirection operand is not a pointer */
+	unary_operand_not_arithmetic,			/**< Operand of this unary operator must be of arithemtic type */
+	unnot_operand_not_integer,				/**< Operand of '~' is not an integer */
+	lognot_operand_not_scalar,				/**< Operand of '!' must be of scalar type */
+	upb_operand_not_array,					/**< Operand of 'upb' is not an array */
+	typecheck_binary_expr,					/**< Invalid argument types to binary expression */
+	condition_must_be_scalar,				/**< Condition must be of scalar type */
+	expected_constant_expression,			/**< Expected constant expression */
+	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
+	expected_member_name,					/**< Expected member name */
+	array_member_must_have_bounds,			/**< Array members must have size expressions */
+	expected_identifier_in_declarator,		/**< Expected identifier in declarator */
+	declaration_does_not_declare_anything,	/**< Declaration does not declare anything */
+	case_expr_not_integer,					/**< Case expression is not an integer */
+	switch_expr_not_integer,				/**< Switch expression is not an integer */
+	void_func_valued_return,				/**< Void function should not return a value */
+	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
-	notvoidret_in_void_func,
+	wrong_init,
+	main_should_return_int_or_void,
+	main_should_be_defined,
+	wrong_main_parameters,
+	wrong_main_parameter_type,
+
+	// Builtin errors
+	too_many_printf_args,					/**< Too many printf arguments */
+	expected_format_specifier,				/**< Expected format specifier */
+	unknown_format_specifier,				/**< Unknown format specifier */
+	printf_fst_not_string,					/**< First argument of 'printf' call is not a string literal */
+	wrong_printf_argument_amount,			/**< Wrong argument amount in 'printf' call */
+	wrong_printf_argument_type,				/**< Wrong argument type in 'printf' call */
+	pointer_in_print,						/**< Pointer in print */
+	expected_identifier_in_printid,			/**< Expected identifier in 'printid' call */
+	expected_identifier_in_getid,			/**< Expected identifier in 'getid' call */
 
 	// Environment errors
-	no_main_in_program,					/**< Undefined main */
-	predef_but_notdef,					/**< Undefined function */
+	no_main_in_program,						/**< Undefined main */
+	predef_but_notdef,						/**< Undefined function */
 
 	// Other errors
 	after_type_must_be_ident = 201,
 	empty_struct,
+	empty_enum,
 	wait_right_sq_br,
 	only_functions_may_have_type_VOID,
 	decl_and_def_have_diff_type,
@@ -67,42 +120,12 @@ typedef enum ERROR
 	expected_semi_after_decl,
 	typedef_requires_a_name,
 	func_decl_req_params,
-	cond_must_be_in_brkts,
 	repeated_decl,
-	arr_init_must_start_from_BEGIN,
-	no_comma_in_init_list,
 	ident_is_not_declared,
-	no_rightsqbr_in_slice,
-	index_must_be_int,
-	slice_not_from_array,
-	call_not_from_function,
-	no_comma_in_act_params,
-	float_instead_int,
-	wrong_number_of_params,
-	wait_rightbr_in_primary,
-	unassignable_inc,
-	wrong_addr,
-	no_colon_in_cond_expr,
-	int_op_for_float,
-	assmnt_float_to_int,
+	not_const_int_expr,
 	redefinition_of_main,
-	no_leftbr_in_printid,
-	no_rightbr_in_printid,
-	no_ident_in_printid,
-	no_leftbr_in_getid,
-	no_rightbr_in_getid,
-	no_ident_in_getid,
-	init_int_by_float,
-	no_comma_in_setmotor,
-	param_setmotor_not_int,
-	no_leftbr_in_stand_func,
-	no_rightbr_in_stand_func,
-	bad_param_in_stand_func,
-	expected_end,
 	aster_before_func,
-	aster_not_for_pointer,
 	aster_with_row,
-	float_in_condition,
 	wrong_func_as_arg,
 	no_right_br_in_arg_func,
 	par_type_void_with_nofun,
@@ -112,98 +135,36 @@ typedef enum ERROR
 	wait_declarator,
 	two_idents_for_1_declarer,
 	function_has_no_body,
-	diff_formal_param_type_and_actual,
-	expected_expression,
-	wrong_operand,
-	must_be_digit_after_exp,
-	label_not_declared,
-	repeated_label,
-	operand_is_pointer,
-	pointer_in_print,
 	wrong_struct,
-	after_dot_must_be_ident,
-	get_field_not_from_struct_pointer,
-	error_in_initialization,
-	type_missmatch,
-	array_assigment,
-	wrong_struct_ass,
-	wrong_init,
-	no_field,
-	slice_from_func,
-	wait_end,
-	act_param_not_ident,
-	unassignable,
 	pnt_before_array,
 	array_size_must_be_int,
 	no_semicolon_in_struct,
+	no_comma_in_enum,
 	wait_ident_after_semicolon_in_struct,
+	wait_ident_after_comma_in_enum,
 	empty_init,
 	ident_not_type,
 	not_decl,
-	print_without_br,
-	select_not_from_struct,
-	init_not_struct,
-	param_threads_not_int,
 
-	wrong_arg_in_send = 341,
-	wrong_arg_in_create,
-
-	no_leftbr_in_printf,
-	no_rightbr_in_printf,
-	wrong_first_printf_param,
-	wrong_printf_param_type,
-	wrong_printf_param_number,
-	printf_no_format_placeholder,
-	printf_unknown_format_placeholder,
-	too_many_printf_args,
-
-	no_mult_in_cast,
-	no_rightbr_in_cast,
-	not_pointer_in_cast,
 	empty_bound_without_init,
-	begin_with_notarray,
-	string_and_notstring,
-	wrong_init_in_actparam,
-	no_comma_or_end,
-
-	not_string_in_stanfunc = 362,
-	not_int_in_stanfunc,
-	no_comma_in_act_params_stanfunc,
-	not_point_string_in_stanfunc,
-
-	struct_init_must_start_from_BEGIN,
-	not_rowofint_in_stanfunc,
-	not_rowoffloat_in_stanfunc,
-
-	not_float_in_stanfunc,
-	not_array_in_stanfunc,
-
-	// Tree parsing errors
-	tree_expression_not_block,
-	tree_expression_unknown,
-	tree_expression_operator,
-	tree_expression_no_texprend,
 
 	// Tree testing errors
-	tree_no_tend,
-	tree_unexpected,
-
-	node_cannot_add_child,
-	node_cannot_set_type,
-	node_cannot_add_arg,
 	node_unexpected,
 
 	// Codegen errors
 	tables_cannot_be_compressed,
-} error_t;
+	wrong_init_in_actparam,
+	array_borders_cannot_be_static_dynamic,
+	such_array_is_not_supported,
+	too_many_arguments
+} err_t;
 
 /** Warnings codes */
 typedef enum WARNING
 {
-	too_long_int = 400,
-
-	tree_operator_unknown,
-	node_argc,
+	result_of_assignment_as_condition,		/**< Using the result of an assignment as a condition */
+	too_long_int,
+	variable_deviation,
 } warning_t;
 
 
@@ -213,7 +174,7 @@ typedef enum WARNING
  *	@param	io			Universal io
  *	@param	num			Error number
  */
-void error(const universal_io *const io, error_t num, ...);
+void error(const universal_io *const io, err_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -231,7 +192,7 @@ void warning(const universal_io *const io, warning_t num, ...);
  *	@param	num			Error number
  *	@param	args		Variable list
  */
-void verror(const universal_io *const io, const error_t num, va_list args);
+void verror(const universal_io *const io, const err_t num, va_list args);
 
 /**
  *	Emit a warning (embedded version)
@@ -248,7 +209,7 @@ void vwarning(const universal_io *const io, const warning_t num, va_list args);
  *
  *	@param	num			Error number
  */
-void system_error(error_t num, ...);
+void system_error(err_t num, ...);
 
 /**
  *	Emit a warning by number

@@ -54,6 +54,33 @@ inline int stack_push(stack *const stk, const item_t value)
 }
 
 /**
+ *	Push new double value
+ *
+ *	@param	stk				Stack structure
+ *	@param	value			Double value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int stack_push_double(stack *const stk, const double value)
+{
+	return vector_add_double(stk, value) != SIZE_MAX ? 0 : -1;
+}
+
+/**
+ *	Push new 64-bit value
+ *
+ *	@param	stk				Stack structure
+ *	@param	value			64-bit value
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+inline int stack_push_int64(stack *const stk, const int64_t value)
+{
+	return vector_add_int64(stk, value) != SIZE_MAX ? 0 : -1;
+}
+
+
+/**
  *	Pop value
  *
  *	@param	stk				Stack structure
@@ -66,6 +93,31 @@ inline item_t stack_pop(stack *const stk)
 }
 
 /**
+ *	Pop double value
+ *
+ *	@param	stk				Stack structure
+ *
+ *	@return	Value, @c DBL_MAX on failure
+ */
+inline double stack_pop_double(stack *const stk)
+{
+	return vector_remove_double(stk);
+}
+
+/**
+ *	Pop 64-bit value
+ *
+ *	@param	stk				Stack structure
+ *
+ *	@return	Value, @c LLONG_MAX on failure
+ */
+inline int64_t stack_pop_int64(stack *const stk)
+{
+	return vector_remove_int64(stk);
+}
+
+
+/**
  *	Peek value
  *
  *	@param	stk				Stack structure
@@ -75,6 +127,29 @@ inline item_t stack_pop(stack *const stk)
 inline item_t stack_peek(const stack *const stk)
 {
 	return vector_get(stk, vector_size(stk) - 1);
+}
+
+/**
+ *	Peek double value
+ *
+ *	@param	stk				Stack structure
+ *
+ *	@return	Value, @c DBL_MAX on failure
+ */
+inline double stack_peek_double(const stack *const stk)
+{
+	return vector_get_double(stk, vector_size(stk) - DOUBLE_SIZE);
+}
+/**
+ *	Peek 64-bit value
+ *
+ *	@param	stk				Stack structure
+ *
+ *	@return	Value, @c LLONG_MAX on failure
+ */
+inline int64_t stack_peek_int64(const stack *const stk)
+{
+	return vector_get_int64(stk, vector_size(stk) - INT64_SIZE);
 }
 
 

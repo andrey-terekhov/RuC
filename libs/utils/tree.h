@@ -89,6 +89,26 @@ EXPORTED size_t node_get_argc(const node *const nd);
 EXPORTED item_t node_get_arg(const node *const nd, const size_t index);
 
 /**
+ *	Get double argument from node by index
+ *
+ *	@param	nd			Node structure
+ *	@param	index		Argument number
+ *
+ *	@return	Argument, @c DBL_MAX on failure
+ */
+EXPORTED double node_get_arg_double(const node *const nd, const size_t index);
+
+/**
+ *	Get 64-bit argument from node by index
+ *
+ *	@param	nd			Node structure
+ *	@param	index		Argument number
+ *
+ *	@return	Argument, @c LLONG_MAX on failure
+ */
+EXPORTED int64_t node_get_arg_int64(const node *const nd, const size_t index);
+
+/**
  *	Get amount of children
  *
  *	@param	nd			Node structure
@@ -152,15 +172,61 @@ EXPORTED int node_set_type(const node *const nd, const item_t type);
 EXPORTED int node_add_arg(const node *const nd, const item_t arg);
 
 /**
+ *	Add new node double argument
+ *
+ *	@param	nd			Node structure
+ *	@param	arg			Node double argument
+ *
+ *	@return	@c  0 on success,
+ *			@c -1 on failure,
+ *			@c -2 on node with children
+ */
+EXPORTED int node_add_arg_double(const node *const nd, const double arg);
+
+/**
+ *	Add new node 64-bit argument
+ *
+ *	@param	nd			Node structure
+ *	@param	arg			Node 64-bit argument
+ *
+ *	@return	@c  0 on success,
+ *			@c -1 on failure,
+ *			@c -2 on node with children
+ */
+EXPORTED int node_add_arg_int64(const node *const nd, const int64_t arg);
+
+/**
  *	Set node argument by index
  *
  *	@param	nd			Node structure
  *	@param	index		Argument number
  *	@param	arg			Node argument
  *
- *	@return	@c  0 on success, @c -1 on failure
+ *	@return	@c 0 on success, @c -1 on failure
  */
 EXPORTED int node_set_arg(const node *const nd, const size_t index, const item_t arg);
+
+/**
+ *	Set node double argument by index
+ *
+ *	@param	nd			Node structure
+ *	@param	index		Argument number
+ *	@param	arg			Node double argument
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t node_set_arg_double(const node *const nd, const size_t index, const double arg);
+
+/**
+ *	Set node 64-bit argument by index
+ *
+ *	@param	nd			Node structure
+ *	@param	index		Argument number
+ *	@param	arg			Node 64-bit argument
+ *
+ *	@return	Number of used elements, @c SIZE_MAX on failure
+ */
+EXPORTED size_t node_set_arg_int64(const node *const nd, const size_t index, const int64_t arg);
 
 
 /**

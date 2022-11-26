@@ -90,6 +90,17 @@ EXPORTED size_t strings_add_by_vector(strings *const vec, const vector *const st
 EXPORTED const char *strings_get(const strings *const vec, const size_t index);
 
 /**
+ *	Get string length
+ *
+ *	@param	vec				Strings vector
+ *	@param	index			Index
+ *
+ *	@return	String length, @c 0 on failure
+ */
+EXPORTED size_t strings_get_length(const strings *const vec, const size_t index);
+
+
+/**
  *	Remove last string
  *
  *	@param	vec				Strings vector

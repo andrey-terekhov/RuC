@@ -20,8 +20,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "errors.h"
 #include "map.h"
+#include "reporter.h"
+#include "strings.h"
+#include "tree.h"
 #include "vector.h"
 
 
@@ -32,30 +34,38 @@
 extern "C" {
 #endif
 
-typedef struct node node;
-
 /** Type qualifiers */
-enum TYPE
+typedef enum TYPE
 {
-	TYPE_FILE			= -7,
+	TYPE_VARARG			= -9,
+	TYPE_NULL_POINTER,
+	TYPE_FILE,
 	TYPE_VOID,
-	TYPE_FLOATING		= -3,
+	TYPE_BOOLEAN		= -4,
+	TYPE_FLOATING,
 	TYPE_CHARACTER,
 	TYPE_INTEGER,
 	TYPE_UNDEFINED,
 
 	TYPE_MSG_INFO 		= 2,
-	TYPE_VOID_POINTER	= 10,
 	TYPE_FUNCTION		= 1001,
 	TYPE_STRUCTURE,
 	TYPE_ARRAY,
 	TYPE_POINTER,
-};
+	TYPE_ENUM,
+
+	BEGIN_USER_TYPE = 15,
+} type_t;
 
 
 /** Global vars definition */
 typedef struct syntax
 {
+	universal_io *io;			/**< Universal io structure */
+	reporter rprt;				/**< Reporter */
+
+	strings string_literals;	/**< String literals list */
+
 	vector predef;				/**< Predefined functions table */
 	vector functions;			/**< Functions table */
 
@@ -75,22 +85,31 @@ typedef struct syntax
 	item_t displ;				/**< Stack displacement in current scope */
 	item_t lg;					/**< Displacement from l (+1) or g (-1) */
 
-	size_t procd;				/**< Process management daemon */
 	size_t ref_main;			/**< Main function reference */
 } syntax;
+
+/** Scope */
+typedef struct scope
+{
+	item_t displ;
+	item_t lg;
+} scope;
 
 
 /**
  *	Create Syntax structure
  *
+ *	@param	ws				Compiler workspace
+ *	@param	io				Universal io structure
+ *
  *	@return	Syntax structure
  */
-syntax sx_create();
+syntax sx_create(const workspace *const ws, universal_io *const io);
 
 /**
  *	Check if syntax structure is correct
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 1 on true, @c 0 on false
  */
@@ -99,11 +118,50 @@ bool sx_is_correct(syntax *const sx);
 /**
  *	Free allocated memory
  *
- *	@param	sx			Syntax structure
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
 int sx_clear(syntax *const sx);
+
+
+/**
+ *	Add new dynamic UTF-8 string to string literal vector
+ *
+ *	@param	sx				Syntax structure
+ *	@param	str				Dynamic UTF-8 string
+ *
+ *	@return	Index, @c SIZE_MAX on failure
+ */
+size_t string_add(syntax *const sx, const vector *const str);
+
+/**
+ *	Get string
+ *
+ *	@param	sx				Syntax structure
+ *	@param	index			Index
+ *
+ *	@return	String, @c NULL on failure
+ */
+const char* string_get(const syntax *const sx, const size_t index);
+
+/**
+ *	Get length of a string
+ *
+ *	@param  sx	  Syntax structure
+ *
+ *	@return Length of a string
+ */
+size_t strings_length(const syntax *const sx, const size_t index);
+
+/**
+ *	Get amount of strings
+ *
+ *	@param  sx	  Syntax structure
+ *
+ *	@return Amount of strings
+ */
+size_t strings_amount(const syntax *const sx);
 
 
 /**
@@ -175,9 +233,9 @@ size_t ident_add(syntax *const sx, const size_t repr, const item_t kind, const i
  *	@param	sx			Syntax structure
  *	@param	index		Index of record in identifiers table
  *
- *	@return	Index of previous declaration in identifiers table, @c ITEM_MAX on failure
+ *	@return	Index of previous declaration in identifiers table, @c SIZE_MAX on failure
  */
-item_t ident_get_prev(const syntax *const sx, const size_t index);
+size_t ident_get_prev(const syntax *const sx, const size_t index);
 
 /**
  *	Get item representation from identifiers table by index
@@ -208,6 +266,16 @@ item_t ident_get_type(const syntax *const sx, const size_t index);
  *	@return	Identifier displacement, @c ITEM_MAX on failure
  */
 item_t ident_get_displ(const syntax *const sx, const size_t index);
+
+/**
+ *	Get identifier spelling by index in identifiers table
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	Pointer to spelling of identifier
+ */
+const char *ident_get_spelling(const syntax *const sx, const size_t index);
 
 /**
  *	Set identifier representation by index in identifiers table
@@ -242,6 +310,26 @@ int ident_set_type(syntax *const sx, const size_t index, const item_t type);
  */
 int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 
+/**
+ *	Check if identifier is declared as type specifier
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return	@c 0 on true, @c 0 on false
+ */
+bool ident_is_type_specifier(syntax *const sx, const size_t index);
+
+/**
+ *	Check if identifier is local by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	index		Index of record in identifiers table
+ *
+ *	@return @c 1 on true, @c 0 on false
+ */
+bool ident_is_local(const syntax *const sx, const size_t index);
+
 
 /**
  *	Add a new record to types table
@@ -255,14 +343,25 @@ int ident_set_displ(syntax *const sx, const size_t index, const item_t displ);
 item_t type_add(syntax *const sx, const item_t *const record, const size_t size);
 
 /**
- *	Get an item from types table by index
+ *	Add a new enum fields to types table
  *
  *	@param	sx			Syntax structure
- *	@param	index		Index of record in types table
+ *	@param	record		Pointer to the new record
+ *	@param	size		Size of the new record
  *
- *	@return	Item by index from types table, @c ITEM_MAX on failure
+ *	@return	New type, @c ITEM_MAX on failure
  */
-item_t type_get(const syntax *const sx, const size_t index);
+item_t type_enum_add_fields(syntax *const sx, const item_t *const record, const size_t size);
+
+/**
+ *	Get type class
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type
+ *
+ *	@return	Type class
+ */
+type_t type_get_class(const syntax *const sx, const item_t type);
 
 /**
  *	Get type size
@@ -275,13 +374,23 @@ item_t type_get(const syntax *const sx, const size_t index);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
- *	Check if type is integer
+ *	Check if type is boolean
  *
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_integer(const item_t type);
+bool type_is_boolean(const item_t type);
+
+/**
+ *	Check if type is integer
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_integer(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is floating
@@ -295,11 +404,12 @@ bool type_is_floating(const item_t type);
 /**
  *	Check if type is arithmetic
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_arithmetic(const item_t type);
+bool type_is_arithmetic(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is void
@@ -309,6 +419,15 @@ bool type_is_arithmetic(const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_void(const item_t type);
+
+/**
+ *	Check if type is null pointer
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_null_pointer(const item_t type);
 
 /**
  *	Check if type is array
@@ -329,6 +448,26 @@ bool type_is_array(const syntax *const sx, const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_structure(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type is enum field
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_enum_field(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is function
@@ -409,6 +548,100 @@ bool type_is_undefined(const item_t type);
 bool type_is_file(const item_t type);
 
 /**
+ *	Get element type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Array type
+ *
+ *	@return	Element type, @c ITEM_MAX on failure
+ */
+item_t type_array_get_element_type(const syntax *const sx, const item_t type);
+
+/**
+ *	Create structure type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	types		Member types
+ *	@param	names		Member names
+ *
+ *	@return	Structure type
+ */
+item_t type_structure(syntax *const sx, vector *const types, vector *const names);
+
+/**
+ *	Get member amount
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Structure type
+ *
+ *	@return	Member amount, @c SIZE_MAX on failure
+ */
+size_t type_structure_get_member_amount(const syntax *const sx, const item_t type);
+
+/**
+ *	Get member name by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Structure type
+ *	@param	index		Member number
+ *
+ *	@return	Member name, @c SIZE_MAX on failure
+ */
+size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index);
+
+/**
+ *	Get member type by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Structure type
+ *	@param	index		Member number
+ *
+ *	@return	Member type, @c ITEM_MAX on failure
+ */
+item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index);
+
+/**
+ *	Get return type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Function type
+ *
+ *	@return	Return type, @c ITEM_MAX on failure
+ */
+item_t type_function_get_return_type(const syntax *const sx, const item_t type);
+
+/**
+ *	Get parameter amount
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Function type
+ *
+ *	@return	Parameter amount, @c SIZE_MAX on failure
+ */
+size_t type_function_get_parameter_amount(const syntax *const sx, const item_t type);
+
+/**
+ *	Get parameter type by index
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Function type
+ *	@param	index		Parameter number
+ *
+ *	@return	Parameter type, @c ITEM_MAX on failure
+ */
+item_t type_function_get_parameter_type(const syntax *const sx, const item_t type, const size_t index);
+
+/**
+ *	Get element type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Pointer type
+ *
+ *	@return	Element type, @c ITEM_MAX on failure
+ */
+item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
+
+/**
  *	Create array type
  *
  *	@param	sx			Syntax structure
@@ -419,13 +652,32 @@ bool type_is_file(const item_t type);
 item_t type_array(syntax *const sx, const item_t type);
 
 /**
+ *	Create string type
+ *
+ *	@param	sx			Syntax structure
+ *
+ *	@return	String type
+ */
+item_t type_string(syntax *const sx);
+
+/**
+ *	Get enum field type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Enum type
+ *
+ *	@return	Enum field type
+ */
+item_t get_enum_field_type(const syntax *const sx, const item_t type);
+
+/**
  *	Create function type
  *
  *	@param	sx			Syntax structure
  *	@param	return_type	Return type
  *	@param	args		List of argument types
  *
- *	@return	Array type
+ *	@return	Function type
  */
 item_t type_function(syntax *const sx, const item_t return_type, const char *const args);
 
@@ -441,14 +693,14 @@ item_t type_pointer(syntax *const sx, const item_t type);
 
 
 /**
- *	Add a new record to representations table or return existing
+ *	Add a new record from io to representations table or return existing
  *
  *	@param	sx			Syntax structure
- *	@param	spelling	Unique UTF-8 string key
+ *	@param	last		Next character after key
  *
  *	@return	Index of record, @c SIZE_MAX on failure
  */
-size_t repr_reserve(syntax *const sx, const char32_t *const spelling);
+size_t repr_reserve(syntax *const sx, char32_t *const last);
 
 /**
  *	Get identifier name from representations table
@@ -486,23 +738,20 @@ int repr_set_reference(syntax *const sx, const size_t index, const item_t ref);
  *	Enter block scope
  *
  *	@param	sx			Syntax structure
- *	@param	displ		Variable to save previous stack displacement
- *	@param	lg			Variable to save previous value of lg
  *
- *	@return	@c 0 on success, @c -1 on failure
+ *	@return	Scope
  */
-int scope_block_enter(syntax *const sx, item_t *const displ, item_t *const lg);
+scope scope_block_enter(syntax *const sx);
 
 /**
  *	Exit block scope
  *
  *	@param	sx			Syntax structure
- *	@param	displ		Stack displacement at the start of the scope
- *	@param	lg			Previous value of lg
+ *	@param	scp			Scope
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int scope_block_exit(syntax *const sx, const item_t displ, const item_t lg);
+int scope_block_exit(syntax *const sx, const scope scp);
 
 /**
  *	Enter function scope
