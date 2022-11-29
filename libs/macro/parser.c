@@ -224,6 +224,7 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
 /**
  *	Skip the current directive processing until next line.
  *	All backslash line breaks and multiline comments will be skipped too.
+ *	Set @c #line directive requirement flag.
  *
  *	@param	prs			Parser structure
  */
@@ -345,7 +346,7 @@ static char32_t skip_lines(parser *const prs)
  *
  *	@param	prs			Parser structure
  *	@param	index		Index of macro
- *	@param	stg			Storage for values
+ *	@param	stg			Value storage
  *	@param	value		Read argument
  *	@param	arg			Argument number
  */
@@ -391,6 +392,17 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 	free(buffer);
 }
 
+/**
+ *	Parse macro argument values from brackets.
+ *	Produce values for replacement to storage.
+ *	Stopped without closing bracket read.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *	@param	stg			Value storage
+ *
+ *	@return	Number of read values, @c SIZE_MAX on failure
+ */
 static size_t parse_brackets(parser *const prs, const size_t index, storage *const stg)
 {
 	size_t arg = 0;
@@ -441,6 +453,15 @@ static size_t parse_brackets(parser *const prs, const size_t index, storage *con
 	return arg;
 }
 
+/**
+ *	Parse macro replacement value.
+ *	Apply arguments and operators to comply observation area.
+ *	After that, preprocess the result value.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *	@param	stg			Value storage
+ */
 static void parse_observation(parser *const prs, const size_t index, storage *const stg)
 {
 	universal_io *io = prs->io;
@@ -481,6 +502,14 @@ static void parse_observation(parser *const prs, const size_t index, storage *co
 	free(buffer);
 }
 
+/**
+ *	Parse macro replacement call.
+ *	Analyze arguments count and parse brackets.
+ *	Nearest empty brackets will be proceed, if macro has no arguments.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ */
 static void parse_replacement(parser *const prs, const size_t index)
 {
 	const size_t expected = storage_get_args_by_index(prs->stg, index);
@@ -528,6 +557,13 @@ static void parse_replacement(parser *const prs, const size_t index)
 	storage_clear(&stg);
 }
 
+/**
+ *	Parse and replace identifier, if macro name recognized.
+ *	Emit an error on @c MAX_CALL_DAPTH reached.
+ *	Skip non macro identifiers.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parce_identifier(parser *const prs)
 {
 	const size_t begin = in_get_position(prs->io);
@@ -573,6 +609,15 @@ static void parce_identifier(parser *const prs)
 	prs->call--;
 }
 
+/**
+ *	Parse usual content until line break.
+ *	Only macro replacement identifiers allowed.
+ *	Paste line break, if @c EOF occurred after significant character.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
 static char32_t parse_until(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
@@ -612,6 +657,17 @@ static char32_t parse_until(parser *const prs)
 	return character;
 }
 
+/**
+ *	Parse line beginning until first significant character.
+ *	Buffer read characters, if a hash character occurred.
+ *	Produce @c #line directives to output, if required.
+ *	It also skip empty lines.
+ *
+ *	@param	prs			Parser structure
+ *	@param	out			IO for buffering
+ *
+ *	@return	First significant character
+ */
 static char32_t parse_hash(parser *const prs, universal_io *const out)
 {
 	out_swap(prs->io, out);
@@ -644,6 +700,15 @@ static char32_t parse_hash(parser *const prs, universal_io *const out)
 	}
 }
 
+/**
+ *	Parse directive keyword and paste @c #line marks.
+ *	Unsupport directive name splitting by backslash.
+ *	But hash separation is acceptable.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Keyword token, @c SIZE_MAX on otherwise
+ */
 static size_t parse_directive(parser *const prs)
 {
 	universal_io out = io_create();
