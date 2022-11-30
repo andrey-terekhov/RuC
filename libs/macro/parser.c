@@ -766,6 +766,14 @@ static size_t parse_directive(parser *const prs)
 }
 
 
+/**
+ *	Parse directive name location.
+ *	Returns name only, if hash has been split.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Location of directive name
+ */
 static location parse_location(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
@@ -780,6 +788,11 @@ static location parse_location(parser *const prs)
 	return loc;
 }
 
+/**
+ *	Parse @c #line directive.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parse_line(parser *const prs)
 {
 	parse_location(prs);
@@ -787,7 +800,14 @@ static void parse_line(parser *const prs)
 	skip_directive(prs);
 }
 
-static void parse_include_path(parser *const prs, const char32_t quote)
+/**
+ *	Parse the filename path and link it.
+ *	Extra tokens after closing quote not accepted.
+ *
+ *	@param	prs			Parser structure
+ *	@param	quote		Expected closing quote
+ */
+static void parse_path(parser *const prs, const char32_t quote)
 {
 	location loc = loc_copy(prs->loc);
 	uni_scan_char(prs->io);
@@ -828,6 +848,11 @@ static void parse_include_path(parser *const prs, const char32_t quote)
 	in_clear(&header);
 }
 
+/**
+ *	Parse @c #include directive.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
@@ -845,7 +870,7 @@ static void parse_include(parser *const prs)
 		case '<':
 			character = '>';
 		case '"':
-			parse_include_path(prs, character);
+			parse_path(prs, character);
 			break;
 
 		case '\n':
@@ -862,6 +887,15 @@ static void parse_include(parser *const prs)
 }
 
 
+/**
+ *	Parse macro name after directive.
+ *	Check that name is valid or emit an error.
+ *	Exit without reading the name.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	@c true on valid name, @c false on failure
+ */
 static bool parse_name(parser *const prs)
 {
 	location loc = parse_location(prs);
@@ -884,6 +918,15 @@ static bool parse_name(parser *const prs)
 	return false;
 }
 
+/**
+ *	Parse macro definition arguments.
+ *	Save the scanned arguments to the parser's storage.
+ *	Use their indexes as the value.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Number of arguments, @c SIZE_MAX on failure
+ */
 static size_t parse_args(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
@@ -944,6 +987,16 @@ static size_t parse_args(parser *const prs)
 	return SIZE_MAX;
 }
 
+/**
+ *	Parse preprocessor operators of argument.
+ *	Produce a masked replacement for argument operators.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *	@param	was_space	Set, if separator required
+ *
+ *	@return	@c true on success, @c false on failure
+ */
 static bool parse_operator(parser *const prs, const size_t index, const bool was_space)
 {
 	location loc = loc_copy(prs->loc);
@@ -984,6 +1037,17 @@ static bool parse_operator(parser *const prs, const size_t index, const bool was
 	return true;
 }
 
+/**
+ *	Parse macro content and prepare value for saving.
+ *	All separator sequences will be replaced by a single space.
+ *	Return an empty string for the correct macro without value.
+ *	Return value require to call @c free() function.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *
+ *	@return	Macro value, @c NULL on failure
+ */
 static char *parse_content(parser *const prs, const size_t index)
 {
 	universal_io out = io_create();
@@ -1044,6 +1108,14 @@ static char *parse_content(parser *const prs, const size_t index)
 	return out_extract_buffer(&out);
 }
 
+/**
+ *	Parse the context of the saved macro.
+ *	Create temporary storage for arguments.
+ *	Set a velue for the parsed macro name.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ */
 static void parse_context(parser *const prs, const size_t index)
 {
 	storage stg = storage_create();
@@ -1092,6 +1164,11 @@ static void parse_context(parser *const prs, const size_t index)
 	prs->stg = origin;
 }
 
+/**
+ *	Parse @c #define directive.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parse_define(parser *const prs)
 {
 	if (parse_name(prs))
@@ -1111,6 +1188,11 @@ static void parse_define(parser *const prs)
 	skip_directive(prs);
 }
 
+/**
+ *	Parse @c #set directive.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parse_set(parser *const prs)
 {
 	if (parse_name(prs))
@@ -1132,6 +1214,11 @@ static void parse_set(parser *const prs)
 	skip_directive(prs);
 }
 
+/**
+ *	Parse @c #undef directive.
+ *
+ *	@param	prs			Parser structure
+ */
 static void parse_undef(parser *const prs)
 {
 	if (parse_name(prs))
