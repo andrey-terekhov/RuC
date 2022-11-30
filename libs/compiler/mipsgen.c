@@ -2095,7 +2095,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
 
-	item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
+	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
 
@@ -2970,10 +2970,10 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_SP, R_V0);
 
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_T0);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A1, R_T1);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_T2);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_T3);
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_S0);
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A1, R_S1);
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_S2);
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_S3);
 }
 
 /**
