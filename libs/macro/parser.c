@@ -1335,7 +1335,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	prs->io = io;
 	prs->loc = loc;
 	out_swap(io, in);
-	return 0;
+	return prs->was_error;
 }
 
 
