@@ -1174,15 +1174,17 @@ static void parse_define(parser *const prs)
 	if (parse_name(prs))
 	{
 		loc_search_from(prs->loc);
-		const size_t index = storage_add_by_io(prs->stg, prs->io);
+		const size_t position = in_get_position(prs->io);
+		size_t index = storage_add_by_io(prs->stg, prs->io);
+
 		if (index == SIZE_MAX)
 		{
-			parser_error(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			in_set_position(prs->io, position);
+			index = storage_search(prs->stg, prs->io);
 		}
-		else
-		{
-			parse_context(prs, index);
-		}
+
+		parse_context(prs, index);
 	}
 
 	skip_directive(prs);
