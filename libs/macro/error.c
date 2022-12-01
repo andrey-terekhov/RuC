@@ -83,15 +83,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case ITERATION_MAX:
 			sprintf(msg, "превышено максимальное количество итераций");
 			break;
-		case CHARACTER_STRAY:
-		{
-			const char32_t character = va_arg(args, char32_t);
-
-			size_t index = sprintf(msg, "потерянный '");
-			index += utf8_to_string(&msg[index], character);
-			sprintf(&msg[index], "' в программе");
-		}
-		break;
 		case STRING_UNTERMINATED:
 		{
 			const char32_t quote = va_arg(args, char32_t);
@@ -118,6 +109,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		case HASH_STRAY:
+			sprintf(msg, "потерянный '#' в программе");
+			break;
 		case HASH_ON_EDGE:
 			sprintf(msg, "'##' не может стоять по краям макроса");
 			break;

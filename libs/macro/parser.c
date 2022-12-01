@@ -634,7 +634,7 @@ static char32_t parse_until(parser *const prs)
 		else if (character == '#')
 		{
 			loc_search_from(prs->loc);
-			parser_error(prs, prs->loc, CHARACTER_STRAY, '#');
+			parser_error(prs, prs->loc, HASH_STRAY);
 			uni_print_char(prs->io, uni_scan_char(prs->io));
 		}
 		else if (character == '\'' || character == '"')
@@ -753,7 +753,7 @@ static size_t parse_directive(parser *const prs)
 		}
 		else
 		{
-			parser_error(prs, &loc, CHARACTER_STRAY, '#');
+			parser_error(prs, &loc, HASH_STRAY);
 			uni_unscan(prs->io, &directive[1]);
 		}
 
