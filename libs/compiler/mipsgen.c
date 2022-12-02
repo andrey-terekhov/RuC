@@ -246,8 +246,6 @@ typedef enum LABEL
 	L_ELSE,			/**< Тип метки -- переход по else */
 	L_END,			/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,	/**< Тип метки -- переход в начало цикла */
-	L_ERROR,		/**< Тип метки -- прыжок при ошибке */
-	L_CASE,			/**< Тип метки -- переход по case */
 } mips_label_t;
 
 typedef struct label
@@ -330,8 +328,8 @@ static const rvalue RVALUE_VOID = { .kind = RVALUE_KIND_CONST };
 
 
 static lvalue emit_lvalue(encoder *const enc, const node *const nd);
-static rvalue emit_binary_operation(encoder *const enc, const rvalue *const rval1
-	, const rvalue *const rval2, const binary_t operator);
+static void emit_binary_operation(encoder *const enc, const rvalue *const dest
+	, const rvalue *const first_operand, const rvalue *const second_operand, const binary_t operator);
 static rvalue emit_expression(encoder *const enc, const node *const nd);
 static rvalue emit_void_expression(encoder *const enc, const node *const nd);
 static void emit_statement(encoder *const enc, const node *const nd);
@@ -357,16 +355,59 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
 }
 
 /**
- * Checks if type is integer. That is: bool, char, int, enum, enum field
+ * Locks certain register
  * 
- * @param	sx					Syntax structure
- * @param	type				Type
- * 
- * @return	@c True if the type is integer, @c False otherwise
+ * @param	enc					Encoder
+ * @param	reg					Register to lock
 */
-static bool mips_type_is_integer(const syntax *const sx, const item_t type)
+static void lock_register(encoder *const enc, const mips_register_t reg)
 {
-	return (type_is_boolean(type) || type_is_integer(sx, type));
+	switch (reg)
+	{
+		case R_T0:
+		case R_T1:
+		case R_T2:
+		case R_T3:
+		case R_T4:
+		case R_T5:
+		case R_T6:
+		case R_T7:
+			if (!enc->registers[reg - R_T0])
+			{
+				// Регистр занят => освобождаем
+				enc->registers[reg - R_T0] = true;
+			}
+			return;
+
+		case R_T8:
+		case R_T9:
+			if (!enc->registers[reg - R_T8 + /* индекс R_T8 в enc->registers */ 8])
+			{
+				enc->registers[reg - R_T8 + 8] = true;
+			}
+			return;
+
+		case R_FT0:
+		case R_FT1:
+		case R_FT2:
+		case R_FT3:
+		case R_FT4:
+		case R_FT5:
+		case R_FT6:
+		case R_FT7:
+		case R_FT8:
+		case R_FT9:
+		case R_FT10:
+		case R_FT11:
+			if (!enc->registers[reg - R_FT0 + /* индекс R_FT0 в enc->registers */ TEMP_REG_AMOUNT])
+			{
+				enc->registers[reg - R_FT0 + TEMP_REG_AMOUNT] = true;
+			}
+			return;
+
+		default: // Не временный регистр и пришли сюда => и так захвачен
+			return;
+	}
 }
 
 /**
@@ -463,10 +504,10 @@ static void free_register(encoder *const enc, const mips_register_t reg)
 		case R_FT9:
 		case R_FT10:
 		case R_FT11:
-			if (enc->registers[reg - R_FT0 + /* индекс R_FT0 в enc->registers */ 10])
+			if (enc->registers[reg - R_FT0 + /* индекс R_FT0 в enc->registers */ TEMP_REG_AMOUNT])
 			{
 				// Регистр занят => освобождаем
-				enc->registers[reg - R_FT0 + 10] = false;
+				enc->registers[reg - R_FT0 + TEMP_REG_AMOUNT] = false;
 			}
 			return;
 
@@ -1146,9 +1187,6 @@ static void emit_label(encoder *const enc, const label *const lbl)
 		case L_BEGIN_CYCLE:
 			uni_printf(io, "BEGIN_CYCLE");
 			break;
-		case L_CASE:
-			uni_printf(io, "CASE");
-			break;
 	}
 
 	uni_printf(io, "%" PRIitem, lbl->num);
@@ -1259,7 +1297,7 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 	const mips_register_t reg = (type_is_floating(value->type)) ? get_float_register(enc) : get_register(enc);
 	const mips_instruction_t instruction = (type_is_floating(value->type)) ? IC_MIPS_LI_S : IC_MIPS_LI;
 
-	uni_printf(enc->sx->io, "# bruh:\n\t");
+	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
 	uni_printf(enc->sx->io, " ");
 	mips_register_to_io(enc->sx->io, reg);
@@ -1375,10 +1413,13 @@ static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 		.val.int_val = mips_type_size(enc->sx, type),
 		.type = TYPE_INTEGER
 	};
-	const rvalue index_in_bytes_value = emit_binary_operation(enc, &index_value, &type_size_value, BIN_MUL);
-	const rvalue result = emit_binary_operation(enc, &base_value, &index_in_bytes_value, BIN_SUB);
+	
+	emit_binary_operation(enc, &index_value, &index_value, &type_size_value, BIN_MUL);
+	emit_binary_operation(enc, &base_value, &base_value, &index_value, BIN_SUB);
 
-	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = result.val.reg_num, .loc.displ = 0, .type = type };
+	free_rvalue(enc, &index_value);
+
+	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_value.val.reg_num, .loc.displ = 0, .type = type };
 }
 
 /**
@@ -1603,66 +1644,23 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
  * Emit binary operation with two rvalues
  *
  * @param	enc				Encoder
- * @param	first_rval1		First rvalue operand
- * @param	second_rval2	Second rvalue operand
+ * @param	dest			Destination rvalue
+ * @param	first_operand	First rvalue operand
+ * @param	second_operand	Second rvalue operand
  * @param	operator		Operator
- *
- * @return	Result rvalue
  */
-static rvalue emit_binary_operation(encoder *const enc
-	, const rvalue *const rval1, const rvalue *const rval2, const binary_t operator)
+static void emit_binary_operation(encoder *const enc, const rvalue *const dest
+	, const rvalue *const first_operand, const rvalue *const second_operand, const binary_t operator)
 {
 	assert(operator != BIN_LOG_AND);
 	assert(operator != BIN_LOG_OR);
 
-	assert(rval1->kind != RVALUE_KIND_VOID);
-	assert(rval2->kind != RVALUE_KIND_VOID);
+	assert(dest->kind == RVALUE_KIND_REGISTER);
+	assert(first_operand->kind != RVALUE_KIND_VOID);
+	assert(second_operand->kind != RVALUE_KIND_VOID);
 
-	item_t result_type;
-	mips_register_t result;
-	const rvalue *freeing_rvalue = &RVALUE_VOID;
-
-	if ((rval1->kind == RVALUE_KIND_REGISTER) && (rval2->kind == RVALUE_KIND_REGISTER))
+	if ((first_operand->kind == RVALUE_KIND_REGISTER) && (second_operand->kind == RVALUE_KIND_REGISTER))
 	{
-		if (!rval1->from_lvalue && !rval2->from_lvalue) // Оба rvalue -- не регистровые переменные
-		{
-			// Возьмём тогда для результата минимальный регистр, а другой впоследствии будет отброшен
-			if (rval1->val.reg_num > rval2->val.reg_num)
-			{
-				result = rval2->val.reg_num;
-				freeing_rvalue = rval1;
-				result_type = rval2->type;
-			}
-			else
-			{
-				result = rval1->val.reg_num;
-				freeing_rvalue = rval2;
-				result_type = rval1->type;
-			}
-		} // В противном случае никакой регистр освобождать не требуется, т.к. в нём будет записан результат
-		else if ((rval1->from_lvalue) && (!rval2->from_lvalue))
-		{
-			result = rval2->val.reg_num;
-			result_type = rval2->type;
-		}
-		else if ((rval2->from_lvalue) && (!rval1->from_lvalue))
-		{
-			result = rval1->val.reg_num;
-			result_type = rval1->type;
-		}
-		else
-		{
-			result = type_is_floating(rval1->type) ? get_float_register(enc) : get_register(enc);
-			result_type = rval1->type;
-		}
-
-		const rvalue result_rvalue = (rvalue) {
-			.kind = RVALUE_KIND_REGISTER
-			, .val.reg_num = result
-			, .type = result_type
-			, .from_lvalue = !FROM_LVALUE
-		};
-
 		switch (operator)
 		{
 			case BIN_LT:
@@ -1678,20 +1676,20 @@ static rvalue emit_binary_operation(encoder *const enc
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, rval1);
+				rvalue_to_io(enc, first_operand);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, rval2);
+				rvalue_to_io(enc, second_operand);
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
-				emit_conditional_branch(enc, instruction, &result_rvalue, &label_else);
+				emit_conditional_branch(enc, instruction, dest, &label_else);
 
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", 0\n");
 
 				emit_label_declaration(enc, &label_else);
@@ -1708,40 +1706,21 @@ static rvalue emit_binary_operation(encoder *const enc
 					get_bin_instruction(operator, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
 				);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, rval1);
+				rvalue_to_io(enc, first_operand);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, rval2);
+				rvalue_to_io(enc, second_operand);
 				uni_printf(enc->sx->io, "\n");
 			}
 			break;
 		}
-
-		free_rvalue(enc, freeing_rvalue);
-		return result_rvalue;
 	}
 	else
 	{
 		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
-		freeing_rvalue = (rval2->kind != RVALUE_KIND_CONST) ? rval1 : rval2;
-		const rvalue *const var_rvalue = (rval2->kind == RVALUE_KIND_CONST) ? rval1 : rval2;
-
-		if (var_rvalue->from_lvalue)
-		{
-			result = type_is_floating(var_rvalue->type) ? get_float_register(enc) : get_register(enc);
-		}
-		else
-		{
-			result = var_rvalue->val.reg_num;
-		}
-
-		const rvalue result_rvalue = {
-			.kind = RVALUE_KIND_REGISTER, 
-			.val.reg_num = result, 
-			.type = var_rvalue->type,
-			.from_lvalue = !FROM_LVALUE
-		};
+		const rvalue *imm_rvalue = (second_operand->kind != RVALUE_KIND_CONST) ? first_operand : second_operand;
+		const rvalue *const var_rvalue = (second_operand->kind == RVALUE_KIND_CONST) ? first_operand : second_operand;
 
 		switch (operator)
 		{
@@ -1755,30 +1734,28 @@ static rvalue emit_binary_operation(encoder *const enc
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = curr_label_num };
 
-				// TODO: Оптимизации с умножением на (-1)
-				// Загружаем <значение из rval2> на регистр
-				const rvalue tmp = emit_load_of_immediate(enc, freeing_rvalue);
-				freeing_rvalue = &tmp;
+				// Загружаем <значение из second_operand> на регистр
+				const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
+				imm_rvalue = &tmp;
 
-				// Записываем <значение из rval1> - <значение из rval2> в result
+				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
 				rvalue_to_io(enc, var_rvalue);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, freeing_rvalue);
+				rvalue_to_io(enc, imm_rvalue);
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
-				emit_conditional_branch(enc, instruction, &result_rvalue, &label_else);
+				emit_conditional_branch(enc, instruction, dest, &label_else);
 
-				emit_label_declaration(enc, &label_else);
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", 0\n");
 
 				emit_label_declaration(enc, &label_else);
@@ -1790,19 +1767,17 @@ static rvalue emit_binary_operation(encoder *const enc
 			default:
 			{
 				bool in_reg = false;
-				// TODO: Оптимизации
-				// Предварительно загружаем константу из const_rvalue в rvalue вида RVALUE_KIND_REGISTER
-				// TODO: вынести выше перед if-ом. Вообще, хочется в целом переделать эту функцию
+				// Предварительно загружаем константу из imm_rvalue в rvalue вида RVALUE_KIND_REGISTER
 				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) ||
 					(operator == BIN_REM))
 				{
 					// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
+					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
+					imm_rvalue = &tmp;
 					if (operator == BIN_SUB)
 					{
-						emit_binary_operation(enc, freeing_rvalue, &RVALUE_NEGATIVE_ONE, BIN_MUL);
+						emit_binary_operation(enc, imm_rvalue, imm_rvalue, &RVALUE_NEGATIVE_ONE, BIN_MUL);
 					}
-					const rvalue tmp = emit_load_of_immediate(enc, freeing_rvalue);
-					freeing_rvalue = &tmp;
 					in_reg = true;
 				}
 
@@ -1814,17 +1789,14 @@ static rvalue emit_binary_operation(encoder *const enc
 						/* Один регистр => true в get_bin_instruction() -> */ !in_reg)
 				);
 				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, &result_rvalue);
+				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
 				rvalue_to_io(enc, var_rvalue);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, freeing_rvalue);
+				rvalue_to_io(enc, imm_rvalue);
 				uni_printf(enc->sx->io, "\n");
 			}
 		}
-
-		free_rvalue(enc, freeing_rvalue);
-		return result_rvalue;
 	}
 }
 
@@ -2086,7 +2058,10 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 /**
  * Emit builtin function call
  * 
- * @param
+ * @param	enc					Encoder
+ * @param	nd					Node in AST
+ * 
+ * @return	Rvalue of builtin function call expression
 */
 static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 {
@@ -2120,7 +2095,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
 
-	item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
+	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
 
@@ -2132,7 +2107,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		const lvalue *prev_arg_displ[4 /* за $a0-$a3 */
 							  + 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
 
-		uni_printf(enc->sx->io, "\t# setting up $fp:\n");
+		uni_printf(enc->sx->io, "\t# setting up $sp:\n");
 		if (displ_for_parameters)
 		{
 			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
@@ -2332,26 +2307,28 @@ static rvalue emit_increment_expression(encoder *const enc, const node *const nd
 
 	const unary_t operator = expression_unary_get_operator(nd);
 	const bool is_prefix = (operator == UN_PREDEC) || (operator == UN_PREINC);
-	const item_t imm = ((operator == UN_PREINC) || (operator == UN_POSTINC)) ? 1 : -1;
+	const rvalue imm_rvalue = {
+		.from_lvalue = !FROM_LVALUE,
+		.kind = RVALUE_KIND_CONST,
+		.val.int_val = ((operator == UN_PREINC) || (operator == UN_POSTINC)) ? 1 : -1,
+		.type = TYPE_INTEGER
+	};
 
 	if (is_prefix)
 	{
-		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, operand_rvalue.val.reg_num, operand_rvalue.val.reg_num, imm);
+		emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &imm_rvalue, BIN_ADD);
 		emit_store_of_rvalue(enc, &operand_lvalue, &operand_rvalue);
 	}
 	else
 	{
-		const mips_register_t post_result_reg = get_register(enc);
 		const rvalue post_result_rvalue = {
+			.from_lvalue = !FROM_LVALUE,
 			.kind = RVALUE_KIND_REGISTER, 
-			.val.reg_num = post_result_reg, 
-			.type = operand_lvalue.type, 
-			.from_lvalue = !FROM_LVALUE
+			.val.reg_num = get_register(enc), 
+			.type = operand_lvalue.type 
 		};
 
-		// FIXME: надо в определенный rvalue это засовывать, добавить это в emit_binary_operation!
-		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, post_result_reg, operand_rvalue.val.reg_num, imm);
-
+		emit_binary_operation(enc, &post_result_rvalue, &operand_rvalue, &imm_rvalue, BIN_ADD);
 		emit_store_of_rvalue(enc, &operand_lvalue, &post_result_rvalue);
 		free_rvalue(enc, &post_result_rvalue);
 	}
@@ -2389,11 +2366,13 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 
 			if (operator == UN_MINUS)
 			{
-				return emit_binary_operation(enc, &RVALUE_ZERO, &operand_rvalue, BIN_SUB);
+				emit_binary_operation(enc, &operand_rvalue, &RVALUE_ZERO, &operand_rvalue, BIN_SUB);
+				return operand_rvalue;
 			}
 			else
 			{
-				return emit_binary_operation(enc, &operand_rvalue, &RVALUE_NEGATIVE_ONE, BIN_XOR);
+				emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &RVALUE_NEGATIVE_ONE, BIN_XOR);
+				return operand_rvalue;
 			}
 		}
 
@@ -2443,7 +2422,6 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 
 		case UN_UPB:
 		{
-			// FIXME -- сейчас некорректна
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue arr_displ_rvalue = emit_expression(enc, &operand);
 			const rvalue word_size_rvalue = {
@@ -2452,14 +2430,9 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 				.val.int_val = WORD_LENGTH,
 				.type = TYPE_INTEGER
 			};
-			const rvalue size_displ_rvalue = emit_binary_operation(
-				enc, 
-				&arr_displ_rvalue, 
-				&word_size_rvalue, 
-				BIN_ADD
-			);
+			emit_binary_operation(enc, &arr_displ_rvalue, &arr_displ_rvalue, &word_size_rvalue, BIN_ADD);
 			const lvalue size_lvalue = { 
-				.base_reg = size_displ_rvalue.val.reg_num,
+				.base_reg = arr_displ_rvalue.val.reg_num,
 				.kind = LVALUE_KIND_STACK,
 				.loc.displ = 0,
 				.type = TYPE_INTEGER
@@ -2521,7 +2494,10 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
 
-			return emit_binary_operation(enc, &lhs_rvalue, &rhs_rvalue, operator);
+			emit_binary_operation(enc, &lhs_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
+
+			free_rvalue(enc, &rhs_rvalue);
+			return lhs_rvalue;
 		}
 	}
 }
@@ -2676,10 +2652,10 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 			return RVALUE_VOID;
 	}
 
-	const rvalue new_value = emit_binary_operation(enc, &prev_value, &value, correct_operation);
-	emit_store_of_rvalue(enc, &target, &new_value);
+	emit_binary_operation(enc, &value, &prev_value, &value, correct_operation);
+	emit_store_of_rvalue(enc, &target, &value);
 
-	return new_value;
+	return value;
 }
 
 /**
@@ -2757,7 +2733,6 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 		*/
 
 		case EXPR_INITIALIZER:
-			// FIXME: кидать соответствующую ошибку
 			system_error(node_unexpected);
 			return RVALUE_VOID;
 
@@ -2803,16 +2778,39 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	, const node *const init, const rvalue *const addr)
 {
 	const size_t amount = expression_initializer_get_size(init);
+
+	// Проверка на соответствие размеров массива и инициализатора
+	uni_printf(enc->sx->io, "\n\t# Check for array and initializer sizes equality:\n");
+
+	const node bound = declaration_variable_get_bound(nd, dimension);
+	const rvalue tmp = emit_expression(enc, &bound);
+	const rvalue bound_rvalue = (tmp.kind == RVALUE_KIND_REGISTER) ? tmp : emit_load_of_immediate(enc, &tmp);
+
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, IC_MIPS_ADDI);
+	uni_printf(enc->sx->io, " ");
+	rvalue_to_io(enc, &bound_rvalue);
+	uni_printf(enc->sx->io, ", ");
+	rvalue_to_io(enc, &bound_rvalue);
+	uni_printf(enc->sx->io, ", %" PRIitem "\n", (-1)*amount);
+
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, IC_MIPS_BNE);
+	uni_printf(enc->sx->io, " ");
+	rvalue_to_io(enc, &bound_rvalue);
+	uni_printf(enc->sx->io, ", ");
+	mips_register_to_io(enc->sx->io, R_ZERO);
+	uni_printf(enc->sx->io, ", error\n");
+
+	free_rvalue(enc, &bound_rvalue);
+
 	for (size_t i = 0; i < amount; i++)
 	{
 		const node subexpr = expression_initializer_get_subexpr(init, i);
+		uni_printf(enc->sx->io, "\n");
 		if (expression_get_class(&subexpr) == EXPR_INITIALIZER)
 		{
-			// Cохраним текущий адрес
-			//to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S0, addr->val.reg_num);
-
 			// Сдвиг адреса на размер массива + 1 (за размер следующего измерения)
-			uni_printf(enc->sx->io, "\n");
 			const mips_register_t reg = get_register(enc);
 			to_code_R_I_R(enc->sx->io, IC_MIPS_LW, reg, 0, addr->val.reg_num); // адрес следующего измерения
 
@@ -2825,9 +2823,6 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 
 			emit_array_init(enc, nd, dimension + 1, &subexpr, &next_addr);
 
-			// Восстановление адреса
-			//to_code_2R(enc->sx->io, IC_MIPS_MOVE, addr->val.reg_num, R_S0);
-			
 			// Сдвиг адреса
 			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, addr->val.reg_num, addr->val.reg_num, -(item_t)WORD_LENGTH);
 			uni_printf(enc->sx->io, "\n");
@@ -2843,6 +2838,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 				.type = TYPE_INTEGER
 			};
 			emit_store_of_rvalue(enc, &array_index_value, &subexpr_value);
+			lock_register(enc, addr->val.reg_num);
 			if (i != amount-1)
 			{
 				to_code_2R_I(
@@ -2897,6 +2893,7 @@ static rvalue emit_bound(encoder *const enc, const node *const bound, const node
 static void emit_array_declaration(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = declaration_variable_get_id(nd);
+	const bool has_init = declaration_variable_has_initializer(nd);
 
 	// Сдвигаем, чтобы размер первого измерения был перед массивом
 	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
@@ -2911,7 +2908,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	emit_store_of_rvalue(enc, &variable, &value);
 	free_rvalue(enc, &value);
 
-	// Сохранение регистров аргументов (чтобы они не были затёры). Но вообще-то это надо бы переделать.
+	// FIXME: Переделать регистры-аргументы
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S0, R_A0);
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S1, R_A1);
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S2, R_A2);
@@ -2919,12 +2916,12 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	// Загрузка адреса в $a0
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_SP);
+
 	// Загрузка размера массива в $a1
 	const node dim_size = declaration_variable_get_bound(nd, 0);
 	const rvalue tmp = emit_expression(enc, &dim_size);
 	const rvalue second_arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 	emit_move_rvalue_to_register(enc, R_A1, &second_arg_rvalue);
-
 	free_rvalue(enc, &second_arg_rvalue);
 
 	const size_t dim = declaration_variable_get_bounds_amount(nd);
@@ -2945,7 +2942,6 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		const node try_dim_size = declaration_variable_get_bound(nd, j);
 		const rvalue bound = emit_bound(enc, &try_dim_size, nd);
 		emit_move_rvalue_to_register(enc, R_A1, &bound);
-
 		free_rvalue(enc, &bound);
 
 		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S5, R_A0);
@@ -2953,13 +2949,14 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 		uni_printf(enc->sx->io, "\tjal DEFARR2\n");
 
-		// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_S5);
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_S6);
+		if (j != dim - 1)
+		{
+			// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
+			to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_T5);
+			to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_T6);
+		}
 	}
 
-	// TODO: Проверка на несоответствие размеров инициализатора и массива
-	const bool has_init = declaration_variable_has_initializer(nd);
 	if (has_init)
 	{
 		uni_printf(enc->sx->io, "\n");
@@ -2971,7 +2968,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &variable_value);
 	}
 
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_SP, R_A0);
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_SP, R_V0);
 
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_S0);
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A1, R_S1);
@@ -3194,11 +3191,11 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	char *buffer = out_extract_buffer(enc->sx->io);
 	enc->sx->io = old_io;
 
-	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
+	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
 	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
 	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
-	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
+	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
 	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
 
@@ -3208,7 +3205,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "%s", buffer);
 	free(buffer);
 
-	const label end_label = { .kind = L_END, .num = ref_ident };
+	const label end_label = { .kind = L_FUNCEND, .num = ref_ident };
 	emit_label_declaration(enc, &end_label);
 
 	// Восстановление стека после работы функции
@@ -3288,8 +3285,8 @@ static void emit_declaration(encoder *const enc, const node *const nd)
 /**
  *	Emit declaration statement
  *
- *	@param	enc					Encoder
- *	@param	nd					Node in AST
+ *	@param	enc		encoder
+ *	@param	nd			Node in AST
  */
 static void emit_declaration_statement(encoder *const enc, const node *const nd)
 {
@@ -3299,38 +3296,6 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
 		const node decl = statement_declaration_get_declarator(nd, i);
 		emit_declaration(enc, &decl);
 	}
-}
-
-/**
- * Emit case statement
- * 
- * @param	enc					Encoder
- * @param	nd					Node in AST
-*/
-static void emit_case_statement(encoder *const enc, const node *const nd)
-{
-	const size_t label_num = enc->label_num++;
-	const label label_case = { .kind = L_CASE, .num = label_num };
-	emit_label_declaration(enc, &label_case);
-
-	const node substmt = statement_case_get_substmt(nd);
-	emit_statement(enc, &substmt);
-}
-
-/**
- * Emit default statement
- * 
- * @param	enc					Encoder
- * @param	nd					Node in AST
-*/
-static void emit_default_statement(encoder *const enc, const node *const nd)
-{
-	const size_t label_num = enc->label_num++;
-	const label label_default = { .kind = L_CASE, .num = label_num };
-	emit_label_declaration(enc, &label_default);
-
-	const node substmt = statement_default_get_substmt(nd);
-	emit_statement(enc, &substmt);
 }
 
 /**
@@ -3387,65 +3352,6 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 	}
 
 	emit_label_declaration(enc, &label_end);
-}
-
-/**
- * Emit switch statement
- * 
- * @param	enc				Encoder
- * @param	nd				Node in AST
-*/
-static void emit_switch_statement(encoder *const enc, const node *const nd)
-{
-	const node condition = statement_switch_get_condition(nd);
-	assert(mips_type_is_integer(enc->sx, expression_get_type(&condition))); // Согласно стандарту Си
-
-	size_t label_num = enc->label_num; // Увеличиваться enc->label_num будет далее
-
-	const label old_label_break = enc->label_break;
-	const label label_break = { .kind = L_END, .num = label_num };
-	enc->label_break = label_break;
-
-	const rvalue tmp = emit_expression(enc, &condition);
-	const rvalue condition_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
-
-	// Размещение меток согласно условиям
-	const node body = statement_switch_get_body(nd);
-	const size_t amount = statement_compound_get_size(&body); // Гарантируется compound statement
-	for (size_t i = 0; i < amount; i++)
-	{
-		const node substmt = statement_compound_get_substmt(&body, i);
-		const item_t substmt_class = statement_get_class(&substmt);
-
-		if (substmt_class == STMT_CASE)
-		{
-			const size_t case_num = label_num++;
-			const label label_case = { .kind = L_CASE, .num = case_num };
-
-			const node case_expr = statement_case_get_expression(&substmt);
-			const rvalue case_expr_rvalue = emit_expression(enc, &case_expr);
-
-			// Пользуемся тем, что это integer type
-			// TODO: заменить на новую версию
-			const rvalue result_rvalue = emit_binary_operation(enc, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
-
-			emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
-		}
-		else if (substmt_class == STMT_DEFAULT)
-		{
-			const size_t default_num = label_num++;
-			const label label_default = { .kind = L_CASE, .num = default_num };
-
-			emit_unconditional_branch(enc, IC_MIPS_J, &label_default);
-		}
-		// Все прочие случаи игнорируются, согласно стандарту Си
-	}
-
-	emit_statement(enc, &body);
-
-	emit_label_declaration(enc, &enc->label_break);
-
-	enc->label_break = old_label_break;
 }
 
 /**
@@ -3614,7 +3520,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &value);
 	}
 
-	const label label_end = { .kind = L_END, .num = enc->curr_function_ident };
+	const label label_end = { .kind = L_FUNCEND, .num = enc->curr_function_ident };
 	emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 }
 
@@ -3633,11 +3539,11 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			break;
 
 		case STMT_CASE:
-			emit_case_statement(enc, nd);
+			// emit_case_statement(enc, nd);
 			break;
 
 		case STMT_DEFAULT:
-			emit_default_statement(enc, nd);
+			// emit_default_statement(enc, nd);
 			break;
 
 		case STMT_COMPOUND:
@@ -3656,7 +3562,7 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			break;
 
 		case STMT_SWITCH:
-			emit_switch_statement(enc, nd);
+			// emit_switch_statement(enc, nd);
 			break;
 
 		case STMT_WHILE:
@@ -3793,14 +3699,14 @@ static void strings_declaration(encoder *const enc)
 
 	// Прыжок на главную метку
 	uni_printf(enc->sx->io, "\tjal MAIN\n");
-}
-
-// TODO: подписать, что значит каждая директива и команда
-static void postgen(encoder *const enc)
-{
+	
+	// Выход из программы в конце работы
 	to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_RA, 0, R_SP);
 	emit_register_branch(enc, IC_MIPS_JR, R_RA);
+}
 
+static void postgen(encoder *const enc)
+{
 	// вставляем runtime.s в конец файла
 	/*
 	uni_printf(enc->sx->io, "\n\n# runtime\n");
@@ -3833,8 +3739,6 @@ static void postgen(encoder *const enc)
 
 	uni_printf(enc->sx->io, "\n\n\t.end\tmain\n");
 	uni_printf(enc->sx->io, "\t.size\tmain, .-main\n");
-	// TODO: тут ещё часть вывод таблицы типов должен быть (вроде это для написанных самими функции типа printid)
-	
 }
 
 
