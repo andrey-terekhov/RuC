@@ -280,7 +280,6 @@ typedef struct encoder
 	bool registers[22]; 					/**< Информация о занятых регистрах */
 
 	size_t scope_displ;						/**< Смещение */
-	node_vector addr_case;					/**< Список узлов-меток case */
 } encoder;
 
 /** Kinds of lvalue */
@@ -3310,9 +3309,13 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
  * @param	enc					Encoder
  * @param	nd					Node in AST
 */
-static void emit_case_statement(encoder *const enc, const node *const nd)
+static void emit_case_statement(encoder *const enc, const node *const nd, const size_t label_num)
 {
-	node_vector_add(&enc->addr_case, nd);
+	const label label_case = { .kind = L_CASE, .num = label_num };
+	emit_label_declaration(enc, &label_case);
+
+	const node substmt = statement_case_get_substmt(nd);
+	emit_statement(enc, &substmt);
 }
 
 /**
@@ -3321,12 +3324,13 @@ static void emit_case_statement(encoder *const enc, const node *const nd)
  * @param	enc					Encoder
  * @param	nd					Node in AST
 */
-static void emit_default_statement(encoder *const enc, const node *const nd)
+static void emit_default_statement(encoder *const enc, const node *const nd, const size_t label_num)
 {
-	// Поместим default в самое начало вектора узлов case'ов
-	const node tmp = node_vector_get(&enc->addr_case, 0);
-	node_vector_set(&enc->addr_case, 0, nd);
-	node_vector_add(&enc->addr_case, &tmp);
+	const label label_default = { .kind = L_CASE, .num = label_num };
+	emit_label_declaration(enc, &label_default);
+
+	const node substmt = statement_default_get_substmt(nd);
+	emit_statement(enc, &substmt);
 }
 
 /**
@@ -3393,13 +3397,10 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 */
 static void emit_switch_statement(encoder *const enc, const node *const nd)
 {
-	node_vector old_addr_case = enc->addr_case;
-	enc->addr_case = node_vector_create();
-
-	const size_t old_case_label_num = enc->case_label_num;
-	const label old_label_break = enc->label_break;
-
 	const size_t label_num = enc->label_num++;
+	size_t curr_case_label_num = enc->case_label_num;
+
+	const label old_label_break = enc->label_break;
 	const label label_break = { .kind = L_END, .num = label_num };
 	enc->label_break = label_break;
 
@@ -3407,55 +3408,47 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 	const rvalue tmp = emit_expression(enc, &condition);
 	const rvalue condition_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 
+	item_t default_index = -1;
+
+	// Размещение меток согласно условиям
 	const node body = statement_switch_get_body(nd);
-	emit_statement(enc, &body); // Таким образом имеем список case'ов
-
-	const size_t case_amount = node_vector_size(&enc->addr_case);
-
-	// Сначала поменяем местами первое и последнее место, чтобы default стоял в конце
-	// А если его нет, то ничего не поменяется
-	const node expected_default = node_vector_get(&enc->addr_case, 0);
-	const bool has_default = (statement_get_class(&expected_default) == STMT_DEFAULT);
-	if (has_default)
+	const size_t amount = statement_compound_get_size(&body); // Гарантируется compound statement
+	for (size_t i = 0; i < amount; i++)
 	{
-		const node last_case = node_vector_get(&enc->addr_case, case_amount - 1);
-		node_vector_set(&enc->addr_case, 0, &last_case);
-		node_vector_set(&enc->addr_case, case_amount - 1, &expected_default);
+		const node substmt = statement_compound_get_substmt(&body, i);
+		const item_t substmt_class = statement_get_class(&substmt);
+
+		if (substmt_class == STMT_CASE)
+		{
+			const size_t case_num = enc->case_label_num++;
+			const label label_case = { .kind = L_CASE, .num = case_num };
+
+			const node case_expr = statement_case_get_expression(&substmt);
+			const rvalue case_expr_rvalue = emit_expression(enc, &case_expr);
+
+			// Пользуемся тем, что это integer type
+			const rvalue result_rvalue = {
+				.from_lvalue = !FROM_LVALUE,
+				.kind = RVALUE_KIND_REGISTER,
+				.val.reg_num = get_register(enc),
+				.type = TYPE_INTEGER
+			};
+			emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
+			emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
+
+			free_rvalue(enc, &case_expr_rvalue);
+			free_rvalue(enc, &result_rvalue);
+		}
+		else if (substmt_class == STMT_DEFAULT)
+		{
+			// Только получаем индекс, а размещение прыжка по нужной метке будет после всех case'ов
+			default_index = enc->case_label_num++;
+		}
 	}
 
-	// Размещение прыжков по меткам
-	size_t i = (has_default) ? 1 : 0;
-	for (; i < case_amount; i++)
+	if (default_index != -1)
 	{
-		const size_t case_num = enc->case_label_num++;
-		const label label_case = { .kind = L_CASE, .num = case_num };
-
-		const node stmt = node_vector_get(&enc->addr_case, i);
-		const node case_expr = statement_case_get_expression(&stmt);
-		const rvalue case_expr_rvalue = emit_expression(enc, &case_expr);
-
-		// Пользуемся тем, что это integer type
-		const rvalue result_rvalue = {
-			.from_lvalue = !FROM_LVALUE,
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num = get_register(enc),
-			.type = TYPE_INTEGER
-		};
-		emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
-		// Прыжок, если в result больше нуля
-		emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
-
-		free_rvalue(enc, &case_expr_rvalue);
-		free_rvalue(enc, &result_rvalue);
-
-		uni_printf(enc->sx->io, "\n");
-	}
-	free_rvalue(enc, &condition_rvalue);
-
-	if (has_default)
-	{
-		const size_t default_num = enc->case_label_num++;
-		const label label_default = { .kind = L_CASE, .num = default_num };
+		const label label_default = { .kind = L_CASE, .num = default_index };
 		emit_unconditional_branch(enc, IC_MIPS_J, &label_default);
 	}
 	else
@@ -3464,30 +3457,33 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 		emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
 	}
 
-	// Размещение тел всех меток
-	enc->case_label_num = old_case_label_num;
-	for (size_t i = 0; i < case_amount; i++)
+	free_rvalue(enc, &condition_rvalue);
+
+	uni_printf(enc->sx->io, "\n");
+
+	// Размещение тел всех case и default statements
+	for (size_t i = 0; i < amount; i++)
 	{
-		const size_t case_num = enc->case_label_num++; 
-		const label label_case = { .kind = L_CASE, .num = case_num };
-		emit_label_declaration(enc, &label_case);
+		const node substmt = statement_compound_get_substmt(&body, i);
+		const item_t substmt_class = statement_get_class(&substmt);
 
-		const node stmt = node_vector_get(&enc->addr_case, i);
-		const node substmt = (statement_get_class(&stmt) == STMT_CASE)
-			? statement_case_get_substmt(&stmt)
-			: statement_default_get_substmt(&stmt);
-		emit_statement(enc, &substmt);
-
-		uni_printf(enc->sx->io, "\n");
+		if (substmt_class == STMT_CASE)
+		{
+			emit_case_statement(enc, &substmt, curr_case_label_num++);
+		}
+		else if (substmt_class == STMT_DEFAULT)
+		{
+			emit_default_statement(enc, &substmt, curr_case_label_num++);
+		}
+		else if (substmt_class == STMT_BREAK)
+		{
+			emit_statement(enc, &substmt);
+		}
+		// Все прочие случаи игнорируются, согласно стандарту Си
 	}
 
 	emit_label_declaration(enc, &enc->label_break);
 	enc->label_break = old_label_break;
-
-	enc->case_label_num = old_case_label_num;
-
-	enc->addr_case = old_addr_case;
-	node_vector_clear(&old_addr_case);
 }
 
 /**
@@ -3675,11 +3671,11 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			break;
 
 		case STMT_CASE:
-			emit_case_statement(enc, nd);
+			system_error(node_unexpected);
 			break;
 
 		case STMT_DEFAULT:
-			emit_default_statement(enc, nd);
+			system_error(node_unexpected);
 			break;
 
 		case STMT_COMPOUND:
@@ -3903,8 +3899,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 
 	enc.scope_displ = 0;
 	enc.global_displ = 0;
-
-	enc.addr_case = node_vector_create();
 
 	enc.displacements = hash_create(HASH_TABLE_SIZE);
 
