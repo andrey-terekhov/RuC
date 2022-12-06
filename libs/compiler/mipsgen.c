@@ -1690,7 +1690,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 0\n");
+				uni_printf(enc->sx->io, ", 1\n");
 
 				emit_label_declaration(enc, &label_else);
 
@@ -1756,7 +1756,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 0\n");
+				uni_printf(enc->sx->io, ", 1\n");
 
 				emit_label_declaration(enc, &label_else);
 
