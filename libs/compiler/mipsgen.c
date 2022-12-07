@@ -1582,7 +1582,6 @@ static void emit_move_rvalue_to_register(encoder *const enc
 static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target, const rvalue *const value)
 {
 	assert(value->kind != RVALUE_KIND_VOID);
-	assert(value->type == value->type);
 
 	const rvalue reg_value = (value->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, value) : *value;
 
@@ -2977,6 +2976,39 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 }
 
 /**
+ * Emit struct initialization
+ * 
+ * @param	enc					Encoder
+ * @param	nd					Node in AST
+*/
+static void emit_structure_init(encoder *const enc, const lvalue *const variable
+	, const node *const initializer, size_t* const displ)
+{
+	const size_t members_amount = type_structure_get_member_amount(enc->sx, expression_get_type(initializer));
+	for (size_t i = 0; i < members_amount; i++)
+	{
+		const node member = expression_initializer_get_subexpr(initializer, i);
+		if (expression_get_class(&member) == EXPR_INITIALIZER)
+		{
+			emit_structure_init(enc, variable, &member, displ);
+			continue;
+		}
+
+		const rvalue member_rvalue = emit_expression(enc, &member);
+
+		const lvalue correct_target_lvalue = {
+			.base_reg = variable->base_reg,
+			.kind = variable->kind,
+			.loc.displ = *displ,
+			.type = member_rvalue.type
+		};
+		emit_store_of_rvalue(enc, &correct_target_lvalue, &member_rvalue);
+
+		*displ += mips_type_size(enc->sx, member_rvalue.type);
+	}
+}
+
+/**
  * Emit variable declaration
  *
  * @param	enc				Encoder
@@ -3008,7 +3040,12 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 
 			if (type_is_structure(enc->sx, type))
 			{
-				if (type_is_structure(enc->sx, expression_get_type(&initializer)))
+				// Инициализация списком
+				if (expression_get_class(&initializer) == EXPR_INITIALIZER)
+				{
+					emit_structure_init(enc, &variable, &initializer, &variable.loc.displ);
+				}
+				else
 				{
 					// Грузим адрес первого элемента на регистр
 					// FIXME: возврат структуры из функции
@@ -3020,31 +3057,34 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 						.val.int_val = displ,
 						.type = TYPE_INTEGER
 					};
-					const rvalue addr_rvalue = emit_load_of_immediate(enc, &tmp);
-					emit_store_of_rvalue(enc, &variable, &addr_rvalue);
-					free_rvalue(enc, &addr_rvalue);
-					return;
-				}
+					const rvalue RHS_addr_rvalue = emit_load_of_immediate(enc, &tmp);
 
-				const size_t members_amount = type_structure_get_member_amount(enc->sx, type);
-				for (size_t i = 0; i < members_amount; i++)
-				{
-					node member = expression_initializer_get_subexpr(&initializer, i);
-					// FIXME: структуры внутри структуры в списке инициализации
-					const rvalue tmp = emit_expression(enc, &member);
-					const rvalue member_rvalue = (tmp.kind == RVALUE_KIND_CONST) 
-						? emit_load_of_immediate(enc, &tmp) 
-						: tmp;
+					// Подсчёт размеров структуры
+					const size_t struct_size = mips_type_size(enc->sx, type);
+					const mips_register_t reg = get_register(enc);
 
-					const size_t member_displ = i*mips_type_size(enc->sx, member_rvalue.type);
-					const lvalue member_lvalue = {
-						.base_reg = variable.base_reg,
-						.kind = LVALUE_KIND_STACK,
-						.loc.displ = variable.loc.displ + member_displ,
-						.type = member_rvalue.type
-					};
-					emit_store_of_rvalue(enc, &member_lvalue, &member_rvalue);
-					free_rvalue(enc, &member_rvalue);
+					// Копирование всех данных из RHS 
+					for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
+					{
+						// Грузим данные из RHS
+						uni_printf(enc->sx->io, "\t");
+						instruction_to_io(enc->sx->io, IC_MIPS_LW);
+						uni_printf(enc->sx->io, " ");
+						mips_register_to_io(enc->sx->io, reg);
+						uni_printf(enc->sx->io, ", %zu(", i);
+						rvalue_to_io(enc, &RHS_addr_rvalue);
+						uni_printf(enc->sx->io, ")\n");
+
+						// Отправляем их в variable
+						uni_printf(enc->sx->io, "\t");
+						instruction_to_io(enc->sx->io, IC_MIPS_SW);
+						uni_printf(enc->sx->io, " ");
+						mips_register_to_io(enc->sx->io, reg);
+						uni_printf(enc->sx->io, ", %" PRIitem "(", variable.loc.displ + i);
+						mips_register_to_io(enc->sx->io, variable.base_reg);
+						uni_printf(enc->sx->io, ")\n\n");
+					}
+					free_rvalue(enc, &RHS_addr_rvalue);
 				}
 			}
 			else
