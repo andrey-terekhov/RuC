@@ -355,6 +355,10 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
 }
 
 /**
+ * Checks if the register corresponding to rvalue is 
+*/
+
+/**
  * Locks certain register
  * 
  * @param	enc					Encoder
@@ -1407,17 +1411,25 @@ static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 			.type = type
 		};
 	}
+
 	const rvalue type_size_value = {
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_CONST,
 		.val.int_val = mips_type_size(enc->sx, type),
 		.type = TYPE_INTEGER
 	};
-	
-	emit_binary_operation(enc, &index_value, &index_value, &type_size_value, BIN_MUL);
-	emit_binary_operation(enc, &base_value, &base_value, &index_value, BIN_SUB);
+	const rvalue index_in_bytes_value = {
+		.from_lvalue = !FROM_LVALUE,
+		.kind = RVALUE_KIND_REGISTER,
+		.val.reg_num = get_register(enc),
+		.type = TYPE_INTEGER
+	};
 
+	emit_binary_operation(enc, &index_in_bytes_value, &index_value, &type_size_value, BIN_MUL);
 	free_rvalue(enc, &index_value);
+
+	emit_binary_operation(enc, &base_value, &base_value, &index_in_bytes_value, BIN_SUB);
+	free_rvalue(enc, &index_in_bytes_value);
 
 	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_value.val.reg_num, .loc.displ = 0, .type = type };
 }
@@ -2360,20 +2372,12 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		case UN_MINUS:
 		case UN_NOT:
 		{
-			// вынести в отдельные функции
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
+			const binary_t instruction = (operator == UN_MINUS) ? BIN_MUL : BIN_XOR;
 
-			if (operator == UN_MINUS)
-			{
-				emit_binary_operation(enc, &operand_rvalue, &RVALUE_ZERO, &operand_rvalue, BIN_SUB);
-				return operand_rvalue;
-			}
-			else
-			{
-				emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &RVALUE_NEGATIVE_ONE, BIN_XOR);
-				return operand_rvalue;
-			}
+			emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &RVALUE_NEGATIVE_ONE, instruction);
+			return operand_rvalue;
 		}
 
 		case UN_LOGNOT:
@@ -2416,7 +2420,6 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 				operand_lvalue.base_reg, 
 				operand_lvalue.loc.displ
 			);
-
 			return result_rvalue;
 		}
 
@@ -2652,10 +2655,17 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 			return RVALUE_VOID;
 	}
 
-	emit_binary_operation(enc, &value, &prev_value, &value, correct_operation);
-	emit_store_of_rvalue(enc, &target, &value);
+	const rvalue result_value = {
+		.from_lvalue = !FROM_LVALUE,
+		.kind = RVALUE_KIND_REGISTER,
+		.val.reg_num = get_register(enc),
+		.type = value.type
+	};
+	emit_binary_operation(enc, &result_value, &prev_value, &value, correct_operation);
+	free_rvalue(enc, &value);
 
-	return value;
+	emit_store_of_rvalue(enc, &target, &result_value);
+	return result_value;
 }
 
 /**
