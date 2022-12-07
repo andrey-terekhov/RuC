@@ -3043,7 +3043,8 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 				// Инициализация списком
 				if (expression_get_class(&initializer) == EXPR_INITIALIZER)
 				{
-					emit_structure_init(enc, &variable, &initializer, &variable.loc.displ);
+					size_t var_displ = variable.loc.displ;
+					emit_structure_init(enc, &variable, &initializer, &var_displ);
 				}
 				else
 				{
