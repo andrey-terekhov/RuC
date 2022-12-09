@@ -355,10 +355,6 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
 }
 
 /**
- * Checks if the register corresponding to rvalue is 
-*/
-
-/**
  * Locks certain register
  * 
  * @param	enc					Encoder
@@ -1318,7 +1314,8 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 }
 
 /**
- * Loads lvalue to register and forms rvalue
+ * Loads lvalue to register and forms rvalue. If lvalue kind is @c LVALUE_KIND_REGISTER,
+ * returns rvalue on the same register
  *
  * @param	enc				Encoder
  * @param	lval			Lvalue to load
@@ -1412,24 +1409,24 @@ static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 		};
 	}
 
-	const rvalue type_size_value = {
+	const rvalue type_size_value = { // Можно было бы сделать отдельным конструктором
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_CONST,
 		.val.int_val = mips_type_size(enc->sx, type),
 		.type = TYPE_INTEGER
 	};
-	const rvalue index_in_bytes_value = {
+	const rvalue offset = {
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_REGISTER,
 		.val.reg_num = get_register(enc),
 		.type = TYPE_INTEGER
 	};
 
-	emit_binary_operation(enc, &index_in_bytes_value, &index_value, &type_size_value, BIN_MUL);
+	emit_binary_operation(enc, &offset, &index_value, &type_size_value, BIN_MUL);
 	free_rvalue(enc, &index_value);
 
-	emit_binary_operation(enc, &base_value, &base_value, &index_in_bytes_value, BIN_SUB);
-	free_rvalue(enc, &index_in_bytes_value);
+	emit_binary_operation(enc, &base_value, &base_value, &offset, BIN_SUB);
+	free_rvalue(enc, &offset);
 
 	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_value.val.reg_num, .loc.displ = 0, .type = type };
 }
@@ -2426,18 +2423,11 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		case UN_UPB:
 		{
 			const node operand = expression_unary_get_operand(nd);
-			const rvalue arr_displ_rvalue = emit_expression(enc, &operand);
-			const rvalue word_size_rvalue = {
-				.from_lvalue = !FROM_LVALUE,
-				.kind = RVALUE_KIND_CONST,
-				.val.int_val = WORD_LENGTH,
-				.type = TYPE_INTEGER
-			};
-			emit_binary_operation(enc, &arr_displ_rvalue, &arr_displ_rvalue, &word_size_rvalue, BIN_ADD);
+			const rvalue array_address = emit_expression(enc, &operand);
 			const lvalue size_lvalue = { 
-				.base_reg = arr_displ_rvalue.val.reg_num,
+				.base_reg = array_address.val.reg_num,
 				.kind = LVALUE_KIND_STACK,
-				.loc.displ = 0,
+				.loc.displ = WORD_LENGTH,
 				.type = TYPE_INTEGER
 			};
 			return emit_load_of_lvalue(enc, &size_lvalue);
@@ -2575,6 +2565,7 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 		const size_t struct_size = mips_type_size(enc->sx, RHS_type);
 		const mips_register_t reg = get_register(enc);
 
+		// FIXME: вынести в отдельную функцию
 		// Копирование всех данных из RHS 
 		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
 		{
@@ -2610,7 +2601,7 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 	}
 
 	// это "+=", "-=" и т.п.
-	const rvalue prev_value = emit_load_of_lvalue(enc, &target);
+	const rvalue target_value = emit_load_of_lvalue(enc, &target);
 	binary_t correct_operation;
 	switch (operator)
 	{
@@ -2655,17 +2646,11 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 			return RVALUE_VOID;
 	}
 
-	const rvalue result_value = {
-		.from_lvalue = !FROM_LVALUE,
-		.kind = RVALUE_KIND_REGISTER,
-		.val.reg_num = get_register(enc),
-		.type = value.type
-	};
-	emit_binary_operation(enc, &result_value, &prev_value, &value, correct_operation);
+	emit_binary_operation(enc, &target_value, &target_value, &value, correct_operation);
 	free_rvalue(enc, &value);
 
-	emit_store_of_rvalue(enc, &target, &result_value);
-	return result_value;
+	emit_store_of_rvalue(enc, &target, &target_value);
+	return target_value;
 }
 
 /**
@@ -2796,6 +2781,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	const rvalue tmp = emit_expression(enc, &bound);
 	const rvalue bound_rvalue = (tmp.kind == RVALUE_KIND_REGISTER) ? tmp : emit_load_of_immediate(enc, &tmp);
 
+	// FIXME: через emit_binary_operation()
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, IC_MIPS_ADDI);
 	uni_printf(enc->sx->io, " ");
@@ -2810,7 +2796,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
 	mips_register_to_io(enc->sx->io, R_ZERO);
-	uni_printf(enc->sx->io, ", error\n");
+	uni_printf(enc->sx->io, ", error\n"); // FIXME: error согласно RUNTIME'му
 
 	free_rvalue(enc, &bound_rvalue);
 
@@ -2822,6 +2808,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 		{
 			// Сдвиг адреса на размер массива + 1 (за размер следующего измерения)
 			const mips_register_t reg = get_register(enc);
+			// FIXME: создать отдельные rvalue и lvalue и через emit_load_of_lvalue()
 			to_code_R_I_R(enc->sx->io, IC_MIPS_LW, reg, 0, addr->val.reg_num); // адрес следующего измерения
 
 			const rvalue next_addr = {
@@ -3653,6 +3640,7 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
 	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
 
+	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
 	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
 	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
 	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
