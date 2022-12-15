@@ -3401,12 +3401,13 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 	size_t curr_case_label_num = enc->case_label_num;
 
 	const label old_label_break = enc->label_break;
-	const label label_break = { .kind = L_END, .num = label_num };
-	enc->label_break = label_break;
+	enc->label_break = (label){ .kind = L_END, .num = label_num };
 
 	const node condition = statement_switch_get_condition(nd);
-	const rvalue tmp = emit_expression(enc, &condition);
-	const rvalue condition_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+	const rvalue tmp_condtion = emit_expression(enc, &condition);
+	const rvalue condition_rvalue = (tmp_condtion.kind == RVALUE_KIND_CONST)
+		? emit_load_of_immediate(enc, &tmp_condtion)
+		: tmp_condtion;
 
 	item_t default_index = -1;
 
@@ -3424,7 +3425,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 			const label label_case = { .kind = L_CASE, .num = case_num };
 
 			const node case_expr = statement_case_get_expression(&substmt);
-			const rvalue case_expr_rvalue = emit_expression(enc, &case_expr);
+			const rvalue case_expr_rvalue = emit_literal_expression(enc, &case_expr);
 
 			// Пользуемся тем, что это integer type
 			const rvalue result_rvalue = {
@@ -3436,7 +3437,6 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 			emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
 			emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
 
-			free_rvalue(enc, &case_expr_rvalue);
 			free_rvalue(enc, &result_rvalue);
 		}
 		else if (substmt_class == STMT_DEFAULT)
@@ -3475,11 +3475,10 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 		{
 			emit_default_statement(enc, &substmt, curr_case_label_num++);
 		}
-		else if (substmt_class == STMT_BREAK)
+		else
 		{
 			emit_statement(enc, &substmt);
 		}
-		// Все прочие случаи игнорируются, согласно стандарту Си
 	}
 
 	emit_label_declaration(enc, &enc->label_break);
