@@ -1582,6 +1582,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target, const rvalue *const value)
 {
 	assert(value->kind != RVALUE_KIND_VOID);
+	assert(value->type == target->type);
 
 	const rvalue reg_value = (value->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, value) : *value;
 
@@ -2979,32 +2980,35 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
  * Emit struct initialization
  * 
  * @param	enc					Encoder
- * @param	nd					Node in AST
+ * @param	target				Lvalue to initialize
+ * @param	initializer			Initializer node in AST
 */
-static void emit_structure_init(encoder *const enc, const lvalue *const variable
-	, const node *const initializer, size_t* const displ)
+static void emit_structure_init(encoder *const enc, const lvalue *const target
+	, const node *const initializer)
 {
-	const size_t members_amount = type_structure_get_member_amount(enc->sx, expression_get_type(initializer));
-	for (size_t i = 0; i < members_amount; i++)
+	size_t displ = 0;
+
+	const size_t amount = expression_initializer_get_size(initializer);
+	for (size_t i = 0; i < amount; i++)
 	{
-		const node member = expression_initializer_get_subexpr(initializer, i);
-		if (expression_get_class(&member) == EXPR_INITIALIZER)
+		const node subexpr = expression_initializer_get_subexpr(initializer, i);
+		const lvalue correct_target_lvalue = {
+			.base_reg = target->base_reg,
+			.kind = target->kind,
+			.loc.displ = target->loc.displ + displ,
+			.type = expression_get_type(&subexpr)
+		};
+
+		displ += mips_type_size(enc->sx, expression_get_type(&subexpr));
+
+		if (expression_get_class(&subexpr) == EXPR_INITIALIZER)
 		{
-			emit_structure_init(enc, variable, &member, displ);
+			emit_structure_init(enc, &correct_target_lvalue, &subexpr);
 			continue;
 		}
 
-		const rvalue member_rvalue = emit_expression(enc, &member);
-
-		const lvalue correct_target_lvalue = {
-			.base_reg = variable->base_reg,
-			.kind = variable->kind,
-			.loc.displ = *displ,
-			.type = member_rvalue.type
-		};
-		emit_store_of_rvalue(enc, &correct_target_lvalue, &member_rvalue);
-
-		*displ += mips_type_size(enc->sx, member_rvalue.type);
+		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
+		emit_store_of_rvalue(enc, &correct_target_lvalue, &subexpr_rvalue);
 	}
 }
 
@@ -3043,8 +3047,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 				// Инициализация списком
 				if (expression_get_class(&initializer) == EXPR_INITIALIZER)
 				{
-					size_t var_displ = variable.loc.displ;
-					emit_structure_init(enc, &variable, &initializer, &var_displ);
+					emit_structure_init(enc, &variable, &initializer);
 				}
 				else
 				{
