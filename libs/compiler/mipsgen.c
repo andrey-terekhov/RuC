@@ -2983,12 +2983,13 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
  * @param	target				Lvalue to initialize
  * @param	initializer			Initializer node in AST
 */
-static void emit_structure_init(encoder *const enc, const lvalue *const target
-	, const node *const initializer)
+static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer)
 {
+	assert(type_get_class(enc->sx, target->type) == TYPE_STRUCTURE);
+
 	size_t displ = 0;
 
-	const size_t amount = expression_initializer_get_size(initializer);
+	const size_t amount = type_structure_get_member_amount(enc->sx, target->type);
 	for (size_t i = 0; i < amount; i++)
 	{
 		const node subexpr = expression_initializer_get_subexpr(initializer, i);
