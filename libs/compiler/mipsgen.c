@@ -2992,24 +2992,24 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 	const size_t amount = type_structure_get_member_amount(enc->sx, target->type);
 	for (size_t i = 0; i < amount; i++)
 	{
-		const node subexpr = expression_initializer_get_subexpr(initializer, i);
-		const lvalue correct_target_lvalue = {
+		const item_t type = type_structure_get_member_type(enc->sx, target->type, i);
+		const lvalue member_lvalue = {
 			.base_reg = target->base_reg,
 			.kind = target->kind,
 			.loc.displ = target->loc.displ + displ,
-			.type = expression_get_type(&subexpr)
+			.type = type
 		};
+		displ += mips_type_size(enc->sx, type);
 
-		displ += mips_type_size(enc->sx, expression_get_type(&subexpr));
-
+		const node subexpr = expression_initializer_get_subexpr(initializer, i);
 		if (expression_get_class(&subexpr) == EXPR_INITIALIZER)
 		{
-			emit_structure_init(enc, &correct_target_lvalue, &subexpr);
+			emit_structure_init(enc, &member_lvalue, &subexpr);
 			continue;
 		}
 
 		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
-		emit_store_of_rvalue(enc, &correct_target_lvalue, &subexpr_rvalue);
+		emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
 	}
 }
 
