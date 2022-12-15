@@ -2985,7 +2985,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 */
 static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer)
 {
-	assert(type_get_class(enc->sx, target->type) == TYPE_STRUCTURE);
+	assert(type_is_structure(enc->sx, target->type) == TYPE_STRUCTURE);
 
 	size_t displ = 0;
 
