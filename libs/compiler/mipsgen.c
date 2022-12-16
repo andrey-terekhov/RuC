@@ -1574,7 +1574,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 }
 
 /**
- * Stores rvalue to lvalue. Frees value parameter register
+ * Stores rvalue to lvalue. Frees value parameter register for a pointer
  *
  * @param	enc				Encoder
  * @param	target			Target lvalue
