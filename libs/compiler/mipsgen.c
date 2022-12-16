@@ -334,6 +334,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	, const rvalue *const first_operand, const rvalue *const second_operand, const binary_t operator);
 static rvalue emit_expression(encoder *const enc, const node *const nd);
 static rvalue emit_void_expression(encoder *const enc, const node *const nd);
+static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer);
 static void emit_statement(encoder *const enc, const node *const nd);
 
 
@@ -1587,7 +1588,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 }
 
 /**
- * Stores rvalue to lvalue
+ * Stores rvalue to lvalue. Frees value parameter register for a pointer
  *
  * @param	enc				Encoder
  * @param	target			Target lvalue
@@ -1596,7 +1597,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target, const rvalue *const value)
 {
 	assert(value->kind != RVALUE_KIND_VOID);
-	assert(value->type == value->type);
+	assert(value->type == target->type);
 
 	const rvalue reg_value = (value->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, value) : *value;
 
@@ -2532,9 +2533,62 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const rvalue RHS_rvalue = emit_expression(enc, &RHS);
 
 	emit_label_declaration(enc, &label_end);
+	// FIXME:
 	assert(LHS_rvalue.val.reg_num == RHS_rvalue.val.reg_num);
 
 	return RHS_rvalue;
+}
+
+/**
+ * Emit structure assignment
+ * 
+ * @param	enc				Encoder
+ * @param	target			Target lvalue
+ * @param	value			Value to assign to target
+ * 
+ * @return	Rvalue of the result of assignment expression
+*/
+static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const target, const node *const value)
+{
+	if (expression_get_class(value) == EXPR_INITIALIZER) // Присваивание списком
+	{
+		emit_structure_init(enc, target, value);
+	}
+	else // Присваивание другой структуры
+	{
+		// FIXME: возврат структуры из функции
+		// FIXME: массив структур
+		const size_t RHS_identifier = expression_identifier_get_id(value);
+		const lvalue RHS_lvalue = displacements_get(enc, RHS_identifier);
+
+		// Копирование всех данных из RHS 
+		const item_t type = expression_get_type(value);
+		const size_t struct_size = mips_type_size(enc->sx, type);
+		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
+		{
+			// Грузим данные из RHS
+			const lvalue value_word = {
+				.base_reg = RHS_lvalue.base_reg,
+				.loc.displ = RHS_lvalue.loc.displ + i,
+				.kind = LVALUE_KIND_STACK,
+				.type = TYPE_INTEGER
+			};
+			const rvalue proxy = emit_load_of_lvalue(enc, &value_word);
+
+			// Отправляем их в variable
+			const lvalue target_word = {
+				.base_reg = target->base_reg,
+				.kind = LVALUE_KIND_STACK,
+				.loc.displ = target->loc.displ + i,
+				.type = TYPE_INTEGER
+			};
+			emit_store_of_rvalue(enc, &target_word, &proxy);
+
+			free_rvalue(enc, &proxy);
+		}
+	}
+
+	return emit_load_of_lvalue(enc, target);
 }
 
 /**
@@ -2554,46 +2608,7 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 	const item_t RHS_type = expression_get_type(&RHS);
 	if (type_is_structure(enc->sx, RHS_type))
 	{
-		// FIXME: возврат структуры из функции
-		// Грузим адрес первого элемента RHS на регистр
-		const size_t RHS_identifier = expression_identifier_get_id(&RHS);
-		const size_t displ = hash_get(&enc->displacements, RHS_identifier, 1);
-		const rvalue tmp = {
-			.from_lvalue = !FROM_LVALUE,
-			.kind = RVALUE_KIND_CONST,
-			.val.int_val = displ,
-			.type = TYPE_INTEGER
-		};
-		const rvalue RHS_addr_rvalue = emit_load_of_immediate(enc, &tmp);
-
-		// Подсчёт размеров структуры
-		const size_t struct_size = mips_type_size(enc->sx, RHS_type);
-		const mips_register_t reg = get_register(enc);
-
-		// FIXME: вынести в отдельную функцию
-		// Копирование всех данных из RHS 
-		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
-		{
-			// Грузим данные из RHS
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_LW);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, reg);
-			uni_printf(enc->sx->io, ", %zu(", i);
-			rvalue_to_io(enc, &RHS_addr_rvalue);
-			uni_printf(enc->sx->io, ")\n");
-
-			// Отправляем их в target
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_SW);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, reg);
-			uni_printf(enc->sx->io, ", %" PRIitem "(", target.loc.displ + i);
-			mips_register_to_io(enc->sx->io, target.base_reg);
-			uni_printf(enc->sx->io, ")\n\n");
-		}
-
-		return emit_load_of_lvalue(enc, &target);
+		return emit_struct_assignment(enc, &target, &RHS);
 	}
 
 	const rvalue value = emit_expression(enc, &RHS);
@@ -2979,6 +2994,43 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 }
 
 /**
+ * Emit struct initialization
+ * 
+ * @param	enc					Encoder
+ * @param	target				Lvalue to initialize
+ * @param	initializer			Initializer node in AST
+*/
+static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer)
+{
+	assert(type_is_structure(enc->sx, target->type));
+
+	size_t displ = 0;
+
+	const size_t amount = type_structure_get_member_amount(enc->sx, target->type);
+	for (size_t i = 0; i < amount; i++)
+	{
+		const item_t type = type_structure_get_member_type(enc->sx, target->type, i);
+		const lvalue member_lvalue = {
+			.base_reg = target->base_reg,
+			.kind = target->kind,
+			.loc.displ = target->loc.displ + displ,
+			.type = type
+		};
+		displ += mips_type_size(enc->sx, type);
+
+		const node subexpr = expression_initializer_get_subexpr(initializer, i);
+		if (expression_get_class(&subexpr) == EXPR_INITIALIZER)
+		{
+			emit_structure_init(enc, &member_lvalue, &subexpr);
+			continue;
+		}
+
+		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
+		emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+	}
+}
+
+/**
  * Emit variable declaration
  *
  * @param	enc				Encoder
@@ -3010,44 +3062,8 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 
 			if (type_is_structure(enc->sx, type))
 			{
-				if (type_is_structure(enc->sx, expression_get_type(&initializer)))
-				{
-					// Грузим адрес первого элемента на регистр
-					// FIXME: возврат структуры из функции
-					const size_t RHS_identifier = expression_identifier_get_id(&initializer);
-					const size_t displ = hash_get(&enc->displacements, RHS_identifier, 1);
-					const rvalue tmp = {
-						.from_lvalue = !FROM_LVALUE,
-						.kind = RVALUE_KIND_CONST,
-						.val.int_val = displ,
-						.type = TYPE_INTEGER
-					};
-					const rvalue addr_rvalue = emit_load_of_immediate(enc, &tmp);
-					emit_store_of_rvalue(enc, &variable, &addr_rvalue);
-					free_rvalue(enc, &addr_rvalue);
-					return;
-				}
-
-				const size_t members_amount = type_structure_get_member_amount(enc->sx, type);
-				for (size_t i = 0; i < members_amount; i++)
-				{
-					node member = expression_initializer_get_subexpr(&initializer, i);
-					// FIXME: структуры внутри структуры в списке инициализации
-					const rvalue tmp = emit_expression(enc, &member);
-					const rvalue member_rvalue = (tmp.kind == RVALUE_KIND_CONST) 
-						? emit_load_of_immediate(enc, &tmp) 
-						: tmp;
-
-					const size_t member_displ = i*mips_type_size(enc->sx, member_rvalue.type);
-					const lvalue member_lvalue = {
-						.base_reg = variable.base_reg,
-						.kind = LVALUE_KIND_STACK,
-						.loc.displ = variable.loc.displ + member_displ,
-						.type = member_rvalue.type
-					};
-					emit_store_of_rvalue(enc, &member_lvalue, &member_rvalue);
-					free_rvalue(enc, &member_rvalue);
-				}
+				const rvalue tmp = emit_struct_assignment(enc, &variable, &initializer);
+				free_rvalue(enc, &tmp);
 			}
 			else
 			{
