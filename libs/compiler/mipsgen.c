@@ -1336,8 +1336,6 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 
 	if (type_is_structure(enc->sx, lval->type))
 	{
-		// FIXME: где то утечка регистров
-		uni_printf(enc->sx->io, "#bruh:\n");
 		// Грузим адрес первого элемента на регистр
 		const rvalue addr_rvalue = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
 		return emit_load_of_immediate(enc, &addr_rvalue);
@@ -1626,7 +1624,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 		}
 		else
 		{
-			if (type_is_array(enc->sx, target->type))
+			//if (type_is_array(enc->sx, target->type))
 			{
 				// Загружаем указатель на массив
 				uni_printf(enc->sx->io, "\t");
@@ -2565,12 +2563,9 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 		const size_t RHS_identifier = expression_identifier_get_id(value);
 		const lvalue RHS_lvalue = displacements_get(enc, RHS_identifier);
 
-		// Подсчёт размеров структуры
+		// Копирование всех данных из RHS 
 		const item_t type = expression_get_type(value);
 		const size_t struct_size = mips_type_size(enc->sx, type);
-		const mips_register_t reg = get_register(enc);
-
-		// Копирование всех данных из RHS 
 		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
 		{
 			// Грузим данные из RHS
@@ -2590,10 +2585,12 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 				.type = TYPE_INTEGER
 			};
 			emit_store_of_rvalue(enc, &target_word, &proxy);
+
+			free_rvalue(enc, &proxy);
 		}
 	}
 
-	return emit_load_of_lvalue(enc, &target);
+	return emit_load_of_lvalue(enc, target);
 }
 
 /**
@@ -3064,7 +3061,8 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 
 			if (type_is_structure(enc->sx, type))
 			{
-				emit_struct_assignment(enc, &variable, &initializer);
+				const rvalue tmp = emit_struct_assignment(enc, &variable, &initializer);
+				free_rvalue(enc, &tmp);
 			}
 			else
 			{
