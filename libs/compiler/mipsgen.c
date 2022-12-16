@@ -246,6 +246,7 @@ typedef enum LABEL
 	L_ELSE,			/**< Тип метки -- переход по else */
 	L_END,			/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,	/**< Тип метки -- переход в начало цикла */
+	L_CASE,			/**< Тип метки -- переход по case */
 } mips_label_t;
 
 typedef struct label
@@ -270,6 +271,7 @@ typedef struct encoder
 	mips_register_t next_float_register; /**< Следующий регистр с плавающей точкой для выделения */
 
 	size_t label_num;						/**< Номер метки */
+	size_t case_label_num;					/**< Номер метки-перехода по case */
 	label label_else;						/**< Метка перехода на else */
 	label label_continue;					/**< Метка continue */
 	label label_break;						/**< Метка break */
@@ -1188,6 +1190,9 @@ static void emit_label(encoder *const enc, const label *const lbl)
 		case L_BEGIN_CYCLE:
 			uni_printf(io, "BEGIN_CYCLE");
 			break;
+		case L_CASE:
+			uni_printf(io, "CASE");
+			break;
 	}
 
 	uni_printf(io, "%" PRIitem, lbl->num);
@@ -1315,7 +1320,8 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 }
 
 /**
- * Loads lvalue to register and forms rvalue
+ * Loads lvalue to register and forms rvalue. If lvalue kind is @c LVALUE_KIND_REGISTER,
+ * returns rvalue on the same register
  *
  * @param	enc				Encoder
  * @param	lval			Lvalue to load
@@ -1408,17 +1414,25 @@ static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 			.type = type
 		};
 	}
-	const rvalue type_size_value = {
+
+	const rvalue type_size_value = { // Можно было бы сделать отдельным конструктором
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_CONST,
 		.val.int_val = mips_type_size(enc->sx, type),
 		.type = TYPE_INTEGER
 	};
-	
-	emit_binary_operation(enc, &index_value, &index_value, &type_size_value, BIN_MUL);
-	emit_binary_operation(enc, &base_value, &base_value, &index_value, BIN_SUB);
+	const rvalue offset = {
+		.from_lvalue = !FROM_LVALUE,
+		.kind = RVALUE_KIND_REGISTER,
+		.val.reg_num = get_register(enc),
+		.type = TYPE_INTEGER
+	};
 
+	emit_binary_operation(enc, &offset, &index_value, &type_size_value, BIN_MUL);
 	free_rvalue(enc, &index_value);
+
+	emit_binary_operation(enc, &base_value, &base_value, &offset, BIN_SUB);
+	free_rvalue(enc, &offset);
 
 	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_value.val.reg_num, .loc.displ = 0, .type = type };
 }
@@ -1691,7 +1705,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 0\n");
+				uni_printf(enc->sx->io, ", 1\n");
 
 				emit_label_declaration(enc, &label_else);
 
@@ -1757,7 +1771,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 0\n");
+				uni_printf(enc->sx->io, ", 1\n");
 
 				emit_label_declaration(enc, &label_else);
 
@@ -2361,20 +2375,12 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		case UN_MINUS:
 		case UN_NOT:
 		{
-			// вынести в отдельные функции
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
+			const binary_t instruction = (operator == UN_MINUS) ? BIN_MUL : BIN_XOR;
 
-			if (operator == UN_MINUS)
-			{
-				emit_binary_operation(enc, &operand_rvalue, &RVALUE_ZERO, &operand_rvalue, BIN_SUB);
-				return operand_rvalue;
-			}
-			else
-			{
-				emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &RVALUE_NEGATIVE_ONE, BIN_XOR);
-				return operand_rvalue;
-			}
+			emit_binary_operation(enc, &operand_rvalue, &operand_rvalue, &RVALUE_NEGATIVE_ONE, instruction);
+			return operand_rvalue;
 		}
 
 		case UN_LOGNOT:
@@ -2417,25 +2423,17 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 				operand_lvalue.base_reg, 
 				operand_lvalue.loc.displ
 			);
-
 			return result_rvalue;
 		}
 
 		case UN_UPB:
 		{
 			const node operand = expression_unary_get_operand(nd);
-			const rvalue arr_displ_rvalue = emit_expression(enc, &operand);
-			const rvalue word_size_rvalue = {
-				.from_lvalue = !FROM_LVALUE,
-				.kind = RVALUE_KIND_CONST,
-				.val.int_val = WORD_LENGTH,
-				.type = TYPE_INTEGER
-			};
-			emit_binary_operation(enc, &arr_displ_rvalue, &arr_displ_rvalue, &word_size_rvalue, BIN_ADD);
+			const rvalue array_address = emit_expression(enc, &operand);
 			const lvalue size_lvalue = { 
-				.base_reg = arr_displ_rvalue.val.reg_num,
+				.base_reg = array_address.val.reg_num,
 				.kind = LVALUE_KIND_STACK,
-				.loc.displ = 0,
+				.loc.displ = WORD_LENGTH,
 				.type = TYPE_INTEGER
 			};
 			return emit_load_of_lvalue(enc, &size_lvalue);
@@ -2623,7 +2621,7 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 	}
 
 	// это "+=", "-=" и т.п.
-	const rvalue prev_value = emit_load_of_lvalue(enc, &target);
+	const rvalue target_value = emit_load_of_lvalue(enc, &target);
 	binary_t correct_operation;
 	switch (operator)
 	{
@@ -2668,10 +2666,11 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 			return RVALUE_VOID;
 	}
 
-	emit_binary_operation(enc, &value, &prev_value, &value, correct_operation);
-	emit_store_of_rvalue(enc, &target, &value);
+	emit_binary_operation(enc, &target_value, &target_value, &value, correct_operation);
+	free_rvalue(enc, &value);
 
-	return value;
+	emit_store_of_rvalue(enc, &target, &target_value);
+	return target_value;
 }
 
 /**
@@ -2802,6 +2801,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	const rvalue tmp = emit_expression(enc, &bound);
 	const rvalue bound_rvalue = (tmp.kind == RVALUE_KIND_REGISTER) ? tmp : emit_load_of_immediate(enc, &tmp);
 
+	// FIXME: через emit_binary_operation()
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, IC_MIPS_ADDI);
 	uni_printf(enc->sx->io, " ");
@@ -2816,7 +2816,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
 	mips_register_to_io(enc->sx->io, R_ZERO);
-	uni_printf(enc->sx->io, ", error\n");
+	uni_printf(enc->sx->io, ", error\n"); // FIXME: error согласно RUNTIME'му
 
 	free_rvalue(enc, &bound_rvalue);
 
@@ -2828,6 +2828,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 		{
 			// Сдвиг адреса на размер массива + 1 (за размер следующего измерения)
 			const mips_register_t reg = get_register(enc);
+			// FIXME: создать отдельные rvalue и lvalue и через emit_load_of_lvalue()
 			to_code_R_I_R(enc->sx->io, IC_MIPS_LW, reg, 0, addr->val.reg_num); // адрес следующего измерения
 
 			const rvalue next_addr = {
@@ -3316,6 +3317,36 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
 }
 
 /**
+ * Emit case statement
+ * 
+ * @param	enc					Encoder
+ * @param	nd					Node in AST
+*/
+static void emit_case_statement(encoder *const enc, const node *const nd, const size_t label_num)
+{
+	const label label_case = { .kind = L_CASE, .num = label_num };
+	emit_label_declaration(enc, &label_case);
+
+	const node substmt = statement_case_get_substmt(nd);
+	emit_statement(enc, &substmt);
+}
+
+/**
+ * Emit default statement
+ * 
+ * @param	enc					Encoder
+ * @param	nd					Node in AST
+*/
+static void emit_default_statement(encoder *const enc, const node *const nd, const size_t label_num)
+{
+	const label label_default = { .kind = L_CASE, .num = label_num };
+	emit_label_declaration(enc, &label_default);
+
+	const node substmt = statement_default_get_substmt(nd);
+	emit_statement(enc, &substmt);
+}
+
+/**
  * Emit compound statement
  *
  * @param	enc				Encoder
@@ -3369,6 +3400,102 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 	}
 
 	emit_label_declaration(enc, &label_end);
+}
+
+/**
+ * Emit switch statement
+ * 
+ * @param	enc				Encoder
+ * @param	nd				Node in AST
+*/
+static void emit_switch_statement(encoder *const enc, const node *const nd)
+{
+	const size_t label_num = enc->label_num++;
+	size_t curr_case_label_num = enc->case_label_num;
+
+	const label old_label_break = enc->label_break;
+	enc->label_break = (label){ .kind = L_END, .num = label_num };
+
+	const node condition = statement_switch_get_condition(nd);
+	const rvalue tmp_condtion = emit_expression(enc, &condition);
+	const rvalue condition_rvalue = (tmp_condtion.kind == RVALUE_KIND_CONST)
+		? emit_load_of_immediate(enc, &tmp_condtion)
+		: tmp_condtion;
+
+	item_t default_index = -1;
+
+	// Размещение меток согласно условиям
+	const node body = statement_switch_get_body(nd);
+	const size_t amount = statement_compound_get_size(&body); // Гарантируется compound statement
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node substmt = statement_compound_get_substmt(&body, i);
+		const item_t substmt_class = statement_get_class(&substmt);
+
+		if (substmt_class == STMT_CASE)
+		{
+			const size_t case_num = enc->case_label_num++;
+			const label label_case = { .kind = L_CASE, .num = case_num };
+
+			const node case_expr = statement_case_get_expression(&substmt);
+			const rvalue case_expr_rvalue = emit_literal_expression(enc, &case_expr);
+
+			// Пользуемся тем, что это integer type
+			const rvalue result_rvalue = {
+				.from_lvalue = !FROM_LVALUE,
+				.kind = RVALUE_KIND_REGISTER,
+				.val.reg_num = get_register(enc),
+				.type = TYPE_INTEGER
+			};
+			emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
+			emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
+
+			free_rvalue(enc, &result_rvalue);
+		}
+		else if (substmt_class == STMT_DEFAULT)
+		{
+			// Только получаем индекс, а размещение прыжка по нужной метке будет после всех case'ов
+			default_index = enc->case_label_num++;
+		}
+	}
+
+	if (default_index != -1)
+	{
+		const label label_default = { .kind = L_CASE, .num = default_index };
+		emit_unconditional_branch(enc, IC_MIPS_J, &label_default);
+	}
+	else
+	{
+		// Нет default => можем попасть в ситуацию, когда требуется пропустить все case'ы
+		emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
+	}
+
+	free_rvalue(enc, &condition_rvalue);
+
+	uni_printf(enc->sx->io, "\n");
+
+	// Размещение тел всех case и default statements
+	for (size_t i = 0; i < amount; i++)
+	{
+		const node substmt = statement_compound_get_substmt(&body, i);
+		const item_t substmt_class = statement_get_class(&substmt);
+
+		if (substmt_class == STMT_CASE)
+		{
+			emit_case_statement(enc, &substmt, curr_case_label_num++);
+		}
+		else if (substmt_class == STMT_DEFAULT)
+		{
+			emit_default_statement(enc, &substmt, curr_case_label_num++);
+		}
+		else
+		{
+			emit_statement(enc, &substmt);
+		}
+	}
+
+	emit_label_declaration(enc, &enc->label_break);
+	enc->label_break = old_label_break;
 }
 
 /**
@@ -3556,11 +3683,11 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			break;
 
 		case STMT_CASE:
-			// emit_case_statement(enc, nd);
+			system_error(node_unexpected);
 			break;
 
 		case STMT_DEFAULT:
-			// emit_default_statement(enc, nd);
+			system_error(node_unexpected);
 			break;
 
 		case STMT_COMPOUND:
@@ -3579,7 +3706,7 @@ static void emit_statement(encoder *const enc, const node *const nd)
 			break;
 
 		case STMT_SWITCH:
-			// emit_switch_statement(enc, nd);
+			emit_switch_statement(enc, nd);
 			break;
 
 		case STMT_WHILE:
@@ -3660,6 +3787,7 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
 	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
 
+	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
 	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
 	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
 	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
@@ -3780,6 +3908,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	enc.next_register = R_T0;
 	enc.next_float_register = R_FT0;
 	enc.label_num = 1;
+	enc.case_label_num = 1;
 
 	enc.scope_displ = 0;
 	enc.global_displ = 0;
