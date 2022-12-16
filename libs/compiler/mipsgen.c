@@ -1624,7 +1624,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 		}
 		else
 		{
-			//if (type_is_array(enc->sx, target->type))
+			if (type_is_array(enc->sx, target->type))
 			{
 				// Загружаем указатель на массив
 				uni_printf(enc->sx->io, "\t");
