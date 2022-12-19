@@ -329,7 +329,7 @@ int loc_search_from(location *const loc)
 			loc->line = line + diff;
 			while (!mark_reverse_recognize(loc->io, &line, &path, &comment, &filler)
 				&& in_get_position(loc->io) != 0);
-			
+
 			loc->path = path;
 			loc->code = loc->line == line && comment != SIZE_MAX ? comment : code;
 			in_set_position(loc->io, position);

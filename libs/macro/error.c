@@ -102,6 +102,48 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "неизвестная директива препроцессора %s", directive);
 		}
 		break;
+		case DIRECTIVE_UNTERMINATED:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "незавершённая директива %s", directive);
+		}
+		break;
+		case DIRECTIVE_NO_EXPRESSION:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "в директиве %s пропущено условие", directive);
+		}
+		break;
+		case DIRECTIVE_WITHOUT:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "%s без %s", directive, directive[4] == 'm' ? "#macro"
+				: directive[4] == 'M' ? "#MACRO"
+				: directive[4] == 'w' ? "#while"
+				: directive[4] == 'W' ? "#WHILE"
+				: directive[1] == 'e' ? "#if"
+				: directive[1] == 'E' ? "#IF"
+				: utf8_convert(&directive[1]) == U'и' ? "#если"
+				: utf8_convert(&directive[1]) == U'И' ? "#ЕСЛИ"
+				: utf8_convert(&directive[11]) == U'е' ? "#если"
+				: utf8_convert(&directive[11]) == U'Е' ? "#ЕСЛИ"
+				: utf8_convert(&directive[11]) == U'м' ? "#макро"
+				: utf8_convert(&directive[11]) == U'М' ? "#МАКРО"
+				: utf8_convert(&directive[11]) == U'п' ? "#пока"
+				: utf8_convert(&directive[11]) == U'П' ? "#ПОКА"
+				: "");
+		}
+		break;
+		case DIRECTIVE_AFTER:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "%s после %s", directive, directive[1] == 'e' ? "#else"
+				: directive[1] == 'E' ? "#ELSE"
+				: utf8_convert(&directive[1]) == U'и' ? "#иначе"
+				: utf8_convert(&directive[1]) == U'И' ? "#ИНАЧЕ"
+				: "");
+		}
+		break;
 
 		case HASH_STRAY:
 			sprintf(msg, "потерянный '#' в программе");
