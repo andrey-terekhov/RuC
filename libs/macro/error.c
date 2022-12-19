@@ -17,6 +17,7 @@
 
 #include "error.h"
 #include <stdio.h>
+#include "keywords.h"
 #include "logger.h"
 #include "uniscanner.h"
 #include "utf8.h"
@@ -117,31 +118,13 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		case DIRECTIVE_WITHOUT:
 		{
 			const char *const directive = va_arg(args, char *);
-			sprintf(msg, "%s без %s", directive, directive[4] == 'm' ? "#macro"
-				: directive[4] == 'M' ? "#MACRO"
-				: directive[4] == 'w' ? "#while"
-				: directive[4] == 'W' ? "#WHILE"
-				: directive[1] == 'e' ? "#if"
-				: directive[1] == 'E' ? "#IF"
-				: utf8_convert(&directive[1]) == U'и' ? "#если"
-				: utf8_convert(&directive[1]) == U'И' ? "#ЕСЛИ"
-				: utf8_convert(&directive[11]) == U'е' ? "#если"
-				: utf8_convert(&directive[11]) == U'Е' ? "#ЕСЛИ"
-				: utf8_convert(&directive[11]) == U'м' ? "#макро"
-				: utf8_convert(&directive[11]) == U'М' ? "#МАКРО"
-				: utf8_convert(&directive[11]) == U'п' ? "#пока"
-				: utf8_convert(&directive[11]) == U'П' ? "#ПОКА"
-				: "");
+			kw_without(directive, &msg[sprintf(msg, "%s без ", directive)]);
 		}
 		break;
 		case DIRECTIVE_AFTER:
 		{
 			const char *const directive = va_arg(args, char *);
-			sprintf(msg, "%s после %s", directive, directive[1] == 'e' ? "#else"
-				: directive[1] == 'E' ? "#ELSE"
-				: utf8_convert(&directive[1]) == U'и' ? "#иначе"
-				: utf8_convert(&directive[1]) == U'И' ? "#ИНАЧЕ"
-				: "");
+			kw_after(directive, &msg[sprintf(msg, "%s после ", directive)]);
 		}
 		break;
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include "map.h"
 
 
@@ -65,6 +66,26 @@ typedef enum KEYWORD
  *	@return	@c 0 on success, @c -1 on failure
  */
 int kw_add(map *const as);
+
+/**
+ *	Get corresponding begin block keyword.
+ *
+ *	@param	directive		Directive spelling
+ *	@param	buffer			Output string
+ *
+ *	@return	Size of written characters
+ */
+size_t kw_without(const char *const directive, char *const buffer);
+
+/**
+ *	Get corresponding @c #else keyword spelling.
+ *
+ *	@param	directive		Directive spelling
+ *	@param	buffer			Output string
+ *
+ *	@return	Size of written characters
+ */
+size_t kw_after(const char *const directive, char *const buffer);
 
 /**
  *	Check that keyword is correct
