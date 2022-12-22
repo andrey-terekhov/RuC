@@ -3118,7 +3118,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n");
 
 	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
-	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT/2; i++)
+	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
 		to_code_R_I_R(enc->sx->io, IC_MIPS_S_S, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT*WORD_LENGTH /* за $s0-$s7 */)
@@ -3131,7 +3131,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		to_code_R_I_R(enc->sx->io
 			, IC_MIPS_SW, R_A0 + i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за $s0-$s7 */
-				+ PRESERVED_FP_REG_AMOUNT/2 * WORD_LENGTH /* за $fs0-$fs10 */)
+				+ PRESERVED_FP_REG_AMOUNT / 2 * WORD_LENGTH /* за $fs0-$fs10 */)
 			, R_SP);
 	}
 
@@ -3183,7 +3183,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT/2)
+			if (i < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_FA0 + 2*fp_count++;
@@ -3244,7 +3244,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n");
 
 	// Восстановление $fs0-$fs7
-	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT/2; i++)
+	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
 		to_code_R_I_R(enc->sx->io, IC_MIPS_L_S, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + /* за s0-s7 */ 8 * WORD_LENGTH), R_SP);
