@@ -3852,35 +3852,20 @@ static void strings_declaration(encoder *const enc)
 
 static void postgen(encoder *const enc)
 {
-	// вставляем runtime.s в конец файла
-	/*
-	uni_printf(enc->sx->io, "\n\n# runtime\n");
-	char *runtime = "../runtimeMIPS/runtime.s";
-	FILE *file = fopen(runtime, "r+");
-	if (runtime != NULL)
-	{
-		char string[1024];
-		while (fgets(string, sizeof(string), file) != NULL)
-		{
-			uni_printf(enc->sx->io, "%s", string);
-		}
-	}
-	fclose(file);
-	uni_printf(enc->sx->io, "# runtime end\n\n");
-	*/
-
+	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
+	// По этой причине вставляю только defarr
 	uni_printf(enc->sx->io, "\n\n# defarr\n");
-	char *defarr = "../runtimeMIPS/defarr.s";
-	FILE *file = fopen(defarr, "r+");
-	if (defarr != NULL)
+
+	universal_io defarr = io_create();
+	in_set_file(&defarr, "../libs/compiler/mips/defarr.s");
+
+	char string[1024];
+	while (fgets(string, sizeof(string), defarr.in_file) != NULL)
 	{
-		char string[1024];
-		while (fgets(string, sizeof(string), file) != NULL)
-		{
-			uni_printf(enc->sx->io, "%s", string);
-		}
+		uni_printf(enc->sx->io, "%s", string);
 	}
-	fclose(file);
+
+	in_clear(&defarr);
 
 	uni_printf(enc->sx->io, "\n\n\t.end\tmain\n");
 	uni_printf(enc->sx->io, "\t.size\tmain, .-main\n");
