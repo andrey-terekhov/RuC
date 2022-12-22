@@ -3857,7 +3857,7 @@ static void postgen(encoder *const enc)
 	uni_printf(enc->sx->io, "\n\n# defarr\n");
 
 	universal_io defarr = io_create();
-	in_set_file(&defarr, "../libs/compiler/mips/defarr.s");
+	in_set_file(&defarr, "mips/defarr.s");
 
 	char string[1024];
 	while (fgets(string, sizeof(string), defarr.in_file) != NULL)
