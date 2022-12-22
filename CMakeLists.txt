@@ -67,6 +67,9 @@ function(get_all_targets _targets _dir)
 	set(${_targets} ${${_targets}} ${_sub_targets} PARENT_SCOPE)
 endfunction()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libs/compiler/mips/defarr.s
+				${CMAKE_CURRENT_BINARY_DIR}/mips/defarr.s
+				COPYONLY)
 
 # Set install parameters
 get_all_targets(targets .)
