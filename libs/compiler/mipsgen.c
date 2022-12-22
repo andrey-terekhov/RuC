@@ -27,28 +27,28 @@
 #endif
 
 
-static const size_t BUFFER_SIZE = 65536; /**< Размер буфера для тела функции */
-static const size_t HASH_TABLE_SIZE = 1024; /**< Размер хеш-таблицы для смещений и регистров */
-static const bool IS_ON_STACK = true; /**< Хранится ли переменная на стеке */
+static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
+static const size_t HASH_TABLE_SIZE = 1024; 		/**< Размер хеш-таблицы для смещений и регистров */
+static const bool IS_ON_STACK = true;				/**< Хранится ли переменная на стеке */
 
-static const size_t WORD_LENGTH = 4;	  /**< Длина слова данных */
-static const size_t HALF_WORD_LENGTH = 2; /**< Длина половины слова данных */
+static const size_t WORD_LENGTH = 4;	  			/**< Длина слова данных */
+static const size_t HALF_WORD_LENGTH = 2; 			/**< Длина половины слова данных */
 
-static const size_t LOW_DYN_BORDER = 0x10010000; /**< Нижняя граница динамической памяти */
-static const size_t HEAP_DISPL = 8000; /**< Смещение кучи относительно глобальной памяти */
+static const size_t LOW_DYN_BORDER = 0x10010000; 	/**< Нижняя граница динамической памяти */
+static const size_t HEAP_DISPL = 8000; 				/**< Смещение кучи относительно глобальной памяти */
 
-static const size_t SP_SIZE = 4; /**< Размер регистра $sp для его сохранения */
-static const size_t RA_SIZE = 4; /**< Размер регистра $ra для его сохранения */
+static const size_t SP_SIZE = 4; 					/**< Размер регистра $sp для его сохранения */
+static const size_t RA_SIZE = 4; 					/**< Размер регистра $ra для его сохранения */
 
-static const size_t TEMP_FP_REG_AMOUNT = 12; /**< Количество временных регистров
-												 для чисел с плавающей точкой */
-static const size_t TEMP_REG_AMOUNT = 10; /**< Количество обычных временных регистров */
-static const size_t ARG_REG_AMOUNT = 4; /**< Количество регистров-аргументов для функций */
+static const size_t TEMP_FP_REG_AMOUNT = 12; 		/**< Количество временных регистров
+												 		для чисел с плавающей точкой */
+static const size_t TEMP_REG_AMOUNT = 10; 			/**< Количество обычных временных регистров */
+static const size_t ARG_REG_AMOUNT = 4; 			/**< Количество регистров-аргументов для функций */
 
-static const size_t PRESERVED_REG_AMOUNT = 8; /**< Количество сохраняемых регистров общего назначения */
-static const size_t PRESERVED_FP_REG_AMOUNT = 10; /**< Количество сохраняемых регистров с плавающей точкой */
+static const size_t PRESERVED_REG_AMOUNT = 8; 		/**< Количество сохраняемых регистров общего назначения */
+static const size_t PRESERVED_FP_REG_AMOUNT = 10; 	/**< Количество сохраняемых регистров с плавающей точкой */
 
-static const bool FROM_LVALUE = 1; /**< Получен ли rvalue из lvalue */
+static const bool FROM_LVALUE = 1; 					/**< Получен ли rvalue из lvalue */
 
 /**< Смещение в стеке для сохранения оберегаемых регистров,
 	 без учёта оптимизаций */
@@ -59,18 +59,18 @@ static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 typedef enum MIPS_REGISTER
 {
-	R_ZERO, /**< Always has the value 0 */
-	R_AT,	/**< Temporary, generally used by assembler */
+	R_ZERO,				/**< Always has the value 0 */
+	R_AT,				/**< Temporary, generally used by assembler */
 
 	R_V0,
-	R_V1, /**< Used for expression evaluations and to hold the integer
-			  and pointer type function return values */
+	R_V1, 				/**< Used for expression evaluations and to hold the integer
+			  				and pointer type function return values */
 
 	R_A0,
 	R_A1,
 	R_A2,
-	R_A3, /**< Used for passing arguments to functions; values are not
-			  preserved across function calls */
+	R_A3, 				/**< Used for passing arguments to functions; values are not
+			  				preserved across function calls */
 
 	R_T0,
 	R_T1,
@@ -79,8 +79,8 @@ typedef enum MIPS_REGISTER
 	R_T4,
 	R_T5,
 	R_T6,
-	R_T7, /**< Temporary registers used for expression evaluation;
-			  values are not preserved across function calls */
+	R_T7, 				/**< Temporary registers used for expression evaluation;
+			  				values are not preserved across function calls */
 
 	R_S0,
 	R_S1,
@@ -89,22 +89,22 @@ typedef enum MIPS_REGISTER
 	R_S4,
 	R_S5,
 	R_S6,
-	R_S7, /**< Saved registers; values are preserved across function calls */
+	R_S7, 				/**< Saved registers; values are preserved across function calls */
 
 	R_T8,
-	R_T9, /**< Temporary registers used for expression evaluations;
-			  values are not preserved across function calls.  When
-			  calling position independent functions $25 (R_T9) must contain
-			  the address of the called function */
+	R_T9, 				/**< Temporary registers used for expression evaluations;
+			  				values are not preserved across function calls.  When
+			  				calling position independent functions $25 (R_T9) must contain
+			  				the address of the called function */
 
 	R_K0,
-	R_K1, /**< Used only by the operating system */
+	R_K1, 				/**< Used only by the operating system */
 
-	R_GP, /**< Global pointer and context pointer */
-	R_SP, /**< Stack pointer */
-	R_FP, /**< Saved register (like s0-s7) or frame pointer */
-	R_RA, /**< Return address. The return address is the location to
-			  which a function should return control */
+	R_GP, 				/**< Global pointer and context pointer */
+	R_SP, 				/**< Stack pointer */
+	R_FP, 				/**< Saved register (like s0-s7) or frame pointer */
+	R_RA, 				/**< Return address. The return address is the location to
+			  				which a function should return control */
 
 	// Регистры для работы с числами с плавающей точкой
 	// Для чисел с двойной точностью используется пара регистров:
@@ -113,14 +113,14 @@ typedef enum MIPS_REGISTER
 	R_FV0,
 	R_FV1,
 	R_FV2,
-	R_FV3, /**< used to hold floating-point type function results;
-			   single-precision uses $f0 and double-precision uses
-			   the register pair $f0..$f1 */
+	R_FV3, 				/**< used to hold floating-point type function results;
+							single-precision uses $f0 and double-precision uses
+							the register pair $f0..$f1 */
 
 	R_FA0,
 	R_FA1,
 	R_FA2,
-	R_FA3, /**< Used for passing arguments to functions */
+	R_FA3, 				/**< Used for passing arguments to functions */
 
 	R_FT0,
 	R_FT1,
@@ -133,7 +133,7 @@ typedef enum MIPS_REGISTER
 	R_FT8,
 	R_FT9,
 	R_FT10,
-	R_FT11, /**< Temporary registers */
+	R_FT11, 			/**< Temporary registers */
 
 	R_FS0,
 	R_FS1,
@@ -146,7 +146,7 @@ typedef enum MIPS_REGISTER
 	R_FS8,
 	R_FS9,
 	R_FS10,
-	R_FS11 /**< Saved registers; their values are preserved across function calls */
+	R_FS11 				/**< Saved registers; their values are preserved across function calls */
 } mips_register_t;
 
 
@@ -155,98 +155,98 @@ typedef enum MIPS_REGISTER
 // Set Manual 2016
 typedef enum INSTRUCTION
 {
-	IC_MIPS_MOVE, /**< MIPS Pseudo-Instruction. Move the contents of one register to another */
-	IC_MIPS_LI,	  /**< MIPS Pseudo-Instruction. Load a constant into a register */
-	IC_MIPS_NOT,  /**< MIPS Pseudo-Instruction. Flips the bits of the source register and
-					  stores them in the destination register (не из вышеуказанной книги) */
+	IC_MIPS_MOVE, 		/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
+	IC_MIPS_LI,	  		/**< MIPS Pseudo-Instruction. Load a constant into a register */
+	IC_MIPS_NOT,  		/**< MIPS Pseudo-Instruction. Flips the bits of the source register and
+					  		stores them in the destination register (не из вышеуказанной книги) */
 
-	IC_MIPS_ADDI, /**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	IC_MIPS_SLL,  /**< To left-shift a word by a fixed number of bits */
-	IC_MIPS_SRA,  /**< To execute an arithmetic right-shift of a word by a fixed number of bits */
-	IC_MIPS_ANDI, /**< To do a bitwise logical AND with a constant */
-	IC_MIPS_XORI, /**< To do a bitwise logical Exclusive OR with a constant */
-	IC_MIPS_ORI,  /**< To do a bitwise logical OR with a constant */
+	IC_MIPS_ADDI, 		/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	IC_MIPS_SLL,  		/**< To left-shift a word by a fixed number of bits */
+	IC_MIPS_SRA,  		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_MIPS_ANDI, 		/**< To do a bitwise logical AND with a constant */
+	IC_MIPS_XORI, 		/**< To do a bitwise logical Exclusive OR with a constant */
+	IC_MIPS_ORI,  		/**< To do a bitwise logical OR with a constant */
 
-	IC_MIPS_ADD,  /**< To add 32-bit integers. If an overflow occurs, then trap */
-	IC_MIPS_SUB,  /**< To subtract 32-bit integers. If overflow occurs, then trap */
-	IC_MIPS_MUL,  /**< To multiply two words and write the result to a GPR */
-	IC_MIPS_DIV,  /**< DIV performs a signed 32-bit integer division, and places
-					   the 32-bit quotient result in the destination register */
-	IC_MIPS_MOD,  /**< MOD performs a signed 32-bit integer division, and places
-					   the 32-bit remainder result in the destination register.
-					   The remainder result has the same sign as the dividend */
-	IC_MIPS_SLLV, /**< To left-shift a word by a variable number of bits */
-	IC_MIPS_SRAV, /**< To execute an arithmetic right-shift of a word by a variable number of bits */
-	IC_MIPS_AND,  /**< To do a bitwise logical AND */
-	IC_MIPS_XOR,  /**< To do a bitwise logical Exclusive OR */
-	IC_MIPS_OR,	  /**< To do a bitwise logical OR */
+	IC_MIPS_ADD,  		/**< To add 32-bit integers. If an overflow occurs, then trap */
+	IC_MIPS_SUB,  		/**< To subtract 32-bit integers. If overflow occurs, then trap */
+	IC_MIPS_MUL,  		/**< To multiply two words and write the result to a GPR */
+	IC_MIPS_DIV,  		/**< DIV performs a signed 32-bit integer division, and places
+					   		the 32-bit quotient result in the destination register */
+	IC_MIPS_MOD,  		/**< MOD performs a signed 32-bit integer division, and places
+							the 32-bit remainder result in the destination register.
+							The remainder result has the same sign as the dividend */
+	IC_MIPS_SLLV, 		/**< To left-shift a word by a variable number of bits */
+	IC_MIPS_SRAV, 		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_MIPS_AND, 		/**< To do a bitwise logical AND */
+	IC_MIPS_XOR,  		/**< To do a bitwise logical Exclusive OR */
+	IC_MIPS_OR,	  		/**< To do a bitwise logical OR */
 
-	IC_MIPS_SW, /**< To store a word to memory */
-	IC_MIPS_LW, /**< To load a word from memory as a signed value */
+	IC_MIPS_SW, 		/**< To store a word to memory */
+	IC_MIPS_LW, 		/**< To load a word from memory as a signed value */
 
-	IC_MIPS_JR,	 /**< To execute a branch to an instruction address in a register */
-	IC_MIPS_JAL, /**< To execute a procedure call within the current 256MB-aligned region */
-	IC_MIPS_J,	 /**< To branch within the current 256 MB-aligned region */
+	IC_MIPS_JR,	 		/**< To execute a branch to an instruction address in a register */
+	IC_MIPS_JAL, 		/**< To execute a procedure call within the current 256MB-aligned region */
+	IC_MIPS_J,	 		/**< To branch within the current 256 MB-aligned region */
 
-	IC_MIPS_BLEZ, /**< Branch on Less Than or Equal to Zero.
-					  To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BLTZ, /**< Branch on Less Than Zero.
-					  To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BGEZ, /**< Branch on Greater Than or Equal to Zero.
-					  To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BGTZ, /**< Branch on Greater Than Zero.
-					  To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BEQ,  /**< Branch on Equal.
-					  To compare GPRs then do a PC-relative conditional branch */
-	IC_MIPS_BNE,  /**< Branch on Not Equal.
-					  To compare GPRs then do a PC-relative conditional branch */
+	IC_MIPS_BLEZ, 		/**< Branch on Less Than or Equal to Zero.
+					  		To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BLTZ, 		/**< Branch on Less Than Zero.
+					  		To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BGEZ, 		/**< Branch on Greater Than or Equal to Zero.
+					  		To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BGTZ, 		/**< Branch on Greater Than Zero.
+					  		To test a GPR then do a PC-relative conditional branch */
+	IC_MIPS_BEQ,  		/**< Branch on Equal.
+					  		To compare GPRs then do a PC-relative conditional branch */
+	IC_MIPS_BNE,  		/**< Branch on Not Equal.
+					  		To compare GPRs then do a PC-relative conditional branch */
 
-	IC_MIPS_LA, /**< Load the address of a named memory
-					location into a register (не из вышеуказанной книги)*/
+	IC_MIPS_LA, 		/**< Load the address of a named memory
+							location into a register (не из вышеуказанной книги)*/
 
-	IC_MIPS_SLTIU, /**< Set on Less Than Immediate Unsigned.
-						To record the result of an unsigned less-than comparison with a constant. */
+	IC_MIPS_SLTIU, 		/**< Set on Less Than Immediate Unsigned.
+								To record the result of an unsigned less-than comparison with a constant. */
 
-	IC_MIPS_NOP, /**<To perform no operation */
+	IC_MIPS_NOP, 		/**<To perform no operation */
 
 	/** Floating point operations. Single precision. */
-	IC_MIPS_ADD_S, /**< To add FP values. */
-	IC_MIPS_SUB_S, /**< To subtract FP values. */
-	IC_MIPS_MUL_S, /**< To multiply FP values. */
-	IC_MIPS_DIV_S, /**< To divide FP values. */
+	IC_MIPS_ADD_S, 		/**< To add FP values. */
+	IC_MIPS_SUB_S, 		/**< To subtract FP values. */
+	IC_MIPS_MUL_S, 		/**< To multiply FP values. */
+	IC_MIPS_DIV_S, 		/**< To divide FP values. */
 
-	IC_MIPS_ABS_S,	/**< Floating Point Absolute Value*/
-	IC_MIPS_ABS,	/**< GPR absolute value (не из вышеуказанной книги). MIPS Pseudo-Instruction. */
+	IC_MIPS_ABS_S,		/**< Floating Point Absolute Value*/
+	IC_MIPS_ABS,		/**< GPR absolute value (не из вышеуказанной книги). MIPS Pseudo-Instruction. */
 
-	IC_MIPS_S_S, /**< MIPS Pseudo instruction. To store a doubleword from an FPR to memory. */
-	IC_MIPS_L_S, /**< MIPS Pseudo instruction. To load a doubleword from memory to an FPR. */
+	IC_MIPS_S_S, 		/**< MIPS Pseudo instruction. To store a doubleword from an FPR to memory. */
+	IC_MIPS_L_S, 		/**< MIPS Pseudo instruction. To load a doubleword from memory to an FPR. */
 
-	IC_MIPS_LI_S, /**< MIPS Pseudo-Instruction. Load a FP constant into a FPR. */
+	IC_MIPS_LI_S, 		/**< MIPS Pseudo-Instruction. Load a FP constant into a FPR. */
 
-	IC_MIPS_MOV_S, /**< The value in first FPR is placed into second FPR. */
+	IC_MIPS_MOV_S, 		/**< The value in first FPR is placed into second FPR. */
 
-	IC_MIPS_MFC_1,	/**< Move word from Floating Point.
-						To copy a word from an FPU (CP1) general register to a GPR. */
-	IC_MIPS_MFHC_1, /**< To copy a word from the high half of an FPU (CP1)
-						general register to a GPR. */
+	IC_MIPS_MFC_1,		/**< Move word from Floating Point.
+							To copy a word from an FPU (CP1) general register to a GPR. */
+	IC_MIPS_MFHC_1, 	/**< To copy a word from the high half of an FPU (CP1)
+							general register to a GPR. */
 
-	IC_MIPS_CVT_D_S, /**< To convert an FP value to double FP. */
-	IC_MIPS_CVT_S_W, /**< To convert fixed point value to single FP. */
-	IC_MIPS_CVT_W_S, /**< To convert single FP to fixed point value */
+	IC_MIPS_CVT_D_S, 	/**< To convert an FP value to double FP. */
+	IC_MIPS_CVT_S_W, 	/**< To convert fixed point value to single FP. */
+	IC_MIPS_CVT_W_S, 	/**< To convert single FP to fixed point value */
 } mips_instruction_t;
 
 
 typedef enum LABEL
 {
-	L_MAIN,			/**< Тип метки -- главная функция */
-	L_FUNC,			/**< Тип метки -- вход в функцию */
-	L_NEXT,			/**< Тип метки -- следующая функция */
-	L_FUNCEND,		/**< Тип метки -- выход из функции */
-	L_STRING,		/**< Тип метки -- строка */
-	L_ELSE,			/**< Тип метки -- переход по else */
-	L_END,			/**< Тип метки -- переход в конец конструкции */
-	L_BEGIN_CYCLE,	/**< Тип метки -- переход в начало цикла */
-	L_CASE,			/**< Тип метки -- переход по case */
+	L_MAIN,				/**< Тип метки -- главная функция */
+	L_FUNC,				/**< Тип метки -- вход в функцию */
+	L_NEXT,				/**< Тип метки -- следующая функция */
+	L_FUNCEND,			/**< Тип метки -- выход из функции */
+	L_STRING,			/**< Тип метки -- строка */
+	L_ELSE,				/**< Тип метки -- переход по else */
+	L_END,				/**< Тип метки -- переход в конец конструкции */
+	L_BEGIN_CYCLE,		/**< Тип метки -- переход в начало цикла */
+	L_CASE,				/**< Тип метки -- переход по case */
 } mips_label_t;
 
 typedef struct label
@@ -257,18 +257,18 @@ typedef struct label
 
 typedef struct encoder
 {
-	syntax *sx; /**< Структура syntax с таблицами */
+	syntax *sx; 							/**< Структура syntax с таблицами */
 
-	size_t max_displ;	 /**< Максимальное смещение от $sp */
-	size_t global_displ; /**< Смещение от $gp */
+	size_t max_displ;	 					/**< Максимальное смещение от $sp */
+	size_t global_displ; 					/**< Смещение от $gp */
 
-	hash displacements; /**< Хеш таблица с информацией о расположении идентификаторов:
-							@c key		 - ссылка на таблицу идентификаторов
-							@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре
-							@c value[1]  - смещение или номер регистра */
+	hash displacements; 					/**< Хеш таблица с информацией о расположении идентификаторов:
+												@c key		 - ссылка на таблицу идентификаторов
+												@c value[0]	 - флаг, лежит ли переменная на стеке или в регистре
+												@c value[1]  - смещение или номер регистра */
 
-	mips_register_t next_register; /**< Следующий обычный регистр для выделения */
-	mips_register_t next_float_register; /**< Следующий регистр с плавающей точкой для выделения */
+	mips_register_t next_register; 			/**< Следующий обычный регистр для выделения */
+	mips_register_t next_float_register; 	/**< Следующий регистр с плавающей точкой для выделения */
 
 	size_t label_num;						/**< Номер метки */
 	size_t case_label_num;					/**< Номер метки-перехода по case */
@@ -291,35 +291,35 @@ typedef enum LVALUE_KIND
 
 typedef struct lvalue
 {
-	const lvalue_kind_t kind;		  /**< Value kind */
-	const mips_register_t base_reg; /**< Base register */
-	const union					  /**< Value location */
+	const lvalue_kind_t kind;		  		/**< Value kind */
+	const mips_register_t base_reg; 		/**< Base register */
+	const union					  			/**< Value location */
 	{
-		item_t reg_num; 				/**< Register where the value is stored */
-		item_t displ;	/**< Stack displacement where the value is stored */
+		item_t reg_num; 					/**< Register where the value is stored */
+		item_t displ;						/**< Stack displacement where the value is stored */
 	} loc;
-	const item_t type; /**< Value type */
+	const item_t type; 						/**< Value type */
 } lvalue;
 
 /** Kinds of rvalue */
 typedef enum RVALUE_KIND
 {
-	RVALUE_KIND_CONST, // Значит, запомнили константу и потом обработали её
+	RVALUE_KIND_CONST, 						// Значит, запомнили константу и потом обработали её
 	RVALUE_KIND_REGISTER,
 	RVALUE_KIND_VOID,
 } rvalue_kind_t;
 
 typedef struct rvalue
 {
-	const rvalue_kind_t kind; /**< Value kind */
-	const item_t type;		/**< Value type */
-	const bool from_lvalue;	/**< Was the rvalue instance formed from lvalue */
+	const rvalue_kind_t kind; 				/**< Value kind */
+	const item_t type;						/**< Value type */
+	const bool from_lvalue;					/**< Was the rvalue instance formed from lvalue */
 	const union
 	{
-		item_t reg_num;	  /**< Where the value is stored */
-		item_t int_val;	  /**< Value of integer (character, boolean) literal */
-		double float_val; /**< Value of floating literal */
-		item_t str_index; /**< Index of pre-declared string */
+		item_t reg_num;	  					/**< Where the value is stored */
+		item_t int_val;	  					/**< Value of integer (character, boolean) literal */
+		double float_val; 					/**< Value of floating literal */
+		item_t str_index; 					/**< Index of pre-declared string */
 	} val;
 } rvalue;
 
@@ -358,10 +358,10 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
 }
 
 /**
- * Locks certain register
+ *	Locks certain register
  * 
- * @param	enc					Encoder
- * @param	reg					Register to lock
+ *	@param	enc					Encoder
+ *	@param	reg					Register to lock
 */
 static void lock_register(encoder *const enc, const mips_register_t reg)
 {
@@ -414,11 +414,11 @@ static void lock_register(encoder *const enc, const mips_register_t reg)
 }
 
 /**
- * Takes the first free register
+ *	Takes the first free register
  *
- * @param	enc					Encoder
+ *	@param	enc					Encoder
  *
- * @return	General purpose register
+ *	@return	General purpose register
  */
 static mips_register_t get_register(encoder *const enc)
 {
@@ -438,11 +438,11 @@ static mips_register_t get_register(encoder *const enc)
 }
 
 /**
- * Takes the first free floating point register
+ *	Takes the first free floating point register
  *
- * @param	enc					Encoder
+ *	@param	enc					Encoder
  *
- * @return	Register			Floating point register
+ *	@return	Register			Floating point register
  */
 static mips_register_t get_float_register(encoder *const enc)
 {
@@ -462,10 +462,10 @@ static mips_register_t get_float_register(encoder *const enc)
 }
 
 /**
- * Free register
+ *	Free register
  * 
- * @param	enc					Encoder
- * @param	reg					Register to set as free
+ *	@param	enc					Encoder
+ *	@param	reg					Register to set as free
 */
 static void free_register(encoder *const enc, const mips_register_t reg)
 {
@@ -520,10 +520,10 @@ static void free_register(encoder *const enc, const mips_register_t reg)
 }
 
 /**
- * Free register occupied by rvalue
+ *	Free register occupied by rvalue
  *
- * @param	enc					Encoder
- * @param	rval				Rvalue to be freed
+ *	@param	enc					Encoder
+ *	@param	rval				Rvalue to be freed
  */
 static void free_rvalue(encoder *const enc, const rvalue *const rval)
 {
@@ -533,12 +533,12 @@ static void free_rvalue(encoder *const enc, const rvalue *const rval)
 	}
 }
 
-/** Get MIPS assembler binary instruction from binary_t type
+/**	Get MIPS assembler binary instruction from binary_t type
  *
- * @param	operation_type		Type of operation in AST
- * @param	is_imm				@c True if the instruction is immediate, @c False otherwise
+ *	@param	operation_type		Type of operation in AST
+ *	@param	is_imm				@c True if the instruction is immediate, @c False otherwise
  *
- * @return	MIPS binary instruction
+ *	@return	MIPS binary instruction
  */
 static mips_instruction_t get_bin_instruction(const binary_t operation_type, const bool is_imm)
 {
@@ -1028,10 +1028,10 @@ static void to_code_R_I(universal_io *const io, const mips_instruction_t instruc
 }
 
 /**
- * Writes "val" field of rvalue structure to io
+ *	Writes "val" field of rvalue structure to io
  *
- * @param	io					Universal i/o (?)
- * @param	rval				Rvalue whose value is to be printed
+ *	@param	io					Universal i/o (?)
+ *	@param	rval				Rvalue whose value is to be printed
  */
 static void rvalue_const_to_io(universal_io *const io, const rvalue *const rval)
 {
@@ -1054,10 +1054,10 @@ static void rvalue_const_to_io(universal_io *const io, const rvalue *const rval)
 }
 
 /**
- * Writes rvalue to io
+ *	Writes rvalue to io
  * 
- * @param	enc					Encoder
- * @param	rval				Rvalue to write
+ *	@param	enc					Encoder
+ *	@param	rval				Rvalue to write
 */
 static void rvalue_to_io(encoder *const enc, const rvalue *const rval)
 {
@@ -1074,10 +1074,10 @@ static void rvalue_to_io(encoder *const enc, const rvalue *const rval)
 }
 
 /**
- * Writes lvalue to io
+ *	Writes lvalue to io
  * 
- * @param	enc						Encoder
- * @param	lvalue					Lvalue
+ *	@param	enc						Encoder
+ *	@param	lvalue					Lvalue
 */
 static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 {
@@ -1094,14 +1094,14 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 }
 
 /**
- * Add new identifier to displacements table
+ *	Add new identifier to displacements table
  * 
- * @param	enc						Encoder
- * @param	identifier				Identifier for adding to the table
- * @param	location				Location of identifier - register, or displacement on stack
- * @param	is_register				@c true, if identifier is register variable, and @c false otherwise
+ *	@param	enc						Encoder
+ *	@param	identifier				Identifier for adding to the table
+ *	@param	location				Location of identifier - register, or displacement on stack
+ *	@param	is_register				@c true, if identifier is register variable, and @c false otherwise
  * 
- * @return	Identifier lvalue
+ *	@return	Identifier lvalue
  */
 static lvalue displacements_add(encoder *const enc, const size_t identifier
 	, const item_t location, const bool is_register)
@@ -1136,12 +1136,12 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier
 }
 
 /**
- * Return lvalue for the given identifier
+ *	Return lvalue for the given identifier
  * 
- * @param	enc						Encoder
- * @param	identifier				Identifier in the table
+ *	@param	enc						Encoder
+ *	@param	identifier				Identifier in the table
  * 
- * @return	Identifier lvalue
+ *	@return	Identifier lvalue
  */
 static lvalue displacements_get(encoder *const enc, const size_t identifier)
 {
@@ -1156,10 +1156,10 @@ static lvalue displacements_get(encoder *const enc, const size_t identifier)
 }
 
 /**
- * Emit label
+ *	Emit label
  *
- * @param	enc				Encoder
- * @param	label				Label for emitting
+ *	@param	enc				Encoder
+ *	@param	label				Label for emitting
  */
 static void emit_label(encoder *const enc, const label *const lbl)
 {
@@ -1199,10 +1199,10 @@ static void emit_label(encoder *const enc, const label *const lbl)
 }
 
 /**
- * Emit label declaration
+ *	Emit label declaration
  *
- * @param	enc				Encoder
- * @param	label			Declared label
+ *	@param	enc				Encoder
+ *	@param	label			Declared label
  */
 static void emit_label_declaration(encoder *const enc, const label *const lbl)
 {
@@ -1211,10 +1211,10 @@ static void emit_label_declaration(encoder *const enc, const label *const lbl)
 }
 
 /**
- * Emit unconditional branch
+ *	Emit unconditional branch
  *
- * @param	enc				Encoder
- * @param	label			Label for unconditional jump
+ *	@param	enc				Encoder
+ *	@param	label			Label for unconditional jump
  */
 static void emit_unconditional_branch(encoder *const enc, const mips_instruction_t instruction, const label *const lbl)
 {
@@ -1228,10 +1228,10 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
 }
 
 /**
- * Emit conditional branch
+ *	Emit conditional branch
  *
- * @param	enc				Encoder
- * @param	label			Label for conditional jump
+ *	@param	enc				Encoder
+ *	@param	label			Label for conditional jump
  */
 static void emit_conditional_branch(encoder *const enc, const mips_instruction_t instruction
 	, const rvalue *const value, const label *const lbl)
@@ -1262,10 +1262,10 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
 }
 
 /**
- * Emit branching with register
+ *	Emit branching with register
  * 
- * @param	enc				Encoder
- * @param	reg				Register			
+ *	@param	enc				Encoder
+ *	@param	reg				Register			
 */
 static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction, const mips_register_t reg)
 {
@@ -1289,12 +1289,12 @@ static void emit_register_branch(encoder *const enc, const mips_instruction_t in
 
 
 /**
- * Creates register kind rvalue and stores there constant kind rvalue
+ *	Creates register kind rvalue and stores there constant kind rvalue
  * 
- * @param	enc				Encoder
- * @param	value			Rvalue of constant kind
+ *	@param	enc				Encoder
+ *	@param	value			Rvalue of constant kind
  * 
- * @return	Created rvalue
+ *	@return	Created rvalue
 */
 static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const value)
 {
@@ -1320,13 +1320,13 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 }
 
 /**
- * Loads lvalue to register and forms rvalue. If lvalue kind is @c LVALUE_KIND_REGISTER,
- * returns rvalue on the same register
+ *	Loads lvalue to register and forms rvalue. If lvalue kind is @c LVALUE_KIND_REGISTER,
+ *	returns rvalue on the same register
  *
- * @param	enc				Encoder
- * @param	lval			Lvalue to load
+ *	@param	enc				Encoder
+ *	@param	lval			Lvalue to load
  *
- * @return	Formed rvalue
+ *	@return	Formed rvalue
  */
 static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 {
@@ -1374,12 +1374,12 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 }
 
 /**
- * Emit identifier lvalue
+ *	Emit identifier lvalue
  *
- * @param	enc				Encoder
- * @param	nd  			Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd  			Node in AST
  *
- * @return	Identifier lvalue
+ *	@return	Identifier lvalue
  */
 static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 {
@@ -1387,12 +1387,12 @@ static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit subscript lvalue
+ *	Emit subscript lvalue
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Subscript lvalue
+ *	@return	Subscript lvalue
  */
 static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 {
@@ -1438,12 +1438,12 @@ static lvalue emit_subscript_lvalue(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit member lvalue
+ *	Emit member lvalue
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Created lvalue
+ *	@return	Created lvalue
  */
 static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 {
@@ -1488,12 +1488,12 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit indirection lvalue
+ *	Emit indirection lvalue
  * 
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  * 
- * @return	Indirected lvalue
+ *	@return	Indirected lvalue
 */
 static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
 {
@@ -1513,12 +1513,12 @@ static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit lvalue expression
+ *	Emit lvalue expression
  *
- * @param	enc			encoder
- * @param	nd				Node in AST
+ *	@param	enc			encoder
+ *	@param	nd				Node in AST
  *
- * @return	Lvalue
+ *	@return	Lvalue
  */
 static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 {
@@ -1546,11 +1546,11 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 }
 
 /**
- * Stores one rvalue of register kind to another
+ *	Stores one rvalue of register kind to another
  * 
- * @param	enc				Encoder
- * @param	target			Target register
- * @param	value			Rvalue to store
+ *	@param	enc				Encoder
+ *	@param	target			Target register
+ *	@param	value			Rvalue to store
 */
 static void emit_move_rvalue_to_register(encoder *const enc
 	, const mips_register_t target, const rvalue *const value)
@@ -1588,11 +1588,11 @@ static void emit_move_rvalue_to_register(encoder *const enc
 }
 
 /**
- * Stores rvalue to lvalue. Frees value parameter register for a pointer
+ *	Stores rvalue to lvalue. Frees value parameter register for a pointer
  *
- * @param	enc				Encoder
- * @param	target			Target lvalue
- * @param	value			Rvalue to store
+ *	@param	enc				Encoder
+ *	@param	target			Target lvalue
+ *	@param	value			Rvalue to store
  */
 static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target, const rvalue *const value)
 {
@@ -1656,13 +1656,13 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 }
 
 /**
- * Emit binary operation with two rvalues
+ *	Emit binary operation with two rvalues
  *
- * @param	enc				Encoder
- * @param	dest			Destination rvalue
- * @param	first_operand	First rvalue operand
- * @param	second_operand	Second rvalue operand
- * @param	operator		Operator
+ *	@param	enc				Encoder
+ *	@param	dest			Destination rvalue
+ *	@param	first_operand	First rvalue operand
+ *	@param	second_operand	Second rvalue operand
+ *	@param	operator		Operator
  */
 static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	, const rvalue *const first_operand, const rvalue *const second_operand, const binary_t operator)
@@ -1818,10 +1818,10 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 /**
  *	Emit literal expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of literal expression
+ *	@return	Rvalue of literal expression
  */
 static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
 {
@@ -1870,11 +1870,11 @@ static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit printf expression
+ *	Emit printf expression
  *
- * @param	enc					Encoder
- * @param	nd					AST node
- * @param	parameters_amount	Number of function parameters
+ *	@param	enc					Encoder
+ *	@param	nd					AST node
+ *	@param	parameters_amount	Number of function parameters
  */
 static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 {
@@ -2071,12 +2071,12 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit builtin function call
+ *	Emit builtin function call
  * 
- * @param	enc					Encoder
- * @param	nd					Node in AST
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
  * 
- * @return	Rvalue of builtin function call expression
+ *	@return	Rvalue of builtin function call expression
 */
 static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 {
@@ -2093,12 +2093,12 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit call expression
+ *	Emit call expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the result of call expression
+ *	@return	Rvalue of the result of call expression
  */
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
@@ -2246,12 +2246,12 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit member expression
+ *	Emit member expression
  * 
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of member expression
+ *	@return	Rvalue of member expression
 */
 static rvalue emit_member_expression(encoder *const enc, const node *const nd)
 {
@@ -2262,12 +2262,12 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit cast expression
+ *	Emit cast expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of cast expression
+ *	@return	Rvalue of cast expression
  */
 static rvalue emit_cast_expression(encoder *const enc, const node *const nd)
 {
@@ -2309,10 +2309,10 @@ static rvalue emit_cast_expression(encoder *const enc, const node *const nd)
 /**
  *	Emit increment or decrement expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return Rvalue of the result of increment or decrement expression
+ *	@return Rvalue of the result of increment or decrement expression
  */
 static rvalue emit_increment_expression(encoder *const enc, const node *const nd)
 {
@@ -2354,10 +2354,10 @@ static rvalue emit_increment_expression(encoder *const enc, const node *const nd
 /**
  *	Emit unary expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the result of unary expression
+ *	@return	Rvalue of the result of unary expression
  */
 static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 {
@@ -2446,12 +2446,12 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit binary expression
+ *	Emit binary expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the result of binary expression
+ *	@return	Rvalue of the result of binary expression
  */
 static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 {
@@ -2502,12 +2502,12 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit ternary expression
+ *	Emit ternary expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the result of ternary expression
+ *	@return	Rvalue of the result of ternary expression
  */
 static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 {
@@ -2540,13 +2540,13 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit structure assignment
+ *	Emit structure assignment
  * 
- * @param	enc				Encoder
- * @param	target			Target lvalue
- * @param	value			Value to assign to target
+ *	@param	enc				Encoder
+ *	@param	target			Target lvalue
+ *	@param	value			Value to assign to target
  * 
- * @return	Rvalue of the result of assignment expression
+ *	@return	Rvalue of the result of assignment expression
 */
 static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const target, const node *const value)
 {
@@ -2592,12 +2592,12 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 }
 
 /**
- * Emit assignment expression
+ *	Emit assignment expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the result of assignment expression
+ *	@return	Rvalue of the result of assignment expression
  */
 static rvalue emit_assignment_expression(encoder *const enc, const node *const nd)
 {
@@ -2699,12 +2699,12 @@ static rvalue emit_inline_expression(encoder *const enc, const node *const nd)
 */
 
 /**
- * Emit expression
+ *	Emit expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of the expression
+ *	@return	Rvalue of the expression
  */
 static rvalue emit_expression(encoder *const enc, const node *const nd)
 {
@@ -2758,12 +2758,12 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit expression which will be evaluated as a void expression
+ *	Emit expression which will be evaluated as a void expression
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  *
- * @return	Rvalue of void type
+ *	@return	Rvalue of void type
  */
 static rvalue emit_void_expression(encoder *const enc, const node *const nd)
 {
@@ -2872,13 +2872,13 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 }
 
 /**
- * Emit bound expression in array declaration
+ *	Emit bound expression in array declaration
  * 
- * @param	enc				Encoder
- * @param	bound			Bound node
- * @param	nd				Declaration node
+ *	@param	enc				Encoder
+ *	@param	bound			Bound node
+ *	@param	nd				Declaration node
  * 
- * @return	Bound expression
+ *	@return	Bound expression
 */
 static rvalue emit_bound(encoder *const enc, const node *const bound, const node *const nd)
 {
@@ -2902,10 +2902,10 @@ static rvalue emit_bound(encoder *const enc, const node *const bound, const node
 }
 
 /**
- * Emit array declaration
+ *	Emit array declaration
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_array_declaration(encoder *const enc, const node *const nd)
 {
@@ -2994,11 +2994,11 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit struct initialization
+ *	Emit struct initialization
  * 
- * @param	enc					Encoder
- * @param	target				Lvalue to initialize
- * @param	initializer			Initializer node in AST
+ *	@param	enc					Encoder
+ *	@param	target				Lvalue to initialize
+ *	@param	initializer			Initializer node in AST
 */
 static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer)
 {
@@ -3031,10 +3031,10 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 }
 
 /**
- * Emit variable declaration
+ *	Emit variable declaration
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_variable_declaration(encoder *const enc, const node *const nd)
 {
@@ -3077,10 +3077,10 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit function definition
+ *	Emit function definition
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_function_definition(encoder *const enc, const node *const nd)
 {
@@ -3317,10 +3317,10 @@ static void emit_declaration_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit case statement
+ *	Emit case statement
  * 
- * @param	enc					Encoder
- * @param	nd					Node in AST
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
 */
 static void emit_case_statement(encoder *const enc, const node *const nd, const size_t label_num)
 {
@@ -3332,10 +3332,10 @@ static void emit_case_statement(encoder *const enc, const node *const nd, const 
 }
 
 /**
- * Emit default statement
+ *	Emit default statement
  * 
- * @param	enc					Encoder
- * @param	nd					Node in AST
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
 */
 static void emit_default_statement(encoder *const enc, const node *const nd, const size_t label_num)
 {
@@ -3347,10 +3347,10 @@ static void emit_default_statement(encoder *const enc, const node *const nd, con
 }
 
 /**
- * Emit compound statement
+ *	Emit compound statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_compound_statement(encoder *const enc, const node *const nd)
 {
@@ -3403,10 +3403,10 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit switch statement
+ *	Emit switch statement
  * 
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
 */
 static void emit_switch_statement(encoder *const enc, const node *const nd)
 {
@@ -3499,10 +3499,10 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit while statement
+ *	Emit while statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_while_statement(encoder *const enc, const node *const nd)
 {
@@ -3536,10 +3536,10 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit do statement
+ *	Emit do statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_do_statement(encoder *const enc, const node *const nd)
 {
@@ -3572,10 +3572,10 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit for statement
+ *	Emit for statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_for_statement(encoder *const enc, const node *const nd)
 {
@@ -3645,10 +3645,10 @@ static void emit_break_statement(encoder *const enc)
 }
 
 /**
- * Emit return statement
+ *	Emit return statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_return_statement(encoder *const enc, const node *const nd)
 {
@@ -3669,10 +3669,10 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit statement
+ *	Emit statement
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static void emit_statement(encoder *const enc, const node *const nd)
 {
@@ -3741,10 +3741,10 @@ static void emit_statement(encoder *const enc, const node *const nd)
 }
 
 /**
- * Emit translation unit
+ *	Emit translation unit
  *
- * @param	enc				Encoder
- * @param	nd				Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
  */
 static int emit_translation_unit(encoder *const enc, const node *const nd)
 {
