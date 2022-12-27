@@ -26,11 +26,11 @@
 #define MAX_INDEX_SIZE 21
 #define MAX_MASK_SIZE 51
 
-#define MASK_POSTFIX		"__"
-#define MASK_ARGUMENT		"__ARG_%zu_"
-#define MASK_STRING			"__STR_%zu_"
-// #define MASK_CHARACTER		"__CHR_%zu_"
-#define MASK_TOKEN_PASTE	"#__TKP_%zu_"
+#define MASK_SUFFIX			"_"
+#define MASK_ARGUMENT		"__ARG_"
+#define MASK_STRING			"__STR_"
+// #define MASK_CHARACTER		"__CHR_"
+#define MASK_TOKEN_PASTE	"#__TKP_"
 
 
 static const size_t MAX_INCLUDE_DEPTH = 32;
@@ -354,7 +354,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 	, char *const value, const size_t arg)
 {
 	char mask[MAX_MASK_SIZE];
-	sprintf(mask, MASK_TOKEN_PASTE "%zu" MASK_POSTFIX, index, arg);
+	sprintf(mask, MASK_TOKEN_PASTE "%zu" MASK_SUFFIX "%zu", index, arg);
 	storage_set_by_index(stg, storage_add(stg, mask), value);
 
 	universal_io io = io_create();
@@ -365,7 +365,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 	out_swap(prs->io, &io);
 
 	char *buffer = out_extract_buffer(&io);
-	sprintf(mask, MASK_ARGUMENT "%zu" MASK_POSTFIX, index, arg);
+	sprintf(mask, MASK_ARGUMENT "%zu" MASK_SUFFIX "%zu", index, arg);
 	storage_set_by_index(stg, storage_add(stg, mask), buffer);
 	free(buffer);
 
@@ -387,7 +387,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
 	in_clear(&io);
 
 	buffer = out_extract_buffer(&io);
-	sprintf(mask, MASK_STRING "%zu" MASK_POSTFIX, index, arg);
+	sprintf(mask, MASK_STRING "%zu" MASK_SUFFIX "%zu", index, arg);
 	storage_set_by_index(stg, storage_add(stg, mask), buffer);
 	free(buffer);
 }
@@ -926,10 +926,11 @@ static bool parse_name(parser *const prs)
  *	Use their indexes as the value.
  *
  *	@param	prs			Parser structure
+ *	@param	index		Index of macro
  *
  *	@return	Number of arguments, @c SIZE_MAX on failure
  */
-static size_t parse_args(parser *const prs)
+static size_t parse_args(parser *const prs, const size_t index)
 {
 	const size_t position = in_get_position(prs->io);
 	if (skip_until(prs, false) != '(' || position != in_get_position(prs->io))
@@ -961,16 +962,16 @@ static size_t parse_args(parser *const prs)
 			break;
 		}
 
-		const size_t index = storage_add_by_io(prs->stg, prs->io);
-		if (index == SIZE_MAX)
+		const size_t argument = storage_add_by_io(prs->stg, prs->io);
+		if (argument == SIZE_MAX)
 		{
 			parser_error(prs, prs->loc, ARGS_DUPLICATE, storage_last_read(prs->stg));
 			break;
 		}
 
 		char buffer[MAX_INDEX_SIZE];
-		sprintf(buffer, "%zu", i);
-		storage_set_by_index(prs->stg, index, buffer);
+		sprintf(buffer, "%zu" MASK_SUFFIX "%zu", index, i);
+		storage_set_by_index(prs->stg, argument, buffer);
 
 		character = skip_until(prs, false);
 		if (character == ',')
@@ -994,12 +995,11 @@ static size_t parse_args(parser *const prs)
  *	Produce a masked replacement for argument operators.
  *
  *	@param	prs			Parser structure
- *	@param	index		Index of macro
  *	@param	was_space	Set, if separator required
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_operator(parser *const prs, const size_t index, const bool was_space)
+static bool parse_operator(parser *const prs, const bool was_space)
 {
 	location loc = loc_copy(prs->loc);
 	uni_scan_char(prs->io);
@@ -1021,7 +1021,7 @@ static bool parse_operator(parser *const prs, const size_t index, const bool was
 			return false;
 		}
 
-		uni_printf(prs->io, MASK_TOKEN_PASTE "%s" MASK_POSTFIX, index, value);
+		uni_printf(prs->io, MASK_TOKEN_PASTE "%s", value);
 		return true;
 	}
 
@@ -1035,7 +1035,7 @@ static bool parse_operator(parser *const prs, const size_t index, const bool was
 		return false;
 	}
 
-	uni_printf(prs->io, "%s" MASK_STRING "%s" MASK_POSTFIX, was_space ? " " : "", index, value);
+	uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
 	return true;
 }
 
@@ -1046,11 +1046,10 @@ static bool parse_operator(parser *const prs, const size_t index, const bool was
  *	Return value require to call @c free() function.
  *
  *	@param	prs			Parser structure
- *	@param	index		Index of macro
  *
  *	@return	Macro value, @c NULL on failure
  */
-static char *parse_content(parser *const prs, const size_t index)
+static char *parse_content(parser *const prs)
 {
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
@@ -1063,7 +1062,7 @@ static char *parse_content(parser *const prs, const size_t index)
 	{
 		if (character == '#')
 		{
-			if (!parse_operator(prs, index, in_get_position(prs->io) != position))
+			if (!parse_operator(prs, in_get_position(prs->io) != position))
 			{
 				out_swap(prs->io, &out);
 				out_clear(&out);
@@ -1078,7 +1077,7 @@ static char *parse_content(parser *const prs, const size_t index)
 				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
 				if (value != NULL)
 				{
-					uni_printf(prs->io, MASK_ARGUMENT "%s" MASK_POSTFIX, index, value);
+					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
 				}
 				else
 				{
@@ -1124,7 +1123,7 @@ static void parse_context(parser *const prs, const size_t index)
 	storage *origin = prs->stg;
 	prs->stg = &stg;
 
-	const size_t args = parse_args(prs);
+	const size_t args = parse_args(prs, index);
 	if (args != SIZE_MAX)
 	{
 		storage_set_args_by_index(origin, index, args);
@@ -1149,7 +1148,7 @@ static void parse_context(parser *const prs, const size_t index)
 			}
 		}
 
-		char *value = parse_content(prs, index);
+		char *value = parse_content(prs);
 		if (value != NULL)
 		{
 			storage_set_by_index(origin, index, value);
