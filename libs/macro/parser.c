@@ -1232,6 +1232,75 @@ static void parse_undef(parser *const prs)
 }
 
 
+/**
+ *	Parse multiline directive block.
+ *	Stop at the end token if a begin was set.
+ *	By default parse until EOF.
+ *	Available begin tokens - @c #if @c #elif @c #else @c #while
+ *
+ *	@param	prs			Parser structure
+ *	@param	begin		Begin token
+ *
+ *	@return	End token, @c SIZE_MAX on otherwise
+ */
+static size_t parse_block(parser *const prs, const size_t begin)
+{
+	char32_t character = '\0';
+	while (character != (char32_t)EOF)
+	{
+		const size_t keyword = parse_directive(prs);
+		switch (keyword)
+		{
+			case KW_LINE:
+				parse_line(prs);
+				break;
+			case KW_INCLUDE:
+				parse_include(prs);
+				break;
+
+			case KW_DEFINE:
+				parse_define(prs);
+				break;
+			case KW_SET:
+				parse_set(prs);
+				break;
+			case KW_UNDEF:
+				parse_undef(prs);
+				break;
+
+			case KW_MACRO:
+			case KW_IFDEF:
+			case KW_IFNDEF:
+
+			case KW_IF:
+			case KW_WHILE:
+			case KW_EVAL:
+				skip_directive(prs);
+				break;
+
+			case SIZE_MAX:
+				character = parse_until(prs);
+				break;
+			default:
+				if (((begin == KW_IFDEF || begin == KW_IFNDEF || begin == KW_IF || begin == KW_ELIF)
+					&& (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF))
+					|| (begin == KW_ELSE && keyword == KW_ENDIF) || (begin == KW_WHILE && keyword == KW_ENDW))
+				{
+					return keyword;
+				}
+
+				location loc = parse_location(prs);
+				parser_error(prs, &loc, begin == KW_ELSE && (keyword == KW_ELIF || keyword == KW_ELSE)
+					? DIRECTIVE_AFTER : DIRECTIVE_WITHOUT, storage_last_read(prs->stg));
+				skip_directive(prs);
+				break;
+		}
+	}
+
+	return SIZE_MAX;
+}
+
+
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
  *	/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  ___\ /\  __ \   /\  ___\   /\  ___\
@@ -1262,7 +1331,6 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 
 	prs.is_recovery_disabled = false;
 	prs.is_line_required = false;
-	prs.is_if_block = false;
 	prs.was_error = false;
 
 	return prs;
@@ -1285,54 +1353,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	location *loc = prs->loc;
 	prs->loc = &current;
 
-	char32_t character = '\0';
-	while (character != (char32_t)EOF)
-	{
-		const size_t keyword = parse_directive(prs);
-		switch (keyword)
-		{
-			case KW_LINE:
-				parse_line(prs);
-				continue;
-			case KW_INCLUDE:
-				parse_include(prs);
-				continue;
-
-			case KW_DEFINE:
-				parse_define(prs);
-				continue;
-			case KW_SET:
-				parse_set(prs);
-				continue;
-			case KW_UNDEF:
-				parse_undef(prs);
-				continue;
-
-			case KW_EVAL:
-
-			case KW_IFDEF:
-			case KW_IFNDEF:
-			case KW_IF:
-
-			case KW_MACRO:
-			case KW_WHILE:
-				break;
-
-			case KW_ELIF:
-			case KW_ELSE:
-			case KW_ENDIF:
-
-			case KW_ENDM:
-			case KW_ENDW:
-				/* error */
-				break;
-
-			default:
-				break;
-		}
-
-		character = parse_until(prs);
-	}
+	parse_block(prs, SIZE_MAX);
 
 	prs->io = io;
 	prs->loc = loc;
