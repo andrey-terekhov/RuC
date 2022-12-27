@@ -803,6 +803,23 @@ static void parse_line(parser *const prs)
 }
 
 /**
+ *	Parse extra tokens after the directive.
+ *	Emit a warning, if occurred.
+ *
+ *	@param	prs			Parser structure
+ */
+static void parse_extra(parser *const prs)
+{
+	if (skip_until(prs, false) != '\n')
+	{
+		loc_search_from(prs->loc);
+		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
+	}
+
+	skip_directive(prs);
+}
+
+/**
  *	Parse the filename path and link it.
  *	Extra tokens after closing quote not accepted.
  *
@@ -839,12 +856,7 @@ static void parse_path(parser *const prs, const char32_t quote)
 		return;
 	}
 
-	if (skip_until(prs, false) != '\n')
-	{
-		loc_search_from(prs->loc);
-		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
-	}
-
+	parse_extra(prs);
 	universal_io header = linker_add_header(prs->lk, index);
 	parser_preprocess(prs, &header);
 	in_clear(&header);
@@ -1288,6 +1300,7 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 					&& (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF))
 					|| (begin == KW_ELSE && keyword == KW_ENDIF) || (begin == KW_WHILE && keyword == KW_ENDW))
 				{
+					parse_extra(prs);
 					return keyword;
 				}
 
