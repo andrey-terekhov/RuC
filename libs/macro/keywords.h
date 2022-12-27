@@ -29,7 +29,7 @@ extern "C" {
 
 typedef enum KEYWORD
 {
-	// Standard Functions [RuC]
+	ERROR_KEYWORD,
 	BEGIN_KEYWORD,
 
 	KW_INCLUDE,					/**< '#include'	keyword	*/
@@ -55,6 +55,7 @@ typedef enum KEYWORD
 	KW_ENDW,					/**< '#endw'	keyword	*/
 
 	END_KEYWORD,
+	NON_KEYWORD,
 } keyword_t;
 
 

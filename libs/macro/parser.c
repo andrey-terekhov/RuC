@@ -707,14 +707,16 @@ static char32_t parse_hash(parser *const prs, universal_io *const out)
  *
  *	@param	prs			Parser structure
  *
- *	@return	Keyword token, @c SIZE_MAX on otherwise
+ *	@return	Recognized keyword token,
+ *			@c ERROR_KEYWORD on failure,
+ *			@c NON_KEYWORD on otherwise
  */
-static size_t parse_directive(parser *const prs)
+static keyword_t parse_directive(parser *const prs)
 {
 	universal_io out = io_create();
 	if (parse_hash(prs, &out) != '#')
 	{
-		return SIZE_MAX;
+		return NON_KEYWORD;
 	}
 
 	location loc = loc_copy(prs->loc);
@@ -758,7 +760,7 @@ static size_t parse_directive(parser *const prs)
 		}
 
 		free(buffer);
-		return SIZE_MAX;
+		return ERROR_KEYWORD;
 	}
 
 	out_clear(&out);
@@ -1241,14 +1243,14 @@ static void parse_undef(parser *const prs)
  *	@param	prs			Parser structure
  *	@param	begin		Begin token
  *
- *	@return	End token, @c SIZE_MAX on otherwise
+ *	@return	End token, @c NON_KEYWORD on otherwise
  */
-static size_t parse_block(parser *const prs, const size_t begin)
+static keyword_t parse_block(parser *const prs, const keyword_t begin)
 {
 	char32_t character = '\0';
 	while (character != (char32_t)EOF)
 	{
-		const size_t keyword = parse_directive(prs);
+		const keyword_t keyword = parse_directive(prs);
 		switch (keyword)
 		{
 			case KW_LINE:
@@ -1278,7 +1280,8 @@ static size_t parse_block(parser *const prs, const size_t begin)
 				skip_directive(prs);
 				break;
 
-			case SIZE_MAX:
+			case NON_KEYWORD:
+			case ERROR_KEYWORD:
 				character = parse_until(prs);
 				break;
 			default:
@@ -1297,7 +1300,7 @@ static size_t parse_block(parser *const prs, const size_t begin)
 		}
 	}
 
-	return SIZE_MAX;
+	return NON_KEYWORD;
 }
 
 
@@ -1353,7 +1356,7 @@ int parser_preprocess(parser *const prs, universal_io *const in)
 	location *loc = prs->loc;
 	prs->loc = &current;
 
-	parse_block(prs, SIZE_MAX);
+	parse_block(prs, NON_KEYWORD);
 
 	prs->io = io;
 	prs->loc = loc;
