@@ -667,12 +667,15 @@ static char32_t parse_until(parser *const prs)
 		}
 	}
 
-	if (character == (char32_t)EOF && prs->prev == NULL && in_get_position(prs->io) != position)
+	if (character != (char32_t)EOF)
+	{
+		loc_line_break(prs->loc);
+	}
+	else if (prs->prev == NULL && in_get_position(prs->io) != position)
 	{
 		uni_print_char(prs->io, '\n');
 	}
 
-	loc_line_break(prs->loc);
 	return character;
 }
 
@@ -706,7 +709,7 @@ static char32_t parse_hash(parser *const prs, universal_io *const out)
 			if (character != '#')
 			{
 				char *buffer = out_extract_buffer(out);
-				uni_printf(prs->io, "%s", buffer);
+				uni_printf(prs->io, "%s", character != (char32_t)EOF ? buffer : "");
 				free(buffer);
 			}
 
