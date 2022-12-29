@@ -564,7 +564,7 @@ static void parse_replacement(parser *const prs, const size_t index)
  *
  *	@param	prs			Parser structure
  */
-static void parce_identifier(parser *const prs)
+static void parse_identifier(parser *const prs)
 {
 	const size_t begin = in_get_position(prs->io);
 	const size_t index = storage_search(prs->stg, prs->io);
@@ -629,7 +629,7 @@ static char32_t parse_until(parser *const prs)
 
 		if (utf8_is_letter(character) && out_is_correct(prs->io))
 		{
-			parce_identifier(prs);
+			parse_identifier(prs);
 		}
 		else if (character == '#')
 		{
