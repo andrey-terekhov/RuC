@@ -815,8 +815,6 @@ static void parse_extra(parser *const prs)
 		loc_search_from(prs->loc);
 		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
 	}
-
-	skip_directive(prs);
 }
 
 /**
@@ -1138,8 +1136,6 @@ static void parse_context(parser *const prs, const size_t index)
 	const size_t args = parse_args(prs, index);
 	if (args != SIZE_MAX)
 	{
-		storage_set_args_by_index(origin, index, args);
-
 		if (skip_until(prs, false) == '#')
 		{
 			loc_search_from(prs->loc);
@@ -1163,6 +1159,7 @@ static void parse_context(parser *const prs, const size_t index)
 		char *value = parse_content(prs);
 		if (value != NULL)
 		{
+			storage_set_args_by_index(origin, index, args);
 			storage_set_by_index(origin, index, value);
 			free(value);
 
@@ -1186,14 +1183,14 @@ static void parse_define(parser *const prs)
 {
 	if (parse_name(prs))
 	{
-		loc_search_from(prs->loc);
 		const size_t position = in_get_position(prs->io);
 		size_t index = storage_add_by_io(prs->stg, prs->io);
 
 		if (index == SIZE_MAX)
 		{
-			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
 			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
 			index = storage_search(prs->stg, prs->io);
 		}
 
@@ -1212,14 +1209,14 @@ static void parse_set(parser *const prs)
 {
 	if (parse_name(prs))
 	{
-		loc_search_from(prs->loc);
 		const size_t position = in_get_position(prs->io);
 		size_t index = storage_search(prs->stg, prs->io);
 
 		if (index == SIZE_MAX)
 		{
-			parser_warning(prs, prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
 			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
 			index = storage_add_by_io(prs->stg, prs->io);
 		}
 
@@ -1301,6 +1298,7 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 					|| (begin == KW_ELSE && keyword == KW_ENDIF) || (begin == KW_WHILE && keyword == KW_ENDW))
 				{
 					parse_extra(prs);
+					skip_directive(prs);
 					return keyword;
 				}
 
