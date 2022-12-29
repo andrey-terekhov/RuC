@@ -338,6 +338,25 @@ static char32_t skip_lines(parser *const prs)
 	return character;
 }
 
+/**
+ *	Skip multiline directive block.
+ *	Produce a simplified masked output for @c #macro.
+ *	Stop when the end / else token has reached.
+ *	Line would be processed before exit.
+ *	Erase output, if error occurred.
+ *
+ *	@param	prs			Parser structure
+ *	@param	begin		Begin token
+ *
+ *	@return	End / else token, @c NON_KEYWORD on otherwise
+ */
+static keyword_t skip_block(parser *const prs, const keyword_t begin)
+{
+	(void)prs;
+	(void)begin;
+	return NON_KEYWORD;
+}
+
 
 /**
  *	Parse read value of macro argument.
@@ -1243,15 +1262,79 @@ static void parse_undef(parser *const prs)
 
 
 /**
+ *	Parse @c #macro directive.
+ *
+ *	@param	prs			Parser structure
+ */
+static void parse_macro(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
+	size_t index = SIZE_MAX;
+	if (parse_name(prs))
+	{
+		const size_t position = in_get_position(prs->io);
+		size_t index = storage_add_by_io(prs->stg, prs->io);
+
+		if (index == SIZE_MAX)
+		{
+			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			index = storage_search(prs->stg, prs->io);
+		}
+	}
+
+	storage *origin = prs->stg;
+	storage stg = storage_create();
+	prs->stg = &stg;
+
+	skip_until(prs, false);
+	const size_t args = index != SIZE_MAX ? parse_args(prs, index) : SIZE_MAX;
+	universal_io out = io_create();
+	if (args != SIZE_MAX)
+	{
+		out_set_buffer(&out, MAX_VALUE_SIZE);
+		parse_extra(prs);
+	}
+
+	skip_directive(prs);
+	out_swap(prs->io, &out);
+	if (skip_block(prs, KW_MACRO) != KW_ENDM)
+	{
+		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+	}
+
+	out_swap(prs->io, &out);
+	storage_clear(&stg);
+	prs->stg = origin;
+
+	char *value = out_extract_buffer(&out);
+	if (value != NULL)
+	{
+		storage_set_args_by_index(prs->stg, index, args);
+		storage_set_by_index(prs->stg, index, value);
+		free(value);
+	}
+	else
+	{
+		storage_remove_by_index(prs->stg, index);
+	}
+}
+
+
+/**
  *	Parse multiline directive block.
- *	Stop at the end token if a begin was set.
+ *	Stop at the end / else token if a begin was set.
  *	By default parse until EOF.
  *	Available begin tokens - @c #if @c #elif @c #else @c #while
  *
  *	@param	prs			Parser structure
  *	@param	begin		Begin token
  *
- *	@return	End token, @c NON_KEYWORD on otherwise
+ *	@return	End / else token, @c NON_KEYWORD on otherwise
  */
 static keyword_t parse_block(parser *const prs, const keyword_t begin)
 {
@@ -1279,6 +1362,8 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				break;
 
 			case KW_MACRO:
+				parse_macro(prs);
+				break;
 			case KW_IFDEF:
 			case KW_IFNDEF:
 
