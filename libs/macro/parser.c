@@ -1329,6 +1329,34 @@ static void parse_macro(parser *const prs)
 
 
 /**
+ *	Parse the next read token and check its corresponding the begin one.
+ *	Emit an error for an invalid token.
+ *
+ *	@param	prs			Parser structure
+ *	@param	begin		Begin token
+ *	@param	next		End / else token
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next)
+{
+	if (((begin == KW_IFDEF || begin == KW_IFNDEF || begin == KW_IF || begin == KW_ELIF)
+		&& (next == KW_ELIF || next == KW_ELSE || next == KW_ENDIF))
+		|| (begin == KW_ELSE && next == KW_ENDIF) || (begin == KW_WHILE && next == KW_ENDW))
+	{
+		parse_extra(prs);
+		skip_directive(prs);
+		return true;
+	}
+
+	location loc = parse_location(prs);
+	parser_error(prs, &loc, begin == KW_ELSE && (next == KW_ELIF || next == KW_ELSE)
+		? DIRECTIVE_AFTER : DIRECTIVE_WITHOUT, storage_last_read(prs->stg));
+	skip_directive(prs);
+	return false;
+}
+
+/**
  *	Parse multiline directive block.
  *	Stop at the end / else token if a begin was set.
  *	By default parse until EOF.
@@ -1381,19 +1409,10 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				character = parse_until(prs);
 				break;
 			default:
-				if (((begin == KW_IFDEF || begin == KW_IFNDEF || begin == KW_IF || begin == KW_ELIF)
-					&& (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF))
-					|| (begin == KW_ELSE && keyword == KW_ENDIF) || (begin == KW_WHILE && keyword == KW_ENDW))
+				if (parse_next(prs, begin, keyword))
 				{
-					parse_extra(prs);
-					skip_directive(prs);
 					return keyword;
 				}
-
-				location loc = parse_location(prs);
-				parser_error(prs, &loc, begin == KW_ELSE && (keyword == KW_ELIF || keyword == KW_ELSE)
-					? DIRECTIVE_AFTER : DIRECTIVE_WITHOUT, storage_last_read(prs->stg));
-				skip_directive(prs);
 				break;
 		}
 	}
