@@ -939,7 +939,7 @@ static bool parse_name(parser *const prs)
 		return true;
 	}
 
-	if (character == '\n')
+	if (character == '\n' || character == (char32_t)EOF)
 	{
 		parser_error(prs, &loc, DIRECTIVE_NAME_NON, storage_last_read(prs->stg));
 	}
@@ -1040,7 +1040,7 @@ static bool parse_operator(parser *const prs, const bool was_space)
 	if (character == '#')
 	{
 		character = skip_until(prs, false);
-		if (character == '\n')
+		if (character == '\n' || character == (char32_t)EOF)
 		{
 			parser_error(prs, &loc, HASH_ON_EDGE);
 			return false;
@@ -1058,7 +1058,7 @@ static bool parse_operator(parser *const prs, const bool was_space)
 	}
 
 	uni_unscan_char(prs->io, character);
-	character = skip_until(prs, false);
+	skip_until(prs, false);
 
 	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
 	if (value == NULL)
