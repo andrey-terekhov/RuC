@@ -17,7 +17,6 @@
 #pragma once
 
 #include "syntax.h"
-#include "uniio.h"
 #include "workspace.h"
 
 
@@ -28,8 +27,8 @@ extern "C" {
 /**
  *	Encode to virtual machine codes
  *
- *	@param	ws		Compiler workspace
- *	@param	sx		Syntax structure
+ *	@param	ws				Compiler workspace
+ *	@param	sx				Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
