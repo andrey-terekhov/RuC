@@ -1,5 +1,5 @@
 /*
- *	Copyright 2019 Andrey Terekhov, Victor Y. Fadeev
+ *	Copyright 2021 Andrey Terekhov, Ivan S. Arkhipov
  *
  *	Licensed under the Apache License, Version 2.0 (the "License");
  *	you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@ extern "C" {
 #endif
 
 /**
- *	Encode to virtual machine codes
+ *	Encode to mips codes
  *
  *	@param	ws				Compiler workspace
  *	@param	sx				Syntax structure
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int encode_to_vm(const workspace *const ws, syntax *const sx);
+int encode_to_mips(const workspace *const ws, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
