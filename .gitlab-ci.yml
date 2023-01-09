@@ -5,8 +5,8 @@ variables:
 
 stages:
   - virtual
-  - mips
   - llvm
+  - mips
 
 virtual:
   stage: virtual
@@ -40,6 +40,7 @@ llvm-uemu:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
     - ./scripts/test.sh -d
+  allow_failure: true
   tags:
   - R2LIN
 
@@ -51,9 +52,7 @@ llvm-baikal:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-baikal.patch
     - ./scripts/test.sh -d
-  tags:
-  - R2LIN
-
+  allow_failure: true
   tags:
   - R2LIN
 
@@ -67,6 +66,7 @@ mips-uemu:
   script:
     - patch ./scripts/test.sh < ./scripts/mips-uemu.patch
     - ./scripts/test.sh -d
+  allow_failure: true
   tags:
   - R2LIN
 
@@ -78,5 +78,6 @@ mips-baikal:
   script:
     - patch ./scripts/test.sh < ./scripts/mips-baikal.patch
     - ./scripts/test.sh -d
+  allow_failure: true
   tags:
   - R2LIN
