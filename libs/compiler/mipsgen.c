@@ -425,7 +425,7 @@ static void lock_register(encoder *const enc, const mips_register_t reg)
 static mips_register_t get_register(encoder *const enc)
 {
 	// Ищем первый свободный регистр
-	mips_register_t i = 0;
+	size_t i = 0;
 	while ((i < TEMP_REG_AMOUNT) && (enc->registers[i]))
 	{
 		i++;
@@ -449,7 +449,7 @@ static mips_register_t get_register(encoder *const enc)
 static mips_register_t get_float_register(encoder *const enc)
 {
 	// Ищем первый свободный регистр
-	mips_register_t i = TEMP_REG_AMOUNT;
+	size_t i = TEMP_REG_AMOUNT;
 	while ((i < TEMP_FP_REG_AMOUNT + TEMP_REG_AMOUNT) && (enc->registers[i]))
 	{
 		i += 2; /* т.к. операции с одинарной точностью */
@@ -1148,7 +1148,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier
 static lvalue displacements_get(encoder *const enc, const size_t identifier)
 {
 	const bool is_register = (hash_get(&enc->displacements, identifier, 0) == 1);
-	const size_t displacement = hash_get(&enc->displacements, identifier, 1);
+	const size_t displacement = (size_t)hash_get(&enc->displacements, identifier, 1);
 	const mips_register_t base_reg = hash_get(&enc->displacements, identifier, 2);
 	const item_t type = ident_get_type(enc->sx, identifier);
 
@@ -1479,7 +1479,7 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 	else
 	{
 		const lvalue base_lvalue = emit_lvalue(enc, &base);
-		const size_t displ = base_lvalue.loc.displ + member_displ;
+		const size_t displ = (size_t)(base_lvalue.loc.displ + member_displ);
 		return (lvalue) {
 			.kind = LVALUE_KIND_STACK,
 			.base_reg = base_lvalue.base_reg,
@@ -1688,7 +1688,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_NE:
 			{
 				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_END, .num = curr_label_num };
+				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
@@ -1749,7 +1749,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_NE:
 			{
 				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_ELSE, .num = curr_label_num };
+				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
 
 				// Загружаем <значение из second_operand> на регистр
 				const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
@@ -2475,7 +2475,7 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			// Случай константы нужно сделать в билдере, на данный момент отсутствует
 
 			const item_t curr_label_num = enc->label_num++;
-			const label label_end = { .kind = L_END, .num = curr_label_num };
+			const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
 			const mips_instruction_t instruction = (operator == BIN_LOG_OR) ? IC_MIPS_BNE : IC_MIPS_BEQ;
 			emit_conditional_branch(enc, instruction, &lhs_rvalue, &label_end);
@@ -3460,7 +3460,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 
 	if (default_index != -1)
 	{
-		const label label_default = { .kind = L_CASE, .num = default_index };
+		const label label_default = { .kind = L_CASE, .num = (size_t)default_index };
 		emit_unconditional_branch(enc, IC_MIPS_J, &label_default);
 	}
 	else
@@ -3826,7 +3826,7 @@ static void strings_declaration(encoder *const enc)
 				uni_printf(enc->sx->io, "%c", string[j]);
 
 				uni_printf(enc->sx->io, "\\0\"\n");
-				const label another_str_label = { .kind = L_STRING, .num = i + args_for_printf * amount };
+				const label another_str_label = { .kind = L_STRING, .num = (size_t)(i + args_for_printf * amount) };
 				emit_label_declaration(enc, &another_str_label);
 				uni_printf(enc->sx->io, "\t.ascii \"");
 			}
