@@ -1197,7 +1197,7 @@ static void emit_label(encoder *const enc, const label *const lbl)
 			break;
 	}
 
-	uni_printf(io, "%" PRIitem, lbl->num);
+	uni_printf(io, "%zu", lbl->num);
 }
 
 /**
@@ -2807,7 +2807,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
 	rvalue_to_io(enc, &bound_rvalue);
-	uni_printf(enc->sx->io, ", %" PRIitem "\n", (-1)*amount);
+	uni_printf(enc->sx->io, ", %" PRIitem "\n", -(item_t)amount);
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, IC_MIPS_BNE);
@@ -2855,7 +2855,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 			};
 			emit_store_of_rvalue(enc, &array_index_value, &subexpr_value);
 			lock_register(enc, addr->val.reg_num);
-			if (i != amount-1)
+			if (i != amount - 1)
 			{
 				to_code_2R_I(
 					enc->sx->io,
