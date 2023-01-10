@@ -220,7 +220,7 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"fputc", U"фписать_символ", type_function(sx, TYPE_INTEGER, "iP"));
 	builtin_add(sx, U"fclose", U"фзакрыть", type_function(sx, TYPE_INTEGER, "P"));
 	builtin_add(sx, U"exit", U"выход", type_function(sx, TYPE_VOID, "i"));
-	
+
 	builtin_add(sx, U"printf", U"печатьф", type_function(sx, TYPE_INTEGER, "s."));
 	builtin_add(sx, U"print", U"печать", type_function(sx, TYPE_VOID, "."));
 	builtin_add(sx, U"printid", U"печатьид", type_function(sx, TYPE_VOID, "."));
@@ -858,8 +858,9 @@ scope scope_block_enter(syntax *const sx)
 		return (scope){ ITEM_MAX, ITEM_MAX };
 	}
 
+	size_t prev_cur_id = sx->cur_id;
 	sx->cur_id = vector_size(&sx->identifiers);
-	return (scope){ sx->displ, sx->lg };
+	return (scope){ sx->displ, sx->lg, prev_cur_id };
 }
 
 int scope_block_exit(syntax *const sx, const scope scp)
@@ -877,6 +878,7 @@ int scope_block_exit(syntax *const sx, const scope scp)
 
 	sx->displ = scp.displ;
 	sx->lg = scp.lg;
+	sx->cur_id = scp.cur_id;
 	return 0;
 }
 
