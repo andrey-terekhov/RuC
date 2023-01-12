@@ -43,6 +43,8 @@ static const size_t MAX_PATH_SIZE = 1024;
 
 
 static char32_t parse_until(parser *const prs);
+static keyword_t parse_directive(parser *const prs);
+static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
 
 
 /**
@@ -352,8 +354,89 @@ static char32_t skip_lines(parser *const prs)
  */
 static keyword_t skip_block(parser *const prs, const keyword_t begin)
 {
-	(void)prs;
-	(void)begin;
+	char32_t character = '\0';
+	while (character != (char32_t)EOF)
+	{
+		const bool is_recovery_disabled = prs->is_recovery_disabled;
+		const bool was_error = prs->was_error;
+		prs->is_recovery_disabled = true;
+		prs->was_error = true;
+
+		universal_io out = io_create();
+		out_swap(prs->io, &out);
+		const keyword_t keyword = parse_directive(prs);
+		out_swap(prs->io, &out);
+
+		prs->is_recovery_disabled = is_recovery_disabled;
+		prs->was_error = was_error;
+
+		if (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
+			|| keyword == KW_ENDW || keyword == KW_ENDM)
+		{
+			if (!parse_next(prs, begin, keyword))
+			{
+				out_clear(prs->io);
+				continue;
+			}
+
+			return keyword;
+		}
+
+		if (keyword == KW_LINE)
+		{
+			skip_directive(prs);
+			continue;
+		}
+
+		if (keyword != NON_KEYWORD)
+		{
+			uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+		}
+
+		size_t position = in_get_position(prs->io);
+		character = skip_until(prs, false);
+		while (character != '\n' && character != (char32_t)EOF)
+		{
+			uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
+			if (utf8_is_letter(character))
+			{
+				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+				if (value != NULL)
+				{
+					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
+				}
+				else
+				{
+					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+				}
+			}
+			else if (character == '\'' || character == '"' || (character == '<' && keyword == KW_INCLUDE))
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+				character = character == '<' ? '>' : character;
+				if (skip_string(prs, character) != character)
+				{
+					out_clear(prs->io);
+				}
+				uni_print_char(prs->io, character);
+			}
+			else
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+			}
+
+			position = in_get_position(prs->io);
+			character = skip_until(prs, false);
+		}
+
+		if (character == '\n')
+		{
+			loc_line_break(prs->loc);
+			uni_print_char(prs->io, '\n');
+		}
+	}
+
+	out_clear(prs->io);
 	return NON_KEYWORD;
 }
 
@@ -829,13 +912,14 @@ static void parse_line(parser *const prs)
  *	Emit a warning, if occurred.
  *
  *	@param	prs			Parser structure
+ *	@param	directive	Directive name
  */
-static void parse_extra(parser *const prs)
+static void parse_extra(parser *const prs, const char *const directive)
 {
 	if (skip_until(prs, false) != '\n')
 	{
 		loc_search_from(prs->loc);
-		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, storage_last_read(prs->stg));
+		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, directive);
 	}
 }
 
@@ -876,7 +960,7 @@ static void parse_path(parser *const prs, const char32_t quote)
 		return;
 	}
 
-	parse_extra(prs);
+	parse_extra(prs, storage_last_read(prs->stg));
 	universal_io header = linker_add_header(prs->lk, index);
 	parser_preprocess(prs, &header);
 	in_clear(&header);
@@ -1279,7 +1363,7 @@ static void parse_macro(parser *const prs)
 	if (parse_name(prs))
 	{
 		const size_t position = in_get_position(prs->io);
-		size_t index = storage_add_by_io(prs->stg, prs->io);
+		index = storage_add_by_io(prs->stg, prs->io);
 
 		if (index == SIZE_MAX)
 		{
@@ -1300,7 +1384,7 @@ static void parse_macro(parser *const prs)
 	if (args != SIZE_MAX)
 	{
 		out_set_buffer(&out, MAX_VALUE_SIZE);
-		parse_extra(prs);
+		parse_extra(prs, directive);
 	}
 
 	skip_directive(prs);
@@ -1341,10 +1425,10 @@ static void parse_macro(parser *const prs)
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next)
 {
 	if (((begin == KW_IFDEF || begin == KW_IFNDEF || begin == KW_IF || begin == KW_ELIF)
-		&& (next == KW_ELIF || next == KW_ELSE || next == KW_ENDIF))
-		|| (begin == KW_ELSE && next == KW_ENDIF) || (begin == KW_WHILE && next == KW_ENDW))
+		&& (next == KW_ELIF || next == KW_ELSE || next == KW_ENDIF)) || (begin == KW_ELSE && next == KW_ENDIF)
+		|| (begin == KW_WHILE && next == KW_ENDW) || (begin == KW_MACRO && next == KW_ENDM))
 	{
-		parse_extra(prs);
+		parse_extra(prs, storage_last_read(prs->stg));
 		skip_directive(prs);
 		return true;
 	}
