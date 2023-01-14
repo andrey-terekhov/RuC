@@ -466,7 +466,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 		out_swap(prs->io, &out);
 		char directive[MAX_KEYWORD_SIZE];
 		const keyword_t keyword = parse_directive(prs);
-		sprintf(directive, "%s", storage_last_read(prs->stg));
+		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
 		out_swap(prs->io, &out);
 
 		if (!prs->is_macro_processed)
@@ -488,7 +488,8 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			return keyword;
 		}
 
-		character = prs->is_macro_processed ? skip_macro(prs, keyword) : skip_directive(prs);
+		character = prs->is_macro_processed && keyword != ERROR_KEYWORD
+			? skip_macro(prs, keyword) : skip_directive(prs);
 	}
 
 	out_clear(prs->io);
