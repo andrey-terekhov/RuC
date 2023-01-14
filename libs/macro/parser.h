@@ -42,6 +42,7 @@ typedef struct parser
 
 	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
 	bool is_line_required;			/**< Set, if position directive required */
+	bool is_macro_processed;		/**< Set, if macro block processed */
 	bool was_error;					/**< Set, if error message occurred */
 } parser;
 

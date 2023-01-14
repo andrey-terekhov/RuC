@@ -44,9 +44,10 @@ static const size_t MAX_PATH_SIZE = 1024;
 
 static char32_t parse_until(parser *const prs);
 static keyword_t parse_directive(parser *const prs);
+static location parse_location(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
 static bool parse_name(parser *const prs);
-static void parse_line(parser *const prs);
+static char32_t parse_line(parser *const prs);
 
 
 /**
@@ -345,6 +346,17 @@ static char32_t skip_lines(parser *const prs)
 	return character;
 }
 
+/**
+ *	Skip @c #macro directive content line.
+ *	Emit an error on no identifier or no expression.
+ *	Produce a masked output for args.
+ *	Erase output, if error occurred.
+ *
+ *	@param	prs			Parser structure
+ *	@param	keyword		Recognized directive
+ *
+ *	@return	Last read character
+ */
 static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 {
 	if (keyword == KW_LINE)
@@ -360,43 +372,22 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 	}
 
 	location loc = parse_location(prs);
+	size_t position = in_get_position(prs->io);
 	char32_t character = skip_until(prs, false);
-	if ((keyword == KW_IF || keyword == KW_WHILE || keyword == KW_EVAL)
+	if ((keyword == KW_INCLUDE || keyword == KW_IF || keyword == KW_WHILE || keyword == KW_EVAL)
 		&& (character == '\n' || character == (char32_t)EOF))
 	{
-		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
 		out_clear(prs->io);
+		parser_error(prs, &loc, keyword == KW_INCLUDE ? INCLUDE_EXPECTS_FILENAME
+			: DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
 		return skip_directive(prs);
 	}
 
 	if (keyword != NON_KEYWORD)
 	{
-		uni_printf(prs->io, "%s ", storage_last_read(prs->stg));
+		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 	}
 
-	if (keyword == KW_INCLUDE)
-	{
-		uni_print_char(prs->io, uni_scan_char(prs->io));
-		character = character == '<' ? '>' : character;
-		if (character != '"' && character != '>')
-		{
-			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
-			out_clear(prs->io);
-			return skip_directive(prs);
-		}
-
-		if (skip_string(prs, character) == character)
-		{
-			uni_print_char(prs->io, character);
-			parse_extra(prs, storage_last_read(prs->stg));
-			return skip_directive(prs);
-		}
-
-		out_clear(prs->io);
-		return skip_directive(prs);
-	}
-
-	size_t position = in_get_position(prs->io);
 	while (character != '\n' && character != (char32_t)EOF)
 	{
 		uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
@@ -419,8 +410,17 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 			if (skip_string(prs, character) != character)
 			{
 				out_clear(prs->io);
+				return skip_directive(prs);
 			}
 			uni_print_char(prs->io, character);
+		}
+		else if (character == '#' && keyword != KW_DEFINE && keyword != KW_SET
+			&& keyword != KW_IF && keyword != KW_WHILE && keyword != KW_EVAL)
+		{
+			out_clear(prs->io);
+			loc_search_from(prs->loc);
+			parser_error(prs, prs->loc, HASH_STRAY);
+			return skip_directive(prs);
 		}
 		else
 		{
@@ -431,11 +431,7 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		character = skip_until(prs, false);
 	}
 
-	if (character == '\n')
-	{
-		loc_line_break(prs->loc);
-		// uni_print_char(prs->io, '\n');
-	}
+	return skip_directive(prs);
 }
 
 /**
@@ -452,21 +448,32 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
  */
 static keyword_t skip_block(parser *const prs, const keyword_t begin)
 {
+	universal_io out = io_create();
+	const bool was_error = prs->was_error;
+	const bool is_recovery_disabled = prs->is_recovery_disabled;
+	const bool is_root_macro = begin == KW_MACRO && !prs->is_macro_processed;
+	prs->is_macro_processed = is_root_macro ? true : prs->is_macro_processed;
+
 	char32_t character = '\0';
 	while (character != (char32_t)EOF)
 	{
-		const bool is_recovery_disabled = prs->is_recovery_disabled;
-		const bool was_error = prs->was_error;
-		prs->is_recovery_disabled = true;
-		prs->was_error = true;
+		if (!prs->is_macro_processed)
+		{
+			prs->is_recovery_disabled = true;
+			prs->was_error = true;
+		}
 
-		universal_io out = io_create();
 		out_swap(prs->io, &out);
+		char directive[MAX_KEYWORD_SIZE];
 		const keyword_t keyword = parse_directive(prs);
+		sprintf(directive, "%s", storage_last_read(prs->stg));
 		out_swap(prs->io, &out);
 
-		prs->is_recovery_disabled = is_recovery_disabled;
-		prs->was_error = was_error;
+		if (!prs->is_macro_processed)
+		{
+			prs->is_recovery_disabled = is_recovery_disabled;
+			prs->was_error = was_error;
+		}
 
 		if (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
 			|| keyword == KW_ENDW || keyword == KW_ENDM)
@@ -477,67 +484,15 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 				continue;
 			}
 
+			prs->is_macro_processed = is_root_macro ? false : prs->is_macro_processed;
 			return keyword;
 		}
 
-		if (keyword == KW_LINE)
-		{
-			skip_directive(prs);
-			continue;
-		}
-
-		char directive[MAX_KEYWORD_SIZE];
-		if (keyword != NON_KEYWORD)
-		{
-			sprintf(directive, "%s", storage_last_read(prs->stg));
-			uni_printf(prs->io, "%s", directive);
-		}
-
-		size_t position = in_get_position(prs->io);
-		character = skip_until(prs, false);
-		while (character != '\n' && character != (char32_t)EOF)
-		{
-			uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
-			if (utf8_is_letter(character))
-			{
-				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-				if (value != NULL)
-				{
-					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
-				}
-				else
-				{
-					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
-				}
-			}
-			else if (character == '\'' || character == '"' || (character == '<' && keyword == KW_INCLUDE))
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-				character = character == '<' ? '>' : character;
-				if (skip_string(prs, character) != character)
-				{
-					out_clear(prs->io);
-				}
-				uni_print_char(prs->io, character);
-			}
-			else
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-			}
-
-			position = in_get_position(prs->io);
-			character = skip_until(prs, false);
-		}
-
-		if (character == '\n')
-		{
-			loc_line_break(prs->loc);
-			uni_print_char(prs->io, '\n');
-		}
-
+		character = prs->is_macro_processed ? skip_macro(prs, keyword) : skip_directive(prs);
 	}
 
 	out_clear(prs->io);
+	prs->is_macro_processed = is_root_macro ? false : prs->is_macro_processed;
 	return NON_KEYWORD;
 }
 
@@ -1645,6 +1600,7 @@ parser parser_create(linker *const lk, storage *const stg, universal_io *const o
 
 	prs.is_recovery_disabled = false;
 	prs.is_line_required = false;
+	prs.is_macro_processed = false;
 	prs.was_error = false;
 
 	return prs;
