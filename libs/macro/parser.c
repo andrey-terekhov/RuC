@@ -45,6 +45,8 @@ static const size_t MAX_PATH_SIZE = 1024;
 static char32_t parse_until(parser *const prs);
 static keyword_t parse_directive(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
+static bool parse_name(parser *const prs);
+static void parse_line(parser *const prs);
 
 
 /**
@@ -229,8 +231,10 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
  *	Set @c #line directive requirement flag.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void skip_directive(parser *const prs)
+static char32_t skip_directive(parser *const prs)
 {
 	const bool is_recovery_disabled = prs->is_recovery_disabled;
 	const bool was_error = prs->was_error;
@@ -239,12 +243,13 @@ static void skip_directive(parser *const prs)
 
 	universal_io out = io_create();
 	out_swap(prs->io, &out);
-	parse_until(prs);
+	char32_t character = parse_until(prs);
 	out_swap(prs->io, &out);
 
 	prs->was_error = was_error;
 	prs->is_recovery_disabled = is_recovery_disabled;
 	prs->is_line_required = true;
+	return character;
 }
 
 /**
@@ -340,6 +345,99 @@ static char32_t skip_lines(parser *const prs)
 	return character;
 }
 
+static char32_t skip_macro(parser *const prs, const keyword_t keyword)
+{
+	if (keyword == KW_LINE)
+	{
+		return parse_line(prs);
+	}
+
+	if ((keyword == KW_MACRO || keyword == KW_DEFINE || keyword == KW_SET || keyword == KW_UNDEF
+		|| keyword == KW_IFDEF || keyword == KW_IFNDEF) && !parse_name(prs))
+	{
+		out_clear(prs->io);
+		return skip_directive(prs);
+	}
+
+	location loc = parse_location(prs);
+	char32_t character = skip_until(prs, false);
+	if ((keyword == KW_IF || keyword == KW_WHILE || keyword == KW_EVAL)
+		&& (character == '\n' || character == (char32_t)EOF))
+	{
+		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
+		out_clear(prs->io);
+		return skip_directive(prs);
+	}
+
+	if (keyword != NON_KEYWORD)
+	{
+		uni_printf(prs->io, "%s ", storage_last_read(prs->stg));
+	}
+
+	if (keyword == KW_INCLUDE)
+	{
+		uni_print_char(prs->io, uni_scan_char(prs->io));
+		character = character == '<' ? '>' : character;
+		if (character != '"' && character != '>')
+		{
+			parser_error(prs, &loc, INCLUDE_EXPECTS_FILENAME, storage_last_read(prs->stg));
+			out_clear(prs->io);
+			return skip_directive(prs);
+		}
+
+		if (skip_string(prs, character) == character)
+		{
+			uni_print_char(prs->io, character);
+			parse_extra(prs, storage_last_read(prs->stg));
+			return skip_directive(prs);
+		}
+
+		out_clear(prs->io);
+		return skip_directive(prs);
+	}
+
+	size_t position = in_get_position(prs->io);
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
+		if (utf8_is_letter(character))
+		{
+			const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+			if (value != NULL)
+			{
+				uni_printf(prs->io, MASK_ARGUMENT "%s", value);
+			}
+			else
+			{
+				uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+			}
+		}
+		else if (character == '\'' || character == '"' || (character == '<' && keyword == KW_INCLUDE))
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+			character = character == '<' ? '>' : character;
+			if (skip_string(prs, character) != character)
+			{
+				out_clear(prs->io);
+			}
+			uni_print_char(prs->io, character);
+		}
+		else
+		{
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+		}
+
+		position = in_get_position(prs->io);
+		character = skip_until(prs, false);
+	}
+
+	if (character == '\n')
+	{
+		loc_line_break(prs->loc);
+		// uni_print_char(prs->io, '\n');
+	}
+}
+
 /**
  *	Skip multiline directive block.
  *	Produce a simplified masked output for @c #macro.
@@ -388,9 +486,11 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			continue;
 		}
 
+		char directive[MAX_KEYWORD_SIZE];
 		if (keyword != NON_KEYWORD)
 		{
-			uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+			sprintf(directive, "%s", storage_last_read(prs->stg));
+			uni_printf(prs->io, "%s", directive);
 		}
 
 		size_t position = in_get_position(prs->io);
@@ -434,6 +534,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			loc_line_break(prs->loc);
 			uni_print_char(prs->io, '\n');
 		}
+
 	}
 
 	out_clear(prs->io);
@@ -899,12 +1000,14 @@ static location parse_location(parser *const prs)
  *	Parse @c #line directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_line(parser *const prs)
+static char32_t parse_line(parser *const prs)
 {
 	parse_location(prs);
 	parser_warning(prs, prs->loc, DIRECTIVE_LINE_SKIPED);
-	skip_directive(prs);
+	return skip_directive(prs);
 }
 
 /**
@@ -970,15 +1073,16 @@ static void parse_path(parser *const prs, const char32_t quote)
  *	Parse @c #include directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_include(parser *const prs)
+static char32_t parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
 	if (prs->include >= MAX_INCLUDE_DEPTH)
 	{
 		parser_error(prs, &loc, INCLUDE_DEPTH);
-		skip_directive(prs);
-		return;
+		return skip_directive(prs);
 	}
 
 	prs->include++;
@@ -1001,7 +1105,7 @@ static void parse_include(parser *const prs)
 	}
 
 	prs->include--;
-	skip_directive(prs);
+	return skip_directive(prs);
 }
 
 
@@ -1284,8 +1388,10 @@ static void parse_context(parser *const prs, const size_t index)
  *	Parse @c #define directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_define(parser *const prs)
+static char32_t parse_define(parser *const prs)
 {
 	if (parse_name(prs))
 	{
@@ -1303,15 +1409,17 @@ static void parse_define(parser *const prs)
 		parse_context(prs, index);
 	}
 
-	skip_directive(prs);
+	return skip_directive(prs);
 }
 
 /**
  *	Parse @c #set directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_set(parser *const prs)
+static char32_t parse_set(parser *const prs)
 {
 	if (parse_name(prs))
 	{
@@ -1329,22 +1437,24 @@ static void parse_set(parser *const prs)
 		parse_context(prs, index);
 	}
 
-	skip_directive(prs);
+	return skip_directive(prs);
 }
 
 /**
  *	Parse @c #undef directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_undef(parser *const prs)
+static char32_t parse_undef(parser *const prs)
 {
 	if (parse_name(prs))
 	{
 		storage_remove_by_index(prs->stg, storage_search(prs->stg, prs->io));
 	}
 
-	skip_directive(prs);
+	return skip_directive(prs);
 }
 
 
@@ -1460,20 +1570,20 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 		switch (keyword)
 		{
 			case KW_LINE:
-				parse_line(prs);
+				character = parse_line(prs);
 				break;
 			case KW_INCLUDE:
-				parse_include(prs);
+				character = parse_include(prs);
 				break;
 
 			case KW_DEFINE:
-				parse_define(prs);
+				character = parse_define(prs);
 				break;
 			case KW_SET:
-				parse_set(prs);
+				character = parse_set(prs);
 				break;
 			case KW_UNDEF:
-				parse_undef(prs);
+				character = parse_undef(prs);
 				break;
 
 			case KW_MACRO:
@@ -1485,7 +1595,7 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 			case KW_IF:
 			case KW_WHILE:
 			case KW_EVAL:
-				skip_directive(prs);
+				character = skip_directive(prs);
 				break;
 
 			case NON_KEYWORD:
