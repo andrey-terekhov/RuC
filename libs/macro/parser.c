@@ -364,22 +364,22 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		return parse_line(prs);
 	}
 
-	if ((keyword == KW_MACRO || keyword == KW_DEFINE || keyword == KW_SET || keyword == KW_UNDEF
-		|| keyword == KW_IFDEF || keyword == KW_IFNDEF) && !parse_name(prs))
-	{
-		out_clear(prs->io);
-		return skip_directive(prs);
-	}
-
 	location loc = parse_location(prs);
 	size_t position = in_get_position(prs->io);
 	char32_t character = skip_until(prs, false);
-	if ((keyword == KW_INCLUDE || keyword == KW_IF || keyword == KW_WHILE || keyword == KW_EVAL)
-		&& (character == '\n' || character == (char32_t)EOF))
+	if ((character == '\n' || character == (char32_t)EOF) && (keyword == KW_INCLUDE
+		|| keyword == KW_IF || keyword == KW_ELIF || keyword == KW_WHILE || keyword == KW_EVAL))
 	{
 		out_clear(prs->io);
 		parser_error(prs, &loc, keyword == KW_INCLUDE ? INCLUDE_EXPECTS_FILENAME
 			: DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
+		return skip_directive(prs);
+	}
+
+	if ((keyword == KW_MACRO || keyword == KW_DEFINE || keyword == KW_SET || keyword == KW_UNDEF
+		|| keyword == KW_IFDEF || keyword == KW_IFNDEF) && !parse_name(prs))
+	{
+		out_clear(prs->io);
 		return skip_directive(prs);
 	}
 
@@ -390,7 +390,7 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 
 	while (character != '\n' && character != (char32_t)EOF)
 	{
-		uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
+		uni_printf(prs->io, "%s", in_get_position(prs->io) != position ? " " : "");
 		if (utf8_is_letter(character))
 		{
 			const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
@@ -415,7 +415,7 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 			uni_print_char(prs->io, character);
 		}
 		else if (character == '#' && keyword != KW_DEFINE && keyword != KW_SET
-			&& keyword != KW_IF && keyword != KW_WHILE && keyword != KW_EVAL)
+			&& keyword != KW_IF && keyword != KW_ELIF && keyword != KW_WHILE && keyword != KW_EVAL)
 		{
 			out_clear(prs->io);
 			loc_search_from(prs->loc);
@@ -488,6 +488,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			return keyword;
 		}
 
+		uni_printf(prs->io, "%s", character != '\0' ? "\n" : "");
 		character = prs->is_macro_processed && keyword != ERROR_KEYWORD
 			? skip_macro(prs, keyword) : skip_directive(prs);
 	}
@@ -1247,7 +1248,7 @@ static char *parse_content(parser *const prs)
 		}
 		else
 		{
-			uni_print_char(prs->io, in_get_position(prs->io) == position ? (char32_t)EOF : ' ');
+			uni_printf(prs->io, "%s", in_get_position(prs->io) != position ? " " : "");
 			if (utf8_is_letter(character))
 			{
 				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
