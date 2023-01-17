@@ -364,6 +364,12 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		return parse_line(prs);
 	}
 
+	if (keyword == ERROR_KEYWORD)
+	{
+		out_clear(prs->io);
+		return skip_directive(prs);
+	}
+
 	location loc = parse_location(prs);
 	size_t position = in_get_position(prs->io);
 	char32_t character = skip_until(prs, false);
@@ -464,9 +470,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 		}
 
 		out_swap(prs->io, &out);
-		char directive[MAX_KEYWORD_SIZE];
-		const keyword_t keyword = parse_directive(prs);
-		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
+		keyword_t keyword = parse_directive(prs);
 		out_swap(prs->io, &out);
 
 		if (!prs->is_macro_processed)
@@ -475,22 +479,38 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			prs->was_error = was_error;
 		}
 
-		if (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
-			|| keyword == KW_ENDW || keyword == KW_ENDM)
-		{
-			if (!parse_next(prs, begin, keyword))
-			{
-				out_clear(prs->io);
-				continue;
-			}
+		location loc = parse_location(prs);
+		char directive[MAX_KEYWORD_SIZE];
+		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
+		const bool is_end_block = keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
+			|| keyword == KW_ENDW || keyword == KW_ENDM;
+		keyword = is_end_block && !parse_next(prs, begin, keyword) ? ERROR_KEYWORD : keyword;
 
+		uni_printf(prs->io, "%s", is_root_macro && (keyword == KW_ENDM || character == '\0') ? "" : "\n");
+		character = (is_root_macro && keyword == KW_ENDM) || !prs->is_macro_processed
+			? skip_directive(prs) : skip_macro(prs, keyword);
+
+		if (is_end_block && keyword != ERROR_KEYWORD)
+		{
 			prs->is_macro_processed = is_root_macro ? false : prs->is_macro_processed;
 			return keyword;
 		}
 
-		uni_printf(prs->io, "%s", character != '\0' ? "\n" : "");
-		character = prs->is_macro_processed && keyword != ERROR_KEYWORD
-			? skip_macro(prs, keyword) : skip_directive(prs);
+		if (keyword == KW_IFDEF || keyword == KW_IFNDEF || keyword == KW_IF
+			|| keyword == KW_WHILE || keyword == KW_MACRO)
+		{
+			keyword = skip_block(prs, keyword);
+			while (keyword == KW_ELIF || keyword == KW_ELSE)
+			{
+				keyword = skip_block(prs, keyword);
+			}
+
+			if (keyword == NON_KEYWORD)
+			{
+				parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+				break;
+			}
+		}
 	}
 
 	out_clear(prs->io);
@@ -1495,15 +1515,12 @@ static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t
 		&& (next == KW_ELIF || next == KW_ELSE || next == KW_ENDIF)) || (begin == KW_ELSE && next == KW_ENDIF)
 		|| (begin == KW_WHILE && next == KW_ENDW) || (begin == KW_MACRO && next == KW_ENDM))
 	{
-		parse_extra(prs, storage_last_read(prs->stg));
-		skip_directive(prs);
 		return true;
 	}
 
 	location loc = parse_location(prs);
 	parser_error(prs, &loc, begin == KW_ELSE && (next == KW_ELIF || next == KW_ELSE)
 		? DIRECTIVE_AFTER : DIRECTIVE_WITHOUT, storage_last_read(prs->stg));
-	skip_directive(prs);
 	return false;
 }
 
@@ -1560,11 +1577,12 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				character = parse_until(prs);
 				break;
 			default:
-				if (parse_next(prs, begin, keyword))
+				if (!parse_next(prs, begin, keyword))
 				{
-					return keyword;
+					character = skip_directive(prs);
+					break;
 				}
-				break;
+				return keyword;
 		}
 	}
 
