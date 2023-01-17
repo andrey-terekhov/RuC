@@ -457,7 +457,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 	universal_io out = io_create();
 	const bool was_error = prs->was_error;
 	const bool is_recovery_disabled = prs->is_recovery_disabled;
-	const bool is_root_macro = begin == KW_MACRO && !prs->is_macro_processed;
+	const bool is_root_macro = begin == KW_MACRO && !prs->is_macro_processed && out_is_correct(prs->io);
 	prs->is_macro_processed = is_root_macro ? true : prs->is_macro_processed;
 
 	char32_t character = '\0';
@@ -776,7 +776,6 @@ static void parse_identifier(parser *const prs)
 	{
 		const size_t end = in_get_position(prs->io);
 		in_set_position(prs->io, begin);
-
 		location loc = loc_copy(prs->loc);
 		prs->prev = &loc;
 
