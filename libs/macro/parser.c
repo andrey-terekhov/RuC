@@ -444,7 +444,6 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
  *	Skip multiline directive block.
  *	Produce a simplified masked output for @c #macro.
  *	Stop when the end / else token has reached.
- *	Line would be processed before exit.
  *	Erase output, if error occurred.
  *
  *	@param	prs			Parser structure
@@ -479,32 +478,36 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			prs->was_error = was_error;
 		}
 
-		location loc = parse_location(prs);
-		char directive[MAX_KEYWORD_SIZE];
-		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
-		const bool is_end_block = keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
-			|| keyword == KW_ENDW || keyword == KW_ENDM;
-		keyword = is_end_block && !parse_next(prs, begin, keyword) ? ERROR_KEYWORD : keyword;
-
-		uni_printf(prs->io, "%s", is_root_macro && (keyword == KW_ENDM || character == '\0') ? "" : "\n");
-		character = (is_root_macro && keyword == KW_ENDM) || !prs->is_macro_processed
-			? skip_directive(prs) : skip_macro(prs, keyword);
-
-		if (is_end_block && keyword != ERROR_KEYWORD)
+		if (keyword == KW_ELIF || keyword == KW_ELSE || keyword == KW_ENDIF
+			|| keyword == KW_ENDW || keyword == KW_ENDM)
 		{
+			if (!parse_next(prs, begin, keyword))
+			{
+				out_clear(prs->io);
+				character = skip_directive(prs);
+				continue;
+			}
+
 			prs->is_macro_processed = is_root_macro ? false : prs->is_macro_processed;
 			return keyword;
 		}
 
-		if (keyword == KW_IFDEF || keyword == KW_IFNDEF || keyword == KW_IF
-			|| keyword == KW_WHILE || keyword == KW_MACRO)
+		location loc = parse_location(prs);
+		char directive[MAX_KEYWORD_SIZE];
+		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
+
+		while (true)
 		{
-			keyword = skip_block(prs, keyword);
-			while (keyword == KW_ELIF || keyword == KW_ELSE)
+			uni_printf(prs->io, "%s", is_root_macro && character == '\0' ? "" : "\n");
+			character = prs->is_macro_processed ? skip_macro(prs, keyword) : skip_directive(prs);
+
+			if (keyword != KW_IFDEF && keyword != KW_IFNDEF && keyword != KW_IF && keyword != KW_ELIF
+				&& keyword != KW_ELSE && keyword != KW_WHILE && keyword != KW_MACRO)
 			{
-				keyword = skip_block(prs, keyword);
+				break;
 			}
 
+			keyword = skip_block(prs, keyword);
 			if (keyword == NON_KEYWORD)
 			{
 				parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
@@ -1480,8 +1483,10 @@ static void parse_macro(parser *const prs)
 	{
 		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
 	}
-
 	out_swap(prs->io, &out);
+	parse_extra(prs, directive);
+	skip_directive(prs);
+
 	storage_clear(&stg);
 	prs->stg = origin;
 
