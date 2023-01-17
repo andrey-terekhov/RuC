@@ -787,8 +787,16 @@ static void parse_identifier(parser *const prs)
 		parse_replacement(prs, index);
 		prs->prev = NULL;
 
-		uni_print_char(prs->io, '\n');
-		loc_update_end(prs->loc);
+		char32_t character = skip_until(prs, true);
+		if (character != '\n' && character != (char32_t)EOF)
+		{
+			uni_print_char(prs->io, '\n');
+			loc_update_end(prs->loc);
+		}
+		else
+		{
+			prs->is_line_required = true;
+		}
 	}
 	else
 	{
