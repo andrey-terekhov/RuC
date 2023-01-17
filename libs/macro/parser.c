@@ -370,7 +370,13 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		return skip_directive(prs);
 	}
 
-	location loc = parse_location(prs);
+	location loc;
+	if (keyword != NON_KEYWORD)
+	{
+		loc = parse_location(prs);
+		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+	}
+
 	size_t position = in_get_position(prs->io);
 	char32_t character = skip_until(prs, false);
 	if ((character == '\n' || character == (char32_t)EOF) && (keyword == KW_INCLUDE
@@ -387,11 +393,6 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 	{
 		out_clear(prs->io);
 		return skip_directive(prs);
-	}
-
-	if (keyword != NON_KEYWORD)
-	{
-		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 	}
 
 	while (character != '\n' && character != (char32_t)EOF)
@@ -492,9 +493,13 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
 			return keyword;
 		}
 
-		location loc = parse_location(prs);
+		location loc;
 		char directive[MAX_KEYWORD_SIZE];
-		sprintf(directive, "%s", keyword != NON_KEYWORD ? storage_last_read(prs->stg) : "");
+		if (keyword != NON_KEYWORD)
+		{
+			loc = parse_location(prs);
+			sprintf(directive, "%s", storage_last_read(prs->stg));
+		}
 
 		while (true)
 		{
