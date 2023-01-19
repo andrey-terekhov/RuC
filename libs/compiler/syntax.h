@@ -93,6 +93,7 @@ typedef struct scope
 {
 	item_t displ;
 	item_t lg;
+	size_t cur_id;
 } scope;
 
 
