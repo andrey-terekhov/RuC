@@ -1,17 +1,11 @@
 void main()
 {
-	int N, i, j, k;
+	int N = 10, i, j, k;
 	float t, S;
 
-	getid(N);
-	printid(N);
 	{
 		float A[N][N], B[N], X[N];
-		getid(A); 
-		printid(A);
-		
-		getid(B);
-		printid(B);
+
 		for (i = 0; i < N; i++)
 		{
 			for (j = i + 1; j < N; j++)
