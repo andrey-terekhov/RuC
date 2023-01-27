@@ -236,6 +236,49 @@ static void get_error(const error_t num, char *const msg, va_list args)
 		}
 		break;
 
+		case EXPR_FLOATING_CONSTANT:
+			sprintf(msg, "вещественная константа в выражении препроцессора");
+			break;
+		case EXPR_INVALID_SUFFIX:
+		{
+			const char *const suffix = va_arg(args, char *);
+			sprintf(msg, "недопустимый суффикс " QUOTE "%s" QUOTE " в целочисленной константе", suffix);
+		}
+		break;
+		case EXPR_INVALID_TOKEN:
+		{
+			const char *const token = va_arg(args, char *);
+			sprintf(msg, "недопустимый токен " QUOTE "%s" QUOTE " в выражении препроцессора", token);
+		}
+		break;
+		case EXPR_MISSING_BINARY:
+		{
+			const char *const operator = va_arg(args, char *);
+			sprintf(msg, "пропущен бинарный оператор перед токеном " QUOTE "%s" QUOTE, operator);
+		}
+		break;
+		case EXPR_MISSING_BRACKET:
+		{
+			const char32_t character = va_arg(args, char32_t);
+
+			size_t index = sprintf(msg, "пропущенная '");
+			index += utf8_to_string(&msg[index], character);
+			sprintf(&msg[index], "' в выражении");
+		}
+		break;
+		case EXPR_NO_LEFT_OPERAND:
+		{
+			const char *const operator = va_arg(args, char *);
+			sprintf(msg, "в операторе '%s' отсутствует левый операнд", operator);
+		}
+		break;
+		case EXPR_NO_RIGHT_OPERAND:
+		{
+			const char *const operator = va_arg(args, char *);
+			sprintf(msg, "в операторе '%s' отсутствует правый операнд", operator);
+		}
+		break;
+
 		default:
 			sprintf(msg, "неизвестная ошибка");
 			break;
@@ -272,6 +315,10 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 		break;
 		case DIRECTIVE_LINE_SKIPED:
 			sprintf(msg, "директива позиционирования будет пропущена");
+			break;
+
+		case EXPR_MULTI_CHARACTER:
+			sprintf(msg, "многосимвольная константа");
 			break;
 
 		default:
