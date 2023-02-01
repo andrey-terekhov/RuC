@@ -99,6 +99,17 @@ int computer_push_token(computer *const comp, location *const loc, const token_t
  */
 int computer_push_number(computer *const comp, location *const loc, const item_t num);
 
+/**
+ *	Push the read character constant onto computer stack
+ *
+ *	@param	comp		Computer structure
+ *	@param	loc			Parsed location
+ *	@param	ch			Character constant
+ *
+ *	@return	@c 0 on success, @c -1 on failure
+ */
+int computer_push_const(computer *const comp, location *const loc, const char32_t ch);
+
 
 /**
  *	Check that computer is correct
