@@ -16,6 +16,7 @@
 
 #include "parser.h"
 #include <stdlib.h>
+#include "computer.h"
 #include "error.h"
 #include "keywords.h"
 #include "uniprinter.h"
@@ -1515,6 +1516,134 @@ static void parse_macro(parser *const prs)
 	}
 }
 
+
+static item_t parse_expression(parser *const prs)
+{
+	location loc = prs->prev == NULL ? parse_location(prs) : loc_copy(prs->prev);
+	computer comp = computer_create(&loc);
+
+	char32_t character = skip_until(prs, false);
+	size_t position = in_get_position(prs->io);
+	loc_search_from(prs->loc);
+
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		const location *comp_loc = prs->prev == NULL ? prs->loc : prs->prev;
+		loc_search_from(prs->loc);
+
+		if (utf8_is_letter(character))
+		{
+			const size_t index = storage_search(prs->stg, prs->io);
+			if (index == SIZE_MAX)
+			{
+				computer_push_number(&comp, comp_loc, 0);
+			}
+
+			// TODO
+		}
+		else if (utf8_is_digit(character) || character == '.')
+		{
+			item_t number = 0;
+			uni_scanf(prs->io, "%" PRIitem, &number);
+			position = in_get_position(prs->io);
+			character = skip_until(prs, false);
+
+			if (position == in_get_position(prs->io))
+			{
+				if (character == '.' || character == 'e' || character == 'E')
+				{
+					parser_error(prs, prs->loc, EXPR_FLOATING_CONSTANT);
+					break;
+				}
+				else if (utf8_is_letter(character))
+				{
+					storage_search(prs->stg, prs->io);
+					parser_error(prs, prs->loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
+					break;
+				}
+			}
+
+			computer_push_number(&comp, comp_loc, number);
+		}
+		else if (character == '\'' || character == '"')
+		{
+			universal_io out = io_create();
+			out_set_buffer(&out, MAX_VALUE_SIZE);
+			out_swap(prs->io, &out);
+			uni_print_char(prs->io, uni_scan_char(prs->io));
+
+			if (skip_string(prs, character) != character)
+			{
+				out_swap(prs->io, &out);
+				out_clear(&out);
+				break;
+			}
+
+			uni_print_char(prs->io, character);
+			out_swap(prs->io, &out);
+			char *buffer = out_extract_buffer(&out);
+
+			if (character == '"')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+				free(buffer);
+				break;
+			}
+
+			if (utf8_symbol_size(buffer[1]) != 1)
+			{
+				parser_warning(prs, prs->loc, EXPR_MULTI_CHARACTER);
+			}
+
+			computer_push_number(&comp, comp_loc, utf8_convert(&buffer[1]));
+			free(buffer);
+		}
+		else if (character == '~')
+		{
+			uni_scan_char(prs->io);
+			computer_push_const(&comp, comp_loc, TK_COMPL);
+		}
+		else if (character != '!' && character != '*' && character != '/' && character != '%'
+			&& character != '+' && character != '-' && character != '<' && character != '>'
+			&& character != '=' && character != '&' && character != '^' && character != '|')
+		{
+			char buffer[8];
+			utf8_to_string(buffer, character);
+			parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+			break;
+		}
+		else
+		{
+			uni_scan_char(prs->io);
+			position = in_get_position(prs->io);
+			char32_t next = skip_until(prs, false);
+
+			// case '~':
+			// 	computer_push_token(&comp, &loc, TK_COMPL);
+			// 	break;
+			// case '!':
+			// 	computer_push_token(&comp, &loc, TK_NOT);
+			// 	break;
+
+			// case '*':
+			// case '/':
+			// case '%':
+		}
+	}
+}
+
+/**
+ *	Parse @c #ifdef directive.
+ *
+ *	@param	prs			Parser structure
+ */
+/*static void parse_ifdef(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+}
+*/
 
 /**
  *	Parse the next read token and check its corresponding the begin one.
