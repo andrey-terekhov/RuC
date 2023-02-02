@@ -1517,18 +1517,241 @@ static void parse_macro(parser *const prs)
 }
 
 
+/**
+ *	Parse an integer number for the expression computer.
+ *	First character should be checked before call.
+ *
+ *	@param	prs			Parser structure
+ *	@param	comp		Expression computer
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_number(parser *const prs, computer *const comp)
+{
+	item_t number = 0;
+	uni_scanf(prs->io, "%" PRIitem, &number);
+	size_t position = in_get_position(prs->io);
+	char32_t character = skip_until(prs, false);
+
+	if (position == in_get_position(prs->io))
+	{
+		if (character == '.' || character == 'e' || character == 'E')
+		{
+			parser_error(prs, prs->loc, EXPR_FLOATING_CONSTANT);
+			return false;
+		}
+		else if (utf8_is_letter(character))
+		{
+			storage_search(prs->stg, prs->io);
+			parser_error(prs, prs->loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
+			return false;
+		}
+	}
+
+	return computer_push_number(comp, prs->prev == NULL ? prs->loc : prs->prev, number) == 0;
+}
+
+/**
+ *	Parse character sequence into a preprocessor expression.
+ *	First character can be @c '\\\\'' or @c '"'.
+ *
+ *	@param	prs			Parser structure
+ *	@param	comp		Expression computer
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_sequence(parser *const prs, computer *const comp)
+{
+	universal_io out = io_create();
+	out_set_buffer(&out, MAX_VALUE_SIZE);
+	out_swap(prs->io, &out);
+
+	char32_t character = uni_scan_char(prs->io);
+	uni_print_char(prs->io, character);
+
+	if (skip_string(prs, character) != character)
+	{
+		out_swap(prs->io, &out);
+		out_clear(&out);
+		return false;
+	}
+
+	uni_print_char(prs->io, character);
+	out_swap(prs->io, &out);
+	char *buffer = out_extract_buffer(&out);
+
+	if (character == '"')
+	{
+		parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+		free(buffer);
+		return false;
+	}
+
+	if (utf8_symbol_size(buffer[1]) != 1)
+	{
+		parser_warning(prs, prs->loc, EXPR_MULTI_CHARACTER);
+	}
+
+	const int res = computer_push_const(comp, prs->prev == NULL ? prs->loc : prs->prev
+										, utf8_convert(&buffer[1]), buffer);
+	free(buffer);
+	return res == 0;
+}
+
+/**
+ *	Parse expression operator.
+ *
+ *	@param	prs			Parser structure
+ *	@param	comp		Expression computer
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_operator(parser *const prs, computer *const comp)
+{
+	const location *loc = prs->prev == NULL ? prs->loc : prs->prev;
+	char32_t character = uni_scan_char(prs->io);
+	size_t position = in_get_position(prs->io);
+	char32_t next = skip_until(prs, false);
+	next = position == in_get_position(prs->io) ? next : '\0';
+
+	switch(character)
+	{
+		case '~':
+			return computer_push_token(comp, loc, TK_COMPL) == 0;
+		case '!':
+			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+					? TK_NOT_EQ : TK_NOT) == 0;
+		case '=':
+			if (next != '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "=");
+				return false;
+			}
+			uni_scan_char(prs->io);
+			return computer_push_token(comp, loc, TK_EQ) == 0;
+
+		case '*':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "*=");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_MULT) == 0;
+		case '/':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "/=");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_DIV) == 0;
+		case '%':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "%=");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_MOD) == 0;
+		case '^':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "^=");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_XOR) == 0;
+
+		case '&':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "&=");
+				return false;
+			}
+			return computer_push_token(comp, loc, next == '&' && uni_scan_char(prs->io) == '&'
+					? TK_AND : TK_BIT_AND) == 0;
+		case '|':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "|=");
+				return false;
+			}
+			return computer_push_token(comp, loc, next == '|' && uni_scan_char(prs->io) == '|'
+					? TK_OR : TK_BIT_OR) == 0;
+
+		case '+':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "+=");
+				return false;
+			}
+			else if (next == '+')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "++");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_ADD) == 0;
+		case '-':
+			if (next == '=')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "-=");
+				return false;
+			}
+			else if (next == '-')
+			{
+				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "--");
+				return false;
+			}
+			return computer_push_token(comp, loc, TK_SUB) == 0;
+
+		case '<':
+			if (next == '<')
+			{
+				uni_scan_char(prs->io);
+				position = in_get_position(prs->io);
+				if (skip_until(prs, false) == '=' && position == in_get_position(prs->io))
+				{
+					parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "<<=");
+					return false;
+				}
+				return computer_push_token(comp, loc, TK_L_SHIFT) == 0;
+			}
+			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+					? TK_LESS_EQ : TK_LESS) == 0;
+		case '>':
+			if (next == '>')
+			{
+				uni_scan_char(prs->io);
+				position = in_get_position(prs->io);
+				if (skip_until(prs, false) == '=' && position == in_get_position(prs->io))
+				{
+					parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, ">>=");
+					return false;
+				}
+				return computer_push_token(comp, loc, TK_R_SHIFT) == 0;
+			}
+			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+					? TK_GREATER_EQ : TK_GREATER) == 0;
+
+		default:
+			char buffer[8];
+			utf8_to_string(buffer, character);
+			parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+			return false;
+	}
+}
+
 static item_t parse_expression(parser *const prs)
 {
-	location loc = prs->prev == NULL ? parse_location(prs) : loc_copy(prs->prev);
-	computer comp = computer_create(&loc);
-
+	location loc = parse_location(prs);
 	char32_t character = skip_until(prs, false);
-	size_t position = in_get_position(prs->io);
-	loc_search_from(prs->loc);
+	if (character == '\n' || character == (char32_t)EOF)
+	{
+		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
+		return 0;
+	}
 
+	computer comp = computer_create(prs->prev == NULL ? &loc : prs->prev);
+	size_t position = in_get_position(prs->io);
 	while (character != '\n' && character != (char32_t)EOF)
 	{
-		const location *comp_loc = prs->prev == NULL ? prs->loc : prs->prev;
 		loc_search_from(prs->loc);
 
 		if (utf8_is_letter(character))
@@ -1536,98 +1759,29 @@ static item_t parse_expression(parser *const prs)
 			const size_t index = storage_search(prs->stg, prs->io);
 			if (index == SIZE_MAX)
 			{
-				computer_push_number(&comp, comp_loc, 0);
+				computer_push_const(&comp, prs->prev == NULL ? prs->loc : prs->prev, '\0'
+					, storage_last_read(prs->stg));
 			}
 
 			// TODO
 		}
 		else if (utf8_is_digit(character) || character == '.')
 		{
-			item_t number = 0;
-			uni_scanf(prs->io, "%" PRIitem, &number);
-			position = in_get_position(prs->io);
-			character = skip_until(prs, false);
-
-			if (position == in_get_position(prs->io))
+			if (parse_number(prs, &comp))
 			{
-				if (character == '.' || character == 'e' || character == 'E')
-				{
-					parser_error(prs, prs->loc, EXPR_FLOATING_CONSTANT);
-					break;
-				}
-				else if (utf8_is_letter(character))
-				{
-					storage_search(prs->stg, prs->io);
-					parser_error(prs, prs->loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
-					break;
-				}
+				break;
 			}
-
-			computer_push_number(&comp, comp_loc, number);
 		}
 		else if (character == '\'' || character == '"')
 		{
-			universal_io out = io_create();
-			out_set_buffer(&out, MAX_VALUE_SIZE);
-			out_swap(prs->io, &out);
-			uni_print_char(prs->io, uni_scan_char(prs->io));
-
-			if (skip_string(prs, character) != character)
+			if (parse_sequence(prs, &comp))
 			{
-				out_swap(prs->io, &out);
-				out_clear(&out);
 				break;
 			}
-
-			uni_print_char(prs->io, character);
-			out_swap(prs->io, &out);
-			char *buffer = out_extract_buffer(&out);
-
-			if (character == '"')
-			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
-				free(buffer);
-				break;
-			}
-
-			if (utf8_symbol_size(buffer[1]) != 1)
-			{
-				parser_warning(prs, prs->loc, EXPR_MULTI_CHARACTER);
-			}
-
-			computer_push_number(&comp, comp_loc, utf8_convert(&buffer[1]));
-			free(buffer);
 		}
-		else if (character == '~')
+		else if (!parse_operator(prs, &comp))
 		{
-			uni_scan_char(prs->io);
-			computer_push_const(&comp, comp_loc, TK_COMPL);
-		}
-		else if (character != '!' && character != '*' && character != '/' && character != '%'
-			&& character != '+' && character != '-' && character != '<' && character != '>'
-			&& character != '=' && character != '&' && character != '^' && character != '|')
-		{
-			char buffer[8];
-			utf8_to_string(buffer, character);
-			parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
 			break;
-		}
-		else
-		{
-			uni_scan_char(prs->io);
-			position = in_get_position(prs->io);
-			char32_t next = skip_until(prs, false);
-
-			// case '~':
-			// 	computer_push_token(&comp, &loc, TK_COMPL);
-			// 	break;
-			// case '!':
-			// 	computer_push_token(&comp, &loc, TK_NOT);
-			// 	break;
-
-			// case '*':
-			// case '/':
-			// case '%':
 		}
 	}
 }
