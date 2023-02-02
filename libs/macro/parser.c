@@ -1750,7 +1750,7 @@ static item_t parse_expression(parser *const prs)
 
 	computer comp = computer_create(prs->prev == NULL ? &loc : prs->prev);
 	size_t position = in_get_position(prs->io);
-	while (character != '\n' && character != (char32_t)EOF)
+	while (false)
 	{
 		loc_search_from(prs->loc);
 
@@ -1784,6 +1784,28 @@ static item_t parse_expression(parser *const prs)
 			break;
 		}
 	}
+
+	computer_clear(&comp);
+	character = skip_until(prs, false);
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		uni_scan_char(prs->io);
+		if (character == '\'' || character == '"')
+		{
+			const bool is_recovery_disabled = prs->is_recovery_disabled;
+			prs->is_recovery_disabled = true;
+
+			universal_io out = io_create();
+			out_swap(prs->io, &out);
+			skip_string(prs, character);
+			out_swap(prs->io, &out);
+
+			prs->is_recovery_disabled = is_recovery_disabled;
+		}
+
+		character = skip_until(prs, false);
+	}
+	return 0;
 }
 
 /**
