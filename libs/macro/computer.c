@@ -35,44 +35,64 @@ int computer_push_token(computer *const comp, location *const loc, const token_t
 	{
 		case TK_COMPL:
 			printf("~ ");
+			break;
 		case TK_NOT:
 			printf("! ");
+			break;
 		case TK_MULT:
 			printf("* ");
+			break;
 		case TK_DIV:
 			printf("/ ");
+			break;
 		case TK_MOD:
 			printf("% ");
+			break;
 		case TK_ADD:
 			printf("+ ");
+			break;
 		case TK_SUB:
 			printf("- ");
+			break;
 		case TK_L_SHIFT:
 			printf("<< ");
+			break;
 		case TK_R_SHIFT:
 			printf(">> ");
+			break;
 		case TK_LESS:
 			printf("< ");
+			break;
 		case TK_GREATER:
 			printf("> ");
+			break;
 		case TK_LESS_EQ:
 			printf("<= ");
+			break;
 		case TK_GREATER_EQ:
 			printf(">= ");
+			break;
 		case TK_EQ:
 			printf("== ");
+			break;
 		case TK_NOT_EQ:
 			printf("!= ");
+			break;
 		case TK_BIT_AND:
 			printf("& ");
+			break;
 		case TK_XOR:
 			printf("^ ");
+			break;
 		case TK_BIT_OR:
 			printf("| ");
+			break;
 		case TK_AND:
 			printf("&& ");
+			break;
 		case TK_OR:
 			printf("|| ");
+			break;
 	}
 
 	return 0;
@@ -84,11 +104,9 @@ int computer_push_number(computer *const comp, location *const loc, const item_t
 	return 0;
 }
 
-int computer_push_const(computer *const comp, location *const loc, const char32_t ch)
+int computer_push_const(computer *const comp, location *const loc, const char32_t ch, const char *const name)
 {
-	char buffer[8];
-	utf8_to_string(buffer, ch);
-	printf("'%s' ", buffer);
+	printf("%s ", name);
 	return 0;
 }
 

@@ -105,10 +105,11 @@ int computer_push_number(computer *const comp, location *const loc, const item_t
  *	@param	comp		Computer structure
  *	@param	loc			Parsed location
  *	@param	ch			Character constant
+ *	@param	name			Constant spelling
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int computer_push_const(computer *const comp, location *const loc, const char32_t ch);
+int computer_push_const(computer *const comp, location *const loc, const char32_t ch, const char *const name);
 
 
 /**
