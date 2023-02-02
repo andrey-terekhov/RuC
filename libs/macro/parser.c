@@ -1818,8 +1818,8 @@ static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t
 		return true;
 	}
 
-	location loc = parse_location(prs);
-	parser_error(prs, &loc, begin == KW_ELSE && (next == KW_ELIF || next == KW_ELSE)
+	parse_location(prs);
+	parser_error(prs, prs->loc, begin == KW_ELSE && (next == KW_ELIF || next == KW_ELSE)
 		? DIRECTIVE_AFTER : DIRECTIVE_WITHOUT, storage_last_read(prs->stg));
 	return false;
 }
