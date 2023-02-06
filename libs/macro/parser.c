@@ -35,7 +35,7 @@
 
 
 static const size_t MAX_INCLUDE_DEPTH = 32;
-static const size_t MAX_CALL_DAPTH = 256;
+static const size_t MAX_CALL_DEPTH = 256;
 static const size_t MAX_ITERATION = 32768;
 
 static const size_t MAX_COMMENT_SIZE = 4096;
@@ -698,8 +698,10 @@ static void parse_observation(parser *const prs, const size_t index, storage *co
  *
  *	@param	prs			Parser structure
  *	@param	index		Index of macro
+ *
+ *	@return	@c true on success, @c false on failure
  */
-static void parse_replacement(parser *const prs, const size_t index)
+static bool parse_replacement(parser *const prs, const size_t index)
 {
 	const size_t expected = storage_get_args_by_index(prs->stg, index);
 	const size_t position = in_get_position(prs->io);
@@ -718,7 +720,7 @@ static void parse_replacement(parser *const prs, const size_t index)
 		in_set_buffer(&value, storage_get_by_index(prs->stg, index));
 		parser_preprocess(prs, &value);
 		in_clear(&value);
-		return;
+		return true;
 	}
 
 	if (skip_lines(prs) != '(')
@@ -726,7 +728,7 @@ static void parse_replacement(parser *const prs, const size_t index)
 		*prs->loc = loc;
 		in_set_position(prs->io, position);
 		parser_error(prs, prs->prev, ARGS_NON, storage_to_string(prs->stg, index));
-		return;
+		return false;
 	}
 
 	storage stg = storage_create();
@@ -744,11 +746,12 @@ static void parse_replacement(parser *const prs, const size_t index)
 
 	uni_scan_char(prs->io);
 	storage_clear(&stg);
+	return expected == actual;
 }
 
 /**
  *	Parse and replace identifier, if macro name recognized.
- *	Emit an error on @c MAX_CALL_DAPTH reached.
+ *	Emit an error on @c MAX_CALL_DEPTH reached.
  *	Skip non macro identifiers.
  *
  *	@param	prs			Parser structure
@@ -764,10 +767,9 @@ static void parse_identifier(parser *const prs)
 		return;
 	}
 
-	if (prs->call >= MAX_CALL_DAPTH)
+	if (prs->call > MAX_CALL_DEPTH)
 	{
-		loc_search_from(prs->loc);
-		parser_error(prs, prs->loc, CALL_DEPTH);
+		parser_error(prs, NULL, CALL_DEPTH);
 		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 		return;
 	}
