@@ -71,6 +71,12 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 {
 	switch(tk)
 	{
+		case TK_L_BOUND:
+			printf("( ");
+			break;
+		case TK_R_BOUND:
+			printf(") ");
+			break;
 		case TK_COMPL:
 			printf("~ ");
 			break;

@@ -1656,6 +1656,10 @@ static bool parse_token(parser *const prs, computer *const comp, const size_t po
 
 	switch(character)
 	{
+		case '(':
+			return computer_push_token(comp, pos, TK_L_BOUND) == 0;
+		case ')':
+			return computer_push_token(comp, pos, TK_R_BOUND) == 0;
 		case '~':
 			return computer_push_token(comp, pos, TK_COMPL) == 0;
 		case '!':
@@ -1944,7 +1948,7 @@ static char32_t parse_eval(parser *const prs)
 		uni_unscan_char(prs->io, '#');
 	}
 
-	uni_printf(prs->io, "\n\n");
+	uni_print_char(prs->io, '\n');
 	loc_update_begin(prs->loc);
 
 	in_set_position(prs->io, position);

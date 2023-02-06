@@ -29,6 +29,9 @@ extern "C" {
 /** Operator Precedence */
 typedef enum TOKEN
 {
+	TK_L_BOUND,			/**< '(' operator */
+	TK_R_BOUND,			/**< ')' operator */
+
 	TK_COMPL,			/**< '~' operator */
 	TK_NOT,				/**< '!' operator */
 
