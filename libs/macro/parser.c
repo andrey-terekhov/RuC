@@ -1525,11 +1525,14 @@ static void parse_macro(parser *const prs)
  *
  *	@param	prs			Parser structure
  *	@param	comp		Expression computer
+ *	@param	pos			Number position
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_number(parser *const prs, computer *const comp)
+static bool parse_number(parser *const prs, computer *const comp, const size_t pos)
 {
+	location loc = loc_copy(prs->loc);
+
 	item_t number = 0;
 	uni_scanf(prs->io, "%" PRIitem, &number);
 	size_t position = in_get_position(prs->io);
@@ -1539,18 +1542,18 @@ static bool parse_number(parser *const prs, computer *const comp)
 	{
 		if (character == '.' || character == 'e' || character == 'E')
 		{
-			parser_error(prs, prs->loc, EXPR_FLOATING_CONSTANT);
+			parser_error(prs, &loc, EXPR_FLOATING_CONSTANT);
 			return false;
 		}
 		else if (utf8_is_letter(character))
 		{
 			storage_search(prs->stg, prs->io);
-			parser_error(prs, prs->loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
+			parser_error(prs, &loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
 			return false;
 		}
 	}
 
-	return computer_push_number(comp, prs->prev == NULL ? prs->loc : prs->prev, number) == 0;
+	return computer_push_number(comp, pos, number) == 0;
 }
 
 /**
@@ -1559,11 +1562,13 @@ static bool parse_number(parser *const prs, computer *const comp)
  *
  *	@param	prs			Parser structure
  *	@param	comp		Expression computer
+ *	@param	pos			Sequence position
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_sequence(parser *const prs, computer *const comp)
+static bool parse_sequence(parser *const prs, computer *const comp, const size_t pos)
 {
+	location loc = loc_copy(prs->loc);
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
 	out_swap(prs->io, &out);
@@ -1584,18 +1589,17 @@ static bool parse_sequence(parser *const prs, computer *const comp)
 
 	if (character == '"')
 	{
-		parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+		parser_error(prs, &loc, EXPR_INVALID_TOKEN, buffer);
 		free(buffer);
 		return false;
 	}
 
 	if (utf8_symbol_size(buffer[1]) != 1)
 	{
-		parser_warning(prs, prs->loc, EXPR_MULTI_CHARACTER);
+		parser_warning(prs, &loc, EXPR_MULTI_CHARACTER);
 	}
 
-	const int res = computer_push_const(comp, prs->prev == NULL ? prs->loc : prs->prev
-										, utf8_convert(&buffer[1]), buffer);
+	const int res = computer_push_const(comp, pos, utf8_convert(&buffer[1]), buffer);
 	free(buffer);
 	return res == 0;
 }
@@ -1605,12 +1609,13 @@ static bool parse_sequence(parser *const prs, computer *const comp)
  *
  *	@param	prs			Parser structure
  *	@param	comp		Expression computer
+ *	@param	pos			Operator position
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_operator(parser *const prs, computer *const comp)
+static bool parse_operator(parser *const prs, computer *const comp, const size_t pos)
 {
-	const location *loc = prs->prev == NULL ? prs->loc : prs->prev;
+	location loc = loc_copy(prs->loc);
 	char32_t character = uni_scan_char(prs->io);
 	size_t position = in_get_position(prs->io);
 	char32_t next = skip_until(prs, false);
@@ -1619,89 +1624,89 @@ static bool parse_operator(parser *const prs, computer *const comp)
 	switch(character)
 	{
 		case '~':
-			return computer_push_token(comp, loc, TK_COMPL) == 0;
+			return computer_push_token(comp, pos, TK_COMPL) == 0;
 		case '!':
-			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+			return computer_push_token(comp, pos, next == '=' && uni_scan_char(prs->io) == '='
 					? TK_NOT_EQ : TK_NOT) == 0;
 		case '=':
 			if (next != '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "=");
 				return false;
 			}
 			uni_scan_char(prs->io);
-			return computer_push_token(comp, loc, TK_EQ) == 0;
+			return computer_push_token(comp, pos, TK_EQ) == 0;
 
 		case '*':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "*=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "*=");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_MULT) == 0;
+			return computer_push_token(comp, pos, TK_MULT) == 0;
 		case '/':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "/=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "/=");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_DIV) == 0;
+			return computer_push_token(comp, pos, TK_DIV) == 0;
 		case '%':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "%=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "%=");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_MOD) == 0;
+			return computer_push_token(comp, pos, TK_MOD) == 0;
 		case '^':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "^=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "^=");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_XOR) == 0;
+			return computer_push_token(comp, pos, TK_XOR) == 0;
 
 		case '&':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "&=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "&=");
 				return false;
 			}
-			return computer_push_token(comp, loc, next == '&' && uni_scan_char(prs->io) == '&'
+			return computer_push_token(comp, pos, next == '&' && uni_scan_char(prs->io) == '&'
 					? TK_AND : TK_BIT_AND) == 0;
 		case '|':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "|=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "|=");
 				return false;
 			}
-			return computer_push_token(comp, loc, next == '|' && uni_scan_char(prs->io) == '|'
+			return computer_push_token(comp, pos, next == '|' && uni_scan_char(prs->io) == '|'
 					? TK_OR : TK_BIT_OR) == 0;
 
 		case '+':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "+=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "+=");
 				return false;
 			}
 			else if (next == '+')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "++");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "++");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_ADD) == 0;
+			return computer_push_token(comp, pos, TK_ADD) == 0;
 		case '-':
 			if (next == '=')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "-=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "-=");
 				return false;
 			}
 			else if (next == '-')
 			{
-				parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "--");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "--");
 				return false;
 			}
-			return computer_push_token(comp, loc, TK_SUB) == 0;
+			return computer_push_token(comp, pos, TK_SUB) == 0;
 
 		case '<':
 			if (next == '<')
@@ -1710,12 +1715,12 @@ static bool parse_operator(parser *const prs, computer *const comp)
 				position = in_get_position(prs->io);
 				if (skip_until(prs, false) == '=' && position == in_get_position(prs->io))
 				{
-					parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, "<<=");
+					parser_error(prs, &loc, EXPR_INVALID_TOKEN, "<<=");
 					return false;
 				}
-				return computer_push_token(comp, loc, TK_L_SHIFT) == 0;
+				return computer_push_token(comp, pos, TK_L_SHIFT) == 0;
 			}
-			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+			return computer_push_token(comp, pos, next == '=' && uni_scan_char(prs->io) == '='
 					? TK_LESS_EQ : TK_LESS) == 0;
 		case '>':
 			if (next == '>')
@@ -1724,18 +1729,18 @@ static bool parse_operator(parser *const prs, computer *const comp)
 				position = in_get_position(prs->io);
 				if (skip_until(prs, false) == '=' && position == in_get_position(prs->io))
 				{
-					parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, ">>=");
+					parser_error(prs, &loc, EXPR_INVALID_TOKEN, ">>=");
 					return false;
 				}
-				return computer_push_token(comp, loc, TK_R_SHIFT) == 0;
+				return computer_push_token(comp, pos, TK_R_SHIFT) == 0;
 			}
-			return computer_push_token(comp, loc, next == '=' && uni_scan_char(prs->io) == '='
+			return computer_push_token(comp, pos, next == '=' && uni_scan_char(prs->io) == '='
 					? TK_GREATER_EQ : TK_GREATER) == 0;
 
 		default:
 			char buffer[8];
 			utf8_to_string(buffer, character);
-			parser_error(prs, prs->loc, EXPR_INVALID_TOKEN, buffer);
+			parser_error(prs, &loc, EXPR_INVALID_TOKEN, buffer);
 			return false;
 	}
 }
@@ -1750,38 +1755,47 @@ static item_t parse_expression(parser *const prs)
 		return 0;
 	}
 
-	computer comp = computer_create(prs->prev == NULL ? &loc : prs->prev);
-	size_t position = in_get_position(prs->io);
+	computer comp = prs->prev == NULL ? computer_create(&loc, prs->io) : computer_create(prs->prev, NULL);
 	while (false)
 	{
-		loc_search_from(prs->loc);
-
+		const size_t position = in_get_position(prs->io);
 		if (utf8_is_letter(character))
 		{
 			const size_t index = storage_search(prs->stg, prs->io);
 			if (index == SIZE_MAX)
 			{
-				computer_push_const(&comp, prs->prev == NULL ? prs->loc : prs->prev, '\0'
-					, storage_last_read(prs->stg));
+				computer_push_const(&comp, position, '\0', storage_last_read(prs->stg));
+				continue;
 			}
 
-			// TODO
+			if (prs->call > MAX_CALL_DEPTH)
+			{
+				parser_error(prs, NULL, CALL_DEPTH);
+				break;
+			}
+
+			universal_io out = io_create();
+			out_set_buffer(&out, MAX_VALUE_SIZE);
+			out_swap(prs->io, &out);
+
+
+			out_swap(prs->io, &out);
 		}
 		else if (utf8_is_digit(character) || character == '.')
 		{
-			if (parse_number(prs, &comp))
+			if (parse_number(prs, &comp, position))
 			{
 				break;
 			}
 		}
 		else if (character == '\'' || character == '"')
 		{
-			if (parse_sequence(prs, &comp))
+			if (parse_sequence(prs, &comp, position))
 			{
 				break;
 			}
 		}
-		else if (!parse_operator(prs, &comp))
+		else if (!parse_operator(prs, &comp, position))
 		{
 			break;
 		}
