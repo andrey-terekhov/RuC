@@ -1566,10 +1566,50 @@ static bool parse_number(parser *const prs, computer *const comp, const size_t p
 {
 	location loc = loc_copy(prs->loc);
 
-	item_t number = 0;
-	uni_scanf(prs->io, "%" PRIitem, &number);
+	unsigned long long number = 0;
+	uni_scanf(prs->io, "%lld", &number);
 	size_t position = in_get_position(prs->io);
 	char32_t character = skip_until(prs, false);
+
+	if (number == 0 && pos + 1 == in_get_position(prs->io))
+	{
+		bool was_error = false;
+		if (character == 'x' || character == 'X')
+		{
+			uni_scan_char(prs->io);
+			was_error = uni_scanf(prs->io, "%llx", &number) != 1;
+		}
+		else if (character == 'd' || character == 'D')
+		{
+			uni_scan_char(prs->io);
+			was_error = uni_scanf(prs->io, "%lld", &number) != 1;
+		}
+		else if (character == 'o' || character == 'O')
+		{
+			uni_scan_char(prs->io);
+			was_error = uni_scanf(prs->io, "%llo", &number) != 1;
+		}
+		else if (character == 'b' || character == 'B')
+		{
+			char buffer[100] = "";
+			uni_scan_char(prs->io);
+			was_error = uni_scanf(prs->io, "%99[01]", buffer) != 1;
+			for (size_t i = 0; buffer[i] != '\0'; i++)
+			{
+				number = (number << 1) | (buffer[i] - '0');
+			}
+        }
+
+		if (!was_error)
+		{
+			position = in_get_position(prs->io);
+			character = skip_until(prs, false);
+		}
+		else
+		{
+			uni_unscan_char(prs->io, character);
+		}
+	}
 
 	if (position == in_get_position(prs->io))
 	{
@@ -1586,7 +1626,7 @@ static bool parse_number(parser *const prs, computer *const comp, const size_t p
 		}
 	}
 
-	return computer_push_number(comp, pos, number) == 0;
+	return computer_push_number(comp, pos, (item_t)number) == 0;
 }
 
 /**
