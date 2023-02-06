@@ -348,6 +348,39 @@ static char32_t skip_lines(parser *const prs)
 }
 
 /**
+ *	Skip expression until the next line.
+ *	Stopped without last character read and processed.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t skip_expression(parser *const prs)
+{
+	char32_t character = skip_until(prs, false);
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		uni_scan_char(prs->io);
+		if (character == '\'' || character == '"')
+		{
+			const bool is_recovery_disabled = prs->is_recovery_disabled;
+			prs->is_recovery_disabled = true;
+
+			universal_io out = io_create();
+			out_swap(prs->io, &out);
+			skip_string(prs, character);
+			out_swap(prs->io, &out);
+
+			prs->is_recovery_disabled = is_recovery_disabled;
+		}
+
+		character = skip_until(prs, false);
+	}
+
+	return character;
+}
+
+/**
  *	Skip @c #macro directive content line.
  *	Emit an error on no identifier or no expression.
  *	Produce a masked output for args.
@@ -1830,6 +1863,26 @@ static item_t parse_expression(parser *const prs)
 			prs->loc = NULL;
 			prs->io = &out;
 		}
+		else if (character == '#')
+		{
+			location current = loc_copy(prs->loc);
+			uni_scan_char(prs->io);
+			skip_until(prs, false);
+
+			storage_search(prs->stg, prs->io);
+			out_set_buffer(&out, MAX_KEYWORD_SIZE);
+			uni_printf(&out, "#%s", storage_last_read(prs->stg));
+
+			char *extract = out_extract_buffer(&out);
+			const size_t keyword = storage_get_index(prs->stg, extract);
+			free(extract);
+
+			if (keyword != KW_EVAL)
+			{
+				parser_error(prs, &current, EXPR_INVALID_TOKEN, "#");
+				break;
+			}
+		}
 		else if (utf8_is_digit(character) || character == '.')
 		{
 			if (!parse_number(prs, &comp, position))
@@ -1860,26 +1913,7 @@ static item_t parse_expression(parser *const prs)
 	prs->loc = origin_loc;
 	prs->prev = origin_prev;
 	computer_clear(&comp);
-
-	character = skip_until(prs, false);
-	while (character != '\n' && character != (char32_t)EOF)
-	{
-		uni_scan_char(prs->io);
-		if (character == '\'' || character == '"')
-		{
-			const bool is_recovery_disabled = prs->is_recovery_disabled;
-			prs->is_recovery_disabled = true;
-
-			universal_io out = io_create();
-			out_swap(prs->io, &out);
-			skip_string(prs, character);
-			out_swap(prs->io, &out);
-
-			prs->is_recovery_disabled = is_recovery_disabled;
-		}
-
-		character = skip_until(prs, false);
-	}
+	skip_expression(prs);
 	return 0;
 }
 
