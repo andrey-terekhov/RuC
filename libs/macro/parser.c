@@ -1638,7 +1638,7 @@ static bool parse_sequence(parser *const prs, computer *const comp, const size_t
 }
 
 /**
- *	Parse expression operator.
+ *	Parse expression operator token.
  *
  *	@param	prs			Parser structure
  *	@param	comp		Expression computer
@@ -1646,7 +1646,7 @@ static bool parse_sequence(parser *const prs, computer *const comp, const size_t
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_operator(parser *const prs, computer *const comp, const size_t pos)
+static bool parse_token(parser *const prs, computer *const comp, const size_t pos)
 {
 	location loc = loc_copy(prs->loc);
 	char32_t character = uni_scan_char(prs->io);
@@ -1687,7 +1687,7 @@ static bool parse_operator(parser *const prs, computer *const comp, const size_t
 		case '%':
 			if (next == '=')
 			{
-				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "%=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "%%=");
 				return false;
 			}
 			return computer_push_token(comp, pos, TK_MOD) == 0;
@@ -1771,13 +1771,23 @@ static bool parse_operator(parser *const prs, computer *const comp, const size_t
 					? TK_GREATER_EQ : TK_GREATER) == 0;
 
 		default:
+		{
 			char buffer[8];
 			utf8_to_string(buffer, character);
 			parser_error(prs, &loc, EXPR_INVALID_TOKEN, buffer);
 			return false;
+		}
 	}
 }
 
+/**
+ *	Parse directive expression.
+ *	Stop without line break processing.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Computation resulte
+ */
 static item_t parse_expression(parser *const prs)
 {
 	location loc = parse_location(prs);
@@ -1797,7 +1807,7 @@ static item_t parse_expression(parser *const prs)
 	universal_io out = io_create();
 	char *buffer = NULL;
 
-	while (false)
+	while (true)
 	{
 		character = buffer == NULL ? skip_until(prs, false) : skip_lines(prs);
 		position = buffer == NULL ? in_get_position(prs->io) : position;
@@ -1897,7 +1907,7 @@ static item_t parse_expression(parser *const prs)
 				break;
 			}
 		}
-		else if (!parse_operator(prs, &comp, position))
+		else if (!parse_token(prs, &comp, position))
 		{
 			break;
 		}

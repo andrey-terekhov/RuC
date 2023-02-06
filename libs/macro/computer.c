@@ -28,7 +28,7 @@ static const size_t MAX_EXPRESSION_DAPTH = 64;
  *	@param	prs			Сomputer structure
  *	@param	num			Error code
  */
-static void parser_error(computer *const comp, const size_t pos, error_t num, ...)
+static void computer_error(computer *const comp, const size_t pos, error_t num, ...)
 {
 	if (in_is_file(comp->io))
 	{
@@ -84,7 +84,7 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 			printf("/ ");
 			break;
 		case TK_MOD:
-			printf("% ");
+			printf("%% ");
 			break;
 		case TK_ADD:
 			printf("+ ");
@@ -162,5 +162,13 @@ item_t computer_pop_result(computer *const comp)
 
 int computer_clear(computer *const comp)
 {
-	return stack_clear(comp) | stack_clear(comp) ? -1 : 0;
+	if (!computer_is_correct(comp))
+	{
+		return -1;
+	}
+
+	stack_clear(&comp->numbers);
+	stack_clear(&comp->operators);
+
+	return 0;
 }
