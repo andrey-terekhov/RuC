@@ -156,7 +156,6 @@ bool computer_is_correct(const computer *const comp)
 
 item_t computer_pop_result(computer *const comp)
 {
-	printf("\n");
 	return 0;
 }
 
@@ -170,5 +169,6 @@ int computer_clear(computer *const comp)
 	stack_clear(&comp->numbers);
 	stack_clear(&comp->operators);
 
+	printf("\n");
 	return 0;
 }

@@ -1687,7 +1687,7 @@ static bool parse_token(parser *const prs, computer *const comp, const size_t po
 		case '%':
 			if (next == '=')
 			{
-				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "%%=");
+				parser_error(prs, &loc, EXPR_INVALID_TOKEN, "%=");
 				return false;
 			}
 			return computer_push_token(comp, pos, TK_MOD) == 0;
@@ -1845,10 +1845,6 @@ static item_t parse_expression(parser *const prs)
 				break;
 			}
 
-			out_set_buffer(&out, MAX_VALUE_SIZE);
-			out_swap(prs->io, &out);
-			prs->call++;
-
 			if (prs->prev == NULL)
 			{
 				const size_t current = in_get_position(prs->io);
@@ -1858,7 +1854,11 @@ static item_t parse_expression(parser *const prs)
 				prs->prev = &loc;
 			}
 
-			if (parse_replacement(prs, index))
+			out_set_buffer(&out, MAX_VALUE_SIZE);
+			out_swap(prs->io, &out);
+			prs->call++;
+
+			if (!parse_replacement(prs, index))
 			{
 				prs->call--;
 				out_swap(prs->io, &out);
@@ -1925,6 +1925,31 @@ static item_t parse_expression(parser *const prs)
 	computer_clear(&comp);
 	skip_expression(prs);
 	return 0;
+}
+
+
+/**
+ *	Parse @c #eval directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_eval(parser *const prs)
+{
+	const size_t position = in_get_position(prs->io);
+	uni_unscan(prs->io, storage_last_read(prs->stg));
+	if (uni_scan_char(prs->io) == '#')
+	{
+		uni_unscan_char(prs->io, '#');
+	}
+
+	uni_printf(prs->io, "\n\n");
+	loc_update_begin(prs->loc);
+
+	in_set_position(prs->io, position);
+	uni_printf(prs->io, "%" PRIitem "\n", parse_expression(prs));
+	return skip_directive(prs);
 }
 
 /**
@@ -2009,8 +2034,10 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 
 			case KW_IF:
 			case KW_WHILE:
-			case KW_EVAL:
 				character = skip_directive(prs);
+				break;
+			case KW_EVAL:
+				character = parse_eval(prs);
 				break;
 
 			case NON_KEYWORD:
