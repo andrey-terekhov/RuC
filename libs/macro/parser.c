@@ -1755,14 +1755,42 @@ static item_t parse_expression(parser *const prs)
 		return 0;
 	}
 
+	universal_io *origin_io = prs->io;
+	location *origin_loc = prs->loc;
+	location *origin_prev = prs->prev;
+
 	computer comp = prs->prev == NULL ? computer_create(&loc, prs->io) : computer_create(prs->prev, NULL);
+	size_t position = in_get_position(prs->io);
+	universal_io out = io_create();
+	char *buffer = NULL;
+
 	while (false)
 	{
-		const size_t position = in_get_position(prs->io);
-		if (utf8_is_letter(character))
+		character = buffer == NULL ? skip_until(prs, false) : skip_lines(prs);
+		position = buffer == NULL ? in_get_position(prs->io) : position;
+
+		if (character == (char32_t)EOF && buffer != NULL)
+		{
+			free(buffer);
+			buffer = NULL;
+			in_clear(&out);
+			prs->io = origin_io;
+			prs->loc = origin_loc;
+			prs->prev = origin_prev;
+		}
+		else if (character == '\n' || character == (char32_t)EOF)
+		{
+			prs->io = origin_io;
+			prs->loc = origin_loc;
+			prs->prev = origin_prev;
+			const item_t result = computer_pop_result(&comp);
+			computer_clear(&comp);
+			return result;
+		}
+		else if (utf8_is_letter(character))
 		{
 			const size_t index = storage_search(prs->stg, prs->io);
-			if (index == SIZE_MAX)
+			if (index == SIZE_MAX || buffer != NULL)
 			{
 				computer_push_const(&comp, position, '\0', storage_last_read(prs->stg));
 				continue;
@@ -1774,23 +1802,44 @@ static item_t parse_expression(parser *const prs)
 				break;
 			}
 
-			universal_io out = io_create();
 			out_set_buffer(&out, MAX_VALUE_SIZE);
 			out_swap(prs->io, &out);
+			prs->call++;
 
+			if (prs->prev == NULL)
+			{
+				const size_t current = in_get_position(prs->io);
+				in_set_position(prs->io, position);
+				loc = loc_copy(prs->loc);
+				in_set_position(prs->io, current);
+				prs->prev = &loc;
+			}
 
+			if (parse_replacement(prs, index))
+			{
+				prs->call--;
+				out_swap(prs->io, &out);
+				out_clear(&out);
+				break;
+			}
+
+			prs->call--;
 			out_swap(prs->io, &out);
+			buffer = out_extract_buffer(&out);
+			in_set_buffer(&out, buffer);
+			prs->loc = NULL;
+			prs->io = &out;
 		}
 		else if (utf8_is_digit(character) || character == '.')
 		{
-			if (parse_number(prs, &comp, position))
+			if (!parse_number(prs, &comp, position))
 			{
 				break;
 			}
 		}
 		else if (character == '\'' || character == '"')
 		{
-			if (parse_sequence(prs, &comp, position))
+			if (!parse_sequence(prs, &comp, position))
 			{
 				break;
 			}
@@ -1801,7 +1850,17 @@ static item_t parse_expression(parser *const prs)
 		}
 	}
 
+	if (buffer != NULL)
+	{
+		free(buffer);
+		in_clear(&out);
+	}
+
+	prs->io = origin_io;
+	prs->loc = origin_loc;
+	prs->prev = origin_prev;
 	computer_clear(&comp);
+
 	character = skip_until(prs, false);
 	while (character != '\n' && character != (char32_t)EOF)
 	{
