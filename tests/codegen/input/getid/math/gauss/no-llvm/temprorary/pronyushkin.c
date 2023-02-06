@@ -5,9 +5,8 @@ void main()
 
 	getid(N);
 	printid(N);
+	float A[N][N], B[N], X[N];
 	{
-		float A[N][N], B[N], X[N];
-		
 		getid(A); 
 		printid(A);
 		
