@@ -18,6 +18,8 @@
 
 #include "item.h"
 #include "locator.h"
+#include "stack.h"
+#include "uniio.h"
 
 
 #ifdef __cplusplus
@@ -62,8 +64,11 @@ typedef enum TOKEN
 /** Computer structure */
 typedef struct computer
 {
-	location *loc;					/**< Default location */
-	bool was_error;					/**< Set, if error message occurred */
+	stack numbers;					/**< Numbers stack */
+	stack operators;				/**< Operators stack */
+
+	location loc;					/**< Directive location */
+	universal_io *io;				/**< IO for location assembly */
 } computer;
 
 
@@ -74,42 +79,42 @@ typedef struct computer
  *
  *	@return	Computer structure
  */
-computer computer_create(location *const loc);
+computer computer_create(location *const loc, universal_io *const io);
 
 
 /**
  *	Push the read token onto computer stack
  *
  *	@param	comp		Computer structure
- *	@param	loc			Parsed location
+ *	@param	pos			Parsed position
  *	@param	tk			Operator token
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int computer_push_token(computer *const comp, location *const loc, const token_t tk);
+int computer_push_token(computer *const comp, const size_t pos, const token_t tk);
 
 /**
  *	Push the read number onto computer stack
  *
  *	@param	comp		Computer structure
- *	@param	loc			Parsed location
+ *	@param	pos			Parsed position
  *	@param	num			Read number
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int computer_push_number(computer *const comp, location *const loc, const item_t num);
+int computer_push_number(computer *const comp, const size_t pos, const item_t num);
 
 /**
  *	Push the read character constant onto computer stack
  *
  *	@param	comp		Computer structure
- *	@param	loc			Parsed location
+ *	@param	pos			Parsed position
  *	@param	ch			Character constant
- *	@param	name			Constant spelling
+ *	@param	name		Constant spelling
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int computer_push_const(computer *const comp, location *const loc, const char32_t ch, const char *const name);
+int computer_push_const(computer *const comp, const size_t pos, const char32_t ch, const char *const name);
 
 
 /**
@@ -120,6 +125,15 @@ int computer_push_const(computer *const comp, location *const loc, const char32_
  *	@return	@c 1 on true, @c 0 on false
  */
 bool computer_is_correct(const computer *const comp);
+
+/**
+ *	Compute buffered expression and clear
+ *
+ *	@param	comp		Computer structure
+ *
+ *	@return	Computation result
+ */
+item_t computer_pop_result(computer *const comp);
 
 
 /**

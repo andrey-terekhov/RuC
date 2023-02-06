@@ -16,6 +16,39 @@
 
 
 #include "computer.h"
+#include "error.h"
+
+
+static const size_t MAX_EXPRESSION_DAPTH = 64;
+
+
+/**
+ *	Emit an error from computer
+ *
+ *	@param	prs			Сomputer structure
+ *	@param	num			Error code
+ */
+static void parser_error(computer *const comp, const size_t pos, error_t num, ...)
+{
+	if (in_is_file(comp->io))
+	{
+		const size_t origin = in_get_position(comp->io);
+		in_set_position(comp->io, pos);
+		loc_search_from(&comp->loc);
+		in_set_position(comp->io, origin);
+	}
+
+	if (loc_is_correct(&comp->loc))
+	{
+		va_list args;
+		va_start(args, num);
+
+		macro_verror(&comp->loc, num, args);
+		comp->loc = loc_copy(NULL);
+
+		va_end(args);
+	}
+}
 
 
 /*
@@ -27,9 +60,14 @@
  */
 
 
-computer computer_create(location *const loc);
+computer computer_create(location *const loc, universal_io *const io)
+{
+	return (computer) { .loc = loc_copy(loc), .io = io
+		, .numbers = stack_create(MAX_EXPRESSION_DAPTH)
+		, .operators = stack_create(MAX_EXPRESSION_DAPTH) };
+}
 
-int computer_push_token(computer *const comp, location *const loc, const token_t tk)
+int computer_push_token(computer *const comp, const size_t pos, const token_t tk)
 {
 	switch(tk)
 	{
@@ -98,18 +136,31 @@ int computer_push_token(computer *const comp, location *const loc, const token_t
 	return 0;
 }
 
-int computer_push_number(computer *const comp, location *const loc, const item_t num)
+int computer_push_number(computer *const comp, const size_t pos, const item_t num)
 {
 	printf("%" PRIitem " ", num);
 	return 0;
 }
 
-int computer_push_const(computer *const comp, location *const loc, const char32_t ch, const char *const name)
+int computer_push_const(computer *const comp, const size_t pos, const char32_t ch, const char *const name)
 {
 	printf("%s ", name);
 	return 0;
 }
 
 
-bool computer_is_correct(const computer *const comp);
-int computer_clear(computer *const comp);
+bool computer_is_correct(const computer *const comp)
+{
+	return comp != NULL && stack_is_correct(&comp->numbers) && stack_is_correct(&comp->operators);
+}
+
+item_t computer_pop_result(computer *const comp)
+{
+	printf("\n");
+	return 0;
+}
+
+int computer_clear(computer *const comp)
+{
+	return stack_clear(comp) | stack_clear(comp) ? -1 : 0;
+}
