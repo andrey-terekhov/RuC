@@ -525,7 +525,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return true;
 	}
 
-	semantic_error(bldr, loc, wrong_init);
+	semantic_error(bldr, loc, wrong_init_type);
 	return false;
 }
 
