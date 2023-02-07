@@ -1978,11 +1978,15 @@ static char32_t parse_set(parser *const prs)
  */
 static char32_t parse_undef(parser *const prs)
 {
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
 	if (parse_name(prs))
 	{
 		storage_remove_by_index(prs->stg, storage_search(prs->stg, prs->io));
 	}
 
+	parse_extra(prs, directive);
 	return skip_directive(prs);
 }
 
