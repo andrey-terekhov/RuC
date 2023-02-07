@@ -50,6 +50,7 @@ static location parse_location(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
 static bool parse_name(parser *const prs);
 static char32_t parse_line(parser *const prs);
+static keyword_t parse_block(parser *const prs, const keyword_t begin);
 
 
 /**
@@ -1054,7 +1055,8 @@ static char32_t parse_line(parser *const prs)
  */
 static void parse_extra(parser *const prs, const char *const directive)
 {
-	if (skip_until(prs, false) != '\n')
+	const char32_t character = skip_until(prs, false);
+	if (character != '\n' && character != (char32_t)EOF)
 	{
 		loc_search_from(prs->loc);
 		parser_warning(prs, prs->loc, DIRECTIVE_EXTRA_TOKENS, directive);
@@ -1989,8 +1991,10 @@ static char32_t parse_undef(parser *const prs)
  *	Parse @c #macro directive.
  *
  *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
  */
-static void parse_macro(parser *const prs)
+static char32_t parse_macro(parser *const prs)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
@@ -2032,7 +2036,7 @@ static void parse_macro(parser *const prs)
 	}
 	out_swap(prs->io, &out);
 	parse_extra(prs, directive);
-	skip_directive(prs);
+	const char32_t character = skip_directive(prs);
 
 	storage_clear(&stg);
 	prs->stg = origin;
@@ -2047,6 +2051,70 @@ static void parse_macro(parser *const prs)
 	else
 	{
 		storage_remove_by_index(prs->stg, index);
+	}
+
+	return character;
+}
+
+/**
+ *	Parse @c #while directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_while(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
+	const size_t begin = in_get_position(prs->io);
+	if (parse_expression(prs) == 0)
+	{
+		skip_directive(prs);
+		universal_io out = io_create();
+		out_swap(prs->io, &out);
+		if (skip_block(prs, KW_WHILE) != KW_ENDW)
+		{
+			parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+		}
+
+		out_swap(prs->io, &out);
+		parse_extra(prs, directive);
+		return skip_directive(prs);
+	}
+
+	size_t iteration = 0;
+	while (true)
+	{
+		skip_directive(prs);
+		if (parse_block(prs, KW_WHILE) != KW_ENDW)
+		{
+			parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+			return (char32_t)EOF;
+		}
+
+		iteration++;
+		if (iteration > MAX_ITERATION)
+		{
+			parser_error(prs, &loc, ITERATION_MAX);
+			parse_extra(prs, directive);
+			return skip_directive(prs);
+		}
+
+		const size_t end = in_get_position(prs->io);
+		location copy = loc_copy(prs->loc);
+		in_set_position(prs->io, begin);
+		*prs->loc = loc;
+
+		if (parse_expression(prs) == 0)
+		{
+			*prs->loc = copy;
+			in_set_position(prs->io, end);
+			parse_extra(prs, directive);
+			return skip_directive(prs);
+		}
 	}
 }
 
@@ -2063,6 +2131,7 @@ static void parse_macro(parser *const prs)
 	sprintf(directive, "%s", storage_last_read(prs->stg));
 }
 */
+
 
 /**
  *	Parse the next read token and check its corresponding the begin one.
@@ -2126,14 +2195,16 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				break;
 
 			case KW_MACRO:
-				parse_macro(prs);
+				character = parse_macro(prs);
 				break;
 			case KW_IFDEF:
 			case KW_IFNDEF:
 
 			case KW_IF:
-			case KW_WHILE:
 				character = skip_directive(prs);
+				break;
+			case KW_WHILE:
+				character = parse_while(prs);
 				break;
 			case KW_EVAL:
 				character = parse_eval(prs);
