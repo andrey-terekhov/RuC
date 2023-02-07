@@ -2035,7 +2035,7 @@ static char32_t parse_macro(parser *const prs)
 		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
 	}
 	out_swap(prs->io, &out);
-	parse_extra(prs, directive);
+	parse_extra(prs, storage_last_read(prs->stg));
 	const char32_t character = skip_directive(prs);
 
 	storage_clear(&stg);
@@ -2081,7 +2081,7 @@ static char32_t parse_while(parser *const prs)
 		}
 
 		out_swap(prs->io, &out);
-		parse_extra(prs, directive);
+		parse_extra(prs, storage_last_read(prs->stg));
 		return skip_directive(prs);
 	}
 
@@ -2099,7 +2099,7 @@ static char32_t parse_while(parser *const prs)
 		if (iteration > MAX_ITERATION)
 		{
 			parser_error(prs, &loc, ITERATION_MAX);
-			parse_extra(prs, directive);
+			parse_extra(prs, storage_last_read(prs->stg));
 			return skip_directive(prs);
 		}
 
@@ -2112,12 +2112,79 @@ static char32_t parse_while(parser *const prs)
 		{
 			*prs->loc = copy;
 			in_set_position(prs->io, end);
-			parse_extra(prs, directive);
+			parse_extra(prs, storage_last_read(prs->stg));
 			return skip_directive(prs);
 		}
 	}
 }
 
+/**
+ *	Parse @c #elif directive until the end token.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	@c KW_ENDIF on success, @c NON_KEYWORD on failure
+ */
+static keyword_t parse_elif(parser *const prs)
+{
+	keyword_t keyword = KW_ELIF;
+	while (keyword != KW_ENDIF && keyword != NON_KEYWORD)
+	{
+		if (parse_expression(prs) != 0)
+		{
+			skip_directive(prs);
+			keyword = parse_block(prs, keyword);
+			while (keyword != KW_ENDIF && keyword != NON_KEYWORD)
+			{
+				if (keyword == KW_ELSE)
+				{
+					parse_extra(prs, storage_last_read(prs->stg));
+				}
+				skip_directive(prs);
+				keyword = skip_block(prs, keyword);
+			}
+
+			return keyword;
+		}
+
+		skip_directive(prs);
+		universal_io out = io_create();
+		out_swap(prs->io, &out);
+		keyword_t keyword = skip_block(prs, KW_ELIF);
+		out_swap(prs->io, &out);
+
+		if (keyword == KW_ELSE)
+		{
+			parse_extra(prs, storage_last_read(prs->stg));
+			skip_directive(prs);
+			return parse_block(prs, keyword);
+		}
+	}
+
+	return keyword;
+}
+
+/**
+ *	Parse @c #if directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_if(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
+	if (parse_elif(prs) != KW_ENDIF)
+	{
+		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+	}
+
+	parse_extra(prs, storage_last_read(prs->stg));
+	return skip_directive(prs);
+}
 
 /**
  *	Parse @c #ifdef directive.
@@ -2199,9 +2266,11 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				break;
 			case KW_IFDEF:
 			case KW_IFNDEF:
+				character = skip_directive(prs);
+				break;
 
 			case KW_IF:
-				character = skip_directive(prs);
+				character = parse_if(prs);
 				break;
 			case KW_WHILE:
 				character = parse_while(prs);
