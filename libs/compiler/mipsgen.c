@@ -3656,8 +3656,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 		const node expression = statement_return_get_expression(nd);
 		const rvalue value = emit_expression(enc, &expression);
 
-		const item_t type = expression_get_type(nd);
-		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = type };
+		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = value.type };
 
 		emit_store_of_rvalue(enc, &return_lval, &value);
 		free_rvalue(enc, &value);
