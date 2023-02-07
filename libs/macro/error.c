@@ -103,6 +103,12 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(msg, "неизвестная директива препроцессора %s", directive);
 		}
 		break;
+		case DIRECTIVE_FORBIDDEN:
+		{
+			const char *const directive = va_arg(args, char *);
+			sprintf(msg, "использование директивы %s внутри макроса запрещено", directive);
+		}
+		break;
 		case DIRECTIVE_UNTERMINATED:
 		{
 			const char *const directive = va_arg(args, char *);

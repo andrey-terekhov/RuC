@@ -411,14 +411,20 @@ static char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		uni_printf(prs->io, "%s", storage_last_read(prs->stg));
 	}
 
-	size_t position = in_get_position(prs->io);
-	char32_t character = skip_until(prs, false);
-	if ((character == '\n' || character == (char32_t)EOF) && (keyword == KW_INCLUDE
-		|| keyword == KW_IF || keyword == KW_ELIF || keyword == KW_WHILE || keyword == KW_EVAL))
+	if (keyword == KW_INCLUDE)
 	{
 		out_clear(prs->io);
-		parser_error(prs, &loc, keyword == KW_INCLUDE ? INCLUDE_EXPECTS_FILENAME
-			: DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
+		parser_error(prs, &loc, DIRECTIVE_FORBIDDEN, storage_last_read(prs->stg));
+		return skip_directive(prs);
+	}
+
+	size_t position = in_get_position(prs->io);
+	char32_t character = skip_until(prs, false);
+	if ((keyword == KW_IF || keyword == KW_ELIF || keyword == KW_WHILE || keyword == KW_EVAL)
+		&& (character == '\n' || character == (char32_t)EOF))
+	{
+		out_clear(prs->io);
+		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
 		return skip_directive(prs);
 	}
 
