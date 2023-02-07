@@ -51,8 +51,7 @@ static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lval
 
 /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
 static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
-											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4 +
-											/* a0-a3: */ 4 * 4;
+											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -3124,16 +3123,6 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			, R_SP);
 	}
 
-	// Сохранение $a0-$a3:
-	for (size_t i = 0; i < ARG_REG_AMOUNT; i++)
-	{
-		to_code_R_I_R(enc->sx->io
-			, IC_MIPS_SW, R_A0 + i
-			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за $s0-$s7 */
-				+ PRESERVED_FP_REG_AMOUNT / 2 * WORD_LENGTH /* за $fs0-$fs10 */)
-			, R_SP);
-	}
-
 	// Выравнивание смещения на 8
 	if (enc->max_displ % 8)
 	{
@@ -3247,15 +3236,6 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	{
 		to_code_R_I_R(enc->sx->io, IC_MIPS_L_S, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + /* за s0-s7 */ 8 * WORD_LENGTH), R_SP);
-	}
-
-	// Восстановление $a0-$a3
-	for (size_t i = 0; i < ARG_REG_AMOUNT; i++)
-	{
-		to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_A0 + i
-			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + 8 * WORD_LENGTH /* за s0-s7 */
-				+ 5 * WORD_LENGTH /* за $fs0-$fs10*/)
-			, R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
