@@ -1553,6 +1553,41 @@ static void parse_macro(parser *const prs)
 
 
 /**
+ *	Parse an integer number suffix.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_suffix(parser *const prs)
+{
+	storage_search(prs->stg, prs->io);
+	const char *suffix = storage_last_read(prs->stg);
+	const size_t size = strlen(suffix);
+	if (size > 3)
+	{
+		return false;
+	}
+
+	switch (suffix[0])
+	{
+		case 'U':
+		case 'u':
+			return size == 1 || ((suffix[1] == 'L' || suffix[1] == 'l')
+				&& (size == 2 || suffix[2] == 'L' || suffix[2] == 'l'));
+
+		case 'L':
+		case 'l':
+			return size == 1 || ((suffix[1] == 'L' || suffix[1] == 'l')
+				&& (size == 2 || suffix[2] == 'U' || suffix[2] == 'u'))
+				|| (size == 2 && (suffix[1] == 'U' || suffix[1] == 'u'));
+
+		default:
+			return false;
+	}
+}
+
+/**
  *	Parse an integer number for the expression computer.
  *	First character should be checked before call.
  *
@@ -1618,9 +1653,8 @@ static bool parse_number(parser *const prs, computer *const comp, const size_t p
 			parser_error(prs, &loc, EXPR_FLOATING_CONSTANT);
 			return false;
 		}
-		else if (utf8_is_letter(character))
+		else if (utf8_is_letter(character) && !parse_suffix(prs))
 		{
-			storage_search(prs->stg, prs->io);
 			parser_error(prs, &loc, EXPR_INVALID_SUFFIX, storage_last_read(prs->stg));
 			return false;
 		}
