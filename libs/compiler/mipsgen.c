@@ -263,27 +263,15 @@ typedef enum LVALUE_KIND
 
 typedef struct lvalue
 {
-	const lvalue_kind_t kind;				/**< Value kind */
-	const mips_register_t base_reg;			/**< Base register */
-	const union								/**< Value location */
+	lvalue_kind_t kind;				/**< Value kind */
+	mips_register_t base_reg;			/**< Base register */
+	union								/**< Value location */
 	{
 		item_t reg_num;						/**< Register where the value is stored */
 		item_t displ;						/**< Stack displacement where the value is stored */
 	} loc;
-	const item_t type;						/**< Value type */
+	item_t type;						/**< Value type */
 } lvalue;
-
-typedef struct mutable_lvalue
-{
-	lvalue_kind_t kind;						/**< Value kind */
-	mips_register_t base_reg;				/**< Base register */
-	union									/**< Value location */
-	{
-		item_t reg_num;						/**< Register where the value is stored */
-		item_t displ;						/**< Stack displacement where the value is stored */
-	} loc;
-	item_t type;							/**< Value type */
-} mutable_lvalue;
 
 
 /** Kinds of rvalue */
@@ -1105,16 +1093,6 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 		mips_register_to_io(enc->sx->io, value->base_reg);
 		uni_printf(enc->sx->io, ")\n");
 	}
-}
-
-static lvalue mutable_lvalue_to_lvalue(const mutable_lvalue val) 
-{
-	return (lvalue) {.kind = val.kind, .base_reg = val.base_reg, .loc.displ = val.loc.displ, .type = val.type};
-}
-
-static mutable_lvalue lvalue_to_mutable_lvalue(const lvalue val) 
-{
-	return (mutable_lvalue) {.kind = val.kind, .base_reg = val.base_reg, .loc.displ = val.loc.displ, .type = val.type};
 }
 
 /**
@@ -2142,7 +2120,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
 		size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
-		mutable_lvalue prev_arg_displ[4 /* за $a0-$a3 */
+		lvalue prev_arg_displ[4 /* за $a0-$a3 */
 									+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
 
 		uni_printf(enc->sx->io, "\t# setting up $sp:\n");
@@ -2212,7 +2190,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 					&arg_rvalue);
 
 				// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-				prev_arg_displ[arg_reg_count++] = lvalue_to_mutable_lvalue(tmp_arg_lvalue);
+				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
 			}
 
 			if (type_is_floating(arg_rvalue.type))
@@ -2238,11 +2216,10 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		{
 			uni_printf(enc->sx->io, "\n");
 
-			const lvalue tmp_lval = mutable_lvalue_to_lvalue(prev_arg_displ[i + j]);
-			const rvalue tmp_rval = emit_load_of_lvalue(enc, &tmp_lval);
+			const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
 			emit_move_rvalue_to_register(
 				enc,
-				type_is_floating(tmp_lval.type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
+				type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
 				&tmp_rval
 			);
 
