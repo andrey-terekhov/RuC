@@ -3195,7 +3195,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 		if (!type_is_floating(ident_get_type(enc->sx, id)))
 		{
-			if (i < ARG_REG_AMOUNT)
+			if (gpr_count < ARG_REG_AMOUNT)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_A0 + gpr_count++;
@@ -3214,7 +3214,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT / 2)
+			if (fp_count < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
