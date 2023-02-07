@@ -2144,8 +2144,12 @@ static keyword_t parse_elif(parser *const prs)
 				{
 					parse_extra(prs, storage_last_read(prs->stg));
 				}
+
 				skip_directive(prs);
+				universal_io out = io_create();
+				out_swap(prs->io, &out);
 				keyword = skip_block(prs, keyword);
+				out_swap(prs->io, &out);
 			}
 
 			return keyword;
@@ -2154,7 +2158,7 @@ static keyword_t parse_elif(parser *const prs)
 		skip_directive(prs);
 		universal_io out = io_create();
 		out_swap(prs->io, &out);
-		keyword_t keyword = skip_block(prs, KW_ELIF);
+		keyword = skip_block(prs, KW_ELIF);
 		out_swap(prs->io, &out);
 
 		if (keyword == KW_ELSE)
