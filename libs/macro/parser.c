@@ -50,7 +50,6 @@ static location parse_location(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
 static bool parse_name(parser *const prs);
 static char32_t parse_line(parser *const prs);
-static item_t parse_expression(parser *const prs);
 
 
 /**
@@ -1146,435 +1145,6 @@ static char32_t parse_include(parser *const prs)
 
 
 /**
- *	Parse macro name after directive.
- *	Check that name is valid or emit an error.
- *	Exit without reading the name.
- *
- *	@param	prs			Parser structure
- *
- *	@return	@c true on valid name, @c false on failure
- */
-static bool parse_name(parser *const prs)
-{
-	location loc = parse_location(prs);
-	char32_t character = skip_until(prs, false);
-	if (utf8_is_letter(character))
-	{
-		return true;
-	}
-
-	if (character == '\n' || character == (char32_t)EOF)
-	{
-		parser_error(prs, &loc, DIRECTIVE_NAME_NON, storage_last_read(prs->stg));
-	}
-	else
-	{
-		loc_search_from(prs->loc);
-		parser_error(prs, prs->loc, MACRO_NAME_FIRST_CHARACTER);
-	}
-
-	return false;
-}
-
-/**
- *	Parse macro definition arguments.
- *	Save the scanned arguments to the parser's storage.
- *	Use their indexes as the value.
- *
- *	@param	prs			Parser structure
- *	@param	index		Index of macro
- *
- *	@return	Number of arguments, @c SIZE_MAX on failure
- */
-static size_t parse_args(parser *const prs, const size_t index)
-{
-	const size_t position = in_get_position(prs->io);
-	if (skip_until(prs, false) != '(' || position != in_get_position(prs->io))
-	{
-		return 0;
-	}
-
-	location loc = loc_copy(prs->loc);
-	uni_scan_char(prs->io);
-	char32_t character = skip_until(prs, false);
-
-	for (size_t i = 0; ; i++)
-	{
-		if (character == ')')
-		{
-			uni_scan_char(prs->io);
-			return i;
-		}
-		else if (character == '\n' || character == (char32_t)EOF)
-		{
-			parser_error(prs, &loc, ARGS_EXPECTED_BRACKET);
-			break;
-		}
-
-		loc_search_from(prs->loc);
-		if (!utf8_is_letter(character))
-		{
-			parser_error(prs, prs->loc, ARGS_EXPECTED_NAME, character, prs->io);
-			break;
-		}
-
-		const size_t argument = storage_add_by_io(prs->stg, prs->io);
-		if (argument == SIZE_MAX)
-		{
-			parser_error(prs, prs->loc, ARGS_DUPLICATE, storage_last_read(prs->stg));
-			break;
-		}
-
-		char buffer[MAX_INDEX_SIZE];
-		sprintf(buffer, "%zu" MASK_SUFFIX "%zu", index, i);
-		storage_set_by_index(prs->stg, argument, buffer);
-
-		character = skip_until(prs, false);
-		if (character == ',')
-		{
-			uni_scan_char(prs->io);
-			character = skip_until(prs, false);
-		}
-		else if (character != ')' && character != '\n' && character != (char32_t)EOF)
-		{
-			loc_search_from(prs->loc);
-			parser_error(prs, prs->loc, ARGS_EXPECTED_COMMA, character, prs->io);
-			break;
-		}
-	}
-
-	return SIZE_MAX;
-}
-
-/**
- *	Parse preprocessor operators of argument.
- *	Produce a masked replacement for argument operators.
- *
- *	@param	prs			Parser structure
- *	@param	was_space	Set, if separator required
- *
- *	@return	@c true on success, @c false on failure
- */
-static bool parse_operator(parser *const prs, const bool was_space)
-{
-	location loc = loc_copy(prs->loc);
-	uni_scan_char(prs->io);
-
-	char32_t character = uni_scan_char(prs->io);
-	if (character == '#')
-	{
-		character = skip_until(prs, false);
-		if (character == '\n' || character == (char32_t)EOF)
-		{
-			parser_error(prs, &loc, HASH_ON_EDGE);
-			return false;
-		}
-
-		const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-		if (value == NULL)
-		{
-			parser_error(prs, &loc, HASH_NOT_FOLLOWED, "##");
-			return false;
-		}
-
-		uni_printf(prs->io, MASK_TOKEN_PASTE "%s", value);
-		return true;
-	}
-
-	uni_unscan_char(prs->io, character);
-	skip_until(prs, false);
-
-	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-	if (value != NULL)
-	{
-		uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
-		return true;
-	}
-
-	universal_io directive = io_create();
-	out_set_buffer(&directive, MAX_KEYWORD_SIZE);
-	uni_printf(&directive, "#%s", storage_last_read(prs->stg));
-
-	char *buffer = out_extract_buffer(&directive);
-	const size_t keyword = storage_get_index(prs->stg, buffer);
-	free(buffer);
-
-	if (keyword != KW_EVAL)
-	{
-		parser_error(prs, &loc, HASH_NOT_FOLLOWED, "#");
-		return false;
-	}
-
-	uni_printf(prs->io, "%s%" PRIitem, was_space ? " " : "", parse_expression(prs));
-	return true;
-}
-
-/**
- *	Parse macro content and prepare value for saving.
- *	All separator sequences will be replaced by a single space.
- *	Return an empty string for the correct macro without value.
- *	Return value require to call @c free() function.
- *
- *	@param	prs			Parser structure
- *
- *	@return	Macro value, @c NULL on failure
- */
-static char *parse_content(parser *const prs)
-{
-	universal_io out = io_create();
-	out_set_buffer(&out, MAX_VALUE_SIZE);
-	out_swap(prs->io, &out);
-
-	char32_t character = skip_until(prs, false);
-	size_t position = in_get_position(prs->io);
-
-	while (character != '\n' && character != (char32_t)EOF)
-	{
-		if (character == '#')
-		{
-			if (!parse_operator(prs, in_get_position(prs->io) != position))
-			{
-				out_swap(prs->io, &out);
-				out_clear(&out);
-				return NULL;
-			}
-		}
-		else
-		{
-			uni_printf(prs->io, "%s", in_get_position(prs->io) != position ? " " : "");
-			if (utf8_is_letter(character))
-			{
-				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-				if (value != NULL)
-				{
-					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
-				}
-				else
-				{
-					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
-				}
-			}
-			else if (character == '\'' || character == '"')
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-				if (skip_string(prs, character) != character)
-				{
-					out_swap(prs->io, &out);
-					out_clear(&out);
-					return NULL;
-				}
-				uni_print_char(prs->io, character);
-			}
-			else
-			{
-				uni_print_char(prs->io, uni_scan_char(prs->io));
-			}
-		}
-
-		position = in_get_position(prs->io);
-		character = skip_until(prs, false);
-	}
-
-	out_swap(prs->io, &out);
-	return out_extract_buffer(&out);
-}
-
-/**
- *	Parse the context of the saved macro.
- *	Create temporary storage for arguments.
- *	Set a velue for the parsed macro name.
- *
- *	@param	prs			Parser structure
- *	@param	index		Index of macro
- */
-static void parse_context(parser *const prs, const size_t index)
-{
-	storage stg = storage_create();
-	storage *origin = prs->stg;
-	prs->stg = &stg;
-
-	const size_t args = parse_args(prs, index);
-	if (args != SIZE_MAX)
-	{
-		if (skip_until(prs, false) == '#')
-		{
-			loc_search_from(prs->loc);
-			uni_scan_char(prs->io);
-			char32_t character = uni_scan_char(prs->io);
-			if (character == '#')
-			{
-				parser_error(prs, prs->loc, HASH_ON_EDGE);
-				storage_remove_by_index(origin, index);
-				storage_clear(&stg);
-				prs->stg = origin;
-				return;
-			}
-			else
-			{
-				uni_unscan_char(prs->io, character);
-				uni_unscan_char(prs->io, '#');
-			}
-		}
-
-		char *value = parse_content(prs);
-		if (value != NULL)
-		{
-			storage_set_args_by_index(origin, index, args);
-			storage_set_by_index(origin, index, value);
-			free(value);
-
-			storage_clear(&stg);
-			prs->stg = origin;
-			return;
-		}
-	}
-
-	storage_remove_by_index(origin, index);
-	storage_clear(&stg);
-	prs->stg = origin;
-}
-
-/**
- *	Parse @c #define directive.
- *
- *	@param	prs			Parser structure
- *
- *	@return	Last read character
- */
-static char32_t parse_define(parser *const prs)
-{
-	if (parse_name(prs))
-	{
-		const size_t position = in_get_position(prs->io);
-		size_t index = storage_add_by_io(prs->stg, prs->io);
-
-		if (index == SIZE_MAX)
-		{
-			in_set_position(prs->io, position);
-			loc_search_from(prs->loc);
-			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
-			index = storage_search(prs->stg, prs->io);
-		}
-
-		parse_context(prs, index);
-	}
-
-	return skip_directive(prs);
-}
-
-/**
- *	Parse @c #set directive.
- *
- *	@param	prs			Parser structure
- *
- *	@return	Last read character
- */
-static char32_t parse_set(parser *const prs)
-{
-	if (parse_name(prs))
-	{
-		const size_t position = in_get_position(prs->io);
-		size_t index = storage_search(prs->stg, prs->io);
-
-		if (index == SIZE_MAX)
-		{
-			in_set_position(prs->io, position);
-			loc_search_from(prs->loc);
-			parser_warning(prs, prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
-			index = storage_add_by_io(prs->stg, prs->io);
-		}
-
-		parse_context(prs, index);
-	}
-
-	return skip_directive(prs);
-}
-
-/**
- *	Parse @c #undef directive.
- *
- *	@param	prs			Parser structure
- *
- *	@return	Last read character
- */
-static char32_t parse_undef(parser *const prs)
-{
-	if (parse_name(prs))
-	{
-		storage_remove_by_index(prs->stg, storage_search(prs->stg, prs->io));
-	}
-
-	return skip_directive(prs);
-}
-
-
-/**
- *	Parse @c #macro directive.
- *
- *	@param	prs			Parser structure
- */
-static void parse_macro(parser *const prs)
-{
-	location loc = parse_location(prs);
-	char directive[MAX_KEYWORD_SIZE];
-	sprintf(directive, "%s", storage_last_read(prs->stg));
-
-	size_t index = SIZE_MAX;
-	if (parse_name(prs))
-	{
-		const size_t position = in_get_position(prs->io);
-		index = storage_add_by_io(prs->stg, prs->io);
-
-		if (index == SIZE_MAX)
-		{
-			in_set_position(prs->io, position);
-			loc_search_from(prs->loc);
-			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
-			index = storage_search(prs->stg, prs->io);
-		}
-	}
-
-	storage *origin = prs->stg;
-	storage stg = storage_create();
-	prs->stg = &stg;
-
-	skip_until(prs, false);
-	const size_t args = index != SIZE_MAX ? parse_args(prs, index) : SIZE_MAX;
-	universal_io out = io_create();
-	if (args != SIZE_MAX)
-	{
-		out_set_buffer(&out, MAX_VALUE_SIZE);
-		parse_extra(prs, directive);
-	}
-
-	skip_directive(prs);
-	out_swap(prs->io, &out);
-	if (skip_block(prs, KW_MACRO) != KW_ENDM)
-	{
-		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
-	}
-	out_swap(prs->io, &out);
-	parse_extra(prs, directive);
-	skip_directive(prs);
-
-	storage_clear(&stg);
-	prs->stg = origin;
-
-	char *value = out_extract_buffer(&out);
-	if (value != NULL)
-	{
-		storage_set_args_by_index(prs->stg, index, args);
-		storage_set_by_index(prs->stg, index, value);
-		free(value);
-	}
-	else
-	{
-		storage_remove_by_index(prs->stg, index);
-	}
-}
-
-
-/**
  *	Parse an integer number suffix.
  *
  *	@param	prs			Parser structure
@@ -2027,7 +1597,6 @@ static item_t parse_expression(parser *const prs)
 	return 0;
 }
 
-
 /**
  *	Parse @c #eval directive.
  *
@@ -2051,6 +1620,436 @@ static char32_t parse_eval(parser *const prs)
 	uni_printf(prs->io, "%" PRIitem "\n", parse_expression(prs));
 	return skip_directive(prs);
 }
+
+
+/**
+ *	Parse macro name after directive.
+ *	Check that name is valid or emit an error.
+ *	Exit without reading the name.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	@c true on valid name, @c false on failure
+ */
+static bool parse_name(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char32_t character = skip_until(prs, false);
+	if (utf8_is_letter(character))
+	{
+		return true;
+	}
+
+	if (character == '\n' || character == (char32_t)EOF)
+	{
+		parser_error(prs, &loc, DIRECTIVE_NAME_NON, storage_last_read(prs->stg));
+	}
+	else
+	{
+		loc_search_from(prs->loc);
+		parser_error(prs, prs->loc, MACRO_NAME_FIRST_CHARACTER);
+	}
+
+	return false;
+}
+
+/**
+ *	Parse macro definition arguments.
+ *	Save the scanned arguments to the parser's storage.
+ *	Use their indexes as the value.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ *
+ *	@return	Number of arguments, @c SIZE_MAX on failure
+ */
+static size_t parse_args(parser *const prs, const size_t index)
+{
+	const size_t position = in_get_position(prs->io);
+	if (skip_until(prs, false) != '(' || position != in_get_position(prs->io))
+	{
+		return 0;
+	}
+
+	location loc = loc_copy(prs->loc);
+	uni_scan_char(prs->io);
+	char32_t character = skip_until(prs, false);
+
+	for (size_t i = 0; ; i++)
+	{
+		if (character == ')')
+		{
+			uni_scan_char(prs->io);
+			return i;
+		}
+		else if (character == '\n' || character == (char32_t)EOF)
+		{
+			parser_error(prs, &loc, ARGS_EXPECTED_BRACKET);
+			break;
+		}
+
+		loc_search_from(prs->loc);
+		if (!utf8_is_letter(character))
+		{
+			parser_error(prs, prs->loc, ARGS_EXPECTED_NAME, character, prs->io);
+			break;
+		}
+
+		const size_t argument = storage_add_by_io(prs->stg, prs->io);
+		if (argument == SIZE_MAX)
+		{
+			parser_error(prs, prs->loc, ARGS_DUPLICATE, storage_last_read(prs->stg));
+			break;
+		}
+
+		char buffer[MAX_INDEX_SIZE];
+		sprintf(buffer, "%zu" MASK_SUFFIX "%zu", index, i);
+		storage_set_by_index(prs->stg, argument, buffer);
+
+		character = skip_until(prs, false);
+		if (character == ',')
+		{
+			uni_scan_char(prs->io);
+			character = skip_until(prs, false);
+		}
+		else if (character != ')' && character != '\n' && character != (char32_t)EOF)
+		{
+			loc_search_from(prs->loc);
+			parser_error(prs, prs->loc, ARGS_EXPECTED_COMMA, character, prs->io);
+			break;
+		}
+	}
+
+	return SIZE_MAX;
+}
+
+/**
+ *	Parse preprocessor operators of argument.
+ *	Produce a masked replacement for argument operators.
+ *
+ *	@param	prs			Parser structure
+ *	@param	was_space	Set, if separator required
+ *
+ *	@return	@c true on success, @c false on failure
+ */
+static bool parse_operator(parser *const prs, const bool was_space)
+{
+	location loc = loc_copy(prs->loc);
+	uni_scan_char(prs->io);
+
+	char32_t character = uni_scan_char(prs->io);
+	if (character == '#')
+	{
+		character = skip_until(prs, false);
+		if (character == '\n' || character == (char32_t)EOF)
+		{
+			parser_error(prs, &loc, HASH_ON_EDGE);
+			return false;
+		}
+
+		const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+		if (value == NULL)
+		{
+			parser_error(prs, &loc, HASH_NOT_FOLLOWED, "##");
+			return false;
+		}
+
+		uni_printf(prs->io, MASK_TOKEN_PASTE "%s", value);
+		return true;
+	}
+
+	uni_unscan_char(prs->io, character);
+	skip_until(prs, false);
+
+	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+	if (value != NULL)
+	{
+		uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
+		return true;
+	}
+
+	universal_io directive = io_create();
+	out_set_buffer(&directive, MAX_KEYWORD_SIZE);
+	uni_printf(&directive, "#%s", storage_last_read(prs->stg));
+
+	char *buffer = out_extract_buffer(&directive);
+	const size_t keyword = storage_get_index(prs->stg, buffer);
+	free(buffer);
+
+	if (keyword != KW_EVAL)
+	{
+		parser_error(prs, &loc, HASH_NOT_FOLLOWED, "#");
+		return false;
+	}
+
+	uni_printf(prs->io, "%s%" PRIitem, was_space ? " " : "", parse_expression(prs));
+	return true;
+}
+
+/**
+ *	Parse macro content and prepare value for saving.
+ *	All separator sequences will be replaced by a single space.
+ *	Return an empty string for the correct macro without value.
+ *	Return value require to call @c free() function.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Macro value, @c NULL on failure
+ */
+static char *parse_content(parser *const prs)
+{
+	universal_io out = io_create();
+	out_set_buffer(&out, MAX_VALUE_SIZE);
+	out_swap(prs->io, &out);
+
+	char32_t character = skip_until(prs, false);
+	size_t position = in_get_position(prs->io);
+
+	while (character != '\n' && character != (char32_t)EOF)
+	{
+		if (character == '#')
+		{
+			if (!parse_operator(prs, in_get_position(prs->io) != position))
+			{
+				out_swap(prs->io, &out);
+				out_clear(&out);
+				return NULL;
+			}
+		}
+		else
+		{
+			uni_printf(prs->io, "%s", in_get_position(prs->io) != position ? " " : "");
+			if (utf8_is_letter(character))
+			{
+				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+				if (value != NULL)
+				{
+					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
+				}
+				else
+				{
+					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+				}
+			}
+			else if (character == '\'' || character == '"')
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+				if (skip_string(prs, character) != character)
+				{
+					out_swap(prs->io, &out);
+					out_clear(&out);
+					return NULL;
+				}
+				uni_print_char(prs->io, character);
+			}
+			else
+			{
+				uni_print_char(prs->io, uni_scan_char(prs->io));
+			}
+		}
+
+		position = in_get_position(prs->io);
+		character = skip_until(prs, false);
+	}
+
+	out_swap(prs->io, &out);
+	return out_extract_buffer(&out);
+}
+
+/**
+ *	Parse the context of the saved macro.
+ *	Create temporary storage for arguments.
+ *	Set a velue for the parsed macro name.
+ *
+ *	@param	prs			Parser structure
+ *	@param	index		Index of macro
+ */
+static void parse_context(parser *const prs, const size_t index)
+{
+	storage stg = storage_create();
+	storage *origin = prs->stg;
+	prs->stg = &stg;
+
+	const size_t args = parse_args(prs, index);
+	if (args != SIZE_MAX)
+	{
+		if (skip_until(prs, false) == '#')
+		{
+			loc_search_from(prs->loc);
+			uni_scan_char(prs->io);
+			char32_t character = uni_scan_char(prs->io);
+			if (character == '#')
+			{
+				parser_error(prs, prs->loc, HASH_ON_EDGE);
+				storage_remove_by_index(origin, index);
+				storage_clear(&stg);
+				prs->stg = origin;
+				return;
+			}
+			else
+			{
+				uni_unscan_char(prs->io, character);
+				uni_unscan_char(prs->io, '#');
+			}
+		}
+
+		char *value = parse_content(prs);
+		if (value != NULL)
+		{
+			storage_set_args_by_index(origin, index, args);
+			storage_set_by_index(origin, index, value);
+			free(value);
+
+			storage_clear(&stg);
+			prs->stg = origin;
+			return;
+		}
+	}
+
+	storage_remove_by_index(origin, index);
+	storage_clear(&stg);
+	prs->stg = origin;
+}
+
+/**
+ *	Parse @c #define directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_define(parser *const prs)
+{
+	if (parse_name(prs))
+	{
+		const size_t position = in_get_position(prs->io);
+		size_t index = storage_add_by_io(prs->stg, prs->io);
+
+		if (index == SIZE_MAX)
+		{
+			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			index = storage_search(prs->stg, prs->io);
+		}
+
+		parse_context(prs, index);
+	}
+
+	return skip_directive(prs);
+}
+
+/**
+ *	Parse @c #set directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_set(parser *const prs)
+{
+	if (parse_name(prs))
+	{
+		const size_t position = in_get_position(prs->io);
+		size_t index = storage_search(prs->stg, prs->io);
+
+		if (index == SIZE_MAX)
+		{
+			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_UNDEFINED, storage_last_read(prs->stg));
+			index = storage_add_by_io(prs->stg, prs->io);
+		}
+
+		parse_context(prs, index);
+	}
+
+	return skip_directive(prs);
+}
+
+/**
+ *	Parse @c #undef directive.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t parse_undef(parser *const prs)
+{
+	if (parse_name(prs))
+	{
+		storage_remove_by_index(prs->stg, storage_search(prs->stg, prs->io));
+	}
+
+	return skip_directive(prs);
+}
+
+
+/**
+ *	Parse @c #macro directive.
+ *
+ *	@param	prs			Parser structure
+ */
+static void parse_macro(parser *const prs)
+{
+	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
+	size_t index = SIZE_MAX;
+	if (parse_name(prs))
+	{
+		const size_t position = in_get_position(prs->io);
+		index = storage_add_by_io(prs->stg, prs->io);
+
+		if (index == SIZE_MAX)
+		{
+			in_set_position(prs->io, position);
+			loc_search_from(prs->loc);
+			parser_warning(prs, prs->loc, MACRO_NAME_REDEFINE, storage_last_read(prs->stg));
+			index = storage_search(prs->stg, prs->io);
+		}
+	}
+
+	storage *origin = prs->stg;
+	storage stg = storage_create();
+	prs->stg = &stg;
+
+	skip_until(prs, false);
+	const size_t args = index != SIZE_MAX ? parse_args(prs, index) : SIZE_MAX;
+	universal_io out = io_create();
+	if (args != SIZE_MAX)
+	{
+		out_set_buffer(&out, MAX_VALUE_SIZE);
+		parse_extra(prs, directive);
+	}
+
+	skip_directive(prs);
+	out_swap(prs->io, &out);
+	if (skip_block(prs, KW_MACRO) != KW_ENDM)
+	{
+		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+	}
+	out_swap(prs->io, &out);
+	parse_extra(prs, directive);
+	skip_directive(prs);
+
+	storage_clear(&stg);
+	prs->stg = origin;
+
+	char *value = out_extract_buffer(&out);
+	if (value != NULL)
+	{
+		storage_set_args_by_index(prs->stg, index, args);
+		storage_set_by_index(prs->stg, index, value);
+		free(value);
+	}
+	else
+	{
+		storage_remove_by_index(prs->stg, index);
+	}
+}
+
 
 /**
  *	Parse @c #ifdef directive.
