@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -d
 
   ubuntu:
     name: Ubuntu 20.04
@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -d
 
   macos:
     name: macOS Big Sur 11
@@ -39,4 +39,4 @@ jobs:
       - name: Set up environment
         run: brew install coreutils
       - name: Run script
-        run: ./scripts/test.sh
+        run: ./scripts/test.sh -d
