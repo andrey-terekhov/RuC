@@ -2195,17 +2195,71 @@ static char32_t parse_if(parser *const prs)
 }
 
 /**
- *	Parse @c #ifdef directive.
+ *	Parse @c #ifdef and @c #ifndef directive.
  *
  *	@param	prs			Parser structure
+ *	@param	keyword		Directive keyword
+ *
+ *	@return	Last read character
  */
-/*static void parse_ifdef(parser *const prs)
+static char32_t parse_ifdef_ifndef(parser *const prs, keyword_t keyword)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
 	sprintf(directive, "%s", storage_last_read(prs->stg));
+
+	if (parse_name(prs))
+	{
+		const size_t index = storage_search(prs->stg, prs->io);
+		parse_extra(prs, directive);
+		skip_directive(prs);
+
+		if ((keyword == KW_IFDEF && index != SIZE_MAX) || (keyword == KW_IFNDEF && index == SIZE_MAX))
+		{
+			keyword = parse_block(prs, keyword);
+		}
+		else
+		{
+			universal_io out = io_create();
+			out_swap(prs->io, &out);
+			keyword = skip_block(prs, keyword);
+			out_swap(prs->io, &out);
+
+			if (keyword == KW_ELIF)
+			{
+				keyword = parse_elif(prs);
+			}
+			else if (keyword == KW_ELSE)
+			{
+				parse_extra(prs, storage_last_read(prs->stg));
+				skip_directive(prs);
+				keyword = parse_block(prs, keyword);
+			}
+		}
+	}
+
+	while (keyword != KW_ENDIF && keyword != NON_KEYWORD)
+	{
+		if (keyword == KW_ELSE)
+		{
+			parse_extra(prs, storage_last_read(prs->stg));
+		}
+
+		skip_directive(prs);
+		universal_io out = io_create();
+		out_swap(prs->io, &out);
+		keyword = skip_block(prs, keyword);
+		out_swap(prs->io, &out);
+	}
+
+	if (keyword != KW_ENDIF)
+	{
+		parser_error(prs, &loc, DIRECTIVE_UNTERMINATED, directive);
+	}
+
+	parse_extra(prs, storage_last_read(prs->stg));
+	return skip_directive(prs);
 }
-*/
 
 
 /**
@@ -2274,7 +2328,7 @@ static keyword_t parse_block(parser *const prs, const keyword_t begin)
 				break;
 			case KW_IFDEF:
 			case KW_IFNDEF:
-				character = skip_directive(prs);
+				character = parse_ifdef_ifndef(prs, keyword);
 				break;
 
 			case KW_IF:
