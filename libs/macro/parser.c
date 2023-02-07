@@ -16,6 +16,7 @@
 
 #include "parser.h"
 #include <stdlib.h>
+#include <string.h>
 #include "computer.h"
 #include "error.h"
 #include "keywords.h"
@@ -49,6 +50,7 @@ static location parse_location(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
 static bool parse_name(parser *const prs);
 static char32_t parse_line(parser *const prs);
+static item_t parse_expression(parser *const prs);
 
 
 /**
@@ -1283,13 +1285,27 @@ static bool parse_operator(parser *const prs, const bool was_space)
 	skip_until(prs, false);
 
 	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-	if (value == NULL)
+	if (value != NULL)
+	{
+		uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
+		return true;
+	}
+
+	universal_io directive = io_create();
+	out_set_buffer(&directive, MAX_KEYWORD_SIZE);
+	uni_printf(&directive, "#%s", storage_last_read(prs->stg));
+
+	char *buffer = out_extract_buffer(&directive);
+	const size_t keyword = storage_get_index(prs->stg, buffer);
+	free(buffer);
+
+	if (keyword != KW_EVAL)
 	{
 		parser_error(prs, &loc, HASH_NOT_FOLLOWED, "#");
 		return false;
 	}
 
-	uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
+	uni_printf(prs->io, "%s%" PRIitem, was_space ? " " : "", parse_expression(prs));
 	return true;
 }
 
