@@ -2513,7 +2513,6 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
 			const item_t result_type = expression_get_type(nd); 
-			printf("%i %i\n", result_type, TYPE_FLOATING);
 			const item_t result_reg_num = type_is_floating(result_type) ? get_float_register(enc) : get_register(enc);
 
 			const rvalue result_rvalue = {
