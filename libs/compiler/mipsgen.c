@@ -1738,6 +1738,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
 		const rvalue *imm_rvalue = (second_operand->kind != RVALUE_KIND_CONST) ? first_operand : second_operand;
 		const rvalue *const var_rvalue = (second_operand->kind == RVALUE_KIND_CONST) ? first_operand : second_operand;
+		const bool is_var_first_operand = var_rvalue == first_operand;
 
 		switch (operator)
 		{
@@ -1761,9 +1762,15 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, var_rvalue);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, imm_rvalue);
+				if (is_var_first_operand) {
+					rvalue_to_io(enc, var_rvalue);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, imm_rvalue);
+				} else {
+					rvalue_to_io(enc, imm_rvalue);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, var_rvalue);
+				}
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
