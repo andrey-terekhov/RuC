@@ -2513,10 +2513,18 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
 
-			emit_binary_operation(enc, &lhs_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
+			const rvalue result_rvalue = {
+				.from_lvalue = !FROM_LVALUE,
+				.kind = RVALUE_KIND_REGISTER,
+				.val.reg_num = get_register(enc),
+				.type = lhs_rvalue.type
+			};
 
+			emit_binary_operation(enc, &result_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
+
+			free_rvalue(enc, &lhs_rvalue);
 			free_rvalue(enc, &rhs_rvalue);
-			return lhs_rvalue;
+			return result_rvalue;
 		}
 	}
 }
