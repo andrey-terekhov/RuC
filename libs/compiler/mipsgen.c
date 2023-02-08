@@ -1688,7 +1688,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_NE:
 			{
 				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
+				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
+				const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
@@ -1707,10 +1708,18 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
+				uni_printf(enc->sx->io, ", 0\n");
+				emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 
 				emit_label_declaration(enc, &label_else);
 
+				uni_printf(enc->sx->io, "\t");
+				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				uni_printf(enc->sx->io, " ");
+				rvalue_to_io(enc, dest);
+				uni_printf(enc->sx->io, ", 1\n");
+
+				emit_label_declaration(enc, &label_end);
 				uni_printf(enc->sx->io, "\n");
 			}
 			break;
@@ -1750,6 +1759,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			{
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
+				const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				// Загружаем <значение из second_operand> на регистр
 				const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
@@ -1773,9 +1783,18 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
+				uni_printf(enc->sx->io, ", 0\n");
+				emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 
 				emit_label_declaration(enc, &label_else);
+
+				uni_printf(enc->sx->io, "\t");
+				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				uni_printf(enc->sx->io, " ");
+				rvalue_to_io(enc, dest);
+				uni_printf(enc->sx->io, ", 1\n");
+
+				emit_label_declaration(enc, &label_end);
 
 				uni_printf(enc->sx->io, "\n");
 				break;
