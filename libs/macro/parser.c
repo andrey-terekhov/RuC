@@ -915,7 +915,8 @@ static char32_t parse_hash(parser *const prs, universal_io *const out)
 	out_swap(prs->io, out);
 	out_set_buffer(prs->io, MAX_COMMENT_SIZE);
 
-	while (true) {
+	while (true)
+	{
 		if (prs->is_line_required)
 		{
 			out_set_buffer(prs->io, MAX_COMMENT_SIZE);
@@ -1227,7 +1228,7 @@ static bool parse_number(parser *const prs, computer *const comp, const size_t p
 			{
 				number = (number << 1) | (buffer[i] - '0');
 			}
-        }
+		}
 
 		if (!was_error)
 		{
