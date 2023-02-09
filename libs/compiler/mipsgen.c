@@ -1123,14 +1123,14 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier
 	hash_set_by_index(&enc->displacements, index, 1, location);
 	hash_set_by_index(&enc->displacements, index, 2, base_reg);
 
-	if (is_local)
+	if (!is_local)
+	{
+		enc->global_displ += mips_type_size(enc->sx, type);
+	}
+	else if (!is_register)
 	{
 		enc->scope_displ += mips_type_size(enc->sx, type);
 		enc->max_displ = max(enc->scope_displ, enc->max_displ);
-	}
-	else
-	{
-		enc->global_displ += mips_type_size(enc->sx, type);
 	}
 
 	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = displacement, .type = type };
