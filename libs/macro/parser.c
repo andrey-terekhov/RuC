@@ -2091,6 +2091,8 @@ static char32_t parse_while(parser *const prs)
 	}
 
 	size_t iteration = 0;
+	const bool was_error = prs->was_error;
+	prs->was_error = prs->is_recovery_disabled && prs->was_error;
 	while (true)
 	{
 		skip_directive(prs);
@@ -2113,11 +2115,12 @@ static char32_t parse_while(parser *const prs)
 		in_set_position(prs->io, begin);
 		*prs->loc = loc;
 
-		if (parse_expression(prs) == 0)
+		if (prs->was_error || parse_expression(prs) == 0)
 		{
 			*prs->loc = copy;
 			in_set_position(prs->io, end);
 			parse_extra(prs, storage_last_read(prs->stg));
+			prs->was_error = prs->was_error || was_error;
 			return skip_directive(prs);
 		}
 	}
