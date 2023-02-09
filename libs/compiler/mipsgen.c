@@ -262,14 +262,14 @@ typedef enum LVALUE_KIND
 
 typedef struct lvalue
 {
-	const lvalue_kind_t kind;				/**< Value kind */
-	const mips_register_t base_reg;			/**< Base register */
-	const union								/**< Value location */
+	lvalue_kind_t kind;				/**< Value kind */
+	mips_register_t base_reg;			/**< Base register */
+	union								/**< Value location */
 	{
 		item_t reg_num;						/**< Register where the value is stored */
 		item_t displ;						/**< Stack displacement where the value is stored */
 	} loc;
-	const item_t type;						/**< Value type */
+	item_t type;						/**< Value type */
 } lvalue;
 
 
@@ -2119,7 +2119,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		size_t f_arg_count = 0;
 		size_t arg_count = 0;
 		size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
-		const lvalue *prev_arg_displ[4 /* за $a0-$a3 */
+		lvalue prev_arg_displ[4 /* за $a0-$a3 */
 									+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
 
 		uni_printf(enc->sx->io, "\t# setting up $sp:\n");
@@ -2189,7 +2189,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 					&arg_rvalue);
 
 				// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-				prev_arg_displ[arg_reg_count++] = &tmp_arg_lvalue;
+				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
 			}
 
 			if (type_is_floating(arg_rvalue.type))
@@ -2215,10 +2215,10 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		{
 			uni_printf(enc->sx->io, "\n");
 
-			const rvalue tmp_rval = emit_load_of_lvalue(enc, prev_arg_displ[i + j]);
+			const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
 			emit_move_rvalue_to_register(
 				enc,
-				type_is_floating(prev_arg_displ[i + j]->type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
+				type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
 				&tmp_rval
 			);
 
