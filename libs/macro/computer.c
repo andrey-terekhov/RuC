@@ -223,33 +223,33 @@ static int computer_compare_priority(const token_t fst, const token_t snd)
 		case ITEM_MAX:
 			return -1;
 		case TK_L_BOUND:
-			return 0;
+			return TK_R_BOUND == snd ? 0 : -1;
 
 		case TK_MULT:
 		case TK_DIV:
 		case TK_MOD:
-			return TK_MULT > snd ? -1 : TK_MOD >= snd ? 0 : 1;
+			return TK_MOD < snd ? 1 : TK_MULT <= snd ? 0 : -1;
 
 		case TK_ADD:
 		case TK_SUB:
-			return TK_ADD > snd ? -1 : TK_SUB >= snd ? 0 : 1;
+			return TK_SUB < snd ? 1 : TK_ADD <= snd ? 0 : -1;
 
 		case TK_L_SHIFT:
 		case TK_R_SHIFT:
-			return TK_L_SHIFT > snd ? -1 : TK_R_SHIFT >= snd ? 0 : 1;
+			return TK_R_SHIFT < snd ? 1 : TK_L_SHIFT <= snd ? 0 : -1;
 
 		case TK_LESS:
 		case TK_GREATER:
 		case TK_LESS_EQ:
 		case TK_GREATER_EQ:
-			return TK_LESS > snd ? -1 : TK_GREATER_EQ >= snd ? 0 : 1;
+			return TK_GREATER_EQ < snd ? 1 : TK_LESS <= snd ? 0 : -1;
 
 		case TK_EQ:
 		case TK_NOT_EQ:
-			return TK_EQ > snd ? -1 : TK_NOT_EQ >= snd ? 0 : 1;
+			return TK_NOT_EQ < snd ? 1 : TK_EQ <= snd ? 0 : -1;
 
 		default:
-			return fst > snd ? -1 : fst == snd ? 0 : 1;
+			return fst < snd ? 1 : fst == snd ? 0 : -1;
 	}
 }
 
@@ -290,15 +290,6 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 	{
 		stack_pop(&comp->operators);
 		stack_pop(&comp->operators);
-		comp->was_number = false;
-		return 0;
-	}
-
-	if (tk == TK_R_BOUND)
-	{
-		computer_select_three(comp);
-		stack_push(&comp->operators, (item_t)pos);
-		stack_push(&comp->operators, tk);
 		comp->was_number = false;
 		return 0;
 	}
