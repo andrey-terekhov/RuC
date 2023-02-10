@@ -6,6 +6,7 @@ variables:
 stages:
   - virtual
   - llvm
+  - mips
 
 virtual:
   stage: virtual
@@ -39,6 +40,7 @@ llvm-uemu:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-uemu.patch
     - ./scripts/test.sh -d
+  allow_failure: true
   tags:
   - R2LIN
 
@@ -50,5 +52,32 @@ llvm-baikal:
   script:
     - patch ./scripts/test.sh < ./scripts/llvm-baikal.patch
     - ./scripts/test.sh -d
+  allow_failure: true
+  tags:
+  - R2LIN
+
+mips-uemu:
+  stage: mips
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu git
+    - rm -rf ../uemu
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.softcom.su/ruc/uemu ../uemu
+  script:
+    - patch ./scripts/test.sh < ./scripts/mips-uemu.patch
+    - ./scripts/test.sh -d
+  allow_failure: true
+  tags:
+  - R2LIN
+
+mips-baikal:
+  stage: mips
+  before_script:
+    - apt-get update
+    - apt-get install -y build-essential cmake clang-11 gcc-mipsel-linux-gnu sshpass
+  script:
+    - patch ./scripts/test.sh < ./scripts/mips-baikal.patch
+    - ./scripts/test.sh -d
+  allow_failure: true
   tags:
   - R2LIN

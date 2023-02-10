@@ -38,6 +38,24 @@ static void semantic_error(builder *const bldr, const location loc, err_t num, .
 	va_end(args);
 }
 
+/**
+ *	Emit a semantic warning
+ *
+ *	@param	bldr		AST builder
+ *	@param	loc			Warning location
+ *	@param	num			Warning code
+ */
+static void semantic_warning(builder *const bldr, const location loc, warning_t num, ...)
+{
+	va_list args;
+	va_start(args, num);
+
+	report_warning(&bldr->sx->rprt, bldr->sx->io, loc, num, args);
+
+	va_end(args);
+}
+
+
 static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
@@ -129,6 +147,7 @@ static node fold_binary_expression(builder *const bldr, const item_t type
 	{
 		case TYPE_ENUM:
 		case TYPE_INTEGER:
+		case TYPE_BOOLEAN:
 		{
 			const item_t left_value = expression_literal_get_integer(LHS);
 			const item_t right_value = expression_literal_get_integer(RHS);
@@ -922,7 +941,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		{
 			if (type_is_floating(left_type) || type_is_floating(right_type))
 			{
-				warning(bldr->sx->io, variable_deviation);
+				semantic_warning(bldr, op_loc, variable_deviation);
 			}
 
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
@@ -1069,6 +1088,164 @@ node build_constant_expression(builder *const bldr, node *const expr)
 	}
 
 	return *expr;
+}
+
+node build_condition(builder *const bldr, node *const expr)
+{
+	if (expression_get_class(expr) == EXPR_ASSIGNMENT)
+	{
+		semantic_warning(bldr, node_get_location(expr), result_of_assignment_as_condition);
+	}
+
+	return *expr;
+}
+
+node build_empty_bound_expression(builder *const bldr, const location loc)
+{
+	return expression_empty_bound(&bldr->context, loc);
+}
+
+
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, node_vector *const bounds, const location loc)
+{
+	if (type_is_void(type))
+	{
+		semantic_error(bldr, loc, only_functions_may_have_type_VOID);
+	}
+
+	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	const size_t bounds_amount = node_vector_size(bounds);
+	for (size_t i = 0; i < bounds_amount; i++)
+	{
+		const node bound = node_vector_get(bounds, i);
+		member_type = type_array(bldr->sx, member_type);
+		if (!type_is_integer(bldr->sx, expression_get_type(&bound)))
+		{
+			semantic_error(bldr, node_get_location(&bound), array_size_must_be_int);
+		}
+	}
+
+	return declaration_member(&bldr->context, member_type, name, bounds, loc);
+}
+
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc)
+{
+	return declaration_struct(&bldr->context, name, struct_loc);
+}
+
+node build_struct_declaration(builder *const bldr, node *const declaration, node_vector *const members)
+{
+	const size_t members_amount = node_vector_size(members);
+	vector types = vector_create(members_amount);
+	vector names = vector_create(members_amount);
+
+	for (size_t i = 0; i < members_amount; i++)
+	{
+		node member = node_vector_get(members, i);
+		if (node_is_correct(&member))
+		{
+			vector_add(&types, declaration_member_get_type(&member));
+			vector_add(&names, (item_t)declaration_member_get_name(&member));
+
+			declaration_struct_add_declarator(declaration, &member);
+		}
+	}
+
+	const size_t name = declaration_struct_get_name(declaration);
+	const item_t type = type_structure(bldr->sx, &types, &names);
+	const size_t id = ident_add(bldr->sx, name, 1000, type, 0);
+
+	vector_clear(&types);
+	vector_clear(&names);
+	declaration_struct_set_type(declaration, type);
+
+	const location struct_loc = node_get_location(declaration);
+	if (id == SIZE_MAX - 1)
+	{
+		semantic_error(bldr, struct_loc, repeated_decl, repr_get_name(bldr->sx, name));
+	}
+
+	const node last_member = node_vector_get(members, members_amount - 1);
+	const location loc = { struct_loc.begin, node_get_location(&last_member).end };
+	return declaration_struct_set_location(declaration, loc);
+}
+
+node build_declarator(builder *const bldr, const item_t type, const size_t name
+   , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
+{
+	if (type_is_void(type))
+	{
+		semantic_error(bldr, ident_loc, only_functions_may_have_type_VOID);
+	}
+
+	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : type;
+	const size_t bounds_amount = node_vector_size(bounds);
+
+	bool has_empty_bounds = false;
+	for (size_t i = 0; i < bounds_amount; i++)
+	{
+		const node bound = node_vector_get(bounds, i);
+		variable_type = type_array(bldr->sx, variable_type);
+		if (!type_is_integer(bldr->sx, expression_get_type(&bound)))
+		{
+			semantic_error(bldr, node_get_location(&bound), array_size_must_be_int);
+		}
+		if (expression_get_class(&bound) == EXPR_EMPTY_BOUND)
+		{
+			has_empty_bounds = true;
+		}
+	}
+
+	if (initializer)
+	{
+		check_assignment_operands(bldr, variable_type, initializer);
+	}
+	else if (has_empty_bounds)
+	{
+		semantic_error(bldr, ident_loc, empty_bound_without_init);
+	}
+
+	// Magic numbers, maybe we need identifiers interface?
+	const size_t id = ident_add(bldr->sx, name, 0, variable_type, 3);
+	if (id == SIZE_MAX)
+	{
+		semantic_error(bldr, ident_loc, redefinition_of_main);
+	}
+	else if (id == SIZE_MAX - 1)
+	{
+		semantic_error(bldr, ident_loc, repeated_decl, repr_get_name(bldr->sx, name));
+	}
+
+
+	return declaration_variable(&bldr->context, id, bounds, initializer, ident_loc);
+}
+
+node build_empty_declaration(builder *const bldr)
+{
+	return statement_declaration(&bldr->context);
+}
+
+node build_declaration(builder *const bldr, node *const declaration, node_vector *const declarators, const location loc)
+{
+	const size_t amount = node_vector_size(declarators);
+	if (amount == 0 && statement_declaration_get_size(declaration) == 0)
+	{
+		semantic_error(bldr, loc, declaration_does_not_declare_anything);
+	}
+	else
+	{
+		for (size_t i = 0; i < amount; i++)
+		{
+			node declarator = node_vector_get(declarators, i);
+			if (node_is_correct(&declarator))
+			{
+				statement_declaration_add_declarator(declaration, &declarator);
+			}
+		}
+	}
+
+	return statement_declaration_set_location(declaration, loc);
 }
 
 

@@ -931,6 +931,7 @@ static void emit_subscript_expression(information *const info, const node *const
 			}
 			else
 			{
+				uni_printf(info->sx->io, " call void @exit(i32 1)");
 				info->answer_const = ITEM_MAX;
 			}
 		}
@@ -1359,6 +1360,10 @@ static void emit_unary_expression(information *const info, const node *const nd)
 				}
 				else
 				{
+					if (type_is_integer(info->sx, expression_get_type(&operand)))
+					{
+						check_type_and_branch(info, expression_get_type(&operand));
+					}
 					to_code_operation_reg_const_bool(info, BIN_XOR, info->answer_reg, true, TYPE_BOOLEAN);
 				}
 				info->answer_reg = info->register_num++;
@@ -1600,7 +1605,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	size_t result = info->answer_reg;
 
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_INTEGER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_CHARACTER && info->answer_kind != ACONST)
 	{
 		to_code_char_to_int(info, result);
 		result = info->register_num - 1;
@@ -1608,7 +1613,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	}
 
 	if (type_get_class(info->sx, expression_get_type(&LHS)) == TYPE_CHARACTER 
-		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER)
+		&& type_get_class(info->sx, expression_get_type(&RHS)) == TYPE_INTEGER && info->answer_kind != ACONST)
 	{
 		to_code_int_to_char(info, result);
 		result = info->register_num - 1;
@@ -1659,7 +1664,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_const_double(info, info->answer_const_double, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
-	else if (type_is_floating(operation_type))
+	else if (type_is_boolean(operation_type))
 	{
 		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
@@ -2352,11 +2357,11 @@ static void emit_variable_declaration(information *const info, const node *const
 		hash_set_by_index(&info->arrays, index, IS_STATIC, 1);
 
 		// получение и сохранение границ
-		const size_t bounds = declaration_variable_get_dim_amount(nd);
+		const size_t bounds = declaration_variable_get_bounds_amount(nd);
 		for (size_t j = 1; j <= bounds; j++)
 		{
 			info->variable_location = LFREE;
-			const node dim_size = declaration_variable_get_dim_expr(nd, j - 1);
+			const node dim_size = declaration_variable_get_bound(nd, j - 1);
 			emit_expression(info, &dim_size);
 
 			if (!has_init)
@@ -2446,7 +2451,7 @@ static void emit_function_definition(information *const info, const node *const 
 
 	for (size_t i = 0; i < parameters; i++)
 	{
-		const size_t id = declaration_function_get_param(nd, i);
+		const size_t id = declaration_function_get_parameter(nd, i);
 		const item_t param_type = ident_get_type(info->sx, id);
 
 		uni_printf(info->sx->io, " %%var.%zu = alloca ", id);

@@ -79,12 +79,20 @@ typedef enum ERROR
 	condition_must_be_scalar,				/**< Condition must be of scalar type */
 	expected_constant_expression,			/**< Expected constant expression */
 	incompatible_cond_operands,				/**< Incompatible operand types in conditional expression */
+	expected_member_name,					/**< Expected member name */
+	array_member_must_have_bounds,			/**< Array members must have size expressions */
+	expected_identifier_in_declarator,		/**< Expected identifier in declarator */
+	declaration_does_not_declare_anything,	/**< Declaration does not declare anything */
 	case_expr_not_integer,					/**< Case expression is not an integer */
 	switch_expr_not_integer,				/**< Switch expression is not an integer */
 	void_func_valued_return,				/**< Void function should not return a value */
 	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
 	wrong_init,
+	main_should_return_int_or_void,
+	main_should_be_defined,
+	wrong_main_parameters,
+	wrong_main_parameter_type,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */
@@ -154,6 +162,7 @@ typedef enum ERROR
 /** Warnings codes */
 typedef enum WARNING
 {
+	result_of_assignment_as_condition,		/**< Using the result of an assignment as a condition */
 	too_long_int,
 	variable_deviation,
 } warning_t;
