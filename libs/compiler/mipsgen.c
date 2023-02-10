@@ -3773,6 +3773,7 @@ static int pregen(encoder *const enc)
 {
 	// Подпись "GNU As:" для директив GNU
 	// Подпись "MIPS Assembler:" для директив ассемблера MIPS
+
 	if (insert_runtime_file(enc, RUNTIME_HEAD_FILENAME))
 		return -1;
 
