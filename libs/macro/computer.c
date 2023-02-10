@@ -19,6 +19,9 @@
 #include "error.h"
 
 
+#define MAX_NUMBER_SIZE 21
+
+
 static const size_t MAX_EXPRESSION_DAPTH = 64;
 
 
@@ -50,7 +53,7 @@ static void computer_error(computer *const comp, const item_t pos, error_t num, 
 	}
 }
 
-static int computer_token_to_string(char *const buffer, const token_t tk)
+static inline int computer_token_to_string(char *const buffer, const token_t tk)
 {
 	switch(tk)
 	{
@@ -216,7 +219,7 @@ static int computer_select_three(computer *const comp)
 	}
 }
 
-static int computer_compare_priority(const token_t fst, const token_t snd)
+static inline int computer_compare_priority(const token_t fst, const token_t snd)
 {
 	switch(fst)
 	{
@@ -253,6 +256,12 @@ static int computer_compare_priority(const token_t fst, const token_t snd)
 	}
 }
 
+static inline int computer_const_number(computer *const comp, const item_t pos
+	, const item_t num, const char *const name)
+{
+	return -1;
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -274,6 +283,11 @@ computer computer_create(location *const loc, universal_io *const io)
 
 int computer_push_token(computer *const comp, const size_t pos, const token_t tk)
 {
+	if (!computer_is_correct(comp))
+	{
+		return -1;
+	}
+
 	if (!comp->was_number)
 	{
 		return computer_token_without_number(comp, (item_t)pos, tk);
@@ -314,27 +328,40 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 
 int computer_push_number(computer *const comp, const size_t pos, const item_t num)
 {
-	printf("%" PRIitem " ", num);
-	stack_push(&comp->numbers, num);
-	return 0;
+	if (!computer_is_correct(comp))
+	{
+		return -1;
+	}
+
+	char value[MAX_NUMBER_SIZE];
+	sprintf(value, "%" PRIitem, num);
+	return computer_const_number(comp, (item_t)pos, num, value);
 }
 
 int computer_push_const(computer *const comp, const size_t pos, const char32_t ch, const char *const name)
 {
-	printf("%s ", name);
-	stack_push(&comp->numbers, ch);
-	return 0;
+	if (!computer_is_correct(comp))
+	{
+		return -1;
+	}
+
+	return computer_const_number(comp, (item_t)pos, (item_t)ch, name);
 }
 
+
+item_t computer_pop_result(computer *const comp)
+{
+	if (!computer_is_correct(comp))
+	{
+		return 0;
+	}
+
+	return stack_pop(&comp->numbers);
+}
 
 bool computer_is_correct(const computer *const comp)
 {
 	return comp != NULL && stack_is_correct(&comp->numbers) && stack_is_correct(&comp->operators);
-}
-
-item_t computer_pop_result(computer *const comp)
-{
-	return stack_pop(&comp->numbers);
 }
 
 
@@ -348,6 +375,5 @@ int computer_clear(computer *const comp)
 	stack_clear(&comp->numbers);
 	stack_clear(&comp->operators);
 
-	printf("\n");
 	return 0;
 }
