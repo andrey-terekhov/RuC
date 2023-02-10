@@ -1662,11 +1662,12 @@ static bool parse_name(parser *const prs)
  *	Use their indexes as the value.
  *
  *	@param	prs			Parser structure
+ *	@param	stg			Argument storage
  *	@param	index		Index of macro
  *
  *	@return	Number of arguments, @c SIZE_MAX on failure
  */
-static size_t parse_args(parser *const prs, const size_t index)
+static size_t parse_args(parser *const prs, storage *const stg, const size_t index)
 {
 	const size_t position = in_get_position(prs->io);
 	if (skip_until(prs, false) != '(' || position != in_get_position(prs->io))
@@ -1698,16 +1699,16 @@ static size_t parse_args(parser *const prs, const size_t index)
 			break;
 		}
 
-		const size_t argument = storage_add_by_io(prs->stg, prs->io);
+		const size_t argument = storage_add_by_io(stg, prs->io);
 		if (argument == SIZE_MAX)
 		{
-			parser_error(prs, prs->loc, ARGS_DUPLICATE, storage_last_read(prs->stg));
+			parser_error(prs, prs->loc, ARGS_DUPLICATE, storage_last_read(stg));
 			break;
 		}
 
 		char buffer[MAX_INDEX_SIZE];
 		sprintf(buffer, "%zu" MASK_SUFFIX "%zu", index, i);
-		storage_set_by_index(prs->stg, argument, buffer);
+		storage_set_by_index(stg, argument, buffer);
 
 		character = skip_until(prs, false);
 		if (character == ',')
@@ -1731,11 +1732,12 @@ static size_t parse_args(parser *const prs, const size_t index)
  *	Produce a masked replacement for argument operators.
  *
  *	@param	prs			Parser structure
+ *	@param	stg			Argument storage
  *	@param	was_space	Set, if separator required
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_operator(parser *const prs, const bool was_space)
+static bool parse_operator(parser *const prs, storage *const stg, const bool was_space)
 {
 	location loc = loc_copy(prs->loc);
 	uni_scan_char(prs->io);
@@ -1750,7 +1752,7 @@ static bool parse_operator(parser *const prs, const bool was_space)
 			return false;
 		}
 
-		const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+		const char *value = storage_get_by_index(stg, storage_search(stg, prs->io));
 		if (value == NULL)
 		{
 			parser_error(prs, &loc, HASH_NOT_FOLLOWED, "##");
@@ -1764,7 +1766,7 @@ static bool parse_operator(parser *const prs, const bool was_space)
 	uni_unscan_char(prs->io, character);
 	skip_until(prs, false);
 
-	const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+	const char *value = storage_get_by_index(stg, storage_search(stg, prs->io));
 	if (value != NULL)
 	{
 		uni_printf(prs->io, "%s" MASK_STRING "%s", was_space ? " " : "", value);
@@ -1773,10 +1775,10 @@ static bool parse_operator(parser *const prs, const bool was_space)
 
 	universal_io directive = io_create();
 	out_set_buffer(&directive, MAX_KEYWORD_SIZE);
-	uni_printf(&directive, "#%s", storage_last_read(prs->stg));
+	uni_printf(&directive, "#%s", storage_last_read(stg));
 
 	char *buffer = out_extract_buffer(&directive);
-	const size_t keyword = storage_get_index(prs->stg, buffer);
+	const size_t keyword = storage_get_index(stg, buffer);
 	free(buffer);
 
 	if (keyword != KW_EVAL)
@@ -1796,10 +1798,11 @@ static bool parse_operator(parser *const prs, const bool was_space)
  *	Return value require to call @c free() function.
  *
  *	@param	prs			Parser structure
+ *	@param	stg			Argument storage
  *
  *	@return	Macro value, @c NULL on failure
  */
-static char *parse_content(parser *const prs)
+static char *parse_content(parser *const prs, storage *const stg)
 {
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
@@ -1812,7 +1815,7 @@ static char *parse_content(parser *const prs)
 	{
 		if (character == '#')
 		{
-			if (!parse_operator(prs, in_get_position(prs->io) != position))
+			if (!parse_operator(prs, stg, in_get_position(prs->io) != position))
 			{
 				out_swap(prs->io, &out);
 				out_clear(&out);
@@ -1824,14 +1827,14 @@ static char *parse_content(parser *const prs)
 			uni_printf(prs->io, "%s", in_get_position(prs->io) != position ? " " : "");
 			if (utf8_is_letter(character))
 			{
-				const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
+				const char *value = storage_get_by_index(stg, storage_search(stg, prs->io));
 				if (value != NULL)
 				{
 					uni_printf(prs->io, MASK_ARGUMENT "%s", value);
 				}
 				else
 				{
-					uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+					uni_printf(prs->io, "%s", storage_last_read(stg));
 				}
 			}
 			else if (character == '\'' || character == '"')
@@ -1869,12 +1872,9 @@ static char *parse_content(parser *const prs)
  */
 static void parse_context(parser *const prs, const size_t index)
 {
-	storage stg = storage_create();
-	storage *origin = prs->stg;
-	prs->stg = &stg;
-
-	const size_t args = parse_args(prs, index);
-	if (args != SIZE_MAX)
+	storage args = storage_create();
+	const size_t amount = parse_args(prs, &args, index);
+	if (amount != SIZE_MAX)
 	{
 		if (skip_until(prs, false) == '#')
 		{
@@ -1884,9 +1884,8 @@ static void parse_context(parser *const prs, const size_t index)
 			if (character == '#')
 			{
 				parser_error(prs, prs->loc, HASH_ON_EDGE);
-				storage_remove_by_index(origin, index);
-				storage_clear(&stg);
-				prs->stg = origin;
+				storage_remove_by_index(prs->stg, index);
+				storage_clear(&args);
 				return;
 			}
 			else
@@ -1896,22 +1895,20 @@ static void parse_context(parser *const prs, const size_t index)
 			}
 		}
 
-		char *value = parse_content(prs);
+		char *value = parse_content(prs, &args);
 		if (value != NULL)
 		{
-			storage_set_args_by_index(origin, index, args);
-			storage_set_by_index(origin, index, value);
+			storage_set_args_by_index(prs->stg, index, amount);
+			storage_set_by_index(prs->stg, index, value);
 			free(value);
 
-			storage_clear(&stg);
-			prs->stg = origin;
+			storage_clear(&args);
 			return;
 		}
 	}
 
-	storage_remove_by_index(origin, index);
-	storage_clear(&stg);
-	prs->stg = origin;
+	storage_remove_by_index(prs->stg, index);
+	storage_clear(&args);
 }
 
 /**
@@ -2020,18 +2017,18 @@ static char32_t parse_macro(parser *const prs)
 		}
 	}
 
-	storage *origin = prs->stg;
-	storage stg = storage_create();
-	prs->stg = &stg;
-
 	skip_until(prs, false);
-	const size_t args = index != SIZE_MAX ? parse_args(prs, index) : SIZE_MAX;
+	storage stg = storage_create();
+	const size_t args = index != SIZE_MAX ? parse_args(prs, &stg, index) : SIZE_MAX;
 	universal_io out = io_create();
 	if (args != SIZE_MAX)
 	{
 		out_set_buffer(&out, MAX_VALUE_SIZE);
 		parse_extra(prs, directive);
 	}
+
+	storage *origin = prs->stg;
+	prs->stg = &stg;
 
 	skip_directive(prs);
 	out_swap(prs->io, &out);
