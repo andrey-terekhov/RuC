@@ -217,12 +217,16 @@ static int computer_select_three(computer *const comp)
 
 static inline int computer_compare_priority(const item_t fst, const item_t snd)
 {
+	if (snd == TK_R_BOUND)
+	{
+		return 1;
+	}
+
 	switch(fst)
 	{
 		case ITEM_MAX:
-			return -1;
 		case TK_L_BOUND:
-			return TK_R_BOUND == snd ? 0 : -1;
+			return -1;
 
 		case TK_MULT:
 		case TK_DIV:
@@ -341,7 +345,6 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 	{
 		stack_pop(&comp->operators);
 		stack_pop(&comp->operators);
-		comp->was_number = false;
 		return 0;
 	}
 
