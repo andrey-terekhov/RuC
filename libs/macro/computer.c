@@ -111,6 +111,10 @@ static inline int computer_token_without_number(computer *const comp, const item
 	const item_t previous = stack_peek(&comp->operators);
 	switch (tk)
 	{
+		case TK_L_BOUND:
+			stack_push(&comp->operators, pos);
+			stack_push(&comp->operators, tk);
+			return 0;
 		case TK_COMPL:
 			stack_push(&comp->operators, pos);
 			stack_push(&comp->operators, tk);
@@ -212,6 +216,43 @@ static int computer_select_three(computer *const comp)
 	}
 }
 
+static int computer_compare_priority(const token_t fst, const token_t snd)
+{
+	switch(fst)
+	{
+		case ITEM_MAX:
+			return -1;
+		case TK_L_BOUND:
+			return 0;
+
+		case TK_MULT:
+		case TK_DIV:
+		case TK_MOD:
+			return TK_MULT > snd ? -1 : TK_MOD >= snd ? 0 : 1;
+
+		case TK_ADD:
+		case TK_SUB:
+			return TK_ADD > snd ? -1 : TK_SUB >= snd ? 0 : 1;
+
+		case TK_L_SHIFT:
+		case TK_R_SHIFT:
+			return TK_L_SHIFT > snd ? -1 : TK_R_SHIFT >= snd ? 0 : 1;
+
+		case TK_LESS:
+		case TK_GREATER:
+		case TK_LESS_EQ:
+		case TK_GREATER_EQ:
+			return TK_LESS > snd ? -1 : TK_GREATER_EQ >= snd ? 0 : 1;
+
+		case TK_EQ:
+		case TK_NOT_EQ:
+			return TK_EQ > snd ? -1 : TK_NOT_EQ >= snd ? 0 : 1;
+
+		default:
+			return fst > snd ? -1 : fst == snd ? 0 : 1;
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -238,10 +279,45 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 		return computer_token_without_number(comp, (item_t)pos, tk);
 	}
 
-	comp->was_number = false;
 	const item_t previous = stack_peek(&comp->operators);
+	if (previous == ITEM_MAX && tk == TK_R_BOUND)
+	{
+		computer_error(comp, (item_t)pos, EXPR_MISSING_BRACKET, '(');
+		return -1;
+	}
 
+	if (previous == TK_L_BOUND && tk == TK_R_BOUND)
+	{
+		stack_pop(&comp->operators);
+		stack_pop(&comp->operators);
+		comp->was_number = false;
+		return 0;
+	}
 
+	if (tk == TK_R_BOUND)
+	{
+		computer_select_three(comp);
+		stack_push(&comp->operators, (item_t)pos);
+		stack_push(&comp->operators, tk);
+		comp->was_number = false;
+		return 0;
+	}
+
+	const int priority = computer_compare_priority(previous, tk);
+	if (priority > 0)
+	{
+		computer_select_three(comp);
+		return computer_push_token(comp, pos, tk);
+	}
+
+	if (priority == 0)
+	{
+		computer_select_three(comp);
+	}
+
+	stack_push(&comp->operators, (item_t)pos);
+	stack_push(&comp->operators, tk);
+	comp->was_number = false;
 	return 0;
 }
 
