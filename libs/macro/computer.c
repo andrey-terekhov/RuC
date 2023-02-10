@@ -106,6 +106,57 @@ static int computer_token_to_string(char *const buffer, const token_t tk)
 	}
 }
 
+static inline int computer_token_without_number(computer *const comp, const item_t pos, const token_t tk)
+{
+	const item_t previous = stack_peek(&comp->operators);
+	switch (tk)
+	{
+		case TK_COMPL:
+			stack_push(&comp->operators, pos);
+			stack_push(&comp->operators, tk);
+			return 0;
+		case TK_NOT:
+			stack_push(&comp->operators, pos);
+			stack_push(&comp->operators, tk);
+			return 0;
+		case TK_ADD:
+			stack_push(&comp->operators, pos);
+			stack_push(&comp->operators, TK_U_NEGATION);
+			return 0;
+		case TK_SUB:
+			stack_push(&comp->operators, pos);
+			stack_push(&comp->operators, TK_U_NEGATION);
+			return 0;
+
+		case TK_R_BOUND:
+			switch (previous)
+			{
+				case TK_L_BOUND:
+					stack_pop(&comp->operators);
+					computer_error(comp, stack_pop(&comp->operators), EXPR_MISSING_BETWEEN);
+					return -1;
+				case ITEM_MAX:
+					computer_error(comp, pos, EXPR_MISSING_BRACKET, '(');
+					return -1;
+			}
+
+		default:
+			if (previous != TK_L_BOUND && previous != ITEM_MAX)
+			{
+				char token[3];
+				computer_token_to_string(token, stack_pop(&comp->operators));
+				computer_error(comp, stack_pop(&comp->operators), EXPR_NO_RIGHT_OPERAND, token);
+			}
+			else
+			{
+				char token[3];
+				computer_token_to_string(token, tk);
+				computer_error(comp, pos, EXPR_NO_LEFT_OPERAND, token);
+			}
+			return -1;
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -129,53 +180,7 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 {
 	if (!comp->was_number)
 	{
-		const item_t previous = stack_peek(&comp->operators);
-		switch (tk)
-		{
-			case TK_COMPL:
-				stack_push(&comp->operators, (item_t)pos);
-				stack_push(&comp->operators, tk);
-				return 0;
-			case TK_NOT:
-				stack_push(&comp->operators, (item_t)pos);
-				stack_push(&comp->operators, tk);
-				return 0;
-			case TK_ADD:
-				stack_push(&comp->operators, (item_t)pos);
-				stack_push(&comp->operators, TK_U_NEGATION);
-				return 0;
-			case TK_SUB:
-				stack_push(&comp->operators, (item_t)pos);
-				stack_push(&comp->operators, TK_U_NEGATION);
-				return 0;
-
-			case TK_R_BOUND:
-				switch (previous)
-				{
-					case TK_L_BOUND:
-						stack_pop(&comp->operators);
-						computer_error(comp, stack_pop(&comp->operators), EXPR_MISSING_BETWEEN);
-						return -1;
-					case ITEM_MAX:
-						computer_error(comp, (item_t)pos, EXPR_MISSING_BRACKET, '(');
-						return -1;
-				}
-
-			default:
-				if (previous != TK_L_BOUND && previous != ITEM_MAX)
-				{
-					char token[3];
-					computer_token_to_string(token, stack_pop(&comp->operators));
-					computer_error(comp, stack_pop(&comp->operators), EXPR_NO_RIGHT_OPERAND, token);
-				}
-				else
-				{
-					char token[3];
-					computer_token_to_string(token, tk);
-					computer_error(comp, (item_t)pos, EXPR_NO_LEFT_OPERAND, token);
-				}
-				return -1;
-		}
+		return computer_token_without_number(comp, (item_t)pos, tk);
 	}
 
 	comp->was_number = false;
