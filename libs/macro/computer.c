@@ -28,12 +28,12 @@ static const size_t MAX_EXPRESSION_DAPTH = 64;
  *	@param	prs			Сomputer structure
  *	@param	num			Error code
  */
-static void computer_error(computer *const comp, const size_t pos, error_t num, ...)
+static void computer_error(computer *const comp, const item_t pos, error_t num, ...)
 {
-	if (in_is_file(comp->io))
+	if (in_is_file(comp->io) && pos != SIZE_MAX)
 	{
 		const size_t origin = in_get_position(comp->io);
-		in_set_position(comp->io, pos);
+		in_set_position(comp->io, (size_t)pos);
 		loc_search_from(&comp->loc);
 		in_set_position(comp->io, origin);
 	}
@@ -47,6 +47,62 @@ static void computer_error(computer *const comp, const size_t pos, error_t num, 
 		comp->loc = loc_copy(NULL);
 
 		va_end(args);
+	}
+}
+
+static int computer_token_to_string(char *const buffer, const token_t tk)
+{
+	switch(tk)
+	{
+		case TK_L_BOUND:
+			return sprintf(buffer, "(");
+		case TK_R_BOUND:
+			return sprintf(buffer, ")");
+		case TK_COMPL:
+			return sprintf(buffer, "~");
+		case TK_NOT:
+			return sprintf(buffer, "!");
+		case TK_U_NEGATION:
+		case TK_SUB:
+			return sprintf(buffer, "-");
+		case TK_U_PLUS:
+		case TK_ADD:
+			return sprintf(buffer, "+");
+		case TK_MULT:
+			return sprintf(buffer, "*");
+		case TK_DIV:
+			return sprintf(buffer, "/");
+		case TK_MOD:
+			return sprintf(buffer, "%%");
+		case TK_L_SHIFT:
+			return sprintf(buffer, "<<");
+		case TK_R_SHIFT:
+			return sprintf(buffer, ">>");
+		case TK_LESS:
+			return sprintf(buffer, "<");
+		case TK_GREATER:
+			return sprintf(buffer, ">");
+		case TK_LESS_EQ:
+			return sprintf(buffer, "<=");
+		case TK_GREATER_EQ:
+			return sprintf(buffer, ">=");
+		case TK_EQ:
+			return sprintf(buffer, "==");
+		case TK_NOT_EQ:
+			return sprintf(buffer, "!=");
+		case TK_BIT_AND:
+			return sprintf(buffer, "&");
+		case TK_XOR:
+			return sprintf(buffer, "^");
+		case TK_BIT_OR:
+			return sprintf(buffer, "|");
+		case TK_AND:
+			return sprintf(buffer, "&&");
+		case TK_OR:
+			return sprintf(buffer, "||");
+
+		default:
+			return 0;
 	}
 }
 
@@ -64,80 +120,65 @@ computer computer_create(location *const loc, universal_io *const io)
 {
 	return (computer) { .loc = loc_copy(loc), .io = io
 		, .numbers = stack_create(MAX_EXPRESSION_DAPTH)
-		, .operators = stack_create(MAX_EXPRESSION_DAPTH) };
+		, .operators = stack_create(MAX_EXPRESSION_DAPTH)
+		, .was_number = false };
 }
+
 
 int computer_push_token(computer *const comp, const size_t pos, const token_t tk)
 {
-	switch(tk)
+	if (!comp->was_number)
 	{
-		case TK_L_BOUND:
-			printf("( ");
-			break;
-		case TK_R_BOUND:
-			printf(") ");
-			break;
-		case TK_COMPL:
-			printf("~ ");
-			break;
-		case TK_NOT:
-			printf("! ");
-			break;
-		case TK_MULT:
-			printf("* ");
-			break;
-		case TK_DIV:
-			printf("/ ");
-			break;
-		case TK_MOD:
-			printf("%% ");
-			break;
-		case TK_ADD:
-			printf("+ ");
-			break;
-		case TK_SUB:
-			printf("- ");
-			break;
-		case TK_L_SHIFT:
-			printf("<< ");
-			break;
-		case TK_R_SHIFT:
-			printf(">> ");
-			break;
-		case TK_LESS:
-			printf("< ");
-			break;
-		case TK_GREATER:
-			printf("> ");
-			break;
-		case TK_LESS_EQ:
-			printf("<= ");
-			break;
-		case TK_GREATER_EQ:
-			printf(">= ");
-			break;
-		case TK_EQ:
-			printf("== ");
-			break;
-		case TK_NOT_EQ:
-			printf("!= ");
-			break;
-		case TK_BIT_AND:
-			printf("& ");
-			break;
-		case TK_XOR:
-			printf("^ ");
-			break;
-		case TK_BIT_OR:
-			printf("| ");
-			break;
-		case TK_AND:
-			printf("&& ");
-			break;
-		case TK_OR:
-			printf("|| ");
-			break;
+		const item_t previous = stack_peek(&comp->operators);
+		switch (tk)
+		{
+			case TK_COMPL:
+				stack_push(&comp->operators, (item_t)pos);
+				stack_push(&comp->operators, tk);
+				return 0;
+			case TK_NOT:
+				stack_push(&comp->operators, (item_t)pos);
+				stack_push(&comp->operators, tk);
+				return 0;
+			case TK_ADD:
+				stack_push(&comp->operators, (item_t)pos);
+				stack_push(&comp->operators, TK_U_NEGATION);
+				return 0;
+			case TK_SUB:
+				stack_push(&comp->operators, (item_t)pos);
+				stack_push(&comp->operators, TK_U_NEGATION);
+				return 0;
+
+			case TK_R_BOUND:
+				switch (previous)
+				{
+					case TK_L_BOUND:
+						stack_pop(&comp->operators);
+						computer_error(comp, stack_pop(&comp->operators), EXPR_MISSING_BETWEEN);
+						return -1;
+					case ITEM_MAX:
+						computer_error(comp, (item_t)pos, EXPR_MISSING_BRACKET, '(');
+						return -1;
+				}
+
+			default:
+				if (previous != TK_L_BOUND && previous != ITEM_MAX)
+				{
+					char token[3];
+					computer_token_to_string(token, stack_pop(&comp->operators));
+					computer_error(comp, stack_pop(&comp->operators), EXPR_NO_RIGHT_OPERAND, token);
+				}
+				else
+				{
+					char token[3];
+					computer_token_to_string(token, tk);
+					computer_error(comp, (item_t)pos, EXPR_NO_LEFT_OPERAND, token);
+				}
+				return -1;
+		}
 	}
+
+	comp->was_number = false;
 
 	return 0;
 }
@@ -145,12 +186,14 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 int computer_push_number(computer *const comp, const size_t pos, const item_t num)
 {
 	printf("%" PRIitem " ", num);
+	stack_push(&comp->numbers, num);
 	return 0;
 }
 
 int computer_push_const(computer *const comp, const size_t pos, const char32_t ch, const char *const name)
 {
 	printf("%s ", name);
+	stack_push(&comp->numbers, ch);
 	return 0;
 }
 
@@ -162,8 +205,9 @@ bool computer_is_correct(const computer *const comp)
 
 item_t computer_pop_result(computer *const comp)
 {
-	return 0;
+	return stack_pop(&comp->numbers);
 }
+
 
 int computer_clear(computer *const comp)
 {

@@ -29,35 +29,37 @@ extern "C" {
 /** Operator Precedence */
 typedef enum TOKEN
 {
-	TK_L_BOUND,			/**< '(' operator */
-	TK_R_BOUND,			/**< ')' operator */
+	TK_L_BOUND,			/**< '('  operator */
+	TK_R_BOUND,			/**< ')'  operator */
 
-	TK_COMPL,			/**< '~' operator */
-	TK_NOT,				/**< '!' operator */
+	TK_COMPL,			/**< '~'  operator */
+	TK_NOT,				/**< '!'  operator */
+	TK_U_NEGATION,		/**< '-'  operator */
+	TK_U_PLUS,			/**< '+'  operator */
 
-	TK_MULT,			/**< '*' operator */
-	TK_DIV,				/**< '/' operator */
-	TK_MOD,				/**< '%' operator */
+	TK_MULT,			/**< '*'  operator */
+	TK_DIV,				/**< '/'  operator */
+	TK_MOD,				/**< '%'  operator */
 
-	TK_ADD,				/**< '+' operator */
-	TK_SUB,				/**< '-' operator */
+	TK_ADD,				/**< '+'  operator */
+	TK_SUB,				/**< '-'  operator */
 
 	TK_L_SHIFT,			/**< '<<' operator */
 	TK_R_SHIFT,			/**< '>>' operator */
 
-	TK_LESS,			/**< '<' operator */
-	TK_GREATER,			/**< '>' operator */
+	TK_LESS,			/**< '<'  operator */
+	TK_GREATER,			/**< '>'  operator */
 	TK_LESS_EQ,			/**< '<=' operator */
 	TK_GREATER_EQ,		/**< '>=' operator */
 
 	TK_EQ,				/**< '==' operator */
 	TK_NOT_EQ,			/**< '!=' operator */
 
-	TK_BIT_AND,			/**< '&' operator */
+	TK_BIT_AND,			/**< '&'  operator */
 
-	TK_XOR,				/**< '^' operator */
+	TK_XOR,				/**< '^'  operator */
 
-	TK_BIT_OR,			/**< '|' operator */
+	TK_BIT_OR,			/**< '|'  operator */
 
 	TK_AND,				/**< '&&' operator */
 
@@ -72,6 +74,8 @@ typedef struct computer
 
 	location loc;					/**< Directive location */
 	universal_io *io;				/**< IO for location assembly */
+
+	bool was_number;				/**< Set, if last push is number */
 } computer;
 
 

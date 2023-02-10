@@ -272,6 +272,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 			sprintf(&msg[index], "' в выражении");
 		}
 		break;
+		case EXPR_MISSING_BETWEEN:
+			sprintf(msg, "пропущено выражение между '(' и ')'");
+			break;
 		case EXPR_NO_LEFT_OPERAND:
 		{
 			const char *const operator = va_arg(args, char *);
