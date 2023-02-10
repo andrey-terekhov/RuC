@@ -128,7 +128,7 @@ static inline int computer_token_without_number(computer *const comp, const item
 			return 0;
 		case TK_ADD:
 			stack_push(&comp->operators, pos);
-			stack_push(&comp->operators, TK_U_NEGATION);
+			stack_push(&comp->operators, TK_U_PLUS);
 			return 0;
 		case TK_SUB:
 			stack_push(&comp->operators, pos);
@@ -169,11 +169,8 @@ static int computer_select_three(computer *const comp)
 	stack_pop(&comp->operators);
 
 	const item_t second = stack_pop(&comp->numbers);
-	stack_pop(&comp->numbers);
 	const item_t first = stack_pop(&comp->numbers);
-	stack_pop(&comp->numbers);
 
-	stack_push(&comp->numbers, ITEM_MAX);
 	switch(operator)
 	{
 		case TK_MULT:
@@ -255,11 +252,43 @@ static inline int computer_compare_priority(const item_t fst, const item_t snd)
 	}
 }
 
-static inline int computer_const_number(computer *const comp, const item_t pos
-	, const item_t num, const char *const name)
+static inline int computer_const_number(computer *const comp, const item_t pos, item_t num, const char *const name)
 {
-	computer_error(comp, pos, EXPR_MISSING_BINARY, name);
-	return -1;
+	if (comp->was_number)
+	{
+		computer_error(comp, pos, EXPR_MISSING_BINARY, name);
+		return -1;
+	}
+
+	comp->was_number = true;
+	while (true)
+	{
+		switch (stack_peek(&comp->operators))
+		{
+			case TK_COMPL:
+				stack_pop(&comp->operators);
+				stack_pop(&comp->operators);
+				num = ~num;
+				break;
+			case TK_NOT:
+				stack_pop(&comp->operators);
+				stack_pop(&comp->operators);
+				num = num != 0 ? 1 : 0;
+				break;
+			case TK_U_NEGATION:
+				stack_pop(&comp->operators);
+				stack_pop(&comp->operators);
+				num = -num;
+				break;
+			case TK_U_PLUS:
+				stack_pop(&comp->operators);
+				stack_pop(&comp->operators);
+				break;
+
+			default:
+				return stack_push(&comp->numbers, num);
+		}
+	}
 }
 
 
@@ -361,6 +390,14 @@ item_t computer_pop_result(computer *const comp)
 {
 	if (!computer_is_correct(comp))
 	{
+		return 0;
+	}
+
+	if (!comp->was_number)
+	{
+		char token[3];
+		computer_token_to_string(token, stack_pop(&comp->operators));
+		computer_error(comp, stack_pop(&comp->operators), EXPR_NO_RIGHT_OPERAND, token);
 		return 0;
 	}
 
