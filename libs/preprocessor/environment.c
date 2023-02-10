@@ -54,7 +54,7 @@ void env_init(environment *const env, linker *const lk, universal_io *const outp
 	env->error_string[0] = '\0';
 
 	env->was_error = 0;
-	env->disable_recovery =  ws_has_flag(lk->ws, "-Wno");
+	env->disable_recovery = ws_has_flag(lk->ws, "-Wno");
 
 	for (size_t i = 0; i < HASH; i++)
 	{

@@ -857,7 +857,7 @@ scope scope_block_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
-		return (scope){ ITEM_MAX, ITEM_MAX };
+		return (scope){ ITEM_MAX, ITEM_MAX, SIZE_MAX };
 	}
 
 	size_t prev_cur_id = sx->cur_id;
