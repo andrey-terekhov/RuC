@@ -125,15 +125,6 @@ int computer_push_const(computer *const comp, const size_t pos, const char32_t c
 
 
 /**
- *	Check that computer is correct
- *
- *	@param	comp		Computer structure
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool computer_is_correct(const computer *const comp);
-
-/**
  *	Compute buffered expression and clear
  *
  *	@param	comp		Computer structure
@@ -141,6 +132,15 @@ bool computer_is_correct(const computer *const comp);
  *	@return	Computation result
  */
 item_t computer_pop_result(computer *const comp);
+
+/**
+ *	Check that computer is correct
+ *
+ *	@param	comp		Computer structure
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool computer_is_correct(const computer *const comp);
 
 
 /**

@@ -53,7 +53,7 @@ static void computer_error(computer *const comp, const item_t pos, error_t num, 
 	}
 }
 
-static inline int computer_token_to_string(char *const buffer, const token_t tk)
+static int computer_token_to_string(char *const buffer, const token_t tk)
 {
 	switch(tk)
 	{
@@ -139,8 +139,7 @@ static inline int computer_token_without_number(computer *const comp, const item
 			switch (previous)
 			{
 				case TK_L_BOUND:
-					stack_pop(&comp->operators);
-					computer_error(comp, stack_pop(&comp->operators), EXPR_MISSING_BETWEEN);
+					computer_error(comp, pos, EXPR_MISSING_BETWEEN);
 					return -1;
 				case ITEM_MAX:
 					computer_error(comp, pos, EXPR_MISSING_BRACKET, '(');
@@ -219,7 +218,7 @@ static int computer_select_three(computer *const comp)
 	}
 }
 
-static inline int computer_compare_priority(const token_t fst, const token_t snd)
+static inline int computer_compare_priority(const item_t fst, const item_t snd)
 {
 	switch(fst)
 	{
@@ -259,6 +258,7 @@ static inline int computer_compare_priority(const token_t fst, const token_t snd
 static inline int computer_const_number(computer *const comp, const item_t pos
 	, const item_t num, const char *const name)
 {
+	computer_error(comp, pos, EXPR_MISSING_BINARY, name);
 	return -1;
 }
 
@@ -291,6 +291,14 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 	if (!comp->was_number)
 	{
 		return computer_token_without_number(comp, (item_t)pos, tk);
+	}
+
+	if (tk == TK_COMPL || tk == TK_NOT)
+	{
+		char token[2];
+		computer_token_to_string(token, tk);
+		computer_error(comp, (item_t)pos, EXPR_MISSING_BINARY, token);
+		return -1;
 	}
 
 	const item_t previous = stack_peek(&comp->operators);
@@ -354,6 +362,20 @@ item_t computer_pop_result(computer *const comp)
 	if (!computer_is_correct(comp))
 	{
 		return 0;
+	}
+
+	item_t operator = stack_peek(&comp->operators);
+	while (operator != ITEM_MAX)
+	{
+		if (operator == TK_L_BOUND)
+		{
+			stack_pop(&comp->operators);
+			computer_error(comp, stack_pop(&comp->operators), EXPR_MISSING_BRACKET, ')');
+			return 0;
+		}
+
+		computer_select_three(comp);
+		operator = stack_peek(&comp->operators);
 	}
 
 	return stack_pop(&comp->numbers);
