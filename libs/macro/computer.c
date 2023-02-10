@@ -30,7 +30,7 @@ static const size_t MAX_EXPRESSION_DAPTH = 64;
  */
 static void computer_error(computer *const comp, const item_t pos, error_t num, ...)
 {
-	if (in_is_file(comp->io) && pos != SIZE_MAX)
+	if (in_is_file(comp->io) && pos != ITEM_MAX)
 	{
 		const size_t origin = in_get_position(comp->io);
 		in_set_position(comp->io, (size_t)pos);
@@ -157,6 +157,61 @@ static inline int computer_token_without_number(computer *const comp, const item
 	}
 }
 
+static int computer_select_three(computer *const comp)
+{
+	const token_t operator = stack_pop(&comp->operators);
+	stack_pop(&comp->operators);
+
+	const item_t second = stack_pop(&comp->numbers);
+	stack_pop(&comp->numbers);
+	const item_t first = stack_pop(&comp->numbers);
+	stack_pop(&comp->numbers);
+
+	stack_push(&comp->numbers, ITEM_MAX);
+	switch(operator)
+	{
+		case TK_MULT:
+			return stack_push(&comp->numbers, first * second);
+		case TK_DIV:
+			return stack_push(&comp->numbers, first / second);
+		case TK_MOD:
+			return stack_push(&comp->numbers, first % second);
+		case TK_ADD:
+			return stack_push(&comp->numbers, first + second);
+		case TK_SUB:
+			return stack_push(&comp->numbers, first - second);
+		case TK_L_SHIFT:
+			return stack_push(&comp->numbers, first << second);
+		case TK_R_SHIFT:
+			return stack_push(&comp->numbers, first >> second);
+		case TK_LESS:
+			return stack_push(&comp->numbers, first < second ? 1 : 0);
+		case TK_GREATER:
+			return stack_push(&comp->numbers, first > second ? 1 : 0);
+		case TK_LESS_EQ:
+			return stack_push(&comp->numbers, first <= second ? 1 : 0);
+		case TK_GREATER_EQ:
+			return stack_push(&comp->numbers, first >= second ? 1 : 0);
+		case TK_EQ:
+			return stack_push(&comp->numbers, first == second ? 1 : 0);
+		case TK_NOT_EQ:
+			return stack_push(&comp->numbers, first != second ? 1 : 0);
+		case TK_BIT_AND:
+			return stack_push(&comp->numbers, first & second);
+		case TK_XOR:
+			return stack_push(&comp->numbers, first ^ second);
+		case TK_BIT_OR:
+			return stack_push(&comp->numbers, first | second);
+		case TK_AND:
+			return stack_push(&comp->numbers, first && second ? 1 : 0);
+		case TK_OR:
+			return stack_push(&comp->numbers, first || second ? 1 : 0);
+
+		default:
+			return -1;
+	}
+}
+
 
 /*
  *	 __     __   __     ______   ______     ______     ______   ______     ______     ______
@@ -184,6 +239,8 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 	}
 
 	comp->was_number = false;
+	const item_t previous = stack_peek(&comp->operators);
+
 
 	return 0;
 }
