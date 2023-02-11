@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13.5)
 
 project(ruc)
 
+option(ENABLE_ANALYSIS "Enable static analysis" OFF)
 
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -48,6 +49,10 @@ if(DEFINED TESTING_EXIT_CODE)
 	add_compile_definitions(TESTING_EXIT_CODE=${TESTING_EXIT_CODE})
 endif()
 
+if(ENABLE_ANALYSIS)
+	# Include dependencies if necessary
+	include(${CMAKE_CURRENT_SOURCE_DIR}/deps/asp.cmake)
+endif()
 
 # Add libraries
 add_subdirectory(libs)
@@ -60,6 +65,9 @@ function(get_all_targets _targets _dir)
 	get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
 
 	foreach(_subdir IN LISTS _subdirs)
+		if (_subdir MATCHES ".*_deps.*")
+			continue ()
+		endif ()
 		get_all_targets(${_targets} ${_subdir})
 	endforeach()
 

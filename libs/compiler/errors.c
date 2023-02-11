@@ -427,6 +427,15 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			sprintf(msg, "слишком много аргументов у функции, допустимое количество до 128");
 			break;
 
+		// Static analysis errors
+		case contract_violation:
+			sprintf(msg, "нарушение контракта");
+			break;
+
+		case sa_external_error:
+			sprintf(msg, "ошибка");
+			break;
+
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);
 			break;
