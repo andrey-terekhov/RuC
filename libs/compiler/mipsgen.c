@@ -2074,6 +2074,57 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 	return RVALUE_VOID;
 }
 
+static rvalue emit_builtin_math_call(encoder *const enc, const node *const nd)
+{
+	//const size_t parameters_amount = expression_call_get_arguments_amount(nd);
+
+	const node callee = expression_call_get_callee(nd);
+	const size_t func_ref = expression_identifier_get_id(&callee);
+
+	const node arg0 = expression_call_get_argument(nd, 0);
+	const rvalue val = emit_expression(enc, &arg0);
+	//const item_t arg_rvalue_type = arg_rvalue.type;
+
+	emit_move_rvalue_to_register(enc, R_FA0, &val);
+
+	uni_printf(enc->sx->io, "\tjal ");
+	switch (func_ref)
+	{
+		case BI_COS:
+			uni_printf(enc->sx->io, "cos");
+			break;
+		case BI_SIN:
+			uni_printf(enc->sx->io, "sin");
+			break;
+		case BI_ASIN:
+			uni_printf(enc->sx->io, "asin");
+			break;
+		case BI_EXP:
+			uni_printf(enc->sx->io, "exp");
+			break;
+		case BI_LOG:
+			uni_printf(enc->sx->io, "log");
+			break;
+		case BI_LOG10:
+			uni_printf(enc->sx->io, "log10");
+			break;
+		case BI_SQRT:
+			uni_printf(enc->sx->io, "sqrt");
+			break;
+		case BI_ROUND:
+			uni_printf(enc->sx->io, "round");
+			break;
+	}
+	uni_printf(enc->sx->io, " \n");
+
+	return (rvalue) {
+		.kind = RVALUE_KIND_REGISTER,
+		.type = TYPE_FLOATING,
+		.val.reg_num = R_FV0,
+		.from_lvalue = !FROM_LVALUE
+	};
+}
+
 /**
  *	Emit builtin function call
  *
@@ -2090,7 +2141,15 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 	{
 		case BI_PRINTF:
 			return emit_printf_expression(enc, nd);
-
+		case BI_COS:
+		case BI_SIN:
+		case BI_ASIN:
+		case BI_EXP:
+		case BI_LOG:
+		case BI_LOG10:
+		case BI_SQRT:
+		case BI_ROUND:
+			return emit_builtin_math_call(enc, nd);
 		default:
 			return RVALUE_VOID;
 	}
