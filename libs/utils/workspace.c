@@ -277,6 +277,27 @@ bool ws_is_correct(const workspace *const ws)
 	return ws != NULL && !ws->was_error;
 }
 
+bool ws_has_flag(const workspace *const ws, const char *const flag)
+{
+	if (!ws_is_correct(ws) || flag == NULL)
+	{
+		return false;
+	}
+
+	for (size_t i = 0; ; i++)
+	{
+		const char *temp = strings_get(&ws->flags, i);
+		if (temp == NULL)
+		{
+			return false;
+		}
+		else if (strcmp(temp, flag) == 0)
+		{
+			return true;
+		}
+	}
+}
+
 
 const char *ws_get_file(const workspace *const ws, const size_t index)
 {
