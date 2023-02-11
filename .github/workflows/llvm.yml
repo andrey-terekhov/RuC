@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: GitHub repository checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Run script
         shell: bash
         run: |
@@ -25,8 +23,6 @@ jobs:
     steps:
       - name: GitHub repository checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Run script
         run: |
           patch ./scripts/test.sh < ./scripts/llvm.patch
@@ -38,8 +34,6 @@ jobs:
     steps:
       - name: GitHub repository checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Set up environment
         run: brew install coreutils
       - name: Run script
