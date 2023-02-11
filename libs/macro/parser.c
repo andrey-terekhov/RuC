@@ -31,7 +31,6 @@
 #define MASK_SUFFIX			"_"
 #define MASK_ARGUMENT		"__ARG_"
 #define MASK_STRING			"__STR_"
-// #define MASK_CHARACTER		"__CHR_"
 #define MASK_TOKEN_PASTE	"#__TKP_"
 
 
@@ -104,7 +103,7 @@ static void parser_warning(parser *const prs, location *const loc, warning_t num
  *
  *	@param	prs			Parser structure
  */
-static void skip_comment(parser *const prs)
+static inline void skip_comment(parser *const prs)
 {
 	bool was_slash = false;
 	char32_t character = uni_scan_char(prs->io);
@@ -131,7 +130,7 @@ static void skip_comment(parser *const prs)
  *
  *	@param	prs			Parser structure
  */
-static void skip_multi_comment(parser *const prs)
+static inline void skip_multi_comment(parser *const prs)
 {
 	uni_unscan_char(prs->io, '*');
 	uni_unscan_char(prs->io, '/');
@@ -357,7 +356,7 @@ static char32_t skip_lines(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t skip_expression(parser *const prs)
+static inline char32_t skip_expression(parser *const prs)
 {
 	char32_t character = skip_until(prs, false);
 	while (character != '\n' && character != (char32_t)EOF)
@@ -393,7 +392,7 @@ static char32_t skip_expression(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t skip_macro(parser *const prs, const keyword_t keyword)
+static inline char32_t skip_macro(parser *const prs, const keyword_t keyword)
 {
 	if (keyword == KW_LINE)
 	{
@@ -580,7 +579,7 @@ static keyword_t skip_block(parser *const prs, const keyword_t begin)
  *	@param	value		Read argument
  *	@param	arg			Argument number
  */
-static void parse_values(parser *const prs, const size_t index, storage *const stg
+static inline void parse_values(parser *const prs, const size_t index, storage *const stg
 	, char *const value, const size_t arg)
 {
 	char mask[MAX_MASK_SIZE];
@@ -633,7 +632,7 @@ static void parse_values(parser *const prs, const size_t index, storage *const s
  *
  *	@return	Number of read values, @c SIZE_MAX on failure
  */
-static size_t parse_brackets(parser *const prs, const size_t index, storage *const stg)
+static inline size_t parse_brackets(parser *const prs, const size_t index, storage *const stg)
 {
 	size_t arg = 0;
 	char32_t character = '\0';
@@ -692,7 +691,7 @@ static size_t parse_brackets(parser *const prs, const size_t index, storage *con
  *	@param	index		Index of macro
  *	@param	stg			Value storage
  */
-static void parse_observation(parser *const prs, const size_t index, storage *const stg)
+static inline void parse_observation(parser *const prs, const size_t index, storage *const stg)
 {
 	universal_io *io = prs->io;
 	universal_io value = io_create();
@@ -797,7 +796,7 @@ static bool parse_replacement(parser *const prs, const size_t index)
  *
  *	@param	prs			Parser structure
  */
-static void parse_identifier(parser *const prs)
+static inline void parse_identifier(parser *const prs)
 {
 	const size_t begin = in_get_position(prs->io);
 	const size_t index = storage_search(prs->stg, prs->io);
@@ -910,7 +909,7 @@ static char32_t parse_until(parser *const prs)
  *
  *	@return	First significant character
  */
-static char32_t parse_hash(parser *const prs, universal_io *const out)
+static inline char32_t parse_hash(parser *const prs, universal_io *const out)
 {
 	out_swap(prs->io, out);
 	out_set_buffer(prs->io, MAX_COMMENT_SIZE);
@@ -1071,7 +1070,7 @@ static void parse_extra(parser *const prs, const char *const directive)
  *	@param	prs			Parser structure
  *	@param	quote		Expected closing quote
  */
-static void parse_path(parser *const prs, const char32_t quote)
+static inline void parse_path(parser *const prs, const char32_t quote)
 {
 	location loc = loc_copy(prs->loc);
 	uni_scan_char(prs->io);
@@ -1114,7 +1113,7 @@ static void parse_path(parser *const prs, const char32_t quote)
  *
  *	@return	Last read character
  */
-static char32_t parse_include(parser *const prs)
+static inline char32_t parse_include(parser *const prs)
 {
 	location loc = parse_location(prs);
 	if (prs->include >= MAX_INCLUDE_DEPTH)
@@ -1154,7 +1153,7 @@ static char32_t parse_include(parser *const prs)
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_suffix(parser *const prs)
+static inline bool parse_suffix(parser *const prs)
 {
 	storage_search(prs->stg, prs->io);
 	const char *suffix = storage_last_read(prs->stg);
@@ -1192,7 +1191,7 @@ static bool parse_suffix(parser *const prs)
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_number(parser *const prs, computer *const comp, const size_t pos)
+static inline bool parse_number(parser *const prs, computer *const comp, const size_t pos)
 {
 	location loc = loc_copy(prs->loc);
 
@@ -1268,7 +1267,7 @@ static bool parse_number(parser *const prs, computer *const comp, const size_t p
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_sequence(parser *const prs, computer *const comp, const size_t pos)
+static inline bool parse_sequence(parser *const prs, computer *const comp, const size_t pos)
 {
 	location loc = loc_copy(prs->loc);
 	universal_io out = io_create();
@@ -1315,7 +1314,7 @@ static bool parse_sequence(parser *const prs, computer *const comp, const size_t
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_token(parser *const prs, computer *const comp, const size_t pos)
+static inline bool parse_token(parser *const prs, computer *const comp, const size_t pos)
 {
 	location loc = loc_copy(prs->loc);
 	char32_t character = uni_scan_char(prs->io);
@@ -1607,7 +1606,7 @@ static item_t parse_expression(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_eval(parser *const prs)
+static inline char32_t parse_eval(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
 	uni_unscan(prs->io, storage_last_read(prs->stg));
@@ -1737,7 +1736,7 @@ static size_t parse_args(parser *const prs, storage *const stg, const size_t ind
  *
  *	@return	@c true on success, @c false on failure
  */
-static bool parse_operator(parser *const prs, storage *const stg, const bool was_space)
+static inline bool parse_operator(parser *const prs, storage *const stg, const bool was_space)
 {
 	location loc = loc_copy(prs->loc);
 	uni_scan_char(prs->io);
@@ -1802,7 +1801,7 @@ static bool parse_operator(parser *const prs, storage *const stg, const bool was
  *
  *	@return	Macro value, @c NULL on failure
  */
-static char *parse_content(parser *const prs, storage *const stg)
+static inline char *parse_content(parser *const prs, storage *const stg)
 {
 	universal_io out = io_create();
 	out_set_buffer(&out, MAX_VALUE_SIZE);
@@ -1918,7 +1917,7 @@ static void parse_context(parser *const prs, const size_t index)
  *
  *	@return	Last read character
  */
-static char32_t parse_define(parser *const prs)
+static inline char32_t parse_define(parser *const prs)
 {
 	if (parse_name(prs))
 	{
@@ -1946,7 +1945,7 @@ static char32_t parse_define(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_set(parser *const prs)
+static inline char32_t parse_set(parser *const prs)
 {
 	if (parse_name(prs))
 	{
@@ -1974,7 +1973,7 @@ static char32_t parse_set(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_undef(parser *const prs)
+static inline char32_t parse_undef(parser *const prs)
 {
 	char directive[MAX_KEYWORD_SIZE];
 	sprintf(directive, "%s", storage_last_read(prs->stg));
@@ -1996,7 +1995,7 @@ static char32_t parse_undef(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_macro(parser *const prs)
+static inline char32_t parse_macro(parser *const prs)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
@@ -2065,7 +2064,7 @@ static char32_t parse_macro(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_while(parser *const prs)
+static inline char32_t parse_while(parser *const prs)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
@@ -2180,7 +2179,7 @@ static keyword_t parse_elif(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_if(parser *const prs)
+static inline char32_t parse_if(parser *const prs)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
@@ -2203,7 +2202,7 @@ static char32_t parse_if(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_ifdef_ifndef(parser *const prs, keyword_t keyword)
+static inline char32_t parse_ifdef_ifndef(parser *const prs, keyword_t keyword)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
