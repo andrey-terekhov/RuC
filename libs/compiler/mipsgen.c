@@ -2074,6 +2074,13 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 	return RVALUE_VOID;
 }
 
+static rvalue emit_builtin_assert_call(encoder *const enc, const node *const nd)
+{
+	const node arg0 = expression_call_get_argument(nd, 0);
+	const rvalue val = emit_expression(enc, &arg0);
+	uni_printf(enc->sx->io, "\tjal assert\n");
+	return RVALUE_VOID;
+}
 static rvalue emit_builtin_math_call(encoder *const enc, const node *const nd)
 {
 	//const size_t parameters_amount = expression_call_get_arguments_amount(nd);
@@ -2139,6 +2146,8 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	switch (func_ref)
 	{
+		case BI_ASSERT:
+			return emit_bulitin_assert_call(enc, nd);
 		case BI_PRINTF:
 			return emit_printf_expression(enc, nd);
 		case BI_COS:
