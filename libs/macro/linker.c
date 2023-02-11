@@ -62,9 +62,18 @@ static inline size_t linker_internal_path(linker *const lk, const char *const fi
 	char path[MAX_ARG_SIZE];
 	linker_make_path(path, file, ws_get_file(lk->ws, lk->current), true);
 
-	return access(path, F_OK) != -1 && vector_add(&lk->included, 0) != SIZE_MAX
-		? ws_add_file(lk->ws, path)
-		: SIZE_MAX;
+	if (access(path, F_OK) != -1)
+	{
+		const size_t size = ws_get_files_num(lk->ws);
+		const size_t index = ws_add_file(lk->ws, path);
+		if (index == size)
+		{
+			vector_add(&lk->included, 0);
+		}
+		return index;
+	}
+
+	return SIZE_MAX;
 }
 
 static inline size_t linker_external_path(linker *const lk, const char *const file)
@@ -76,8 +85,13 @@ static inline size_t linker_external_path(linker *const lk, const char *const fi
 
 		if (access(path, F_OK) != -1)
 		{
-			vector_add(&lk->included, 0);
-			return ws_add_file(lk->ws, path);
+			const size_t size = ws_get_files_num(lk->ws);
+			const size_t index = ws_add_file(lk->ws, path);
+			if (index == size)
+			{
+				vector_add(&lk->included, 0);
+			}
+			return index;
 		}
 	}
 
@@ -96,13 +110,11 @@ static inline size_t linker_external_path(linker *const lk, const char *const fi
 
 linker linker_create(workspace *const ws)
 {
-	return (linker)
-		{
-			.ws = ws,
-			.sources = ws_get_files_num(ws),
-			.included = vector_create(MAX_PATHS),
-			.current = SIZE_MAX,
-		};
+	linker lk = { .ws = ws, .sources = ws_get_files_num(ws),
+		.included = vector_create(MAX_PATHS), .current = SIZE_MAX };
+
+	vector_increase(&lk.included, lk.sources);
+	return lk;
 }
 
 
@@ -112,6 +124,7 @@ universal_io linker_add_source(linker *const lk, const size_t index)
 
 	if (linker_is_correct(lk) && in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
 	{
+		vector_set(&lk->included, index, 1);
 		lk->current = index;
 	}
 
@@ -121,11 +134,10 @@ universal_io linker_add_source(linker *const lk, const size_t index)
 universal_io linker_add_header(linker *const lk, const size_t index)
 {
 	universal_io input = io_create();
-	if (linker_is_correct(lk) && index >= lk->sources
-		&& vector_get(&lk->included, index - lk->sources) == 0
+	if (linker_is_correct(lk) && vector_get(&lk->included, index) != 1
 		&& in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
 	{
-		vector_set(&lk->included, index - lk->sources, 1);
+		vector_set(&lk->included, index, 1);
 		lk->current = index;
 	}
 
