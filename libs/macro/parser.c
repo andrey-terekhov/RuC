@@ -43,7 +43,6 @@ static const size_t MAX_VALUE_SIZE = 4096;
 static const size_t MAX_PATH_SIZE = 1024;
 
 
-static char32_t parse_until(parser *const prs);
 static keyword_t parse_directive(parser *const prs);
 static location parse_location(parser *const prs);
 static bool parse_next(parser *const prs, const keyword_t begin, const keyword_t next);
@@ -229,33 +228,6 @@ static char32_t skip_string(parser *const prs, const char32_t quote)
 }
 
 /**
- *	Skip the current directive processing until next line.
- *	All backslash line breaks and multiline comments will be skipped too.
- *	Set @c #line directive requirement flag.
- *
- *	@param	prs			Parser structure
- *
- *	@return	Last read character
- */
-static char32_t skip_directive(parser *const prs)
-{
-	const bool is_recovery_disabled = prs->is_recovery_disabled;
-	const bool was_error = prs->was_error;
-	prs->is_recovery_disabled = true;
-	prs->was_error = true;
-
-	universal_io out = io_create();
-	out_swap(prs->io, &out);
-	char32_t character = parse_until(prs);
-	out_swap(prs->io, &out);
-
-	prs->was_error = was_error;
-	prs->is_recovery_disabled = is_recovery_disabled;
-	prs->is_line_required = true;
-	return character;
-}
-
-/**
  *	Skip all comments, space and tab characters until first significant character.
  *	Line break is also a significant character.
  *	Stopped without last character read and processed.
@@ -365,19 +337,44 @@ static inline char32_t skip_expression(parser *const prs)
 		if (character == '\'' || character == '"')
 		{
 			const bool is_recovery_disabled = prs->is_recovery_disabled;
+			const bool was_error = prs->was_error;
 			prs->is_recovery_disabled = true;
+			prs->was_error = true;
 
 			universal_io out = io_create();
 			out_swap(prs->io, &out);
 			skip_string(prs, character);
 			out_swap(prs->io, &out);
 
+			prs->was_error = was_error;
 			prs->is_recovery_disabled = is_recovery_disabled;
 		}
 
 		character = skip_until(prs, false);
 	}
 
+	return character;
+}
+
+/**
+ *	Skip the current directive processing until next line.
+ *	All backslash line breaks and multiline comments will be skipped too.
+ *	Set @c #line directive requirement flag.
+ *
+ *	@param	prs			Parser structure
+ *
+ *	@return	Last read character
+ */
+static char32_t skip_directive(parser *const prs)
+{
+	skip_expression(prs);
+	char32_t character = uni_scan_char(prs->io);
+	if (character != (char32_t)EOF)
+	{
+		loc_line_break(prs->loc);
+	}
+
+	prs->is_line_required = true;
 	return character;
 }
 
@@ -856,7 +853,7 @@ static inline void parse_identifier(parser *const prs)
  *
  *	@return	Last read character
  */
-static char32_t parse_until(parser *const prs)
+static inline char32_t parse_until(parser *const prs)
 {
 	const size_t position = in_get_position(prs->io);
 	char32_t character = '\0';
@@ -865,7 +862,7 @@ static char32_t parse_until(parser *const prs)
 	{
 		character = skip_until(prs, true);
 
-		if (utf8_is_letter(character) && out_is_correct(prs->io))
+		if (utf8_is_letter(character))
 		{
 			parse_identifier(prs);
 		}
