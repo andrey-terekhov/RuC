@@ -11,7 +11,7 @@ jobs:
     name: Git Repo Sync
     steps:
     - name: GitHub repository checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Synchronization with GitLab
