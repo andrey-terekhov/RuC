@@ -11,7 +11,7 @@ def process_file(file):
   o = open(f"{e[0]}.min{e[1]}", 'w')
   for l in i.readlines():
     s = l.split("#")[0]
-    s = s.strip()
+    s = s.rstrip()
     if len(s) == 0:
       continue
     o.write(s + "\n")
