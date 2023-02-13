@@ -2132,6 +2132,39 @@ static rvalue emit_builtin_math_call(encoder *const enc, const node *const nd)
 	};
 }
 
+static rvalue emit_call_expression2(encoder *const enc, const node *const nd)
+{
+	const node callee = expression_call_get_callee(nd);
+	const size_t func_ref = expression_identifier_get_id(&callee);
+	const size_t amount = strings_amount(enc->sx);
+	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
+
+	for (int i = 0; i < parameters_amount; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		const rvalue tmp = emit_expression(enc, &arg);
+		//const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+
+		const label label_func = { .kind = L_FUNC, .num = func_ref };
+		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+
+		// const size_tsize_t  reg_number 
+		emit_move_rvalue_to_register(
+			enc,
+			type_is_floating(arg_rvalue.type)
+				? (R_FA0 + f_arg_count)
+				: (R_A0 + arg_count),
+			&arg_rvalue);
+
+		if (type_is_floating(arg_rvalue.type))
+			f_arg_count += 2;
+		else
+			arg_count += 1;
+	}
+
+	return RVALUE_VOID;
+}
+
 /**
  *	Emit builtin function call
  *
@@ -2791,7 +2824,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 			return emit_literal_expression(enc, nd);
 
 		case EXPR_CALL:
-			return emit_call_expression(enc, nd);
+			return emit_call_expression2(enc, nd);
 
 		case EXPR_MEMBER:
 			return emit_member_expression(enc, nd);
