@@ -1791,17 +1791,25 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			default:
 			{
 				bool in_reg = false;
+				bool change_order = false;
+
 				// Предварительно загружаем константу из imm_rvalue в rvalue вида RVALUE_KIND_REGISTER
 				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM))
 				{
 					// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
 					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
 					imm_rvalue = &tmp;
-					if (operator == BIN_SUB)
-					{
-						emit_binary_operation(enc, imm_rvalue, imm_rvalue, &RVALUE_NEGATIVE_ONE, BIN_MUL);
-					}
 					in_reg = true;
+					if (((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_REM)) && !is_var_first_operand) {
+						change_order = true;
+					}
+				}
+
+				if ((operator == BIN_SHL || operator == BIN_SHR) && !is_var_first_operand) {
+					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
+					imm_rvalue = &tmp;
+					in_reg = true;
+					change_order = true;
 				}
 
 				// Выписываем операцию, её результат будет записан в result
@@ -1814,9 +1822,16 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, var_rvalue);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, imm_rvalue);
+				if (!change_order) {
+					rvalue_to_io(enc, var_rvalue);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, imm_rvalue);
+				} else {
+					rvalue_to_io(enc, imm_rvalue);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, var_rvalue);
+				}
+
 				uni_printf(enc->sx->io, "\n");
 			}
 		}
