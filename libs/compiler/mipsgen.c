@@ -1107,7 +1107,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier)
 	// TODO: выдача сохраняемых регистров 
 	const bool is_register = false;
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const size_t location = is_local ? enc->scope_displ : enc->global_displ;
+	const size_t location = is_local ? -enc->scope_displ : enc->global_displ;
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
 	const item_t type = ident_get_type(enc->sx, identifier);
 
@@ -3174,7 +3174,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 		if (!type_is_floating(ident_get_type(enc->sx, id)))
 		{
-			if (i < ARG_REG_AMOUNT)
+			if (gpr_count < ARG_REG_AMOUNT)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_A0 + gpr_count++;
@@ -3187,13 +3187,15 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			}
 			else
 			{
-				// TODO:
-				assert(false);
+				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
+				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
+
+				displacements_set(enc, id, displ, false);
 			}
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT / 2)
+			if (fp_count < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
@@ -3205,8 +3207,10 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			}
 			else
 			{
-				// TODO:
-				assert(false);
+				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
+				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
+
+				displacements_set(enc, id, displ, false);
 			}
 		}
 	}
@@ -3219,16 +3223,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	char *buffer = out_extract_buffer(enc->sx->io);
 	enc->sx->io = old_io;
 
-	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
-	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
-
 	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
-	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	// $fp указывает на конец статики (которое в данный момент равно концу динамики)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
-	// Смещаем $fp ниже конца статики (чтобы он не совпадал с $sp)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)WORD_LENGTH);
+	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
+	// $sp указывает на конец динамики (которое в данный момент равно концу статики)
+	// Смещаем $sp ниже конца статики (чтобы он не совпадал с $fp)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
 
 	uni_printf(enc->sx->io, "%s", buffer);
 	free(buffer);
@@ -3240,8 +3242,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
 	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP,
-				(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n");
 
