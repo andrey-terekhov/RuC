@@ -1099,16 +1099,15 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
  *
  *	@param	enc					Encoder
  *	@param	identifier			Identifier for adding to the table
- *	@param	location			Location of identifier - register, or displacement on stack
- *	@param	is_register			@c true, if identifier is register variable, and @c false otherwise
  *
  *	@return	Identifier lvalue
  */
-static lvalue displacements_add(encoder *const enc, const size_t identifier
-	, const item_t location, const bool is_register)
+static lvalue displacements_add(encoder *const enc, const size_t identifier)
 {
-	const size_t displacement = enc->scope_displ;
+	// TODO: выдача сохраняемых регистров 
+	const bool is_register = false;
 	const bool is_local = ident_is_local(enc->sx, identifier);
+	const size_t location = is_local ? enc->scope_displ : enc->global_displ;
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
 	const item_t type = ident_get_type(enc->sx, identifier);
 
@@ -1133,7 +1132,37 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier
 		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 	}
 
-	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
+}
+
+/**
+ *	Add identifier to displacements table with known location
+ *
+ *	@param	enc					Encoder
+ *	@param	identifier			Identifier for adding to the table
+ *	@param	location			Location of identifier - register, or displacement on stack
+ *	@param	is_register			@c true, if identifier is register variable, and @c false otherwise
+ *
+ *	@return	Identifier lvalue
+ */
+static lvalue displacements_set(encoder *const enc, const size_t identifier, const item_t location, const bool is_register)
+{
+	const bool is_local = ident_is_local(enc->sx, identifier);
+	const mips_register_t base_reg = is_local ? R_FP : R_GP;
+	const item_t type = ident_get_type(enc->sx, identifier);
+
+	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
+	{
+		// TODO: кидать соответствующую ошибку
+		system_error(node_unexpected);
+	}
+
+	const size_t index = hash_add(&enc->displacements, identifier, 3);
+	hash_set_by_index(&enc->displacements, index, 0, (is_register) ? 1 : 0);
+	hash_set_by_index(&enc->displacements, index, 1, location);
+	hash_set_by_index(&enc->displacements, index, 2, base_reg);
+
+	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
 }
 
 /**
@@ -2912,7 +2941,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	// Сдвигаем, чтобы размер первого измерения был перед массивом
 	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	const lvalue variable = displacements_add(enc, identifier, enc->scope_displ, false);
+	const lvalue variable = displacements_add(enc, identifier);
 	const rvalue value = {
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_REGISTER,
@@ -3046,14 +3075,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	}
 	else
 	{
-		const bool is_register = false;	// Тут должно быть что-то типо ident_is_register (если не откажемся)
-		const lvalue variable = displacements_add(
-			enc,
-			identifier,
-			// что-то такое, как будет поддержано: (is_register) ? <получение регистра> : info->scope_displ,
-			enc->scope_displ,
-			is_register
-		);
+		const lvalue variable = displacements_add(enc, identifier);
 		if (declaration_variable_has_initializer(nd))
 		{
 			const node initializer = declaration_variable_get_initializer(nd);
@@ -3161,7 +3183,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 				uni_printf(enc->sx->io, "\n");
 
 				// Вносим переменную в таблицу символов
-				displacements_add(enc, id, curr_reg, true);
+				displacements_set(enc, id, curr_reg, true);
 			}
 			else
 			{
@@ -3179,7 +3201,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 				mips_register_to_io(enc->sx->io, curr_reg);
 				uni_printf(enc->sx->io, "\n");
 
-				displacements_add(enc, id, curr_reg, true);
+				displacements_set(enc, id, curr_reg, true);
 			}
 			else
 			{
