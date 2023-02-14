@@ -296,8 +296,6 @@ static void get_error(const error_t num, char *const msg, va_list args)
 
 static void get_warning(const warning_t num, char *const msg, va_list args)
 {
-	(void)args;
-
 	switch (num)
 	{
 		case MACRO_CONSOLE_SEPARATOR:
