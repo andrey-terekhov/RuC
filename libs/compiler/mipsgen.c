@@ -1107,9 +1107,14 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier)
 	// TODO: выдача сохраняемых регистров 
 	const bool is_register = false;
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const size_t location = is_local ? -enc->scope_displ : enc->global_displ;
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
 	const item_t type = ident_get_type(enc->sx, identifier);
+	if (is_local && !is_register)
+	{
+		enc->scope_displ += mips_type_size(enc->sx, type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+	}
+	const size_t location = is_local ? -enc->scope_displ : enc->global_displ;
 
 	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
 	{
@@ -1125,11 +1130,6 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier)
 	if (!is_local)
 	{
 		enc->global_displ += mips_type_size(enc->sx, type);
-	}
-	else if (!is_register)
-	{
-		enc->scope_displ += mips_type_size(enc->sx, type);
-		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 	}
 
 	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
