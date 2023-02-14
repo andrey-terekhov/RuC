@@ -3036,7 +3036,7 @@ static int emit_translation_unit(information *const info, const node *const nd)
 	}
 
 
-	#ifdef _MSC_VER
+	#ifdef _WIN32
 		uni_printf(info->sx->io, "!llvm.linker.options = !{!0}\n");
 		uni_printf(info->sx->io, "!0 = !{!\"/STACK:268435456\"}\n");
 	#endif

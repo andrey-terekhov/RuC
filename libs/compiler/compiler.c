@@ -22,7 +22,7 @@
 #include "mipsgen.h"
 #include "llvmgen.h"
 #include "parser.h"
-#include "preprocessor.h"
+#include "macro.h"
 #include "syntax.h"
 #include "uniio.h"
 
@@ -96,6 +96,11 @@ static status_t compile_from_ws(workspace *const ws, const encoder enc)
 	{
 		error_msg("некорректные входные данные");
 		return sts_system_error;
+	}
+
+	if (ws_has_flag(ws, "-E"))
+	{
+		return macro_to_file(ws, ws_get_output(ws)) ? sts_macro_error : sts_success;
 	}
 
 	universal_io io = io_create();

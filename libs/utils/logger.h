@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include "dll.h"
+#include "locator.h"
 
 
 #ifdef __cplusplus
@@ -90,6 +91,31 @@ EXPORTED void log_warning(const char *const tag, const char *const msg, const ch
  *	@param	symbol	Position in line, if more line length, then turn off highlighting
  */
 EXPORTED void log_note(const char *const tag, const char *const msg, const char *const line, const size_t symbol);
+
+
+/**
+ *	Add error message to log
+ *
+ *	@param	loc		Message location
+ *	@param	msg		Message content
+ */
+EXPORTED void log_auto_error(location *const loc, const char *const msg);
+
+/**
+ *	Add warning message to log
+ *
+ *	@param	loc		Message location
+ *	@param	msg		Message content
+ */
+EXPORTED void log_auto_warning(location *const loc, const char *const msg);
+
+/**
+ *	Add note message to log
+ *
+ *	@param	loc		Message location
+ *	@param	msg		Message content
+ */
+EXPORTED void log_auto_note(location *const loc, const char *const msg);
 
 
 /**
