@@ -3740,7 +3740,7 @@ static int emit_translation_unit(encoder *const enc, const node *const nd)
 	return enc->sx->rprt.errors != 0;
 }
 
-static int insert_runtime_file(syntax *const sx, const char *const filename)
+static int insert_runtime_file(encoder *const enc, const char *const filename)
 {
 	FILE *file = fopen(filename, "r+");
 	if (!file)
@@ -3760,7 +3760,7 @@ static int insert_runtime_file(syntax *const sx, const char *const filename)
 	char string[1024];
 	while (fgets(string, sizeof(string), file) != NULL)
 	{
-		uni_printf(sx->io, "%s", string);
+		uni_printf(enc->sx->io, "%s", string);
 	}
 
 	fclose(file);
@@ -3769,20 +3769,20 @@ static int insert_runtime_file(syntax *const sx, const char *const filename)
 
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
-static int pregen(syntax *const sx)
+static int pregen(encoder *const enc)
 {
 	// Подпись "GNU As:" для директив GNU
 	// Подпись "MIPS Assembler:" для директив ассемблера MIPS
-	if (insert_runtime_file(sx, RUNTIME_HEAD_FILENAME))
+	if (insert_runtime_file(enc, RUNTIME_HEAD_FILENAME))
 		return -1;
 
 	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
-	uni_printf(sx->io, "\n");
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
+	to_code_R_I(enc->sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	uni_printf(enc->sx->io, "\n");
 
 	return 0;
 }
@@ -3845,7 +3845,7 @@ static int postgen(encoder *const enc)
 {
 	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
 	// По этой причине вставляю только defarr
-	if (insert_runtime_file(enc->sx, RUNTIME_FOOT_FILENAME))
+	if (insert_runtime_file(enc, RUNTIME_FOOT_FILENAME))
 		return -1;
 
 	uni_printf(enc->sx->io, "\n\n\t.end\tmain\n");
@@ -3887,7 +3887,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	if (!pregen(sx))
+	if (!pregen(&enc))
 		return -1;
 
 	strings_declaration(&enc);
