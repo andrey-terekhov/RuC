@@ -20,12 +20,12 @@
 #include "operations.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 #ifndef max
 	#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
-
 
 static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
 static const size_t HASH_TABLE_SIZE = 1024;			/**< Размер хеш-таблицы для смещений и регистров */
@@ -52,6 +52,10 @@ static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lval
 /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
 static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
 											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
+
+static const char* const RUNTIME_HEAD_FILENAME = "runtime-mips/head.min.s";
+static const char* const RUNTIME_FOOT_FILENAME = "runtime-mips/foot.min.s";
+static const char* const INSTALL_PATH = "/usr/local/ruc/";
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -3736,34 +3740,41 @@ static int emit_translation_unit(encoder *const enc, const node *const nd)
 	return enc->sx->rprt.errors != 0;
 }
 
+static int insert_runtime_file(syntax *const sx, const char *const filename)
+{
+	FILE *file = fopen(filename, "r+");
+	if (!file)
+	{
+		char filename2[256];
+		strcat(filename2, INSTALL_PATH);
+		strcat(filename2, INSTALL_PATH);
+		file = fopen(filename2, "r+");
+	}
+
+	if (!file) 
+	{
+		system_error(no_runtime_files);
+		return -1;
+	}
+
+	char string[1024];
+	while (fgets(string, sizeof(string), file) != NULL)
+	{
+		uni_printf(sx->io, "%s", string);
+	}
+
+	fclose(file);
+	return 0;
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
-static void pregen(syntax *const sx)
+static int pregen(syntax *const sx)
 {
 	// Подпись "GNU As:" для директив GNU
 	// Подпись "MIPS Assembler:" для директив ассемблера MIPS
-
-	uni_printf(sx->io, "\t.section .mdebug.abi32\n");	// ?
-	uni_printf(sx->io, "\t.previous\n");				// следующая инструкция будет перенесена в секцию, описанную выше
-	uni_printf(sx->io, "\t.nan\tlegacy\n");				// ?
-	uni_printf(sx->io, "\t.module fp=xx\n");			// ?
-	uni_printf(sx->io, "\t.module nooddspreg\n");		// ?
-	uni_printf(sx->io, "\t.abicalls\n");				// ?
-	uni_printf(sx->io, "\t.option pic0\n");				// как если бы при компиляции была включена опция "-fpic" (что означает?)
-	uni_printf(sx->io, "\t.text\n");					// последующий код будет перенесён в текстовый сегмент памяти
-	// выравнивание последующих данных / команд по границе, кратной 2^n байт (в данном случае 2^2 = 4)
-	uni_printf(sx->io, "\t.align 2\n");
-
-	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
-	uni_printf(sx->io, "\n\t.globl\tmain\n");
-	uni_printf(sx->io, "\t.ent\tmain\n");				// начало процедуры main
-	uni_printf(sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
-	uni_printf(sx->io, "main:\n");
-
-	// инициализация gp
-	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
-	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
-	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
+	if (insert_runtime_file(sx, RUNTIME_HEAD_FILENAME))
+		return -1;
 
 	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
 	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
@@ -3772,6 +3783,8 @@ static void pregen(syntax *const sx)
 	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
 	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
 	uni_printf(sx->io, "\n");
+
+	return 0;
 }
 
 // создаём метки всех строк в программе
@@ -3828,40 +3841,16 @@ static void strings_declaration(encoder *const enc)
 	emit_register_branch(enc, IC_MIPS_JR, R_RA);
 }
 
-static void postgen(encoder *const enc)
+static int postgen(encoder *const enc)
 {
 	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
 	// По этой причине вставляю только defarr
-	uni_printf(enc->sx->io, "\n\n# defarr\n\
-# объявление одномерного массива\n\
-# $a0 -- адрес первого элемента\n\
-# $a1 -- размер измерения\n\
-DEFARR1:\n\
-	sw $a1, 4($a0)			# Сохранение границы\n\
-	li $v0, 4				# Загрузка размера слова\n\
-	mul $v0, $v0, $a1		# Подсчёт размера первого измерения массива в байтах\n\
-	sub $v0, $a0, $v0		# Считаем адрес после конца массива, т.е. $v0 -- на слово ниже последнего элемента\n\
-	addi $v0, $v0, -4\n\
-	jr $ra\n\
-\n\
-# объявление многомерного массива, но сначала обязана вызываться процедура DEFARR1\n\
-# $a0 -- адрес первого элемента\n\
-# $a1 -- размер измерения\n\
-# $a2 -- адрес первого элемента предыдущего измерения\n\
-# $a3 -- размер предыдущего измерения\n\
-DEFARR2:\n\
-	sw $a0, 0($a2)			# Сохраняем адрес в элементе предыдущего измерения\n\
-	move $t0, $ra			# Запоминаем $ra, чтобы он не затёрся\n\
-	jal DEFARR1				# Выделение памяти под массив\n\
-	move $ra, $t0			# Восстанавливаем $ra\n\
-	addi $a2, $a2, -4		# В $a2 следующий элемент в предыдущем измерении\n\
-	addi $a0, $v0, -4		# В $a0 первый элемент массива в текущем измерении, плюс выделяется место под размеры\n\
-	addi $a3, $a3, -1		# Уменьшаем счётчик\n\
-	bne $a3, $0, DEFARR2	# Прыгаем, если ещё не всё выделили\n\
-	jr $ra\n");
+	if (insert_runtime_file(enc->sx, RUNTIME_FOOT_FILENAME))
+		return -1;
 
 	uni_printf(enc->sx->io, "\n\n\t.end\tmain\n");
 	uni_printf(enc->sx->io, "\t.size\tmain, .-main\n");
+	return 0;
 }
 
 
@@ -3898,12 +3887,16 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	pregen(sx);
+	if (!pregen(sx))
+		return -1;
+
 	strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
-	postgen(&enc);
+
+	if (!postgen(&enc))
+		return -1;
 
 	hash_clear(&enc.displacements);
 	return ret;
