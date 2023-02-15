@@ -2106,7 +2106,7 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
  *
  *	@return	Rvalue of the result of call expression
  */
-static void emit_struct_return_call_expression(encoder *const enc, const node *const nd, const rvalue *const return_value_addr)
+static void emit_struct_return_call_expression(encoder *const enc, const node *const nd, const lvalue *const target)
 {
 	const node callee = expression_call_get_callee(nd);
 	// Конвертируем в указатель на функцию
@@ -2144,8 +2144,6 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 
 	const lvalue tmp_r_a0_lvalue = {
 		.base_reg = R_SP,
-		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-		// второй на 2*WORD_LENGTH и т.д.
 		.loc.displ = 0,
 		.kind = LVALUE_KIND_STACK,
 		.type = TYPE_INTEGER
@@ -2163,11 +2161,24 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 		&r_a0_saved_rvalue
 	);
 
-	emit_move_rvalue_to_register(
-		enc,
-		R_A0,
-		return_value_addr
-	);
+	if (target != NULL)
+	{
+		const rvalue target_addr = emit_load_of_lvalue(enc, target);
+		emit_move_rvalue_to_register(
+			enc,
+			R_A0,
+			&target_addr
+		);
+	}
+	else
+	{
+		const rvalue null_addr = {.kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .from_lvalue = !FROM_LVALUE, .val.int_val = -1};
+		emit_move_rvalue_to_register(
+			enc,
+			R_A0,
+			&null_addr
+		);
+	}
 
 	size_t arg_reg_count = 0;
 	++arg_count;
@@ -2309,7 +2320,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		}
 
 		uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
-
+		// TODO: вынести загрузку аргументов в отдельную функцию
 		// TODO: структуры / массивы в параметры
 		size_t arg_reg_count = 0;
 		for (size_t i = 0; i < params_amount; i++)
@@ -2734,7 +2745,11 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 	{
 		emit_structure_init(enc, target, value);
 	}
-	else	// Присваивание другой структуры
+	else if (expression_get_class(value) == EXPR_CALL)
+	{
+		emit_struct_return_call_expression(enc, value, target);
+	}
+	else// Присваивание другой структуры
 	{
 		// FIXME: возврат структуры из функции
 		// FIXME: массив структур
@@ -2899,7 +2914,21 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 			return emit_literal_expression(enc, nd);
 
 		case EXPR_CALL:
-			return emit_call_expression(enc, nd);
+			if (type_is_structure(enc->sx, expression_get_type(nd)))
+			{
+				//Если вызвали здесь, то значение не используется => target = NULL
+				emit_struct_return_call_expression(enc, nd, NULL);
+				return (rvalue) {
+					.kind = RVALUE_KIND_REGISTER,
+					.type = expression_get_type(nd),
+					.val.reg_num = type_is_floating(expression_get_type(nd)) ? R_FV0 : R_V0,
+					.from_lvalue = !FROM_LVALUE
+				};
+			}
+			else
+			{
+				return emit_call_expression(enc, nd);
+			}
 
 		case EXPR_MEMBER:
 			return emit_member_expression(enc, nd);
@@ -3325,6 +3354,10 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	size_t gpr_count = 0;
 	size_t fp_count = 0;
 
+	if (type_is_structure(enc->sx, func_type)) {
+		++gpr_count;
+	}
+
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_parameter(nd, i);
@@ -3332,7 +3365,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 		if (!type_is_floating(ident_get_type(enc->sx, id)))
 		{
-			if (i < ARG_REG_AMOUNT)
+			if (gpr_count < ARG_REG_AMOUNT)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_A0 + gpr_count++;
@@ -3351,7 +3384,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT / 2)
+			if (fp_count < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
 				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
@@ -3814,12 +3847,33 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 	if (statement_return_has_expression(nd))
 	{
 		const node expression = statement_return_get_expression(nd);
-		const rvalue value = emit_expression(enc, &expression);
 
-		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = value.type };
+		if (type_is_structure(enc->sx, expression_get_type(&expression)))
+		{
+			const rvalue r_a0_reg_rvalue = {.kind = RVALUE_KIND_REGISTER, .type = TYPE_INTEGER, .val.reg_num = R_A0, .from_lvalue = !FROM_LVALUE };
+			const label label_end = { .kind = L_FUNCEND, .num = enc->curr_function_ident };
 
-		emit_store_of_rvalue(enc, &return_lval, &value);
-		free_rvalue(enc, &value);
+			// Если совершает переход - это означает, что значение функции не используется (т е в struct_ret_call_expr R_A0 <- -1) и тогда
+			// то, что сгенерирует emit_struct_assignment не будет использовано
+			emit_conditional_branch(enc, IC_MIPS_BLEZ, &r_a0_reg_rvalue, &label_end);
+
+			const lvalue target = {
+				.kind = LVALUE_KIND_STACK,
+				.type = expression_get_type(&expression),
+				.base_reg = R_A0,
+				.loc.displ = 0
+			};
+
+			emit_struct_assignment(enc, &target, &expression);
+		} else {
+			const rvalue value = emit_expression(enc, &expression);
+
+			const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = value.type };
+
+			emit_store_of_rvalue(enc, &return_lval, &value);
+			free_rvalue(enc, &value);
+		}
+
 	}
 
 	const label label_end = { .kind = L_FUNCEND, .num = enc->curr_function_ident };
