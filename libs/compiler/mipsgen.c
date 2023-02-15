@@ -1094,7 +1094,7 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 	{
 		uni_printf(enc->sx->io, "%" PRIitem "(", value->loc.displ);
 		mips_register_to_io(enc->sx->io, value->base_reg);
-		uni_printf(enc->sx->io, ")\n");
+		uni_printf(enc->sx->io, ")");
 	}
 }
 
