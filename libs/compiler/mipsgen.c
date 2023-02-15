@@ -1880,289 +1880,307 @@ static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
  *	@param	nd					AST node
  *	@param	parameters_amount	Number of function parameters
  */
-static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
-{
-	const node string = expression_call_get_argument(nd, 0);
-	const size_t index = expression_literal_get_string(&string);
-	const size_t amount = strings_amount(enc->sx);
-	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
+// static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
+// {
+// 	const node string = expression_call_get_argument(nd, 0);
+// 	const size_t index = expression_literal_get_string(&string);
+// 	const size_t amount = strings_amount(enc->sx);
+// 	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
 
-	for (size_t i = 1; i < parameters_amount; i++)
-	{
-		const node arg = expression_call_get_argument(nd, i);
-		const rvalue val = emit_expression(enc, &arg);
-		const rvalue arg_rvalue = (val.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &val) : val;
-		const item_t arg_rvalue_type = arg_rvalue.type;
+// 	for (size_t i = 1; i < parameters_amount; i++)
+// 	{
+// 		const node arg = expression_call_get_argument(nd, i);
+// 		const rvalue val = emit_expression(enc, &arg);
+// 		const rvalue arg_rvalue = (val.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &val) : val;
+// 		const item_t arg_rvalue_type = arg_rvalue.type;
 
-		// Всегда хотим сохранять $a0 и $a1
-		to_code_2R_I(
-			enc->sx->io,
-			IC_MIPS_ADDI,
-			R_SP,
-			R_SP,
-			-(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
-		);
-		uni_printf(enc->sx->io, "\n");
+// 		// Всегда хотим сохранять $a0 и $a1
+// 		to_code_2R_I(
+// 			enc->sx->io,
+// 			IC_MIPS_ADDI,
+// 			R_SP,
+// 			R_SP,
+// 			-(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+// 		);
+// 		uni_printf(enc->sx->io, "\n");
 
-		const lvalue a0_lval = {
-			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-			// второй на 2*WORD_LENGTH и т.д.
-			.loc.displ = 0,
-			.kind = LVALUE_KIND_STACK,
-			.type = arg_rvalue.type
-		};
-		const rvalue a0_rval = {
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num = R_A0,
-			.type = TYPE_INTEGER,
-			.from_lvalue = !FROM_LVALUE
-		};
-		emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
+// 		const lvalue a0_lval = {
+// 			.base_reg = R_SP,
+// 			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 			// второй на 2*WORD_LENGTH и т.д.
+// 			.loc.displ = 0,
+// 			.kind = LVALUE_KIND_STACK,
+// 			.type = arg_rvalue.type
+// 		};
+// 		const rvalue a0_rval = {
+// 			.kind = RVALUE_KIND_REGISTER,
+// 			.val.reg_num = R_A0,
+// 			.type = TYPE_INTEGER,
+// 			.from_lvalue = !FROM_LVALUE
+// 		};
+// 		emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-		const lvalue a1_lval = {
-			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-			// второй на 2*WORD_LENGTH и т.д.
-			.loc.displ = WORD_LENGTH,
-			.kind = LVALUE_KIND_STACK,
-			.type = arg_rvalue.type
-		};
-		const rvalue a1_rval = {
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num = R_A1,
-			.type = TYPE_INTEGER,
-			.from_lvalue = !FROM_LVALUE
-		};
-		emit_store_of_rvalue(enc, &a1_lval, &a1_rval);
+// 		const lvalue a1_lval = {
+// 			.base_reg = R_SP,
+// 			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 			// второй на 2*WORD_LENGTH и т.д.
+// 			.loc.displ = WORD_LENGTH,
+// 			.kind = LVALUE_KIND_STACK,
+// 			.type = arg_rvalue.type
+// 		};
+// 		const rvalue a1_rval = {
+// 			.kind = RVALUE_KIND_REGISTER,
+// 			.val.reg_num = R_A1,
+// 			.type = TYPE_INTEGER,
+// 			.from_lvalue = !FROM_LVALUE
+// 		};
+// 		emit_store_of_rvalue(enc, &a1_lval, &a1_rval);
 
-		if (!type_is_floating(arg_rvalue.type))
-		{
-			uni_printf(enc->sx->io, "\n");
-			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
+// 		if (!type_is_floating(arg_rvalue.type))
+// 		{
+// 			uni_printf(enc->sx->io, "\n");
+// 			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
-			uni_printf(enc->sx->io, "\tjal printf\n");
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\tjal printf\n");
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 			uni_printf(enc->sx->io, "\n");
 
-			free_rvalue(enc, &arg_rvalue);
+// 			free_rvalue(enc, &arg_rvalue);
 
-			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-		}
-		else
-		{
-			const lvalue a2_lval = {
-				.base_reg = R_SP,
-				// по call convention: первый на WORD_LENGTH выше предыдущего положения
-				// $fp, второй на 2*WORD_LENGTH и т.д.
-				.loc.displ = 2 * WORD_LENGTH,
-				.type = TYPE_INTEGER,
-				.kind = LVALUE_KIND_STACK
-			};
-			const rvalue a2_rval = {
-				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = R_A2,
-				.type = TYPE_INTEGER,
-				.from_lvalue = !FROM_LVALUE
-			};
-			emit_store_of_rvalue(enc, &a2_lval, &a2_rval);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 		}
+// 		else
+// 		{
+// 			const lvalue a2_lval = {
+// 				.base_reg = R_SP,
+// 				// по call convention: первый на WORD_LENGTH выше предыдущего положения
+// 				// $fp, второй на 2*WORD_LENGTH и т.д.
+// 				.loc.displ = 2 * WORD_LENGTH,
+// 				.type = TYPE_INTEGER,
+// 				.kind = LVALUE_KIND_STACK
+// 			};
+// 			const rvalue a2_rval = {
+// 				.kind = RVALUE_KIND_REGISTER,
+// 				.val.reg_num = R_A2,
+// 				.type = TYPE_INTEGER,
+// 				.from_lvalue = !FROM_LVALUE
+// 			};
+// 			emit_store_of_rvalue(enc, &a2_lval, &a2_rval);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Конвертируем single to double
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_CVT_D_S);
-			uni_printf(enc->sx->io, " ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// Конвертируем single to double
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_CVT_D_S);
+// 			uni_printf(enc->sx->io, " ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в $a0-$a3
-			// Даже для floating point!
-			// %lo из arg_rvalue в $a1
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFC_1);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A1);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в $a0-$a3
+// 			// Даже для floating point!
+// 			// %lo из arg_rvalue в $a1
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_MFC_1);
+// 			uni_printf(enc->sx->io, " ");
+// 			mips_register_to_io(enc->sx->io, R_A1);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// %hi из arg_rvalue в $a2
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFHC_1);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A2);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// %hi из arg_rvalue в $a2
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_MFHC_1);
+// 			uni_printf(enc->sx->io, " ");
+// 			mips_register_to_io(enc->sx->io, R_A2);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
-			uni_printf(enc->sx->io, "\tjal printf\n\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\tjal printf\n\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
-			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 			// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
+// 			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
-			const rvalue a2_rval_to_copy = emit_load_of_lvalue(enc, &a2_lval);
-			emit_move_rvalue_to_register(enc, R_A2, &a2_rval_to_copy);
+// 			const rvalue a2_rval_to_copy = emit_load_of_lvalue(enc, &a2_lval);
+// 			emit_move_rvalue_to_register(enc, R_A2, &a2_rval_to_copy);
 
-			free_rvalue(enc, &a2_rval);
-			free_rvalue(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
-		}
+// 			free_rvalue(enc, &a2_rval);
+// 			free_rvalue(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
+// 		}
 
-		const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
-		emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
+// 		const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
+// 		emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
 
-		free_rvalue(enc, &a0_rval_to_copy);
-		uni_printf(enc->sx->io, "\n");
+// 		free_rvalue(enc, &a0_rval_to_copy);
+// 		uni_printf(enc->sx->io, "\n");
 
-		const rvalue a1_rval_to_copy = emit_load_of_lvalue(enc, &a1_lval);
-		emit_move_rvalue_to_register(enc, R_A1, &a1_rval_to_copy);
+// 		const rvalue a1_rval_to_copy = emit_load_of_lvalue(enc, &a1_lval);
+// 		emit_move_rvalue_to_register(enc, R_A1, &a1_rval_to_copy);
 
-		free_rvalue(enc, &a1_rval_to_copy);
-		uni_printf(enc->sx->io, "\n");
+// 		free_rvalue(enc, &a1_rval_to_copy);
+// 		uni_printf(enc->sx->io, "\n");
 
-		to_code_2R_I(
-			enc->sx->io,
-			IC_MIPS_ADDI,
-			R_SP,
-			R_SP,
-			(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
-		);
-		uni_printf(enc->sx->io, "\n");
-	}
+// 		to_code_2R_I(
+// 			enc->sx->io,
+// 			IC_MIPS_ADDI,
+// 			R_SP,
+// 			R_SP,
+// 			(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+// 		);
+// 		uni_printf(enc->sx->io, "\n");
+// 	}
 
-	const lvalue a0_lval = {
-		.base_reg = R_SP,
-		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-		// второй на 2*WORD_LENGTH и т.д.
-		.loc.displ = 0,
-		.kind = LVALUE_KIND_STACK,
-		.type = TYPE_INTEGER
-	};
-	const rvalue a0_rval = {
-		.from_lvalue = !FROM_LVALUE,
-		.kind = RVALUE_KIND_REGISTER,
-		.val.reg_num = R_A0,
-		.type = TYPE_INTEGER
-	};
-	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
+// 	const lvalue a0_lval = {
+// 		.base_reg = R_SP,
+// 		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 		// второй на 2*WORD_LENGTH и т.д.
+// 		.loc.displ = 0,
+// 		.kind = LVALUE_KIND_STACK,
+// 		.type = TYPE_INTEGER
+// 	};
+// 	const rvalue a0_rval = {
+// 		.from_lvalue = !FROM_LVALUE,
+// 		.kind = RVALUE_KIND_REGISTER,
+// 		.val.reg_num = R_A0,
+// 		.type = TYPE_INTEGER
+// 	};
+// 	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
-	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
-	uni_printf(enc->sx->io, "\tjal printf\n");
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-	uni_printf(enc->sx->io, "\n");
+// 	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+// 	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+// 	uni_printf(enc->sx->io, "\tjal printf\n");
+// 	uni_printf(enc->sx->io, "\t");
+// 	instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 	uni_printf(enc->sx->io, "\n");
 
-	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-	const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
-	emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
+// 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 	const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
+// 	emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
 
-	free_rvalue(enc, &a0_rval_to_copy);
+// 	free_rvalue(enc, &a0_rval_to_copy);
 
-	// FIXME: Возвращает число распечатанных символов (включая '\0'?)
-	return RVALUE_VOID;
-}
-
-static rvalue emit_builtin_assert_call(encoder *const enc, const node *const nd)
-{
-	const node arg0 = expression_call_get_argument(nd, 0);
-	const rvalue val = emit_expression(enc, &arg0);
-	uni_printf(enc->sx->io, "\tjal assert\n");
-	return RVALUE_VOID;
-}
-static rvalue emit_builtin_math_call(encoder *const enc, const node *const nd)
-{
-	//const size_t parameters_amount = expression_call_get_arguments_amount(nd);
-
-	const node callee = expression_call_get_callee(nd);
-	const size_t func_ref = expression_identifier_get_id(&callee);
-
-	const node arg0 = expression_call_get_argument(nd, 0);
-	const rvalue val = emit_expression(enc, &arg0);
-	//const item_t arg_rvalue_type = arg_rvalue.type;
-
-	emit_move_rvalue_to_register(enc, R_FA0, &val);
-
-	uni_printf(enc->sx->io, "\tjal ");
-	switch (func_ref)
-	{
-		case BI_COS:
-			uni_printf(enc->sx->io, "cos");
-			break;
-		case BI_SIN:
-			uni_printf(enc->sx->io, "sin");
-			break;
-		case BI_ASIN:
-			uni_printf(enc->sx->io, "asin");
-			break;
-		case BI_EXP:
-			uni_printf(enc->sx->io, "exp");
-			break;
-		case BI_LOG:
-			uni_printf(enc->sx->io, "log");
-			break;
-		case BI_LOG10:
-			uni_printf(enc->sx->io, "log10");
-			break;
-		case BI_SQRT:
-			uni_printf(enc->sx->io, "sqrt");
-			break;
-		case BI_ROUND:
-			uni_printf(enc->sx->io, "round");
-			break;
-	}
-	uni_printf(enc->sx->io, " \n");
-
-	return (rvalue) {
-		.kind = RVALUE_KIND_REGISTER,
-		.type = TYPE_FLOATING,
-		.val.reg_num = R_FV0,
-		.from_lvalue = !FROM_LVALUE
-	};
-}
+// 	// FIXME: Возвращает число распечатанных символов (включая '\0'?)
+// 	return RVALUE_VOID;
+// }
 
 static rvalue emit_call_expression2(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
-	const size_t amount = strings_amount(enc->sx);
-	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
+	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
-	for (int i = 0; i < parameters_amount; i++)
+	const size_t params_amount = expression_call_get_arguments_amount(nd);
+
+	size_t f_arg_count = 0;
+	size_t arg_count = 0;
+	size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
+	lvalue prev_arg_displ[4 /* за $a0-$a3 */
+									+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
+	size_t arg_reg_count = 0;
+
+	if (displ_for_parameters)
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
+
+	for (size_t i = 0; i < params_amount; i++)
 	{
 		const node arg = expression_call_get_argument(nd, i);
 		const rvalue tmp = emit_expression(enc, &arg);
-		//const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 
-		const label label_func = { .kind = L_FUNC, .num = func_ref };
-		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT) // Saving variable on stack.
+			mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type) 
+				? R_FA0 + f_arg_count
+				: R_A0 + arg_count));
 
-		// const size_tsize_t  reg_number 
-		emit_move_rvalue_to_register(
+		const lvalue tmp_arg_lvalue = {
+			.base_reg = R_SP,
+			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+			// второй на 2*WORD_LENGTH и т.д.
+			.loc.displ = i * WORD_LENGTH,
+			.kind = LVALUE_KIND_STACK,
+			.type = arg_rvalue.type
+		};
+		const rvalue arg_saved_rvalue = {
+			.kind = RVALUE_KIND_REGISTER,
+			.val.reg_num = (type_is_floating(arg_rvalue.type)
+				? R_FA0 + f_arg_count
+				: R_A0 + arg_count),
+			.type = arg_rvalue.type,
+			.from_lvalue = !FROM_LVALUE
+		};
+
+
+		// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
+		emit_store_of_rvalue(
 			enc,
-			type_is_floating(arg_rvalue.type)
-				? (R_FA0 + f_arg_count)
-				: (R_A0 + arg_count),
-			&arg_rvalue);
+			&tmp_arg_lvalue,
+			(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
+				? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
+				: &arg_rvalue		// Передача аргумента
+		);
+
+		// Если это передача параметров в регистры-аргументы
+		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
+		{
+			// Аргументы рассматриваются в данном случае как регистровые переменные
+			emit_move_rvalue_to_register(
+				enc,
+				type_is_floating(arg_rvalue.type)
+					? (R_FA0 + f_arg_count)
+					: (R_A0 + arg_count),
+				&arg_rvalue);
+
+			// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
+			prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
+		}
 
 		if (type_is_floating(arg_rvalue.type))
 			f_arg_count += 2;
 		else
 			arg_count += 1;
+
+		free_rvalue(enc, &arg_rvalue);
 	}
 
-	return RVALUE_VOID;
+	const label label_func = { .kind = L_FUNC, .num = func_ref };
+	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+
+	// Восстановление аргументов - они могут понадобиться в дальнейшем.
+	size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
+	while (i + j < arg_reg_count)
+	{
+		uni_printf(enc->sx->io, "\n");
+
+		const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
+		emit_move_rvalue_to_register(
+			enc,
+			type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
+			&tmp_rval
+		);
+
+		free_rvalue(enc, &tmp_rval);
+	}
+
+	if (displ_for_parameters)
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
+
+	return (rvalue) {
+		.kind = RVALUE_KIND_REGISTER,
+		.type = return_type,
+		.val.reg_num = type_is_floating(return_type) ? R_FV0 : R_V0,
+		.from_lvalue = !FROM_LVALUE
+	};
 }
 
 /**
@@ -2173,29 +2191,6 @@ static rvalue emit_call_expression2(encoder *const enc, const node *const nd)
  *
  *	@return	Rvalue of builtin function call expression
  */
-static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
-{
-	const node callee = expression_call_get_callee(nd);
-	const size_t func_ref = expression_identifier_get_id(&callee);
-	switch (func_ref)
-	{
-		case BI_ASSERT:
-			return emit_bulitin_assert_call(enc, nd);
-		case BI_PRINTF:
-			return emit_printf_expression(enc, nd);
-		case BI_COS:
-		case BI_SIN:
-		case BI_ASIN:
-		case BI_EXP:
-		case BI_LOG:
-		case BI_LOG10:
-		case BI_SQRT:
-		case BI_ROUND:
-			return emit_builtin_math_call(enc, nd);
-		default:
-			return RVALUE_VOID;
-	}
-}
 
 /**
  *	Emit call expression
@@ -2339,7 +2334,8 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	}
 	else
 	{
-		return emit_builtin_call(enc, nd);
+		//return emit_builtin_call(enc, nd);
+		return RVALUE_VOID;
 	}
 
 	return (rvalue) {
