@@ -5,63 +5,63 @@ FUNC2:                          # assert()
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC6:                          # asin
+FUNC6:                          # asin()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal asin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC10:                         # cos
+FUNC10:                         # cos()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal cos
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC14:                         # sin
+FUNC14:                         # sin()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC18:                         # sin
+FUNC18:                         # sin()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC22:                         # log
+FUNC22:                         # log()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal log
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC26:                         # log10
+FUNC26:                         # log10()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal log10
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC30:                         # sqrt
+FUNC30:                         # sqrt()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sqrt
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC34:                         # rand
+FUNC34:                         # rand()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal rand
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC38:                         # round
+FUNC38:                         # round()
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal round
@@ -69,21 +69,22 @@ FUNC38:                         # round
 	lw $ra, -4($sp)
 	jr $ra
 
-FUNC42:
+FUNC42:                         # strcpy()
 	jr $ra
-FUNC46:
+FUNC46:                         # strncpy()
 	jr $ra
-FUNC50:
+FUNC50:                         # strcat()
 	jr $ra
-FUNC54:
+FUNC54:                         # strncat()
 	jr $ra
-FUNC58:
+FUNC58:                         # strcmp()
 	jr $ra
-FUNC62:
+FUNC62:                         # strncmp()
 	jr $ra
-FUNC66:
+FUNC66:                         # strstr()
 	jr $ra
-FUNC70:
+FUNC70:                         # strlen()
+	lw $v0,-1($a0)
 	jr $ra
 
 # defarr1

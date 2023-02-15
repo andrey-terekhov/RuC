@@ -83,6 +83,7 @@ FUNC62:
 FUNC66:
 	jr $ra
 FUNC70:
+	lw $v0,-1($a0)
 	jr $ra
 DEFARR1:
 	sw $a1, 4($a0)
