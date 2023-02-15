@@ -3887,7 +3887,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	if (!pregen(&enc))
+	if (pregen(&enc))
 		return -1;
 
 	strings_declaration(&enc);
@@ -3895,7 +3895,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
 
-	if (!postgen(&enc))
+	if (postgen(&enc))
 		return -1;
 
 	hash_clear(&enc.displacements);
