@@ -12,56 +12,56 @@ FUNC6:                          # asin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC10:                         # asin
+FUNC10:                         # cos
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal cos
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC14:                         # asin
+FUNC14:                         # sin
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC18:                         # asin
+FUNC18:                         # sin
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sin
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC22:                         # asin
+FUNC22:                         # log
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal log
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC26:                         # asin
+FUNC26:                         # log10
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal log10
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC30:                         # asin
+FUNC30:                         # sqrt
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal sqrt
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC34:                         # asin
+FUNC34:                         # rand
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal rand
 	addi $sp, $sp, 4
 	lw $ra, -4($sp)
 	jr $ra
-FUNC38:                         # asin
+FUNC38:                         # round
 	sw $ra, -4($sp)
 	addi $sp, $sp, -4
 	jal round
