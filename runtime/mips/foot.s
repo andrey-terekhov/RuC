@@ -1,3 +1,91 @@
+FUNC2:                          # assert()
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal assert
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC6:                          # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal asin
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC10:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal cos
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC14:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal sin
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC18:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal sin
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC22:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal log
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC26:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal log10
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC30:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal sqrt
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC34:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal rand
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+FUNC38:                         # asin
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal round
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+
+FUNC42:
+	jr $ra
+FUNC46:
+	jr $ra
+FUNC50:
+	jr $ra
+FUNC54:
+	jr $ra
+FUNC58:
+	jr $ra
+FUNC62:
+	jr $ra
+FUNC66:
+	jr $ra
+FUNC70:
+	jr $ra
+
 # defarr1
 # объявление одномерного массива
 # $a0 -- адрес первого элемента
