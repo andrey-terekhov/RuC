@@ -1762,11 +1762,14 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				if (is_var_first_operand) {
+				if (is_var_first_operand)
+				{
 					rvalue_to_io(enc, var_rvalue);
 					uni_printf(enc->sx->io, ", ");
 					rvalue_to_io(enc, imm_rvalue);
-				} else {
+				}
+				else
+				{
 					rvalue_to_io(enc, imm_rvalue);
 					uni_printf(enc->sx->io, ", ");
 					rvalue_to_io(enc, var_rvalue);
@@ -1800,12 +1803,14 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
 					imm_rvalue = &tmp;
 					in_reg = true;
-					if (((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_REM)) && !is_var_first_operand) {
+					if (((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_REM)) && !is_var_first_operand)
+					{
 						change_order = true;
 					}
 				}
 
-				if ((operator == BIN_SHL || operator == BIN_SHR) && !is_var_first_operand) {
+				if ((operator == BIN_SHL || operator == BIN_SHR) && !is_var_first_operand)
+				{
 					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
 					imm_rvalue = &tmp;
 					in_reg = true;
@@ -1822,11 +1827,14 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				if (!change_order) {
+				if (!change_order)
+				{
 					rvalue_to_io(enc, var_rvalue);
 					uni_printf(enc->sx->io, ", ");
 					rvalue_to_io(enc, imm_rvalue);
-				} else {
+				}
+				else
+				{
 					rvalue_to_io(enc, imm_rvalue);
 					uni_printf(enc->sx->io, ", ");
 					rvalue_to_io(enc, var_rvalue);
