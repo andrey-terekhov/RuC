@@ -19,6 +19,8 @@
 	.extern sqrt
 	.extern round
 
+	.extern exit
+
 	.globl main                 # делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
 	.ent main                   # начало процедуры main
 	.type main, @function       # тип "main" -- функция

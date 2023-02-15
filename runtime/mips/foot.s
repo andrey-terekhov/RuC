@@ -87,6 +87,15 @@ FUNC70:                         # strlen()
 	lw $v0,-1($a0)
 	jr $ra
 
+FUNC162:                        # exit()
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal exit
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
+
+
 # defarr1
 # объявление одномерного массива
 # $a0 -- адрес первого элемента

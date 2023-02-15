@@ -16,6 +16,7 @@
 	.extern log10
 	.extern sqrt
 	.extern round
+	.extern exit
 	.globl main
 	.ent main
 	.type main, @function

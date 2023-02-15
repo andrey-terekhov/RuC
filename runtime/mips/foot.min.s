@@ -85,6 +85,13 @@ FUNC66:
 FUNC70:
 	lw $v0,-1($a0)
 	jr $ra
+FUNC162:
+	sw $ra, -4($sp)
+	addi $sp, $sp, -4
+	jal exit
+	addi $sp, $sp, 4
+	lw $ra, -4($sp)
+	jr $ra
 DEFARR1:
 	sw $a1, 4($a0)
 	li $v0, 4
