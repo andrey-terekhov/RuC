@@ -437,5 +437,5 @@ int computer_clear(computer *const comp)
 	stack_clear(&comp->numbers);
 	stack_clear(&comp->operators);
 
-	return 0;
+	return loc_is_correct(&comp->loc) ? 0 : -1;
 }

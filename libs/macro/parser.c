@@ -1496,7 +1496,7 @@ static item_t parse_expression(parser *const prs)
 			prs->loc = origin_loc;
 			prs->prev = origin_prev;
 			const item_t result = computer_pop_result(&comp);
-			computer_clear(&comp);
+			prs->was_error = computer_clear(&comp) != 0 || prs->was_error;
 			return result;
 		}
 		else if (utf8_is_letter(character))
@@ -1591,7 +1591,7 @@ static item_t parse_expression(parser *const prs)
 	prs->io = origin_io;
 	prs->loc = origin_loc;
 	prs->prev = origin_prev;
-	computer_clear(&comp);
+	prs->was_error = computer_clear(&comp) != 0 || prs->was_error;
 	skip_expression(prs);
 	return 0;
 }
