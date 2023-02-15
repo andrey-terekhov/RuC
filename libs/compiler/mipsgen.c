@@ -2096,12 +2096,7 @@ static rvalue emit_call_expression2(encoder *const enc, const node *const nd)
 	{
 		const node arg = expression_call_get_argument(nd, i);
 		const rvalue tmp = emit_expression(enc, &arg);
-		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
-
-		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT) // Saving variable on stack.
-			mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type) 
-				? R_FA0 + f_arg_count
-				: R_A0 + arg_count));
+		const rvalue arg_rvalue = tmp;
 
 		const lvalue tmp_arg_lvalue = {
 			.base_reg = R_SP,
