@@ -326,7 +326,7 @@ int computer_push_token(computer *const comp, const size_t pos, const token_t tk
 		return computer_token_without_number(comp, (item_t)pos, tk);
 	}
 
-	if (tk == TK_COMPL || tk == TK_NOT)
+	if (tk == TK_COMPL || tk == TK_NOT || tk == TK_L_BOUND)
 	{
 		char token[2];
 		computer_token_to_string(token, tk);
@@ -437,5 +437,5 @@ int computer_clear(computer *const comp)
 	stack_clear(&comp->numbers);
 	stack_clear(&comp->operators);
 
-	return 0;
+	return loc_is_correct(&comp->loc) ? 0 : -1;
 }
