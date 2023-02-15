@@ -3296,6 +3296,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	emit_label_declaration(enc, &func_label);
 
 	const item_t func_type = ident_get_type(enc->sx, ref_ident);
+	const item_t return_type = type_function_get_return_type(enc->sx, func_type);
 	const size_t parameters = type_function_get_parameter_amount(enc->sx, func_type);
 
 	if (ref_ident == enc->sx->ref_main)
@@ -3354,7 +3355,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	size_t gpr_count = 0;
 	size_t fp_count = 0;
 
-	if (type_is_structure(enc->sx, func_type)) {
+	if (type_is_structure(enc->sx, return_type)) {
 		++gpr_count;
 	}
 
