@@ -188,7 +188,7 @@ int storage_remove_by_index(storage *const stg, const size_t id)
 		return 0;
 	}
 
-	map_set_by_index(&stg->as, hash_get_key(&stg->hs, id), ITEM_MAX);
+	map_set_by_index(&stg->as, (size_t)hash_get_key(&stg->hs, id), ITEM_MAX);
 	if (hash_get_by_index(&stg->hs, id, 0) == (item_t)strings_size(&stg->vec) - 1)
 	{
 		strings_remove(&stg->vec);
@@ -215,7 +215,7 @@ size_t storage_search(storage *const stg, universal_io *const io)
 
 const char *storage_to_string(const storage *const stg, const size_t id)
 {
-	return storage_is_correct(stg) ? map_to_string(&stg->as, hash_get_key(&stg->hs, id)) : NULL;
+	return storage_is_correct(stg) ? map_to_string(&stg->as, (size_t)hash_get_key(&stg->hs, id)) : NULL;
 }
 
 const char *storage_last_read(const storage *const stg)
