@@ -439,13 +439,17 @@ static inline char32_t skip_macro(parser *const prs, const keyword_t keyword)
 		if (utf8_is_letter(character))
 		{
 			const char *value = storage_get_by_index(prs->stg, storage_search(prs->stg, prs->io));
-			if (value != NULL)
+			if (value == NULL)
 			{
-				uni_printf(prs->io, MASK_ARGUMENT "%s", value);
+				uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+			}
+			else if (keyword == KW_IFDEF || keyword == KW_IFNDEF)
+			{
+				uni_printf(prs->io, MASK_TOKEN_PASTE "%s", value);
 			}
 			else
 			{
-				uni_printf(prs->io, "%s", storage_last_read(prs->stg));
+				uni_printf(prs->io, MASK_ARGUMENT "%s", value);
 			}
 		}
 		else if (character == '\'' || character == '"' || (character == '<' && keyword == KW_INCLUDE))
