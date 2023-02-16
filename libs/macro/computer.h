@@ -74,6 +74,7 @@ typedef struct computer
 
 	location loc;					/**< Directive location */
 	universal_io *io;				/**< IO for location assembly */
+	const char *directive;			/**< Directive name for error emitting */
 
 	bool was_number;				/**< Set, if last push is number */
 } computer;
@@ -83,10 +84,12 @@ typedef struct computer
  *	Create computer structure
  *
  *	@param	loc			Default location
+ *	@param	io			Location IO
+ *	@param	directive	Directive name
  *
  *	@return	Computer structure
  */
-computer computer_create(location *const loc, universal_io *const io);
+computer computer_create(location *const loc, universal_io *const io, const char *const directive);
 
 
 /**

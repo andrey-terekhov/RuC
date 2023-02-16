@@ -305,9 +305,9 @@ static inline int computer_const_number(computer *const comp, const item_t pos, 
  */
 
 
-computer computer_create(location *const loc, universal_io *const io)
+computer computer_create(location *const loc, universal_io *const io, const char *const directive)
 {
-	return (computer) { .loc = loc_copy(loc), .io = io
+	return (computer) { .loc = loc_copy(loc), .io = io, .directive = directive
 		, .numbers = stack_create(MAX_EXPRESSION_DAPTH)
 		, .operators = stack_create(MAX_EXPRESSION_DAPTH)
 		, .was_number = false };
@@ -393,6 +393,12 @@ item_t computer_pop_result(computer *const comp)
 {
 	if (!computer_is_correct(comp))
 	{
+		return 0;
+	}
+
+	if (stack_size(&comp->numbers) == 0)
+	{
+		computer_error(comp, ITEM_MAX, DIRECTIVE_NO_EXPRESSION, comp->directive);
 		return 0;
 	}
 
