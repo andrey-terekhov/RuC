@@ -1460,10 +1460,13 @@ static inline bool parse_token(parser *const prs, computer *const comp, const si
 static item_t parse_expression(parser *const prs)
 {
 	location loc = parse_location(prs);
+	char directive[MAX_KEYWORD_SIZE];
+	sprintf(directive, "%s", storage_last_read(prs->stg));
+
 	char32_t character = skip_until(prs, false);
 	if (character == '\n' || character == (char32_t)EOF)
 	{
-		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, storage_last_read(prs->stg));
+		parser_error(prs, &loc, DIRECTIVE_NO_EXPRESSION, directive);
 		return 0;
 	}
 
@@ -1471,7 +1474,8 @@ static item_t parse_expression(parser *const prs)
 	location *origin_loc = prs->loc;
 	location *origin_prev = prs->prev;
 
-	computer comp = prs->prev == NULL ? computer_create(&loc, prs->io) : computer_create(prs->prev, NULL);
+	computer comp = prs->prev == NULL ? computer_create(&loc, prs->io, directive)
+		: computer_create(prs->prev, NULL, directive);
 	size_t position = in_get_position(prs->io);
 	universal_io out = io_create();
 	char *buffer = NULL;
