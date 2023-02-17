@@ -3355,7 +3355,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	size_t gpr_count = 0;
 	size_t fp_count = 0;
 
-	if (type_is_structure(enc->sx, return_type)) {
+	if (type_is_structure(enc->sx, return_type))
+	{
 		++gpr_count;
 	}
 
