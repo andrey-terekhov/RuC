@@ -2161,24 +2161,12 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 		&r_a0_saved_rvalue
 	);
 
-	if (target != NULL)
-	{
-		const rvalue target_addr = emit_load_of_lvalue(enc, target);
-		emit_move_rvalue_to_register(
-			enc,
-			R_A0,
-			&target_addr
-		);
-	}
-	else
-	{
-		const rvalue null_addr = {.kind = RVALUE_KIND_CONST, .type = TYPE_INTEGER, .from_lvalue = !FROM_LVALUE, .val.int_val = -1};
-		emit_move_rvalue_to_register(
-			enc,
-			R_A0,
-			&null_addr
-		);
-	}
+	const rvalue target_addr = emit_load_of_lvalue(enc, target);
+	emit_move_rvalue_to_register(
+		enc,
+		R_A0,
+		&target_addr
+	);
 
 	size_t arg_reg_count = 0;
 	++arg_count;
@@ -2916,12 +2904,25 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 		case EXPR_CALL:
 			if (type_is_structure(enc->sx, expression_get_type(nd)))
 			{
-				//Если вызвали здесь, то значение не используется => target = NULL
-				emit_struct_return_call_expression(enc, nd, NULL);
+				const item_t type = expression_get_type(nd);
+				const size_t old_displ = enc->scope_displ;
+				const lvalue target = {
+					.kind = LVALUE_KIND_STACK,
+					.type = type,
+					.base_reg = R_FP,
+					.loc.displ = old_displ
+				};
+
+				enc->scope_displ += mips_type_size(enc->sx, type);
+				enc->max_displ = max(enc->scope_displ, enc->max_displ);
+
+				emit_struct_return_call_expression(enc, nd, &target);
+				enc->scope_displ = old_displ;
+
 				return (rvalue) {
 					.kind = RVALUE_KIND_REGISTER,
-					.type = expression_get_type(nd),
-					.val.reg_num = type_is_floating(expression_get_type(nd)) ? R_FV0 : R_V0,
+					.type = TYPE_INTEGER,
+					.val.reg_num = R_A0,
 					.from_lvalue = !FROM_LVALUE
 				};
 			}
@@ -3852,13 +3853,6 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 
 		if (type_is_structure(enc->sx, expression_get_type(&expression)))
 		{
-			const rvalue r_a0_reg_rvalue = {.kind = RVALUE_KIND_REGISTER, .type = TYPE_INTEGER, .val.reg_num = R_A0, .from_lvalue = !FROM_LVALUE };
-			const label label_end = { .kind = L_FUNCEND, .num = enc->curr_function_ident };
-
-			// Если совершает переход - это означает, что значение функции не используется (т е в struct_ret_call_expr R_A0 <- -1) и тогда
-			// то, что сгенерирует emit_struct_assignment не будет использовано
-			emit_conditional_branch(enc, IC_MIPS_BLEZ, &r_a0_reg_rvalue, &label_end);
-
 			const lvalue target = {
 				.kind = LVALUE_KIND_STACK,
 				.type = expression_get_type(&expression),
@@ -3867,7 +3861,9 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 			};
 
 			emit_struct_assignment(enc, &target, &expression);
-		} else {
+		}
+		else
+		{
 			const rvalue value = emit_expression(enc, &expression);
 
 			const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = value.type };
