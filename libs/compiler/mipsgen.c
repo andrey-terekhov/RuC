@@ -2085,6 +2085,10 @@ static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
+	// Конвертируем в указатель на функцию
+	// FIXME: хотим рассмотреть любой callee как указатель
+	// на данный момент это не поддержано в билдере, когда будет сделано -- добавить в emit_expression()
+	// и применяем функцию emit_identifier_expression (т.к. его категория в билдере будет проставлена как rvalue)
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
