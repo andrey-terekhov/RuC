@@ -187,6 +187,7 @@ typedef enum INSTRUCTION
 
 	IC_MIPS_JR,			/**< To execute a branch to an instruction address in a register */
 	IC_MIPS_JAL,		/**< To execute a procedure call within the current 256MB-aligned region */
+	IC_MIPS_JALR,		/**< To execute a procedure with address in a register */
 	IC_MIPS_J,			/**< To branch within the current 256 MB-aligned region */
 
 	IC_MIPS_BLEZ,		/**< Branch on Less Than or Equal to Zero.
@@ -897,6 +898,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_JAL:
 			uni_printf(io, "jal");
 			break;
+		case IC_MIPS_JALR:
+			uni_printf(io, "jalr");
+			break;
 		case IC_MIPS_J:
 			uni_printf(io, "j");
 			break;
@@ -1160,6 +1164,11 @@ static lvalue displacements_get(encoder *const enc, const size_t identifier)
 	return (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .type = type };
 }
 
+static bool displacements_contains(encoder *const enc, const size_t identifier) 
+{
+	return hash_get(&enc->displacements, identifier, 0) != ITEM_MAX;
+}
+
 /**
  *	Emit label
  *
@@ -1274,7 +1283,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
  */
 static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction, const mips_register_t reg)
 {
-	assert(instruction == IC_MIPS_JR);
+	assert(instruction == IC_MIPS_JR || instruction == IC_MIPS_JALR);
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -2090,6 +2099,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	// на данный момент это не поддержано в билдере, когда будет сделано -- добавить в emit_expression()
 	// и применяем функцию emit_identifier_expression (т.к. его категория в билдере будет проставлена как rvalue)
 	const size_t func_ref = expression_identifier_get_id(&callee);
+	const bool is_ptr_call = displacements_contains(enc, func_ref);
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
@@ -2160,8 +2170,16 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &arg_rvalue);
 	}
 
-	const label label_func = { .kind = L_FUNC, .num = func_ref };
-	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	if (is_ptr_call) 
+	{
+		const lvalue jump_lvalue = emit_lvalue(enc, &callee);
+		emit_register_branch(enc, IC_MIPS_JALR, jump_lvalue.loc.reg_num);
+	}
+	else 
+	{
+		const label label_func = { .kind = L_FUNC, .num = func_ref };
+		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	}
 
 	// Восстановление аргументов - они могут понадобиться в дальнейшем.
 	size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
