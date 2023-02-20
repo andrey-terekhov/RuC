@@ -1114,7 +1114,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier)
 		enc->scope_displ += mips_type_size(enc->sx, type);
 		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 	}
-	const item_t location = is_local ? -(item_t)enc->scope_displ : enc->global_displ;
+	const item_t location = is_local ? -(item_t)enc->scope_displ : (item_t)enc->global_displ;
 
 	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
 	{
