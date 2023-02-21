@@ -1139,29 +1139,14 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
  *
  *	@param	enc					Encoder
  *	@param	identifier			Identifier for adding to the table
- *	@param	location			Location of identifier - register, or displacement on stack
- *	@param	is_register			@c true, if identifier is register variable, and @c false otherwise
- *
- *	@return	Identifier lvalue
+ *	@param	value				Lvalue for adding to the table
  */
-static lvalue displacements_set(encoder *const enc, const size_t identifier, const item_t location, const bool is_register)
+static void displacements_set(encoder *const enc, const size_t identifier, const lvalue *const value)
 {
-	const bool is_local = ident_is_local(enc->sx, identifier);
-	const mips_register_t base_reg = is_local ? R_FP : R_GP;
-	const item_t type = ident_get_type(enc->sx, identifier);
-
-	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
-	{
-		// TODO: кидать соответствующую ошибку
-		system_error(node_unexpected);
-	}
-
 	const size_t index = hash_add(&enc->displacements, identifier, 3);
-	hash_set_by_index(&enc->displacements, index, 0, (is_register) ? 1 : 0);
-	hash_set_by_index(&enc->displacements, index, 1, location);
-	hash_set_by_index(&enc->displacements, index, 2, base_reg);
-
-	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
+	hash_set_by_index(&enc->displacements, index, 0, (value->kind == LVALUE_KIND_REGISTER) ? 1 : 0);
+	hash_set_by_index(&enc->displacements, index, 1, value->loc.displ);
+	hash_set_by_index(&enc->displacements, index, 2, value->base_reg);
 }
 
 /**
@@ -3176,13 +3161,15 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			if (i < ARG_REG_AMOUNT)
 			{
 				// Рассматриваем их как регистровые переменные
+				const item_t type = ident_get_type(enc->sx, id);
 				const mips_register_t curr_reg = R_A0 + gpr_count++;
 				uni_printf(enc->sx->io, "is in register ");
 				mips_register_to_io(enc->sx->io, curr_reg);
 				uni_printf(enc->sx->io, "\n");
 
 				// Вносим переменную в таблицу символов
-				displacements_set(enc, id, curr_reg, true);
+				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+				displacements_set(enc, id, &value);
 			}
 			else
 			{
@@ -3195,12 +3182,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			if (i < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
+				const item_t type = ident_get_type(enc->sx, id);
 				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
 				uni_printf(enc->sx->io, "is in register ");
 				mips_register_to_io(enc->sx->io, curr_reg);
 				uni_printf(enc->sx->io, "\n");
 
-				displacements_set(enc, id, curr_reg, true);
+				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+				displacements_set(enc, id, &value);
 			}
 			else
 			{
