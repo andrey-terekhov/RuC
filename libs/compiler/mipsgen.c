@@ -1102,10 +1102,9 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
  *
  *	@return	Identifier lvalue
  */
-static lvalue displacements_add(encoder *const enc, const size_t identifier)
+static lvalue displacements_add(encoder *const enc, const size_t identifier, const bool is_register)
 {
 	// TODO: выдача сохраняемых регистров 
-	const bool is_register = false;
 	const bool is_local = ident_is_local(enc->sx, identifier);
 	const size_t location = is_local ? enc->scope_displ : enc->global_displ;
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
@@ -2941,7 +2940,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	// Сдвигаем, чтобы размер первого измерения был перед массивом
 	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	const lvalue variable = displacements_add(enc, identifier);
+	const lvalue variable = displacements_add(enc, identifier, false);
 	const rvalue value = {
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_REGISTER,
@@ -3075,7 +3074,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	}
 	else
 	{
-		const lvalue variable = displacements_add(enc, identifier);
+		const lvalue variable = displacements_add(enc, identifier, false);
 		if (declaration_variable_has_initializer(nd))
 		{
 			const node initializer = declaration_variable_get_initializer(nd);
