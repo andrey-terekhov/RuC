@@ -2098,13 +2098,111 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit load of arguments inside function call
+ *
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
+ *	@param  prev_arg_displ   Array with locations of previous argument registers
+ *	@param	arg_reg_count	 Pointer to the number of stored argument registers
+ *
+ */
+static void emit_function_arguments_loading(encoder *const enc, const node *const nd, lvalue prev_arg_displ[], size_t *const arg_reg_count)
+{
+	const node callee = expression_call_get_callee(nd);
+	const size_t params_amount = expression_call_get_arguments_amount(nd);
+	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
+	const bool does_return_structure = type_is_structure(enc->sx, return_type);
+
+	*arg_reg_count = does_return_structure ? 1: 0;
+	const size_t start_displ = does_return_structure ? WORD_LENGTH: 0;
+
+	uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
+
+	size_t f_arg_count = 0;
+	size_t arg_count = 0;
+	// TODO: структуры / массивы в параметры
+	// TODO: вызовы как аргументы
+	for (size_t i = 0; i < params_amount; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		const rvalue tmp = emit_expression(enc, &arg);
+		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+		const size_t supposed_reg_num = type_is_floating(arg_rvalue.type)
+											? f_arg_count
+											: does_return_structure ? (arg_count + 1): arg_count;
+
+		if (supposed_reg_num < ARG_REG_AMOUNT)
+		{
+			uni_printf(enc->sx->io, "\t# saving ");
+			mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type) ? R_FA0 + supposed_reg_num
+																				: R_A0 + supposed_reg_num));
+			uni_printf(enc->sx->io, " value on stack:\n");
+		}
+		else
+		{
+			uni_printf(enc->sx->io, "\t# parameter on stack:\n");
+		}
+
+		const lvalue tmp_arg_lvalue = {
+			.base_reg = R_SP,
+			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+			// второй на 2*WORD_LENGTH и т.д.
+			.loc.displ = i * WORD_LENGTH + start_displ,
+			.kind = LVALUE_KIND_STACK,
+			.type = arg_rvalue.type
+		};
+
+		const rvalue arg_saved_rvalue = {
+			.kind = RVALUE_KIND_REGISTER,
+			.val.reg_num =
+				(type_is_floating(arg_rvalue.type) ? R_FA0 + supposed_reg_num
+												   : R_A0 + supposed_reg_num),
+			.type = arg_rvalue.type,
+			.from_lvalue = !FROM_LVALUE
+		};
+		// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
+		emit_store_of_rvalue(
+			enc, &tmp_arg_lvalue,
+			supposed_reg_num < ARG_REG_AMOUNT
+				? &arg_saved_rvalue // Сохранение значения в регистре-аргументе
+				: &arg_rvalue // Передача аргумента
+		);
+
+		// Если это передача параметров в регистры-аргументы
+		if (supposed_reg_num < ARG_REG_AMOUNT)
+		{
+			// Аргументы рассматриваются в данном случае как регистровые переменные
+			emit_move_rvalue_to_register(
+				enc,
+				type_is_floating(arg_rvalue.type) ? (R_FA0 + supposed_reg_num)
+												  : (R_A0 + supposed_reg_num),
+				&arg_rvalue
+			);
+
+			// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
+			prev_arg_displ[(*arg_reg_count)++] = tmp_arg_lvalue;
+		}
+
+		if (type_is_floating(arg_rvalue.type))
+		{
+			f_arg_count += 2;
+		}
+		else
+		{
+			arg_count += 1;
+		}
+
+		free_rvalue(enc, &arg_rvalue);
+	}
+}
+
+/**
  *	Emit call expression of a function returning a structure
  *
  *	@param	enc					Encoder
  *	@param	nd					Node in AST
  *	@param  return_value_addr   Rvalue storing the address of the place to store the return value
  *
- *	@return	Rvalue of the result of call expression
  */
 static void emit_struct_return_call_expression(encoder *const enc, const node *const nd, const lvalue *const target)
 {
@@ -2121,10 +2219,8 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
 
-	assert(func_ref >= BEGIN_USER_FUNC);
+	//TODO builtin functions
 
-	size_t f_arg_count = 0;
-	size_t arg_count = 0;
 	size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
 	size_t displ_for_return_value_addr = WORD_LENGTH;
 	lvalue prev_arg_displ[4 /* за $a0-$a3 */
@@ -2136,7 +2232,7 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters + displ_for_return_value_addr));
 	}
 
-	uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
+	uni_printf(enc->sx->io, "\n\t# target address passing:\n");
 
 	uni_printf(enc->sx->io, "\t# saving ");
 	mips_register_to_io(enc->sx->io, R_A0);
@@ -2167,80 +2263,10 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 		R_A0,
 		&target_addr
 	);
+	prev_arg_displ[0] = tmp_r_a0_lvalue;
 
 	size_t arg_reg_count = 0;
-	++arg_count;
-	prev_arg_displ[arg_reg_count++] = tmp_r_a0_lvalue;
-	// TODO: структуры / массивы в параметры
-	for (size_t i = 0; i < params_amount; i++)
-	{
-		const node arg = expression_call_get_argument(nd, i);
-		const rvalue tmp = emit_expression(enc, &arg);
-		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
-
-		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-		{
-			uni_printf(enc->sx->io, "\t# saving ");
-			mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type) ? R_FA0 + f_arg_count
-																				: R_A0 + arg_count));
-			uni_printf(enc->sx->io, " value on stack:\n");
-		}
-		else
-		{
-			uni_printf(enc->sx->io, "\t# parameter on stack:\n");
-		}
-
-		const lvalue tmp_arg_lvalue = {
-			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-			// второй на 2*WORD_LENGTH и т.д.
-			.loc.displ = i * WORD_LENGTH + WORD_LENGTH,
-			.kind = LVALUE_KIND_STACK,
-			.type = arg_rvalue.type
-		};
-
-		const rvalue arg_saved_rvalue = {
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num =
-				(type_is_floating(arg_rvalue.type) ? R_FA0 + f_arg_count
-												   : R_A0 + arg_count),
-			.type = arg_rvalue.type,
-			.from_lvalue = !FROM_LVALUE
-		};
-		// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
-		emit_store_of_rvalue(
-			enc, &tmp_arg_lvalue,
-			(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
-				? &arg_saved_rvalue // Сохранение значения в регистре-аргументе
-				: &arg_rvalue // Передача аргумента
-		);
-
-		// Если это передача параметров в регистры-аргументы
-		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-		{
-			// Аргументы рассматриваются в данном случае как регистровые переменные
-			emit_move_rvalue_to_register(
-				enc,
-				type_is_floating(arg_rvalue.type) ? (R_FA0 + f_arg_count)
-												  : (R_A0 + arg_count),
-				&arg_rvalue
-			);
-
-			// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-			prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
-		}
-
-		if (type_is_floating(arg_rvalue.type))
-		{
-			f_arg_count += 2;
-		}
-		else
-		{
-			arg_count += 1;
-		}
-
-		free_rvalue(enc, &arg_rvalue);
-	}
+	emit_function_arguments_loading(enc, nd, prev_arg_displ, &arg_reg_count);
 
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
 	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
@@ -2307,81 +2333,8 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
 		}
 
-		uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
-		// TODO: вынести загрузку аргументов в отдельную функцию
-		// TODO: структуры / массивы в параметры
 		size_t arg_reg_count = 0;
-		for (size_t i = 0; i < params_amount; i++)
-		{
-			const node arg = expression_call_get_argument(nd, i);
-			const rvalue tmp = emit_expression(enc, &arg);
-			const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
-
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				uni_printf(enc->sx->io, "\t# saving ");
-				mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count));
-				uni_printf(enc->sx->io, " value on stack:\n");
-			}
-			else
-			{
-				uni_printf(enc->sx->io, "\t# parameter on stack:\n");
-			}
-
-			const lvalue tmp_arg_lvalue = {
-				.base_reg = R_SP,
-				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-				// второй на 2*WORD_LENGTH и т.д.
-				.loc.displ = i * WORD_LENGTH,
-				.kind = LVALUE_KIND_STACK,
-				.type = arg_rvalue.type
-			};
-
-			const rvalue arg_saved_rvalue = {
-				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = (type_is_floating(arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count),
-				.type = arg_rvalue.type,
-				.from_lvalue = !FROM_LVALUE
-			};
-			// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
-			emit_store_of_rvalue(
-				enc,
-				&tmp_arg_lvalue,
-				(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
-					? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
-					: &arg_rvalue		// Передача аргумента
-			);
-
-			// Если это передача параметров в регистры-аргументы
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				// Аргументы рассматриваются в данном случае как регистровые переменные
-				emit_move_rvalue_to_register(
-					enc,
-					type_is_floating(arg_rvalue.type)
-						? (R_FA0 + f_arg_count)
-						: (R_A0 + arg_count),
-					&arg_rvalue);
-
-				// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
-			}
-
-			if (type_is_floating(arg_rvalue.type))
-			{
-				f_arg_count += 2;
-			}
-			else
-			{
-				arg_count += 1;
-			}
-
-			free_rvalue(enc, &arg_rvalue);
-		}
+		emit_function_arguments_loading(enc, nd, prev_arg_displ, &arg_reg_count);
 
 		const label label_func = { .kind = L_FUNC, .num = func_ref };
 		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
@@ -2739,7 +2692,6 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 	}
 	else// Присваивание другой структуры
 	{
-		// FIXME: возврат структуры из функции
 		// FIXME: массив структур
 		const size_t RHS_identifier = expression_identifier_get_id(value);
 		const lvalue RHS_lvalue = displacements_get(enc, RHS_identifier);
