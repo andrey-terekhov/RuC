@@ -1232,6 +1232,106 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
 	uni_printf(enc->sx->io, "\n");
 }
 
+static void emit_builtin_branch(encoder *const enc, builtin_t builtin)
+{
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, IC_MIPS_JAL);
+	uni_printf(enc->sx->io, " ");
+	switch (builtin)
+	{
+		case BI_ASSERT:
+			uni_printf(enc->sx->io, "assert");
+			break;
+
+		case BI_ASIN:
+			uni_printf(enc->sx->io, "asin");
+			break;
+		case BI_COS:
+			uni_printf(enc->sx->io, "cos");
+			break;
+		case BI_SIN:
+			uni_printf(enc->sx->io, "sin");
+			break;
+		case BI_EXP:
+			uni_printf(enc->sx->io, "exp");
+			break;
+		case BI_LOG:
+			uni_printf(enc->sx->io, "log");
+			break;
+		case BI_LOG10:
+			uni_printf(enc->sx->io, "log10");
+			break;
+		case BI_SQRT:
+			uni_printf(enc->sx->io, "sqrt");
+			break;
+		case BI_RAND:
+			uni_printf(enc->sx->io, "rand");
+			break;
+		case BI_ROUND:
+			uni_printf(enc->sx->io, "round");
+			break;
+
+		case BI_STRCPY:
+			uni_printf(enc->sx->io, "strcpy");
+			break;
+		case BI_STRNCPY:
+			uni_printf(enc->sx->io, "strncpy");
+			break;
+		case BI_STRCAT:
+			uni_printf(enc->sx->io, "strcat");
+			break;
+		case BI_STRNCAT:
+			uni_printf(enc->sx->io, "strncat");
+			break;
+		case BI_STRCMP:
+			uni_printf(enc->sx->io, "strcmp");
+			break;
+		case BI_STRNCMP:
+			uni_printf(enc->sx->io, "strncmp");
+			break;
+		case BI_STRSTR:
+			uni_printf(enc->sx->io, "strstr");
+			break;
+		case BI_STRLEN:
+			uni_printf(enc->sx->io, "strlen");
+			break;
+
+		case BI_FOPEN:
+			uni_printf(enc->sx->io, "fopen");
+			break;
+		case BI_FGETC:
+			uni_printf(enc->sx->io, "fgetc");
+			break;
+		case BI_FPUTC:
+			uni_printf(enc->sx->io, "fputc");
+			break;
+		case BI_FCLOSE:
+			uni_printf(enc->sx->io, "fclose");
+			break;
+
+		case BI_EXIT:
+			uni_printf(enc->sx->io, "exit");
+			break;
+
+		case BI_EXIT:
+			uni_printf(enc->sx->io, "printf");
+			break;
+		case BI_EXIT:
+			uni_printf(enc->sx->io, "print");
+			break;
+		case BI_EXIT:
+			uni_printf(enc->sx->io, "printid");
+			break;
+		case BI_EXIT:
+			uni_printf(enc->sx->io, "getid");
+			break;
+		default:
+			system_error(node_unexpected);
+			return;
+	}
+	uni_printf(enc->sx->io, "\n");
+}
+
 /**
  *	Emit conditional branch
  *
