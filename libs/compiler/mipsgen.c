@@ -2059,8 +2059,15 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &arg_rvalue);
 	}
 
-	const label label_func = { .kind = L_FUNC, .num = func_ref };
-	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	if (func_ref >= BEGIN_USER_FUNC)
+	{
+		const label label_func = { .kind = L_FUNC, .num = func_ref };
+		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	}
+	else
+	{
+		emit_builtin_branch(enc, func_ref);
+	}
 
 	// Восстановление аргументов - они могут понадобиться в дальнейшем.
 	size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
