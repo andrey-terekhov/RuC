@@ -1105,6 +1105,7 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 static lvalue displacements_add(encoder *const enc, const size_t identifier, const bool is_register)
 {
 	// TODO: выдача сохраняемых регистров 
+	assert(is_register == true);
 	const bool is_local = ident_is_local(enc->sx, identifier);
 	const size_t location = is_local ? enc->scope_displ : enc->global_displ;
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
