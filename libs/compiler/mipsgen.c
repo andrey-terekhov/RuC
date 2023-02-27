@@ -1736,9 +1736,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	else
 	{
 		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
-		const rvalue *imm_rvalue = (second_operand->kind != RVALUE_KIND_CONST) ? first_operand : second_operand;
-		const rvalue *const var_rvalue = (second_operand->kind == RVALUE_KIND_CONST) ? first_operand : second_operand;
-		const bool is_var_first_operand = var_rvalue == first_operand;
+		const rvalue *real_first_operand = first_operand;
+		const rvalue *real_second_operand = second_operand;
 
 		switch (operator)
 		{
@@ -1752,9 +1751,17 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
 
-				// Загружаем <значение из second_operand> на регистр
-				const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
-				imm_rvalue = &tmp;
+				// Загружаем <значение из first_operand и second_operand> на регистр
+				if (real_first_operand->kind == RVALUE_KIND_CONST)
+				{
+					const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
+					real_first_operand = &tmp;
+				}
+				else
+				{
+					const rvalue tmp = emit_load_of_immediate(enc, real_second_operand);
+					real_second_operand = &tmp;
+				}
 
 				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
@@ -1762,18 +1769,9 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				if (is_var_first_operand)
-				{
-					rvalue_to_io(enc, var_rvalue);
-					uni_printf(enc->sx->io, ", ");
-					rvalue_to_io(enc, imm_rvalue);
-				}
-				else
-				{
-					rvalue_to_io(enc, imm_rvalue);
-					uni_printf(enc->sx->io, ", ");
-					rvalue_to_io(enc, var_rvalue);
-				}
+				rvalue_to_io(enc, real_first_operand);
+				uni_printf(enc->sx->io, ", ");
+				rvalue_to_io(enc, real_second_operand);
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
@@ -1794,27 +1792,37 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			default:
 			{
 				bool in_reg = false;
-				bool change_order = false;
 
-				// Предварительно загружаем константу из imm_rvalue в rvalue вида RVALUE_KIND_REGISTER
+				// Нет команд работающих с константными значениями, поэтому грузим его на регистр
 				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM))
 				{
-					// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
-					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
-					imm_rvalue = &tmp;
-					in_reg = true;
-					if (((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_REM)) && !is_var_first_operand)
+					if (real_first_operand->kind == RVALUE_KIND_CONST)
 					{
-						change_order = true;
+						const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
+						real_first_operand = &tmp;
 					}
+					else
+					{
+						const rvalue tmp = emit_load_of_immediate(enc, real_second_operand);
+						real_second_operand = &tmp;
+					}
+					in_reg = true;
 				}
 
-				if ((operator == BIN_SHL || operator == BIN_SHR) && !is_var_first_operand)
+				// Нет команд работающих с первым операндом в виде константы и операция не комутативна, поэтому грузим его на регистр
+				if ((operator == BIN_SHL || operator == BIN_SHR) && real_first_operand->kind == RVALUE_KIND_CONST)
 				{
-					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
-					imm_rvalue = &tmp;
+					const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
+					real_first_operand = &tmp;
 					in_reg = true;
-					change_order = true;
+				}
+
+				// Все остальные операции комутативны, поэтому для них просто ставим в первый операнд регистровое значение, во второй константное
+				if ((operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && real_first_operand->kind == RVALUE_KIND_CONST)
+				{
+					const rvalue *const tmp = real_first_operand;
+					real_first_operand = real_second_operand;
+					real_second_operand = tmp;
 				}
 
 				// Выписываем операцию, её результат будет записан в result
@@ -1827,18 +1835,9 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				if (!change_order)
-				{
-					rvalue_to_io(enc, var_rvalue);
-					uni_printf(enc->sx->io, ", ");
-					rvalue_to_io(enc, imm_rvalue);
-				}
-				else
-				{
-					rvalue_to_io(enc, imm_rvalue);
-					uni_printf(enc->sx->io, ", ");
-					rvalue_to_io(enc, var_rvalue);
-				}
+				rvalue_to_io(enc, real_first_operand);
+				uni_printf(enc->sx->io, ", ");
+				rvalue_to_io(enc, real_second_operand);
 
 				uni_printf(enc->sx->io, "\n");
 			}
