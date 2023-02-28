@@ -3174,10 +3174,12 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			}
 			else
 			{
+				const item_t type = ident_get_type(enc->sx, id);
 				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
 				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
-				displacements_set(enc, id, displ, false);
+				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+				displacements_set(enc, id, &value);
 			}
 		}
 		else
@@ -3196,10 +3198,12 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			}
 			else
 			{
+				const item_t type = ident_get_type(enc->sx, id);
 				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
 				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
-				displacements_set(enc, id, displ, false);
+				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+				displacements_set(enc, id, &value);
 			}
 		}
 	}
