@@ -53,10 +53,8 @@ static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lval
 static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
 											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
 
-static const char* const RUNTIME_HEAD_FILENAME = "runtime-mips/head.min.s";
-static const char* const RUNTIME_FOOT_FILENAME = "runtime-mips/foot.min.s";
-static const char* const INSTALL_PATH = "/usr/local/ruc/";
-
+static const char* const RUNTIME_HEAD_FILENAME = "runtime-mips/head.s";
+static const char* const RUNTIME_FOOT_FILENAME = "runtime-mips/foot.s";
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 typedef enum MIPS_REGISTER
