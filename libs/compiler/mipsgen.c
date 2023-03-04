@@ -1658,6 +1658,54 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 }
 
 /**
+ *	Emit load of operand of binary operation
+ *
+ *	@param	enc					Encoder
+ *	@param	operand 			Operand rvalue
+ *
+ *	@return rvalue of operand
+ */
+static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand, const binary_t operation, const bool is_first_operand)
+{
+	switch (operation)
+	{
+		case BIN_LT:
+		case BIN_GT:
+		case BIN_LE:
+		case BIN_GE:
+		case BIN_EQ:
+		case BIN_NE:
+		case BIN_SUB:
+		case BIN_DIV:
+		case BIN_MUL:
+		case BIN_REM:
+			// Сравнение => Используется BIN_SUB, поэтому грузим на регистр
+			// sub, div, mul, rem => Нет команд работающих с константными значениями, поэтому грузим его на регистр
+			return (operand->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, operand):  *operand;
+		case BIN_SHL:
+		case BIN_SHR:
+			// Нет команд работающих с первым операндом в виде константы и операции не комутативны, поэтому грузим его на регистр
+			if (is_first_operand)
+			{
+				return (operand->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, operand):  *operand;
+			}
+
+			return *operand;
+		case BIN_ADD:
+		case BIN_AND:
+		case BIN_OR:
+		case BIN_XOR:
+			// Операции комутативны и есть операция работающая с одним значением на регистре и одним в виде константы
+			// Логика замены операндов вне функции
+			return *operand;
+		default:
+			// Не может быть других операций
+			system_error(node_unexpected);
+			return RVALUE_VOID;
+	}
+}
+
+/**
  *	Emit binary operation with two rvalues
  *
  *	@param	enc					Encoder
@@ -1735,9 +1783,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	}
 	else
 	{
-		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
-		const rvalue *real_first_operand = first_operand;
-		const rvalue *real_second_operand = second_operand;
+		const rvalue real_first_operand = emit_operand_load(enc, first_operand, operator, true);
+		const rvalue real_second_operand = emit_operand_load(enc, second_operand, operator, false);
 
 		switch (operator)
 		{
@@ -1751,27 +1798,15 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
 
-				// Загружаем <значение из first_operand и second_operand> на регистр
-				if (real_first_operand->kind == RVALUE_KIND_CONST)
-				{
-					const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
-					real_first_operand = &tmp;
-				}
-				else
-				{
-					const rvalue tmp = emit_load_of_immediate(enc, real_second_operand);
-					real_second_operand = &tmp;
-				}
-
 				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, real_first_operand);
+				rvalue_to_io(enc, &real_first_operand);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, real_second_operand);
+				rvalue_to_io(enc, &real_second_operand);
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
@@ -1792,37 +1827,24 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			default:
 			{
 				bool in_reg = false;
+				bool change_order = false;
 
-				// Нет команд работающих с константными значениями, поэтому грузим его на регистр
+				// Нет команд работающих с операндами в виде константы
 				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM))
 				{
-					if (real_first_operand->kind == RVALUE_KIND_CONST)
-					{
-						const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
-						real_first_operand = &tmp;
-					}
-					else
-					{
-						const rvalue tmp = emit_load_of_immediate(enc, real_second_operand);
-						real_second_operand = &tmp;
-					}
 					in_reg = true;
 				}
 
-				// Нет команд работающих с первым операндом в виде константы и операция не комутативна, поэтому грузим его на регистр
-				if ((operator == BIN_SHL || operator == BIN_SHR) && real_first_operand->kind == RVALUE_KIND_CONST)
+				// Нет команд работающих с первым операндом в виде константы и операция не комутативна
+				if ((operator == BIN_SHL || operator == BIN_SHR) && first_operand->kind == RVALUE_KIND_CONST)
 				{
-					const rvalue tmp = emit_load_of_immediate(enc, real_first_operand);
-					real_first_operand = &tmp;
 					in_reg = true;
 				}
 
-				// Все остальные операции комутативны, поэтому для них просто ставим в первый операнд регистровое значение, во второй константное
-				if ((operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && real_first_operand->kind == RVALUE_KIND_CONST)
+				// Все остальные операции комутативны, поэтому используем addi, меняя порядок если надо
+				if ((operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST)
 				{
-					const rvalue *const tmp = real_first_operand;
-					real_first_operand = real_second_operand;
-					real_second_operand = tmp;
+					change_order = true;
 				}
 
 				// Выписываем операцию, её результат будет записан в result
@@ -1835,9 +1857,18 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, real_first_operand);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, real_second_operand);
+				if (change_order)
+				{
+					rvalue_to_io(enc, &real_second_operand);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, &real_first_operand);
+				}
+				else
+				{
+					rvalue_to_io(enc, &real_first_operand);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, &real_second_operand);
+				}
 
 				uni_printf(enc->sx->io, "\n");
 			}
