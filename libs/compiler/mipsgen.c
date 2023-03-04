@@ -1841,7 +1841,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 					in_reg = true;
 				}
 
-				// Все остальные операции комутативны, поэтому используем addi, меняя порядок если надо
+				// Все остальные операции комутативны, поэтому используем инструкцию с константой, меняя порядок если надо
 				if ((operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST)
 				{
 					change_order = true;
