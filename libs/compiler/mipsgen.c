@@ -2385,12 +2385,68 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
  *
  *	@return	Rvalue of member expression
  */
-static rvalue emit_member_expression(encoder *const enc, const node *const nd)
+static rvalue emit_member_expression(encoder *const enc, const node *const nd, bool is_the_value_used)
 {
-	(void)enc;
-	(void)nd;
-	// FIXME: возврат структуры из функции. Указателя тут оказаться не может
-	return RVALUE_VOID;
+	const node base = expression_member_get_base(nd);
+	const item_t base_type = expression_get_type(&base);
+	const enum EXPRESSION base_class = expression_get_class(&base);
+
+	// Указателя тут оказаться не может, единственные случаи - вызов функции и выборка
+	assert(!expression_member_is_arrow(nd));
+	assert(base_class == EXPR_CALL || base_class == EXPR_MEMBER);
+
+	if (base_class == EXPR_CALL)
+	{
+		const size_t old_displ = enc->scope_displ;
+		const lvalue base_lvalue = {.kind = LVALUE_KIND_STACK,
+									 .type = base_type, .base_reg = R_FP, .loc.displ = old_displ};
+		enc->scope_displ += mips_type_size(enc->sx, base_type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+
+		emit_struct_return_call_expression(enc, &base, &base_lvalue);
+
+		size_t member_displ = 0;
+		const size_t member_index = expression_member_get_member_index(nd);
+		for (size_t i = 0; i < member_index; i++)
+		{
+			const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
+			member_displ += mips_type_size(enc->sx, member_type);
+		}
+
+		const lvalue member_lvalue = {.kind = LVALUE_KIND_STACK,
+									   .type = type_structure_get_member_type(enc->sx, base_type, member_index),
+									   .base_reg = R_FP,
+									   .loc.displ = base_lvalue.loc.displ + member_displ};
+
+		if (!is_the_value_used)
+		{
+			enc->scope_displ = old_displ;
+		}
+		return emit_load_of_lvalue(enc, &member_lvalue);
+	}
+
+	// EXPR_MEMBER
+	const size_t old_displ = enc->scope_displ;
+	const rvalue base_rvalue = emit_member_expression(enc, &base, true);
+	//TODO очистить base_rvalue
+	size_t member_displ = 0;
+	const size_t member_index = expression_member_get_member_index(nd);
+	for (size_t i = 0; i < member_index; i++)
+	{
+		const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
+		member_displ += mips_type_size(enc->sx, member_type);
+	}
+
+	const lvalue member_lvalue = {.kind = LVALUE_KIND_STACK,
+								   .type = type_structure_get_member_type(enc->sx, base_type, member_index),
+								   .base_reg = base_rvalue.val.reg_num,
+								   .loc.displ = member_displ};
+
+	if (!is_the_value_used)
+	{
+		enc->scope_displ = old_displ;
+	}
+	return emit_load_of_lvalue(enc, &member_lvalue);
 }
 
 /**
@@ -2690,6 +2746,39 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 	{
 		emit_struct_return_call_expression(enc, value, target);
 	}
+	else if (expression_get_class(value) == EXPR_MEMBER)
+	{
+		const size_t old_displ = enc->scope_displ;
+		const rvalue RHS_rvalue = emit_member_expression(enc, value, true);
+		//TODO очистить base_rvalue
+		const item_t type = expression_get_type(value);
+		const size_t struct_size = mips_type_size(enc->sx, type);
+		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
+		{
+			// Грузим данные из RHS
+			const lvalue value_word = {
+				.base_reg = RHS_rvalue.val.reg_num,
+				.loc.displ = i,
+				.kind = LVALUE_KIND_STACK,
+				.type = TYPE_INTEGER
+			};
+			const rvalue proxy = emit_load_of_lvalue(enc, &value_word);
+
+			// Отправляем их в variable
+			const lvalue target_word = {
+				.base_reg = target->base_reg,
+				.kind = LVALUE_KIND_STACK,
+				.loc.displ = target->loc.displ + i,
+				.type = TYPE_INTEGER
+			};
+			emit_store_of_rvalue(enc, &target_word, &proxy);
+
+			free_rvalue(enc, &proxy);
+		}
+
+		// Очистка места занятого в emit_member_expression
+		enc->scope_displ = old_displ;
+	}
 	else// Присваивание другой структуры
 	{
 		// FIXME: массив структур
@@ -2746,6 +2835,8 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 		return emit_struct_assignment(enc, &target, &RHS);
 	}
 
+	// В случае, если value - member, в emit_member_expr мы можем scope_displ сбросить,
+	// т к это место на стеке не будет использоваться до присвоения, а после оно нам не нужно
 	const rvalue value = emit_expression(enc, &RHS);
 
 	const binary_t operator = expression_assignment_get_operator(nd);
@@ -2884,7 +2975,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 			}
 
 		case EXPR_MEMBER:
-			return emit_member_expression(enc, nd);
+			return emit_member_expression(enc, nd, false);
 
 		case EXPR_CAST:
 			return emit_cast_expression(enc, nd);
