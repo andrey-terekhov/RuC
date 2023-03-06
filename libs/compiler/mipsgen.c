@@ -1661,9 +1661,9 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
  *	Emit load of operand of binary operation
  *
  *	@param	enc					Encoder
- *	@param	operand 			Operand rvalue
+ *	@param	operand 			Start operand rvalue
  *
- *	@return rvalue of operand
+ *	@return correct operand rvalue
  */
 static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand, const binary_t operation, const bool is_first_operand)
 {
@@ -1847,7 +1847,6 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 					change_order = true;
 				}
 
-				// Выписываем операцию, её результат будет записан в result
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(
 					enc->sx->io,
