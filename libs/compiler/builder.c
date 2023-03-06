@@ -333,7 +333,7 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 	for (size_t i = 1; i < argc; i++)
 	{
 		node argument = node_vector_get(args, i);
-		if (!check_assignment_operands(bldr, format_types[i - 1], &argument))
+		if (!check_assignment_operands(bldr, format_types[i - 1], &argument, true))
 		{
 			// FIXME: кинуть другую ошибку
 			return node_broken();
@@ -437,7 +437,7 @@ builder builder_create(syntax *const sx)
 }
 
 
-bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init)
+bool check_assignment_operands(builder *const bldr, item_t expected_type, node *const init, const bool can_assign_to_const)
 {
 	if (!node_is_correct(init))
 	{
@@ -446,6 +446,16 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
+	if (type_has_const_modifier(sx, expected_type))
+	{
+		if (!can_assign_to_const)
+		{
+			semantic_error(bldr, loc, wrong_init);
+			return false;
+		}
+		expected_type = type_is_const(sx, expected_type) ? type_const_get_element_type(sx, expected_type) : expected_type;
+	}
+
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
 		const size_t actual_inits = expression_initializer_get_size(init);
@@ -462,7 +472,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 			{
 				const item_t type = type_structure_get_member_type(sx, expected_type, i);
 				node subexpr = expression_initializer_get_subexpr(init, i);
-				if (!check_assignment_operands(bldr, type, &subexpr))
+				if (!check_assignment_operands(bldr, type, &subexpr, can_assign_to_const))
 				{
 					return false;
 				}
@@ -477,7 +487,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 			for (size_t i = 0; i < actual_inits; i++)
 			{
 				node subexpr = expression_initializer_get_subexpr(init, i);
-				if (!check_assignment_operands(bldr, type, &subexpr))
+				if (!check_assignment_operands(bldr, type, &subexpr, can_assign_to_const))
 				{
 					return false;
 				}
@@ -493,7 +503,8 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		}
 	}
 
-	const item_t actual_type = expression_get_type(init);
+	const item_t expr_type = expression_get_type(init);
+	const item_t actual_type = type_is_const(sx, expr_type) ? type_const_get_element_type(sx, expr_type) : expr_type;
 	if (type_is_floating(expected_type) && type_is_integer(sx, actual_type))
 	{
 		*init = build_cast_expression(expected_type, init);
@@ -653,7 +664,7 @@ node build_call_expression(builder *const bldr, node *const callee
 	{
 		const item_t expected_type = type_function_get_parameter_type(bldr->sx, callee_type, i);
 		node argument = node_vector_get(args, i);
-		if (!check_assignment_operands(bldr, expected_type, &argument))
+		if (!check_assignment_operands(bldr, expected_type, &argument, true))
 		{
 			return node_broken();
 		}
@@ -880,8 +891,9 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			return node_broken();
 		}
 
-		if (!check_assignment_operands(bldr, left_type, RHS))
+		if (!check_assignment_operands(bldr, left_type, RHS, false))
 		{
+			semantic_error(bldr, op_loc, assign_to_const);
 			return node_broken();
 		}
 	}
@@ -1107,7 +1119,7 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 
 
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, node_vector *const bounds, const location loc)
+	, const bool was_const, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
@@ -1115,6 +1127,10 @@ node build_member_declaration(builder *const bldr, const item_t type, const size
 	}
 
 	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	if (was_const)
+	{
+		member_type = type_const(bldr->sx, member_type);
+	}
 	const size_t bounds_amount = node_vector_size(bounds);
 	for (size_t i = 0; i < bounds_amount; i++)
 	{
@@ -1172,7 +1188,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 }
 
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-   , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
+   , const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
@@ -1180,6 +1196,10 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 	}
 
 	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : type;
+	if (was_const)
+	{
+		variable_type = type_const(bldr->sx, variable_type);
+	}
 	const size_t bounds_amount = node_vector_size(bounds);
 
 	bool has_empty_bounds = false;
@@ -1199,7 +1219,7 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 
 	if (initializer)
 	{
-		check_assignment_operands(bldr, variable_type, initializer);
+		check_assignment_operands(bldr, variable_type, initializer, true);
 	}
 	else if (has_empty_bounds)
 	{
@@ -1420,7 +1440,7 @@ node build_return_statement(builder *const bldr, node *const expr, const locatio
 		// TODO: void*?
 		if (return_type != type_pointer(bldr->sx, TYPE_VOID))
 		{
-			check_assignment_operands(bldr, return_type, expr);
+			check_assignment_operands(bldr, return_type, expr, true);
 		}
 
 		loc.end = node_get_location(expr).end;

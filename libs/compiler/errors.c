@@ -395,6 +395,15 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case not_decl:	// test_exist
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный пользователем)");
 			break;
+		case multiple_const_in_type:
+			sprintf(msg, "встречено несколько модификаторов const для одного типа");
+			break;
+		case const_void:
+			sprintf(msg, "не существует типа const void");
+			break;
+		case assign_to_const:
+			sprintf(msg, "нельзя присваивать значение переменной с модификатором const");
+			break;
 		case empty_bound_without_init:	// test_exist
 			sprintf(msg, "в описании массива границы не указаны, а инициализации нет");
 			break;

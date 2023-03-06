@@ -145,6 +145,9 @@ typedef enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
+	multiple_const_in_type,
+	const_void,
+	assign_to_const,
 
 	empty_bound_without_init,
 

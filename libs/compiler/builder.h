@@ -52,13 +52,14 @@ builder builder_create(syntax *const sx);
  *	Check assignment operands
  *	@note	TODO: Remove
  *
- *	@param	bldr			AST builder
- *	@param	expected_type	Expected type
- *	@param	init			Initializer
+ *	@param	bldr				AST builder
+ *	@param	expected_type		Expected type
+ *	@param	init				Initializer
+ *	@param	can_assign_to_const	@c 1 if allowed to assign to const type, @c 0 if not
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init);
+bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init, const bool can_assign_to_const);
 
 /**
  *	Build an identifier expression
@@ -278,13 +279,14 @@ node build_empty_bound_expression(builder *const bldr, const location loc);
  *	@param	type			Member type
  *	@param	name			Member name
  *	@param	was_star		Flag if there was a star token
+ *	@param	was_const		Flag if there was a const token after a star token
  *	@param	bounds			Member array bounds
  *	@param	loc				Member location
  *
  *	@return	Member declaration
  */
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, node_vector *const bounds, const location loc);
+	, const bool was_const, node_vector *const bounds, const location loc);
 
 /**
  *	Build an empty struct declaration
@@ -315,6 +317,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *	@param	type			Base type
  *	@param	name			Name
  *	@param	was_star		Flag if there was a star token
+ *	@param	was_const		Flag if there was a const token after a star token
  *	@param	bounds			Bounds expressions
  *	@param	initializer		Initializer
  *	@param	ident_loc		Identifier location
@@ -322,7 +325,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *	@return	Declarator
  */
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc);
+	, const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc);
 
 /**
  *	Build an empty declaration

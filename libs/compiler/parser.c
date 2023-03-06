@@ -116,6 +116,23 @@ static void parser_error(parser *const prs, err_t num, ...)
 }
 
 /**
+ *	Emit a syntax error from parser with specified location
+ *
+ *	@param	prs			Parser
+ *	@param	num			Error code
+ *	@param	loc			Location of error
+ */
+static void parser_error_specified_loc(parser *const prs, err_t num, location loc, ...)
+{
+	va_list args;
+	va_start(args, loc);
+
+	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
+
+	va_end(args);
+}
+
+/**
  *	Consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser
@@ -766,6 +783,7 @@ static node parse_condition(parser *const prs)
  *	Parse type specifier
  *
  *	type-specifier:
+ *		`const`
  *		`void`
  *		`bool`
  *		`char`
@@ -812,6 +830,41 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 		case TK_FILE:
 			consume_token(prs);
 			return TYPE_FILE;
+
+		case TK_CONST:
+		{
+			const location prev_loc = consume_token(prs);
+			const item_t type = parse_type_specifier(prs, parent);
+			switch(type)
+			{
+				case TYPE_BOOLEAN:
+					return TYPE_CONST_BOOLEAN;			
+				case TYPE_CHARACTER:
+					return TYPE_CONST_CHARACTER;
+				case TYPE_INTEGER:
+					return TYPE_CONST_INTEGER;
+				case TYPE_FLOATING:
+					return TYPE_CONST_FLOATING;
+				case TYPE_FILE:
+					return TYPE_CONST_FILE;
+				case TYPE_VOID:
+				{
+					parser_error_specified_loc(prs, const_void, prev_loc);
+					return TYPE_UNDEFINED;
+				}
+				case TYPE_UNDEFINED:
+					return TYPE_UNDEFINED;
+				default:
+				{
+					if (type_is_const(prs->sx, type))
+					{
+						parser_error_specified_loc(prs, multiple_const_in_type, prev_loc);
+						return TYPE_UNDEFINED;
+					}
+					return type_const(prs->sx, type);
+				}
+			}
+		}
 
 		case TK_IDENTIFIER:
 		{
@@ -898,6 +951,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 {
 	const item_t type = parse_type_specifier(prs, parent);
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
@@ -936,7 +990,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 	}
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	const node member = build_member_declaration(&prs->bld, type, name, was_star, &bounds, ident_loc);
+	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
 
 	node_vector_clear(&bounds);
 	return member;
@@ -1169,6 +1223,7 @@ static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 static node parse_init_declarator(parser *const prs, const item_t type)
 {
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
 		parser_error(prs, expected_identifier_in_declarator);
@@ -1217,7 +1272,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 	}
 
 	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
-	node declarator = build_declarator(&prs->bld, type, name, was_star, &bounds, initializer_ptr, ident_loc);
+	node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
 	node_vector_clear(&bounds);
 
 	return declarator;
@@ -1290,6 +1345,7 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_ENUM:
 		case TK_FILE:
 		case TK_TYPEDEF:
+		case TK_CONST:
 			return true;
 
 		case TK_IDENTIFIER:

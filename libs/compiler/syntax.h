@@ -37,6 +37,11 @@ extern "C" {
 /** Type qualifiers */
 typedef enum TYPE
 {
+	TYPE_CONST_FILE			= -17,
+	TYPE_CONST_BOOLEAN		= -14,
+	TYPE_CONST_FLOATING,
+	TYPE_CONST_CHARACTER,
+	TYPE_CONST_INTEGER,
 	TYPE_VARARG			= -9,
 	TYPE_NULL_POINTER,
 	TYPE_FILE,
@@ -53,6 +58,7 @@ typedef enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_ENUM,
+	TYPE_CONST,
 
 	BEGIN_USER_TYPE = 15,
 } type_t;
@@ -431,6 +437,24 @@ bool type_is_void(const item_t type);
 bool type_is_null_pointer(const item_t type);
 
 /**
+ *	Check if type is const type
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_const(const syntax *const sx, const item_t type);
+
+/**
+ *	Check if type has const modifier
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_has_const_modifier(const syntax *const sx, const item_t type);
+
+/**
  *	Check if type is array
  *
  *	@param	sx			Syntax structure
@@ -547,6 +571,16 @@ bool type_is_undefined(const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_file(const item_t type);
+
+/**
+ *	Get element type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Const type
+ *
+ *	@return	Element type, @c ITEM_MAX on failure
+ */
+item_t type_const_get_element_type(const syntax *const sx, const item_t type);
 
 /**
  *	Get element type
@@ -691,6 +725,16 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
  *	@return	Pointer type
  */
 item_t type_pointer(syntax *const sx, const item_t type);
+
+/**
+ *	Create const type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Referenced type
+ *
+ *	@return	Const type
+ */
+item_t type_const(syntax *const sx, const item_t type);
 
 
 /**
