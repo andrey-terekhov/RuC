@@ -3023,8 +3023,15 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 			continue;
 		}
 
-		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
-		emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+		if (type_is_structure(enc->sx, expression_get_type(&subexpr)))
+		{
+			emit_struct_assignment(enc, &member_lvalue, &subexpr);
+		}
+		else
+		{
+			const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
+			emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+		}
 	}
 }
 
