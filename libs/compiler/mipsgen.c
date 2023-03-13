@@ -28,6 +28,7 @@
 
 
 static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
+static const size_t GLOBAL_DECL_SIZE = 128;			/**< Размер вектора для хранения деклараций глобальных переменных*/
 static const size_t HASH_TABLE_SIZE = 1024;			/**< Размер хеш-таблицы для смещений и регистров */
 static const bool IS_ON_STACK = true;				/**< Хранится ли переменная на стеке */
 
@@ -303,7 +304,7 @@ typedef struct encoder
 	syntax *sx;								/**< Структура syntax с таблицами */
 
 	size_t max_displ;						/**< Максимальное смещение от $sp */
-	size_t global_displ;					/**< Смещение от $gp */
+	vector global_declarations;				/**< Вектор с индексами узлов-деклараций глобальных переменных: */
 
 	hash displacements;						/**< Хеш таблица с информацией о расположении идентификаторов:
 												@c key		- ссылка на таблицу идентификаторов
@@ -1113,7 +1114,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 	// TODO: выдача сохраняемых регистров 
 	assert(is_register == false);
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const item_t location = is_local ? (item_t)enc->scope_displ : 0;
+	const item_t location = is_local ? enc->scope_displ : 0;
 	const mips_register_t base_reg = R_FP;
 	const item_t type = ident_get_type(enc->sx, identifier);
 
@@ -3208,23 +3209,10 @@ static void emit_global_variable_declaration(encoder *const enc, const node *con
 	}
 	else
 	{
-		const lvalue variable = displacements_add(enc, identifier, false);
+		displacements_add(enc, identifier, false);
 		if (declaration_variable_has_initializer(nd))
 		{
-			const node initializer = declaration_variable_get_initializer(nd);
-
-			if (type_is_structure(enc->sx, type))
-			{
-				const rvalue tmp = emit_struct_assignment(enc, &variable, &initializer);
-				free_rvalue(enc, &tmp);
-			}
-			else
-			{
-				const rvalue value = emit_expression(enc, &initializer);
-
-				emit_store_of_rvalue(enc, &variable, &value);
-				free_rvalue(enc, &value);
-			}
+			vector_add(&enc->global_declarations, nd->index);
 		}
 	}
 }
@@ -3959,25 +3947,6 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\t.text\n");					// последующий код будет перенесён в текстовый сегмент памяти
 	// выравнивание последующих данных / команд по границе, кратной 2^n байт (в данном случае 2^2 = 4)
 	uni_printf(sx->io, "\t.align 2\n");
-
-	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
-	uni_printf(sx->io, "\n\t.globl\tmain\n");
-	uni_printf(sx->io, "\t.ent\tmain\n");				// начало процедуры main
-	uni_printf(sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
-	uni_printf(sx->io, "main:\n");
-
-	// инициализация gp
-	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
-	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
-	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
-
-	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
-	uni_printf(sx->io, "\n");
 }
 
 // создаём метки всех строк в программе
@@ -4036,6 +4005,54 @@ static void strings_declaration(encoder *const enc)
 
 static void postgen(encoder *const enc)
 {
+	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
+	uni_printf(enc->sx->io, "\n\t.globl\tmain\n");
+	uni_printf(enc->sx->io, "\t.ent\tmain\n");				// начало процедуры main
+	uni_printf(enc->sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
+	uni_printf(enc->sx->io, "main:\n");
+
+	// инициализация gp
+	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
+	uni_printf(enc->sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
+	uni_printf(enc->sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
+
+	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
+	to_code_R_I(enc->sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	uni_printf(enc->sx->io, "\n");
+
+	const size_t global_declarations_amount = vector_size(&enc->global_declarations);
+	for (size_t i = 0; i < global_declarations_amount; i++)
+	{
+		const node nd = {.tree=&enc->sx->tree, .index=(size_t)vector_get(&enc->global_declarations, i)};
+
+		const size_t identifier = declaration_variable_get_id(&nd);
+		const item_t type = ident_get_type(enc->sx, identifier);
+		const node initializer = declaration_variable_get_initializer(&nd);
+		const char *spelling = ident_get_spelling(enc->sx, identifier);
+
+		uni_printf(enc->sx->io, "\t# \"%s\" variable declaration:\n", spelling);
+
+		const lvalue variable = displacements_get(enc, identifier);
+		if (type_is_structure(enc->sx, type))
+		{
+			const rvalue tmp = emit_struct_assignment(enc, &variable, &initializer);
+			free_rvalue(enc, &tmp);
+		}
+		else
+		{
+			const rvalue value = emit_expression(enc, &initializer);
+
+			emit_store_of_rvalue(enc, &variable, &value);
+			free_rvalue(enc, &value);
+		}
+	}
+
+	strings_declaration(enc);
+
 	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
 	// По этой причине вставляю только defarr
 	uni_printf(enc->sx->io, "\n\n# defarr\n\
@@ -4095,7 +4112,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	enc.case_label_num = 1;
 
 	enc.scope_displ = 0;
-	enc.global_displ = 0;
+	enc.global_declarations = vector_create(HASH_TABLE_SIZE);;
 
 	enc.displacements = hash_create(HASH_TABLE_SIZE);
 
@@ -4105,7 +4122,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	}
 
 	pregen(sx);
-	strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
