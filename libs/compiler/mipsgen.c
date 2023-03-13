@@ -3031,6 +3031,7 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 		{
 			const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
 			emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+			free_rvalue(enc, &subexpr_rvalue);
 		}
 	}
 }
