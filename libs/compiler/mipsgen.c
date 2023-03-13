@@ -2429,7 +2429,7 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 	// Base as EXPR_MEMBER
 	const size_t old_displ = enc->scope_displ;
 	const rvalue base_rvalue = emit_member_expression(enc, &base, true);
-	//TODO очистить base_rvalue
+
 	size_t member_displ = 0;
 	const size_t member_index = expression_member_get_member_index(nd);
 	for (size_t i = 0; i < member_index; i++)
@@ -2447,7 +2447,10 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 	{
 		enc->scope_displ = old_displ;
 	}
-	return emit_load_of_lvalue(enc, &member_lvalue);
+
+	const rvalue member_rvalue = emit_load_of_lvalue(enc, &member_lvalue);
+	free_rvalue(enc, &base_rvalue);
+	return member_rvalue;
 }
 
 /**
