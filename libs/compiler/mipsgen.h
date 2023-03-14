@@ -32,7 +32,7 @@ extern "C" {
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
-int encode_to_mips(const workspace *const ws, syntax *const sx) { return 1; }
+int encode_to_mips(const workspace *const ws, syntax *const sx);
 
 #ifdef __cplusplus
 } /* extern "C" */
