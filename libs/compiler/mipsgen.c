@@ -3149,8 +3149,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n\t# function parameters:\n");
 
-	size_t gpr_count = 0;
-	size_t fp_count = 0;
+	size_t register_arguments_amount = 0;
+	size_t floating_register_arguments_amount = 0;
 
 	for (size_t i = 0; i < parameters; i++)
 	{
@@ -3159,11 +3159,11 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 		if (!type_is_floating(ident_get_type(enc->sx, id)))
 		{
-			if (gpr_count < ARG_REG_AMOUNT)
+			if (register_arguments_amount < ARG_REG_AMOUNT)
 			{
 				// Рассматриваем их как регистровые переменные
 				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_A0 + gpr_count++;
+				const mips_register_t curr_reg = R_A0 + register_arguments_amount++;
 				uni_printf(enc->sx->io, "is in register ");
 				mips_register_to_io(enc->sx->io, curr_reg);
 				uni_printf(enc->sx->io, "\n");
@@ -3184,11 +3184,11 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			if (fp_count < ARG_REG_AMOUNT / 2)
+			if (floating_register_arguments_amount < ARG_REG_AMOUNT / 2)
 			{
 				// Рассматриваем их как регистровые переменные
 				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
+				const mips_register_t curr_reg = R_FA0 + 2 * floating_register_arguments_amount++;
 				uni_printf(enc->sx->io, "is in register ");
 				mips_register_to_io(enc->sx->io, curr_reg);
 				uni_printf(enc->sx->io, "\n");
