@@ -26,17 +26,12 @@ extern "C"
 
 typedef struct ir_evals
 {
-	size_t int_size;
-	size_t float_size;
-	size_t bool_size;
-	size_t char_size;
-	size_t pointer_size;
-
-	void (*emit_rvalue)(void *const ctx, const rvalue *const value);
-	void (*emit_lvalue)(void *const ctx, const lvalue *const value);
 	void (*emit_const_int)(void *const ctx, int value);
 	void (*emit_const_float)(void *const ctx, float value);
 	void (*emit_const_string)(void *const ctx, char* value);
+	void (*emit_rvalue)(void *const ctx, const rvalue *const value);
+	void (*emit_lvalue)(void *const ctx, const lvalue *const value);
+
 	void (*emit_store)(void *const context, ir_value* value, ir_value* dest);
 	void (*emit_load)(void *const context, ir_value* source);
 	void (*emit_alloca)(void *const ctx, size_t size);
@@ -79,15 +74,15 @@ typedef struct lvalue_kind
 	LVALUE_KIND_PARAM
 } lvalue_kind;
 
-struct ir_module;
 typedef struct ir_module ir_module;
-
-struct ir_builder;
-typedef struct ir_builder;
+typedef struct ir_builder ir_builder;
+typedef struct ir_context ir_context;
 
 ir_module create_ir_module();
-void ir_emit_module(ir_builder *builder, ir_module *module);
-void ir_eval_module(ir_context *context, ir_module *module);
+ir_builder create_ir_builder();
+
+void ir_emit_module(ir_builder *const builder, ir_module *module);
+void ir_eval_module(ir_context *const context, ir_module *module);
 
 #ifdef __cplusplus
 }
