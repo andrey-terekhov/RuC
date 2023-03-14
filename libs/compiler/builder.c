@@ -531,6 +531,45 @@ bool check_assignment_operands(builder *const bldr, item_t expected_type, node *
 		return true;
 	}
 
+	if (type_is_pointer(sx, expected_type) && type_is_pointer(sx, actual_type))
+	{
+		item_t expected_element_type = type_pointer_get_element_type(sx, expected_type);
+		const item_t actual_element_type = type_pointer_get_element_type(sx, actual_type);
+		if (type_has_const_modifier(sx, expected_element_type) && !type_has_const_modifier(sx, actual_element_type))
+		{
+			if (type_is_const(sx, expected_element_type))
+			{
+				expected_element_type = type_const_get_element_type(sx, expected_element_type);
+			}
+			else
+			{
+				switch (expected_element_type)
+				{
+					case TYPE_CONST_BOOLEAN:
+						expected_element_type = TYPE_BOOLEAN;
+						break;
+					case TYPE_CONST_CHARACTER:
+						expected_element_type = TYPE_CHARACTER;
+						break;
+					case TYPE_CONST_FILE:
+						expected_element_type = TYPE_FILE;
+						break;
+					case TYPE_CONST_FLOATING:
+						expected_element_type = TYPE_FLOATING;
+						break;
+					case TYPE_CONST_INTEGER:
+						expected_element_type = TYPE_INTEGER;
+						break;
+						// default:
+				}
+			}
+			if (expected_element_type == actual_element_type)
+			{
+				return true;
+			}
+		}
+	}
+
 	if (expected_type == actual_type)
 	{
 		return true;
