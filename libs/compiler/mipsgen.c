@@ -3157,54 +3157,35 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		const size_t id = declaration_function_get_parameter(nd, i);
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
-		if (!type_is_floating(ident_get_type(enc->sx, id)))
+		const bool argument_is_float = type_is_floating(ident_get_type(enc->sx, id));
+
+		const bool argument_is_register = !argument_is_float 
+			? register_arguments_amount < ARG_REG_AMOUNT 
+			: floating_register_arguments_amount < ARG_REG_AMOUNT / 2;
+
+		if (argument_is_register)
 		{
-			if (register_arguments_amount < ARG_REG_AMOUNT)
-			{
-				// Рассматриваем их как регистровые переменные
-				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_A0 + register_arguments_amount++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+			// Рассматриваем их как регистровые переменные
+			const item_t type = ident_get_type(enc->sx, id);
+			const mips_register_t curr_reg = argument_is_float 
+				? R_FA0 + 2 * floating_register_arguments_amount++
+				: R_A0 + register_arguments_amount++;
+			uni_printf(enc->sx->io, "is in register ");
+			mips_register_to_io(enc->sx->io, curr_reg);
+			uni_printf(enc->sx->io, "\n");
 
-				// Вносим переменную в таблицу символов
-				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
-			else
-			{
-				const item_t type = ident_get_type(enc->sx, id);
-				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
-				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
-
-				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
+			// Вносим переменную в таблицу символов
+			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 		else
 		{
-			if (floating_register_arguments_amount < ARG_REG_AMOUNT / 2)
-			{
-				// Рассматриваем их как регистровые переменные
-				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_FA0 + 2 * floating_register_arguments_amount++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+			const item_t type = ident_get_type(enc->sx, id);
+			const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
+			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
-				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
-			else
-			{
-				const item_t type = ident_get_type(enc->sx, id);
-				const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
-				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
-
-				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
+			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 	}
 
