@@ -1114,9 +1114,14 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 	// TODO: выдача сохраняемых регистров 
 	assert(is_register == false);
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const item_t location = is_local ? enc->scope_displ : 0;
 	const mips_register_t base_reg = R_FP;
 	const item_t type = ident_get_type(enc->sx, identifier);
+	if (is_local && !is_register)
+	{
+		enc->scope_displ += mips_type_size(enc->sx, type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+	}
+	const item_t location = is_local ? -(item_t)enc->scope_displ : 0;
 
 	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
 	{
@@ -1138,11 +1143,6 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 			.var_spelling = (char *)ident_get_spelling(enc->sx, identifier),
 			.type = type 
 		};
-	}
-	else if (!is_register)
-	{
-		enc->scope_displ += mips_type_size(enc->sx, type);
-		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 	}
 
 	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
@@ -3172,8 +3172,16 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 			continue;
 		}
 
-		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
-		emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+		if (type_is_structure(enc->sx, expression_get_type(&subexpr)))
+		{
+			emit_struct_assignment(enc, &member_lvalue, &subexpr);
+		}
+		else
+		{
+			const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
+			emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+			free_rvalue(enc, &subexpr_rvalue);
+		}
 	}
 }
 
@@ -3332,54 +3340,43 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n\t# function parameters:\n");
 
-	size_t gpr_count = 0;
-	size_t fp_count = 0;
+	size_t register_arguments_amount = 0;
+	size_t floating_register_arguments_amount = 0;
 
 	for (size_t i = 0; i < parameters; i++)
 	{
 		const size_t id = declaration_function_get_parameter(nd, i);
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
-		if (!type_is_floating(ident_get_type(enc->sx, id)))
-		{
-			if (i < ARG_REG_AMOUNT)
-			{
-				// Рассматриваем их как регистровые переменные
-				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_A0 + gpr_count++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+		const bool argument_is_float = type_is_floating(ident_get_type(enc->sx, id));
 
-				// Вносим переменную в таблицу символов
-				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
-			else
-			{
-				// TODO:
-				assert(false);
-			}
+		const bool argument_is_register = !argument_is_float 
+			? register_arguments_amount < ARG_REG_AMOUNT 
+			: floating_register_arguments_amount < ARG_REG_AMOUNT / 2;
+
+		if (argument_is_register)
+		{
+			// Рассматриваем их как регистровые переменные
+			const item_t type = ident_get_type(enc->sx, id);
+			const mips_register_t curr_reg = argument_is_float 
+				? R_FA0 + 2 * floating_register_arguments_amount++
+				: R_A0 + register_arguments_amount++;
+			uni_printf(enc->sx->io, "is in register ");
+			mips_register_to_io(enc->sx->io, curr_reg);
+			uni_printf(enc->sx->io, "\n");
+
+			// Вносим переменную в таблицу символов
+			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT / 2)
-			{
-				// Рассматриваем их как регистровые переменные
-				const item_t type = ident_get_type(enc->sx, id);
-				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+			const item_t type = ident_get_type(enc->sx, id);
+			const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
+			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
-				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-				displacements_set(enc, id, &value);
-			}
-			else
-			{
-				// TODO:
-				assert(false);
-			}
+			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 	}
 
@@ -3391,16 +3388,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	char *buffer = out_extract_buffer(enc->sx->io);
 	enc->sx->io = old_io;
 
-	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
-	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
-
 	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
-	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	// $fp указывает на конец статики (которое в данный момент равно концу динамики)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
-	// Смещаем $fp ниже конца статики (чтобы он не совпадал с $sp)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)WORD_LENGTH);
+	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
+	// $sp указывает на конец динамики (которое в данный момент равно концу статики)
+	// Смещаем $sp ниже конца статики (чтобы он не совпадал с $fp)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
 
 	uni_printf(enc->sx->io, "%s", buffer);
 	free(buffer);
@@ -3412,8 +3407,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
 	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP,
-				(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n");
 
