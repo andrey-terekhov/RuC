@@ -1658,12 +1658,14 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 }
 
 /**
- *	Emit load of operand of binary operation
+ *	Gets original operands and loads them depending on the needs of operation
  *
  *	@param	enc					Encoder
- *	@param	operand 			Start operand rvalue
+ *	@param	operand 			Original operand rvalue
+ *	@param  operation			Operation in which this operand used
+ *	@param  is_first_operand    Bool which defines if the operand is first in binary expression
  *
- *	@return correct operand rvalue
+ *	@return new operand rvalue
  */
 static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand, const binary_t operation, const bool is_first_operand)
 {
@@ -1826,32 +1828,21 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 
 			default:
 			{
-				bool in_reg = false;
-				bool change_order = false;
-
-				// Нет команд работающих с операндами в виде константы
-				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM))
-				{
-					in_reg = true;
-				}
-
-				// Нет команд работающих с первым операндом в виде константы и операция не комутативна
-				if ((operator == BIN_SHL || operator == BIN_SHR) && first_operand->kind == RVALUE_KIND_CONST)
-				{
-					in_reg = true;
-				}
+				bool does_need_instruction_working_with_both_operands_in_registers =
+					// Нет команд работающих с операндами в виде константы
+					(operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM)
+					// Нет команд работающих с первым операндом в виде константы и операция не комутативна
+					|| ((operator == BIN_SHL || operator == BIN_SHR) && first_operand->kind == RVALUE_KIND_CONST);
 
 				// Все остальные операции комутативны, поэтому используем инструкцию с константой, меняя порядок если надо
-				if ((operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST)
-				{
-					change_order = true;
-				}
+				bool change_order = (operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST;
 
+				// Выписываем операцию, её результат будет записан в result
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(
 					enc->sx->io,
 					get_bin_instruction(operator,
-						/* Один регистр => true в get_bin_instruction() -> */ !in_reg)
+										/* Один регистр => true в get_bin_instruction() -> */ !does_need_instruction_working_with_both_operands_in_registers)
 				);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
