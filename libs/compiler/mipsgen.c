@@ -4106,7 +4106,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	enc.case_label_num = 1;
 
 	enc.scope_displ = 0;
-	enc.global_declarations = vector_create(HASH_TABLE_SIZE);;
+	enc.global_declarations = vector_create(HASH_TABLE_SIZE);
 
 	enc.displacements = hash_create(HASH_TABLE_SIZE);
 
