@@ -566,7 +566,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 	{
 		return (size_t)type_get(sx, (size_t)type + 1);
 	}
-	else if (type_is_floating(type))
+	else if (type_is_floating(sx, type))
 	{
 		return 2;
 	}
@@ -576,25 +576,26 @@ size_t type_size(const syntax *const sx, const item_t type)
 	}
 }
 
-bool type_is_boolean(const item_t type)
+bool type_is_boolean(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_BOOLEAN || type == TYPE_CONST_BOOLEAN;
+	return type == TYPE_BOOLEAN || (type_is_const(sx, type) && type_is_boolean(sx, type_const_get_unqualified_type(sx, type)));
 }
 
 bool type_is_integer(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_CHARACTER || type == TYPE_INTEGER || type == TYPE_CONST_CHARACTER ||
-		type == TYPE_CONST_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
+	return type_is_const(sx, type) 
+		? type_is_integer(sx, type_const_get_unqualified_type(sx, type)) 
+		:type == TYPE_CHARACTER || type == TYPE_INTEGER || type_is_enum(sx, type) || type_is_enum_field(sx, type);
 }
 
-bool type_is_floating(const item_t type)
+bool type_is_floating(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_FLOATING || type == TYPE_CONST_FLOATING;
+	return type == TYPE_FLOATING || (type_is_const(sx, type) && type_is_floating(sx, type_const_get_unqualified_type(sx, type)));
 }
 
 bool type_is_arithmetic(const syntax *const sx, const item_t type)
 {
-	return type_is_integer(sx, type) || type_is_floating(type);
+	return type_is_integer(sx, type) || type_is_floating(sx, type);
 }
 
 bool type_is_void(const item_t type)
@@ -612,26 +613,21 @@ bool type_is_const(const syntax *const sx, const item_t type)
 	return type > 0 && type_get(sx, (size_t)type) == TYPE_CONST;
 }
 
-bool type_has_const_modifier(const syntax *const sx, const item_t type) {
-	return type_is_const(sx, type) || type == TYPE_CONST_FILE || type == TYPE_CONST_BOOLEAN ||
-		type == TYPE_CONST_FLOATING || type == TYPE_CONST_CHARACTER || type == TYPE_CONST_INTEGER;
-}
-
 bool type_is_array(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_is_array(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_is_array(sx, type_const_get_unqualified_type(sx, type))
 		: type > 0 && type_get(sx, (size_t)type) == TYPE_ARRAY;
 }
 
 bool type_is_structure(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_is_structure(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_is_structure(sx, type_const_get_unqualified_type(sx, type))
 		: type > 0 && type_get(sx, (size_t)type) == TYPE_STRUCTURE;
 }
 
 bool type_is_enum(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_is_enum(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_is_enum(sx, type_const_get_unqualified_type(sx, type))
 		: type > 0 && type_get(sx, (size_t)type) == TYPE_ENUM;
 }
 
@@ -647,13 +643,13 @@ bool type_is_function(const syntax *const sx, const item_t type)
 
 bool type_is_pointer(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_is_pointer(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_is_pointer(sx, type_const_get_unqualified_type(sx, type))
 		: type > 0 && type_get(sx, (size_t)type) == TYPE_POINTER;
 }
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
 {
-	return type_is_boolean(type) || type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
+	return type_is_boolean(sx, type) || type_is_integer(sx, type) || type_is_pointer(sx, type) || type_is_null_pointer(type);
 }
 
 bool type_is_aggregate(const syntax *const sx, const item_t type)
@@ -671,19 +667,19 @@ bool type_is_struct_pointer(const syntax *const sx, const item_t type)
 	return type_is_pointer(sx, type) && type_is_structure(sx, type_pointer_get_element_type(sx, type));
 }
 
-bool type_is_file(const item_t type)
+bool type_is_file(const syntax *const sx, const item_t type)
 {
-	return type == TYPE_FILE || type == TYPE_CONST_FILE;
+	return type == TYPE_FILE || (type_is_const(sx, type) && type_is_file(sx, type_const_get_unqualified_type(sx, type)));
 }
 
-item_t type_const_get_element_type(const syntax *const sx, const item_t type)
+item_t type_const_get_unqualified_type(const syntax *const sx, const item_t type)
 {
 	return type_is_const(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 
 item_t type_array_get_element_type(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_array_get_element_type(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_array_get_element_type(sx, type_const_get_unqualified_type(sx, type))
 								   : type_is_array(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 
@@ -713,19 +709,19 @@ item_t type_structure(syntax *const sx, vector *const types, vector *const names
 
 size_t type_structure_get_member_amount(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_structure_get_member_amount(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_structure_get_member_amount(sx, type_const_get_unqualified_type(sx, type))
 		: type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 2) / 2 : SIZE_MAX;
 }
 
 size_t type_structure_get_member_name(const syntax *const sx, const item_t type, const size_t index)
 {
-	return type_is_const(sx, type) ? type_structure_get_member_name(sx, type_const_get_element_type(sx, type), index)
+	return type_is_const(sx, type) ? type_structure_get_member_name(sx, type_const_get_unqualified_type(sx, type), index)
 		: type_is_structure(sx, type) ? (size_t)type_get(sx, (size_t)type + 4 + 2 * index) : SIZE_MAX;
 }
 
 item_t type_structure_get_member_type(const syntax *const sx, const item_t type, const size_t index)
 {
-	return type_is_const(sx, type) ? type_structure_get_member_type(sx, type_const_get_element_type(sx, type), index)
+	return type_is_const(sx, type) ? type_structure_get_member_type(sx, type_const_get_unqualified_type(sx, type), index)
 		: type_is_structure(sx, type) ? type_get(sx, (size_t)type + 3 + 2 * index) : ITEM_MAX;
 }
 
@@ -747,7 +743,7 @@ item_t type_function_get_parameter_type(const syntax *const sx, const item_t typ
 
 item_t type_pointer_get_element_type(const syntax *const sx, const item_t type)
 {
-	return type_is_const(sx, type) ? type_pointer_get_element_type(sx, type_const_get_element_type(sx, type))
+	return type_is_const(sx, type) ? type_pointer_get_element_type(sx, type_const_get_unqualified_type(sx, type))
 		: type_is_pointer(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 

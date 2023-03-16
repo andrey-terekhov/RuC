@@ -2100,35 +2100,20 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 		case TYPE_FILE:
 			return sprintf(buffer, "FILE");
 
-		case TYPE_CONST_FILE:
-			return sprintf(buffer, "const FILE");
-
 		case TYPE_VOID:
 			return sprintf(buffer, "void");
 
 		case TYPE_BOOLEAN:
 			return sprintf(buffer, "bool");
-			
-		case TYPE_CONST_BOOLEAN:
-			return sprintf(buffer, "const bool");
 
 		case TYPE_FLOATING:
 			return sprintf(buffer, "double");
 
-		case TYPE_CONST_FLOATING:
-			return sprintf(buffer, "const float");
-
 		case TYPE_CHARACTER:
 			return sprintf(buffer, "char");
 
-		case TYPE_CONST_CHARACTER:
-			return sprintf(buffer, "const char");
-
 		case TYPE_INTEGER:
 			return sprintf(buffer, "int");
-			
-		case TYPE_CONST_INTEGER:
-			return sprintf(buffer, "const int");
 
 		case TYPE_UNDEFINED:
 			return sprintf(buffer, "undefined type");
@@ -2191,7 +2176,7 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 
 		case TYPE_CONST:
 		{
-			const item_t element_type = type_const_get_element_type(sx, type);
+			const item_t element_type = type_const_get_unqualified_type(sx, type);
 			if (type_is_pointer(sx, element_type))
 			{
 				int index = write_type_spelling(sx, element_type, buffer);

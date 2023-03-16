@@ -782,8 +782,10 @@ static node parse_condition(parser *const prs)
 /**
  *	Parse type specifier
  *
- *	type-specifier:
+ *	type-qualifiers:
  *		`const`
+ *
+ *	type-specifier:
  *		`void`
  *		`bool`
  *		`char`
@@ -837,21 +839,6 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 			const item_t type = parse_type_specifier(prs, parent);
 			switch(type)
 			{
-				case TYPE_BOOLEAN:
-					return TYPE_CONST_BOOLEAN;			
-				case TYPE_CHARACTER:
-					return TYPE_CONST_CHARACTER;
-				case TYPE_INTEGER:
-					return TYPE_CONST_INTEGER;
-				case TYPE_FLOATING:
-					return TYPE_CONST_FLOATING;
-				case TYPE_FILE:
-					return TYPE_CONST_FILE;
-				case TYPE_VOID:
-				{
-					parser_error_specified_loc(prs, const_void, prev_loc);
-					return TYPE_UNDEFINED;
-				}
 				case TYPE_UNDEFINED:
 					return TYPE_UNDEFINED;
 				default:

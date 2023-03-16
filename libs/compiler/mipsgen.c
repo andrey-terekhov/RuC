@@ -1315,8 +1315,8 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 {
 	assert(value->kind == RVALUE_KIND_CONST);
 
-	const mips_register_t reg = (type_is_floating(value->type)) ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = (type_is_floating(value->type)) ? IC_MIPS_LI_S : IC_MIPS_LI;
+	const mips_register_t reg = (type_is_floating(enc->sx, value->type)) ? get_float_register(enc) : get_register(enc);
+	const mips_instruction_t instruction = (type_is_floating(enc->sx, value->type)) ? IC_MIPS_LI_S : IC_MIPS_LI;
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1362,7 +1362,7 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 		return emit_load_of_immediate(enc, &addr_rvalue);
 	}
 
-	const bool is_floating = type_is_floating(lval->type);
+	const bool is_floating = type_is_floating(enc->sx, lval->type);
 	const mips_register_t reg = is_floating ? get_float_register(enc) : get_register(enc);
 	const mips_instruction_t instruction = is_floating ? IC_MIPS_L_S : IC_MIPS_LW;
 
@@ -1572,7 +1572,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
-		const mips_instruction_t instruction = !type_is_floating(value->type) ? IC_MIPS_LI : IC_MIPS_LI_S;
+		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_MIPS_LI : IC_MIPS_LI_S;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1591,7 +1591,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 	}
 	else
 	{
-		const mips_instruction_t instruction = !type_is_floating(value->type) ? IC_MIPS_MOVE : IC_MIPS_MFC_1;
+		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_MIPS_MOVE : IC_MIPS_MFC_1;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1620,7 +1620,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if (value->val.reg_num != target->loc.reg_num)
 		{
-			const mips_instruction_t instruction = type_is_floating(value->type) ? IC_MIPS_MOV_S : IC_MIPS_MOVE;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_MIPS_MOV_S : IC_MIPS_MOVE;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1634,7 +1634,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if ((!type_is_structure(enc->sx, target->type)) && (!type_is_array(enc->sx, target->type)))
 		{
-			const mips_instruction_t instruction = type_is_floating(value->type) ? IC_MIPS_S_S : IC_MIPS_SW;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_MIPS_S_S : IC_MIPS_SW;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1910,7 +1910,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			IC_MIPS_ADDI,
 			R_SP,
 			R_SP,
-			-(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+			-(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
 		);
 		uni_printf(enc->sx->io, "\n");
 
@@ -1946,7 +1946,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 		};
 		emit_store_of_rvalue(enc, &a1_lval, &a1_rval);
 
-		if (!type_is_floating(arg_rvalue.type))
+		if (!type_is_floating(enc->sx, arg_rvalue.type))
 		{
 			uni_printf(enc->sx->io, "\n");
 			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
@@ -2046,7 +2046,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			IC_MIPS_ADDI,
 			R_SP,
 			R_SP,
-			(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+			(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
 		);
 		uni_printf(enc->sx->io, "\n");
 	}
@@ -2152,10 +2152,10 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			const rvalue tmp = emit_expression(enc, &arg);
 			const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
+			if ((type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
 			{
 				uni_printf(enc->sx->io, "\t# saving ");
-				mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type)
+				mips_register_to_io(enc->sx->io, (type_is_floating(enc->sx, arg_rvalue.type)
 					? R_FA0 + f_arg_count
 					: R_A0 + arg_count));
 				uni_printf(enc->sx->io, " value on stack:\n");
@@ -2176,7 +2176,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 
 			const rvalue arg_saved_rvalue = {
 				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = (type_is_floating(arg_rvalue.type)
+				.val.reg_num = (type_is_floating(enc->sx, arg_rvalue.type)
 					? R_FA0 + f_arg_count
 					: R_A0 + arg_count),
 				.type = arg_rvalue.type,
@@ -2186,18 +2186,18 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			emit_store_of_rvalue(
 				enc,
 				&tmp_arg_lvalue,
-				(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
+				(type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
 					? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
 					: &arg_rvalue		// Передача аргумента
 			);
 
 			// Если это передача параметров в регистры-аргументы
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
+			if ((type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
 			{
 				// Аргументы рассматриваются в данном случае как регистровые переменные
 				emit_move_rvalue_to_register(
 					enc,
-					type_is_floating(arg_rvalue.type)
+					type_is_floating(enc->sx, arg_rvalue.type)
 						? (R_FA0 + f_arg_count)
 						: (R_A0 + arg_count),
 					&arg_rvalue);
@@ -2206,7 +2206,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
 			}
 
-			if (type_is_floating(arg_rvalue.type))
+			if (type_is_floating(enc->sx, arg_rvalue.type))
 			{
 				f_arg_count += 2;
 			}
@@ -2232,7 +2232,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
 			emit_move_rvalue_to_register(
 				enc,
-				type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
+				type_is_floating(enc->sx, prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
 				&tmp_rval
 			);
 
@@ -2254,7 +2254,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	return (rvalue) {
 		.kind = RVALUE_KIND_REGISTER,
 		.type = return_type,
-		.val.reg_num = type_is_floating(return_type) ? R_FV0 : R_V0,
+		.val.reg_num = type_is_floating(enc->sx, return_type) ? R_FV0 : R_V0,
 		.from_lvalue = !FROM_LVALUE
 	};
 }
@@ -2291,7 +2291,7 @@ static rvalue emit_cast_expression(encoder *const enc, const node *const nd)
 	const item_t target_type = expression_get_type(nd);
 	const item_t source_type = expression_get_type(&operand);
 
-	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
+	if (type_is_integer(enc->sx, source_type) && type_is_floating(enc->sx, target_type))
 	{
 		// int -> float
 		const rvalue result = {
@@ -2410,7 +2410,7 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
-			const mips_instruction_t instruction = type_is_floating(operand_rvalue.type) ? IC_MIPS_ABS_S : IC_MIPS_ABS;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_MIPS_ABS_S : IC_MIPS_ABS;
 
 			to_code_2R(enc->sx->io, instruction, operand_rvalue.val.reg_num, operand_rvalue.val.reg_num);
 			return operand_rvalue;
@@ -3157,7 +3157,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		const size_t id = declaration_function_get_parameter(nd, i);
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
-		if (!type_is_floating(ident_get_type(enc->sx, id)))
+		if (!type_is_floating(enc->sx, ident_get_type(enc->sx, id)))
 		{
 			if (i < ARG_REG_AMOUNT)
 			{

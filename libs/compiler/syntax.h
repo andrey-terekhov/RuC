@@ -37,11 +37,6 @@ extern "C" {
 /** Type qualifiers */
 typedef enum TYPE
 {
-	TYPE_CONST_FILE			= -17,
-	TYPE_CONST_BOOLEAN		= -14,
-	TYPE_CONST_FLOATING,
-	TYPE_CONST_CHARACTER,
-	TYPE_CONST_INTEGER,
 	TYPE_VARARG			= -9,
 	TYPE_NULL_POINTER,
 	TYPE_FILE,
@@ -383,11 +378,12 @@ size_t type_size(const syntax *const sx, const item_t type);
 /**
  *	Check if type is boolean
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_boolean(const item_t type);
+bool type_is_boolean(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is integer
@@ -402,11 +398,12 @@ bool type_is_integer(const syntax *const sx, const item_t type);
 /**
  *	Check if type is floating
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_floating(const item_t type);
+bool type_is_floating(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is arithmetic
@@ -444,15 +441,6 @@ bool type_is_null_pointer(const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_const(const syntax *const sx, const item_t type);
-
-/**
- *	Check if type has const modifier
- *
- *	@param	type		Type for check
- *
- *	@return	@c 1 on true, @c 0 on false
- */
-bool type_has_const_modifier(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is array
@@ -566,11 +554,12 @@ bool type_is_undefined(const item_t type);
 /**
  *	Check if type is FILE
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_file(const item_t type);
+bool type_is_file(const syntax *const sx, const item_t type);
 
 /**
  *	Get element type
@@ -580,7 +569,7 @@ bool type_is_file(const item_t type);
  *
  *	@return	Element type, @c ITEM_MAX on failure
  */
-item_t type_const_get_element_type(const syntax *const sx, const item_t type);
+item_t type_const_get_unqualified_type(const syntax *const sx, const item_t type);
 
 /**
  *	Get element type
