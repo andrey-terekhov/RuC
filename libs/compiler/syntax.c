@@ -126,6 +126,11 @@ static inline bool type_is_equal(const syntax *const sx, const size_t first, con
 	size_t length = 1;
 	const item_t type = vector_get(&sx->types, first);
 
+	if (type == TYPE_CONST)
+	{
+		return type_is_equal(sx, type_const_get_unqualified_type(sx, first), type_const_get_unqualified_type(sx, second));
+	}
+
 	// Определяем, сколько полей надо сравнивать для различных типов записей
 	if (type == TYPE_STRUCTURE || type == TYPE_FUNCTION)
 	{
