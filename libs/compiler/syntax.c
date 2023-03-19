@@ -562,7 +562,11 @@ type_t type_get_class(const syntax *const sx, const item_t type)
 
 size_t type_size(const syntax *const sx, const item_t type)
 {
-	if (type_is_structure(sx, type))
+	if (type_is_const(sx, type))
+	{
+		return type_size(sx, type_const_get_unqualified_type(sx, type));
+	}
+	else if (type_is_structure(sx, type))
 	{
 		return (size_t)type_get(sx, (size_t)type + 1);
 	}
