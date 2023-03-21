@@ -61,7 +61,7 @@ static item_t usual_arithmetic_conversions(const syntax *const sx, node *const L
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
-	if (type_is_floating(sx,LHS_type) || type_is_floating(sx,RHS_type))
+	if (type_is_floating(sx, LHS_type) || type_is_floating(sx, RHS_type))
 	{
 		*LHS = build_cast_expression(TYPE_FLOATING, LHS);
 		*RHS = build_cast_expression(TYPE_FLOATING, RHS);
@@ -437,7 +437,7 @@ builder builder_create(syntax *const sx)
 }
 
 
-bool check_assignment_operands(builder *const bldr, item_t expected_type, node *const init, const bool is_declaration)
+bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init, const bool is_declaration)
 {
 	if (!node_is_correct(init))
 	{
