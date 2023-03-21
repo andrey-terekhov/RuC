@@ -368,6 +368,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case wrong_init:	//test_exist
 			sprintf(msg, "переменные такого типа нельзя инициализировать");
 			break;
+		case wrong_init_type:	//test_exist
+			sprintf(msg, "переменная одного типа инициализируется выражением другого типа");
+			break;
 		case pnt_before_array:	// test_exist
 			sprintf(msg, "в РуСи не бывает указателей на массивы");
 			break;
