@@ -279,6 +279,7 @@ node build_empty_bound_expression(builder *const bldr, const location loc);
  *	@param	type			Member type
  *	@param	name			Member name
  *	@param	was_star		Flag if there was a star token
+ *	@param	was_amp			Flag if there was a ampersand token
  *	@param	was_const		Flag if there was a const token after a star token
  *	@param	bounds			Member array bounds
  *	@param	loc				Member location
@@ -286,7 +287,7 @@ node build_empty_bound_expression(builder *const bldr, const location loc);
  *	@return	Member declaration
  */
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, const bool was_const, node_vector *const bounds, const location loc);
+	, const bool was_amp, const bool was_const, node_vector *const bounds, const location loc);
 
 /**
  *	Build an empty struct declaration
@@ -317,6 +318,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *	@param	type			Base type
  *	@param	name			Name
  *	@param	was_star		Flag if there was a star token
+ *	@param	was_amp			Flag if there was a ampersand token
  *	@param	was_const		Flag if there was a const token after a star token
  *	@param	bounds			Bounds expressions
  *	@param	initializer		Initializer
@@ -324,8 +326,8 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *
  *	@return	Declarator
  */
-node build_declarator(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc);
+node build_declarator(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, const bool was_amp, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc);
 
 /**
  *	Build an empty declaration

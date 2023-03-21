@@ -54,6 +54,7 @@ typedef enum TYPE
 	TYPE_POINTER,
 	TYPE_ENUM,
 	TYPE_CONST,
+	TYPE_REFERENCE,
 
 	BEGIN_USER_TYPE = 15,
 } type_t;
@@ -503,6 +504,16 @@ bool type_is_function(const syntax *const sx, const item_t type);
 bool type_is_pointer(const syntax *const sx, const item_t type);
 
 /**
+ *	Check if type is reference
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_reference(const syntax *const sx, const item_t type);
+
+/**
  *	Check if type is scalar
  *
  *	@param	sx			Syntax structure
@@ -666,6 +677,16 @@ item_t type_function_get_parameter_type(const syntax *const sx, const item_t typ
 item_t type_pointer_get_element_type(const syntax *const sx, const item_t type);
 
 /**
+ *	Get element type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Reference type
+ *
+ *	@return	Element type, @c ITEM_MAX on failure
+ */
+item_t type_reference_get_element_type(const syntax *const sx, const item_t type);
+
+/**
  *	Create array type
  *
  *	@param	sx			Syntax structure
@@ -724,6 +745,16 @@ item_t type_pointer(syntax *const sx, const item_t type);
  *	@return	Const type
  */
 item_t type_const(syntax *const sx, const item_t type);
+
+/**
+ *	Create reference type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Referenced type
+ *
+ *	@return	Reference type
+ */
+item_t type_reference(syntax *const sx, const item_t type);
 
 
 /**

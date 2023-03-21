@@ -229,6 +229,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case invalid_const_pointer_cast:
 			sprintf(msg, "нельзя преобразовать указатель на коснтанту в указатель на переменную");
 			break;
+		case reference_without_declaration:
+			sprintf(msg, "встречено определение переменной-ссылки без объявления");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:

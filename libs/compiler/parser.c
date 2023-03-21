@@ -938,6 +938,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 {
 	const item_t type = parse_type_specifier(prs, parent);
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_amp = was_star ? false : try_consume_token(prs, TK_AMP);
 	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
@@ -977,7 +978,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 	}
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
+	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_amp, was_const, &bounds, ident_loc);
 
 	node_vector_clear(&bounds);
 	return member;
@@ -1210,6 +1211,7 @@ static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 static node parse_init_declarator(parser *const prs, const item_t type)
 {
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_amp = was_star ? false : try_consume_token(prs, TK_AMP);
 	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
@@ -1259,7 +1261,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 	}
 
 	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
-	node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
+	node declarator = build_declarator(&prs->bld, type, name, was_star, was_amp, was_const, &bounds, initializer_ptr, ident_loc);
 	node_vector_clear(&bounds);
 
 	return declarator;

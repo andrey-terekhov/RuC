@@ -95,6 +95,7 @@ typedef enum ERROR
 	wrong_main_parameter_type,
 	assign_to_const,
 	invalid_const_pointer_cast,
+	reference_without_declaration,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */

@@ -447,9 +447,12 @@ bool check_assignment_operands(builder *const bldr, item_t expected_type, node *
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
 
-	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
-		? type_const_get_unqualified_type(sx, expected_type)
-		: expected_type;
+	const item_t expected_type_element = type_is_reference(sx, expected_type)
+		? type_reference_get_element_type(sx, expected_type)
+		: expected_type; 
+	const item_t expected_type_unqualified = type_is_const(sx, expected_type_element) 
+		? type_const_get_unqualified_type(sx, expected_type_element)
+		: expected_type_element;
 	if (type_is_const(sx, expected_type) && !is_declaration)
 	{
 		semantic_error(bldr, loc, assign_to_const);
@@ -504,7 +507,12 @@ bool check_assignment_operands(builder *const bldr, item_t expected_type, node *
 	}
 
 	const item_t expr_type = expression_get_type(init);
-	const item_t actual_type = type_is_const(sx, expr_type) ? type_const_get_unqualified_type(sx, expr_type) : expr_type;
+	const item_t expr_type_element = type_is_reference(sx, expr_type)
+		? type_reference_get_element_type(sx, expr_type)
+		: expr_type;
+	const item_t actual_type = type_is_const(sx, expr_type_element) 
+		? type_const_get_unqualified_type(sx, expr_type_element) 
+		: expr_type_element;
 	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
 	{
 		*init = build_cast_expression(expected_type_unqualified, init);
@@ -1134,14 +1142,14 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 
 
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, const bool was_const, node_vector *const bounds, const location loc)
+	, const bool was_amp, const bool was_const, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
 		semantic_error(bldr, loc, only_functions_may_have_type_VOID);
 	}
 
-	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	item_t member_type = was_star ? type_pointer(bldr->sx, type) : was_amp ? type_reference(bldr->sx, type) : type;
 	if (was_const)
 	{
 		member_type = type_const(bldr->sx, member_type);
@@ -1202,15 +1210,15 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 	return declaration_struct_set_location(declaration, loc);
 }
 
-node build_declarator(builder *const bldr, const item_t type, const size_t name
-   , const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
+node build_declarator(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, const bool was_amp, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
 		semantic_error(bldr, ident_loc, only_functions_may_have_type_VOID);
 	}
 
-	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : type;
+	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : was_amp ? type_reference(bldr->sx, type) : type;
 	if (was_const)
 	{
 		variable_type = type_const(bldr->sx, variable_type);
@@ -1239,6 +1247,10 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 	else if (has_empty_bounds)
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
+	}
+	else if (type_is_reference(bldr->sx, variable_type))
+	{
+		semantic_error(bldr, ident_loc, reference_without_declaration);
 	}
 
 	// Magic numbers, maybe we need identifiers interface?
