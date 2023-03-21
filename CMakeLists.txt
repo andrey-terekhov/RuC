@@ -13,7 +13,6 @@ set(CMAKE_SKIP_BUILD_RPATH TRUE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-
 if(MSVC)
 	set(CMAKE_CXX_STANDARD 20)
 
@@ -41,7 +40,7 @@ endif()
 
 # Disable asserts for Release build
 add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
-
+add_compile_definitions(INSTALL_PATH="${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}")
 
 # Import testing exit code
 if(DEFINED TESTING_EXIT_CODE)
@@ -54,6 +53,9 @@ add_subdirectory(libs)
 
 # Add frontend
 add_subdirectory(src)
+
+# Add runtime
+add_subdirectory(runtime)
 
 
 function(get_all_targets _targets _dir)

@@ -426,7 +426,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case too_many_arguments:
 			sprintf(msg, "слишком много аргументов у функции, допустимое количество до 128");
 			break;
-
+		case no_runtime_files:
+			sprintf(msg, "не найдены runtime файлы, проверьте целостность установки или вручную поместите runtime файлы для Вашей архитектуры в рабочую директорию");
+			break;
 		default:
 			sprintf(msg, "неизвестный код ошибки (%i)", num);
 			break;
