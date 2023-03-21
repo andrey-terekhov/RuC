@@ -132,11 +132,6 @@ typedef struct ir_evals
  */
 typedef struct ir_module
 {
-	// Каждый тип юнита модуля (extern, функция, глобальная переменная)
-	// представлен отдельным linked list'ом.
-	//
-	// Возможно есть причины использовать hashmap'ы
-
 	vector externs;
 	node externs_root;
 
