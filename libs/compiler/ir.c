@@ -1508,41 +1508,48 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 			break;
 		case BIN_SHR:
 			break;
+
+		case BIN_LT:
+			unimplemented();
+			break;
+		case BIN_GT:
+			unimplemented();
+			break;
+		case BIN_LE:
+			unimplemented();
+			break;
+		case BIN_GE:
+			unimplemented();
+			break;
+		case BIN_EQ:
+			unimplemented();
+			break;
+		case BIN_NE:
+			unimplemented();
+			break;
+		case BIN_AND:
+			unimplemented();
+			break;
+		case BIN_XOR:
+			unimplemented();
+			break;
+		case BIN_OR:
+			unimplemented();
+			break;
+		case BIN_LOG_AND:
+			unimplemented();
+			break;
+		case BIN_LOG_OR:
+			unimplemented();
+			break;
+
+		case BIN_COMMA:
+			unimplemented();
+			break;
 		default:
 			unreachable();
 			break;
-
-		// BIN_LT
-		// BIN_GT
-		// BIN_LE
-		// BIN_GE
-		// BIN_EQ
-		// BIN_NE
-		// BIN_AND
-		// BIN_XOR
-		// BIN_OR
-		// BIN_LOG_AND
-		// BIN_LOG_OR
-
-		// BIN_ASSIGN
-		// BIN_MUL_ASSIGN
-		// BIN_DIV_ASSIGN
-		// BIN_REM_ASSIGN
-		// BIN_ADD_ASSIGN
-		// BIN_SUB_ASSIGN
-		// BIN_SHL_ASSIGN
-		// BIN_SHR_ASSIGN
-		// BIN_AND_ASSIGN
-		// BIN_XOR_ASSIGN
-		// BIN_OR_ASSIGN
-		// BIN_COMMA
 	}
-	// assert(dest->kind == RVALUE_KIND_REGISTER);
-	// assert(first_operand->kind != RVALUE_KIND_VOID);
-	// assert(second_operand->kind != RVALUE_KIND_VOID);
-
-	unimplemented();
-	// Stub.
 	return 0;
 }
 
@@ -1553,7 +1560,7 @@ static item_t ir_emit_binary_expression(ir_builder *const builder, const node *c
 	const node rhs = expression_binary_get_RHS(nd);
 
 	unimplemented();
-	// Stub.
+
 	return 0;
 }
 
@@ -1567,11 +1574,6 @@ static item_t ir_emit_ternary_expression(ir_builder *const builder, const node *
 	const item_t lhs_value = ir_emit_expression(builder, &lhs);
 	const item_t rhs_value = ir_emit_expression(builder, &rhs); 
 
-	// const item_t res_value = ir_build_select(builder, lhs_value, rhs_value, condition_value);
-
-	// ir_free_value(condition_value);
-	// ir_free_value(lhs_value);
-	// ir_free_value(rhs_value);
 	unimplemented();
 
 	return IR_VALUE_VOID;
@@ -1723,8 +1725,6 @@ static void ir_emit_array_declaration(ir_builder *const builder, const node *con
 
 static void ir_emit_structure_init(ir_builder *const builder, const item_t target, const node *const initializer)
 {
-	//assert(type_is_structure(builder->sx, target->type));
-
 	unimplemented();
 }
 
@@ -1826,17 +1826,12 @@ static void ir_emit_default_statement(ir_builder *const builder, const node *con
 
 static void ir_emit_compound_statement(ir_builder *const builder, const node *const nd)
 {
-	//const size_t scope_displacement = enc->scope_displ;
-
 	const size_t size = statement_compound_get_size(nd);
 	for (size_t i = 0; i < size; i++)
 	{
 		const node substmt = statement_compound_get_substmt(nd, i);
 		ir_emit_statement(builder, &substmt);
 	}
-
-	// enc->max_displ = max(enc->scope_displ, enc->max_displ);
-	// enc->scope_displ = scope_displacement;
 }
 
 static void ir_emit_switch_statement(ir_builder *const builder, const node *const nd)
@@ -1942,8 +1937,6 @@ static void ir_emit_do_statement(ir_builder *const builder, const node *const nd
 
 static void ir_emit_for_statement(ir_builder *const builder, const node *const nd)
 {
-	//const size_t scope_displacement = enc->scope_displ;
-
 	if (statement_for_has_inition(nd))
 	{
 		const node inition = statement_for_get_inition(nd);
@@ -1983,8 +1976,6 @@ static void ir_emit_for_statement(ir_builder *const builder, const node *const n
 
 	builder->continue_label = old_continue;
 	builder->break_label = old_break;
-
-	//builder->scope_displ = scope_displacement;
 }
 
 static void ir_emit_return_statement(ir_builder *const builder, const node *const nd)
