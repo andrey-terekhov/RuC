@@ -176,6 +176,8 @@ typedef struct ir_builder
 	item_t continue_label;
 	item_t function_end_label;
 
+	item_t value_zero;
+	item_t value_fzero;
 	item_t value_one;
 	item_t value_minus_one;
 	item_t value_fone;

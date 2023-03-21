@@ -137,7 +137,7 @@ static bool ir_value_is_const(const ir_value *const value)
 
 static item_t ir_value_get_type(const ir_value *const value)
 {
-	return TYPE_INTEGER;
+	return node_get_arg(value, 0);
 }
 
 static int ir_value_get_const_int(const ir_value *const value)
@@ -508,6 +508,8 @@ static ir_label ir_module_get_label(const ir_module *const module, size_t index)
 // IR построитель.
 //
 
+static item_t ir_build_const_int(ir_builder *const builder, const int int_);
+static item_t ir_build_const_float(ir_builder *const builder, const float float_);
 
 ir_builder create_ir_builder(ir_module *const module, const syntax *const sx) 
 {
@@ -522,10 +524,12 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	builder.continue_label = IR_LABEL_NULL;
 	builder.function_end_label = IR_LABEL_NULL;
 
-	builder.value_one = IR_VALUE_VOID;
-	builder.value_minus_one = IR_VALUE_VOID;
-	builder.value_fone = IR_VALUE_VOID;
-	builder.value_fminus_one = IR_VALUE_VOID;
+	builder.value_zero = ir_build_const_int(&builder, 0);
+	builder.value_fzero = ir_build_const_float(&builder, 0.0);
+	builder.value_one = ir_build_const_int(&builder, 1);
+	builder.value_minus_one = ir_build_const_float(&builder, -1);
+	builder.value_fone = ir_build_const_float(&builder, 1.0);
+	builder.value_fminus_one = ir_build_const_float(&builder, -1.0);
 
 	return builder;
 }
@@ -835,7 +839,7 @@ static void ir_dump_type(const ir_builder *const builder, const item_t type)
 		ir_dump_type(builder, ret_type);
 
 		ir_dumpf("(");
-		for(int i = 0; i < param_count; i++)
+		for(size_t i = 0; i < param_count; i++)
 		{
 			const item_t param_type = type_function_get_parameter_type(sx, type, i); 
 			ir_dump_type(builder, param_type);
@@ -1075,7 +1079,7 @@ static void ir_dump_instr(const ir_builder *const builder, const ir_instr *const
 			ir_dump_value(builder, &res_value);
 			ir_dumpf(" <- ");
 			ir_dump_ic(builder, ic);
-			ir_dumpf(" %d\n", op1);
+			ir_dumpf(" %" PRIitem "\n", op1);
 			break;
 		}
 		default:
@@ -1365,79 +1369,60 @@ static item_t ir_emit_increment_expression(ir_builder *const builder, const node
 static item_t ir_emit_unary_expression(ir_builder *const builder, const node *const nd)
 {
 	const unary_t operator = expression_unary_get_operator(nd);
-	assert(operator != UN_INDIRECTION);
 
-	unimplemented();
+	switch (operator)
+	{
+		case UN_POSTINC:
+		case UN_POSTDEC:
+		case UN_PREINC:
+		case UN_PREDEC:
+			return ir_emit_increment_expression(builder, nd);
 
-	return IR_VALUE_VOID;
+		case UN_MINUS:
+		case UN_NOT:
+		{
+			const node operand = expression_unary_get_operand(nd);
+			const item_t operand_value = ir_emit_expression(builder, &operand);
+			const binary_t instruction = (operator == UN_MINUS) ? BIN_MUL : BIN_XOR;
+			const item_t second_value = builder->value_minus_one;
 
-	// switch (operator)
-	// {
-	// 	case UN_POSTINC:
-	// 	case UN_POSTDEC:
-	// 	case UN_PREINC:
-	// 	case UN_PREDEC:
-	// 		return ir_emit_increment_expression(builder, nd);
+			return ir_emit_binary_operation(builder, operand_value, second_value, instruction);
+		}
 
-	// 	case UN_MINUS:
-	// 	case UN_NOT:
-	// 	{
-	// 		const node operand = expression_unary_get_operand(nd);
-	// 		const item_t operand_value = ir_emit_expression(builder, &operand);
-	// 		const binary_t instruction = (operator == UN_MINUS) ? BIN_MUL : BIN_XOR;
+		case UN_LOGNOT:
+		{
+			const node operand = expression_unary_get_operand(nd);
+			const item_t value = ir_emit_expression(builder, &operand);
+			const item_t second_value = builder->value_zero;
 
-	// 		ir_emit_binary_operation(builder, operand_value, second_value, instruction);
-	// 		return operand_rvalue;
-	// 	}
+			unimplemented();
+			return IR_VALUE_VOID;
+		}
 
-	// 	case UN_LOGNOT:
-	// 	{
-	// 		const node operand = expression_unary_get_operand(nd);
-	// 		const rvalue value = emit_expression(enc, &operand);
+		case UN_ABS:
+		{
+			unimplemented();
+			return IR_VALUE_VOID;
+		}
 
-	// 		return value;
-	// 	}
+		case UN_ADDRESS:
+		{
+			const node operand = expression_unary_get_operand(nd);
 
-	// 	case UN_ABS:
-	// 	{
-	// 		unimplemented();
-	// 		return IR_VALUE_VOID;
-	// 	}
+			unimplemented();
+			return IR_VALUE_VOID;
+		}
 
-	// 	case UN_ADDRESS:
-	// 	{
-	// 		const node operand = expression_unary_get_operand(nd);
-	// 		const lvalue operand_lvalue = emit_lvalue(enc, &operand);
+		case UN_UPB:
+		{
+			unimplemented();
+			return IR_VALUE_VOID;
+		}
 
-	// 		assert(operand_lvalue.kind != LVALUE_KIND_REGISTER);
-
-	// 		const rvalue result_rvalue = {
-	// 			.from_lvalue = !FROM_LVALUE,
-	// 			.kind = RVALUE_KIND_REGISTER,
-	// 			.val.reg_num = get_register(enc),
-	// 			.type = TYPE_INTEGER
-	// 		};
-
-	// 		to_code_2R_I(
-	// 			enc->sx->io,
-	// 			IC_MIPS_ADDI,
-	// 			result_rvalue.val.reg_num,
-	// 			operand_lvalue.base_reg,
-	// 			operand_lvalue.loc.displ
-	// 		);
-	// 		return result_rvalue;
-	// 	}
-
-	// 	case UN_UPB:
-	// 	{
-	// 		unimplemented();
-	// 		return IR_VALUE_VOID;
-	// 	}
-
-	// 	default:
-	// 		unreachable();
-	// 		return IR_VALUE_VOID;
-	// }
+		default:
+			unreachable();
+			return IR_VALUE_VOID;
+	}
 }
 
 static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t lhs, const item_t rhs, const binary_t operator)
@@ -2082,7 +2067,11 @@ typedef struct ir_context
 static void ir_eval_label(ir_context *const ctx, const ir_instr *const instr)
 {
 	const item_t op1 = ir_instr_get_op1(instr);
-	ctx->evals->emit_label(ctx, op1);
+	const char* label_string = "";
+
+	unimplemented();
+
+	ctx->evals->emit_label(ctx, label_string);
 }
 
 static void ir_eval_store(ir_context *const ctx, const ir_instr *const instr)
