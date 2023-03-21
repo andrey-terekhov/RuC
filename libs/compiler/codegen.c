@@ -355,83 +355,6 @@ static int print_table(const encoder *const enc, const vector *const table)
 }
 
 /**
- *	Print types table unqualifying const types
- *
- *	@param	enc			Encoder
- *
- *	@return	@c 0 on success, @c -1 on error
- */
-static int print_types_without_const(const encoder *const enc)
-{
-	const vector *const types = &enc->sx->types;
-
-	size_t start_type = enc->sx->start_type;
-	size_t next_type = vector_get(types, start_type);
-	while (next_type != 0)
-	{
-		start_type = next_type;
-		next_type = vector_get(types, start_type);
-	}
-
-	for (size_t i = 0; i < start_type; i++)
-	{
-		const item_t item = vector_get(types, i);
-		if (!item_check_var(enc->target, item))
-		{
-			system_error(tables_cannot_be_compressed);
-			return -1;
-		}
-
-		uni_printf(enc->sx->io, "%" PRIitem " ", item);
-	}
-
-	const size_t size = vector_size(types);
-	size_t index_shift = 0;
-	for (size_t i = start_type + 1; i < size;)
-	{
-		const type_t type = vector_get(types, i);
-		if (type == TYPE_CONST)
-		{
-			i += 3;
-			index_shift += 3;
-			continue;
-		}
-
-		size_t length = 1;
-		if (type == TYPE_STRUCTURE || type == TYPE_FUNCTION)
-		{
-			length = 2 + (size_t)vector_get(types, i + 2);
-		}
-
-		const item_t prev_type = vector_get(types, i - 1) - index_shift;
-		if (!item_check_var(enc->target, prev_type))
-		{
-			system_error(tables_cannot_be_compressed);
-			return -1;
-		}
-
-		uni_printf(enc->sx->io, "%" PRIitem " ", prev_type);
-
-		for (size_t j = i; j <= i + length; j++)
-		{
-			const item_t item = vector_get(types, j);
-			if (!item_check_var(enc->target, item))
-			{
-				system_error(tables_cannot_be_compressed);
-				return -1;
-			}
-
-			uni_printf(enc->sx->io, "%" PRIitem " ", item);
-		}
-
-		i += length + 2;
-	}
-
-	uni_printf(enc->sx->io, "\n");
-	return 0;
-}
-
-/**
  *	Export codes of virtual machine
  *
  *	@param	enc			Encoder
@@ -454,7 +377,7 @@ static int enc_export(const encoder *const enc)
 		|| print_table(enc, &enc->functions)
 		|| print_table(enc, &enc->identifiers)
 		|| print_table(enc, &enc->representations)
-		|| print_types_without_const(enc);
+		|| print_table(enc, &enc->sx->types);
 }
 
 /**
@@ -553,10 +476,9 @@ static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = expression_identifier_get_id(nd);
 	const item_t type = ident_get_type(enc->sx, identifier);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	const item_t displ = displacements_get(enc, identifier);
 
-	return (lvalue){ .kind = VARIABLE, .type = unqualified_type, .displ = displ };
+	return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
 }
 
 /**
@@ -657,7 +579,6 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	const node operand = expression_unary_get_operand(nd);
 	const lvalue value = emit_lvalue(enc, &operand);
 	if (value.kind == VARIABLE)
@@ -666,7 +587,7 @@ static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
 		mem_add(enc, value.displ);
 	}
 
-	return (lvalue){ .kind = ADDRESS, .type = unqualified_type };
+	return (lvalue){ .kind = ADDRESS, .type = type };
 }
 
 /**
@@ -710,9 +631,7 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
  */
 static void emit_literal_expression(encoder *const enc, const node *const nd)
 {
-	const item_t type = expression_get_type(nd);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
-	switch (type_get_class(enc->sx, unqualified_type))
+	switch (type_get_class(enc->sx, expression_get_type(nd)))
 	{
 		case TYPE_NULL_POINTER:
 		{
@@ -851,10 +770,8 @@ static void compress_ident(encoder *const enc, const size_t ref)
 	}
 
 	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
-	const item_t type = ident_get_type(enc->sx, ref);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
-	vector_add(&enc->identifiers, unqualified_type);
+	vector_add(&enc->identifiers, ident_get_type(enc->sx, ref));
 	vector_add(&enc->identifiers, displacements_get(enc, ref));
 
 	const char *buffer = repr_get_name(enc->sx, (size_t)ident_get_repr(enc->sx, ref));
@@ -945,9 +862,7 @@ static void emit_print_expression(encoder *const enc, const node *const nd)
 		emit_expression(enc, &arg);
 
 		mem_add(enc, IC_PRINT);
-		const item_t arg_type = expression_get_type(&arg);
-		const item_t unqualified_arg_type =  type_is_const(enc->sx, arg_type) ? type_const_get_unqualified_type(enc->sx, arg_type) : arg_type;
-		mem_add(enc, unqualified_arg_type);
+		mem_add(enc, expression_get_type(&arg));
 	}
 }
 
@@ -1466,11 +1381,6 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		dimensions++;
 	}
 
-	if (type_is_const(enc->sx, type))
-	{
-		type = type_const_get_unqualified_type(enc->sx, type);
-	}
-
 	const bool has_initializer = declaration_variable_has_initializer(nd);
 	const item_t length = (item_t)type_size(enc->sx, type);
 	const item_t displ = displacements_add(enc, identifier);
@@ -1525,8 +1435,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	}
 
 	const item_t displ = displacements_add(enc, identifier);
-	const item_t unqualified_type = type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
-	const item_t iniproc = proc_get(enc, (size_t)unqualified_type);
+	const item_t iniproc = proc_get(enc, (size_t)type);
 	if (iniproc != ITEM_MAX && iniproc != 0)
 	{
 		mem_add(enc, IC_STRUCT_WITH_ARR);
@@ -1539,15 +1448,15 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 		const node initializer = declaration_variable_get_initializer(nd);
 		emit_expression(enc, &initializer);
 
-		if (type_is_structure(enc->sx, unqualified_type))
+		if (type_is_structure(enc->sx, type))
 		{
 			mem_add(enc, IC_COPY0ST_ASSIGN);
 			mem_add(enc, displ);
-			mem_add(enc, (item_t)type_size(enc->sx, unqualified_type));
+			mem_add(enc, (item_t)type_size(enc->sx, type));
 		}
 		else
 		{
-			mem_add(enc, type_is_floating(enc->sx, unqualified_type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+			mem_add(enc, type_is_floating(enc->sx, type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 			mem_add(enc, displ);
 		}
 	}
