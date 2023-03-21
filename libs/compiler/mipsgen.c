@@ -20,12 +20,12 @@
 #include "operations.h"
 #include "tree.h"
 #include "uniprinter.h"
+#include <string.h>
 
 
 #ifndef max
 	#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
-
 
 static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
 static const size_t HASH_TABLE_SIZE = 1024;			/**< Размер хеш-таблицы для смещений и регистров */
@@ -52,6 +52,10 @@ static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lval
 /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
 static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
 											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
+
+static const char* const RUNTIME_HEAD_FILENAME = "runtime-mips/head.min.s";
+static const char* const RUNTIME_FOOT_FILENAME = "runtime-mips/foot.min.s";
+static const char* const INSTALL_PATH = "/usr/local/ruc/";
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -183,6 +187,7 @@ typedef enum INSTRUCTION
 
 	IC_MIPS_JR,			/**< To execute a branch to an instruction address in a register */
 	IC_MIPS_JAL,		/**< To execute a procedure call within the current 256MB-aligned region */
+	IC_MIPS_JALR,		/**< To execute a procedure with address in a register */
 	IC_MIPS_J,			/**< To branch within the current 256 MB-aligned region */
 
 	IC_MIPS_BLEZ,		/**< Branch on Less Than or Equal to Zero.
@@ -893,6 +898,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_MIPS_JAL:
 			uni_printf(io, "jal");
 			break;
+		case IC_MIPS_JALR:
+			uni_printf(io, "jalr");
+			break;
 		case IC_MIPS_J:
 			uni_printf(io, "j");
 			break;
@@ -1090,7 +1098,7 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 	{
 		uni_printf(enc->sx->io, "%" PRIitem "(", value->loc.displ);
 		mips_register_to_io(enc->sx->io, value->base_reg);
-		uni_printf(enc->sx->io, ")\n");
+		uni_printf(enc->sx->io, ")");
 	}
 }
 
@@ -1168,6 +1176,11 @@ static lvalue displacements_get(encoder *const enc, const size_t identifier)
 	const lvalue_kind_t kind = (is_register) ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK;
 
 	return (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+}
+
+static bool displacements_contains(encoder *const enc, const size_t identifier) 
+{
+	return hash_get(&enc->displacements, identifier, 0) != ITEM_MAX;
 }
 
 /**
@@ -1284,7 +1297,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
  */
 static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction, const mips_register_t reg)
 {
-	assert(instruction == IC_MIPS_JR);
+	assert(instruction == IC_MIPS_JR || instruction == IC_MIPS_JALR);
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1890,221 +1903,199 @@ static rvalue emit_literal_expression(encoder *const enc, const node *const nd)
  *	@param	nd					AST node
  *	@param	parameters_amount	Number of function parameters
  */
-static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
-{
-	const node string = expression_call_get_argument(nd, 0);
-	const size_t index = expression_literal_get_string(&string);
-	const size_t amount = strings_amount(enc->sx);
-	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
+// static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
+// {
+// 	const node string = expression_call_get_argument(nd, 0);
+// 	const size_t index = expression_literal_get_string(&string);
+// 	const size_t amount = strings_amount(enc->sx);
+// 	const size_t parameters_amount = expression_call_get_arguments_amount(nd);
 
-	for (size_t i = 1; i < parameters_amount; i++)
-	{
-		const node arg = expression_call_get_argument(nd, i);
-		const rvalue val = emit_expression(enc, &arg);
-		const rvalue arg_rvalue = (val.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &val) : val;
-		const item_t arg_rvalue_type = arg_rvalue.type;
+// 	for (size_t i = 1; i < parameters_amount; i++)
+// 	{
+// 		const node arg = expression_call_get_argument(nd, i);
+// 		const rvalue val = emit_expression(enc, &arg);
+// 		const rvalue arg_rvalue = (val.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &val) : val;
+// 		const item_t arg_rvalue_type = arg_rvalue.type;
 
-		// Всегда хотим сохранять $a0 и $a1
-		to_code_2R_I(
-			enc->sx->io,
-			IC_MIPS_ADDI,
-			R_SP,
-			R_SP,
-			-(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
-		);
-		uni_printf(enc->sx->io, "\n");
+// 		// Всегда хотим сохранять $a0 и $a1
+// 		to_code_2R_I(
+// 			enc->sx->io,
+// 			IC_MIPS_ADDI,
+// 			R_SP,
+// 			R_SP,
+// 			-(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+// 		);
+// 		uni_printf(enc->sx->io, "\n");
 
-		const lvalue a0_lval = {
-			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-			// второй на 2*WORD_LENGTH и т.д.
-			.loc.displ = 0,
-			.kind = LVALUE_KIND_STACK,
-			.type = arg_rvalue.type
-		};
-		const rvalue a0_rval = {
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num = R_A0,
-			.type = TYPE_INTEGER,
-			.from_lvalue = !FROM_LVALUE
-		};
-		emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
+// 		const lvalue a0_lval = {
+// 			.base_reg = R_SP,
+// 			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 			// второй на 2*WORD_LENGTH и т.д.
+// 			.loc.displ = 0,
+// 			.kind = LVALUE_KIND_STACK,
+// 			.type = arg_rvalue.type
+// 		};
+// 		const rvalue a0_rval = {
+// 			.kind = RVALUE_KIND_REGISTER,
+// 			.val.reg_num = R_A0,
+// 			.type = TYPE_INTEGER,
+// 			.from_lvalue = !FROM_LVALUE
+// 		};
+// 		emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-		const lvalue a1_lval = {
-			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-			// второй на 2*WORD_LENGTH и т.д.
-			.loc.displ = WORD_LENGTH,
-			.kind = LVALUE_KIND_STACK,
-			.type = arg_rvalue.type
-		};
-		const rvalue a1_rval = {
-			.kind = RVALUE_KIND_REGISTER,
-			.val.reg_num = R_A1,
-			.type = TYPE_INTEGER,
-			.from_lvalue = !FROM_LVALUE
-		};
-		emit_store_of_rvalue(enc, &a1_lval, &a1_rval);
+// 		const lvalue a1_lval = {
+// 			.base_reg = R_SP,
+// 			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 			// второй на 2*WORD_LENGTH и т.д.
+// 			.loc.displ = WORD_LENGTH,
+// 			.kind = LVALUE_KIND_STACK,
+// 			.type = arg_rvalue.type
+// 		};
+// 		const rvalue a1_rval = {
+// 			.kind = RVALUE_KIND_REGISTER,
+// 			.val.reg_num = R_A1,
+// 			.type = TYPE_INTEGER,
+// 			.from_lvalue = !FROM_LVALUE
+// 		};
+// 		emit_store_of_rvalue(enc, &a1_lval, &a1_rval);
 
-		if (!type_is_floating(arg_rvalue.type))
-		{
-			uni_printf(enc->sx->io, "\n");
-			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
+// 		if (!type_is_floating(arg_rvalue.type))
+// 		{
+// 			uni_printf(enc->sx->io, "\n");
+// 			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
-			uni_printf(enc->sx->io, "\tjal printf\n");
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\tjal printf\n");
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 			uni_printf(enc->sx->io, "\n");
 
-			free_rvalue(enc, &arg_rvalue);
+// 			free_rvalue(enc, &arg_rvalue);
 
-			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-		}
-		else
-		{
-			const lvalue a2_lval = {
-				.base_reg = R_SP,
-				// по call convention: первый на WORD_LENGTH выше предыдущего положения
-				// $fp, второй на 2*WORD_LENGTH и т.д.
-				.loc.displ = 2 * WORD_LENGTH,
-				.type = TYPE_INTEGER,
-				.kind = LVALUE_KIND_STACK
-			};
-			const rvalue a2_rval = {
-				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = R_A2,
-				.type = TYPE_INTEGER,
-				.from_lvalue = !FROM_LVALUE
-			};
-			emit_store_of_rvalue(enc, &a2_lval, &a2_rval);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 		}
+// 		else
+// 		{
+// 			const lvalue a2_lval = {
+// 				.base_reg = R_SP,
+// 				// по call convention: первый на WORD_LENGTH выше предыдущего положения
+// 				// $fp, второй на 2*WORD_LENGTH и т.д.
+// 				.loc.displ = 2 * WORD_LENGTH,
+// 				.type = TYPE_INTEGER,
+// 				.kind = LVALUE_KIND_STACK
+// 			};
+// 			const rvalue a2_rval = {
+// 				.kind = RVALUE_KIND_REGISTER,
+// 				.val.reg_num = R_A2,
+// 				.type = TYPE_INTEGER,
+// 				.from_lvalue = !FROM_LVALUE
+// 			};
+// 			emit_store_of_rvalue(enc, &a2_lval, &a2_rval);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Конвертируем single to double
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_CVT_D_S);
-			uni_printf(enc->sx->io, " ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// Конвертируем single to double
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_CVT_D_S);
+// 			uni_printf(enc->sx->io, " ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в $a0-$a3
-			// Даже для floating point!
-			// %lo из arg_rvalue в $a1
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFC_1);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A1);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в $a0-$a3
+// 			// Даже для floating point!
+// 			// %lo из arg_rvalue в $a1
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_MFC_1);
+// 			uni_printf(enc->sx->io, " ");
+// 			mips_register_to_io(enc->sx->io, R_A1);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// %hi из arg_rvalue в $a2
-			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFHC_1);
-			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A2);
-			uni_printf(enc->sx->io, ", ");
-			rvalue_to_io(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
+// 			// %hi из arg_rvalue в $a2
+// 			uni_printf(enc->sx->io, "\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_MFHC_1);
+// 			uni_printf(enc->sx->io, " ");
+// 			mips_register_to_io(enc->sx->io, R_A2);
+// 			uni_printf(enc->sx->io, ", ");
+// 			rvalue_to_io(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+// 			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
-			uni_printf(enc->sx->io, "\tjal printf\n\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-			uni_printf(enc->sx->io, "\n");
+// 			uni_printf(enc->sx->io, "\tjal printf\n\t");
+// 			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 			uni_printf(enc->sx->io, "\n");
 
-			// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
-			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 			// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
+// 			uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
-			const rvalue a2_rval_to_copy = emit_load_of_lvalue(enc, &a2_lval);
-			emit_move_rvalue_to_register(enc, R_A2, &a2_rval_to_copy);
+// 			const rvalue a2_rval_to_copy = emit_load_of_lvalue(enc, &a2_lval);
+// 			emit_move_rvalue_to_register(enc, R_A2, &a2_rval_to_copy);
 
-			free_rvalue(enc, &a2_rval);
-			free_rvalue(enc, &arg_rvalue);
-			uni_printf(enc->sx->io, "\n");
-		}
+// 			free_rvalue(enc, &a2_rval);
+// 			free_rvalue(enc, &arg_rvalue);
+// 			uni_printf(enc->sx->io, "\n");
+// 		}
 
-		const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
-		emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
+// 		const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
+// 		emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
 
-		free_rvalue(enc, &a0_rval_to_copy);
-		uni_printf(enc->sx->io, "\n");
+// 		free_rvalue(enc, &a0_rval_to_copy);
+// 		uni_printf(enc->sx->io, "\n");
 
-		const rvalue a1_rval_to_copy = emit_load_of_lvalue(enc, &a1_lval);
-		emit_move_rvalue_to_register(enc, R_A1, &a1_rval_to_copy);
+// 		const rvalue a1_rval_to_copy = emit_load_of_lvalue(enc, &a1_lval);
+// 		emit_move_rvalue_to_register(enc, R_A1, &a1_rval_to_copy);
 
-		free_rvalue(enc, &a1_rval_to_copy);
-		uni_printf(enc->sx->io, "\n");
+// 		free_rvalue(enc, &a1_rval_to_copy);
+// 		uni_printf(enc->sx->io, "\n");
 
-		to_code_2R_I(
-			enc->sx->io,
-			IC_MIPS_ADDI,
-			R_SP,
-			R_SP,
-			(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
-		);
-		uni_printf(enc->sx->io, "\n");
-	}
+// 		to_code_2R_I(
+// 			enc->sx->io,
+// 			IC_MIPS_ADDI,
+// 			R_SP,
+// 			R_SP,
+// 			(item_t)WORD_LENGTH * (!type_is_floating(arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+// 		);
+// 		uni_printf(enc->sx->io, "\n");
+// 	}
 
-	const lvalue a0_lval = {
-		.base_reg = R_SP,
-		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-		// второй на 2*WORD_LENGTH и т.д.
-		.loc.displ = 0,
-		.kind = LVALUE_KIND_STACK,
-		.type = TYPE_INTEGER
-	};
-	const rvalue a0_rval = {
-		.from_lvalue = !FROM_LVALUE,
-		.kind = RVALUE_KIND_REGISTER,
-		.val.reg_num = R_A0,
-		.type = TYPE_INTEGER
-	};
-	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
+// 	const lvalue a0_lval = {
+// 		.base_reg = R_SP,
+// 		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+// 		// второй на 2*WORD_LENGTH и т.д.
+// 		.loc.displ = 0,
+// 		.kind = LVALUE_KIND_STACK,
+// 		.type = TYPE_INTEGER
+// 	};
+// 	const rvalue a0_rval = {
+// 		.from_lvalue = !FROM_LVALUE,
+// 		.kind = RVALUE_KIND_REGISTER,
+// 		.val.reg_num = R_A0,
+// 		.type = TYPE_INTEGER
+// 	};
+// 	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
-	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
-	uni_printf(enc->sx->io, "\tjal printf\n");
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_NOP);
-	uni_printf(enc->sx->io, "\n");
+// 	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+// 	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+// 	uni_printf(enc->sx->io, "\tjal printf\n");
+// 	uni_printf(enc->sx->io, "\t");
+// 	instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+// 	uni_printf(enc->sx->io, "\n");
 
-	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-	const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
-	emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
+// 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
+// 	const rvalue a0_rval_to_copy = emit_load_of_lvalue(enc, &a0_lval);
+// 	emit_move_rvalue_to_register(enc, R_A0, &a0_rval_to_copy);
 
-	free_rvalue(enc, &a0_rval_to_copy);
+// 	free_rvalue(enc, &a0_rval_to_copy);
 
-	// FIXME: Возвращает число распечатанных символов (включая '\0'?)
-	return RVALUE_VOID;
-}
-
-/**
- *	Emit builtin function call
- *
- *	@param	enc					Encoder
- *	@param	nd					Node in AST
- *
- *	@return	Rvalue of builtin function call expression
- */
-static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
-{
-	const node callee = expression_call_get_callee(nd);
-	const size_t func_ref = expression_identifier_get_id(&callee);
-	switch (func_ref)
-	{
-		case BI_PRINTF:
-			return emit_printf_expression(enc, nd);
-
-		default:
-			return RVALUE_VOID;
-	}
-}
+// 	// FIXME: Возвращает число распечатанных символов (включая '\0'?)
+// 	return RVALUE_VOID;
+// }
 
 /**
  *	Emit call expression
@@ -2122,134 +2113,106 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	// на данный момент это не поддержано в билдере, когда будет сделано -- добавить в emit_expression()
 	// и применяем функцию emit_identifier_expression (т.к. его категория в билдере будет проставлена как rvalue)
 	const size_t func_ref = expression_identifier_get_id(&callee);
-	const size_t params_amount = expression_call_get_arguments_amount(nd);
-
+	const bool is_ptr_call = displacements_contains(enc, func_ref);
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
-	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
+	const size_t params_amount = expression_call_get_arguments_amount(nd);
 
-	if (func_ref >= BEGIN_USER_FUNC)
-	{
-		size_t f_arg_count = 0;
-		size_t arg_count = 0;
-		size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
-		lvalue prev_arg_displ[4 /* за $a0-$a3 */
+	size_t f_arg_count = 0;
+	size_t arg_count = 0;
+	size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
+	lvalue prev_arg_displ[4 /* за $a0-$a3 */
 									+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
+	size_t arg_reg_count = 0;
 
-		uni_printf(enc->sx->io, "\t# setting up $sp:\n");
-		if (displ_for_parameters)
+	if (displ_for_parameters)
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
+
+	for (size_t i = 0; i < params_amount; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		const rvalue tmp = emit_expression(enc, &arg);
+		const rvalue arg_rvalue = tmp;
+
+		const lvalue tmp_arg_lvalue = {
+			.base_reg = R_SP,
+			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+			// второй на 2*WORD_LENGTH и т.д.
+			.loc.displ = i * WORD_LENGTH,
+			.kind = LVALUE_KIND_STACK,
+			.type = arg_rvalue.type
+		};
+		const rvalue arg_saved_rvalue = {
+			.kind = RVALUE_KIND_REGISTER,
+			.val.reg_num = (type_is_floating(arg_rvalue.type)
+				? R_FA0 + f_arg_count
+				: R_A0 + arg_count),
+			.type = arg_rvalue.type,
+			.from_lvalue = !FROM_LVALUE
+		};
+
+
+		// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
+		emit_store_of_rvalue(
+			enc,
+			&tmp_arg_lvalue,
+			(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
+				? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
+				: &arg_rvalue		// Передача аргумента
+		);
+
+		// Если это передача параметров в регистры-аргументы
+		if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
 		{
-			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
-		}
-
-		uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
-
-		// TODO: структуры / массивы в параметры
-		size_t arg_reg_count = 0;
-		for (size_t i = 0; i < params_amount; i++)
-		{
-			const node arg = expression_call_get_argument(nd, i);
-			const rvalue tmp = emit_expression(enc, &arg);
-			const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
-
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				uni_printf(enc->sx->io, "\t# saving ");
-				mips_register_to_io(enc->sx->io, (type_is_floating(arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count));
-				uni_printf(enc->sx->io, " value on stack:\n");
-			}
-			else
-			{
-				uni_printf(enc->sx->io, "\t# parameter on stack:\n");
-			}
-
-			const lvalue tmp_arg_lvalue = {
-				.base_reg = R_SP,
-				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-				// второй на 2*WORD_LENGTH и т.д.
-				.loc.displ = i * WORD_LENGTH,
-				.kind = LVALUE_KIND_STACK,
-				.type = arg_rvalue.type
-			};
-
-			const rvalue arg_saved_rvalue = {
-				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = (type_is_floating(arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count),
-				.type = arg_rvalue.type,
-				.from_lvalue = !FROM_LVALUE
-			};
-			// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
-			emit_store_of_rvalue(
-				enc,
-				&tmp_arg_lvalue,
-				(type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
-					? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
-					: &arg_rvalue		// Передача аргумента
-			);
-
-			// Если это передача параметров в регистры-аргументы
-			if ((type_is_floating(arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				// Аргументы рассматриваются в данном случае как регистровые переменные
-				emit_move_rvalue_to_register(
-					enc,
-					type_is_floating(arg_rvalue.type)
-						? (R_FA0 + f_arg_count)
-						: (R_A0 + arg_count),
-					&arg_rvalue);
-
-				// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
-			}
-
-			if (type_is_floating(arg_rvalue.type))
-			{
-				f_arg_count += 2;
-			}
-			else
-			{
-				arg_count += 1;
-			}
-
-			free_rvalue(enc, &arg_rvalue);
-		}
-
-		const label label_func = { .kind = L_FUNC, .num = func_ref };
-		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
-
-		// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
-		uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-
-		size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
-		while (i + j < arg_reg_count)
-		{
-			uni_printf(enc->sx->io, "\n");
-
-			const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
+			// Аргументы рассматриваются в данном случае как регистровые переменные
 			emit_move_rvalue_to_register(
 				enc,
-				type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
-				&tmp_rval
-			);
+				type_is_floating(arg_rvalue.type)
+					? (R_FA0 + f_arg_count)
+					: (R_A0 + arg_count),
+				&arg_rvalue);
 
-			free_rvalue(enc, &tmp_rval);
+			// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
+			prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
 		}
 
-		if (displ_for_parameters)
-		{
-			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
-		}
+		if (type_is_floating(arg_rvalue.type))
+			f_arg_count += 2;
+		else
+			arg_count += 1;
 
-		uni_printf(enc->sx->io, "\n");
+		free_rvalue(enc, &arg_rvalue);
 	}
-	else
+
+	if (is_ptr_call) 
 	{
-		return emit_builtin_call(enc, nd);
+		const lvalue jump_lvalue = emit_lvalue(enc, &callee);
+		emit_register_branch(enc, IC_MIPS_JALR, jump_lvalue.loc.reg_num);
 	}
+	else 
+	{
+		const label label_func = { .kind = L_FUNC, .num = func_ref };
+		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	}
+
+	// Восстановление аргументов - они могут понадобиться в дальнейшем.
+	size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
+	while (i + j < arg_reg_count)
+	{
+		uni_printf(enc->sx->io, "\n");
+
+		const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
+		emit_move_rvalue_to_register(
+			enc,
+			type_is_floating(prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
+			&tmp_rval
+		);
+
+		free_rvalue(enc, &tmp_rval);
+	}
+
+	if (displ_for_parameters)
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
 
 	return (rvalue) {
 		.kind = RVALUE_KIND_REGISTER,
@@ -3741,42 +3704,52 @@ static int emit_translation_unit(encoder *const enc, const node *const nd)
 	return enc->sx->rprt.errors != 0;
 }
 
+static int insert_runtime_file(encoder *const enc, const char *const filename)
+{
+	FILE *file = fopen(filename, "r+");
+	if (!file)
+	{
+		char filename2[256];
+		strcat(filename2, INSTALL_PATH);
+		strcat(filename2, INSTALL_PATH);
+		file = fopen(filename2, "r+");
+	}
+
+	if (!file) 
+	{
+		system_error(no_runtime_files);
+		return -1;
+	}
+
+	char string[1024];
+	while (fgets(string, sizeof(string), file) != NULL)
+	{
+		uni_printf(enc->sx->io, "%s", string);
+	}
+
+	fclose(file);
+	return 0;
+}
+
 // В дальнейшем при необходимости сюда можно передавать флаги вывода директив
 // TODO: подписать, что значит каждая директива и команда
-static void pregen(syntax *const sx)
+static int pregen(encoder *const enc)
 {
 	// Подпись "GNU As:" для директив GNU
 	// Подпись "MIPS Assembler:" для директив ассемблера MIPS
 
-	uni_printf(sx->io, "\t.section .mdebug.abi32\n");	// ?
-	uni_printf(sx->io, "\t.previous\n");				// следующая инструкция будет перенесена в секцию, описанную выше
-	uni_printf(sx->io, "\t.nan\tlegacy\n");				// ?
-	uni_printf(sx->io, "\t.module fp=xx\n");			// ?
-	uni_printf(sx->io, "\t.module nooddspreg\n");		// ?
-	uni_printf(sx->io, "\t.abicalls\n");				// ?
-	uni_printf(sx->io, "\t.option pic0\n");				// как если бы при компиляции была включена опция "-fpic" (что означает?)
-	uni_printf(sx->io, "\t.text\n");					// последующий код будет перенесён в текстовый сегмент памяти
-	// выравнивание последующих данных / команд по границе, кратной 2^n байт (в данном случае 2^2 = 4)
-	uni_printf(sx->io, "\t.align 2\n");
-
-	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
-	uni_printf(sx->io, "\n\t.globl\tmain\n");
-	uni_printf(sx->io, "\t.ent\tmain\n");				// начало процедуры main
-	uni_printf(sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
-	uni_printf(sx->io, "main:\n");
-
-	// инициализация gp
-	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
-	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
-	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
+	if (insert_runtime_file(enc, RUNTIME_HEAD_FILENAME))
+		return -1;
 
 	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
-	uni_printf(sx->io, "\n");
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
+	to_code_R_I(enc->sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	uni_printf(enc->sx->io, "\n");
+
+	return 0;
 }
 
 // создаём метки всех строк в программе
@@ -3833,40 +3806,16 @@ static void strings_declaration(encoder *const enc)
 	emit_register_branch(enc, IC_MIPS_JR, R_RA);
 }
 
-static void postgen(encoder *const enc)
+static int postgen(encoder *const enc)
 {
 	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
 	// По этой причине вставляю только defarr
-	uni_printf(enc->sx->io, "\n\n# defarr\n\
-# объявление одномерного массива\n\
-# $a0 -- адрес первого элемента\n\
-# $a1 -- размер измерения\n\
-DEFARR1:\n\
-	sw $a1, 4($a0)			# Сохранение границы\n\
-	li $v0, 4				# Загрузка размера слова\n\
-	mul $v0, $v0, $a1		# Подсчёт размера первого измерения массива в байтах\n\
-	sub $v0, $a0, $v0		# Считаем адрес после конца массива, т.е. $v0 -- на слово ниже последнего элемента\n\
-	addi $v0, $v0, -4\n\
-	jr $ra\n\
-\n\
-# объявление многомерного массива, но сначала обязана вызываться процедура DEFARR1\n\
-# $a0 -- адрес первого элемента\n\
-# $a1 -- размер измерения\n\
-# $a2 -- адрес первого элемента предыдущего измерения\n\
-# $a3 -- размер предыдущего измерения\n\
-DEFARR2:\n\
-	sw $a0, 0($a2)			# Сохраняем адрес в элементе предыдущего измерения\n\
-	move $t0, $ra			# Запоминаем $ra, чтобы он не затёрся\n\
-	jal DEFARR1				# Выделение памяти под массив\n\
-	move $ra, $t0			# Восстанавливаем $ra\n\
-	addi $a2, $a2, -4		# В $a2 следующий элемент в предыдущем измерении\n\
-	addi $a0, $v0, -4		# В $a0 первый элемент массива в текущем измерении, плюс выделяется место под размеры\n\
-	addi $a3, $a3, -1		# Уменьшаем счётчик\n\
-	bne $a3, $0, DEFARR2	# Прыгаем, если ещё не всё выделили\n\
-	jr $ra\n");
+	if (insert_runtime_file(enc, RUNTIME_FOOT_FILENAME))
+		return -1;
 
 	uni_printf(enc->sx->io, "\n\n\t.end\tmain\n");
 	uni_printf(enc->sx->io, "\t.size\tmain, .-main\n");
+	return 0;
 }
 
 
@@ -3903,12 +3852,16 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	pregen(sx);
+	if (pregen(&enc))
+		return -1;
+
 	strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
-	postgen(&enc);
+
+	if (postgen(&enc))
+		return -1;
 
 	hash_clear(&enc.displacements);
 	return ret;

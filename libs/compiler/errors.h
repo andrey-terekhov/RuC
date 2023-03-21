@@ -156,7 +156,8 @@ typedef enum ERROR
 	wrong_init_in_actparam,
 	array_borders_cannot_be_static_dynamic,
 	such_array_is_not_supported,
-	too_many_arguments
+	too_many_arguments,
+	no_runtime_files
 } err_t;
 
 /** Warnings codes */

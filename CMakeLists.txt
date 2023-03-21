@@ -55,6 +55,9 @@ add_subdirectory(libs)
 # Add frontend
 add_subdirectory(src)
 
+# Add runtime
+add_subdirectory(runtime)
+
 
 function(get_all_targets _targets _dir)
 	get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
