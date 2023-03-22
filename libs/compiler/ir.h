@@ -83,6 +83,31 @@ typedef struct lvalue
 	lvalue_kind kind;
 } lvalue;
 
+typedef enum label_kind
+{
+	LABEL_KIND_BEGIN,
+	LABEL_KIND_THEN,
+	LABEL_KIND_ELSE,
+	LABEL_KIND_END,
+	LABEL_KIND_BEGIN_CYCLE,
+	LABEL_KIND_NEXT
+} label_kind;
+
+/**
+ *	@~english
+ *	@brief Labels are passed into code generation functions. They represent
+ *	a single assembly label.
+ *
+ *	@~russian
+ *	@brief Метки передаются в функции кодогенерации. Они соответствуют одной
+ *	ассемблерной метке.
+ */
+typedef struct label
+{
+	label_kind kind;
+	size_t id;
+} label;
+
 /**
  *	@~english
  *	@brief IR evals is a set of function pointers that are called during a tree
