@@ -34,7 +34,7 @@ extern "C"
 typedef enum rvalue_kind
 {
 	RVALUE_KIND_TEMP,
-	RVALUE_KIND_CONST
+	RVALUE_KIND_IMM
 } rvalue_kind;
 
 /**
