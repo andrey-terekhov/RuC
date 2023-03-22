@@ -130,23 +130,7 @@ typedef struct ir_evals
  *	значения, используемые в инструкциях функций. Фактически эквивалентен единице 
  *	трансляции.
  */
-typedef struct ir_module
-{
-	vector externs;
-	node externs_root;
-
-	vector globals;
-	node globals_root;
-
-	vector functions;
-	node functions_root;
-
-	vector values;
-	node values_root;
-
-	vector labels;
-	node labels_root;
-} ir_module;
+typedef struct ir_module ir_module;
 
 #define IR_MAX_TEMP_VALUES 8
 
@@ -159,30 +143,7 @@ typedef struct ir_module
  *	@brief Построитель IR дерева, что-то вроде контекста для определенного модуля,
  *	используется при построении IR дерева.
  */
-typedef struct ir_builder
-{
-	const syntax *const sx;
-
-	ir_module* module;
-
-	item_t temp_values[IR_MAX_TEMP_VALUES];
-	bool temp_used[IR_MAX_TEMP_VALUES];
-
-	hash displs;
-
-	item_t function;
-
-	item_t break_label;
-	item_t continue_label;
-	item_t function_end_label;
-
-	item_t value_zero;
-	item_t value_fzero;
-	item_t value_one;
-	item_t value_minus_one;
-	item_t value_fone;
-	item_t value_fminus_one;
-} ir_builder;
+typedef struct ir_builder ir_builder;
 
 /**
  *	@~english

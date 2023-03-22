@@ -432,6 +432,24 @@ static ir_function ir_function_load(const vector *const tree, item_t id)
 // Модули.
 //
 
+struct ir_module 
+{
+	vector externs;
+	node externs_root;
+
+	vector globals;
+	node globals_root;
+
+	vector functions;
+	node functions_root;
+
+	vector values;
+	node values_root;
+
+	vector labels;
+	node labels_root;
+};
+
 static const size_t IR_EXTERNS_SIZE = 500;
 static const size_t IR_GLOBALS_SIZE = 500;
 static const size_t IR_FUNCTIONS_SIZE = 5000;
@@ -507,6 +525,31 @@ static ir_label ir_module_get_label(const ir_module *const module, size_t index)
 //
 // IR построитель.
 //
+
+struct ir_builder 
+{
+	const syntax *const sx;
+
+	ir_module* module;
+
+	item_t temp_values[IR_MAX_TEMP_VALUES];
+	bool temp_used[IR_MAX_TEMP_VALUES];
+
+	hash displs;
+
+	item_t function;
+
+	item_t break_label;
+	item_t continue_label;
+	item_t function_end_label;
+
+	item_t value_zero;
+	item_t value_fzero;
+	item_t value_one;
+	item_t value_minus_one;
+	item_t value_fone;
+	item_t value_fminus_one;
+};
 
 static item_t ir_build_imm_int(ir_builder *const builder, const int int_);
 static item_t ir_build_imm_float(ir_builder *const builder, const float float_);
