@@ -74,7 +74,7 @@ inline unreachable(const char* msg)
 
 typedef enum ir_value_kind {
 	IR_VALUE_KIND_VOID,
-	IR_VALUE_KIND_CONST,
+	IR_VALUE_KIND_IMM,
 	IR_VALUE_KIND_TEMP,
 	IR_VALUE_KIND_LOCAL,
 	IR_VALUE_KIND_GLOBAL,
@@ -92,23 +92,23 @@ static ir_value create_ir_value(const node *const nd, const ir_value_kind kind, 
 	return value;
 }
 
-static ir_value create_ir_const_value(const node *const nd, const item_t type)
+static ir_value create_ir_imm_value(const node *const nd, const item_t type)
 {
-	return create_ir_value(nd, IR_VALUE_KIND_CONST, type);
+	return create_ir_value(nd, IR_VALUE_KIND_IMM, type);
 }
-static ir_value create_ir_const_int(const node *const nd, const int int_)
+static ir_value create_ir_imm_int(const node *const nd, const int int_)
 {
-	ir_value value = create_ir_const_value(nd, TYPE_INTEGER);
+	ir_value value = create_ir_imm_value(nd, TYPE_INTEGER);
 	node_add_arg(&value, int_);
 	return value;
 }
-static ir_value create_ir_const_float(const node *const nd, const double double_)
+static ir_value create_ir_imm_float(const node *const nd, const double double_)
 {
-	ir_value value = create_ir_const_value(nd, TYPE_FLOATING);
+	ir_value value = create_ir_imm_value(nd, TYPE_FLOATING);
 	node_add_arg(&value, double_);
 	return value;
 }
-static ir_value create_ir_const_string(const node *const nd, const char *const string)
+static ir_value create_ir_imm_string(const node *const nd, const char *const string)
 {
 	unimplemented();
 	return node_broken();
@@ -130,9 +130,9 @@ static bool ir_value_is_temp(const ir_value *const value)
 {
 	return ir_value_get_kind(value) == IR_VALUE_KIND_TEMP;
 }
-static bool ir_value_is_const(const ir_value *const value)
+static bool ir_value_is_imm(const ir_value *const value)
 {
-	return ir_value_get_kind(value) == IR_VALUE_KIND_CONST;
+	return ir_value_get_kind(value) == IR_VALUE_KIND_IMM;
 }
 
 static item_t ir_value_get_type(const ir_value *const value)
@@ -140,15 +140,15 @@ static item_t ir_value_get_type(const ir_value *const value)
 	return node_get_arg(value, 0);
 }
 
-static int ir_value_get_const_int(const ir_value *const value)
+static int ir_value_get_imm_int(const ir_value *const value)
 {
 	return node_get_arg(value, 1);
 }
-static float ir_value_get_const_float(const ir_value *const value)
+static float ir_value_get_imm_float(const ir_value *const value)
 {
 	return node_get_arg_double(value, 1);
 }
-static char* ir_value_get_const_string(const ir_value *const value)
+static char* ir_value_get_imm_string(const ir_value *const value)
 {
 	unimplemented();
 	return NULL;
@@ -508,8 +508,8 @@ static ir_label ir_module_get_label(const ir_module *const module, size_t index)
 // IR построитель.
 //
 
-static item_t ir_build_const_int(ir_builder *const builder, const int int_);
-static item_t ir_build_const_float(ir_builder *const builder, const float float_);
+static item_t ir_build_imm_int(ir_builder *const builder, const int int_);
+static item_t ir_build_imm_float(ir_builder *const builder, const float float_);
 
 ir_builder create_ir_builder(ir_module *const module, const syntax *const sx) 
 {
@@ -524,12 +524,12 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	builder.continue_label = IR_LABEL_NULL;
 	builder.function_end_label = IR_LABEL_NULL;
 
-	builder.value_zero = ir_build_const_int(&builder, 0);
-	builder.value_fzero = ir_build_const_float(&builder, 0.0);
-	builder.value_one = ir_build_const_int(&builder, 1);
-	builder.value_minus_one = ir_build_const_float(&builder, -1);
-	builder.value_fone = ir_build_const_float(&builder, 1.0);
-	builder.value_fminus_one = ir_build_const_float(&builder, -1.0);
+	builder.value_zero = ir_build_imm_int(&builder, 0);
+	builder.value_fzero = ir_build_imm_float(&builder, 0.0);
+	builder.value_one = ir_build_imm_int(&builder, 1);
+	builder.value_minus_one = ir_build_imm_float(&builder, -1);
+	builder.value_fone = ir_build_imm_float(&builder, 1.0);
+	builder.value_fminus_one = ir_build_imm_float(&builder, -1.0);
 
 	return builder;
 }
@@ -565,17 +565,17 @@ static void ir_build_global(ir_builder *const builder, const item_t id, const it
 // Построение значений.
 //
 
-static item_t ir_build_const_int(ir_builder *const builder, const int int_)
+static item_t ir_build_imm_int(ir_builder *const builder, const int int_)
 {
-	ir_value value = create_ir_const_int(&builder->module->values_root, int_);
+	ir_value value = create_ir_imm_int(&builder->module->values_root, int_);
 	return ir_value_save(&value);
 }
-static item_t ir_build_const_float(ir_builder *const builder, const float float_)
+static item_t ir_build_imm_float(ir_builder *const builder, const float float_)
 {
-	ir_value value = create_ir_const_float(&builder->module->values_root, float_);
+	ir_value value = create_ir_imm_float(&builder->module->values_root, float_);
 	return ir_value_save(&value);
 }
-static item_t ir_build_const_string(ir_builder *const builder, char* string)
+static item_t ir_build_imm_string(ir_builder *const builder, char* string)
 {
 	size_t size = strlen(string);
 	// Stub.
@@ -863,15 +863,15 @@ static void ir_dump_value(const ir_builder *const builder, const ir_value *const
 
 			break;
 		}
-		case IR_VALUE_KIND_CONST:
+		case IR_VALUE_KIND_IMM:
 		{
 			const item_t type = ir_value_get_type(value);
 			if (type_is_integer(sx, type))
-				ir_dumpf("%d", ir_value_get_const_int(value));
+				ir_dumpf("%d", ir_value_get_imm_int(value));
 			else if (type_is_floating(type))
-				ir_dumpf("%f", ir_value_get_const_float(value));
+				ir_dumpf("%f", ir_value_get_imm_float(value));
 			else
-				ir_dumpf("<? const>");
+				ir_dumpf("<? imm>");
 			break;
 		}
 		case IR_VALUE_KIND_TEMP:
@@ -1269,18 +1269,18 @@ static item_t ir_emit_literal_expression(ir_builder* const builder, const node *
 	switch (type_get_class(sx, type))
 	{
 		case TYPE_BOOLEAN:
-			return ir_build_const_int(builder, expression_literal_get_boolean(nd) ? 1 : 0);
+			return ir_build_imm_int(builder, expression_literal_get_boolean(nd) ? 1 : 0);
 		case TYPE_CHARACTER:
-			return ir_build_const_int(builder, expression_literal_get_character(nd));
+			return ir_build_imm_int(builder, expression_literal_get_character(nd));
 		case TYPE_INTEGER:
-			return ir_build_const_int(builder, expression_literal_get_integer(nd));
+			return ir_build_imm_int(builder, expression_literal_get_integer(nd));
 		case TYPE_FLOATING:
-			return ir_build_const_float(builder, expression_literal_get_floating(nd));
+			return ir_build_imm_float(builder, expression_literal_get_floating(nd));
 		case TYPE_ARRAY:
 			// TODO: Implement other array types.
 			unimplemented();
 			return IR_VALUE_VOID;
-			//return ir_build_const_string(builder, expression_literal_get_string(nd));
+			//return ir_build_imm_string(builder, expression_literal_get_string(nd));
 		default:
 			return IR_VALUE_VOID;
 	}
