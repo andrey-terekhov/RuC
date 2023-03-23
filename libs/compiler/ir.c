@@ -355,9 +355,9 @@ static ir_label create_ir_label(const node *const nd, ir_label_kind kind)
 {
 	static item_t id = 0;
 
-	ir_label label = node_add_child(nd, kind);
-	node_add_arg(&label, ++id);
-	return label;
+	ir_label label_ = node_add_child(nd, kind);
+	node_add_arg(&label_, ++id);
+	return label_;
 }
 
 static ir_label_kind ir_label_get_kind(const ir_label *const label)
@@ -654,14 +654,12 @@ static void ir_free_value(ir_builder *const builder, item_t value)
 
 static item_t ir_add_label(ir_builder *const builder, const ir_label_kind kind)
 {
-	const ir_label label = create_ir_label(&builder->module->labels_root, kind);
-	return ir_label_save(&label);
+	const ir_label label_ = create_ir_label(&builder->module->labels_root, kind);
+	return ir_label_save(&label_);
 }
 
 static ir_value ir_get_value(const ir_builder *const builder, const item_t id)
 {
-	if (id == -1)
-		return node_broken();
 	return ir_value_load(&builder->module->values, (size_t) id);
 }
 static ir_label ir_get_label(const ir_builder *const builder, const item_t id)
@@ -1091,8 +1089,8 @@ static void ir_dump_instr(const ir_builder *const builder, const ir_instr *const
 	{
 		case IR_IC_LABEL:
 		{
-			const ir_label label = ir_get_label(builder, op1);
-			ir_dump_label(builder, &label);
+			const ir_label label_ = ir_get_label(builder, op1);
+			ir_dump_label(builder, &label_);
 			ir_dumpf(":\n");
 			break;
 		}
@@ -1100,12 +1098,12 @@ static void ir_dump_instr(const ir_builder *const builder, const ir_instr *const
 		case IR_IC_JMPZ:
 		case IR_IC_JMPNZ:
 		{
-			const ir_label label = ir_get_label(builder, op1);
+			const ir_label label_ = ir_get_label(builder, op1);
 
 			ir_dumpf("\t");
 			ir_dump_ic(builder, ic);
 			ir_dumpf(" ");
-			ir_dump_label(builder, &label);
+			ir_dump_label(builder, &label_);
 
 			if (op2 != IR_VALUE_VOID)
 			{
@@ -2109,12 +2107,7 @@ typedef struct ir_context
 
 static void ir_eval_label(ir_context *const ctx, const ir_instr *const instr)
 {
-	const item_t op1 = ir_instr_get_op1(instr);
-	const char* label_string = "";
-
 	unimplemented();
-
-	ctx->evals->emit_label(ctx, label_string);
 }
 
 static void ir_eval_store(ir_context *const ctx, const ir_instr *const instr)
