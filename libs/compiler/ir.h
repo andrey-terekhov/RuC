@@ -38,6 +38,11 @@ typedef enum rvalue_kind
 } rvalue_kind;
 
 /**
+ *	@defgroup IR
+ *	@{
+ */
+
+/**
  *	@~english
  *	@brief Rvalues are passed into instruction generation functions for a specific
  *	platform. Rvalue is a value, that can be calculated, but assignment operation
@@ -207,7 +212,7 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx);
  *	@brief Dumps IR module in format of special IR language to stdout.
  *
  *	@~russian
- *	@brief Выводит модуль в формате специального IR языка в stdout.
+ *	@brief Выводит модуль в отформатированном виде в stdout.
  */
 void ir_dump(const ir_builder *const builder, const ir_module *const module);
 /**
@@ -239,6 +244,10 @@ void ir_emit_module(ir_builder *const builder, const node *const nd);
  *	функций из evals. Используется при генерации кода для конкретной архитектуры.
  */
 void ir_eval_module(const ir_module *const module, const ir_evals *const evals);
+
+/**
+ *	@}
+ */
 
 #ifdef __cplusplus
 }
