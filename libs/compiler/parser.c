@@ -818,6 +818,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 
 		case TK_CONST:
 		{
+			consume_token(prs);
 			const item_t type = parse_type_specifier(prs, parent);
 			switch(type)
 			{
