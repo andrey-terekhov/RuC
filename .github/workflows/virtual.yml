@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
       - name: Run script
         shell: bash
-        run: ./scripts/test.sh -d
+        run: ./scripts/test.sh
 
   ubuntu:
     name: Ubuntu 20.04
