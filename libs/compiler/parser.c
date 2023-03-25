@@ -116,23 +116,6 @@ static void parser_error(parser *const prs, err_t num, ...)
 }
 
 /**
- *	Emit a syntax error from parser with specified location
- *
- *	@param	prs			Parser
- *	@param	num			Error code
- *	@param	loc			Location of error
- */
-static void parser_error_specified_loc(parser *const prs, err_t num, location loc, ...)
-{
-	va_list args;
-	va_start(args, loc);
-
-	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
-
-	va_end(args);
-}
-
-/**
  *	Consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser
@@ -835,7 +818,6 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 
 		case TK_CONST:
 		{
-			const location prev_loc = consume_token(prs);
 			const item_t type = parse_type_specifier(prs, parent);
 			switch(type)
 			{
@@ -845,7 +827,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 				{
 					if (type_is_const(prs->sx, type))
 					{
-						parser_error_specified_loc(prs, multiple_const_in_type, prev_loc);
+						parser_error(prs, multiple_const_in_type);
 						return TYPE_UNDEFINED;
 					}
 					return type_const(prs->sx, type);

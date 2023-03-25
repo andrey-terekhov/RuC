@@ -447,14 +447,15 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
 
-	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
-		? type_const_get_unqualified_type(sx, expected_type)
-		: expected_type;
 	if (type_is_const(sx, expected_type) && !is_declaration)
 	{
 		semantic_error(bldr, loc, assign_to_const);
 		return false;
 	}
+
+	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
+		? type_const_get_unqualified_type(sx, expected_type)
+		: expected_type;
 
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
@@ -540,8 +541,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 			semantic_error(bldr, loc, invalid_const_pointer_cast);
 			return false;
 		}
-		if (type_is_const(sx, expected_element_type) && !type_is_const(sx, actual_element_type)
-			&& actual_element_type == type_const_get_unqualified_type(sx, expected_element_type))
+		if (type_is_const(sx, expected_element_type) && actual_element_type == type_const_get_unqualified_type(sx, expected_element_type))
 		{
 			return true;
 		}

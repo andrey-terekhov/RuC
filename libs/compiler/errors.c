@@ -227,7 +227,7 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			sprintf(msg, "нельзя присваивать значение константе");
 			break;
 		case invalid_const_pointer_cast:
-			sprintf(msg, "нельзя преобразовать указатель на коснтанту в указатель на переменную");
+			sprintf(msg, "нельзя преобразовать указатель на константу в указатель на переменную");
 			break;
 
 		// Builtin errors
