@@ -2377,11 +2377,10 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
  *
  *	@param	enc					Encoder
  *	@param	nd					Node in AST
- *	@param  is_the_value_used   Bool, that is true if value is needed to be stored on stack
  *
  *	@return	Rvalue of member expression
  */
-static rvalue emit_member_expression(encoder *const enc, const node *const nd, bool is_the_value_needed_on_stack)
+static rvalue emit_member_expression(encoder *const enc, const node *const nd, bool is_the_value_used)
 {
 	const node base = expression_member_get_base(nd);
 	const item_t base_type = expression_get_type(&base);
@@ -2414,14 +2413,14 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 									   .base_reg = R_FP,
 									   .loc.displ = base_lvalue.loc.displ + member_displ};
 
-		if (!is_the_value_needed_on_stack)
+		if (!is_the_value_used)
 		{
 			enc->scope_displ = old_displ;
 		}
 		return emit_load_of_lvalue(enc, &member_lvalue);
 	}
 
-	// Base as EXPR_MEMBER
+	// EXPR_MEMBER
 	const size_t old_displ = enc->scope_displ;
 	const rvalue base_rvalue = emit_member_expression(enc, &base, true);
 	//TODO очистить base_rvalue
@@ -2438,7 +2437,7 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 								   .base_reg = base_rvalue.val.reg_num,
 								   .loc.displ = member_displ};
 
-	if (!is_the_value_needed_on_stack)
+	if (!is_the_value_used)
 	{
 		enc->scope_displ = old_displ;
 	}
