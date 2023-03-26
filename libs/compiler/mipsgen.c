@@ -1099,18 +1099,22 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
  *
  *	@param	enc					Encoder
  *	@param	identifier			Identifier for adding to the table
- *	@param	location			Location of identifier - register, or displacement on stack
- *	@param	is_register			@c true, if identifier is register variable, and @c false otherwise
  *
  *	@return	Identifier lvalue
  */
-static lvalue displacements_add(encoder *const enc, const size_t identifier
-	, const item_t location, const bool is_register)
+static lvalue displacements_add(encoder *const enc, const size_t identifier, const bool is_register)
 {
-	const size_t displacement = enc->scope_displ;
+	// TODO: выдача сохраняемых регистров 
+	assert(is_register == false);
 	const bool is_local = ident_is_local(enc->sx, identifier);
 	const mips_register_t base_reg = is_local ? R_FP : R_GP;
 	const item_t type = ident_get_type(enc->sx, identifier);
+	if (is_local && !is_register)
+	{
+		enc->scope_displ += mips_type_size(enc->sx, type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+	}
+	const item_t location = is_local ? -(item_t)enc->scope_displ : (item_t)enc->global_displ;
 
 	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
 	{
@@ -1127,13 +1131,23 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier
 	{
 		enc->global_displ += mips_type_size(enc->sx, type);
 	}
-	else if (!is_register)
-	{
-		enc->scope_displ += mips_type_size(enc->sx, type);
-		enc->max_displ = max(enc->scope_displ, enc->max_displ);
-	}
 
-	return (lvalue) { .kind = LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
+}
+
+/**
+ *	Add identifier to displacements table with known location
+ *
+ *	@param	enc					Encoder
+ *	@param	identifier			Identifier for adding to the table
+ *	@param	value				Lvalue for adding to the table
+ */
+static void displacements_set(encoder *const enc, const size_t identifier, const lvalue *const value)
+{
+	const size_t index = hash_add(&enc->displacements, identifier, 3);
+	hash_set_by_index(&enc->displacements, index, 0, (value->kind == LVALUE_KIND_REGISTER) ? 1 : 0);
+	hash_set_by_index(&enc->displacements, index, 1, value->loc.displ);
+	hash_set_by_index(&enc->displacements, index, 2, value->base_reg);
 }
 
 /**
@@ -3069,7 +3083,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	// Сдвигаем, чтобы размер первого измерения был перед массивом
 	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	const lvalue variable = displacements_add(enc, identifier, enc->scope_displ, false);
+	const lvalue variable = displacements_add(enc, identifier, false);
 	const rvalue value = {
 		.from_lvalue = !FROM_LVALUE,
 		.kind = RVALUE_KIND_REGISTER,
@@ -3180,8 +3194,16 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 			continue;
 		}
 
-		const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
-		emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+		if (type_is_structure(enc->sx, expression_get_type(&subexpr)))
+		{
+			emit_struct_assignment(enc, &member_lvalue, &subexpr);
+		}
+		else
+		{
+			const rvalue subexpr_rvalue = emit_expression(enc, &subexpr);
+			emit_store_of_rvalue(enc, &member_lvalue, &subexpr_rvalue);
+			free_rvalue(enc, &subexpr_rvalue);
+		}
 	}
 }
 
@@ -3203,14 +3225,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	}
 	else
 	{
-		const bool is_register = false;	// Тут должно быть что-то типо ident_is_register (если не откажемся)
-		const lvalue variable = displacements_add(
-			enc,
-			identifier,
-			// что-то такое, как будет поддержано: (is_register) ? <получение регистра> : info->scope_displ,
-			enc->scope_displ,
-			is_register
-		);
+		const lvalue variable = displacements_add(enc, identifier, false);
 		if (declaration_variable_has_initializer(nd))
 		{
 			const node initializer = declaration_variable_get_initializer(nd);
@@ -3300,8 +3315,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n\t# function parameters:\n");
 
-	size_t gpr_count = 0;
-	size_t fp_count = 0;
+	size_t register_arguments_amount = 0;
+	size_t floating_register_arguments_amount = 0;
 
 	if (type_is_structure(enc->sx, return_type))
 	{
@@ -3313,42 +3328,35 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		const size_t id = declaration_function_get_parameter(nd, i);
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
-		if (!type_is_floating(ident_get_type(enc->sx, id)))
-		{
-			if (i < ARG_REG_AMOUNT)
-			{
-				// Рассматриваем их как регистровые переменные
-				const mips_register_t curr_reg = R_A0 + gpr_count++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+		const bool argument_is_float = type_is_floating(ident_get_type(enc->sx, id));
 
-				// Вносим переменную в таблицу символов
-				displacements_add(enc, id, curr_reg, true);
-			}
-			else
-			{
-				// TODO:
-				assert(false);
-			}
+		const bool argument_is_register = !argument_is_float 
+			? register_arguments_amount < ARG_REG_AMOUNT 
+			: floating_register_arguments_amount < ARG_REG_AMOUNT / 2;
+
+		if (argument_is_register)
+		{
+			// Рассматриваем их как регистровые переменные
+			const item_t type = ident_get_type(enc->sx, id);
+			const mips_register_t curr_reg = argument_is_float 
+				? R_FA0 + 2 * floating_register_arguments_amount++
+				: R_A0 + register_arguments_amount++;
+			uni_printf(enc->sx->io, "is in register ");
+			mips_register_to_io(enc->sx->io, curr_reg);
+			uni_printf(enc->sx->io, "\n");
+
+			// Вносим переменную в таблицу символов
+			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 		else
 		{
-			if (i < ARG_REG_AMOUNT / 2)
-			{
-				// Рассматриваем их как регистровые переменные
-				const mips_register_t curr_reg = R_FA0 + 2 * fp_count++;
-				uni_printf(enc->sx->io, "is in register ");
-				mips_register_to_io(enc->sx->io, curr_reg);
-				uni_printf(enc->sx->io, "\n");
+			const item_t type = ident_get_type(enc->sx, id);
+			const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
+			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
-				displacements_add(enc, id, curr_reg, true);
-			}
-			else
-			{
-				// TODO:
-				assert(false);
-			}
+			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+			displacements_set(enc, id, &value);
 		}
 	}
 
@@ -3360,16 +3368,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	char *buffer = out_extract_buffer(enc->sx->io);
 	enc->sx->io = old_io;
 
-	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
-	// $fp указывает на конец динамики (которое в данный момент равно концу статики)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
-
 	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
-	// $sp указывает на конец статики (которое в данный момент равно концу динамики)
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	// $fp указывает на конец статики (которое в данный момент равно концу динамики)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
-	// Смещаем $fp ниже конца статики (чтобы он не совпадал с $sp)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)WORD_LENGTH);
+	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
+	// $sp указывает на конец динамики (которое в данный момент равно концу статики)
+	// Смещаем $sp ниже конца статики (чтобы он не совпадал с $fp)
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
 
 	uni_printf(enc->sx->io, "%s", buffer);
 	free(buffer);
@@ -3381,8 +3387,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
 	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP,
-				(item_t)(enc->max_displ + FUNC_DISPL_PRESEREVED + WORD_LENGTH));
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n");
 
