@@ -3687,6 +3687,31 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit switch statement condition
+ *
+ *	@param	enc					Encoder
+ *	@param	condition			Condition node in AST
+ *
+ *	@return rvalue of loaded condition expression
+ */
+static rvalue emit_switch_statement_condition(encoder *const enc, const node *const condition)
+{
+	const type_t condition_type = expression_get_type(condition);
+
+	if (type_is_function(enc->sx, condition_type) && type_is_structure(enc->sx, type_function_get_return_type(enc->sx, condition_type)))
+	{
+		const lvalue function_return_value = {.kind = LVALUE_KIND_STACK, .type = type_function_get_return_type(enc->sx, condition_type),
+											   .base_reg = R_FP, .loc.displ = enc->scope_displ};
+		enc->scope_displ += mips_type_size(enc->sx, type_function_get_return_type(enc->sx, condition_type));
+		enc->max_displ = max(enc->max_displ, enc->scope_displ);
+
+		emit_struct_return_call_expression(enc, condition, &function_return_value);
+		return emit_load_of_lvalue(enc, &function_return_value);
+	}
+	return emit_expression(enc, condition);
+}
+
+/**
  *	Emit switch statement
  *
  *	@param	enc					Encoder
@@ -3700,11 +3725,15 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 	const label old_label_break = enc->label_break;
 	enc->label_break = (label){ .kind = L_END, .num = label_num };
 
+	const size_t old_displ = enc->scope_displ;
+
 	const node condition = statement_switch_get_condition(nd);
-	const rvalue tmp_condtion = emit_expression(enc, &condition);
-	const rvalue condition_rvalue = (tmp_condtion.kind == RVALUE_KIND_CONST)
-		? emit_load_of_immediate(enc, &tmp_condtion)
-		: tmp_condtion;
+
+	const rvalue tmp_condition = emit_switch_statement_condition(enc, &condition);
+
+	const rvalue condition_rvalue = (tmp_condition.kind == RVALUE_KIND_CONST)
+		? emit_load_of_immediate(enc, &tmp_condition)
+		: tmp_condition;
 
 	item_t default_index = -1;
 
@@ -3754,6 +3783,8 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 		emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
 	}
 
+	// Очищаем место занятое под condition
+	enc->scope_displ = old_displ;
 	free_rvalue(enc, &condition_rvalue);
 
 	uni_printf(enc->sx->io, "\n");
