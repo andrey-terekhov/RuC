@@ -337,6 +337,8 @@ static rvalue emit_expression(encoder *const enc, const node *const nd);
 static rvalue emit_void_expression(encoder *const enc, const node *const nd);
 static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer);
 static void emit_statement(encoder *const enc, const node *const nd);
+static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const target, const node *const value);
+static void emit_struct_return_call_expression(encoder *const enc, const node *const nd, const lvalue *const target);
 
 
 static size_t mips_type_size(const syntax *const sx, const item_t type)
@@ -2107,6 +2109,20 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Emit load of function argument
+ *
+ *	@param	enc					Encoder
+ *	@param	arg					Argument node in AST
+ *
+ *  @return Rvalue of argument expression
+ */
+static rvalue emit_function_argument(encoder *const enc, const node *const arg)
+{
+	const rvalue tmp = emit_expression(enc, arg);
+	return (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+}
+
+/**
  *	Emit load of arguments inside function call
  *
  *	@param	enc					Encoder
@@ -2134,8 +2150,7 @@ static void emit_function_arguments_loading(encoder *const enc, const node *cons
 	for (size_t i = 0; i < params_amount; i++)
 	{
 		const node arg = expression_call_get_argument(nd, i);
-		const rvalue tmp = emit_expression(enc, &arg);
-		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+		const rvalue arg_rvalue = emit_function_argument(enc, &arg);
 		const size_t supposed_reg_num = type_is_floating(arg_rvalue.type)
 											? f_arg_count
 											: does_return_structure ? (arg_count + 1): arg_count;
