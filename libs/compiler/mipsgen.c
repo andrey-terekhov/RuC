@@ -3072,7 +3072,14 @@ static rvalue emit_void_expression(encoder *const enc, const node *const nd)
 	}
 	else
 	{
+		const size_t old_displ = enc->scope_displ;
 		const rvalue result = emit_expression(enc, nd);
+
+		// Очищаем структуру созданную в emit_member_expression
+		if (expression_get_class(nd) == EXPR_MEMBER && type_is_structure(enc->sx, expression_get_type(nd)))
+		{
+			enc->scope_displ = old_displ;
+		}
 		free_rvalue(enc, &result);
 	}
 	return RVALUE_VOID;
