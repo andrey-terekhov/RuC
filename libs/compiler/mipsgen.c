@@ -3320,7 +3320,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	if (type_is_structure(enc->sx, return_type))
 	{
-		++gpr_count;
+		++register_arguments_amount;
 	}
 
 	for (size_t i = 0; i < parameters; i++)
