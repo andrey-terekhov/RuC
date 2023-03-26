@@ -2535,8 +2535,11 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	emit_conditional_branch(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
+	const rvalue result = {.kind = RVALUE_KIND_REGISTER, .val.reg_num = get_register(enc), .from_lvalue = !FROM_LVALUE, .type = expression_get_type(nd)};
+
 	const node LHS = expression_ternary_get_LHS(nd);
 	const rvalue LHS_rvalue = emit_expression(enc, &LHS);
+	emit_move_rvalue_to_register(enc, result.val.reg_num, &LHS_rvalue);
 	free_rvalue(enc, &LHS_rvalue);
 
 	const label label_end = { .kind = L_END, .num = label_num };
@@ -2545,12 +2548,12 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 
 	const node RHS = expression_ternary_get_RHS(nd);
 	const rvalue RHS_rvalue = emit_expression(enc, &RHS);
+	emit_move_rvalue_to_register(enc, result.val.reg_num, &RHS_rvalue);
+	free_rvalue(enc, &RHS_rvalue);
 
 	emit_label_declaration(enc, &label_end);
-	// FIXME:
-	assert(LHS_rvalue.val.reg_num == RHS_rvalue.val.reg_num);
 
-	return RHS_rvalue;
+	return result;
 }
 
 /**
