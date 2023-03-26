@@ -2121,7 +2121,8 @@ static rvalue emit_function_argument(encoder *const enc, const node *const arg)
 	const rvalue tmp = emit_expression(enc, arg);
 	const type_t arg_type = expression_get_type(arg);
 
-	if (type_is_structure(enc->sx, arg_type))
+	// Когда expr_member, он сам создаёт "копию"
+	if (type_is_structure(enc->sx, arg_type) && expression_get_class(arg) != EXPR_MEMBER)
 	{
 		const lvalue argument_copy = {.kind = LVALUE_KIND_STACK, .type = arg_type, .loc.displ = enc->scope_displ, .base_reg = R_FP};
 		enc->scope_displ += mips_type_size(enc->sx, arg_type);
