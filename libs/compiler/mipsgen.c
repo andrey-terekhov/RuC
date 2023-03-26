@@ -3783,7 +3783,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 		emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
 	}
 
-	// Очищаем место занятое под condition
+	// Очищаем место занятое под condition (в случае emit_member_expression и struct_return_call)
 	enc->scope_displ = old_displ;
 	free_rvalue(enc, &condition_rvalue);
 
