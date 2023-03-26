@@ -31,16 +31,16 @@ extern "C"
 {
 #endif
 
+/**
+ *	@defgroup IR
+ *	@{
+ */
+
 typedef enum rvalue_kind
 {
 	RVALUE_KIND_TEMP,
 	RVALUE_KIND_IMM
 } rvalue_kind;
-
-/**
- *	@defgroup IR
- *	@{
- */
 
 /**
  *	@~english
@@ -86,6 +86,7 @@ typedef enum lvalue_kind
 typedef struct lvalue
 {
 	lvalue_kind kind;
+	item_t id;
 } lvalue;
 
 typedef enum label_kind
@@ -113,10 +114,40 @@ typedef struct label
 	size_t id;
 } label;
 
+/** Format: instr. */
+typedef void (*ir_gen_n_instr_func)(void *const enc);
+/** Format: instr rvalue. */
+typedef void (*ir_gen_rn_instr_func)(void *const enc, const rvalue value);
+/** Format: rvalue <- instr rvalue. */
+typedef void (*ir_gen_rr_instr_func)(void *const enc, const rvalue op1, const rvalue res);
+/** Format: rvalue <- instr rvalue, rvalue. */
+typedef void (*ir_gen_rrr_instr_func)(void *const enc, const rvalue op1, const rvalue op2, const rvalue res);
+/** Format: rvalue <- instr rvalue, rvalue. */
+typedef void (*ir_gen_lr_instr_func)(void *const enc, const lvalue src, const rvalue dest);
+/** Format: rvalue <- instr rvalue, rvalue. */
+typedef void (*ir_gen_rl_instr_func)(void *const enc, const rvalue src, const lvalue dest);
+/** Format: lvalue <- instr size. */
+typedef void (*ir_gen_sl_instr_func)(void *const enc, const size_t op1, const lvalue res);
+/** Format: instr label. */
+typedef void (*ir_gen_bn_instr_func)(void *const enc, const label label_);
+/** Format: instr label, rvalue. */
+typedef void (*ir_gen_brn_instr_func)(void *const enc, const label label_, const rvalue value);
+/** Format: instr function. */
+typedef void (*ir_gen_fn_instr_func)(void *const enc, const item_t function);
+/** Format: rvalue <- instr function. */
+typedef void (*ir_gen_fr_instr_func)(void *const enc, const item_t function, const rvalue res);
+
+typedef void (*ir_gen_extern_func)(void *const enc, const item_t id, const item_t type);
+typedef void (*ir_gen_global_func)(void *const enc, const item_t id, const item_t type);
+typedef void (*ir_gen_function_func)(void *const enc, const item_t id, const item_t type);
+
+
+
+
 /**
  *	@~english
- *	@brief IR evals is a set of function pointers that are called during a tree
- *	evaluation. The function implementations are individual to each platform.
+ *	@brief IR gens is a set of function pointers that are called during the code
+ *	generation. The function implementations are individual to each platform.
  *	It is some kind of a "visitor" GoF pattern.
  *
  *	@~russian
@@ -124,30 +155,50 @@ typedef struct label
  *	дерева. Реализация функций индивидуальна для каждой платформы. Что-то вроде
  *	паттерна "посетитель".
  */
-typedef struct ir_evals
+typedef struct ir_gens
 {
-	void (*emit_const_int)(void *const ctx, int value);
-	void (*emit_const_float)(void *const ctx, float value);
-	void (*emit_const_string)(void *const ctx, char* value);
-	void (*emit_rvalue)(void *const ctx, const rvalue *const value);
-	void (*emit_lvalue)(void *const ctx, const lvalue *const value);
+	ir_gen_n_instr_func gen_nop;
 
-	void (*emit_store)(void *const ctx, const rvalue *const value, const rvalue *const dest);
-	void (*emit_load)(void *const ctx, const rvalue *const source);
-	void (*emit_alloca)(void *const ctx, size_t size);
+	ir_gen_bn_instr_func gen_label;
 
-	void (*emit_iadd)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_isub)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_imul)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_idiv)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
+	ir_gen_rl_instr_func gen_store;
+	ir_gen_lr_instr_func gen_load;
+	ir_gen_sl_instr_func gen_alloca;
 
-	void (*emit_fadd)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_fsub)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_fmul)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
-	void (*emit_fiv)(void *const ctx, const rvalue *const lhs, const rvalue *const rhs, const rvalue *const res);
+	ir_gen_rrr_instr_func gen_add;
+	ir_gen_rrr_instr_func gen_sub;
+	ir_gen_rrr_instr_func gen_mul;
+	ir_gen_rrr_instr_func gen_div;
 
-	void (*emit_label)(void *const ctx, const char* name);
-} ir_evals;
+	ir_gen_rrr_instr_func gen_mod;
+
+	ir_gen_rrr_instr_func gen_and;
+	ir_gen_rrr_instr_func gen_or;
+	ir_gen_rrr_instr_func gen_xor;
+	ir_gen_rrr_instr_func gen_shl;
+	ir_gen_rrr_instr_func gen_shr;
+
+	ir_gen_rrr_instr_func gen_fadd;
+	ir_gen_rrr_instr_func gen_fsub;
+	ir_gen_rrr_instr_func gen_fmul;
+	ir_gen_rrr_instr_func gen_fdiv;
+
+	ir_gen_rr_instr_func gen_ftoi;
+	ir_gen_rr_instr_func gen_itof;
+
+	ir_gen_rn_instr_func gen_param;
+	ir_gen_fr_instr_func gen_call;
+	ir_gen_rn_instr_func gen_ret;
+
+	ir_gen_bn_instr_func gen_jmp;
+	ir_gen_brn_instr_func gen_jmpz;
+	ir_gen_brn_instr_func gen_jmpnz;
+
+	ir_gen_extern_func gen_extern;
+	ir_gen_global_func gen_global;
+	ir_gen_function_func gen_function_begin;
+	ir_gen_function_func gen_function_end;
+} ir_gens;
 
 /**
  *	@~english
@@ -160,7 +211,23 @@ typedef struct ir_evals
  *	значения, используемые в инструкциях функций. Фактически эквивалентен единице 
  *	трансляции.
  */
-typedef struct ir_module ir_module;
+typedef struct ir_module 
+{
+	vector externs;
+	node externs_root;
+
+	vector globals;
+	node globals_root;
+
+	vector functions;
+	node functions_root;
+
+	vector values;
+	node values_root;
+
+	vector labels;
+	node labels_root;
+} ir_module;
 
 #define IR_MAX_TEMP_VALUES 8
 
@@ -173,7 +240,30 @@ typedef struct ir_module ir_module;
  *	@brief Построитель IR дерева, что-то вроде контекста для определенного модуля,
  *	используется при построении IR дерева.
  */
-typedef struct ir_builder ir_builder;
+typedef struct ir_builder 
+{
+	const syntax *const sx;
+
+	ir_module* module;
+
+	item_t temp_values[IR_MAX_TEMP_VALUES];
+	bool temp_used[IR_MAX_TEMP_VALUES];
+
+	hash displs;
+
+	item_t function;
+
+	item_t break_label;
+	item_t continue_label;
+	item_t function_end_label;
+
+	item_t value_zero;
+	item_t value_fzero;
+	item_t value_one;
+	item_t value_minus_one;
+	item_t value_fone;
+	item_t value_fminus_one;
+} ir_builder;
 
 /**
  *	@~english
@@ -194,6 +284,7 @@ typedef struct ir_context ir_context;
  *	@brief Create a new empty IR module.
  */
 ir_module create_ir_module();
+
 /**
  *	@~russian
  *	@brief Создать новый построитель IR дерева для заданного модуля, используется 
@@ -214,7 +305,7 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx);
  *	@~russian
  *	@brief Выводит модуль в отформатированном виде в stdout.
  */
-void ir_dump(const ir_builder *const builder, const ir_module *const module);
+void ir_dump(const ir_builder *const builder);
 /**
  *	@memberof ir_builder
  *
@@ -243,7 +334,7 @@ void ir_emit_module(ir_builder *const builder, const node *const nd);
  *	@brief Обходит IR модуль и генерирует платформозависимый код при помощи 
  *	функций из evals. Используется при генерации кода для конкретной архитектуры.
  */
-void ir_eval_module(const ir_module *const module, const ir_evals *const evals);
+void ir_eval_module(const ir_module *const module, const ir_gens *const gens);
 
 /**
  *	@}
