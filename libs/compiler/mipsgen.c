@@ -2531,7 +2531,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const size_t label_num = enc->label_num++;
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 
-	const mips_instruction_t instruction = IC_MIPS_BEQ;
+	const mips_instruction_t instruction = IC_MIPS_BNE;
 	emit_conditional_branch(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
