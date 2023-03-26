@@ -2389,12 +2389,12 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 /**
  *	Emit member expression
  *
- *	@param	enc					Encoder
- *	@param	nd					Node in AST
+ *	@param	enc								Encoder
+ *	@param	nd								Node in AST
  *
  *	@return	Rvalue of member expression
  */
-static rvalue emit_member_expression(encoder *const enc, const node *const nd, bool is_the_value_needed_on_stack)
+static rvalue emit_member_expression(encoder *const enc, const node *const nd)
 {
 	const node base = expression_member_get_base(nd);
 	const item_t base_type = expression_get_type(&base);
@@ -2427,7 +2427,8 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 									   .base_reg = R_FP,
 									   .loc.displ = base_lvalue.loc.displ + member_displ};
 
-		if (!is_the_value_needed_on_stack)
+		//Если не структура, то место на стеке не нужно
+		if (!type_is_structure(enc->sx, type_structure_get_member_type(enc->sx, base_type, member_index)))
 		{
 			enc->scope_displ = old_displ;
 		}
@@ -2436,9 +2437,8 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 
 	// Base as EXPR_MEMBER
 	const size_t old_displ = enc->scope_displ;
-	const rvalue base_rvalue = emit_member_expression(enc, &base,
-													  /* Нам нужно значение на стеке, т к нужно взять поле, а member может быть сложным */true);
-	//TODO очистить base_rvalue
+	const rvalue base_rvalue = emit_member_expression(enc, &base);
+
 	size_t member_displ = 0;
 	const size_t member_index = expression_member_get_member_index(nd);
 	for (size_t i = 0; i < member_index; i++)
@@ -2452,11 +2452,15 @@ static rvalue emit_member_expression(encoder *const enc, const node *const nd, b
 								   .base_reg = base_rvalue.val.reg_num,
 								   .loc.displ = member_displ};
 
-	if (!is_the_value_needed_on_stack)
+	//Если не структура, то место на стеке не нужно
+	if (!type_is_structure(enc->sx, type_structure_get_member_type(enc->sx, base_type, member_index)))
 	{
 		enc->scope_displ = old_displ;
 	}
-	return emit_load_of_lvalue(enc, &member_lvalue);
+
+	const rvalue member_rvalue = emit_load_of_lvalue(enc, &member_lvalue);
+	free_rvalue(enc, &base_rvalue);
+	return member_rvalue;
 }
 
 /**
@@ -2759,8 +2763,8 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 	else if (expression_get_class(value) == EXPR_MEMBER)
 	{
 		const size_t old_displ = enc->scope_displ;
-		const rvalue RHS_rvalue = emit_member_expression(enc, value, true);
-		//TODO очистить base_rvalue
+		const rvalue RHS_rvalue = emit_member_expression(enc, value);
+
 		const item_t type = expression_get_type(value);
 		const size_t struct_size = mips_type_size(enc->sx, type);
 		for (size_t i = 0; i < struct_size; i += WORD_LENGTH)
@@ -2786,8 +2790,9 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 			free_rvalue(enc, &proxy);
 		}
 
-		// Очистка места занятого в emit_member_expression
+		// Очистка места на стеке занятого в emit_member_expression
 		enc->scope_displ = old_displ;
+		free_rvalue(enc, &RHS_rvalue);
 	}
 	else// Присваивание другой структуры
 	{
@@ -2983,7 +2988,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 			}
 
 		case EXPR_MEMBER:
-			return emit_member_expression(enc, nd, false);
+			return emit_member_expression(enc, nd);
 
 		case EXPR_CAST:
 			return emit_cast_expression(enc, nd);
