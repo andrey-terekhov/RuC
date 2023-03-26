@@ -2307,7 +2307,7 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
 	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
 
-	// Очищаем место занятое для копий аргументов
+	// Очищаем место занятое для копий структур
 	enc->scope_displ = old_displ;
 
 	// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
@@ -2372,11 +2372,15 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
 		}
 
+		const size_t old_displ = enc->scope_displ;
 		size_t arg_reg_count = 0;
 		emit_function_arguments_loading(enc, nd, prev_arg_displ, &arg_reg_count);
 
 		const label label_func = { .kind = L_FUNC, .num = func_ref };
 		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+
+		// Очищаем место занятое для копий структур
+		enc->scope_displ = old_displ;
 
 		// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
 		uni_printf(enc->sx->io, "\n\t# data restoring:\n");
