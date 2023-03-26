@@ -2130,6 +2130,17 @@ static rvalue emit_function_argument(encoder *const enc, const node *const arg)
 		emit_struct_assignment(enc, &argument_copy, arg);
 		return emit_load_of_lvalue(enc, &argument_copy);
 	}
+
+	if (type_is_function(enc->sx, arg_type) && type_is_structure(enc->sx, type_function_get_return_type(enc->sx, arg_type)))
+	{
+		const lvalue function_return_value = {.kind = LVALUE_KIND_STACK, .type = arg_type, .loc.displ = enc->scope_displ, .base_reg = R_FP};
+		enc->scope_displ += mips_type_size(enc->sx, arg_type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+
+		emit_struct_return_call_expression(enc, arg, &function_return_value);
+		return emit_load_of_lvalue(enc, &function_return_value);
+	}
+
 	return (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 }
 
