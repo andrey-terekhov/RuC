@@ -2119,6 +2119,17 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 static rvalue emit_function_argument(encoder *const enc, const node *const arg)
 {
 	const rvalue tmp = emit_expression(enc, arg);
+	const type_t arg_type = expression_get_type(arg);
+
+	if (type_is_structure(enc->sx, arg_type))
+	{
+		const lvalue argument_copy = {.kind = LVALUE_KIND_STACK, .type = arg_type, .loc.displ = enc->scope_displ, .base_reg = R_FP};
+		enc->scope_displ += mips_type_size(enc->sx, arg_type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+
+		emit_struct_assignment(enc, &argument_copy, arg);
+		return emit_load_of_lvalue(enc, &argument_copy);
+	}
 	return (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 }
 
@@ -2289,11 +2300,15 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 	);
 	prev_arg_displ[0] = tmp_r_a0_lvalue;
 
+	const size_t old_displ = enc->scope_displ;
 	size_t arg_reg_count = 0;
 	emit_function_arguments_loading(enc, nd, prev_arg_displ, &arg_reg_count);
 
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
 	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+
+	// Очищаем место занятое для копий аргументов
+	enc->scope_displ = old_displ;
 
 	// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
