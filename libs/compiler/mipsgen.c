@@ -3401,6 +3401,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
 		const bool argument_is_float = type_is_floating(ident_get_type(enc->sx, id));
+		const bool argument_is_address = type_is_structure(enc->sx, ident_get_type(enc->sx, id);
 
 		const bool argument_is_register = !argument_is_float 
 			? register_arguments_amount < ARG_REG_AMOUNT 
@@ -3413,22 +3414,41 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			const mips_register_t curr_reg = argument_is_float 
 				? R_FA0 + 2 * floating_register_arguments_amount++
 				: R_A0 + register_arguments_amount++;
-			uni_printf(enc->sx->io, "is in register ");
+			if (argument_is_address)
+			{
+				uni_printf(enc->sx->io, "address is in register ");
+			}
+			else
+			{
+				uni_printf(enc->sx->io, "is in register ");
+			}
 			mips_register_to_io(enc->sx->io, curr_reg);
 			uni_printf(enc->sx->io, "\n");
 
 			// Вносим переменную в таблицу символов
 			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			displacements_set(enc, id, &value,
+							  /* Так как адрес лежит в регистре можем взять сам lvalue */ false);
 		}
 		else
 		{
 			const item_t type = ident_get_type(enc->sx, id);
 			const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH + displacement_for_return_address;
-			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
-
-			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			if (argument_is_address)
+			{
+				uni_printf(enc->sx->io, "address is on stack at offset %zu from $fp\n", displ);
+				const lvalue address_value = {.kind = LVALUE_KIND_STACK, .type = TYPE_INTEGER, .loc.displ = displ, .base_reg = R_FP };
+				displacements_set(enc, id, &address_value,
+								  /* На стеке передаётся адрес аргумента
+								   * Не можем передать сам lvalue идентификатора т к для этого нужно загружать адрес на регистр */true);
+			}
+			else
+			{
+				uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
+				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
+				displacements_set(enc, id, &value,
+								  /* На стек передаётся само значение типа */false);
+			}
 		}
 	}
 
