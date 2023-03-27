@@ -2142,7 +2142,6 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
  */
 static rvalue emit_function_argument(encoder *const enc, const node *const arg)
 {
-	const rvalue tmp = emit_expression(enc, arg);
 	const type_t arg_type = expression_get_type(arg);
 
 	if (type_is_structure(enc->sx, arg_type))
@@ -2151,9 +2150,10 @@ static rvalue emit_function_argument(encoder *const enc, const node *const arg)
 		enc->scope_displ += mips_type_size(enc->sx, arg_type);
 		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 
-		emit_struct_assignment(enc, &argument_copy, arg);
-		return emit_load_of_lvalue(enc, &argument_copy);
+		return emit_struct_assignment(enc, &argument_copy, arg);
 	}
+
+	const rvalue tmp = emit_expression(enc, arg);
 	return (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
 }
 
@@ -3446,9 +3446,18 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\n");
 
 			// Вносим переменную в таблицу символов
-			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-			displacements_set(enc, id, &value,
-							  /* Так как адрес лежит в регистре можем взять сам lvalue */ false);
+			if (argument_is_address)
+			{
+				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = 0, .base_reg = curr_reg };
+				displacements_set(enc, id, &value,
+								  /* В регистре лежит адрес аргумента, значит можем взять lvalue самого аргумента */ false);
+			}
+			else
+			{
+				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+				displacements_set(enc, id, &value,
+								  /* В регистре лежит само значение аргумента */ false);
+			}
 		}
 		else
 		{
