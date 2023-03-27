@@ -1891,6 +1891,10 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				arg_func = 1;
 				type = type_pointer(prs->sx, type);
+				if (try_consume_token(prs, TK_CONST))
+				{
+					type = type_const(prs->sx, type);
+				}
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
