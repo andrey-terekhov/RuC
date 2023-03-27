@@ -3421,7 +3421,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		uni_printf(enc->sx->io, "\t# parameter \"%s\" ", ident_get_spelling(enc->sx, id));
 
 		const bool argument_is_float = type_is_floating(ident_get_type(enc->sx, id));
-		const bool argument_is_address = type_is_structure(enc->sx, ident_get_type(enc->sx, id));
+		const bool argument_is_address = type_is_structure(enc->sx, ident_get_type(enc->sx, id))
+										 || type_is_array(enc->sx, ident_get_type(enc->sx, id));
 
 		const bool argument_is_register = !argument_is_float 
 			? register_arguments_amount < ARG_REG_AMOUNT 
