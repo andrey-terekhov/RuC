@@ -2832,6 +2832,11 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 
 			free_rvalue(enc, &proxy);
 		}
+
+		if (is_identifier_has_address_loaded(enc, expression_identifier_get_id(value)))
+		{
+			free_register(enc, RHS_lvalue.base_reg);
+		}
 	}
 
 	return emit_load_of_lvalue(enc, target);
