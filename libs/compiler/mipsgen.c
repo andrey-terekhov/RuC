@@ -1355,7 +1355,7 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 		};
 	}
 
-	if (type_is_structure(enc->sx, lval->type))
+	if (type_is_structure(enc->sx, lval->type) || type_is_array(enc->sx, lval->type))
 	{
 		// Грузим адрес первого элемента на регистр
 		const rvalue tmp = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
