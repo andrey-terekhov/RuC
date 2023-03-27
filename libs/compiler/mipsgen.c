@@ -3456,9 +3456,18 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\n");
 
 			// Вносим переменную в таблицу символов
-			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-			displacements_set(enc, id, &value,
-							  /* Так как адрес лежит в регистре можем взять сам lvalue */ false);
+			if (argument_is_address)
+			{
+				const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = 0, .base_reg = curr_reg };
+				displacements_set(enc, id, &value,
+								  /* В регистре лежит адрес аргумента, значит можем взять lvalue самого аргумента */ false);
+			}
+			else
+			{
+				const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
+				displacements_set(enc, id, &value,
+								  /* В регистре лежит само значение аргумента */ false);
+			}
 		}
 		else
 		{
