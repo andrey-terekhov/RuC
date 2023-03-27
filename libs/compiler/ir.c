@@ -121,6 +121,20 @@ static ir_value create_ir_temp_value(const node *const nd, const item_t type, co
 	return value;
 }
 
+static ir_value create_ir_local_value(const node *const nd, const item_t type, const size_t displ)
+{
+	ir_value value = create_ir_value(nd, IR_VALUE_KIND_LOCAL, type);
+	node_add_arg(&value, displ);
+	return value;
+}
+
+static ir_value create_ir_param_value(const node *const nd, const item_t type, const size_t num)
+{
+	ir_value value = create_ir_value(nd, IR_VALUE_KIND_PARAM, type);
+	node_add_arg(&value, num);
+	return value;
+}
+
 static ir_value_kind ir_value_get_kind(const ir_value *const value)
 {
 	return node_get_type(value);
@@ -140,21 +154,31 @@ static item_t ir_value_get_type(const ir_value *const value)
 	return node_get_arg(value, 0);
 }
 
-static int ir_value_get_imm_int(const ir_value *const value)
+static int ir_imm_value_get_int(const ir_value *const value)
 {
 	return node_get_arg(value, 1);
 }
-static float ir_value_get_imm_float(const ir_value *const value)
+static float ir_imm_value_get_float(const ir_value *const value)
 {
 	return node_get_arg_double(value, 1);
 }
-static char* ir_value_get_imm_string(const ir_value *const value)
+static char* ir_imm_value_get_string(const ir_value *const value)
 {
 	unimplemented();
 	return NULL;
 }
 
-static item_t ir_value_get_temp_id(const ir_value *const value)
+static item_t ir_temp_value_get_id(const ir_value *const value)
+{
+	return node_get_arg(value, 1);
+}
+
+static item_t ir_local_value_get_dipsl(const ir_value *const value)
+{
+	return node_get_arg(value, 1);
+}
+
+static size_t ir_param_value_get_num(const ir_value *const value)
 {
 	return node_get_arg(value, 1);
 }
@@ -529,6 +553,7 @@ static const size_t IR_EXTERNS_SIZE = 500;
 static const size_t IR_GLOBALS_SIZE = 500;
 static const size_t IR_FUNCTIONS_SIZE = 5000;
 static const size_t IR_VALUES_SIZE = 1000;
+static const size_t IR_IDENTS_SIZE = 1000;
 
 ir_module create_ir_module()
 {
@@ -549,6 +574,8 @@ ir_module create_ir_module()
 	module.labels = vector_create(IR_VALUES_SIZE);
 	module.labels_root = node_get_root(&module.labels);
 
+	module.idents = hash_create(IR_IDENTS_SIZE);
+
 	return module;
 }
 
@@ -558,7 +585,7 @@ static size_t ir_module_get_extern_count(const ir_module *const module)
 }
 static ir_extern ir_module_index_extern(const ir_module *const module, size_t idx)
 {
-	return node_get_child(&module->externs_root, index);
+	return node_get_child(&module->externs_root, idx);
 }
 
 static size_t ir_module_get_global_count(const ir_module *const module)
@@ -609,6 +636,16 @@ static ir_label ir_module_get_label(const ir_module *const module, const item_t 
 	return ir_label_load(&module->labels, id);
 }
 
+static void ir_idents_add(ir_module *const module, const item_t id, const item_t value)
+{
+	const item_t idx = hash_add(&module->idents, id, 1);
+	hash_set_by_index(&module->idents, idx, 0, value);
+}
+static item_t ir_idents_get(const ir_module *const module, const item_t id)
+{
+	return hash_get(&module->idents, id, 0);
+}
+
 //
 // IR построитель.
 //
@@ -622,6 +659,8 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	ir_builder builder = (ir_builder) {
 		.sx = sx
 	};
+
+	builder.displ = 0;
 
 	builder.module = module;
 
@@ -639,16 +678,19 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	return builder;
 }
 
-static item_t ir_displs_add(ir_builder *const builder, const size_t id, const item_t location)
+static void ir_displ_add(ir_builder *const builder, item_t type)
 {
-	unimplemented();
-	return IR_VALUE_VOID;
+	const syntax *const sx = builder->sx;
+	builder->displ += type_size(sx, type);
 }
 
-static item_t ir_displs_get(ir_module *const module, const size_t identifier)
+static void ir_displ_reset(ir_builder *const builder)
 {
-	unimplemented();
-	return IR_VALUE_VOID;
+	builder->displ = 0;
+}
+static size_t ir_displ_get(ir_builder *const builder)
+{
+	return builder->displ;
 }
 
 
@@ -705,13 +747,21 @@ static item_t ir_build_temp(ir_builder *const builder, const item_t type)
 
 	return value_id;
 }
+static item_t ir_build_local(ir_builder *const builder, const item_t type)
+{
+	const syntax *const sx = builder->sx;
+	const ir_value value = create_ir_local_value(&builder->module->values_root, type, ir_displ_get(builder));
+	ir_displ_add(builder, type);
+
+	return ir_value_save(&value);
+}
 static void ir_free_value(ir_builder *const builder, item_t value)
 {
 	const ir_value temp = ir_value_load(&builder->module->values, value);
 	if (!ir_value_is_temp(&temp))
 		return;
 
-	builder->temp_used[ir_value_get_temp_id(&temp)] = false;
+	builder->temp_used[ir_temp_value_get_id(&temp)] = false;
 }
 
 static item_t ir_add_label(ir_builder *const builder, const ir_label_kind kind)
@@ -773,10 +823,8 @@ static item_t ir_build_alloca(ir_builder *const builder, const item_t type)
 {
 	const syntax *const sx = builder->sx;
 
-	const item_t res = ir_build_temp(builder, TYPE_INTEGER);
+	const item_t res = ir_build_local(builder, type);
 	ir_build_instr(builder, IR_IC_ALLOCA, type_size(sx, type) * 4, IR_VALUE_VOID, res);
-
-	ir_add_displ(builder, type_size(sx, type));
 
 	return res;
 }
@@ -970,16 +1018,16 @@ static void ir_dump_value(const ir_builder *const builder, const ir_value *const
 		{
 			const item_t type = ir_value_get_type(value);
 			if (type_is_integer(sx, type))
-				ir_dumpf("%d", ir_value_get_imm_int(value));
+				ir_dumpf("%d", ir_imm_value_get_int(value));
 			else if (type_is_floating(type))
-				ir_dumpf("%f", ir_value_get_imm_float(value));
+				ir_dumpf("%f", ir_imm_value_get_float(value));
 			else
 				ir_dumpf("<? imm>");
 			break;
 		}
 		case IR_VALUE_KIND_TEMP:
 		{
-			const item_t id = ir_value_get_temp_id(value);
+			const item_t id = ir_temp_value_get_id(value);
 			ir_dumpf("%%%" PRIitem, id);
 			break;
 		}
@@ -990,7 +1038,7 @@ static void ir_dump_value(const ir_builder *const builder, const ir_value *const
 		}
 		case IR_VALUE_KIND_LOCAL:
 		{
-			unimplemented();
+			ir_dumpf("(%d)", ir_local_value_get_dipsl(value));
 			break;
 		}
 		default:
@@ -1430,11 +1478,7 @@ static item_t ir_emit_identifier_lvalue(ir_builder* const builder, const node *c
 	const ir_module *const module = builder->module;
 	const item_t id = expression_identifier_get_id(nd);
 
-	unimplemented();
-
-	return IR_VALUE_VOID;
-
-	//return ir_idents_get(module, id);
+	return ir_idents_get(module, id);
 }
 
 static item_t ir_emit_subscript_lvalue(ir_builder* const builder, const node *const nd)
@@ -1975,15 +2019,13 @@ static void ir_emit_variable_declaration(ir_builder *const builder, const node *
 
 	const item_t var_ptr_value = ir_build_alloca(builder, type);
 
-	/*ir_idents_add(
+	ir_idents_add(
 		module,
 		identifier,
 		var_ptr_value
-	);*/
+	);
 
-	unimplemented();
-
-	if (declaration_variable_has_initializer(nd))
+	/*if (declaration_variable_has_initializer(nd))
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
 
@@ -1999,7 +2041,7 @@ static void ir_emit_variable_declaration(ir_builder *const builder, const node *
 		ir_build_store(builder, value, var_ptr_value);
 		ir_free_value(builder, value);
 		// }
-	}
+	}*/
 }
 
 static void ir_emit_function_definition(ir_builder *const builder, const node *const nd)
@@ -2014,6 +2056,8 @@ static void ir_emit_function_definition(ir_builder *const builder, const node *c
 	ir_build_function_definition(builder, id, func_type);
 
 	node body = declaration_function_get_body(nd);
+
+	ir_displ_reset(builder);
 	ir_emit_statement(builder, &body);
 
 	// ir_build_ret(builder, IR_VALUE_VOID);
@@ -2722,6 +2766,12 @@ static void ir_gen_instr(ir_context *const ctx, const ir_instr *const instr)
 }
 static void ir_gen_extern(ir_context *const ctx, const ir_extern *const extern_)
 {
+	const ir_gens *const gens = ctx->gens;
+	const void *const enc = ctx->enc;
+
+	const item_t id = ir_extern_get_id(extern_);
+	const item_t type = ir_extern_get_type(extern_);
+
 
 }
 static void ir_gen_global(ir_context *const ctx, const ir_global *const global)

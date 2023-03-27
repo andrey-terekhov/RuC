@@ -227,6 +227,8 @@ typedef struct ir_module
 
 	vector labels;
 	node labels_root;
+
+	hash idents;
 } ir_module;
 
 #define IR_MAX_TEMP_VALUES 8
@@ -249,7 +251,7 @@ typedef struct ir_builder
 	item_t temp_values[IR_MAX_TEMP_VALUES];
 	bool temp_used[IR_MAX_TEMP_VALUES];
 
-	hash displs;
+	size_t displ;
 
 	item_t function;
 
