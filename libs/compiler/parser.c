@@ -906,7 +906,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
  *	Parse member declaration
  *
  *	member-declaration:
- *		type-specifier member-declarator `;`
+ *		type-qualifiers type-specifier member-declarator `;`
  *
  *	member-declarator:
  *		`*`[opt] identifier
@@ -1252,7 +1252,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
  *	Parse declaration
  *
  *	declaration:
- *		type-specifier init-declarator-list[opt] `;`
+ *		type-qualifiers type-specifier init-declarator-list[opt] `;`
  *
  *	init-declarator-list:
  *		init-declarator
