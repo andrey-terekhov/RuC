@@ -457,9 +457,9 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		return false;
 	}
 
-	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
-		? type_const_get_unqualified_type(sx, expected_type)
-		: expected_type;
+	const item_t expected_type_unqualified = type_is_const(sx, expected_type_element) 
+		? type_const_get_unqualified_type(sx, expected_type_element)
+		: expected_type_element;
 
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
@@ -515,6 +515,13 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	const item_t actual_type = type_is_const(sx, expr_type_element) 
 		? type_const_get_unqualified_type(sx, expr_type_element) 
 		: expr_type_element;
+
+	if (is_declaration && type_is_reference(sx, expected_type) && !(expression_is_lvalue(init)))
+	{
+		semantic_error(bldr, loc, -1);
+		return false;
+	}
+
 	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
 	{
 		*init = build_cast_expression(expected_type_unqualified, init);

@@ -1886,7 +1886,8 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			int arg_func = 0;	/**< Тип возврата функции-параметра:
 									 @c 0 - обычный тип,
 									 @c 1 - была `*`,
-									 @c 2 - была `[` */
+									 @c 2 - была `[` 
+									 @c 3 - была `&` */
 			item_t type = parse_type_specifier(prs, NULL);
 
 			if (try_consume_token(prs, TK_STAR))
@@ -1897,6 +1898,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				{
 					type = type_const(prs->sx, type);
 				}
+			}
+			else if (try_consume_token(prs, TK_AMP))
+			{
+				arg_func = 3;
+				type = type_reference(prs->sx, type);
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
@@ -1980,6 +1986,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				else if (arg_func == 2)
 				{
 					parser_error(prs, array_before_func);
+					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+				}
+				else if (arg_func == 3)
+				{
+					parser_error(prs, amp_before_func); 
 					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 				}
 

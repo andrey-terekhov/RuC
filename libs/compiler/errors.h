@@ -150,6 +150,7 @@ typedef enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
+	amp_before_func,
 
 	empty_bound_without_init,
 

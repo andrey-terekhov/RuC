@@ -419,6 +419,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case empty_enum:
 			sprintf(msg, "перечисление должно иметь поля");
 			break;
+		case amp_before_func:
+			sprintf(msg, "& перед описанием функции");
+			break;
 
 		// Tree testing errors
 		case node_unexpected:
