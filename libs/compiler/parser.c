@@ -2112,6 +2112,11 @@ static void parse_function_definition(parser *const prs, node *const parent, con
  */
 static void parse_function_declaration(parser *const prs, node *const parent, const item_t type)
 {
+	if (type_is_const(prs->sx, type))
+	{
+		parser_error(prs, function_type_const);
+	}
+
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = token_get_ident_name(&prs->tk);
 

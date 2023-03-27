@@ -229,6 +229,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case invalid_const_pointer_cast:
 			sprintf(msg, "нельзя преобразовать указатель на константу в указатель на переменную");
 			break;
+		case function_type_const:
+			sprintf(msg, "тип функции не может быть константой");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:
