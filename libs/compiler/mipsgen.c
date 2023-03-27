@@ -2180,7 +2180,7 @@ static void emit_function_arguments_loading(encoder *const enc, const node *cons
 
 	size_t f_arg_count = 0;
 	size_t arg_count = 0;
-	// TODO: структуры / массивы в параметры
+	// TODO: массивы в параметры
 	// TODO: вызовы как аргументы
 	for (size_t i = 0; i < params_amount; i++)
 	{
@@ -2662,6 +2662,11 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 				operand_lvalue.base_reg,
 				operand_lvalue.loc.displ
 			);
+
+			if (expression_get_class(&operand) == EXPR_IDENTIFIER && is_identifier_has_address_loaded(enc, expression_identifier_get_id(&operand)))
+			{
+				free_register(enc, operand_lvalue.base_reg);
+			}
 			return result_rvalue;
 		}
 
@@ -2800,8 +2805,7 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 	else// Присваивание другой структуры
 	{
 		// FIXME: массив структур
-		const size_t RHS_identifier = expression_identifier_get_id(value);
-		const lvalue RHS_lvalue = displacements_get(enc, RHS_identifier);
+		const lvalue RHS_lvalue = emit_identifier_lvalue(enc, value);
 
 		// Копирование всех данных из RHS
 		const item_t type = expression_get_type(value);
@@ -2850,7 +2854,12 @@ static rvalue emit_assignment_expression(encoder *const enc, const node *const n
 	const item_t RHS_type = expression_get_type(&RHS);
 	if (type_is_structure(enc->sx, RHS_type))
 	{
-		return emit_struct_assignment(enc, &target, &RHS);
+		const rvalue assignment_result = emit_struct_assignment(enc, &target, &RHS);
+		if (expression_get_class(&LHS) == EXPR_IDENTIFIER && is_identifier_has_address_loaded(enc, expression_identifier_get_id(&LHS)))
+		{
+			free_register(enc, target.base_reg);
+		}
+		return assignment_result;
 	}
 
 	const rvalue value = emit_expression(enc, &RHS);
@@ -2951,7 +2960,14 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 	if (expression_is_lvalue(nd))
 	{
 		const lvalue lval = emit_lvalue(enc, nd);
-		return emit_load_of_lvalue(enc, &lval);
+		const rvalue loaded_lvalue = emit_load_of_lvalue(enc, &lval);
+
+		if (expression_get_class(nd) == EXPR_IDENTIFIER && is_identifier_has_address_loaded(enc, expression_identifier_get_id(nd)))
+		{
+			free_register(enc, lval.base_reg);
+		}
+
+		return loaded_lvalue;
 	}
 
 	// Иначе rvalue:
@@ -3009,7 +3025,11 @@ static rvalue emit_void_expression(encoder *const enc, const node *const nd)
 {
 	if (expression_is_lvalue(nd))
 	{
-		emit_lvalue(enc, nd);	// Либо регистровая переменная, либо на стеке => ничего освобождать не надо
+		const lvalue lvalue = emit_lvalue(enc, nd);	// Либо регистровая переменная, либо на стеке => нужно освобождать только если адрес был загружен в регистр
+		if (expression_get_class(nd) == EXPR_IDENTIFIER && is_identifier_has_address_loaded(enc, expression_identifier_get_id(nd)))
+		{
+			free_register(enc, lvalue.base_reg);
+		}
 	}
 	else
 	{
