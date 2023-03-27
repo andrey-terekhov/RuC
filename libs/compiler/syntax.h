@@ -573,12 +573,12 @@ bool type_is_undefined(const item_t type);
 bool type_is_file(const syntax *const sx, const item_t type);
 
 /**
- *	Get element type
+ *	Get unqualified type
  *
  *	@param	sx			Syntax structure
  *	@param	type		Const type
  *
- *	@return	Element type, @c ITEM_MAX on failure
+ *	@return	Unqualified type, @c ITEM_MAX on failure
  */
 item_t type_const_get_unqualified_type(const syntax *const sx, const item_t type);
 

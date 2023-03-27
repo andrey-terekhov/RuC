@@ -116,23 +116,6 @@ static void parser_error(parser *const prs, err_t num, ...)
 }
 
 /**
- *	Emit a syntax error from parser with specified location
- *
- *	@param	prs			Parser
- *	@param	num			Error code
- *	@param	loc			Location of error
- */
-static void parser_error_specified_loc(parser *const prs, err_t num, location loc, ...)
-{
-	va_list args;
-	va_start(args, loc);
-
-	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
-
-	va_end(args);
-}
-
-/**
  *	Consume the current 'peek token' and lex the next one
  *
  *	@param	prs			Parser
@@ -835,7 +818,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 
 		case TK_CONST:
 		{
-			const location prev_loc = consume_token(prs);
+			consume_token(prs);
 			const item_t type = parse_type_specifier(prs, parent);
 			switch(type)
 			{
@@ -845,7 +828,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 				{
 					if (type_is_const(prs->sx, type))
 					{
-						parser_error_specified_loc(prs, multiple_const_in_type, prev_loc);
+						parser_error(prs, multiple_const_in_type);
 						return TYPE_UNDEFINED;
 					}
 					return type_const(prs->sx, type);
@@ -923,7 +906,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
  *	Parse member declaration
  *
  *	member-declaration:
- *		type-specifier member-declarator `;`
+ *		type-qualifiers type-specifier member-declarator `;`
  *
  *	member-declarator:
  *		`*`[opt] identifier
@@ -1271,7 +1254,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
  *	Parse declaration
  *
  *	declaration:
- *		type-specifier init-declarator-list[opt] `;`
+ *		type-qualifiers type-specifier init-declarator-list[opt] `;`
  *
  *	init-declarator-list:
  *		init-declarator
@@ -1910,6 +1893,10 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				arg_func = 1;
 				type = type_pointer(prs->sx, type);
+				if (try_consume_token(prs, TK_CONST))
+				{
+					type = type_const(prs->sx, type);
+				}
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
@@ -2127,6 +2114,11 @@ static void parse_function_definition(parser *const prs, node *const parent, con
  */
 static void parse_function_declaration(parser *const prs, node *const parent, const item_t type)
 {
+	if (type_is_const(prs->sx, type))
+	{
+		parser_error(prs, function_type_const);
+	}
+
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = token_get_ident_name(&prs->tk);
 
