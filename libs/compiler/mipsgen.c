@@ -3964,7 +3964,8 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 				.loc.displ = 0
 			};
 
-			emit_struct_assignment(enc, &target, &expression);
+			const rvalue tmp = emit_struct_assignment(enc, &target, &expression);
+			free_rvalue(enc, &tmp);
 		}
 		else
 		{
