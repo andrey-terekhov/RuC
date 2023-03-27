@@ -2131,7 +2131,7 @@ static rvalue emit_function_argument(encoder *const enc, const node *const arg)
  *	@param	arg_reg_count	 Pointer to the number of stored argument registers
  *
  */
-static void emit_function_arguments_loading(encoder *const enc, const node *const nd, lvalue prev_arg_displ[], size_t *const arg_reg_count)
+static void emit_function_arguments_loading(encoder *const enc, const node *const nd, lvalue prev_arg_displ[6], size_t *const arg_reg_count)
 {
 	const node callee = expression_call_get_callee(nd);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
@@ -2322,14 +2322,14 @@ static void emit_struct_return_call_expression(encoder *const enc, const node *c
 }
 
 /**
- *	Emit call expression
+ *	Emit call expression which return simple type(int, bool, array ...)
  *
  *	@param	enc					Encoder
  *	@param	nd					Node in AST
  *
  *	@return	Rvalue of the result of call expression
  */
-static rvalue emit_call_expression(encoder *const enc, const node *const nd)
+static rvalue emit_simple_type_return_call_expression(encoder *const enc, const node *const nd)
 {
 	const node callee = expression_call_get_callee(nd);
 	// Конвертируем в указатель на функцию
@@ -2399,6 +2399,46 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		.val.reg_num = type_is_floating(return_type) ? R_FV0 : R_V0,
 		.from_lvalue = !FROM_LVALUE
 	};
+}
+
+/**
+ *	Emit call expression
+ *
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
+ *
+ *	@return	Rvalue of the result of call expression
+ */
+static rvalue emit_call_expression(encoder *const enc, const node *const nd)
+{
+	if (type_is_structure(enc->sx, expression_get_type(nd)))
+	{
+		const item_t type = expression_get_type(nd);
+		const size_t old_displ = enc->scope_displ;
+		const lvalue target = {
+			.kind = LVALUE_KIND_STACK,
+			.type = type,
+			.base_reg = R_FP,
+			.loc.displ = old_displ
+		};
+
+		enc->scope_displ += mips_type_size(enc->sx, type);
+		enc->max_displ = max(enc->scope_displ, enc->max_displ);
+
+		emit_struct_return_call_expression(enc, nd, &target);
+		enc->scope_displ = old_displ;
+
+		return (rvalue) {
+			.kind = RVALUE_KIND_REGISTER,
+			.type = TYPE_INTEGER,
+			.val.reg_num = R_A0,
+			.from_lvalue = !FROM_LVALUE
+		};
+	}
+	else
+	{
+		return emit_simple_type_return_call_expression(enc, nd);
+	}
 }
 
 /**
@@ -2878,34 +2918,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 			return emit_literal_expression(enc, nd);
 
 		case EXPR_CALL:
-			if (type_is_structure(enc->sx, expression_get_type(nd)))
-			{
-				const item_t type = expression_get_type(nd);
-				const size_t old_displ = enc->scope_displ;
-				const lvalue target = {
-					.kind = LVALUE_KIND_STACK,
-					.type = type,
-					.base_reg = R_FP,
-					.loc.displ = old_displ
-				};
-
-				enc->scope_displ += mips_type_size(enc->sx, type);
-				enc->max_displ = max(enc->scope_displ, enc->max_displ);
-
-				emit_struct_return_call_expression(enc, nd, &target);
-				enc->scope_displ = old_displ;
-
-				return (rvalue) {
-					.kind = RVALUE_KIND_REGISTER,
-					.type = TYPE_INTEGER,
-					.val.reg_num = R_A0,
-					.from_lvalue = !FROM_LVALUE
-				};
-			}
-			else
-			{
-				return emit_call_expression(enc, nd);
-			}
+			return emit_call_expression(enc, nd);
 
 		case EXPR_MEMBER:
 			return emit_member_expression(enc, nd);
