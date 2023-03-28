@@ -3208,7 +3208,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 			// Вносим переменную в таблицу символов
 			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			displacements_set(enc, id, &value, /* Т к не рассматриваются адресные типы */ false);
 		}
 		else
 		{
@@ -3217,7 +3217,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
 			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			displacements_set(enc, id, &value, /* Т к не рассматриваются адресные типы */ false);
 		}
 	}
 
