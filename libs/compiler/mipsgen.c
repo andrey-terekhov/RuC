@@ -1355,11 +1355,16 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 		};
 	}
 
-	if (type_is_structure(enc->sx, lval->type))
+	if (type_is_structure(enc->sx, lval->type) || type_is_array(enc->sx, lval->type))
 	{
 		// Грузим адрес первого элемента на регистр
-		const rvalue addr_rvalue = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
-		return emit_load_of_immediate(enc, &addr_rvalue);
+		const rvalue tmp = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
+		const rvalue displ_rvalue = emit_load_of_immediate(enc, &tmp);
+
+		const rvalue base_reg_rvalue = { .kind = RVALUE_KIND_REGISTER, .val.reg_num = lval->base_reg, .type = TYPE_INTEGER };
+
+		emit_binary_operation(enc, &displ_rvalue, &displ_rvalue, &base_reg_rvalue, BIN_ADD);
+		return displ_rvalue;
 	}
 
 	const bool is_floating = type_is_floating(enc->sx, lval->type);
