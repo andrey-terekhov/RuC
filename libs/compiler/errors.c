@@ -235,6 +235,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case reference_without_declaration:
 			sprintf(msg, "встречено объявление переменной-ссылки без инициализации");
 			break;
+		case reference_to_not_lvalue:
+			sprintf(msg, "Невозможно создать сыслку на выражение, не являющееся lvalue");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:

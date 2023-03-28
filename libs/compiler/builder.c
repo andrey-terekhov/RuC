@@ -510,7 +510,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	if (is_declaration && type_is_reference(sx, expected_type) && !(expression_is_lvalue(init)))
 	{
-		semantic_error(bldr, loc, -1);
+		semantic_error(bldr, loc, reference_to_not_lvalue);
 		return false;
 	}
 

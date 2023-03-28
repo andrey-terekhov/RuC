@@ -98,6 +98,7 @@ typedef enum ERROR
 	function_type_const,
 	multiple_const_in_type,
 	reference_without_declaration,
+	reference_to_not_lvalue,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */
