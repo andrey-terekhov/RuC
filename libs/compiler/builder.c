@@ -508,6 +508,12 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		}
 	}
 
+	if (is_declaration && type_is_reference(sx, expected_type) && !(expression_is_lvalue(init)))
+	{
+		semantic_error(bldr, loc, -1);
+		return false;
+	}
+
 	const item_t expr_type = expression_get_type(init);
 	const item_t expr_type_element = type_is_reference(sx, expr_type)
 		? type_reference_get_element_type(sx, expr_type)
@@ -515,12 +521,6 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	const item_t actual_type = type_is_const(sx, expr_type_element) 
 		? type_const_get_unqualified_type(sx, expr_type_element) 
 		: expr_type_element;
-
-	if (is_declaration && type_is_reference(sx, expected_type) && !(expression_is_lvalue(init)))
-	{
-		semantic_error(bldr, loc, -1);
-		return false;
-	}
 
 	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
 	{
