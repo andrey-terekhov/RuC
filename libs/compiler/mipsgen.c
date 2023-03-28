@@ -2985,7 +2985,8 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		.type = TYPE_INTEGER
 	};
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, value.val.reg_num, R_SP);
-	emit_store_of_rvalue(enc, &variable, &value);
+	const lvalue target = {.kind = variable.kind, .type = TYPE_INTEGER, .loc = variable.loc, .base_reg = variable.base_reg};
+	emit_store_of_rvalue(enc, &target, &value);
 	free_rvalue(enc, &value);
 
 	// FIXME: Переделать регистры-аргументы
