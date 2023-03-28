@@ -2174,6 +2174,23 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			return index;
 		}
 
+		case TYPE_CONST:
+		{
+			const item_t element_type = type_const_get_unqualified_type(sx, type);
+			if (type_is_pointer(sx, element_type))
+			{
+				int index = write_type_spelling(sx, element_type, buffer);
+				index += sprintf(&buffer[index], " const");
+				return index;
+			}
+			else
+			{
+				int index = sprintf(buffer, "const ");
+				index += write_type_spelling(sx, element_type, &buffer[index]);
+				return index; 
+			}
+		}
+
 		default:
 			return 0;
 	}

@@ -37,6 +37,7 @@ typedef enum TOKEN
 	TK_BREAK,						/**< 'break' keyword */
 	TK_CASE,						/**< 'case' keyword */
 	TK_CHAR,						/**< 'char' keyword */
+	TK_CONST, 						/**< 'const' keyword */
 	TK_CONTINUE,					/**< 'continue' keyword */
 	TK_DEFAULT,						/**< 'default' keyword */
 	TK_DO,							/**< 'do' keyword */

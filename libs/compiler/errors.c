@@ -223,6 +223,15 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case nonvoid_func_void_return:
 			sprintf(msg, "функция должна возвращать значение");
 			break;
+		case assign_to_const:
+			sprintf(msg, "нельзя присваивать значение константе");
+			break;
+		case invalid_const_pointer_cast:
+			sprintf(msg, "нельзя преобразовать указатель на константу в указатель на переменную");
+			break;
+		case function_type_const:
+			sprintf(msg, "тип функции не может быть константой");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:
@@ -394,6 +403,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			break;
 		case not_decl:	// test_exist
 			sprintf(msg, "здесь должен быть тип (стандартный или описанный пользователем)");
+			break;
+		case multiple_const_in_type:
+			sprintf(msg, "встречено несколько модификаторов const для одного типа");
 			break;
 		case empty_bound_without_init:	// test_exist
 			sprintf(msg, "в описании массива границы не указаны, а инициализации нет");

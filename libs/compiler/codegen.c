@@ -440,7 +440,7 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 			}
 			else
 			{
-				mem_add(enc, type_is_floating(value.type) ? IC_LOADD : IC_LOAD);
+				mem_add(enc, type_is_floating(enc->sx, value.type) ? IC_LOADD : IC_LOAD);
 				mem_add(enc, value.displ);
 			}
 
@@ -959,7 +959,7 @@ static void emit_cast_expression(encoder *const enc, const node *const nd)
 	const item_t source_type = expression_get_type(&subexpr);
 
 	// Необходимо только преобразование 'int' -> 'float'
-	if (type_is_integer(enc->sx, source_type) && type_is_floating(target_type))
+	if (type_is_integer(enc->sx, source_type) && type_is_floating(enc->sx, target_type))
 	{
 		mem_add(enc, IC_WIDEN);
 	}
@@ -984,7 +984,7 @@ static void emit_increment_expression(encoder *const enc, const node *const nd)
 		instruction = instruction_to_address_ver(instruction);
 	}
 
-	if (type_is_floating(expression_get_type(nd)))
+	if (type_is_floating(enc->sx, expression_get_type(nd)))
 	{
 		mem_add(enc, instruction_to_floating_ver(instruction));
 	}
@@ -1104,7 +1104,7 @@ static void emit_binary_expression(encoder *const enc, const node *const nd)
 		}
 
 		const instruction_t instruction = binary_to_instruction(operator);
-		if (type_is_floating(expression_get_type(&LHS)))
+		if (type_is_floating(enc->sx, expression_get_type(&LHS)))
 		{
 			mem_add(enc, instruction_to_floating_ver(instruction));
 		}
@@ -1180,7 +1180,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			instruction = instruction_to_address_ver(instruction);
 		}
 
-		if (type_is_floating(type))
+		if (type_is_floating(enc->sx, type))
 		{
 			instruction = instruction_to_floating_ver(instruction);
 		}
@@ -1456,7 +1456,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			mem_add(enc, type_is_floating(type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+			mem_add(enc, type_is_floating(enc->sx, type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 			mem_add(enc, displ);
 		}
 	}
