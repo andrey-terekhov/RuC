@@ -1699,18 +1699,14 @@ static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand,
 			return (operand->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, operand):  *operand;
 		case BIN_SHL:
 		case BIN_SHR:
-			// Нет команд работающих с первым операндом в виде константы и операции не комутативны, поэтому грузим его на регистр
-			if (is_first_operand)
-			{
-				return (operand->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, operand):  *operand;
-			}
-
-			return *operand;
+			// Нет команд работающих с первым операндом в виде константы и операции не коммутативны, поэтому грузим его на регистр
+			return !is_first_operand || operand->kind != RVALUE_KIND_CONST ? *operand
+																		   : emit_load_of_immediate(enc, operand);
 		case BIN_ADD:
 		case BIN_AND:
 		case BIN_OR:
 		case BIN_XOR:
-			// Операции комутативны и есть операция работающая с одним значением на регистре и одним в виде константы
+			// Операции коммутативны и есть операция работающая с одним значением на регистре и одним в виде константы
 			// Логика замены операндов вне функции
 			return *operand;
 		default:
@@ -1844,10 +1840,10 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				bool does_need_instruction_working_with_both_operands_in_registers =
 					// Нет команд работающих с операндами в виде константы
 					(operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM)
-					// Нет команд работающих с первым операндом в виде константы и операция не комутативна
+					// Нет команд работающих с первым операндом в виде константы и операция не коммутативна
 					|| ((operator == BIN_SHL || operator == BIN_SHR) && first_operand->kind == RVALUE_KIND_CONST);
 
-				// Все остальные операции комутативны, поэтому используем инструкцию с константой, меняя порядок если надо
+				// Все остальные операции коммутативны, поэтому используем инструкцию с константой, меняя порядок если надо
 				bool change_order = (operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST;
 
 				// Выписываем операцию, её результат будет записан в result
