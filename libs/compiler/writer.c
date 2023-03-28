@@ -2191,6 +2191,14 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 			}
 		}
 
+		case TYPE_REFERENCE:
+		{
+			const item_t element_type = type_reference_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "&");
+			return index;
+		}
+
 		default:
 			return 0;
 	}
