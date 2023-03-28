@@ -750,7 +750,7 @@ item_t type_const(syntax *const sx, const item_t type);
  *	Create reference type
  *
  *	@param	sx			Syntax structure
- *	@param	type		Referenced type
+ *	@param	type		Reference type
  *
  *	@return	Reference type
  */
