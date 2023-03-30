@@ -96,7 +96,9 @@ typedef enum label_kind
 	LABEL_KIND_ELSE,
 	LABEL_KIND_END,
 	LABEL_KIND_BEGIN_CYCLE,
-	LABEL_KIND_NEXT
+	LABEL_KIND_NEXT,
+	LABEL_KIND_AND,
+	LABEL_KIND_OR,
 } label_kind;
 
 /**
@@ -114,18 +116,24 @@ typedef struct label
 	size_t id;
 } label;
 
+typedef void (*ir_gen_pre)(void *const enc);
+typedef void (*ir_gen_post)(void *const enc);
 /** Format: instr. */
 typedef void (*ir_gen_n_instr_func)(void *const enc);
 /** Format: instr rvalue. */
 typedef void (*ir_gen_rn_instr_func)(void *const enc, const rvalue value);
 /** Format: rvalue <- instr rvalue. */
 typedef void (*ir_gen_rr_instr_func)(void *const enc, const rvalue op1, const rvalue res);
+/** Format: instr rvalue, rvalue. */
+typedef void (*ir_gen_rrn_instr_func)(void *const enc, const rvalue src, const rvalue dest);
 /** Format: rvalue <- instr rvalue, rvalue. */
 typedef void (*ir_gen_rrr_instr_func)(void *const enc, const rvalue op1, const rvalue op2, const rvalue res);
-/** Format: rvalue <- instr rvalue, rvalue. */
+/** Format: rvalue <- instr lvalue. */
 typedef void (*ir_gen_lr_instr_func)(void *const enc, const lvalue src, const rvalue dest);
-/** Format: rvalue <- instr rvalue, rvalue. */
+/** Format: lvalue <- instr rvalue. */
 typedef void (*ir_gen_rl_instr_func)(void *const enc, const rvalue src, const lvalue dest);
+/** Format: instr rvalue, lvalue. */
+typedef void (*ir_gen_rln_instr_func)(void *const enc, const rvalue src, const lvalue dest);
 /** Format: lvalue <- instr size. */
 typedef void (*ir_gen_sl_instr_func)(void *const enc, const size_t op1, const lvalue res);
 /** Format: instr label. */
@@ -161,7 +169,8 @@ typedef struct ir_gens
 
 	ir_gen_bn_instr_func gen_label;
 
-	ir_gen_rl_instr_func gen_store;
+	ir_gen_rrn_instr_func gen_move;
+	ir_gen_rln_instr_func gen_store;
 	ir_gen_lr_instr_func gen_load;
 	ir_gen_sl_instr_func gen_alloca;
 
