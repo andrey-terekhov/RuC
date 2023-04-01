@@ -733,7 +733,9 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	{
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t type = type_is_const(bldr->sx, struct_type) 
+				? type_const(bldr->sx, type_structure_get_member_type(bldr->sx, struct_type, i))
+				: type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
