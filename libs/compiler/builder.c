@@ -61,10 +61,17 @@ static item_t usual_arithmetic_conversions(const syntax *const sx, node *const L
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
-	if (type_is_floating(sx, LHS_type) || type_is_floating(sx, RHS_type))
+	const bool is_LHS_floating = type_is_reference(sx, LHS_type)
+		? type_is_floating(sx, type_reference_get_element_type(sx, LHS_type))
+		: type_is_floating(sx, LHS_type);
+	const bool is_RHS_floating = type_is_reference(sx, RHS_type)
+		? type_is_floating(sx, type_reference_get_element_type(sx, RHS_type))
+		: type_is_floating(sx, RHS_type);
+
+	if (is_LHS_floating || is_RHS_floating)
 	{
-		*LHS = build_cast_expression(TYPE_FLOATING, LHS);
-		*RHS = build_cast_expression(TYPE_FLOATING, RHS);
+		*LHS = build_cast_expression(sx, TYPE_FLOATING, LHS);
+		*RHS = build_cast_expression(sx, TYPE_FLOATING, RHS);
 
 		return TYPE_FLOATING;
 	}
@@ -525,7 +532,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type) && !expected_type_is_reference)
 	{
-		*init = build_cast_expression(expected_type_unqualified, init);
+		*init = build_cast_expression(sx, expected_type_unqualified, init);
 		return true;
 	}
 
@@ -764,7 +771,7 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	return node_broken();
 }
 
-node build_cast_expression(const item_t target_type, node *const expr)
+node build_cast_expression(const syntax *const sx, const item_t target_type, node *const expr)
 {
 	if (!node_is_correct(expr))
 	{
@@ -772,9 +779,15 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	}
 
 	const item_t source_type = expression_get_type(expr);
+	const item_t source_type_element = type_is_reference(sx, source_type)
+		? type_reference_get_element_type(sx, source_type)
+		: source_type;
+	const item_t source_type_unqualified = type_is_const(sx, source_type_element)
+		? type_const_get_unqualified_type(sx, source_type_element)
+		: source_type_element;
 	const location loc = node_get_location(expr);
 
-	if (target_type != source_type)
+	if (target_type != source_type_unqualified)
 	{
 		if (expression_get_class(expr) == EXPR_LITERAL)
 		{

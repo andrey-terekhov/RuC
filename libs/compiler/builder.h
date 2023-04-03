@@ -183,12 +183,13 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 /**
  *	Build a cast expression
  *
+ *	@param	sx				Syntax structure
  *	@param	target_type		Value type
  *	@param	expr			Operand
  *
  *	@return	Cast expression node
  */
-node build_cast_expression(const item_t target_type, node *const expr);
+node build_cast_expression(const syntax *const sx, const item_t target_type, node *const expr);
 
 /**
  *	Build an unary expression
