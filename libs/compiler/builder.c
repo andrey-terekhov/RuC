@@ -584,6 +584,7 @@ typedef enum DECL_WITHOUT_INIT_ERROR
 {
 	DECL_WITHOUT_INIT_OK,
 	DECL_WITHOUT_INIT_CONST,
+	DECL_WITHOUT_INIT_REFERENCE,
 } decl_without_init_err_t;
 
 /**
@@ -616,6 +617,10 @@ decl_without_init_err_t error_declaration_without_initializer(const syntax *cons
 	else if (type_is_const(sx, type))
 	{
 		return DECL_WITHOUT_INIT_CONST;
+	}
+	else if (type_is_reference(sx, type))
+	{
+		return DECL_WITHOUT_INIT_REFERENCE;
 	}
 	else
 	{
@@ -1339,6 +1344,9 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name,
 				break;
 			case DECL_WITHOUT_INIT_CONST:
 				semantic_error(bldr, ident_loc, const_without_init);
+				break;
+			case DECL_WITHOUT_INIT_REFERENCE:
+				semantic_error(bldr, ident_loc, reference_without_init);
 				break;
 		}
 	}
