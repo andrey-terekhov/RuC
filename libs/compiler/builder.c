@@ -447,7 +447,8 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
 
-	const item_t expected_type_element = type_is_reference(sx, expected_type)
+	const bool expected_type_is_reference = type_is_reference(sx, expected_type);
+	const item_t expected_type_element = expected_type_is_reference
 		? type_reference_get_element_type(sx, expected_type)
 		: expected_type;
 
@@ -508,7 +509,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		}
 	}
 
-	if (is_declaration && type_is_reference(sx, expected_type) && !(expression_is_lvalue(init)))
+	if (is_declaration && expected_type_is_reference && !(expression_is_lvalue(init)))
 	{
 		semantic_error(bldr, loc, reference_to_not_lvalue);
 		return false;
@@ -522,7 +523,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		? type_const_get_unqualified_type(sx, expr_type_element) 
 		: expr_type_element;
 
-	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
+	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type) && !expected_type_is_reference)
 	{
 		*init = build_cast_expression(expected_type_unqualified, init);
 		return true;
