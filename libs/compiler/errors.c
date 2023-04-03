@@ -232,6 +232,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case function_type_const:
 			sprintf(msg, "тип функции не может быть константой");
 			break;
+		case const_without_init:
+			sprintf(msg, "встречено объявление константы без инициализации");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:
