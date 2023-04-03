@@ -1355,11 +1355,16 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 		};
 	}
 
-	if (type_is_structure(enc->sx, lval->type))
+	if (type_is_structure(enc->sx, lval->type) || type_is_array(enc->sx, lval->type))
 	{
 		// Грузим адрес первого элемента на регистр
-		const rvalue addr_rvalue = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
-		return emit_load_of_immediate(enc, &addr_rvalue);
+		const rvalue tmp = { .kind = RVALUE_KIND_CONST, .val.int_val = lval->loc.displ, .type = TYPE_INTEGER };
+		const rvalue displ_rvalue = emit_load_of_immediate(enc, &tmp);
+
+		const rvalue base_reg_rvalue = { .kind = RVALUE_KIND_REGISTER, .val.reg_num = lval->base_reg, .type = TYPE_INTEGER };
+
+		emit_binary_operation(enc, &displ_rvalue, &displ_rvalue, &base_reg_rvalue, BIN_ADD);
+		return displ_rvalue;
 	}
 
 	const bool is_floating = type_is_floating(enc->sx, lval->type);
@@ -1671,6 +1676,52 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 }
 
 /**
+ *	Gets original operands and loads them depending on the needs of operation
+ *
+ *	@param	enc					Encoder
+ *	@param	operand 			Original operand rvalue
+ *	@param  operation			Operation in which this operand used
+ *	@param  is_first_operand    Bool which defines if the operand is first in binary expression
+ *
+ *	@return new operand rvalue
+ */
+static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand, const binary_t operation, const bool is_first_operand)
+{
+	switch (operation)
+	{
+		case BIN_LT:
+		case BIN_GT:
+		case BIN_LE:
+		case BIN_GE:
+		case BIN_EQ:
+		case BIN_NE:
+		case BIN_SUB:
+		case BIN_DIV:
+		case BIN_MUL:
+		case BIN_REM:
+			// Сравнение => Используется BIN_SUB, поэтому грузим на регистр
+			// sub, div, mul, rem => Нет команд работающих с константными значениями, поэтому грузим его на регистр
+			return (operand->kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, operand):  *operand;
+		case BIN_SHL:
+		case BIN_SHR:
+			// Нет команд работающих с первым операндом в виде константы и операции не коммутативны, поэтому грузим его на регистр
+			return !is_first_operand || operand->kind != RVALUE_KIND_CONST ? *operand
+																		   : emit_load_of_immediate(enc, operand);
+		case BIN_ADD:
+		case BIN_AND:
+		case BIN_OR:
+		case BIN_XOR:
+			// Операции коммутативны и есть операция работающая с одним значением на регистре и одним в виде константы
+			// Логика замены операндов вне функции
+			return *operand;
+		default:
+			// Не может быть других операций
+			system_error(node_unexpected);
+			return RVALUE_VOID;
+	}
+}
+
+/**
  *	Emit binary operation with two rvalues
  *
  *	@param	enc					Encoder
@@ -1748,9 +1799,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	}
 	else
 	{
-		// Гарантируется, что будет ровно один оператор в регистре и один оператор в константе
-		const rvalue *imm_rvalue = (second_operand->kind != RVALUE_KIND_CONST) ? first_operand : second_operand;
-		const rvalue *const var_rvalue = (second_operand->kind == RVALUE_KIND_CONST) ? first_operand : second_operand;
+		const rvalue real_first_operand = emit_operand_load(enc, first_operand, operator, true);
+		const rvalue real_second_operand = emit_operand_load(enc, second_operand, operator, false);
 
 		switch (operator)
 		{
@@ -1764,19 +1814,15 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
 
-				// Загружаем <значение из second_operand> на регистр
-				const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
-				imm_rvalue = &tmp;
-
 				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, var_rvalue);
+				rvalue_to_io(enc, &real_first_operand);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, imm_rvalue);
+				rvalue_to_io(enc, &real_second_operand);
 				uni_printf(enc->sx->io, "\n");
 
 				const mips_instruction_t instruction = get_bin_instruction(operator, false);
@@ -1796,33 +1842,38 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 
 			default:
 			{
-				bool in_reg = false;
-				// Предварительно загружаем константу из imm_rvalue в rvalue вида RVALUE_KIND_REGISTER
-				if ((operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM))
-				{
-					// Нет команд вычитания из значения по регистру константы, так что умножаем на (-1)
-					const rvalue tmp = emit_load_of_immediate(enc, imm_rvalue);
-					imm_rvalue = &tmp;
-					if (operator == BIN_SUB)
-					{
-						emit_binary_operation(enc, imm_rvalue, imm_rvalue, &RVALUE_NEGATIVE_ONE, BIN_MUL);
-					}
-					in_reg = true;
-				}
+				bool does_need_instruction_working_with_both_operands_in_registers =
+					// Нет команд работающих с операндами в виде константы
+					(operator == BIN_SUB) || (operator == BIN_DIV) || (operator == BIN_MUL) || (operator == BIN_REM)
+					// Нет команд работающих с первым операндом в виде константы и операция не коммутативна
+					|| ((operator == BIN_SHL || operator == BIN_SHR) && first_operand->kind == RVALUE_KIND_CONST);
+
+				// Все остальные операции коммутативны, поэтому используем инструкцию с константой, меняя порядок если надо
+				bool change_order = (operator == BIN_ADD || operator == BIN_OR || operator == BIN_XOR || operator == BIN_AND) && first_operand->kind == RVALUE_KIND_CONST;
 
 				// Выписываем операцию, её результат будет записан в result
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(
 					enc->sx->io,
 					get_bin_instruction(operator,
-						/* Один регистр => true в get_bin_instruction() -> */ !in_reg)
+										/* Один регистр => true в get_bin_instruction() -> */ !does_need_instruction_working_with_both_operands_in_registers)
 				);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, var_rvalue);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, imm_rvalue);
+				if (change_order)
+				{
+					rvalue_to_io(enc, &real_second_operand);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, &real_first_operand);
+				}
+				else
+				{
+					rvalue_to_io(enc, &real_first_operand);
+					uni_printf(enc->sx->io, ", ");
+					rvalue_to_io(enc, &real_second_operand);
+				}
+
 				uni_printf(enc->sx->io, "\n");
 			}
 		}
@@ -2531,12 +2582,15 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const size_t label_num = enc->label_num++;
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 
-	const mips_instruction_t instruction = IC_MIPS_BEQ;
+	const mips_instruction_t instruction = IC_MIPS_BNE;
 	emit_conditional_branch(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
+	const rvalue result = {.kind = RVALUE_KIND_REGISTER, .val.reg_num = get_register(enc), .from_lvalue = !FROM_LVALUE, .type = expression_get_type(nd)};
+
 	const node LHS = expression_ternary_get_LHS(nd);
 	const rvalue LHS_rvalue = emit_expression(enc, &LHS);
+	emit_move_rvalue_to_register(enc, result.val.reg_num, &LHS_rvalue);
 	free_rvalue(enc, &LHS_rvalue);
 
 	const label label_end = { .kind = L_END, .num = label_num };
@@ -2545,12 +2599,12 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 
 	const node RHS = expression_ternary_get_RHS(nd);
 	const rvalue RHS_rvalue = emit_expression(enc, &RHS);
+	emit_move_rvalue_to_register(enc, result.val.reg_num, &RHS_rvalue);
+	free_rvalue(enc, &RHS_rvalue);
 
 	emit_label_declaration(enc, &label_end);
-	// FIXME:
-	assert(LHS_rvalue.val.reg_num == RHS_rvalue.val.reg_num);
 
-	return RHS_rvalue;
+	return result;
 }
 
 /**
@@ -2934,7 +2988,8 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		.type = TYPE_INTEGER
 	};
 	to_code_2R(enc->sx->io, IC_MIPS_MOVE, value.val.reg_num, R_SP);
-	emit_store_of_rvalue(enc, &variable, &value);
+	const lvalue target = {.kind = variable.kind, .type = TYPE_INTEGER, .loc = variable.loc, .base_reg = variable.base_reg};
+	emit_store_of_rvalue(enc, &target, &value);
 	free_rvalue(enc, &value);
 
 	// FIXME: Переделать регистры-аргументы

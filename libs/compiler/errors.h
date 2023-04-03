@@ -97,6 +97,7 @@ typedef enum ERROR
 	invalid_const_pointer_cast,
 	function_type_const,
 	multiple_const_in_type,
+	const_without_init,
 	reference_without_init,
 	reference_to_not_lvalue,
 

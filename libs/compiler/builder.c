@@ -580,6 +580,49 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	return false;
 }
 
+typedef enum DECL_WITHOUT_INIT_ERROR
+{
+	DECL_WITHOUT_INIT_OK,
+	DECL_WITHOUT_INIT_CONST,
+} decl_without_init_err_t;
+
+/**
+ *	Get error type for declaration without initializer or @c DECL_WITHOUT_INIT_OK if it is allowed
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type
+ *
+ *	@return @c true if declaration without initializer is allowed, @c false otherwise
+ */
+decl_without_init_err_t error_declaration_without_initializer(const syntax *const sx, const item_t type)
+{
+	if (type_is_array(sx, type))
+	{
+		return error_declaration_without_initializer(sx, type_array_get_element_type(sx, type));
+	}
+	else if (type_is_structure(sx, type))
+	{
+		const size_t size = type_structure_get_member_amount(sx, type);
+		for (size_t i = 0; i < size; i++)
+		{
+			const decl_without_init_err_t err = error_declaration_without_initializer(sx, type_structure_get_member_type(sx, type, i));
+			if (err != DECL_WITHOUT_INIT_OK)
+			{
+				return err;
+			}
+		}
+		return DECL_WITHOUT_INIT_OK;
+	}
+	else if (type_is_const(sx, type))
+	{
+		return DECL_WITHOUT_INIT_CONST;
+	}
+	else
+	{
+		return DECL_WITHOUT_INIT_OK;
+	}
+}
+
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc)
 {
 	const item_t identifier = repr_get_reference(bldr->sx, name);
@@ -760,7 +803,9 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	{
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t type = type_is_const(bldr->sx, struct_type) 
+				? type_const(bldr->sx, type_structure_get_member_type(bldr->sx, struct_type, i))
+				: type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
@@ -1285,9 +1330,17 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name,
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
 	}
-	else if (type_is_reference(bldr->sx, variable_type))
+	else
 	{
-		semantic_error(bldr, ident_loc, reference_without_declaration);
+		decl_without_init_err_t err = error_declaration_without_initializer(bldr->sx, variable_type);
+		switch (err)
+		{
+			case DECL_WITHOUT_INIT_OK:
+				break;
+			case DECL_WITHOUT_INIT_CONST:
+				semantic_error(bldr, ident_loc, const_without_init);
+				break;
+		}
 	}
 
 	// Magic numbers, maybe we need identifiers interface?
