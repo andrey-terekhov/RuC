@@ -56,6 +56,7 @@ typedef enum rvalue_kind
 typedef struct rvalue
 {
 	rvalue_kind kind;
+	item_t type;
 	size_t id;
 	union 
 	{
@@ -64,6 +65,15 @@ typedef struct rvalue
 		int int_;
 	} value;
 } rvalue;
+
+rvalue_kind rvalue_get_kind(const rvalue *const value);
+item_t rvalue_get_type(const rvalue *const value);
+
+item_t temp_rvalue_get_id(const rvalue *const value);
+int imm_int_rvalue_get_value(const rvalue *const value);
+float imm_float_rvalue_get_value(const rvalue *const value);
+char* imm_string_rvalue_get_value(const rvalue *const value);
+
 
 typedef enum lvalue_kind
 {
@@ -86,11 +96,24 @@ typedef enum lvalue_kind
 typedef struct lvalue
 {
 	lvalue_kind kind;
-	item_t id;
+	item_t type;
+	size_t num;
+	item_t displ;
 } lvalue;
+
+lvalue_kind lvalue_get_kind(const lvalue *const value);
+item_t lvalue_get_type(const lvalue *const value);
+
+size_t param_lvalue_get_num(const lvalue *const value);
+item_t local_lvalue_get_displ(const lvalue *const value);
+item_t global_lvalue_get_displ(const lvalue *const value);
+
+
 
 typedef enum label_kind
 {
+	LABEL_KIND_FUNC,
+	LABEL_KIND_MAIN,
 	LABEL_KIND_BEGIN,
 	LABEL_KIND_THEN,
 	LABEL_KIND_ELSE,
@@ -121,33 +144,36 @@ typedef void (*ir_gen_post)(void *const enc);
 /** Format: instr. */
 typedef void (*ir_gen_n_instr_func)(void *const enc);
 /** Format: instr rvalue. */
-typedef void (*ir_gen_rn_instr_func)(void *const enc, const rvalue value);
+typedef void (*ir_gen_rn_instr_func)(void *const enc, const rvalue *const value);
 /** Format: rvalue <- instr rvalue. */
-typedef void (*ir_gen_rr_instr_func)(void *const enc, const rvalue op1, const rvalue res);
+typedef void (*ir_gen_rr_instr_func)(void *const enc, const rvalue *const op1, const rvalue *const res);
 /** Format: instr rvalue, rvalue. */
-typedef void (*ir_gen_rrn_instr_func)(void *const enc, const rvalue src, const rvalue dest);
+typedef void (*ir_gen_rrn_instr_func)(void *const enc, const rvalue *const src, const rvalue *const dest);
 /** Format: rvalue <- instr rvalue, rvalue. */
-typedef void (*ir_gen_rrr_instr_func)(void *const enc, const rvalue op1, const rvalue op2, const rvalue res);
+typedef void (*ir_gen_rrr_instr_func)(void *const enc, const rvalue *const op1, const rvalue *const op2, const rvalue *const res);
 /** Format: rvalue <- instr lvalue. */
-typedef void (*ir_gen_lr_instr_func)(void *const enc, const lvalue src, const rvalue dest);
+typedef void (*ir_gen_lr_instr_func)(void *const enc, const lvalue *const src, const rvalue *const dest);
 /** Format: lvalue <- instr rvalue. */
-typedef void (*ir_gen_rl_instr_func)(void *const enc, const rvalue src, const lvalue dest);
+typedef void (*ir_gen_rl_instr_func)(void *const enc, const rvalue *const src, const lvalue *const dest);
 /** Format: instr rvalue, lvalue. */
-typedef void (*ir_gen_rln_instr_func)(void *const enc, const rvalue src, const lvalue dest);
+typedef void (*ir_gen_rln_instr_func)(void *const enc, const rvalue *const src, const lvalue *const dest);
 /** Format: lvalue <- instr size. */
-typedef void (*ir_gen_sl_instr_func)(void *const enc, const size_t op1, const lvalue res);
+typedef void (*ir_gen_sl_instr_func)(void *const enc, const size_t op1, const lvalue *const res);
 /** Format: instr label. */
-typedef void (*ir_gen_bn_instr_func)(void *const enc, const label label_);
+typedef void (*ir_gen_bn_instr_func)(void *const enc, const label *const label_);
 /** Format: instr label, rvalue. */
-typedef void (*ir_gen_brn_instr_func)(void *const enc, const label label_, const rvalue value);
+typedef void (*ir_gen_brn_instr_func)(void *const enc, const label *const label_, const rvalue *const value);
+/** Format: instr label, rvalue, rvalue. */
+typedef void (*ir_gen_brrn_instr_func)(void *const enc, const label *const label_, const rvalue *const op2, const rvalue *const op3);
 /** Format: instr function. */
 typedef void (*ir_gen_fn_instr_func)(void *const enc, const item_t function);
 /** Format: rvalue <- instr function. */
-typedef void (*ir_gen_fr_instr_func)(void *const enc, const item_t function, const rvalue res);
+typedef void (*ir_gen_fr_instr_func)(void *const enc, const item_t function, const rvalue *const res);
 
 typedef void (*ir_gen_extern_func)(void *const enc, const item_t id, const item_t type);
 typedef void (*ir_gen_global_func)(void *const enc, const item_t id, const item_t type);
 typedef void (*ir_gen_function_func)(void *const enc, const item_t id, const item_t type);
+typedef void (*ir_gen_general_func)(void *const enc);
 
 
 
@@ -203,10 +229,17 @@ typedef struct ir_gens
 	ir_gen_brn_instr_func gen_jmpz;
 	ir_gen_brn_instr_func gen_jmpnz;
 
+	ir_gen_brrn_instr_func gen_jmpeq;
+	ir_gen_brrn_instr_func gen_jmplt;
+	ir_gen_brrn_instr_func gen_jmple;
+
 	ir_gen_extern_func gen_extern;
 	ir_gen_global_func gen_global;
 	ir_gen_function_func gen_function_begin;
 	ir_gen_function_func gen_function_end;
+
+	ir_gen_general_func gen_begin;
+	ir_gen_general_func gen_end;
 } ir_gens;
 
 /**
@@ -267,13 +300,6 @@ typedef struct ir_builder
 	item_t break_label;
 	item_t continue_label;
 	item_t function_end_label;
-
-	item_t value_zero;
-	item_t value_fzero;
-	item_t value_one;
-	item_t value_minus_one;
-	item_t value_fone;
-	item_t value_fminus_one;
 } ir_builder;
 
 /**
@@ -339,13 +365,13 @@ void ir_emit_module(ir_builder *const builder, const node *const nd);
  *
  *	@~english 
  *	@brief IR module and generate platform-dependent code using functions
- *	specified in evals. Used when generating code for a specific architecture.
+ *	specified in gens. Used when generating code for a specific architecture.
  *
  *	@~russian
  *	@brief Обходит IR модуль и генерирует платформозависимый код при помощи 
- *	функций из evals. Используется при генерации кода для конкретной архитектуры.
+ *	функций из gens. Используется при генерации кода для конкретной архитектуры.
  */
-void ir_eval_module(const ir_module *const module, const ir_gens *const gens);
+void ir_gen_module(const ir_module *const module, const ir_gens *const gens, void *const enc);
 
 /**
  *	@}

@@ -67,6 +67,114 @@ inline unreachable(const char* msg)
 
 #endif
 
+//
+// Значения для передачи в gen_* функции.
+//
+
+// Rvalue.
+
+rvalue create_temp_rvalue(const item_t id)
+{
+	return (rvalue) {
+		.kind = RVALUE_KIND_TEMP,
+		.id = id
+	};
+}
+rvalue create_imm_int_rvalue(const int value)
+{
+	return (rvalue) {
+		.kind = RVALUE_KIND_IMM,
+		.value.int_ = value
+	};
+}
+rvalue create_imm_float_rvalue(const float value)
+{
+	return (rvalue) {
+		.kind = RVALUE_KIND_IMM,
+		.value.float_ = value
+	};
+}
+rvalue create_imm_string_rvalue(const char* value)
+{
+	return (rvalue) {
+		.kind = RVALUE_KIND_IMM,
+		.value.string = value
+	};
+}
+
+rvalue_kind rvalue_get_kind(const rvalue *const value)
+{
+	return value->kind;
+}
+item_t rvalue_get_type(const rvalue *const value)
+{
+	return value->type;
+}
+
+item_t temp_rvalue_get_id(const rvalue *const value)
+{
+	return value->id;
+}
+int imm_int_rvalue_get_value(const rvalue *const value)
+{
+	return value->value.int_;
+}
+float imm_float_rvalue_get_value(const rvalue *const value)
+{
+	return value->value.float_;
+}
+char* imm_string_rvalue_get_value(const rvalue *const value)
+{
+	return value->value.string;
+}
+
+
+// Lvalue.
+
+lvalue create_local_lvalue(const item_t displ)
+{
+	return (lvalue) {
+		.kind = LVALUE_KIND_LOCAL,
+		.displ = displ
+	};
+}
+lvalue create_param_lvalue(const size_t num)
+{
+	return (lvalue) {
+		.kind = LVALUE_KIND_LOCAL,
+		.num = num
+	};
+}
+lvalue create_global_lvalue(const item_t displ)
+{
+	return (lvalue) {
+		.kind = LVALUE_KIND_LOCAL,
+		.displ = displ
+	};
+}
+
+lvalue_kind lvalue_get_kind(const lvalue *const value)
+{
+	return value->kind;
+}
+item_t lvalue_get_type(const lvalue *const value)
+{
+	return value->type;
+}
+
+item_t local_lvalue_get_displ(const lvalue *const value)
+{
+	return value->displ;
+}
+size_t param_lvalue_get_num(const lvalue *const value)
+{
+	return value->num;
+}
+item_t global_lvalue_get_displ(const lvalue *const value)
+{
+	return value->displ;
+}
+
 
 //
 // Значения.
@@ -246,8 +354,8 @@ static item_t ir_global_get_type(const ir_global *const global)
 //
 // %1 - первый операнд.
 // %2 - второй операнд.
-// %r - третий операнд (результат).
-// %pc - .
+// %r (%3) - результат (третий операнд).
+// %pc - счетчик программы.
 // [<val>] - значение по адресу `val`.
 //
 // <- - операция `поместить`.
@@ -312,6 +420,13 @@ typedef enum ir_ic
 	IR_IC_JMPNZ,
 	// %pc <- %1 if %2 == 0
 	IR_IC_JMPZ,
+	// %pc <- %1 if %2 == %r
+	IR_IC_JMPEQ,
+	// %pc <- %1 if %2 < %r
+	IR_IC_JMPLT,
+	// %pc <- %1 if %2 <= %r
+	IR_IC_JMPLE,
+
 
 	// %r <- %1 to float
 	IR_IC_ITOF,
@@ -356,6 +471,8 @@ typedef enum ir_instr_kind
 	IR_INSTR_KIND_BN,
 	/** Format: instr label, rvalue */
 	IR_INSTR_KIND_BRN,
+	/** Format: instr label, rvalue, rvalue */
+	IR_INSTR_KIND_BRRN,
 	/** Format: instr function */
 	IR_INSTR_KIND_FN,
 	/** Format: rvalue <- instr function */
@@ -407,6 +524,11 @@ static ir_instr_kind ir_instr_kind_from_ic(const ir_ic ic)
 		case IR_IC_JMPZ:
 			return IR_INSTR_KIND_BRN;
 
+		case IR_IC_JMPEQ:
+		case IR_IC_JMPLT:
+		case IR_IC_JMPLE:
+			return IR_INSTR_KIND_BRRN;
+
 		case IR_IC_ITOF:
 		case IR_IC_FTOI:
 			return IR_INSTR_KIND_RR;
@@ -455,9 +577,13 @@ static item_t ir_instr_get_op2(const ir_instr *const instr)
 {
 	return node_get_arg(instr, 1);
 }
-static item_t ir_instr_get_res(const ir_instr *const instr)
+static item_t ir_instr_get_op3(const ir_instr *const instr)
 {
 	return node_get_arg(instr, 2);
+}
+static item_t ir_instr_get_res(const ir_instr *const instr)
+{
+	return ir_instr_get_op3(instr);
 }
 
 //
@@ -680,13 +806,6 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	builder.continue_label = IR_LABEL_NULL;
 	builder.function_end_label = IR_LABEL_NULL;
 
-	builder.value_zero = ir_build_imm_int(&builder, 0);
-	builder.value_fzero = ir_build_imm_float(&builder, 0.0);
-	builder.value_one = ir_build_imm_int(&builder, 1);
-	builder.value_minus_one = ir_build_imm_float(&builder, -1);
-	builder.value_fone = ir_build_imm_float(&builder, 1.0);
-	builder.value_fminus_one = ir_build_imm_float(&builder, -1.0);
-
 	return builder;
 }
 
@@ -724,23 +843,11 @@ static void ir_build_global(ir_builder *const builder, const item_t id, const it
 // Построение значений.
 //
 
-static item_t ir_build_imm_int(ir_builder *const builder, const int int_)
-{
-	ir_value value = create_ir_imm_int(&builder->module->values_root, int_);
-	return ir_value_save(&value);
-}
-static item_t ir_build_imm_float(ir_builder *const builder, const float float_)
-{
-	ir_value value = create_ir_imm_float(&builder->module->values_root, float_);
-	return ir_value_save(&value);
-}
-static item_t ir_build_imm_string(ir_builder *const builder, char* string)
-{
-	size_t size = strlen(string);
-	// Stub.
-	unimplemented();
-	return -1;
-}
+// FIXME: ir_build_move необходим для реализации Immediate значений как rvalue,
+// поскольку далеко не все целевые архитектуры имеют функции поддерживающие
+// immediate как операнд, мы передаем в почти все gen_*() инструкции temp rvalue.
+static void ir_build_move(ir_builder *const builder, const item_t src, const item_t dest);
+
 static item_t ir_build_temp(ir_builder *const builder, const item_t type)
 {
 	size_t temp_id = 0;
@@ -756,9 +863,59 @@ static item_t ir_build_temp(ir_builder *const builder, const item_t type)
 	const ir_value value = create_ir_temp_value(&builder->module->values_root, type, temp_id);
 	const item_t value_id = ir_value_save(&value);
 	builder->temp_values[temp_id] = value_id;
+	builder->temp_used[temp_id] = true;
 
 	return value_id;
 }
+static item_t ir_build_imm_int(ir_builder *const builder, const int int_)
+{
+	ir_value value = create_ir_imm_int(&builder->module->values_root, int_);
+	item_t id = ir_value_save(&value);
+	item_t temp_value = ir_build_temp(builder, TYPE_INTEGER);
+	ir_build_move(builder, id, temp_value);
+	return temp_value;
+}
+static item_t ir_build_imm_float(ir_builder *const builder, const float float_)
+{
+	ir_value value = create_ir_imm_float(&builder->module->values_root, float_);
+	item_t id = ir_value_save(&value);
+	item_t temp_value = ir_build_temp(builder, TYPE_FLOATING);
+	ir_build_move(builder, id, temp_value);
+	return temp_value;
+}
+static item_t ir_build_imm_zero(ir_builder *const builder)
+{
+	return ir_build_imm_int(builder, 0);
+}
+static item_t ir_build_imm_one(ir_builder *const builder)
+{
+	return ir_build_imm_int(builder, 1);
+}
+static item_t ir_build_imm_minus_one(ir_builder *const builder)
+{
+	return ir_build_imm_int(builder, -1);
+
+}
+static item_t ir_build_imm_fzero(ir_builder *const builder)
+{
+	return ir_build_imm_float(builder, 0.0);
+}
+static item_t ir_build_imm_fone(ir_builder *const builder)
+{
+	return ir_build_imm_float(builder, 1.0);
+}
+static item_t ir_build_imm_fminus_one(ir_builder *const builder)
+{
+	return ir_build_imm_float(builder, -1.0);
+}
+static item_t ir_build_imm_string(ir_builder *const builder, char* string)
+{
+	size_t size = strlen(string);
+	// Stub.
+	unimplemented();
+	return -1;
+}
+
 static item_t ir_build_local(ir_builder *const builder, const item_t type)
 {
 	const syntax *const sx = builder->sx;
@@ -940,6 +1097,18 @@ static void ir_build_jmpnz(ir_builder *const builder, const item_t label, const 
 static void ir_build_jmpz(ir_builder *const builder, const item_t label, const item_t cond)
 {
 	ir_build_instr(builder, IR_IC_JMPZ, label, cond, IR_VALUE_VOID);
+}
+static void ir_build_jmpeq(ir_builder *const builder, const item_t label, const item_t lhs, const item_t rhs)
+{
+	ir_build_instr(builder, IR_IC_JMPEQ, label, lhs, rhs);
+}
+static void ir_build_jmplt(ir_builder *const builder, const item_t label, const item_t lhs, const item_t rhs)
+{
+	ir_build_instr(builder, IR_IC_JMPLT, label, lhs, rhs);
+}
+static void ir_build_jmple(ir_builder *const builder, const item_t label, const item_t lhs, const item_t rhs)
+{
+	ir_build_instr(builder, IR_IC_JMPLE, label, lhs, rhs);
 }
 
 static item_t ir_build_itof(ir_builder *const builder, const item_t value)
@@ -1155,6 +1324,15 @@ static void ir_dump_ic(const ir_builder *const builder, const ir_ic ic)
 		case IR_IC_JMPNZ:
 			ir_dumpf("jmpnz");
 			break;
+		case IR_IC_JMPEQ:
+			ir_dumpf("jmpeq");
+			break;
+		case IR_IC_JMPLT:
+			ir_dumpf("jmplt");
+			break;
+		case IR_IC_JMPLE:
+			ir_dumpf("jmple");
+			break;
 
 		case IR_IC_ITOF:
 			ir_dumpf("itof");
@@ -1171,6 +1349,10 @@ static void ir_dump_ic(const ir_builder *const builder, const ir_ic ic)
 			break;
 		case IR_IC_RET:
 			ir_dumpf("ret");
+			break;
+
+		case IR_IC_SLT:
+			ir_dumpf("slt");
 			break;
 
 		default:
@@ -1277,7 +1459,7 @@ static void ir_dump_rrn_instr(const ir_builder *const builder, const ir_instr *c
 	ir_dump_ic(builder, ic);
 	ir_dumpf(" ");
 	ir_dump_value(builder, &op1_value);
-	ir_dumpf(" ");
+	ir_dumpf(", ");
 	ir_dump_value(builder, &op2_value);
 	ir_dumpf("\n");
 }
@@ -1407,6 +1589,30 @@ static void ir_dump_brn_instr(const ir_builder *const builder, const ir_instr *c
 	ir_dump_value(builder, &op2_value);
 	ir_dumpf("\n");
 }
+static void ir_dump_brrn_instr(const ir_builder *const builder, const ir_instr *const instr)
+{
+	const ir_ic ic = ir_instr_get_ic(instr);
+
+	const item_t op1 = ir_instr_get_op1(instr);
+	const ir_label label_ = ir_get_label(builder, op1);
+
+	const item_t op2 = ir_instr_get_op2(instr);
+	const ir_value op2_value = ir_get_value(builder, op2);
+
+	const item_t op3 = ir_instr_get_op3(instr);
+	const ir_value op3_value = ir_get_value(builder, op3);
+
+
+	ir_dumpf("\t");
+	ir_dump_ic(builder, ic);
+	ir_dumpf(" ");
+	ir_dump_label(builder, &label_);
+	ir_dumpf(", ");
+	ir_dump_value(builder, &op2_value);
+	ir_dumpf(", ");
+	ir_dump_value(builder, &op3_value);
+	ir_dumpf("\n");
+}
 static void ir_dump_fn_instr(const ir_builder *const builder, const ir_instr *const instr)
 {
 	const ir_ic ic = ir_instr_get_ic(instr);
@@ -1474,6 +1680,9 @@ static void ir_dump_instr(const ir_builder *const builder, const ir_instr *const
 			ir_dump_bn_instr(builder, instr);
 			break;
 		case IR_INSTR_KIND_BRN:
+			ir_dump_brn_instr(builder, instr);
+			break;
+		case IR_INSTR_KIND_BRRN:
 			ir_dump_brn_instr(builder, instr);
 			break;
 		case IR_INSTR_KIND_FN:
@@ -1770,7 +1979,9 @@ static item_t ir_emit_unary_expression(ir_builder *const builder, const node *co
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const item_t operand_value = ir_emit_expression(builder, &operand);
-			const item_t res_value = ir_emit_binary_operation(builder, operand_value, builder->value_minus_one, BIN_MUL);
+			const item_t minus_one_value = ir_build_imm_minus_one(builder);
+			const item_t res_value = ir_emit_binary_operation(builder, operand_value, minus_one_value, BIN_MUL);
+			ir_free_value(builder, minus_one_value);
 			ir_free_value(builder, operand_value);
 			return res_value;
 		}
@@ -1778,7 +1989,9 @@ static item_t ir_emit_unary_expression(ir_builder *const builder, const node *co
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const item_t operand_value = ir_emit_expression(builder, &operand);
-			const item_t res_value = ir_emit_binary_operation(builder, operand_value, builder->value_minus_one, BIN_XOR);
+			const item_t minus_one_value = ir_build_imm_minus_one(builder);
+			const item_t res_value = ir_emit_binary_operation(builder, operand_value, minus_one_value, BIN_XOR);
+			ir_free_value(builder, minus_one_value);
 			ir_free_value(builder, operand_value);
 			return res_value;
 		}
@@ -1787,7 +2000,7 @@ static item_t ir_emit_unary_expression(ir_builder *const builder, const node *co
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const item_t value = ir_emit_expression(builder, &operand);
-			const item_t second_value = builder->value_zero;
+			//const item_t second_value = builder->value_zero;
 
 			unimplemented();
 			return IR_VALUE_VOID;
@@ -1838,6 +2051,7 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 		{
 			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
 			{
+				//printf("%d %d\n", lhs, rhs);
 				return ir_build_add(builder, lhs, rhs);
 			}
 			else 
@@ -1898,18 +2112,66 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 			return ir_build_shr(builder, lhs, rhs);
 
 		case BIN_LT:
-			break;
+			unimplemented();
 		case BIN_GT:
-			break;
+			unimplemented();
 		case BIN_LE:
-			break;
+			unimplemented();
 		case BIN_GE:
-			break;
+			unimplemented();
 		case BIN_EQ:
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmpeq(builder, else_label, lhs, rhs);
+
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
+
+				ir_build_label(builder, end_label);
+
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
+				return res;
+			}
+			else 
+			{
+				const item_t lhs_value = type_is_floating(lhs_type) ? lhs : ir_build_itof(builder, lhs);
+				const item_t rhs_value = type_is_floating(rhs_type) ? rhs : ir_build_itof(builder, rhs);
+
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmpeq(builder, else_label, lhs, rhs);
+
+				//ir_build_move(builder, builder->value_zero, res);
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				//ir_build_move(builder, builder->value_one, res);
+
+				ir_build_label(builder, end_label);
+
+				return res;
+			}
 			break;
 		case BIN_NE:
 		{
-			break;
+			unimplemented();
 		}
 
 		case BIN_AND:
@@ -1956,11 +2218,15 @@ static item_t ir_emit_binary_expression(ir_builder *const builder, const node *c
 			ir_build_jmpz(builder, and_label, rhs_value);
 			ir_free_value(builder, rhs_value);
 
-			ir_build_move(builder, builder->value_one, res_value);
+			const item_t one_value = ir_build_imm_one(builder);
+			ir_build_move(builder, one_value, res_value);
+			ir_free_value(builder, one_value);
 			ir_build_jmp(builder, end_label);
 
 			ir_build_label(builder, and_label);
-			ir_build_move(builder, builder->value_zero, res_value);
+			const item_t zero_value = ir_build_imm_zero(builder);
+			ir_build_move(builder, zero_value, res_value);
+			ir_free_value(builder, zero_value);
 
 			ir_build_label(builder, end_label);
 
@@ -1982,11 +2248,15 @@ static item_t ir_emit_binary_expression(ir_builder *const builder, const node *c
 			ir_build_jmpnz(builder, or_label, rhs_value);
 			ir_free_value(builder, rhs_value);
 
-			ir_build_move(builder, builder->value_zero, res_value);
+			const item_t zero_value = ir_build_imm_zero(builder);
+			ir_build_move(builder, zero_value, res_value);
+			ir_free_value(builder, zero_value);
 			ir_build_jmp(builder, end_label);
 
 			ir_build_label(builder, or_label);
-			ir_build_move(builder, builder->value_one, res_value);
+			const item_t one_value = ir_build_imm_zero(builder);
+			ir_build_move(builder, one_value, res_value);
+			ir_free_value(builder, one_value);
 
 			ir_build_label(builder, end_label);
 
@@ -2007,16 +2277,37 @@ static item_t ir_emit_binary_expression(ir_builder *const builder, const node *c
 static item_t ir_emit_ternary_expression(ir_builder *const builder, const node *const nd)
 {
 	const node condition = expression_ternary_get_condition(nd);
-	const node lhs = expression_ternary_get_LHS(nd);
-	const node rhs = expression_ternary_get_RHS(nd);
+	const node lhs_node = expression_ternary_get_LHS(nd);
+	const node rhs_node = expression_ternary_get_RHS(nd);
 
 	const item_t condition_value = ir_emit_expression(builder, &condition);
-	const item_t lhs_value = ir_emit_expression(builder, &lhs);
-	const item_t rhs_value = ir_emit_expression(builder, &rhs); 
+	const item_t lhs_value = ir_emit_expression(builder, &lhs_node);
+	const item_t rhs_value = ir_emit_expression(builder, &rhs_node); 
 
-	unimplemented();
+	const ir_value lhs_value_ = ir_get_value(builder, lhs_value);
+	const item_t lhs_type = ir_value_get_type(&lhs_value_);
 
-	return IR_VALUE_VOID;
+	// FIXME: support different types?.
+	const item_t res_value = ir_build_temp(builder, lhs_type);
+
+	const item_t second_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+	const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+	ir_build_jmpz(builder, second_label, condition_value);
+
+	ir_build_move(builder, lhs_value, res_value);
+	ir_build_jmp(builder, end_label);
+
+	ir_build_label(builder, second_label);
+	ir_build_move(builder, rhs_value, res_value);
+
+	ir_build_label(builder, end_label);
+
+	ir_free_value(builder, condition_value);
+	ir_free_value(builder, lhs_value);
+	ir_free_value(builder, rhs_value);
+
+	return res_value;
 }
 
 static item_t ir_emit_struct_assignment(ir_builder *const builder, const item_t target, const node *const value)
@@ -2410,6 +2701,7 @@ static void ir_emit_return_statement(ir_builder *const builder, const node *cons
 		const item_t value = ir_emit_expression(builder, &expression);
 
 		ir_build_ret(builder, value);
+		ir_free_value(builder, value);
 	}
 	else 
 	{
@@ -2499,17 +2791,54 @@ void ir_emit_module(ir_builder *const builder, const node *const nd)
 
 typedef struct ir_context
 {
-	ir_module *module;
-	ir_gens *gens;
-	void *enc;
+	const ir_module *const module;
+	const ir_gens *const gens;
+	void *const enc;
 } ir_context;
 
-static rvalue ir_to_rvalue(const ir_value *const value)
+ir_context create_ir_context(const ir_module *const module, const ir_gens *const gens, void *const enc)
 {
-	return (rvalue) {};
+	return (ir_context) {
+		.module = module,
+		.gens = gens,
+		.enc = enc
+	};
 }
-static lvalue ir_to_lvalue(const ir_value *const value)
+
+static rvalue ir_value_to_rvalue(const ir_value *const value)
 {
+	switch (ir_value_get_kind(value))
+	{
+		case IR_VALUE_KIND_IMM:
+			return (rvalue) {
+
+			};
+		case IR_VALUE_KIND_TEMP:
+			return create_temp_rvalue(ir_temp_value_get_id(value));
+			return (rvalue) {
+				.kind = RVALUE_KIND_TEMP,
+				.id = ir_temp_value_get_id(value)
+			};
+		default:
+			return (rvalue) {
+
+			};
+	}
+
+}
+static lvalue ir_value_to_lvalue(const ir_value *const value)
+{
+	switch (ir_value_get_kind(value))
+	{
+		case IR_VALUE_KIND_LOCAL:
+		case IR_VALUE_KIND_PARAM:
+		case IR_VALUE_KIND_GLOBAL:
+			break;
+		default:
+			unreachable();
+			break;
+	}
+
 	return (lvalue) {};
 }
 static label ir_to_label(const ir_label *const label_)
@@ -2699,6 +3028,24 @@ static ir_gen_brn_instr_func ir_get_brn_instr_gen(const ir_context *const ctx, c
 			return NULL;
 	}
 }
+static ir_gen_brrn_instr_func ir_get_brrn_instr_gen(const ir_context *const ctx, const ir_instr *const instr)
+{
+	const ir_ic ic = ir_instr_get_ic(instr);
+	const ir_gens *const gens = ctx->gens;
+
+	switch (ic)
+	{
+		case IR_IC_JMPEQ:
+			return gens->gen_jmpeq;
+		case IR_IC_JMPLT:
+			return gens->gen_jmplt;
+		case IR_IC_JMPLE:
+			return gens->gen_jmple;
+		default:
+			unreachable();
+			return NULL;
+	}
+}
 static ir_gen_fn_instr_func ir_get_fn_instr_gen(const ir_context *const ctx, const ir_instr *const instr)
 {
 	const ir_ic ic = ir_instr_get_ic(instr);
@@ -2736,6 +3083,28 @@ static ir_gen_global_func ir_get_global_gen(const ir_context *const ctx, const i
 	return gens->gen_global;
 }
 
+static ir_gen_function_func ir_get_function_begin_gen(const ir_context *const ctx)
+{
+	const ir_gens *const gens = ctx->gens;
+	return gens->gen_function_begin;
+}
+static ir_gen_function_func ir_get_function_end_gen(const ir_context *const ctx)
+{
+	const ir_gens *const gens = ctx->gens;
+	return gens->gen_function_end;
+}
+static ir_gen_general_func ir_get_begin_gen(const ir_context *const ctx)
+{
+	const ir_gens *const gens = ctx->gens;
+	return gens->gen_begin;
+}
+static ir_gen_general_func ir_get_end_gen(const ir_context *const ctx)
+{
+	const ir_gens *const gens = ctx->gens;
+	return gens->gen_end;
+}
+
+
 static void ir_gen_n_instr(ir_context *const ctx, const ir_instr *const instr)
 {
 	const ir_module *const module = ctx->module;
@@ -2749,9 +3118,9 @@ static void ir_gen_rn_instr(ir_context *const ctx, const ir_instr *const instr)
 	const item_t op1 = ir_instr_get_op1(instr);
 	const ir_value op1_value = ir_module_get_value(module, op1);
 
-	const rvalue value = ir_to_rvalue(&op1_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
 
-	ir_get_rn_instr_gen(ctx, instr)(enc, value);
+	ir_get_rn_instr_gen(ctx, instr)(enc, &op1_rvalue);
 }
 static void ir_gen_rr_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2764,10 +3133,10 @@ static void ir_gen_rr_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op1_value = ir_module_get_value(module, op1);
 	const ir_value res_value = ir_module_get_value(module, res);
 
-	const rvalue value = ir_to_rvalue(&op1_value);
-	const rvalue dest = ir_to_rvalue(&res_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
+	const rvalue res_rvalue = ir_value_to_rvalue(&res_value);
 
-	ir_get_rr_instr_gen(ctx, instr)(enc, value, dest);
+	ir_get_rr_instr_gen(ctx, instr)(enc, &op1_rvalue, &res_rvalue);
 }
 static void ir_gen_rrn_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2780,10 +3149,10 @@ static void ir_gen_rrn_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op1_value = ir_module_get_value(module, op1);
 	const ir_value op2_value = ir_module_get_value(module, op2);
 
-	const rvalue value = ir_to_rvalue(&op1_value);
-	const rvalue dest = ir_to_rvalue(&op2_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
+	const rvalue op2_rvalue = ir_value_to_rvalue(&op2_value);
 
-	ir_get_rrn_instr_gen(ctx, instr)(enc, value, dest);
+	ir_get_rrn_instr_gen(ctx, instr)(enc, &op1_rvalue, &op2_rvalue);
 }
 static void ir_gen_rrr_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2798,11 +3167,11 @@ static void ir_gen_rrr_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op2_value = ir_module_get_value(module, op2);
 	const ir_value res_value = ir_module_get_value(module, res);
 
-	const rvalue lhs = ir_to_rvalue(&op1_value);
-	const rvalue rhs = ir_to_rvalue(&op2_value);
-	const rvalue dest = ir_to_rvalue(&res_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
+	const rvalue op2_rvalue = ir_value_to_rvalue(&op2_value);
+	const rvalue res_rvalue = ir_value_to_rvalue(&res_value);
 
-	ir_get_rrr_instr_gen(ctx, instr)(enc, lhs, rhs, dest);
+	ir_get_rrr_instr_gen(ctx, instr)(enc, &op1_rvalue, &op2_rvalue, &res_rvalue);
 }
 static void ir_gen_lr_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2815,10 +3184,10 @@ static void ir_gen_lr_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op1_value = ir_module_get_value(module, op1);
 	const ir_value res_value = ir_module_get_value(module, res);
 
-	const lvalue src = ir_to_lvalue(&op1_value);
-	const rvalue dest = ir_to_rvalue(&res_value);
+	const lvalue op1_lvalue = ir_value_to_lvalue(&op1_value);
+	const rvalue res_rvalue = ir_value_to_rvalue(&res_value);
 
-	ir_get_lr_instr_gen(ctx, instr)(enc, src, dest);
+	ir_get_lr_instr_gen(ctx, instr)(enc, &op1_lvalue, &res_rvalue);
 }
 static void ir_gen_rl_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2831,10 +3200,10 @@ static void ir_gen_rl_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op1_value = ir_module_get_value(module, op1);
 	const ir_value res_value = ir_module_get_value(module, res);
 
-	const rvalue src = ir_to_rvalue(&op1_value);
-	const lvalue dest = ir_to_lvalue(&res_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
+	const lvalue res_lvalue = ir_value_to_lvalue(&res_value);
 
-	ir_get_rl_instr_gen(ctx, instr)(enc, src, dest);
+	ir_get_rl_instr_gen(ctx, instr)(enc, &op1_rvalue, &res_lvalue);
 }
 static void ir_gen_rln_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2847,10 +3216,10 @@ static void ir_gen_rln_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value op1_value = ir_module_get_value(module, op1);
 	const ir_value op2_value = ir_module_get_value(module, op2);
 
-	const rvalue src = ir_to_rvalue(&op1_value);
-	const lvalue dest = ir_to_lvalue(&op2_value);
+	const rvalue op1_rvalue = ir_value_to_rvalue(&op1_value);
+	const lvalue op2_lvalue = ir_value_to_lvalue(&op2_value);
 
-	ir_get_rln_instr_gen(ctx, instr)(enc, src, dest);
+	ir_get_rln_instr_gen(ctx, instr)(enc, &op1_rvalue, &op2_lvalue);
 }
 static void ir_gen_sl_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2864,9 +3233,9 @@ static void ir_gen_sl_instr(ir_context *const ctx, const ir_instr *const instr)
 	const ir_value res_value = ir_module_get_value(module, res);
 
 	const size_t size = (size_t) op1;
-	const lvalue dest = ir_to_lvalue(&res_value);
+	const lvalue res_lvalue = ir_value_to_lvalue(&res_value);
 
-	ir_get_sl_instr_gen(ctx, instr)(enc, size, dest);
+	ir_get_sl_instr_gen(ctx, instr)(enc, size, &res_lvalue);
 }
 static void ir_gen_bn_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2876,11 +3245,11 @@ static void ir_gen_bn_instr(ir_context *const ctx, const ir_instr *const instr)
 
 	const item_t op1 = ir_instr_get_op1(instr);
 
-	const ir_value op1_label = ir_module_get_label(module, op1);
+	const ir_value op1_value = ir_module_get_label(module, op1);
 
-	const label label_ = ir_to_label(&op1_label);
+	const label op1_label = ir_to_label(&op1_value);
 
-	ir_get_bn_instr_gen(ctx, instr)(enc, label_);
+	ir_get_bn_instr_gen(ctx, instr)(enc, &op1_label);
 }
 static void ir_gen_brn_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2891,13 +3260,33 @@ static void ir_gen_brn_instr(ir_context *const ctx, const ir_instr *const instr)
 	const item_t op1 = ir_instr_get_op1(instr);
 	const item_t op2 = ir_instr_get_op2(instr);
 
-	const ir_label op1_label = ir_module_get_label(module, op1);
+	const ir_label op1_value = ir_module_get_label(module, op1);
 	const ir_value op2_value = ir_module_get_value(module, op2);
 
-	const label label_ = ir_to_label(&op1_label);
-	const rvalue value = ir_to_rvalue(&op2_value);
+	const label op1_label = ir_to_label(&op1_value);
+	const rvalue op2_rvalue = ir_value_to_rvalue(&op2_value);
 
-	ir_get_brn_instr_gen(ctx, instr)(enc, label_, value);
+	ir_get_brn_instr_gen(ctx, instr)(enc, &op1_label, &op2_rvalue);
+}
+static void ir_gen_brrn_instr(ir_context *const ctx, const ir_instr *const instr)
+{
+	const ir_module *const module = ctx->module;
+	const ir_gens *const gens = ctx->gens;
+	void *const enc = ctx->enc;
+
+	const item_t op1 = ir_instr_get_op1(instr);
+	const item_t op2 = ir_instr_get_op2(instr);
+	const item_t op3 = ir_instr_get_op3(instr);
+
+	const ir_label op1_value = ir_module_get_label(module, op1);
+	const ir_value op2_value = ir_module_get_value(module, op2);
+	const ir_value op3_value = ir_module_get_value(module, op3);
+
+	const label op1_label = ir_to_label(&op1_value);
+	const rvalue op2_rvalue = ir_value_to_rvalue(&op2_value);
+	const rvalue op3_rvalue = ir_value_to_rvalue(&op3_value);
+
+	ir_get_brrn_instr_gen(ctx, instr)(enc, &op1_label, &op2_rvalue, &op3_rvalue);
 }
 static void ir_gen_fn_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2907,9 +3296,9 @@ static void ir_gen_fn_instr(ir_context *const ctx, const ir_instr *const instr)
 
 	const item_t op1 = ir_instr_get_op1(instr);
 
-	const item_t function = op1;
+	const item_t op1_function = op1;
 
-	ir_get_fn_instr_gen(ctx, instr)(enc, function);
+	ir_get_fn_instr_gen(ctx, instr)(enc, op1_function);
 }
 static void ir_gen_fr_instr(ir_context *const ctx, const ir_instr *const instr)
 {
@@ -2922,10 +3311,10 @@ static void ir_gen_fr_instr(ir_context *const ctx, const ir_instr *const instr)
 
 	const ir_value res_value = ir_module_get_label(module, res);
 
-	const item_t function = op1;
-	const rvalue value = ir_to_rvalue(&res_value);
+	const item_t op1_function = op1;
+	const rvalue res_rvalue = ir_value_to_rvalue(&res_value);
 
-	ir_get_fr_instr_gen(ctx, instr)(enc, function, value);
+	ir_get_fr_instr_gen(ctx, instr)(enc, op1_function, &res_rvalue);
 }
 
 static void ir_gen_instr(ir_context *const ctx, const ir_instr *const instr)
@@ -2997,29 +3386,40 @@ static void ir_gen_global(ir_context *const ctx, const ir_global *const global)
 }
 static void ir_gen_function(ir_context *const ctx, const ir_function *const function)
 {
+	const ir_gens *const gens = ctx->gens;
+	void *const enc = ctx->enc;
+
+	const item_t id = ir_function_get_id(function);
+	const item_t type = ir_function_get_type(function);
+
+	ir_get_function_begin_gen(ctx)(enc, id, type);
 	for (size_t i = 0; i < ir_function_get_instr_count(function); i++)
 	{
 		ir_instr instr = ir_function_index_instr(function, i);
 		ir_gen_instr(ctx, &instr);
 	}
+	ir_get_function_end_gen(ctx)(enc, id, type);
 }
-void ir_gen_module(const ir_module *const module, const ir_gens *const gens)
+void ir_gen_module(const ir_module *const module, const ir_gens *const gens, void *const enc)
 {
-	void *ctx = NULL;
+	ir_context ctx = create_ir_context(module, gens, enc);
+
+	ir_get_begin_gen(&ctx)(enc);
 	for (size_t i = 0; i < ir_module_get_extern_count(module); i++)
 	{
 		ir_extern extern_ = ir_module_index_extern(module, i);
-		ir_gen_extern(ctx, &extern_);
+		ir_gen_extern(&ctx, &extern_);
 	}
 	for (size_t i = 0; i < ir_module_get_global_count(module); i++)
 	{
 		ir_global global = ir_module_index_global(module, i);
-		ir_gen_global(ctx, &global);
+		ir_gen_global(&ctx, &global);
 	}
 	for (size_t i = 0; i < ir_module_get_function_count(module); i++)
 	{
 		ir_function function = ir_module_index_function(module, i);
-		ir_gen_function(ctx, &function);
+		ir_gen_function(&ctx, &function);
 	}
+	ir_get_end_gen(&ctx)(enc);
 }
 
