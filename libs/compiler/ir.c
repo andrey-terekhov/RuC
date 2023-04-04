@@ -73,10 +73,11 @@ inline unreachable(const char* msg)
 
 // Rvalue.
 
-rvalue create_temp_rvalue(const item_t id)
+rvalue create_temp_rvalue(const item_t type, const item_t id)
 {
 	return (rvalue) {
 		.kind = RVALUE_KIND_TEMP,
+		.type = type,
 		.id = id
 	};
 }
@@ -84,6 +85,7 @@ rvalue create_imm_int_rvalue(const int value)
 {
 	return (rvalue) {
 		.kind = RVALUE_KIND_IMM,
+		.type = TYPE_INTEGER,
 		.value.int_ = value
 	};
 }
@@ -91,6 +93,7 @@ rvalue create_imm_float_rvalue(const float value)
 {
 	return (rvalue) {
 		.kind = RVALUE_KIND_IMM,
+		.type = TYPE_FLOATING,
 		.value.float_ = value
 	};
 }
@@ -812,7 +815,7 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 static void ir_displ_add(ir_builder *const builder, item_t type)
 {
 	const syntax *const sx = builder->sx;
-	builder->displ += type_size(sx, type);
+	builder->displ += type_size(sx, type) * 4;
 }
 
 static void ir_displ_reset(ir_builder *const builder)
@@ -2976,19 +2979,11 @@ static rvalue ir_value_to_rvalue(const ir_value *const value)
 	switch (ir_value_get_kind(value))
 	{
 		case IR_VALUE_KIND_IMM:
-			return (rvalue) {
-
-			};
+			return create_imm_int_rvalue(ir_imm_value_get_int(value));
 		case IR_VALUE_KIND_TEMP:
-			return create_temp_rvalue(ir_temp_value_get_id(value));
-			return (rvalue) {
-				.kind = RVALUE_KIND_TEMP,
-				.id = ir_temp_value_get_id(value)
-			};
+			return create_temp_rvalue(ir_value_get_type(value), ir_temp_value_get_id(value));
 		default:
-			return (rvalue) {
-
-			};
+			return (rvalue) {};
 	}
 
 }
@@ -2997,8 +2992,12 @@ static lvalue ir_value_to_lvalue(const ir_value *const value)
 	switch (ir_value_get_kind(value))
 	{
 		case IR_VALUE_KIND_LOCAL:
+			return create_local_lvalue(ir_local_value_get_dipsl(value));
 		case IR_VALUE_KIND_PARAM:
+			unimplemented();
+			break;
 		case IR_VALUE_KIND_GLOBAL:
+			unimplemented();
 			break;
 		default:
 			unreachable();
@@ -3009,7 +3008,38 @@ static lvalue ir_value_to_lvalue(const ir_value *const value)
 }
 static label ir_to_label(const ir_label *const label_)
 {
-	return (label) {};
+	label_kind kind;
+	switch (ir_label_get_kind(label_))
+	{
+		case IR_LABEL_KIND_END:
+			kind = LABEL_KIND_END;
+			break;
+		case IR_LABEL_KIND_ELSE:
+			kind = LABEL_KIND_ELSE;
+			break;
+		case IR_LABEL_KIND_THEN:
+			kind = LABEL_KIND_THEN;
+			break;
+		case IR_LABEL_KIND_OR:
+			kind = LABEL_KIND_OR;
+			break;
+		case IR_LABEL_KIND_AND:
+			kind = LABEL_KIND_AND;
+			break;
+		case IR_LABEL_KIND_BEGIN:
+			kind = IR_LABEL_KIND_BEGIN;
+			break;
+		case IR_LABEL_KIND_BEGIN_CYCLE:
+			kind = IR_LABEL_KIND_BEGIN_CYCLE;
+			break;
+		case IR_LABEL_KIND_NEXT:
+			kind = IR_LABEL_KIND_NEXT;
+			break;
+	}
+	return (label) {
+		.kind = kind,
+		.id = ir_label_get_id(label_)
+	};
 }
 
 static ir_gen_n_instr_func ir_get_n_instr_gen(const ir_context *const ctx, const ir_instr *const instr)

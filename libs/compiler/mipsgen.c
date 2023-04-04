@@ -730,19 +730,20 @@ static void mips_print_rvalue(mips_encoder *const enc, const rvalue *const value
 {
 	const syntax *const sx = enc->sx;
 
-	switch (value->kind)
+	switch (rvalue_get_kind(value))
 	{
 		case RVALUE_KIND_TEMP:
-			if (type_is_floating(value->kind))
-			{
-				mips_register register_ = mips_get_temp_register(enc, temp_rvalue_get_id(value));
-			}
-			else if (type_is_integer(sx, value->kind))
-			{
-				mips_register register_ = mips_get_temp_float_register(enc, temp_rvalue_get_id(value));
-			}
+		{
+			mips_register register_;
+			if (type_is_floating(rvalue_get_type(value)))
+				register_ = mips_get_temp_float_register(enc, temp_rvalue_get_id(value));
+			else if (type_is_integer(sx, rvalue_get_type(value)))
+				register_ = mips_get_temp_register(enc, temp_rvalue_get_id(value));
+			mips_print_register(enc, register_);
 			break;
+		}
 		case RVALUE_KIND_IMM:
+			mips_printf(enc, "%d", imm_int_rvalue_get_value(value));
 			break;
 	}
 }
@@ -751,7 +752,12 @@ static void mips_print_lvalue(mips_encoder *const enc, const lvalue *const value
 	switch (value->kind)
 	{
 		case LVALUE_KIND_LOCAL:
+		{
+			mips_printf(enc, "%d(", -local_lvalue_get_displ(value));
+			mips_print_register(enc, MIPS_R_SP);
+			mips_printf(enc, ")");
 			break;
+		}
 		case LVALUE_KIND_GLOBAL:
 			break;
 		case LVALUE_KIND_PARAM:
@@ -830,7 +836,7 @@ static void mips_to_code_instr_rr(mips_encoder *const enc, const mips_ic ic, con
 	mips_print_ic(enc, ic);
 	mips_printf(enc, " ");
 	mips_print_rvalue(enc, op1);
-	mips_printf(enc, ",");
+	mips_printf(enc, ", ");
 	mips_print_rvalue(enc, op2);
 	mips_printf(enc, "\n");
 }
@@ -840,7 +846,7 @@ static void mips_to_code_instr_lr(mips_encoder *const enc, const mips_ic ic, con
 	mips_print_ic(enc, ic);
 	mips_printf(enc, " ");
 	mips_print_lvalue(enc, op1);
-	mips_printf(enc, ",");
+	mips_printf(enc, ", ");
 	mips_print_rvalue(enc, op2);
 	mips_printf(enc, "\n");
 }
@@ -850,7 +856,7 @@ static void mips_to_code_instr_rl(mips_encoder *const enc, const mips_ic ic, con
 	mips_print_ic(enc, ic);
 	mips_printf(enc, " ");
 	mips_print_rvalue(enc, op1);
-	mips_printf(enc, ",");
+	mips_printf(enc, ", ");
 	mips_print_lvalue(enc, op2);
 	mips_printf(enc, "\n");
 }
@@ -860,9 +866,9 @@ static void mips_to_code_instr_rrr(mips_encoder *const enc, const mips_ic ic, co
 	mips_print_ic(enc, ic);
 	mips_printf(enc, " ");
 	mips_print_rvalue(enc, op1);
-	mips_printf(enc, ",");
+	mips_printf(enc, ", ");
 	mips_print_rvalue(enc, op2);
-	mips_printf(enc, ",");
+	mips_printf(enc, ", ");
 	mips_print_rvalue(enc, op3);
 	mips_printf(enc, "\n");
 }
