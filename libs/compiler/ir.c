@@ -2001,8 +2001,27 @@ static item_t ir_emit_unary_expression(ir_builder *const builder, const node *co
 			const node operand = expression_unary_get_operand(nd);
 			const item_t value = ir_emit_expression(builder, &operand);
 			//const item_t second_value = builder->value_zero;
+			const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+			const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
 
-			unimplemented();
+			const item_t res_value = ir_build_temp(builder, TYPE_BOOLEAN);
+
+			const item_t zero_value = ir_build_imm_zero(builder);
+			ir_build_jmple(builder, else_label, value, zero_value);
+			ir_free_value(builder, value);
+			ir_free_value(builder, zero_value);
+
+			const item_t zero_value1 = ir_build_imm_zero(builder);
+			ir_build_move(builder, zero_value1, res_value);
+			ir_free_value(builder, zero_value1);
+			ir_build_jmp(builder, end_label);
+
+			ir_build_label(builder, else_label);
+			const item_t one_value = ir_build_imm_one(builder);
+			ir_build_move(builder, one_value, res_value);
+			ir_free_value(builder, one_value);
+			ir_build_label(builder, end_label);
+
 			return IR_VALUE_VOID;
 		}
 
@@ -2112,14 +2131,146 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 			return ir_build_shr(builder, lhs, rhs);
 
 		case BIN_LT:
-			unimplemented();
+		{
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmplt(builder, else_label, lhs, rhs);
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
+
+				ir_build_label(builder, end_label);
+
+				return res;
+			}
+			else 
+			{
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
+			break;
+		}
 		case BIN_GT:
-			unimplemented();
+		{
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmple(builder, else_label, lhs, rhs);
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
+
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
+
+				ir_build_label(builder, end_label);
+
+				return res;
+			}
+			else 
+			{
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
+			break;
+		}
 		case BIN_LE:
-			unimplemented();
+		{
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmple(builder, else_label, lhs, rhs);
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
+
+				ir_build_label(builder, end_label);
+
+				return res;
+			}
+			else 
+			{
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
+			break;
+		}
 		case BIN_GE:
-			unimplemented();
+		{
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
+				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
+
+				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
+				const item_t end_label = ir_add_label(builder, IR_LABEL_KIND_END);
+
+				ir_build_jmplt(builder, else_label, lhs, rhs);
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
+
+				ir_build_jmp(builder, end_label);
+
+				ir_build_label(builder, else_label);
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
+
+				ir_build_label(builder, end_label);
+
+				return res;
+			}
+			else 
+			{
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
+			break;
+		}
+
 		case BIN_EQ:
+		{
 			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
 			{
 				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
@@ -2148,9 +2299,15 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 			}
 			else 
 			{
-				const item_t lhs_value = type_is_floating(lhs_type) ? lhs : ir_build_itof(builder, lhs);
-				const item_t rhs_value = type_is_floating(rhs_type) ? rhs : ir_build_itof(builder, rhs);
-
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
+			break;
+		}
+		case BIN_NE:
+		{
+			if (type_is_integer(sx, lhs_type) && type_is_integer(sx, rhs_type))
+			{
 				const item_t res = ir_build_temp(builder, TYPE_BOOLEAN);
 
 				const item_t else_label = ir_add_label(builder, IR_LABEL_KIND_ELSE);
@@ -2158,20 +2315,29 @@ static item_t ir_emit_binary_operation(ir_builder *const builder, const item_t l
 
 				ir_build_jmpeq(builder, else_label, lhs, rhs);
 
-				//ir_build_move(builder, builder->value_zero, res);
+				const item_t one_value = ir_build_imm_one(builder);
+				ir_build_move(builder, one_value, res);
+				ir_free_value(builder, one_value);
 				ir_build_jmp(builder, end_label);
 
 				ir_build_label(builder, else_label);
-				//ir_build_move(builder, builder->value_one, res);
+				const item_t zero_value = ir_build_imm_zero(builder);
+				ir_build_move(builder, zero_value, res);
+				ir_free_value(builder, zero_value);
 
 				ir_build_label(builder, end_label);
 
+				ir_free_value(builder, lhs);
+				ir_free_value(builder, rhs);
+
 				return res;
 			}
+			else 
+			{
+				unimplemented();
+				return IR_VALUE_VOID;
+			}
 			break;
-		case BIN_NE:
-		{
-			unimplemented();
 		}
 
 		case BIN_AND:
