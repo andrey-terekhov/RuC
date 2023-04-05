@@ -33,7 +33,7 @@ size_t reporter_get_errors_number(reporter *const rprt)
 	return rprt->errors;
 }
 
-void report_error(reporter *const rprt, universal_io *const io, const location loc, const err_t num, va_list args)
+void report_error(reporter *const rprt, universal_io *const io, const range_location loc, const err_t num, va_list args)
 {
 	if (rprt->is_recovery_disabled && rprt->errors != 0)
 	{
@@ -49,7 +49,7 @@ void report_error(reporter *const rprt, universal_io *const io, const location l
 	in_set_position(io, prev_loc);
 }
 
-void report_warning(reporter *const rprt, universal_io *const io, const location loc, const warning_t num, va_list args)
+void report_warning(reporter *const rprt, universal_io *const io, const range_location loc, const warning_t num, va_list args)
 {
 	if (rprt->is_recovery_disabled && rprt->errors != 0)
 	{

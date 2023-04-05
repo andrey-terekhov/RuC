@@ -52,7 +52,7 @@ typedef struct parser
 
 static item_t parse_struct_specifier(parser *const prs, const node *const parent);
 static item_t parse_enum_specifier(parser *const prs, const node *const parent);
-static location consume_token(parser *const prs);
+static range_location consume_token(parser *const prs);
 static node parse_expression(parser *const prs);
 static node parse_initializer(parser *const prs);
 static node parse_statement(parser *const prs);
@@ -105,7 +105,7 @@ static inline void parser_clear(parser *const prs)
  */
 static void parser_error(parser *const prs, err_t num, ...)
 {
-	const location loc = token_get_location(&prs->tk);
+	const range_location loc = token_get_location(&prs->tk);
 
 	va_list args;
 	va_start(args, num);
@@ -122,9 +122,9 @@ static void parser_error(parser *const prs, err_t num, ...)
  *
  *	@return	Location of consumed token
  */
-static location consume_token(parser *const prs)
+static range_location consume_token(parser *const prs)
 {
-	location prev_loc = token_get_location(&prs->tk);
+	range_location prev_loc = token_get_location(&prs->tk);
 	prs->tk = lex(&prs->lxr);
 	return prev_loc;
 }
@@ -305,7 +305,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_IDENTIFIER:
 		{
 			const size_t name = token_get_ident_name(&prs->tk);
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 
 			return build_identifier_expression(&prs->bld, name, loc);
 		}
@@ -313,7 +313,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_CHAR_LITERAL:
 		{
 			const char32_t value = token_get_char_value(&prs->tk);
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 
 			return build_character_literal_expression(&prs->bld, value, loc);
 		}
@@ -321,7 +321,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_INT_LITERAL:
 		{
 			const item_t value = (item_t)token_get_int_value(&prs->tk);
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 
 			return build_integer_literal_expression(&prs->bld, value, loc);
 		}
@@ -329,7 +329,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_FLOAT_LITERAL:
 		{
 			const double value = token_get_float_value(&prs->tk);
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 
 			return build_floating_literal_expression(&prs->bld, value, loc);
 		}
@@ -337,7 +337,7 @@ static node parse_primary_expression(parser *const prs)
 		case TK_STRING_LITERAL:
 		{
 			const size_t value = token_get_string_num(&prs->tk);
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 
 			return build_string_literal_expression(&prs->bld, value, loc);
 		}
@@ -353,7 +353,7 @@ static node parse_primary_expression(parser *const prs)
 
 		case TK_L_PAREN:
 		{
-			const location l_loc = consume_token(prs);
+			const range_location l_loc = consume_token(prs);
 			const node subexpr = parse_expression(prs);
 
 			if (!try_consume_token(prs, TK_R_PAREN))
@@ -424,12 +424,12 @@ static node parse_postfix_expression(parser *const prs)
 
 			case TK_L_SQUARE:
 			{
-				const location l_loc = consume_token(prs);
+				const range_location l_loc = consume_token(prs);
 				node index = parse_expression(prs);
 
 				if (token_is(&prs->tk, TK_R_SQUARE))
 				{
-					const location r_loc = consume_token(prs);
+					const range_location r_loc = consume_token(prs);
 					operand = build_subscript_expression(&prs->bld, &operand, &index, l_loc, r_loc);
 				}
 				else
@@ -445,11 +445,11 @@ static node parse_postfix_expression(parser *const prs)
 
 			case TK_L_PAREN:
 			{
-				const location l_loc = consume_token(prs);
+				const range_location l_loc = consume_token(prs);
 
 				if (token_is(&prs->tk, TK_R_PAREN))
 				{
-					const location r_loc = consume_token(prs);
+					const range_location r_loc = consume_token(prs);
 					operand = build_call_expression(&prs->bld, &operand, NULL, l_loc, r_loc);
 
 					continue;
@@ -458,7 +458,7 @@ static node parse_postfix_expression(parser *const prs)
 				node_vector args = parse_initializer_list(prs);
 				if (token_is(&prs->tk, TK_R_PAREN))
 				{
-					const location r_loc = consume_token(prs);
+					const range_location r_loc = consume_token(prs);
 					operand = build_call_expression(&prs->bld, &operand, &args, l_loc, r_loc);
 				}
 				else
@@ -477,12 +477,12 @@ static node parse_postfix_expression(parser *const prs)
 			case TK_ARROW:
 			{
 				const bool is_arrow = token_is(&prs->tk, TK_ARROW);
-				const location op_loc = consume_token(prs);
+				const range_location op_loc = consume_token(prs);
 
 				if (token_is(&prs->tk, TK_IDENTIFIER))
 				{
 					const size_t name = token_get_ident_name(&prs->tk);
-					const location id_loc = consume_token(prs);
+					const range_location id_loc = consume_token(prs);
 
 					operand = build_member_expression(&prs->bld, &operand, name, is_arrow, op_loc, id_loc);
 				}
@@ -497,14 +497,14 @@ static node parse_postfix_expression(parser *const prs)
 
 			case TK_PLUS_PLUS:
 			{
-				const location op_loc = consume_token(prs);
+				const range_location op_loc = consume_token(prs);
 				operand = build_unary_expression(&prs->bld, &operand, UN_POSTINC, op_loc);
 				continue;
 			}
 
 			case TK_MINUS_MINUS:
 			{
-				const location op_loc = consume_token(prs);
+				const range_location op_loc = consume_token(prs);
 				operand = build_unary_expression(&prs->bld, &operand, UN_POSTDEC, op_loc);
 				continue;
 			}
@@ -546,7 +546,7 @@ static node parse_unary_expression(parser *const prs)
 		case TK_UPB:
 		{
 			const unary_t operator = token_to_unary(token_get_kind(&prs->tk));
-			const location op_loc = consume_token(prs);
+			const range_location op_loc = consume_token(prs);
 			node operand = parse_unary_expression(prs);
 
 			return build_unary_expression(&prs->bld, &operand, operator, op_loc);
@@ -569,7 +569,7 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
 	while (next_token_prec >= min_prec)
 	{
 		const token_t op_token_kind = token_get_kind(&prs->tk);
-		location op_loc = consume_token(prs);
+		range_location op_loc = consume_token(prs);
 
 		const bool is_binary = next_token_prec != PREC_CONDITIONAL;
 		node middle = node_broken();
@@ -683,7 +683,7 @@ static node parse_initializer(parser *const prs)
 {
 	if (token_is(&prs->tk, TK_L_BRACE))
 	{
-		const location l_loc = consume_token(prs);
+		const range_location l_loc = consume_token(prs);
 
 		if (try_consume_token(prs, TK_R_BRACE))
 		{
@@ -694,7 +694,7 @@ static node parse_initializer(parser *const prs)
 		node_vector inits = parse_initializer_list(prs);
 		if (token_is(&prs->tk, TK_R_BRACE))
 		{
-			const location r_loc = consume_token(prs);
+			const range_location r_loc = consume_token(prs);
 			const node result = build_initializer(&prs->bld, &inits, l_loc, r_loc);
 
 			node_vector_clear(&inits);
@@ -732,7 +732,7 @@ static node parse_condition(parser *const prs)
 		return node_broken();
 	}
 
-	const location l_loc = consume_token(prs);
+	const range_location l_loc = consume_token(prs);
 
 	node condition = parse_expression(prs);
 	if (!node_is_correct(&condition))
@@ -908,7 +908,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 	}
 
 	const size_t name = token_get_ident_name(&prs->tk);
-	const location ident_loc = consume_token(prs);
+	const range_location ident_loc = consume_token(prs);
 
 	node_vector bounds = node_vector_create();
 	while (try_consume_token(prs, TK_L_SQUARE))
@@ -957,7 +957,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
  *
  *	@return	Struct type
  */
-static item_t parse_struct_declaration(parser *const prs, const node *const parent, location struct_loc, size_t name)
+static item_t parse_struct_declaration(parser *const prs, const node *const parent, range_location struct_loc, size_t name)
 {
 	prs->was_type_def = true;	// FIXME: this is only until global declarations refactoring
 	assert(token_is(&prs->tk, TK_L_BRACE));
@@ -998,7 +998,7 @@ static item_t parse_struct_declaration(parser *const prs, const node *const pare
 static item_t parse_struct_specifier(parser *const prs, const node *const parent)
 {
 	assert(token_is(&prs->tk, TK_STRUCT));
-	const location struct_loc = consume_token(prs);
+	const range_location struct_loc = consume_token(prs);
 
 	switch (token_get_kind(&prs->tk))
 	{
@@ -1177,14 +1177,14 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 	}
 
 	const size_t name = token_get_ident_name(&prs->tk);
-	const location ident_loc = consume_token(prs);
+	const range_location ident_loc = consume_token(prs);
 
 	node_vector bounds = node_vector_create();
 	while (try_consume_token(prs, TK_L_SQUARE))
 	{
 		if (token_is(&prs->tk, TK_R_SQUARE))
 		{
-			const location loc = consume_token(prs);
+			const range_location loc = consume_token(prs);
 			const node empty_bound = build_empty_bound_expression(&prs->bld, loc);
 			node_vector_add(&bounds, &empty_bound);
 			continue;
@@ -1240,7 +1240,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 static node parse_declaration(parser *const prs)
 {
 	node declaration = build_empty_declaration(&prs->bld);
-	const location start_loc = token_get_location(&prs->tk);
+	const range_location start_loc = token_get_location(&prs->tk);
 
 	const item_t type = parse_type_specifier(prs, &declaration);
 	node_vector declarators = node_vector_create();
@@ -1254,10 +1254,10 @@ static node parse_declaration(parser *const prs)
 		} while (try_consume_token(prs, TK_COMMA));
 	}
 
-	const location end_loc = token_get_location(&prs->tk);
+	const range_location end_loc = token_get_location(&prs->tk);
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
 
-	const location loc = { start_loc.begin, end_loc.end };
+	const range_location loc = { start_loc.begin, end_loc.end };
 	const node result = build_declaration(&prs->bld, &declaration, &declarators, loc);
 	node_vector_clear(&declarators);
 
@@ -1322,7 +1322,7 @@ static bool is_declaration_specifier(parser *const prs)
 static node parse_case_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_CASE));
-	const location case_loc = consume_token(prs);
+	const range_location case_loc = consume_token(prs);
 
 	if (!prs->is_in_switch)
 	{
@@ -1357,7 +1357,7 @@ static node parse_case_statement(parser *const prs)
 static node parse_default_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_DEFAULT));
-	const location default_loc = consume_token(prs);
+	const range_location default_loc = consume_token(prs);
 
 	if (!prs->is_in_switch)
 	{
@@ -1393,7 +1393,7 @@ static node parse_default_statement(parser *const prs)
 static node parse_compound_statement_body(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_L_BRACE));
-	const location l_loc = consume_token(prs);
+	const range_location l_loc = consume_token(prs);
 
 	node_vector stmts = node_vector_create();
 	while (token_is_not(&prs->tk, TK_R_BRACE) && token_is_not(&prs->tk, TK_EOF))
@@ -1409,7 +1409,7 @@ static node parse_compound_statement_body(parser *const prs)
 		return node_broken();
 	}
 
-	const location r_loc = consume_token(prs);
+	const range_location r_loc = consume_token(prs);
 	node result = build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
 	node_vector_clear(&stmts);
 	return result;
@@ -1468,7 +1468,7 @@ static node parse_expression_statement(parser *const prs)
 static node parse_if_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_IF));
-	const location if_loc = consume_token(prs);
+	const range_location if_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
 	node then_stmt = parse_statement(prs);
@@ -1495,7 +1495,7 @@ static node parse_if_statement(parser *const prs)
 static node parse_switch_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_SWITCH));
-	const location switch_loc = consume_token(prs);
+	const range_location switch_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
 
@@ -1520,7 +1520,7 @@ static node parse_switch_statement(parser *const prs)
 static node parse_while_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_WHILE));
-	const location while_loc = consume_token(prs);
+	const range_location while_loc = consume_token(prs);
 
 	node condition = parse_condition(prs);
 
@@ -1545,7 +1545,7 @@ static node parse_while_statement(parser *const prs)
 static node parse_do_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_DO));
-	const location do_loc = consume_token(prs);
+	const range_location do_loc = consume_token(prs);
 
 	const bool old_in_loop = prs->is_in_loop;
 	prs->is_in_loop = true;
@@ -1579,7 +1579,7 @@ static node parse_do_statement(parser *const prs)
 static node parse_for_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_FOR));
-	const location for_loc = consume_token(prs);
+	const range_location for_loc = consume_token(prs);
 	const scope scp = scope_block_enter(prs->sx);
 
 	if (token_is_not(&prs->tk, TK_L_PAREN))
@@ -1589,7 +1589,7 @@ static node parse_for_statement(parser *const prs)
 		return node_broken();
 	}
 
-	const location l_loc = consume_token(prs);
+	const range_location l_loc = consume_token(prs);
 
 	node init;
 	const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
@@ -1681,7 +1681,7 @@ static node parse_for_statement(parser *const prs)
 static node parse_continue_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_CONTINUE));
-	const location continue_loc = consume_token(prs);
+	const range_location continue_loc = consume_token(prs);
 
 	if (!prs->is_in_loop)
 	{
@@ -1707,7 +1707,7 @@ static node parse_continue_statement(parser *const prs)
 static node parse_break_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_BREAK));
-	const location break_loc = consume_token(prs);
+	const range_location break_loc = consume_token(prs);
 
 	if (!(prs->is_in_loop || prs->is_in_switch))
 	{
@@ -1733,7 +1733,7 @@ static node parse_break_statement(parser *const prs)
 static node parse_return_statement(parser *const prs)
 {
 	assert(token_is(&prs->tk, TK_RETURN));
-	const location return_loc = consume_token(prs);
+	const range_location return_loc = consume_token(prs);
 
 	prs->was_return = true;
 	if (try_consume_token(prs, TK_SEMICOLON))

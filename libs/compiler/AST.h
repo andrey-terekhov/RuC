@@ -99,7 +99,7 @@ inline node node_broken(void)
  *
  *	@return	Node location
  */
-location node_get_location(const node *const nd);
+range_location node_get_location(const node *const nd);
 
 
 /**
@@ -146,7 +146,7 @@ inline bool expression_is_lvalue(const node *const nd)
  *
  *	@return	Identifier expression
  */
-node expression_identifier(node *const context, const item_t type, const size_t id, const location loc);
+node expression_identifier(node *const context, const item_t type, const size_t id, const range_location loc);
 
 /**
  *	Get index in indentifiers table of identifier expression
@@ -167,7 +167,7 @@ size_t expression_identifier_get_id(const node *const nd);
  *
  *	@return	Null literal expression
  */
-node expression_null_literal(node *const context, const item_t type, const location loc);
+node expression_null_literal(node *const context, const item_t type, const range_location loc);
 
 
 /**
@@ -180,7 +180,7 @@ node expression_null_literal(node *const context, const item_t type, const locat
  *
  *	@return	Boolean literal expression
  */
-node expression_boolean_literal(node *const context, const item_t type, const bool value, const location loc);
+node expression_boolean_literal(node *const context, const item_t type, const bool value, const range_location loc);
 
 /**
  *	Get value of boolean literal expression
@@ -202,7 +202,7 @@ bool expression_literal_get_boolean(const node *const nd);
  *
  *	@return	Character literal expression
  */
-node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc);
+node expression_character_literal(node *const context, const item_t type, const char32_t value, const range_location loc);
 
 /**
  *	Get value of character literal expression
@@ -224,7 +224,7 @@ char32_t expression_literal_get_character(const node *const nd);
  *
  *	@return	Integer literal expression
  */
-node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc);
+node expression_integer_literal(node *const context, const item_t type, const item_t value, const range_location loc);
 
 /**
  *	Get value of integer literal expression
@@ -246,7 +246,7 @@ item_t expression_literal_get_integer(const node *const nd);
  *
  *	@return	Floating literal expression
  */
-node expression_floating_literal(node *const context, const item_t type, const double value, const location loc);
+node expression_floating_literal(node *const context, const item_t type, const double value, const range_location loc);
 
 /**
  *	Get value of floating literal expression
@@ -268,7 +268,7 @@ double expression_literal_get_floating(const node *const nd);
  *
  *	@return	String literal expression
  */
-node expression_string_literal(node *const context, const item_t type, const size_t index, const location loc);
+node expression_string_literal(node *const context, const item_t type, const size_t index, const range_location loc);
 
 /**
  *	Get string index of literal expression
@@ -290,7 +290,7 @@ size_t expression_literal_get_string(const node *const nd);
  *
  *	@return	Subscript expression
  */
-node expression_subscript(const item_t type, node *const base, node *const index, const location loc);
+node expression_subscript(const item_t type, node *const base, node *const index, const range_location loc);
 
 /**
  *	Get base expression of subscript expression
@@ -321,7 +321,7 @@ node expression_subscript_get_index(const node *const nd);
  *
  *	@return	Call expression
  */
-node expression_call(const item_t type, node *const callee, node_vector *const args, const location loc);
+node expression_call(const item_t type, node *const callee, node_vector *const args, const range_location loc);
 
 /**
  *	Get called expression of call expression
@@ -364,7 +364,7 @@ node expression_call_get_argument(const node *const nd, const size_t index);
  *	@return	Member expression
  */
 node expression_member(const item_t type, const category_t ctg
-	, const size_t index, bool is_arrow, node *const base, const location loc);
+	, const size_t index, bool is_arrow, node *const base, const range_location loc);
 
 /**
  *	Get base expression of member expression
@@ -404,7 +404,7 @@ bool expression_member_is_arrow(const node *const nd);
  *
  *	@return	Cast expression
  */
-node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
+node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const range_location loc);
 
 /**
  *	Get source type of cast expression
@@ -436,7 +436,7 @@ node expression_cast_get_operand(const node *const nd);
  *
  *	@return	Unary expression
  */
-node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const location loc);
+node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const range_location loc);
 
 /**
  *	Get operator of unary expression
@@ -468,7 +468,7 @@ node expression_unary_get_operand(const node *const nd);
  *
  *	@return	Binary expression
  */
-node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc);
+node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const range_location loc);
 
 /**
  *	Get operator of binary expression
@@ -509,7 +509,7 @@ node expression_binary_get_RHS(const node *const nd);
  *
  *	@return	Ternary expression
  */
-node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const location loc);
+node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const range_location loc);
 
 /**
  *	Get condition of ternary expression
@@ -550,7 +550,7 @@ node expression_ternary_get_RHS(const node *const nd);
  *
  *	@return	Assignment expression
  */
-node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc);
+node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const range_location loc);
 
 /**
  *	Get operator of assignment expression
@@ -588,7 +588,7 @@ node expression_assignment_get_RHS(const node *const nd);
  *
  *	@return	Initializer
  */
-node expression_initializer(node_vector *const exprs, const location loc);
+node expression_initializer(node_vector *const exprs, const range_location loc);
 
 /**
  *	Set type of initializer
@@ -626,7 +626,7 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
  *
  *	@return	Empty bound expression
  */
-node expression_empty_bound(node *const context, const location loc);
+node expression_empty_bound(node *const context, const range_location loc);
 
 
 /**
@@ -648,7 +648,7 @@ statement_t statement_get_class(const node *const nd);
  *
  *	@return	Case statement
  */
-node statement_case(node *const expr, node *const substmt, const location loc);
+node statement_case(node *const expr, node *const substmt, const range_location loc);
 
 /**
  *	Get expression of case statement
@@ -677,7 +677,7 @@ node statement_case_get_substmt(const node *const nd);
  *
  *	@return	Default statement
  */
-node statement_default(node *const substmt, const location loc);
+node statement_default(node *const substmt, const range_location loc);
 
 /**
  *	Get substatement of default statement
@@ -698,7 +698,7 @@ node statement_default_get_substmt(const node *const nd);
  *
  *	@return	Compound statement
  */
-node statement_compound(node *const context, node_vector *const stmts, const location loc);
+node statement_compound(node *const context, node_vector *const stmts, const range_location loc);
 
 /**
  *	Get size of compound statement
@@ -728,7 +728,7 @@ node statement_compound_get_substmt(const node *const nd, const size_t index);
  *
  *	@return	Null statement
  */
-node statement_null(node *const context, const location loc);
+node statement_null(node *const context, const range_location loc);
 
 
 /**
@@ -741,7 +741,7 @@ node statement_null(node *const context, const location loc);
  *
  *	@return	If statement
  */
-node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc);
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const range_location loc);
 
 /**
  *	Check if if statement has else-substatement
@@ -789,7 +789,7 @@ node statement_if_get_else_substmt(const node *const nd);
  *
  *	@return	Switch statement
  */
-node statement_switch(node *const cond, node *const body, const location loc);
+node statement_switch(node *const cond, node *const body, const range_location loc);
 
 /**
  *	Get condition of switch statement
@@ -819,7 +819,7 @@ node statement_switch_get_body(const node *const nd);
  *
  *	@return	While statement
  */
-node statement_while(node *const cond, node *const body, const location loc);
+node statement_while(node *const cond, node *const body, const range_location loc);
 
 /**
  *	Get condition of while statement
@@ -849,7 +849,7 @@ node statement_while_get_body(const node *const nd);
  *
  *	@return	Do statement
  */
-node statement_do(node *const body, node *const cond, const location loc);
+node statement_do(node *const body, node *const cond, const range_location loc);
 
 /**
  *	Get condition of do statement
@@ -881,7 +881,7 @@ node statement_do_get_body(const node *const nd);
  *
  *	@return	For statement
  */
-node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc);
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const range_location loc);
 
 /**
  *	Check if for statement has inition
@@ -955,7 +955,7 @@ node statement_for_get_body(const node *const nd);
  *
  *	@return	Continue statement
  */
-node statement_continue(node *const context, const location loc);
+node statement_continue(node *const context, const range_location loc);
 
 
 /**
@@ -966,7 +966,7 @@ node statement_continue(node *const context, const location loc);
  *
  *	@return	Break statement
  */
-node statement_break(node *const context, const location loc);
+node statement_break(node *const context, const range_location loc);
 
 
 /**
@@ -978,7 +978,7 @@ node statement_break(node *const context, const location loc);
  *
  *	@return	Return statement
  */
-node statement_return(node *const context, node *const expr, const location loc);
+node statement_return(node *const context, node *const expr, const range_location loc);
 
 /**
  *	Check if return statement has expression
@@ -1024,7 +1024,7 @@ void statement_declaration_add_declarator(const node *const nd, node *const decl
  *
  *	@return	Declatation statement
  */
-node statement_declaration_set_location(const node *const nd, const location loc);
+node statement_declaration_set_location(const node *const nd, const range_location loc);
 
 /**
  *	Get size of declaration statement
@@ -1068,7 +1068,7 @@ declaration_t declaration_get_class(const node *const nd);
  *	@return	Member declaration
  */
 node declaration_member(node *const context, const item_t type, const size_t name
-	, node_vector *const bounds, const location loc);
+	, node_vector *const bounds, const range_location loc);
 
 /**
  *	Get name of member in member declaration
@@ -1117,7 +1117,7 @@ node declaration_member_get_bound(const node *const nd, const size_t index);
  *
  *	@return	Struct declaration
  */
-node declaration_struct(node *const context, const size_t name, const location loc);
+node declaration_struct(node *const context, const size_t name, const range_location loc);
 
 /**
  *	Add member declaration to a struct declaration
@@ -1143,7 +1143,7 @@ void declaration_struct_set_type(node *const nd, const item_t type);
  *
  *	@return	Struct declaration
  */
-node declaration_struct_set_location(node *const nd, const location loc);
+node declaration_struct_set_location(node *const nd, const range_location loc);
 
 /**
  *	Get struct name of struct declaration
@@ -1195,7 +1195,7 @@ node declaration_struct_get_member(const node *const nd, const size_t index);
  *	@return	Variable declaration
  */
 node declaration_variable(node *const context, const size_t id, node_vector *const bounds
-	, node *const initializer, const location loc);
+	, node *const initializer, const range_location loc);
 
 /**
  *	Get variable identifier in variable declaration

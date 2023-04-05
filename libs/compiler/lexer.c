@@ -29,7 +29,7 @@
 static void lexer_error(lexer *const lxr, err_t num, ...)
 {
 	const size_t position = in_get_position(lxr->sx->io);
-	const location loc = { position, position + 1 };
+	const range_location loc = { position, position + 1 };
 
 	va_list args;
 	va_start(args, num);
@@ -135,10 +135,10 @@ static token lex_identifier_or_keyword(lexer *const lxr)
 
 	if (ref >= 0)
 	{
-		return token_identifier((location){ loc_begin, loc_end }, repr);
+		return token_identifier((range_location){ loc_begin, loc_end }, repr);
 	}
 
-	return token_keyword((location){ loc_begin, loc_end }, (token_t)ref);
+	return token_keyword((range_location){ loc_begin, loc_end }, (token_t)ref);
 }
 
 /**
@@ -218,7 +218,7 @@ static token lex_numeric_literal(lexer *const lxr)
 			}
 
 			const size_t loc_end = in_get_position(lxr->sx->io);
-			return token_int_literal((location){ loc_begin, loc_end }, int_value);
+			return token_int_literal((range_location){ loc_begin, loc_end }, int_value);
 		}
 
 		if ((base == 2 && int_value >= 0x8000000000000000)
@@ -297,7 +297,7 @@ static token lex_numeric_literal(lexer *const lxr)
 			}
 
 			const size_t loc_end = in_get_position(lxr->sx->io);
-			return token_float_literal((location){ loc_begin, loc_end }, DBL_MAX);
+			return token_float_literal((range_location){ loc_begin, loc_end }, DBL_MAX);
 		}
 
 		while (utf8_is_digit(lxr->character))
@@ -321,7 +321,7 @@ static token lex_numeric_literal(lexer *const lxr)
 	const size_t loc_end = in_get_position(lxr->sx->io);
 	if (is_integer)
 	{
-		return token_int_literal((location){ loc_begin, loc_end }, int_value);
+		return token_int_literal((range_location){ loc_begin, loc_end }, int_value);
 	}
 	else
 	{
@@ -331,7 +331,7 @@ static token lex_numeric_literal(lexer *const lxr)
 			warning(lxr->sx->io, too_long_int);
 		}
 
-		return token_float_literal((location){ loc_begin, loc_end }, float_value);
+		return token_float_literal((range_location){ loc_begin, loc_end }, float_value);
 	}
 }
 
@@ -385,7 +385,7 @@ static token lex_char_literal(lexer *const lxr)
 		scan(lxr);
 
 		const size_t loc_end = in_get_position(lxr->sx->io);
-		return token_char_literal((location){ loc_begin, loc_end }, '\0');
+		return token_char_literal((range_location){ loc_begin, loc_end }, '\0');
 	}
 
 	const char32_t value = get_next_string_elem(lxr);
@@ -400,7 +400,7 @@ static token lex_char_literal(lexer *const lxr)
 	}
 
 	const size_t loc_end = in_get_position(lxr->sx->io);
-	return token_char_literal((location){ loc_begin, loc_end }, value);
+	return token_char_literal((range_location){ loc_begin, loc_end }, value);
 }
 
 /**
@@ -439,7 +439,7 @@ static token lex_string_literal(lexer *const lxr)
 	const size_t index = string_add(lxr->sx, &lxr->lexstr);
 	vector_resize(&lxr->lexstr, 0);
 
-	return token_string_literal((location){ loc_begin, loc_end }, index);
+	return token_string_literal((range_location){ loc_begin, loc_end }, index);
 }
 
 
@@ -805,7 +805,7 @@ token lex(lexer *const lxr)
 		}
 
 		const size_t loc_end = in_get_position(lxr->sx->io);
-		return token_punctuator((location){ loc_begin, loc_end }, punctuator_kind);
+		return token_punctuator((range_location){ loc_begin, loc_end }, punctuator_kind);
 	}
 }
 

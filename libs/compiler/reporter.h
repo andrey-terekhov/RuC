@@ -60,7 +60,7 @@ size_t reporter_get_errors_number(reporter *const rprt);
  *	@param	num			Error code
  *	@param	args		Variable list
  */
-void report_error(reporter *const rprt, universal_io *const io, const location loc, const err_t num, va_list args);
+void report_error(reporter *const rprt, universal_io *const io, const range_location loc, const err_t num, va_list args);
 
 /**
  *	Report a warning
@@ -71,7 +71,7 @@ void report_error(reporter *const rprt, universal_io *const io, const location l
  *	@param	num			Warning code
  *	@param	args		Variable list
  */
-void report_warning(reporter *const rprt, universal_io *const io, const location loc, const warning_t num, va_list args);
+void report_warning(reporter *const rprt, universal_io *const io, const range_location loc, const warning_t num, va_list args);
 
 #ifdef __cplusplus
 } /* extern "C" */

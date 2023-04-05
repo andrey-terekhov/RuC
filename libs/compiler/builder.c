@@ -28,7 +28,7 @@
  *	@param	loc			Error location
  *	@param	num			Error code
  */
-static void semantic_error(builder *const bldr, const location loc, err_t num, ...)
+static void semantic_error(builder *const bldr, const range_location loc, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -45,7 +45,7 @@ static void semantic_error(builder *const bldr, const location loc, err_t num, .
  *	@param	loc			Warning location
  *	@param	num			Warning code
  */
-static void semantic_warning(builder *const bldr, const location loc, warning_t num, ...)
+static void semantic_warning(builder *const bldr, const range_location loc, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -73,7 +73,7 @@ static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
 }
 
 static node fold_unary_expression(builder *const bldr, const item_t type, const category_t ctg
-	, node *const expr, const unary_t op, const location loc)
+	, node *const expr, const unary_t op, const range_location loc)
 {
 	if (expression_get_class(expr) != EXPR_LITERAL)
 	{
@@ -136,7 +136,7 @@ static node fold_unary_expression(builder *const bldr, const item_t type, const 
 }
 
 static node fold_binary_expression(builder *const bldr, const item_t type
-	, node *const LHS, node *const RHS, const binary_t op, const location loc)
+	, node *const LHS, node *const RHS, const binary_t op, const range_location loc)
 {
 	if (expression_get_class(LHS) != EXPR_LITERAL || expression_get_class(RHS) != EXPR_LITERAL)
 	{
@@ -298,7 +298,7 @@ static size_t evaluate_args(builder *const bldr, const node *const format_str
 	return args;
 }
 
-static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+static node build_printf_expression(builder *const bldr, node *const callee, node_vector *const args, const range_location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -342,11 +342,11 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 		node_vector_set(args, i, &argument);
 	}
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	const range_location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_INTEGER, callee, args, loc);
 }
 
-static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+static node build_print_expression(builder *const bldr, node *const callee, node_vector *const args, const range_location r_loc)
 {
 	size_t argc;
 	if (args == NULL || (argc = node_vector_size(args)) == 0)
@@ -365,11 +365,11 @@ static node build_print_expression(builder *const bldr, node *const callee, node
 		}
 	}
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	const range_location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+static node build_printid_expression(builder *const bldr, node *const callee, node_vector *const args, const range_location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -388,11 +388,11 @@ static node build_printid_expression(builder *const bldr, node *const callee, no
 		}
 	}
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	const range_location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
-static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const location r_loc)
+static node build_getid_expression(builder *const bldr, node *const callee, node_vector *const args, const range_location r_loc)
 {
 	const size_t argc = node_vector_size(args);
 	if (args == NULL || argc == 0)
@@ -411,7 +411,7 @@ static node build_getid_expression(builder *const bldr, node *const callee, node
 		}
 	}
 
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	const range_location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(TYPE_VOID, callee, args, loc);
 }
 
@@ -445,7 +445,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	}
 
 	syntax *const sx = bldr->sx;
-	const location loc = node_get_location(init);
+	const range_location loc = node_get_location(init);
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
 		const size_t actual_inits = expression_initializer_get_size(init);
@@ -529,7 +529,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	return false;
 }
 
-node build_identifier_expression(builder *const bldr, const size_t name, const location loc)
+node build_identifier_expression(builder *const bldr, const size_t name, const range_location loc)
 {
 	const item_t identifier = repr_get_reference(bldr->sx, name);
 
@@ -550,38 +550,38 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
 	return expression_identifier(&bldr->context, type, (size_t)identifier, loc);
 }
 
-node build_null_literal_expression(builder *const bldr, const location loc)
+node build_null_literal_expression(builder *const bldr, const range_location loc)
 {
 	return expression_null_literal(&bldr->context, TYPE_NULL_POINTER, loc);
 }
 
-node build_boolean_literal_expression(builder *const bldr, const bool value, const location loc)
+node build_boolean_literal_expression(builder *const bldr, const bool value, const range_location loc)
 {
 	return expression_boolean_literal(&bldr->context, TYPE_BOOLEAN, value, loc);
 }
 
-node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc)
+node build_character_literal_expression(builder *const bldr, const char32_t value, const range_location loc)
 {
 	return expression_character_literal(&bldr->context, TYPE_CHARACTER, value, loc);
 }
 
-node build_integer_literal_expression(builder *const bldr, const item_t value, const location loc)
+node build_integer_literal_expression(builder *const bldr, const item_t value, const range_location loc)
 {
 	return expression_integer_literal(&bldr->context, TYPE_INTEGER, value, loc);
 }
 
-node build_floating_literal_expression(builder *const bldr, const double value, const location loc)
+node build_floating_literal_expression(builder *const bldr, const double value, const range_location loc)
 {
 	return expression_floating_literal(&bldr->context, TYPE_FLOATING, value, loc);
 }
 
-node build_string_literal_expression(builder *const bldr, const size_t index, const location loc)
+node build_string_literal_expression(builder *const bldr, const size_t index, const range_location loc)
 {
 	return expression_string_literal(&bldr->context, type_string(bldr->sx), index, loc);
 }
 
 node build_subscript_expression(builder *const bldr, node *const base, node *const index
-	, const location l_loc, const location r_loc)
+	, const range_location l_loc, const range_location r_loc)
 {
 	if (!node_is_correct(base) || !node_is_correct(index))
 	{
@@ -604,12 +604,12 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
 
 	const item_t element_type = type_array_get_element_type(bldr->sx, base_type);
 
-	const location loc = { node_get_location(base).begin, r_loc.end };
+	const range_location loc = { node_get_location(base).begin, r_loc.end };
 	return expression_subscript(element_type, base, index, loc);
 }
 
 node build_call_expression(builder *const bldr, node *const callee
-	, node_vector *const args, const location l_loc, const location r_loc)
+	, node_vector *const args, const range_location l_loc, const range_location r_loc)
 {
 	if (!node_is_correct(callee))
 	{
@@ -662,12 +662,12 @@ node build_call_expression(builder *const bldr, node *const callee
 	}
 
 	const item_t return_type = type_function_get_return_type(bldr->sx, callee_type);
-	const location loc = { node_get_location(callee).begin, r_loc.end };
+	const range_location loc = { node_get_location(callee).begin, r_loc.end };
 	return expression_call(return_type, callee, args, loc);
 }
 
 node build_member_expression(builder *const bldr, node *const base, const size_t name
-	, const bool is_arrow, const location op_loc, const location id_loc)
+	, const bool is_arrow, const range_location op_loc, const range_location id_loc)
 {
 	if (!node_is_correct(base))
 	{
@@ -707,7 +707,7 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
 			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
-			const location loc = { node_get_location(base).begin, id_loc.end };
+			const range_location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
 		}
@@ -725,7 +725,7 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	}
 
 	const item_t source_type = expression_get_type(expr);
-	const location loc = node_get_location(expr);
+	const range_location loc = node_get_location(expr);
 
 	if (target_type != source_type)
 	{
@@ -751,7 +751,7 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	return *expr;
 }
 
-node build_unary_expression(builder *const bldr, node *const operand, const unary_t op_kind, const location op_loc)
+node build_unary_expression(builder *const bldr, node *const operand, const unary_t op_kind, const range_location op_loc)
 {
 	if (!node_is_correct(operand))
 	{
@@ -760,9 +760,9 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 
 	const item_t operand_type = expression_get_type(operand);
 
-	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
-		? (location){ node_get_location(operand).begin, op_loc.end }
-		: (location){ op_loc.begin, node_get_location(operand).end };
+	const range_location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
+		? (range_location){ node_get_location(operand).begin, op_loc.end }
+		: (range_location){ op_loc.begin, node_get_location(operand).end };
 
 	switch (op_kind)
 	{
@@ -862,7 +862,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 }
 
 node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS
-	, const binary_t op_kind, const location op_loc)
+	, const binary_t op_kind, const range_location op_loc)
 {
 	if (!node_is_correct(LHS) || !node_is_correct(RHS))
 	{
@@ -886,7 +886,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		}
 	}
 
-	const location loc = { node_get_location(LHS).begin, node_get_location(RHS).end };
+	const range_location loc = { node_get_location(LHS).begin, node_get_location(RHS).end };
 
 	switch (op_kind)
 	{
@@ -1015,7 +1015,8 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 	}
 }
 
-node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS, location op_loc)
+node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS,
+							  range_location op_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(LHS) || !node_is_correct(RHS))
 	{
@@ -1041,7 +1042,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 		return node_broken();
 	}
 
-	const location loc = { node_get_location(cond).begin, node_get_location(RHS).end };
+	const range_location loc = { node_get_location(cond).begin, node_get_location(RHS).end };
 
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
@@ -1066,7 +1067,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	return node_broken();
 }
 
-node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc)
+node build_initializer(builder *const bldr, node_vector *const exprs, const range_location l_loc, const range_location r_loc)
 {
 	const size_t actual_inits = node_vector_size(exprs);
 	if (actual_inits == 0)
@@ -1075,7 +1076,7 @@ node build_initializer(builder *const bldr, node_vector *const exprs, const loca
 		return node_broken();
 	}
 
-	const location loc = { l_loc.begin, r_loc.end };
+	const range_location loc = { l_loc.begin, r_loc.end };
 	return expression_initializer(exprs, loc);
 }
 
@@ -1100,14 +1101,14 @@ node build_condition(builder *const bldr, node *const expr)
 	return *expr;
 }
 
-node build_empty_bound_expression(builder *const bldr, const location loc)
+node build_empty_bound_expression(builder *const bldr, const range_location loc)
 {
 	return expression_empty_bound(&bldr->context, loc);
 }
 
 
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, node_vector *const bounds, const location loc)
+	, node_vector *const bounds, const range_location loc)
 {
 	if (type_is_void(type))
 	{
@@ -1129,7 +1130,7 @@ node build_member_declaration(builder *const bldr, const item_t type, const size
 	return declaration_member(&bldr->context, member_type, name, bounds, loc);
 }
 
-node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc)
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const range_location struct_loc)
 {
 	return declaration_struct(&bldr->context, name, struct_loc);
 }
@@ -1160,19 +1161,19 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 	vector_clear(&names);
 	declaration_struct_set_type(declaration, type);
 
-	const location struct_loc = node_get_location(declaration);
+	const range_location struct_loc = node_get_location(declaration);
 	if (id == SIZE_MAX - 1)
 	{
 		semantic_error(bldr, struct_loc, repeated_decl, repr_get_name(bldr->sx, name));
 	}
 
 	const node last_member = node_vector_get(members, members_amount - 1);
-	const location loc = { struct_loc.begin, node_get_location(&last_member).end };
+	const range_location loc = { struct_loc.begin, node_get_location(&last_member).end };
 	return declaration_struct_set_location(declaration, loc);
 }
 
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-   , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
+   , const bool was_star, node_vector *const bounds, node *const initializer, const range_location ident_loc)
 {
 	if (type_is_void(type))
 	{
@@ -1226,7 +1227,7 @@ node build_empty_declaration(builder *const bldr)
 	return statement_declaration(&bldr->context);
 }
 
-node build_declaration(builder *const bldr, node *const declaration, node_vector *const declarators, const location loc)
+node build_declaration(builder *const bldr, node *const declaration, node_vector *const declarators, const range_location loc)
 {
 	const size_t amount = node_vector_size(declarators);
 	if (amount == 0 && statement_declaration_get_size(declaration) == 0)
@@ -1249,7 +1250,7 @@ node build_declaration(builder *const bldr, node *const declaration, node_vector
 }
 
 
-node build_case_statement(builder *const bldr, node *const expr, node *const substmt, const location case_loc)
+node build_case_statement(builder *const bldr, node *const expr, node *const substmt, const range_location case_loc)
 {
 	if (!node_is_correct(expr) || !node_is_correct(substmt))
 	{
@@ -1262,11 +1263,11 @@ node build_case_statement(builder *const bldr, node *const expr, node *const sub
 		return node_broken();
 	}
 
-	const location loc = { case_loc.begin, node_get_location(substmt).end };
+	const range_location loc = { case_loc.begin, node_get_location(substmt).end };
 	return statement_case(expr, substmt, loc);
 }
 
-node build_default_statement(builder *const bldr, node *const substmt, const location default_loc)
+node build_default_statement(builder *const bldr, node *const substmt, const range_location default_loc)
 {
 	if (!node_is_correct(substmt))
 	{
@@ -1274,11 +1275,11 @@ node build_default_statement(builder *const bldr, node *const substmt, const loc
 	}
 
 	(void)bldr;
-	const location loc = { default_loc.begin, node_get_location(substmt).end };
+	const range_location loc = { default_loc.begin, node_get_location(substmt).end };
 	return statement_default(substmt, loc);
 }
 
-node build_compound_statement(builder *const bldr, node_vector *const stmts, location l_loc, location r_loc)
+node build_compound_statement(builder *const bldr, node_vector *const stmts, range_location l_loc, range_location r_loc)
 {
 	if (stmts)
 	{
@@ -1293,17 +1294,17 @@ node build_compound_statement(builder *const bldr, node_vector *const stmts, loc
 		}
 	}
 
-	const location loc = { l_loc.begin, r_loc.end };
+	const range_location loc = { l_loc.begin, r_loc.end };
 	return statement_compound(&bldr->context, stmts, loc);
 }
 
-node build_null_statement(builder *const bldr, const location semi_loc)
+node build_null_statement(builder *const bldr, const range_location semi_loc)
 {
 	return statement_null(&bldr->context, semi_loc);
 }
 
 node build_if_statement(builder *const bldr, node *const cond
-	, node *const then_stmt, node *const else_stmt, const location if_loc)
+	, node *const then_stmt, node *const else_stmt, const range_location if_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(then_stmt) || (else_stmt && !node_is_correct(else_stmt)))
 	{
@@ -1316,11 +1317,11 @@ node build_if_statement(builder *const bldr, node *const cond
 		return node_broken();
 	}
 
-	const location loc = { if_loc.begin, node_get_location(else_stmt ? else_stmt : then_stmt).end };
+	const range_location loc = { if_loc.begin, node_get_location(else_stmt ? else_stmt : then_stmt).end };
 	return statement_if(cond, then_stmt, else_stmt, loc);
 }
 
-node build_switch_statement(builder *const bldr, node *const cond, node *const body, const location switch_loc)
+node build_switch_statement(builder *const bldr, node *const cond, node *const body, const range_location switch_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(body))
 	{
@@ -1333,11 +1334,11 @@ node build_switch_statement(builder *const bldr, node *const cond, node *const b
 		return node_broken();
 	}
 
-	const location loc = { switch_loc.begin, node_get_location(body).end };
+	const range_location loc = { switch_loc.begin, node_get_location(body).end };
 	return statement_switch(cond, body, loc);
 }
 
-node build_while_statement(builder *const bldr, node *const cond, node *const body, const location while_loc)
+node build_while_statement(builder *const bldr, node *const cond, node *const body, const range_location while_loc)
 {
 	if (!node_is_correct(cond) || !node_is_correct(body))
 	{
@@ -1350,11 +1351,11 @@ node build_while_statement(builder *const bldr, node *const cond, node *const bo
 		return node_broken();
 	}
 
-	const location loc = { while_loc.begin, node_get_location(body).end };
+	const range_location loc = { while_loc.begin, node_get_location(body).end };
 	return statement_while(cond, body, loc);
 }
 
-node build_do_statement(builder *const bldr, node *const body, node *const cond, const location do_loc)
+node build_do_statement(builder *const bldr, node *const body, node *const cond, const range_location do_loc)
 {
 	if (!node_is_correct(body) || !node_is_correct(cond))
 	{
@@ -1367,12 +1368,12 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
 		return node_broken();
 	}
 
-	const location loc = { do_loc.begin, node_get_location(cond).end };
+	const range_location loc = { do_loc.begin, node_get_location(cond).end };
 	return statement_do(body, cond, loc);
 }
 
 node build_for_statement(builder *const bldr, node *const init
-	, node *const cond, node *const incr, node *const body, const location for_loc)
+	, node *const cond, node *const incr, node *const body, const range_location for_loc)
 {
 	if ((init && !node_is_correct(init)) || (cond && !node_is_correct(cond))
 		|| (incr && !node_is_correct(incr)) || !node_is_correct(body))
@@ -1386,23 +1387,23 @@ node build_for_statement(builder *const bldr, node *const init
 		return node_broken();
 	}
 
-	const location loc = { for_loc.begin, node_get_location(body).end };
+	const range_location loc = { for_loc.begin, node_get_location(body).end };
 	return statement_for(init, cond, incr, body, loc);
 }
 
-node build_continue_statement(builder *const bldr, const location continue_loc)
+node build_continue_statement(builder *const bldr, const range_location continue_loc)
 {
 	return statement_continue(&bldr->context, continue_loc);
 }
 
-node build_break_statement(builder *const bldr, const location break_loc)
+node build_break_statement(builder *const bldr, const range_location break_loc)
 {
 	return statement_break(&bldr->context, break_loc);
 }
 
-node build_return_statement(builder *const bldr, node *const expr, const location return_loc)
+node build_return_statement(builder *const bldr, node *const expr, const range_location return_loc)
 {
-	location loc = return_loc;
+	range_location loc = return_loc;
 	const item_t return_type = type_function_get_return_type(bldr->sx, bldr->func_type);
 	if (expr != NULL)
 	{

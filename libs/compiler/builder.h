@@ -69,7 +69,7 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
  *
  *	@return	Identifier expression node
  */
-node build_identifier_expression(builder *const bldr, const size_t name, const location loc);
+node build_identifier_expression(builder *const bldr, const size_t name, const range_location loc);
 
 /**
  *	Build a null literal expression
@@ -79,7 +79,7 @@ node build_identifier_expression(builder *const bldr, const size_t name, const l
  *
  *	@return Null literal expression node
  */
-node build_null_literal_expression(builder *const bldr, const location loc);
+node build_null_literal_expression(builder *const bldr, const range_location loc);
 
 /**
  *	Build a boolean literal expression
@@ -90,7 +90,7 @@ node build_null_literal_expression(builder *const bldr, const location loc);
  *
  *	@return	Boolean literal expression node
  */
-node build_boolean_literal_expression(builder *const bldr, const bool value, const location loc);
+node build_boolean_literal_expression(builder *const bldr, const bool value, const range_location loc);
 
 /**
  *	Build a character literal expression
@@ -101,7 +101,7 @@ node build_boolean_literal_expression(builder *const bldr, const bool value, con
  *
  *	@return	Character literal expression node
  */
-node build_character_literal_expression(builder *const bldr, const char32_t value, const location loc);
+node build_character_literal_expression(builder *const bldr, const char32_t value, const range_location loc);
 
 /**
  *	Build an integer literal expression
@@ -112,7 +112,7 @@ node build_character_literal_expression(builder *const bldr, const char32_t valu
  *
  *	@return	Integer literal expression node
  */
-node build_integer_literal_expression(builder *const bldr, const item_t value, const location loc);
+node build_integer_literal_expression(builder *const bldr, const item_t value, const range_location loc);
 
 /**
  *	Build a floating literal expression
@@ -123,7 +123,7 @@ node build_integer_literal_expression(builder *const bldr, const item_t value, c
  *
  *	@return	Floating literal expression node
  */
-node build_floating_literal_expression(builder *const bldr, const double value, const location loc);
+node build_floating_literal_expression(builder *const bldr, const double value, const range_location loc);
 
 /**
  *	Build a string literal expression
@@ -134,7 +134,7 @@ node build_floating_literal_expression(builder *const bldr, const double value, 
  *
  *	@return	String literal expression node
  */
-node build_string_literal_expression(builder *const bldr, const size_t index, const location loc);
+node build_string_literal_expression(builder *const bldr, const size_t index, const range_location loc);
 
 /**
  *	Build a subscript expression
@@ -148,7 +148,7 @@ node build_string_literal_expression(builder *const bldr, const size_t index, co
  *	@return	Subscript expression node
  */
 node build_subscript_expression(builder *const bldr, node *const base, node *const index
-	, const location l_loc, const location r_loc);
+	, const range_location l_loc, const range_location r_loc);
 
 /**
  *	Build a call expression
@@ -162,7 +162,7 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
  *	@return	Call expression node
  */
 node build_call_expression(builder *const bldr, node *const callee
-	, node_vector *const args, const location l_loc, const location r_loc);
+	, node_vector *const args, const range_location l_loc, const range_location r_loc);
 
 /**
  *	Build a member expression
@@ -177,7 +177,7 @@ node build_call_expression(builder *const bldr, node *const callee
  *	@return	Member expression node
  */
 node build_member_expression(builder *const bldr, node *const base, const size_t name
-	, const bool is_arrow, const location op_loc, const location id_loc);
+	, const bool is_arrow, const range_location op_loc, const range_location id_loc);
 
 /**
  *	Build a cast expression
@@ -199,7 +199,7 @@ node build_cast_expression(const item_t target_type, node *const expr);
  *
  *	@return	Unary expression node
  */
-node build_unary_expression(builder *const bldr, node *const operand, const unary_t op_kind, const location op_loc);
+node build_unary_expression(builder *const bldr, node *const operand, const unary_t op_kind, const range_location op_loc);
 
 /**
  *	Build a binary expression
@@ -213,7 +213,7 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
  *	@return	Binary expression node
  */
 node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS
-	, const binary_t op_kind, const location op_loc);
+	, const binary_t op_kind, const range_location op_loc);
 
 /**
  *	Build a ternary expression
@@ -226,7 +226,8 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
  *
  *	@return	Ternary expression node
  */
-node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS, location op_loc);
+node build_ternary_expression(builder *const bldr, node *const cond, node *const LHS, node *const RHS,
+							  range_location op_loc);
 
 /**
  *	Build an initializer
@@ -238,7 +239,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
  *
  *	@return	Initializer
  */
-node build_initializer(builder *const bldr, node_vector *const exprs, const location l_loc, const location r_loc);
+node build_initializer(builder *const bldr, node_vector *const exprs, const range_location l_loc, const range_location r_loc);
 
 /**
  *	Build a constant expression
@@ -268,7 +269,7 @@ node build_condition(builder *const bldr, node *const expr);
  *
  *	@return	Empty bound expression
  */
-node build_empty_bound_expression(builder *const bldr, const location loc);
+node build_empty_bound_expression(builder *const bldr, const range_location loc);
 
 
 /**
@@ -284,7 +285,7 @@ node build_empty_bound_expression(builder *const bldr, const location loc);
  *	@return	Member declaration
  */
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, node_vector *const bounds, const location loc);
+	, node_vector *const bounds, const range_location loc);
 
 /**
  *	Build an empty struct declaration
@@ -295,7 +296,7 @@ node build_member_declaration(builder *const bldr, const item_t type, const size
  *
  *	@return	Empty struct declaration
  */
-node build_empty_struct_declaration(builder *const bldr, const size_t name, const location struct_loc);
+node build_empty_struct_declaration(builder *const bldr, const size_t name, const range_location struct_loc);
 
 /**
  *	Build a struct declaration
@@ -322,7 +323,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *	@return	Declarator
  */
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc);
+	, const bool was_star, node_vector *const bounds, node *const initializer, const range_location ident_loc);
 
 /**
  *	Build an empty declaration
@@ -344,7 +345,7 @@ node build_empty_declaration(builder *const bldr);
  *	@return	Declaration
  */
 node build_declaration(builder *const bldr, node *const declaration
-	, node_vector *const declarators, const location semi_loc);
+	, node_vector *const declarators, const range_location semi_loc);
 
 
 /**
@@ -357,7 +358,7 @@ node build_declaration(builder *const bldr, node *const declaration
  *
  *	@return	Case statement
  */
-node build_case_statement(builder *const bldr, node *const expr, node *const substmt, const location case_loc);
+node build_case_statement(builder *const bldr, node *const expr, node *const substmt, const range_location case_loc);
 
 /**
  *	Build a default statement
@@ -368,7 +369,7 @@ node build_case_statement(builder *const bldr, node *const expr, node *const sub
  *
  *	@return	Default statement
  */
-node build_default_statement(builder *const bldr, node *const substmt, const location default_loc);
+node build_default_statement(builder *const bldr, node *const substmt, const range_location default_loc);
 
 /**
  *	Build a compound statement
@@ -380,7 +381,8 @@ node build_default_statement(builder *const bldr, node *const substmt, const loc
  *
  *	@return	Compound statement
  */
-node build_compound_statement(builder *const bldr, node_vector *const stmts, location l_loc, location r_loc);
+node build_compound_statement(builder *const bldr, node_vector *const stmts, range_location l_loc,
+							  range_location r_loc);
 
 /**
  *	Build a null statement
@@ -390,7 +392,7 @@ node build_compound_statement(builder *const bldr, node_vector *const stmts, loc
  *
  *	@return	Null statement
  */
-node build_null_statement(builder *const bldr, const location semi_loc);
+node build_null_statement(builder *const bldr, const range_location semi_loc);
 
 /**
  *	Build an if statement
@@ -404,7 +406,7 @@ node build_null_statement(builder *const bldr, const location semi_loc);
  *	@return	If statement
  */
 node build_if_statement(builder *const bldr, node *const cond
-	, node *const then_stmt, node *const else_stmt, const location if_loc);
+	, node *const then_stmt, node *const else_stmt, const range_location if_loc);
 
 /**
  *	Build a switch statement
@@ -416,7 +418,7 @@ node build_if_statement(builder *const bldr, node *const cond
  *
  *	@return	Switch statement
  */
-node build_switch_statement(builder *const bldr, node *const cond, node *const body, const location switch_loc);
+node build_switch_statement(builder *const bldr, node *const cond, node *const body, const range_location switch_loc);
 
 /**
  *	Build a while statement
@@ -428,7 +430,7 @@ node build_switch_statement(builder *const bldr, node *const cond, node *const b
  *
  *	@return	While statement
  */
-node build_while_statement(builder *const bldr, node *const cond, node *const body, const location while_loc);
+node build_while_statement(builder *const bldr, node *const cond, node *const body, const range_location while_loc);
 
 /**
  *	Build a do statement
@@ -440,7 +442,7 @@ node build_while_statement(builder *const bldr, node *const cond, node *const bo
  *
  *	@return	Do statement
  */
-node build_do_statement(builder *const bldr, node *const body, node *const cond, const location do_loc);
+node build_do_statement(builder *const bldr, node *const body, node *const cond, const range_location do_loc);
 
 /**
  *	Build a for statement
@@ -455,7 +457,7 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
  *	@return	For statement
  */
 node build_for_statement(builder *const bldr, node *const init
-	, node *const cond, node *const incr, node *const body, const location for_loc);
+	, node *const cond, node *const incr, node *const body, const range_location for_loc);
 
 /**
  *	Build a continue statement
@@ -465,7 +467,7 @@ node build_for_statement(builder *const bldr, node *const init
  *
  *	@return	Continue statement
  */
-node build_continue_statement(builder *const bldr, const location continue_loc);
+node build_continue_statement(builder *const bldr, const range_location continue_loc);
 
 /**
  *	Build a break statement
@@ -475,7 +477,7 @@ node build_continue_statement(builder *const bldr, const location continue_loc);
  *
  *	@return	Break statement
  */
-node build_break_statement(builder *const bldr, const location break_loc);
+node build_break_statement(builder *const bldr, const range_location break_loc);
 
 /**
  *	Build a return statement
@@ -485,7 +487,7 @@ node build_break_statement(builder *const bldr, const location break_loc);
  *
  *	@return	Return statement
  */
-node build_return_statement(builder *const bldr, node *const expr, const location return_loc);
+node build_return_statement(builder *const bldr, node *const expr, const range_location return_loc);
 
 #ifdef __cplusplus
 } /* extern "C" */

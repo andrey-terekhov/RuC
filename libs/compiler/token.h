@@ -119,16 +119,17 @@ typedef enum TOKEN
 } token_t;
 
 /** Source location */
-typedef struct location
+typedef struct range_location
 {
+	// TODO: this should contain location structs
 	size_t begin;
 	size_t end;
-} location;
+} range_location;
 
 /** Token representation */
 typedef struct token
 {
-	location loc;					/**< Source location */
+	range_location loc;				/**< Source location */
 	token_t kind;					/**< Token kind */
 	union
 	{
@@ -148,7 +149,7 @@ typedef struct token
  *
  *	@return	Token location
  */
-location token_get_location(const token *const tk);
+range_location token_get_location(const token *const tk);
 
 /**
  *	Get token kind
@@ -174,7 +175,7 @@ bool token_is_not(const token *const tk, const token_t kind);
  *
  *	@return	Identifier token
  */
-token token_identifier(const location loc, const size_t name);
+token token_identifier(const range_location loc, const size_t name);
 
 /**
  *	Get identifier name from identifier token
@@ -194,7 +195,7 @@ size_t token_get_ident_name(const token *const tk);
  *
  *	@return	Character literal token
  */
-token token_char_literal(const location loc, const char32_t value);
+token token_char_literal(const range_location loc, const char32_t value);
 
 /**
  *	Get value from character literal token
@@ -214,7 +215,7 @@ char32_t token_get_char_value(const token *const tk);
  *
  *	@return	Integer literal token
  */
-token token_int_literal(const location loc, const uint64_t value);
+token token_int_literal(const range_location loc, const uint64_t value);
 
 /**
  *	Get value from integer literal token
@@ -234,7 +235,7 @@ uint64_t token_get_int_value(const token *const tk);
  *
  *	@return	Floating literal token
  */
-token token_float_literal(const location loc, const double value);
+token token_float_literal(const range_location loc, const double value);
 
 /**
  *	Get value from floating literal token
@@ -254,7 +255,7 @@ double token_get_float_value(const token *const tk);
  *
  *	@return	String literal token
  */
-token token_string_literal(const location loc, const size_t string_num);
+token token_string_literal(const range_location loc, const size_t string_num);
 
 /**
  *	Get string index from string literal token
@@ -281,7 +282,7 @@ token token_eof(void);
  *
  *	@return	Keyword token
  */
-token token_keyword(const location loc, const token_t kind);
+token token_keyword(const range_location loc, const token_t kind);
 
 /**
  *	Create punctuator token
@@ -291,7 +292,7 @@ token token_keyword(const location loc, const token_t kind);
  *
  *	@return	Punctuator token
  */
-token token_punctuator(const location loc, const token_t kind);
+token token_punctuator(const range_location loc, const token_t kind);
 
 #ifdef __cplusplus
 } /* extern "C" */

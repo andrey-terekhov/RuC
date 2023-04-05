@@ -17,7 +17,7 @@
 #include "AST.h"
 
 extern node node_broken(void);
-extern location node_get_location(const node *const nd);
+extern range_location node_get_location(const node *const nd);
 
 extern item_t expression_get_type(const node *const nd);
 extern bool expression_is_lvalue(const node *const nd);
@@ -44,10 +44,10 @@ static inline void node_set_child(const node *const parent, const node *const ch
  */
 
 
-location node_get_location(const node *const nd)
+range_location node_get_location(const node *const nd)
 {
 	const size_t argc = node_get_argc(nd);
-	return (location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
+	return (range_location){ (size_t)node_get_arg(nd, argc - 2), (size_t)node_get_arg(nd, argc - 1) };
 }
 
 expression_t expression_get_class(const node *const nd)
@@ -83,7 +83,7 @@ expression_t expression_get_class(const node *const nd)
 	}
 }
 
-node expression_identifier(node *const context, const item_t type, const size_t id, const location loc)
+node expression_identifier(node *const context, const item_t type, const size_t id, const range_location loc)
 {
 	node nd = node_create(context, OP_IDENTIFIER);
 
@@ -103,7 +103,7 @@ size_t expression_identifier_get_id(const node *const nd)
 }
 
 
-node expression_null_literal(node *const context, const item_t type, const location loc)
+node expression_null_literal(node *const context, const item_t type, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -116,7 +116,7 @@ node expression_null_literal(node *const context, const item_t type, const locat
 }
 
 
-node expression_boolean_literal(node *const context, const item_t type, const bool value, const location loc)
+node expression_boolean_literal(node *const context, const item_t type, const bool value, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -136,7 +136,7 @@ bool expression_literal_get_boolean(const node *const nd)
 }
 
 
-node expression_character_literal(node *const context, const item_t type, const char32_t value, const location loc)
+node expression_character_literal(node *const context, const item_t type, const char32_t value, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -156,7 +156,7 @@ char32_t expression_literal_get_character(const node *const nd)
 }
 
 
-node expression_integer_literal(node *const context, const item_t type, const item_t value, const location loc)
+node expression_integer_literal(node *const context, const item_t type, const item_t value, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -176,7 +176,7 @@ item_t expression_literal_get_integer(const node *const nd)
 }
 
 
-node expression_floating_literal(node *const context, const item_t type, const double value, const location loc)
+node expression_floating_literal(node *const context, const item_t type, const double value, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -196,7 +196,7 @@ double expression_literal_get_floating(const node *const nd)
 }
 
 
-node expression_string_literal(node *const context, const item_t type, const size_t index, const location loc)
+node expression_string_literal(node *const context, const item_t type, const size_t index, const range_location loc)
 {
 	node nd = node_create(context, OP_LITERAL);
 
@@ -216,7 +216,7 @@ size_t expression_literal_get_string(const node *const nd)
 }
 
 
-node expression_subscript(const item_t type, node *const base, node *const index, const location loc)
+node expression_subscript(const item_t type, node *const base, node *const index, const range_location loc)
 {
 	node nd = node_insert(base, OP_SLICE, 4);		// Выражение-операнд
 	node_set_child(&nd, index);						// Выражение-индекс
@@ -242,7 +242,7 @@ node expression_subscript_get_index(const node *const nd)
 }
 
 
-node expression_call(const item_t type, node *const callee, node_vector *const args, const location loc)
+node expression_call(const item_t type, node *const callee, node_vector *const args, const range_location loc)
 {
 	node nd = node_insert(callee, OP_CALL, 4);		// Операнд выражения
 
@@ -284,7 +284,7 @@ node expression_call_get_argument(const node *const nd, const size_t index)
 
 
 node expression_member(const item_t type, const category_t ctg
-	, const size_t index, bool is_arrow, node *const base, const location loc)
+	, const size_t index, bool is_arrow, node *const base, const range_location loc)
 {
 	node nd = node_insert(base, OP_SELECT, 6);		// Операнд выражения
 
@@ -317,7 +317,7 @@ bool expression_member_is_arrow(const node *const nd)
 }
 
 
-node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc)
+node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const range_location loc)
 {
 	node nd = node_insert(expr, OP_CAST, 5);		// Операнд выражения
 
@@ -343,7 +343,7 @@ node expression_cast_get_operand(const node *const nd)
 }
 
 
-node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const location loc)
+node expression_unary(const item_t type, const category_t ctg, node *const expr, const unary_t op, const range_location loc)
 {
 	node nd = node_insert(expr, OP_UNARY, 5);		// Операнд выражения
 
@@ -369,7 +369,7 @@ node expression_unary_get_operand(const node *const nd)
 }
 
 
-node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc)
+node expression_binary(const item_t type, node *const LHS, node *const RHS, const binary_t op, const range_location loc)
 {
 	node nd = node_insert(LHS, OP_BINARY, 5);		// Первый операнд выражения
 	node_set_child(&nd, RHS);						// Второй операнд выражения
@@ -402,7 +402,7 @@ node expression_binary_get_RHS(const node *const nd)
 }
 
 
-node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const location loc)
+node expression_ternary(const item_t type, node *const cond, node *const LHS, node *const RHS, const range_location loc)
 {
 	node nd = node_insert(cond, OP_TERNARY, 4);		// Первый операнд выражения
 	node_set_child(&nd, LHS);						// Второй операнд выражения
@@ -435,7 +435,7 @@ node expression_ternary_get_RHS(const node *const nd)
 }
 
 
-node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const location loc)
+node expression_assignment(const item_t type, node *const LHS, node *const RHS, const binary_t op, const range_location loc)
 {
 	node nd = node_insert(LHS, OP_ASSIGNMENT, 5);	// Первый операнд выражения
 	node_set_child(&nd, RHS);						// Второй операнд выражения
@@ -468,7 +468,7 @@ node expression_assignment_get_RHS(const node *const nd)
 }
 
 
-node expression_initializer(node_vector *const exprs, const location loc)
+node expression_initializer(node_vector *const exprs, const range_location loc)
 {
 	node fst = node_vector_get(exprs, 0);
 	node nd = node_insert(&fst, OP_INITIALIZER, 4);
@@ -507,7 +507,7 @@ node expression_initializer_get_subexpr(const node *const nd, const size_t index
 }
 
 
-node expression_empty_bound(node *const context, const location loc)
+node expression_empty_bound(node *const context, const range_location loc)
 {
 	node nd = node_create(context, OP_EMPTY_BOUND);
 
@@ -557,7 +557,7 @@ statement_t statement_get_class(const node *const nd)
 }
 
 
-node statement_case(node *const expr, node *const substmt, const location loc)
+node statement_case(node *const expr, node *const substmt, const range_location loc)
 {
 	node nd = node_insert(expr, OP_CASE, 2);
 	node_set_child(&nd, substmt);
@@ -581,7 +581,7 @@ node statement_case_get_substmt(const node *const nd)
 }
 
 
-node statement_default(node *const substmt, const location loc)
+node statement_default(node *const substmt, const range_location loc)
 {
 	node nd = node_insert(substmt, OP_DEFAULT, 2);
 
@@ -598,7 +598,7 @@ node statement_default_get_substmt(const node *const nd)
 }
 
 
-node statement_compound(node *const context, node_vector *const stmts, const location loc)
+node statement_compound(node *const context, node_vector *const stmts, const range_location loc)
 {
 	node nd = node_create(context, OP_BLOCK);
 
@@ -631,7 +631,7 @@ node statement_compound_get_substmt(const node *const nd, const size_t index)
 }
 
 
-node statement_null(node *const context, const location loc)
+node statement_null(node *const context, const range_location loc)
 {
 	node nd = node_create(context, OP_NOP);
 
@@ -642,7 +642,7 @@ node statement_null(node *const context, const location loc)
 }
 
 
-node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const location loc)
+node statement_if(node *const cond, node *const then_stmt, node *const else_stmt, const range_location loc)
 {
 	node nd = node_insert(cond, OP_IF, 3);
 	node_set_child(&nd, then_stmt);
@@ -686,7 +686,7 @@ node statement_if_get_else_substmt(const node *const nd)
 }
 
 
-node statement_switch(node *const cond, node *const body, const location loc)
+node statement_switch(node *const cond, node *const body, const range_location loc)
 {
 	node nd = node_insert(cond, OP_SWITCH, 2);
 	node_set_child(&nd, body);
@@ -710,7 +710,7 @@ node statement_switch_get_body(const node *const nd)
 }
 
 
-node statement_while(node *const cond, node *const body, const location loc)
+node statement_while(node *const cond, node *const body, const range_location loc)
 {
 	node nd = node_insert(cond, OP_WHILE, 2);
 	node_set_child(&nd, body);
@@ -734,7 +734,7 @@ node statement_while_get_body(const node *const nd)
 }
 
 
-node statement_do(node *const body, node *const cond, const location loc)
+node statement_do(node *const body, node *const cond, const range_location loc)
 {
 	node nd = node_insert(body, OP_DO, 2);
 	node_set_child(&nd, cond);
@@ -758,7 +758,7 @@ node statement_do_get_body(const node *const nd)
 }
 
 
-node statement_for(node *const init, node *const cond, node *const incr, node *const body, const location loc)
+node statement_for(node *const init, node *const cond, node *const incr, node *const body, const range_location loc)
 {
 	node nd = node_insert(body, OP_FOR, 5);
 
@@ -835,7 +835,7 @@ node statement_for_get_body(const node *const nd)
 }
 
 
-node statement_continue(node *const context, const location loc)
+node statement_continue(node *const context, const range_location loc)
 {
 	node nd = node_create(context, OP_CONTINUE);
 
@@ -846,7 +846,7 @@ node statement_continue(node *const context, const location loc)
 }
 
 
-node statement_break(node *const context, const location loc)
+node statement_break(node *const context, const range_location loc)
 {
 	node nd = node_create(context, OP_BREAK);
 
@@ -857,7 +857,7 @@ node statement_break(node *const context, const location loc)
 }
 
 
-node statement_return(node *const context, node *const expr, const location loc)
+node statement_return(node *const context, node *const expr, const range_location loc)
 {
 	node nd = node_create(context, OP_RETURN);
 
@@ -903,7 +903,7 @@ void statement_declaration_add_declarator(const node *const nd, node *const decl
 	node_set_child(nd, declarator);
 }
 
-node statement_declaration_set_location(const node *const nd, const location loc)
+node statement_declaration_set_location(const node *const nd, const range_location loc)
 {
 	assert(node_get_type(nd) == OP_DECLSTMT);
 	node_set_arg(nd, 0, (item_t)loc.begin);
@@ -944,7 +944,7 @@ declaration_t declaration_get_class(const node *const nd)
 
 
 node declaration_member(node *const context, const item_t type, const size_t name
-	, node_vector *const bounds, const location loc)
+	, node_vector *const bounds, const range_location loc)
 {
 	node nd = node_create(context, OP_DECL_MEMBER);
 
@@ -991,7 +991,7 @@ node declaration_member_get_bound(const node *const nd, const size_t index)
 }
 
 
-node declaration_struct(node *const context, const size_t name, const location loc)
+node declaration_struct(node *const context, const size_t name, const range_location loc)
 {
 	node nd = node_create(context, OP_DECL_STRUCT);
 
@@ -1015,7 +1015,7 @@ void declaration_struct_set_type(node *const nd, const item_t type)
 	node_set_arg(nd, 1, type);
 }
 
-node declaration_struct_set_location(node *const nd, const location loc)
+node declaration_struct_set_location(node *const nd, const range_location loc)
 {
 	assert(node_get_type(nd) == OP_DECL_STRUCT);
 	node_set_arg(nd, 2, (item_t)loc.begin);
@@ -1050,7 +1050,7 @@ node declaration_struct_get_member(const node *const nd, const size_t index)
 
 
 node declaration_variable(node *const context, const size_t id, node_vector *const bounds
-   , node *const initializer, const location loc)
+   , node *const initializer, const range_location loc)
 {
 	node nd = node_create(context, OP_DECL_VAR);
 

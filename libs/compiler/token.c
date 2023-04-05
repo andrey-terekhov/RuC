@@ -26,7 +26,7 @@
  */
 
 
-location token_get_location(const token *const tk)
+range_location token_get_location(const token *const tk)
 {
 	return tk->loc;
 }
@@ -47,7 +47,7 @@ bool token_is_not(const token *const tk, const token_t kind)
 }
 
 
-token token_identifier(const location loc, const size_t name)
+token token_identifier(const range_location loc, const size_t name)
 {
 	return (token){ .loc = loc, .kind = TK_IDENTIFIER, .data.ident_repr = name };
 }
@@ -59,7 +59,7 @@ size_t token_get_ident_name(const token *const tk)
 }
 
 
-token token_char_literal(const location loc, const char32_t value)
+token token_char_literal(const range_location loc, const char32_t value)
 {
 	return (token){ .loc = loc, .kind = TK_CHAR_LITERAL, .data.char_value = value };
 }
@@ -71,7 +71,7 @@ char32_t token_get_char_value(const token *const tk)
 }
 
 
-token token_int_literal(const location loc, const uint64_t value)
+token token_int_literal(const range_location loc, const uint64_t value)
 {
 	return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
 }
@@ -83,7 +83,7 @@ uint64_t token_get_int_value(const token *const tk)
 }
 
 
-token token_float_literal(const location loc, const double value)
+token token_float_literal(const range_location loc, const double value)
 {
 	return (token){ .loc = loc, .kind = TK_FLOAT_LITERAL, .data.float_value = value };
 }
@@ -95,7 +95,7 @@ double token_get_float_value(const token *const tk)
 }
 
 
-token token_string_literal(const location loc, const size_t string_num)
+token token_string_literal(const range_location loc, const size_t string_num)
 {
 	return (token){ .loc = loc, .kind = TK_STRING_LITERAL, .data.string_num = string_num };
 }
@@ -112,12 +112,12 @@ token token_eof(void)
 	return (token){ .loc = { SIZE_MAX, SIZE_MAX }, .kind = TK_EOF };
 }
 
-token token_keyword(const location loc, const token_t kind)
+token token_keyword(const range_location loc, const token_t kind)
 {
 	return (token){ .loc = loc, .kind = kind };
 }
 
-token token_punctuator(const location loc, const token_t kind)
+token token_punctuator(const range_location loc, const token_t kind)
 {
 	return (token){ .loc = loc, .kind = kind };
 }

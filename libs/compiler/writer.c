@@ -18,6 +18,7 @@
 #include <string.h>
 #include "AST.h"
 #include "instructions.h"
+#include "locator.h"
 #include "uniprinter.h"
 
 
@@ -75,16 +76,39 @@ static inline void write_line(writer *const wrt, const char *const string)
 	uni_printf(wrt->io, "%s", string);
 }
 
+
 /**
  *	Write source location
  *
  *	@param	wrt			Writer
- *	@param	loc			Source location
+ *	@param	io_index	Index in the io
  */
-static inline void write_location(writer *const wrt, const location loc)
+static inline void write_location(writer *const wrt, const size_t io_index)
 {
-	uni_printf(wrt->io, " at <%zu, %zu>\n", loc.begin, loc.end);
+	const size_t prev_loc = in_get_position(wrt->sx->io);
+	in_set_position(wrt->sx->io, io_index);
+
+	const location loc = loc_search(wrt->sx->io);
+	in_set_position(wrt->sx->io, prev_loc);
+
+	uni_printf(wrt->io, "%zu:%zu", loc_get_line(&loc), loc_get_symbol(&loc));
 }
+
+/**
+ *	Write range location
+ *
+ *	@param	wrt			Writer
+ *	@param	loc			Range location
+ */
+static inline void write_range_location(writer *const wrt, const range_location loc)
+{
+	write(wrt, " at <");
+	write_location(wrt, loc.begin);
+	write(wrt, ", ");
+	write_location(wrt, loc.end);
+	write(wrt, ">\n");
+}
+
 
 /**
  *	Write type spelling
@@ -279,7 +303,7 @@ static void write_expression_metadata(writer *const wrt, const node *const nd)
 	write_type(wrt, expression_get_type(nd));
 	write(wrt, "'");
 
-	write_location(wrt, node_get_location(nd));
+	write_range_location(wrt, node_get_location(nd));
 }
 
 /**
