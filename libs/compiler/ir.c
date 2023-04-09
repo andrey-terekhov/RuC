@@ -67,6 +67,8 @@ inline unreachable(const char* msg)
 
 #endif
 
+#define max(a, b) ((a >= b) ? a : b)
+
 //
 // Значения для передачи в gen_* функции.
 //
@@ -104,6 +106,13 @@ rvalue create_imm_string_rvalue(const char* value)
 		.value.string = value
 	};
 }
+rvalue create_generic_rvalue(const size_t id)
+{
+	return (rvalue) {
+		.kind = RVALUE_KIND_GENERIC,
+		.id = id
+	};
+}
 
 rvalue_kind rvalue_get_kind(const rvalue *const value)
 {
@@ -129,6 +138,10 @@ float imm_float_rvalue_get_value(const rvalue *const value)
 char* imm_string_rvalue_get_value(const rvalue *const value)
 {
 	return value->value.string;
+}
+size_t generic_rvalue_get_id(const rvalue *const value)
+{
+	return value->id;
 }
 
 
@@ -165,7 +178,7 @@ item_t lvalue_get_type(const lvalue *const value)
 	return value->type;
 }
 
-item_t local_lvalue_get_displ(const lvalue *const value)
+size_t local_lvalue_get_displ(const lvalue *const value)
 {
 	return value->displ;
 }
@@ -173,10 +186,103 @@ size_t param_lvalue_get_num(const lvalue *const value)
 {
 	return value->num;
 }
-item_t global_lvalue_get_displ(const lvalue *const value)
+size_t global_lvalue_get_displ(const lvalue *const value)
 {
 	return value->displ;
 }
+
+label create_label(const label_kind kind, const size_t id)
+{
+	return (label) {
+		.kind = kind,
+		.id = id
+	};
+}
+
+label_kind label_get_kind(const label *const label)
+{
+	return label->kind;
+}
+size_t label_get_id(const label *const label)
+{
+	return label->id;
+}
+
+static extern_data create_extern_data(const item_t id, const item_t type)
+{
+	return (extern_data) {
+		.id = id,
+		.type = type
+	};
+}
+
+item_t extern_data_get_id(const extern_data *const data)
+{
+	return data->id;
+}
+item_t extern_data_get_type(const extern_data *const data)
+{
+	return data->type;
+}
+
+static global_data create_global_data(const item_t id, const item_t type)
+{
+	return (global_data) {
+		.id = id,
+		.type = type
+	};
+}
+
+item_t global_data_get_id(const global_data *const data)
+{
+	return data->id;
+}
+item_t global_data_get_type(const global_data *const data)
+{
+	return data->type;
+}
+
+static function_data create_function_data(const item_t id, const item_t type, const size_t param_count, 
+	const bool is_leaf, const size_t local_size, const size_t max_call_arguments)
+{
+	return (function_data) {
+		.id = id,
+		.type = type,
+		.param_count = param_count,
+
+		.is_leaf = is_leaf,
+
+		.local_size = local_size,
+		.max_call_arguments = max_call_arguments
+	};
+}
+
+item_t function_data_get_id(const function_data *const data)
+{
+	return data->id;
+}
+const char* function_data_get_spelling(const function_data *const data, const syntax *const sx)
+{
+	return ident_get_spelling(sx, function_data_get_id(data));
+}
+item_t function_data_get_type(const function_data *const data)
+{
+	return data->type;
+}
+
+size_t function_data_get_param_count(const function_data *const data)
+{
+	return data->param_count;
+}
+size_t function_data_get_local_size(const function_data *const data)
+{
+	return data->local_size;
+}
+size_t function_data_get_max_call_arguments(const function_data *const data)
+{
+	return data->max_call_arguments;
+}
+
 
 
 //
@@ -246,6 +352,13 @@ static ir_value create_ir_param_value(const node *const nd, const item_t type, c
 	return value;
 }
 
+static ir_value create_ir_global_value(const node *const nd, const item_t type, const size_t displ)
+{
+	ir_value value = create_ir_value(nd, IR_VALUE_KIND_GLOBAL, type);
+	node_add_arg(&value, displ);
+	return value;
+}
+
 static ir_value_kind ir_value_get_kind(const ir_value *const value)
 {
 	return node_get_type(value);
@@ -290,6 +403,11 @@ static item_t ir_local_value_get_dipsl(const ir_value *const value)
 }
 
 static size_t ir_param_value_get_num(const ir_value *const value)
+{
+	return node_get_arg(value, 1);
+}
+
+static size_t ir_global_value_get_displ(const ir_value *const value)
 {
 	return node_get_arg(value, 1);
 }
@@ -645,8 +763,12 @@ typedef node ir_function;
 static ir_function create_ir_function(const node *const nd, const item_t id, const item_t type)
 {
 	ir_function function = node_add_child(nd, id);
-	node_add_arg(&function, type);
-	node_add_arg(&function, 0);
+	node_add_arg(&function, type); // Тип функции.
+	node_add_arg(&function, 0); // Число аргументов.
+	node_add_arg(&function, true); // Является ли функция листовой (не вызывает другие функции?).
+	node_add_arg(&function, 0); // Размер пространства для локальных переменных.
+	node_add_arg(&function, 0); // Максимально число аргументов у функций, вызываемых данной.
+
 	return function;
 }
 
@@ -667,14 +789,39 @@ static item_t ir_function_get_type(const ir_function *const function)
 {
 	return node_get_arg(function, 0);
 }
-static void ir_function_add_displ(ir_function *const function, const size_t displ)
+static void ir_function_increase_param_count(ir_function *const function, const size_t amount)
 {
-
+	node_set_arg(function, 1, node_get_arg(function, 1) + amount);
 }
-static size_t ir_function_get_displ(const ir_function *const function)
+static size_t ir_function_get_param_count(const ir_function *const function)
 {
 	return node_get_arg(function, 1);
 }
+static void ir_function_make_non_leaf(ir_function *const function)
+{
+	node_set_arg(function, 2, false);
+}
+static bool ir_function_is_leaf(const ir_function *const function)
+{
+	return node_get_arg(function, 2);
+}
+static void ir_function_increase_local_size(ir_function *const function, const size_t displ)
+{
+	node_set_arg(function, 3, node_get_arg(function, 3) + displ);
+}
+static size_t ir_function_get_local_size(const ir_function *const function)
+{
+	return node_get_arg(function, 3);
+}
+static void ir_function_update_max_call_arguments(ir_function *const function, size_t amount)
+{
+	node_set_arg(function, 4, max(amount, node_get_arg(function, 4)));
+}
+static bool ir_function_get_max_call_arguments(const ir_function *const function)
+{
+	return node_get_arg(function, 4);
+}
+
 
 static item_t ir_function_save(const ir_function *const function)
 {
@@ -812,25 +959,63 @@ ir_builder create_ir_builder(ir_module *const module, const syntax *const sx)
 	return builder;
 }
 
-static void ir_displ_add(ir_builder *const builder, item_t type)
-{
-	const syntax *const sx = builder->sx;
-	builder->displ += type_size(sx, type) * 4;
-}
-
-static void ir_displ_reset(ir_builder *const builder)
-{
-	builder->displ = 0;
-}
-static size_t ir_displ_get(ir_builder *const builder)
-{
-	return builder->displ;
-}
 
 
 //
 // Функции построителя.
 //
+
+static ir_value ir_get_value(const ir_builder *const builder, const item_t id)
+{
+	return ir_module_get_value(builder->module, id);
+}
+static ir_label ir_get_label(const ir_builder *const builder, const item_t id)
+{
+	return ir_module_get_label(builder->module, id);
+}
+
+static ir_function ir_get_function(const ir_builder *const builder, const item_t id)
+{
+	return ir_module_get_function(builder->module, id);
+}
+static ir_function ir_get_current_function(const ir_builder *const builder)
+{
+	return ir_get_function(builder, builder->function);
+}
+
+static size_t ir_locals_get(const ir_builder *const builder)
+{
+	ir_function function = ir_get_current_function(builder);
+	return ir_function_get_local_size(&function);
+}
+
+static void ir_locals_add(ir_builder *const builder, item_t type)
+{
+	const syntax *const sx = builder->sx;
+	// FIXME: type_size() currently return size in machine WORDS.
+	size_t added_size = type_size(sx, type) * 4; 
+
+	ir_function function = ir_get_current_function(builder);
+	ir_function_increase_local_size(&function, added_size);
+}
+
+
+static void ir_update_max_call_arguments(ir_builder* const builder, size_t amount)
+{
+	ir_function function = ir_get_current_function(builder);
+	ir_function_update_max_call_arguments(builder, amount);
+}
+static void ir_increase_param_count(ir_builder *const builder, size_t amount)
+{
+	ir_function function = ir_get_current_function(builder);
+	ir_function_increase_param_count(&function, amount);
+}
+
+static void ir_make_non_leaf(ir_builder *const builder)
+{
+	ir_function function = ir_get_current_function(builder);
+	ir_function_make_non_leaf(&function);
+}
 
 static void ir_build_extern(ir_builder *const builder, const item_t id, const item_t type)
 {
@@ -921,9 +1106,8 @@ static item_t ir_build_imm_string(ir_builder *const builder, char* string)
 
 static item_t ir_build_local(ir_builder *const builder, const item_t type)
 {
-	const syntax *const sx = builder->sx;
-	const ir_value value = create_ir_local_value(&builder->module->values_root, type, ir_displ_get(builder));
-	ir_displ_add(builder, type);
+	const ir_value value = create_ir_local_value(&builder->module->values_root, type, ir_locals_get(builder));
+	ir_locals_add(builder, type);
 
 	return ir_value_save(&value);
 }
@@ -940,24 +1124,6 @@ static item_t ir_add_label(ir_builder *const builder, const ir_label_kind kind)
 {
 	const ir_label label_ = create_ir_label(&builder->module->labels_root, kind);
 	return ir_label_save(&label_);
-}
-
-static ir_value ir_get_value(const ir_builder *const builder, const item_t id)
-{
-	return ir_module_get_value(builder->module, id);
-}
-static ir_label ir_get_label(const ir_builder *const builder, const item_t id)
-{
-	return ir_module_get_label(builder->module, id);
-}
-
-static ir_function ir_get_function(const ir_builder *const builder, const item_t id)
-{
-	return ir_module_get_function(builder->module, id);
-}
-static ir_function ir_get_current_function(const ir_builder *const builder)
-{
-	return ir_get_function(builder, builder->function);
 }
 
 //
@@ -991,11 +1157,6 @@ static void ir_build_store(ir_builder *const builder, const item_t src, const it
 	ir_build_instr(builder, IR_IC_STORE, src, dest, IR_VALUE_VOID);
 }
 
-static void ir_add_displ(ir_builder *const builder, const size_t displ)
-{
-	ir_function function = ir_get_current_function(builder);
-	ir_function_add_displ(&function, displ);
-}
 static item_t ir_build_alloca(ir_builder *const builder, const item_t type)
 {
 	const syntax *const sx = builder->sx;
@@ -1605,7 +1766,6 @@ static void ir_dump_brrn_instr(const ir_builder *const builder, const ir_instr *
 	const item_t op3 = ir_instr_get_op3(instr);
 	const ir_value op3_value = ir_get_value(builder, op3);
 
-
 	ir_dumpf("\t");
 	ir_dump_ic(builder, ic);
 	ir_dumpf(" ");
@@ -1686,7 +1846,7 @@ static void ir_dump_instr(const ir_builder *const builder, const ir_instr *const
 			ir_dump_brn_instr(builder, instr);
 			break;
 		case IR_INSTR_KIND_BRRN:
-			ir_dump_brn_instr(builder, instr);
+			ir_dump_brrn_instr(builder, instr);
 			break;
 		case IR_INSTR_KIND_FN:
 			ir_dump_fn_instr(builder, instr);
@@ -1717,13 +1877,16 @@ static void ir_dump_global(const ir_builder *const builder, const ir_global *con
 }
 static void ir_dump_function(const ir_builder *const builder, const ir_function *const function)
 {
+	const syntax *const sx = builder->sx;
+
 	const item_t id = ir_function_get_id(function);
 	const item_t type = ir_function_get_type(function);
 
 	ir_dumpf("function ");
-	ir_dump_type(builder, type);
+	ir_dumpf("%s", ident_get_spelling(sx, id));
 	ir_dumpf(" ");
-	ir_dumpf("$%" PRIitem "\n", id);
+	ir_dump_type(builder, type);
+	ir_dumpf("\n");
 
 	ir_dumpf("{\n");
 	for (size_t i = 0; i < ir_function_get_instr_count(function); i++)
@@ -1900,6 +2063,9 @@ static item_t ir_emit_call_expression(ir_builder *const builder, const node *con
 
 	const item_t value = ir_build_call(builder, (item_t) func_ref);
 
+	ir_make_non_leaf(builder);
+	ir_update_max_call_arguments(builder, params_amount);
+
 	return value;
 }
 
@@ -1934,21 +2100,37 @@ static item_t ir_emit_increment_expression(ir_builder *const builder, const node
 {
 	const node operand = expression_unary_get_operand(nd);
 	const unary_t operator = expression_unary_get_operator(nd);
+	const bool is_inc = (operator == UN_PREINC || operator == UN_POSTINC);
 	const bool is_prefix = (operator == UN_PREDEC) || (operator == UN_PREINC);
 
-	item_t operand_value = ir_emit_lvalue(builder, &operand);
-	//item_t imm_rvalue = ((operator == UN_PREINC) || (operator == UN_POSTINC)) ? builder->value_one : value_minus_one;
+	const item_t operand_lvalue = ir_emit_lvalue(builder, &operand);
+	const ir_value operand_value = ir_get_value(builder, operand_lvalue);
 
 	if (is_prefix)
 	{
+		const item_t operand_rvalue = ir_build_load(builder, operand_lvalue, ir_value_get_type(&operand_value));
+		const item_t second_value = ir_build_imm_one(builder);
+		const item_t incremented_value = ir_emit_binary_operation(builder, operand_rvalue, second_value, (is_inc) ? BIN_ADD : BIN_SUB);
+		ir_free_value(builder, operand_rvalue);
+		ir_free_value(builder, second_value);
 
+		ir_build_store(builder, incremented_value, operand_lvalue);
+
+		return incremented_value;
 	}
 	else
 	{
+		const item_t operand_rvalue = ir_build_load(builder, operand_lvalue, ir_value_get_type(&operand_value));
+		const item_t second_value = ir_build_imm_one(builder);
+		const item_t incremented_value = ir_emit_binary_operation(builder, operand_rvalue, second_value, (is_inc) ? BIN_ADD : BIN_SUB);
+		ir_free_value(builder, second_value);
 
+		ir_build_store(builder, incremented_value, operand_lvalue);
+		ir_free_value(builder, incremented_value);
+
+		return operand_rvalue;
 	}
 
-	unimplemented();
 	return IR_VALUE_VOID;
 }
 
@@ -2657,10 +2839,11 @@ static void ir_emit_function_definition(ir_builder *const builder, const node *c
 	//const size_t parameter_count = type_function_get_parameter_amount(sx, func_type);
 
 	ir_build_function_definition(builder, id, func_type);
+	//ir_increase_param_count();
 
 	node body = declaration_function_get_body(nd);
 
-	ir_displ_reset(builder);
+	//ir_displ_reset(builder);
 	ir_emit_statement(builder, &body);
 
 	// ir_build_ret(builder, IR_VALUE_VOID);
@@ -2994,10 +3177,10 @@ static lvalue ir_value_to_lvalue(const ir_value *const value)
 		case IR_VALUE_KIND_LOCAL:
 			return create_local_lvalue(ir_local_value_get_dipsl(value));
 		case IR_VALUE_KIND_PARAM:
-			unimplemented();
+			return create_param_lvalue(ir_param_value_get_num(value));
 			break;
 		case IR_VALUE_KIND_GLOBAL:
-			unimplemented();
+			return create_global_lvalue(ir_global_value_get_displ(value));
 			break;
 		default:
 			unreachable();
@@ -3027,19 +3210,38 @@ static label ir_to_label(const ir_label *const label_)
 			kind = LABEL_KIND_AND;
 			break;
 		case IR_LABEL_KIND_BEGIN:
-			kind = IR_LABEL_KIND_BEGIN;
+			kind = LABEL_KIND_BEGIN;
 			break;
 		case IR_LABEL_KIND_BEGIN_CYCLE:
-			kind = IR_LABEL_KIND_BEGIN_CYCLE;
+			kind = LABEL_KIND_BEGIN_CYCLE;
 			break;
 		case IR_LABEL_KIND_NEXT:
-			kind = IR_LABEL_KIND_NEXT;
+			kind = LABEL_KIND_NEXT;
 			break;
 	}
 	return (label) {
 		.kind = kind,
 		.id = ir_label_get_id(label_)
 	};
+}
+
+static extern_data ir_extern_to_data(const ir_extern *const extern_)
+{
+	return create_extern_data(ir_extern_get_id(extern_), ir_extern_get_type(extern_));
+}
+static global_data ir_global_to_data(const ir_global *const global)
+{
+	return create_global_data(ir_global_get_id(global), ir_global_get_type(global));
+}
+static function_data ir_function_to_data(const ir_function *const function)
+{
+	return create_function_data(
+		ir_function_get_id(function),
+		ir_function_get_type(function),
+		ir_function_get_param_count(function),
+		ir_function_is_leaf(function),
+		ir_function_get_local_size(function),
+		ir_function_get_max_call_arguments(function));
 }
 
 static ir_gen_n_instr_func ir_get_n_instr_gen(const ir_context *const ctx, const ir_instr *const instr)
@@ -3555,6 +3757,9 @@ static void ir_gen_instr(ir_context *const ctx, const ir_instr *const instr)
 		case IR_INSTR_KIND_BRN:
 			ir_gen_brn_instr(ctx, instr);
 			break;
+		case IR_INSTR_KIND_BRRN:
+			ir_gen_brrn_instr(ctx, instr);
+			break;
 		case IR_INSTR_KIND_FN:
 			ir_gen_fn_instr(ctx, instr);
 			break;
@@ -3571,30 +3776,28 @@ static void ir_gen_extern(ir_context *const ctx, const ir_extern *const extern_)
 	const ir_gens *const gens = ctx->gens;
 	const void *const enc = ctx->enc;
 
-	const item_t id = ir_extern_get_id(extern_);
-	const item_t type = ir_extern_get_type(extern_);
-
+	const extern_data data = ir_extern_to_data(extern_);
 
 }
 static void ir_gen_global(ir_context *const ctx, const ir_global *const global)
 {
-	
+	const global_data data = ir_global_to_data(global);
+
 }
 static void ir_gen_function(ir_context *const ctx, const ir_function *const function)
 {
 	const ir_gens *const gens = ctx->gens;
 	void *const enc = ctx->enc;
 
-	const item_t id = ir_function_get_id(function);
-	const item_t type = ir_function_get_type(function);
+	const function_data data = ir_function_to_data(function);
 
-	ir_get_function_begin_gen(ctx)(enc, id, type);
+	ir_get_function_begin_gen(ctx)(enc, &data);
 	for (size_t i = 0; i < ir_function_get_instr_count(function); i++)
 	{
 		ir_instr instr = ir_function_index_instr(function, i);
 		ir_gen_instr(ctx, &instr);
 	}
-	ir_get_function_end_gen(ctx)(enc, id, type);
+	ir_get_function_end_gen(ctx)(enc, &data);
 }
 void ir_gen_module(const ir_module *const module, const ir_gens *const gens, void *const enc)
 {

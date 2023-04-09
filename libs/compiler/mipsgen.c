@@ -89,6 +89,10 @@ inline unreachable(const char* msg)
 	do {\
 		uni_printf(enc->io, __VA_ARGS__);\
 	} while(0)
+#define mips_commentf(enc, ...)\
+	do {\
+		mips_printf(enc, "# " __VA_ARGS__);\
+	} while(0)
 
 // // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
 typedef enum mips_register
@@ -263,7 +267,8 @@ typedef enum mips_ic
 
 	MIPS_IC_MOV_S,		/**< The value in first FPR is placed into second FPR. */
 
-	MIPS_IC_MFC_1,		/**< Move word from Floating Point.
+	MIPS_IC_MTC1,
+	MIPS_IC_MFC1,		/**< Move word from Floating Point.
 							To copy a word from an FPU (CP1) general register to a GPR. */
 	MIPS_IC_MFHC_1,		/**< To copy a word from the high half of an FPU (CP1)
 							general register to a GPR. */
@@ -279,6 +284,7 @@ typedef struct mips_encoder
 	syntax *sx;								/**< Структура syntax с таблицами */
 	universal_io *io;
 
+	item_t function;
 } mips_encoder;
 
 mips_encoder create_mips_encoder(const syntax *const sx)
@@ -501,6 +507,13 @@ static void mips_print_register(mips_encoder *const enc, const mips_register reg
 	}
 }
 
+static void mips_print_function(mips_encoder *const enc, const item_t id)
+{
+	const syntax *const sx = enc->sx;
+
+	mips_printf(enc, "_%s", ident_get_spelling(sx, id));
+}
+
 mips_register mips_get_temp_register(mips_encoder *const enc, const item_t id)
 {
 	(void) enc;
@@ -707,7 +720,10 @@ static void mips_print_ic(mips_encoder *const enc, const mips_ic ic)
 			mips_printf(enc, "mov.s");
 			break;
 
-		case MIPS_IC_MFC_1:
+		case MIPS_IC_MTC1:
+			mips_printf(enc, "mtc1");
+			break;
+		case MIPS_IC_MFC1:
 			mips_printf(enc, "mfc1");
 			break;
 		case MIPS_IC_MFHC_1:
@@ -726,25 +742,38 @@ static void mips_print_ic(mips_encoder *const enc, const mips_ic ic)
 	}
 }
 
+static const rvalue MIPS_RA_RVALUE = { .kind = RVALUE_KIND_GENERIC, .id = MIPS_R_RA };
+static const rvalue MIPS_SP_RVALUE = { .kind = RVALUE_KIND_GENERIC, .id = MIPS_R_SP };
+static const rvalue MIPS_FP_RVALUE = { .kind = RVALUE_KIND_GENERIC, .id = MIPS_R_FP };
+static const rvalue MIPS_V0_RVALUE = { .kind = RVALUE_KIND_GENERIC, .id = MIPS_R_V0 };
+
 static void mips_print_rvalue(mips_encoder *const enc, const rvalue *const value)
 {
 	const syntax *const sx = enc->sx;
 
-	switch (rvalue_get_kind(value))
+	const rvalue_kind value_kind = rvalue_get_kind(value);
+	const item_t value_type = rvalue_get_type(value);
+
+	switch (value_kind)
 	{
 		case RVALUE_KIND_TEMP:
 		{
-			mips_register register_;
-			if (type_is_floating(rvalue_get_type(value)))
-				register_ = mips_get_temp_float_register(enc, temp_rvalue_get_id(value));
-			else if (type_is_integer(sx, rvalue_get_type(value)))
-				register_ = mips_get_temp_register(enc, temp_rvalue_get_id(value));
+			const item_t value_id = temp_rvalue_get_id(value);
+			const mips_register register_ = type_is_floating(value_type) ? mips_get_temp_float_register(enc, value_id) : mips_get_temp_register(enc, value_id);
 			mips_print_register(enc, register_);
 			break;
 		}
 		case RVALUE_KIND_IMM:
+		{
 			mips_printf(enc, "%d", imm_int_rvalue_get_value(value));
 			break;
+		}
+		case RVALUE_KIND_GENERIC:
+		{
+			const mips_register value_id = (mips_register) generic_rvalue_get_id(value);
+			mips_print_register(enc, value_id);
+			break;
+		}
 	}
 }
 static void mips_print_lvalue(mips_encoder *const enc, const lvalue *const value)
@@ -753,7 +782,7 @@ static void mips_print_lvalue(mips_encoder *const enc, const lvalue *const value
 	{
 		case LVALUE_KIND_LOCAL:
 		{
-			mips_printf(enc, "%d(", -local_lvalue_get_displ(value));
+			mips_printf(enc, "%" PRIitem "(", local_lvalue_get_displ(value));
 			mips_print_register(enc, MIPS_R_SP);
 			mips_printf(enc, ")");
 			break;
@@ -790,8 +819,8 @@ static void mips_print_label(mips_encoder *const enc, const label *const lbl)
 		case LABEL_KIND_THEN:
 			mips_printf(enc, "THEN");
 			break;
-		// case LABEL_KIND_FUNCEND:
-		// 	mips_printf(enc, "FUNCEND");
+		case LABEL_KIND_FUNCEND:
+			mips_printf(enc, "FUNCEND");
 		// 	break;
 		// case LABEL_KIND_STRING:
 		// 	mips_printf(enc, "STRING");
@@ -815,12 +844,24 @@ static void mips_print_label(mips_encoder *const enc, const label *const lbl)
 		// 	mips_printf(enc, "CASE");
 			break;
 	}
-	mips_printf(enc, "%" PRIitem, lbl->id);
+	mips_printf(enc, "%zu", lbl->id);
 }
 
 static void mips_gen_nop(mips_encoder *const enc)
 {
 
+}
+
+// static void mips_print_instr_rir(mips_encoder *const enc, const mips_register op1, const item_t op2, const mips_register op3)
+// {
+
+// }
+
+static void mips_to_code_f(mips_encoder *const enc, const item_t id)
+{
+	mips_print_function(enc, id);
+	mips_printf(enc, ":");
+	mips_printf(enc, "\n");
 }
 
 static void mips_to_code_b(mips_encoder *const enc, const label *const label_)
@@ -830,6 +871,22 @@ static void mips_to_code_b(mips_encoder *const enc, const label *const label_)
 	mips_printf(enc, "\n");
 }
 
+static void mips_to_code_instr_r(mips_encoder *const enc, const mips_ic ic, const rvalue *const op1)
+{
+	mips_printf(enc, "\t");
+	mips_print_ic(enc, ic);
+	mips_printf(enc, " ");
+	mips_print_rvalue(enc, op1);
+	mips_printf(enc, "\n");
+}
+static void mips_to_code_instr_f(mips_encoder *const enc, const mips_ic ic, const item_t op1)
+{
+	mips_printf(enc, "\t");
+	mips_print_ic(enc, ic);
+	mips_printf(enc, " ");
+	mips_print_function(enc, op1);
+	mips_printf(enc, "\n");
+}
 static void mips_to_code_instr_rr(mips_encoder *const enc, const mips_ic ic, const rvalue *const op1, const rvalue *const op2)
 {
 	mips_printf(enc, "\t");
@@ -927,20 +984,21 @@ static void mips_gen_move(mips_encoder *const enc, const rvalue *const src, cons
 		case RVALUE_KIND_IMM:
 		{
 			if (type_is_integer(sx, src->type))
-			{
-				//mips_to_code_instr_rr(enc, )
-
-			}
+				mips_to_code_instr_rr(enc, MIPS_IC_LI, dest, src);
 			else if (type_is_floating(src->type))
-			{
-
-			}
-			else
-			{
+				mips_to_code_instr_rr(enc, MIPS_IC_LI_S, dest, src);
+			else;
 				// FIXME: some kind of error.
-			}
 			break;
 		}
+		case RVALUE_KIND_GENERIC:
+		{
+			mips_to_code_instr_rr(enc, MIPS_IC_MOVE, dest, src);
+			break;
+		}
+		default:
+			unreachable();
+			break;
 	}
 }
 
@@ -1042,47 +1100,106 @@ static void mips_gen_jmple(mips_encoder *const enc, const label *const label_, c
 	mips_to_code_instr_rrb(enc, MIPS_IC_BLE, lhs, rhs, label_);
 }
 
+// FIXME: Небезопансная инструкция! Меняет содержание исходного rvalue.
+// Но на данный момент работает.
 static void mips_gen_ftoi(mips_encoder *const enc, const rvalue *const src, const rvalue *const dest)
 {
-	unimplemented();
+	mips_to_code_instr_rr(enc, MIPS_IC_CVT_S_W, src, src);
+	mips_to_code_instr_rr(enc, MIPS_IC_MFC1, dest, src);
 }
 static void mips_gen_itof(mips_encoder *const enc, const rvalue *const src, const rvalue *const dest)
 {
-	unimplemented();
+	mips_to_code_instr_rr(enc, MIPS_IC_MTC1, src, dest);
+	mips_to_code_instr_rr(enc, MIPS_IC_CVT_W_S, dest, dest);
 }
 
 static void mips_gen_param(mips_encoder *const enc, const rvalue *const value)
 {
-	unimplemented();
+	//const lvalue param_value = create_param_lvalue(i);
+	//mips_gen_store(enc, value, param_value);
+	mips_printf(enc, "\tparam stub\n");
 }
 static void mips_gen_call(mips_encoder *const enc, const item_t function, const rvalue *const res)
 {
-	unimplemented();
+	mips_printf(enc, "\tcall stub\n");
+	mips_to_code_instr_f(enc, MIPS_IC_JAL, function);
+	// // for (size_t i = 0; i < enc->param_count; i++)
+	// // {
+	// // }
+
+	// enc->param_count = 0;
 }
 static void mips_gen_ret(mips_encoder *const enc, const rvalue *const value)
 {
-	unimplemented();
+	mips_gen_move(enc, value, &MIPS_V0_RVALUE);
+	const label funcend_label = create_label(LABEL_KIND_FUNCEND, enc->function);
+	mips_to_code_instr_b(enc, MIPS_IC_J, &funcend_label);
 }
 
-static void mips_gen_extern(mips_encoder *const enc, const item_t id, const item_t type)
+static void mips_gen_extern(mips_encoder *const enc, const extern_data *const data)
 {
-	(void) type;
+	(void) data;
 	//mips_to_code_extern(enc, id);
 	unimplemented();
 }
-static void mips_gen_global(mips_encoder *const enc, const item_t id, const item_t type)
+static void mips_gen_global(mips_encoder *const enc, const global_data *const global)
 {
-	(void) type;
+	(void) global;
 	//mips_to_code_extern(enc, id);
 	unimplemented();
 }
-static void mips_gen_funciton_begin(mips_encoder *const enc, const item_t id, const item_t type)
-{
 
+
+//
+// MIPS кадр стека, информация: https://www.cs.umb.edu/cs641/MIPscallconvention
+//
+static size_t mips_calculate_function_displ(const function_data *const data)
+{
+	size_t resval =
+		4 + /* For $ra. */
+		4 + /* For $fp */
+		0 + /* For $gp */
+		0 + /* For preserved registers */
+		function_data_get_param_count(data) * 4 +
+		function_data_get_local_size(data) +
+		function_data_get_max_call_arguments(data) * 4;
+	return resval + resval % 8; // FIXME: Поддержка x32 и x64 битных версий, возможно выравнивание будет не нужно..
+}
+static void mips_gen_funciton_begin(mips_encoder *const enc, const function_data *const data)
+{
+	const syntax *const sx = enc->sx;
+	const item_t id = function_data_get_id(data);
+
+	const size_t displ = mips_calculate_function_displ(data);
+
+	mips_commentf(enc, "function %s()\n", function_data_get_spelling(data, sx));
+	mips_to_code_f(enc, id);
+
+	mips_printf(enc, "\taddiu $sp, $sp, -%zu\n", displ);
+	mips_printf(enc, "\tsw $ra, %zu($sp)\n", displ - 4);
+	mips_printf(enc, "\tsw $fp, %zu($sp)\n", displ - 8);
+	mips_gen_move(enc, &MIPS_SP_RVALUE, &MIPS_FP_RVALUE);
+	//mips_gen_store(enc, &MIPS_);
+
+	mips_commentf(enc, "body\n");
+
+	enc->function = id;
 	unimplemented();
 }
-static void mips_gen_funciton_end(mips_encoder *const enc, const item_t id, const item_t type)
+static void mips_gen_funciton_end(mips_encoder *const enc, const function_data *const data)
 {
+	const size_t displ = mips_calculate_function_displ(data);
+	const item_t id = function_data_get_id(data);
+	const label funcend_label = create_label(LABEL_KIND_FUNCEND, id);
+
+	mips_to_code_b(enc, &funcend_label);
+
+	mips_gen_move(enc, &MIPS_FP_RVALUE, &MIPS_SP_RVALUE);
+	mips_printf(enc, "\tlw $fp, %zu($sp)\n", displ);
+	mips_printf(enc, "\tlw $ra, %zu($sp)\n", displ - 4);
+	mips_printf(enc, "\taddiu $sp, $sp, %zu\n", displ - 8);
+	mips_printf(enc, "\tjr $ra\n");
+	mips_printf(enc, "\n");
 	unimplemented();
 }
 
@@ -1129,15 +1246,11 @@ static void mips_gen_begin(mips_encoder *const enc)
 	mips_printf(enc, "\tjal MAIN\n");
 	mips_printf(enc, "\tlw $ra, 0($sp)\n");
 	mips_printf(enc, "\tjr $ra\n");
+	mips_printf(enc, "\n");
 }
 static void mips_gen_end(mips_encoder *const enc)
 {
-	mips_printf(enc, "\t\n");
-	mips_printf(enc, "\t\n");
-	mips_printf(enc, "\t\n");
-	mips_printf(enc, "\t\n");
-	mips_printf(enc, "\t\n");
-	mips_printf(enc, "\t\n");
+	mips_printf(enc, "\n");
 
 	mips_printf(enc, "# defarr\n");
 	mips_printf(enc, "# объявление одномерного массива\n");
@@ -1171,45 +1284,6 @@ static void mips_gen_end(mips_encoder *const enc)
 	mips_printf(enc, "\t.end\tmain\n");
 	mips_printf(enc, "\t.size\tmain, .-main\n");
 }
-
-
-// ir_gen_rl_instr_func mips_gen_store;
-// ir_gen_lr_instr_func mips_gen_load;
-// ir_gen_sl_instr_func mips_gen_alloca;
-
-// ir_gen_rrr_instr_func mips_gen_add;
-// ir_gen_rrr_instr_func mips_gen_sub;
-// ir_gen_rrr_instr_func mips_gen_mul;
-// ir_gen_rrr_instr_func mips_gen_div;
-
-// ir_gen_rrr_instr_func mips_gen_mod;
-
-// ir_gen_rrr_instr_func mips_gen_and;
-// ir_gen_rrr_instr_func mips_gen_or;
-// ir_gen_rrr_instr_func mips_gen_xor;
-// ir_gen_rrr_instr_func mips_gen_shl;
-// ir_gen_rrr_instr_func mips_gen_shr;
-
-// ir_gen_rrr_instr_func mips_gen_fadd;
-// ir_gen_rrr_instr_func mips_gen_fsub;
-// ir_gen_rrr_instr_func mips_gen_fmul;
-// ir_gen_rrr_instr_func mips_gen_fdiv;
-
-// ir_gen_rr_instr_func mips_gen_ftoi;
-// ir_gen_rr_instr_func mips_gen_itof;
-
-// ir_gen_rn_instr_func mips_gen_param;
-// ir_gen_fr_instr_func mips_gen_call;
-// ir_gen_rn_instr_func mips_gen_ret;
-
-// ir_gen_bn_instr_func mips_gen_jmp;
-// ir_gen_brn_instr_func mips_gen_jmpz;
-// ir_gen_brn_instr_func mips_gen_jmpnz;
-
-// ir_gen_extern_func mips_gen_extern;
-// ir_gen_global_func mips_gen_global;
-// ir_gen_function_func mips_gen_function_begin;
-// ir_gen_function_func mips_gen_function_end;
 
 int encode_to_mips(const workspace *const ws, syntax *const sx)
 {
