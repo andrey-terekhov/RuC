@@ -530,7 +530,8 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		? type_const_get_unqualified_type(sx, expr_type_element) 
 		: expr_type_element;
 
-	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type) && !expected_type_is_reference)
+	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type) 
+		&& !(expected_type_is_reference && is_declaration))
 	{
 		*init = build_cast_expression(sx, expected_type_unqualified, init);
 		return true;
