@@ -1206,13 +1206,33 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	const lvalue array_lvalue = emit_lvalue(enc, array);
 	item_t current_type = expression_get_type(array);
 
-	mem_add(enc, IC_LOAD);
-	mem_add(enc, array_lvalue.displ);
 	int dimensions = 0;
 	while (type_is_array(enc->sx, current_type))
 	{
 		current_type = type_array_get_element_type(enc->sx, current_type);
 		++dimensions;
+	}
+
+	if (dimensions == 1)
+	{
+		// Начало инициализатора
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, array_lvalue.displ);
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+
+		// Его размер
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_LI);
+		mem_add(enc, 1);
+		mem_add(enc, IC_ADD);
+
+		// Копирование его в конец стека
+		mem_add(enc, IC_COPY2ST);
+		return;
 	}
 
 	// Вычисление смещения старта инициализатора (следующий индекс после найденного)
@@ -1223,39 +1243,37 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		mem_add(enc, IC_LI);
 		mem_add(enc, -1);
 		mem_add(enc, IC_ADD);
-		mem_add(enc, IC_LOAD);
-		mem_add(enc, mem_size(enc) - 1);
+		mem_add(enc, IC_COPY1ST);
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
 		mem_add(enc, IC_ADD);
 		mem_add(enc, IC_LAT);
 	}
 
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
 	mem_add(enc, IC_LI);
 	mem_add(enc, -1);
 	mem_add(enc, IC_ADD);
-	mem_add(enc, IC_LOAD);
-	mem_add(enc, mem_size(enc) - 1);
+	mem_add(enc, IC_LAT);
 	mem_add(enc, IC_ADD);
 
 	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
-	mem_add(enc, IC_LOAD);
-	mem_add(enc, mem_size(enc) - 1);
-	mem_add(enc, IC_LOAD);
-	mem_add(enc, mem_size(enc) - 2);
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
 	mem_add(enc, IC_LI);
 	mem_add(enc, dimensions);
 	mem_add(enc, IC_ADD);
 	mem_add(enc, IC_LAT);
 	mem_add(enc, IC_ADD);
 
-	// Увеличение индекс начала (чтобы стал равен началу)
-	mem_add(enc, IC_LI);
-	mem_add(enc, 1);
-	mem_add(enc, IC_ASSIGN_V);
-	mem_add(enc, mem_size(enc) - 3);
-
 	// Вычисление длины инициализатора (конец - начало)
-	mem_add(enc, IC_LOAD);
-	mem_add(enc, mem_size(enc) - 2);
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
 	mem_add(enc, IC_SUB);
 
 	// Копирование его в конец стека

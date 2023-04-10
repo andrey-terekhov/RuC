@@ -209,6 +209,7 @@ typedef enum INSTURCTION
 	IC_COPY0ST_ASSIGN,			/**< 'COPY0STASS' instruction code */
 	IC_COPY1ST_ASSIGN,			/**< 'COPY1STASS' instruction code */
 	IC_COPYST,					/**< 'COPYST' instruction code */
+	IC_COPY_FROM_END,			/**< 'COPYLAST' instruction code */
 
 	IC_ABS	= 9534,				/**< 'ABS' instruction code */
 	IC_SQRT,					/**< 'SQRT' instruction code */
