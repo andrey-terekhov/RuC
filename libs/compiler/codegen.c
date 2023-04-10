@@ -1143,6 +1143,92 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Loads copy of array initializer on top of the stack
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void array_load_initializer(encoder *const enc, const node *const array)
+{
+	assert(expression_get_class(array) == EXPR_IDENTIFIER && type_is_array(enc->sx, expression_get_type(array)));
+	const lvalue array_lvalue = emit_lvalue(enc, array);
+	item_t current_type = expression_get_type(array);
+
+	int dimensions = 0;
+	while (type_is_array(enc->sx, current_type))
+	{
+		current_type = type_array_get_element_type(enc->sx, current_type);
+		++dimensions;
+	}
+
+	if (dimensions == 1)
+	{
+		// Начало инициализатора
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, array_lvalue.displ);
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+
+		// Его размер
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_LI);
+		mem_add(enc, 1);
+		mem_add(enc, IC_ADD);
+
+		// Копирование его в конец стека
+		mem_add(enc, IC_COPY2ST);
+		return;
+	}
+
+	// Вычисление смещения старта инициализатора (следующий индекс после найденного)
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, array_lvalue.displ);
+	for (int i = 0; i < dimensions - 2; i++)
+	{
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_COPY1ST);
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
+	mem_add(enc, IC_LI);
+	mem_add(enc, -1);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
+	mem_add(enc, IC_LI);
+	mem_add(enc, dimensions);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление длины инициализатора (конец - начало)
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
+	mem_add(enc, IC_SUB);
+
+	// Копирование его в конец стека
+	mem_add(enc, IC_COPY2ST);
+}
+
+/**
  *	Emit assignment expression
  *
  *	@param	enc			Encoder
