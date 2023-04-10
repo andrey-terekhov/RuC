@@ -61,10 +61,17 @@ static item_t usual_arithmetic_conversions(const syntax *const sx, node *const L
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
-	if (type_is_floating(sx, LHS_type) || type_is_floating(sx, RHS_type))
+	const bool is_LHS_floating = type_is_reference(sx, LHS_type)
+		? type_is_floating(sx, type_reference_get_element_type(sx, LHS_type))
+		: type_is_floating(sx, LHS_type);
+	const bool is_RHS_floating = type_is_reference(sx, RHS_type)
+		? type_is_floating(sx, type_reference_get_element_type(sx, RHS_type))
+		: type_is_floating(sx, RHS_type);
+
+	if (is_LHS_floating || is_RHS_floating)
 	{
-		*LHS = build_cast_expression(TYPE_FLOATING, LHS);
-		*RHS = build_cast_expression(TYPE_FLOATING, RHS);
+		*LHS = build_cast_expression(sx, TYPE_FLOATING, LHS);
+		*RHS = build_cast_expression(sx, TYPE_FLOATING, RHS);
 
 		return TYPE_FLOATING;
 	}
@@ -447,15 +454,20 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
 
-	if (type_is_const(sx, expected_type) && !is_declaration)
+	const bool expected_type_is_reference = type_is_reference(sx, expected_type);
+	const item_t expected_type_element = expected_type_is_reference
+		? type_reference_get_element_type(sx, expected_type)
+		: expected_type;
+
+	if (type_is_const(sx, expected_type_element) && !is_declaration)
 	{
 		semantic_error(bldr, loc, assign_to_const);
 		return false;
 	}
 
-	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
-		? type_const_get_unqualified_type(sx, expected_type)
-		: expected_type;
+	const item_t expected_type_unqualified = type_is_const(sx, expected_type_element) 
+		? type_const_get_unqualified_type(sx, expected_type_element)
+		: expected_type_element;
 
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
@@ -504,11 +516,24 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		}
 	}
 
-	const item_t expr_type = expression_get_type(init);
-	const item_t actual_type = type_is_const(sx, expr_type) ? type_const_get_unqualified_type(sx, expr_type) : expr_type;
-	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
+	if (is_declaration && expected_type_is_reference && !(expression_is_lvalue(init)))
 	{
-		*init = build_cast_expression(expected_type_unqualified, init);
+		semantic_error(bldr, loc, reference_to_not_lvalue);
+		return false;
+	}
+
+	const item_t expr_type = expression_get_type(init);
+	const item_t expr_type_element = type_is_reference(sx, expr_type)
+		? type_reference_get_element_type(sx, expr_type)
+		: expr_type;
+	const item_t actual_type = type_is_const(sx, expr_type_element) 
+		? type_const_get_unqualified_type(sx, expr_type_element) 
+		: expr_type_element;
+
+	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type) 
+		&& !(expected_type_is_reference && is_declaration))
+	{
+		*init = build_cast_expression(sx, expected_type_unqualified, init);
 		return true;
 	}
 
@@ -554,6 +579,54 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	semantic_error(bldr, loc, wrong_init);
 	return false;
+}
+
+typedef enum DECL_WITHOUT_INIT_ERROR
+{
+	DECL_WITHOUT_INIT_OK,
+	DECL_WITHOUT_INIT_CONST,
+	DECL_WITHOUT_INIT_REFERENCE,
+} decl_without_init_err_t;
+
+/**
+ *	Get error type for declaration without initializer or @c DECL_WITHOUT_INIT_OK if it is allowed
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type
+ *
+ *	@return @c true if declaration without initializer is allowed, @c false otherwise
+ */
+decl_without_init_err_t error_declaration_without_initializer(const syntax *const sx, const item_t type)
+{
+	if (type_is_array(sx, type))
+	{
+		return error_declaration_without_initializer(sx, type_array_get_element_type(sx, type));
+	}
+	else if (type_is_structure(sx, type))
+	{
+		const size_t size = type_structure_get_member_amount(sx, type);
+		for (size_t i = 0; i < size; i++)
+		{
+			const decl_without_init_err_t err = error_declaration_without_initializer(sx, type_structure_get_member_type(sx, type, i));
+			if (err != DECL_WITHOUT_INIT_OK)
+			{
+				return err;
+			}
+		}
+		return DECL_WITHOUT_INIT_OK;
+	}
+	else if (type_is_const(sx, type))
+	{
+		return DECL_WITHOUT_INIT_CONST;
+	}
+	else if (type_is_reference(sx, type))
+	{
+		return DECL_WITHOUT_INIT_REFERENCE;
+	}
+	else
+	{
+		return DECL_WITHOUT_INIT_OK;
+	}
 }
 
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc)
@@ -707,13 +780,16 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 
 	if (!is_arrow)
 	{
-		if (!type_is_structure(bldr->sx, base_type))
+		const item_t base_element_type = type_is_reference(bldr->sx, base_type)
+			? type_reference_get_element_type(bldr->sx, base_type)
+			: base_type;
+		if (!type_is_structure(bldr->sx, base_element_type))
 		{
 			semantic_error(bldr, op_loc, member_reference_not_struct);
 			return node_broken();
 		}
 
-		struct_type = base_type;
+		struct_type = base_element_type;
 		category = expression_is_lvalue(base) ? LVALUE : RVALUE;
 	}
 	else
@@ -733,7 +809,9 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	{
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t type = type_is_const(bldr->sx, struct_type) 
+				? type_const(bldr->sx, type_structure_get_member_type(bldr->sx, struct_type, i))
+				: type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
@@ -744,7 +822,7 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	return node_broken();
 }
 
-node build_cast_expression(const item_t target_type, node *const expr)
+node build_cast_expression(const syntax *const sx, const item_t target_type, node *const expr)
 {
 	if (!node_is_correct(expr))
 	{
@@ -752,9 +830,15 @@ node build_cast_expression(const item_t target_type, node *const expr)
 	}
 
 	const item_t source_type = expression_get_type(expr);
+	const item_t source_type_element = type_is_reference(sx, source_type)
+		? type_reference_get_element_type(sx, source_type)
+		: source_type;
+	const item_t source_type_unqualified = type_is_const(sx, source_type_element)
+		? type_const_get_unqualified_type(sx, source_type_element)
+		: source_type_element;
 	const location loc = node_get_location(expr);
 
-	if (target_type != source_type)
+	if (target_type != source_type_unqualified)
 	{
 		if (expression_get_class(expr) == EXPR_LITERAL)
 		{
@@ -786,6 +870,9 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 	}
 
 	const item_t operand_type = expression_get_type(operand);
+	const item_t operand_element_type = type_is_reference(bldr->sx, operand_type)
+		? type_reference_get_element_type(bldr->sx, operand_type)
+		: operand_type;
 
 	const location loc = op_kind == UN_POSTINC || op_kind == UN_POSTDEC
 		? (location){ node_get_location(operand).begin, op_loc.end }
@@ -804,13 +891,13 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 				return node_broken();
 			}
 
-			if (!type_is_arithmetic(bldr->sx, operand_type))
+			if (!type_is_arithmetic(bldr->sx, operand_element_type))
 			{
 				semantic_error(bldr, op_loc, increment_operand_not_arithmetic, op_kind);
 				return node_broken();
 			}
 
-			return expression_unary(operand_type, RVALUE, operand, op_kind, loc);
+			return expression_unary(operand_element_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ADDRESS:
@@ -821,39 +908,41 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 				return node_broken();
 			}
 
-			const item_t type = type_pointer(bldr->sx, operand_type);
+			const item_t type = type_is_reference(bldr->sx, operand_element_type) 
+				? type_pointer(bldr->sx, type_reference_get_element_type(bldr->sx, operand_element_type)) 
+				: type_pointer(bldr->sx, operand_element_type);
 			return expression_unary(type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_INDIRECTION:
 		{
-			if (!type_is_pointer(bldr->sx, operand_type))
+			if (!type_is_pointer(bldr->sx, operand_element_type))
 			{
 				semantic_error(bldr, op_loc, indirection_operand_not_pointer);
 				return node_broken();
 			}
 
-			const item_t type = type_pointer_get_element_type(bldr->sx, operand_type);
+			const item_t type = type_pointer_get_element_type(bldr->sx, operand_element_type);
 			return expression_unary(type, LVALUE, operand, op_kind, loc);
 		}
 
 		case UN_ABS:
 		case UN_MINUS:
 		{
-			if (!type_is_arithmetic(bldr->sx, operand_type))
+			if (!type_is_arithmetic(bldr->sx, operand_element_type))
 			{
-				semantic_error(bldr, op_loc, unary_operand_not_arithmetic, operand_type);
+				semantic_error(bldr, op_loc, unary_operand_not_arithmetic, operand_element_type);
 				return node_broken();
 			}
 
-			return fold_unary_expression(bldr, operand_type, RVALUE, operand, op_kind, loc);
+			return fold_unary_expression(bldr, operand_element_type, RVALUE, operand, op_kind, loc);
 		}
 
 		case UN_NOT:
 		{
-			if (!type_is_integer(bldr->sx, operand_type))
+			if (!type_is_integer(bldr->sx, operand_element_type))
 			{
-				semantic_error(bldr, op_loc, unnot_operand_not_integer, operand_type);
+				semantic_error(bldr, op_loc, unnot_operand_not_integer, operand_element_type);
 				return node_broken();
 			}
 
@@ -862,9 +951,9 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 
 		case UN_LOGNOT:
 		{
-			if (!type_is_scalar(bldr->sx, operand_type))
+			if (!type_is_scalar(bldr->sx, operand_element_type))
 			{
-				semantic_error(bldr, op_loc, lognot_operand_not_scalar, operand_type);
+				semantic_error(bldr, op_loc, lognot_operand_not_scalar, operand_element_type);
 				return node_broken();
 			}
 
@@ -873,9 +962,9 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
 
 		case UN_UPB:
 		{
-			if (!type_is_array(bldr->sx, operand_type))
+			if (!type_is_array(bldr->sx, operand_element_type))
 			{
-				semantic_error(bldr, op_loc, upb_operand_not_array, operand_type);
+				semantic_error(bldr, op_loc, upb_operand_not_array, operand_element_type);
 				return node_broken();
 			}
 
@@ -915,6 +1004,13 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 
 	const location loc = { node_get_location(LHS).begin, node_get_location(RHS).end };
 
+	const item_t left_element_type = type_is_reference(bldr->sx, left_type)
+		? type_reference_get_element_type(bldr->sx, left_type)
+		: left_type;
+	const item_t right_element_type = type_is_reference(bldr->sx, right_type)
+		? type_reference_get_element_type(bldr->sx, right_type)
+		: right_type;
+
 	switch (op_kind)
 	{
 		case BIN_REM:
@@ -924,7 +1020,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_XOR:
 		case BIN_OR:
 		{
-			if (!type_is_integer(bldr->sx, left_type) || !type_is_integer(bldr->sx, right_type))
+			if (!type_is_integer(bldr->sx, left_element_type) || !type_is_integer(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -938,7 +1034,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_ADD:
 		case BIN_SUB:
 		{
-			if (!type_is_arithmetic(bldr->sx, left_type) || !type_is_arithmetic(bldr->sx, right_type))
+			if (!type_is_arithmetic(bldr->sx, left_element_type) || !type_is_arithmetic(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -953,7 +1049,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_LE:
 		case BIN_GE:
 		{
-			if (!type_is_arithmetic(bldr->sx, left_type) || !type_is_arithmetic(bldr->sx, right_type))
+			if (!type_is_arithmetic(bldr->sx, left_element_type) || !type_is_arithmetic(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -966,19 +1062,19 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_EQ:
 		case BIN_NE:
 		{
-			if (type_is_floating(bldr->sx, left_type) || type_is_floating(bldr->sx, right_type))
+			if (type_is_floating(bldr->sx, left_element_type) || type_is_floating(bldr->sx, right_element_type))
 			{
 				semantic_warning(bldr, op_loc, variable_deviation);
 			}
 
-			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
+			if (type_is_arithmetic(bldr->sx, left_element_type) && type_is_arithmetic(bldr->sx, right_element_type))
 			{
 				usual_arithmetic_conversions(bldr->sx, LHS, RHS);
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
 
-			if ((type_is_pointer(bldr->sx, left_type) && type_is_null_pointer(right_type))
-				|| (type_is_null_pointer(left_type) && type_is_pointer(bldr->sx, right_type))
+			if ((type_is_pointer(bldr->sx, left_element_type) && type_is_null_pointer(right_element_type))
+				|| (type_is_null_pointer(left_element_type) && type_is_pointer(bldr->sx, right_element_type))
 				|| left_type == right_type)
 			{
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
@@ -991,7 +1087,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_LOG_AND:
 		case BIN_LOG_OR:
 		{
-			if (!type_is_scalar(bldr->sx, left_type) || !type_is_scalar(bldr->sx, right_type))
+			if (!type_is_scalar(bldr->sx, left_element_type) || !type_is_scalar(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -1010,7 +1106,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_XOR_ASSIGN:
 		case BIN_OR_ASSIGN:
 		{
-			if (!type_is_integer(bldr->sx, left_type) || !type_is_integer(bldr->sx, right_type))
+			if (!type_is_integer(bldr->sx, left_element_type) || !type_is_integer(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -1024,7 +1120,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 		case BIN_ADD_ASSIGN:
 		case BIN_SUB_ASSIGN:
 		{
-			if (!type_is_arithmetic(bldr->sx, left_type) || !type_is_arithmetic(bldr->sx, right_type))
+			if (!type_is_arithmetic(bldr->sx, left_element_type) || !type_is_arithmetic(bldr->sx, right_element_type))
 			{
 				semantic_error(bldr, op_loc, typecheck_binary_expr);
 				return node_broken();
@@ -1134,14 +1230,14 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 
 
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, const bool was_const, node_vector *const bounds, const location loc)
+	, const bool was_amp, const bool was_const, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
 		semantic_error(bldr, loc, only_functions_may_have_type_VOID);
 	}
 
-	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	item_t member_type = was_star ? type_pointer(bldr->sx, type) : was_amp ? type_reference(bldr->sx, type) : type;
 	if (was_const)
 	{
 		member_type = type_const(bldr->sx, member_type);
@@ -1202,15 +1298,15 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 	return declaration_struct_set_location(declaration, loc);
 }
 
-node build_declarator(builder *const bldr, const item_t type, const size_t name
-   , const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
+node build_declarator(builder *const bldr, const item_t type, const size_t name, const bool was_star
+	, const bool was_amp, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
 		semantic_error(bldr, ident_loc, only_functions_may_have_type_VOID);
 	}
 
-	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : type;
+	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : was_amp ? type_reference(bldr->sx, type) : type;
 	if (was_const)
 	{
 		variable_type = type_const(bldr->sx, variable_type);
@@ -1239,6 +1335,21 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 	else if (has_empty_bounds)
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
+	}
+	else
+	{
+		decl_without_init_err_t err = error_declaration_without_initializer(bldr->sx, variable_type);
+		switch (err)
+		{
+			case DECL_WITHOUT_INIT_OK:
+				break;
+			case DECL_WITHOUT_INIT_CONST:
+				semantic_error(bldr, ident_loc, const_without_init);
+				break;
+			case DECL_WITHOUT_INIT_REFERENCE:
+				semantic_error(bldr, ident_loc, reference_without_init);
+				break;
+		}
 	}
 
 	// Magic numbers, maybe we need identifiers interface?

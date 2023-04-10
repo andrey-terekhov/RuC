@@ -90,6 +90,7 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd);
 static void emit_expression(encoder *const enc, const node *const nd);
 static void emit_statement(encoder *const enc, const node *const nd);
 static void emit_declaration(encoder *const enc, const node *const nd);
+static void emit_reference_declaration(encoder *const enc, const node *const nd);
 
 
 /*
@@ -454,6 +455,12 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 				mem_add(enc, IC_COPY1ST);
 				mem_add(enc, (item_t)type_size(enc->sx, value.type));
 			}
+			else if (type_is_reference(enc->sx, value.type))
+			{
+				mem_add(enc, type_is_integer(enc->sx, type_reference_get_element_type(enc->sx, value.type)) 
+					? IC_LAT 
+					: IC_LATD);
+			}
 			else if (!type_is_array(enc->sx, value.type) && !type_is_pointer(enc->sx, value.type))
 			{
 				mem_add(enc, type_is_integer(enc->sx, value.type) ? IC_LAT : IC_LATD);
@@ -478,6 +485,12 @@ static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 	const item_t type = ident_get_type(enc->sx, identifier);
 	const item_t displ = displacements_get(enc, identifier);
 
+	if (type_is_reference(enc->sx, type))
+	{
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, displ);
+		return (lvalue){ .kind = ADDRESS, .type = type, .displ = displ };
+	}
 	return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
 }
 
@@ -538,7 +551,7 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 		emit_expression(enc, &base);
 		mem_add(enc, IC_SELECT);
 		mem_add(enc, member_displ);
-		if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
+		if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type) || type_is_reference(enc->sx, type))
 		{
 			mem_add(enc, IC_LAT);
 		}
@@ -551,6 +564,13 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 		if (value.kind == VARIABLE)
 		{
 			const item_t displ = value.displ > 0 ? value.displ + member_displ : value.displ - member_displ;
+			if (type_is_reference(enc->sx, type_structure_get_member_type(enc->sx, base_type, member_index)))
+			{
+				mem_add(enc, type_is_floating(enc->sx, type_reference_get_element_type(enc->sx, type)) ? IC_LOADD : IC_LOAD);
+				mem_add(enc, displ);
+				return (lvalue){ .kind = ADDRESS, .type = type, .displ = displ };
+			}
+
 			return (lvalue){ .kind = VARIABLE, .type = type, .displ = displ };
 		}
 		else // if (enc->last_kind == ADDRESS)
@@ -558,7 +578,7 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 			mem_add(enc, IC_SELECT);
 			mem_add(enc, member_displ);
 
-			if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type))
+			if (type_is_array(enc->sx, type) || type_is_pointer(enc->sx, type) || type_is_reference(enc->sx, type))
 			{
 				mem_add(enc, IC_LAT);
 			}
@@ -711,10 +731,11 @@ static void emit_literal_expression(encoder *const enc, const node *const nd)
 /**
  *	Emit argument
  *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
+ *	@param	enc				Encoder
+ *	@param	nd				Node in AST
+ *	@param	is_reference	@c true if argument is reference, @c false otherwise
  */
-static void emit_argument(encoder *const enc, const node *const nd)
+static void emit_argument(encoder *const enc, const node *const nd, const bool is_reference)
 {
 	const item_t arg_type = expression_get_type(nd);
 	if (type_is_function(enc->sx, arg_type))
@@ -754,6 +775,10 @@ static void emit_argument(encoder *const enc, const node *const nd)
 
 		mem_set(enc, reserved - 1, (item_t)size);
 		mem_set(enc, reserved - 2, (item_t)mem_size(enc));
+	}
+	else if (is_reference && !type_is_reference(enc->sx, arg_type))
+	{
+		emit_reference_declaration(enc, nd);
 	}
 	else
 	{
@@ -902,7 +927,8 @@ static void emit_call_expression(encoder *const enc, const node *const nd)
 	for (size_t i = 0; i < args; i++)
 	{
 		const node argument = expression_call_get_argument(nd, i);
-		emit_argument(enc, &argument);
+		const bool is_reference = type_is_reference(enc->sx, type_function_get_parameter_type(enc->sx, ident_get_type(enc->sx, func), i));
+		emit_argument(enc, &argument, is_reference);
 	}
 
 	if (func >= BEGIN_USER_FUNC)
@@ -1104,7 +1130,11 @@ static void emit_binary_expression(encoder *const enc, const node *const nd)
 		}
 
 		const instruction_t instruction = binary_to_instruction(operator);
-		if (type_is_floating(enc->sx, expression_get_type(&LHS)))
+		const item_t LHS_type = expression_get_type(&LHS);
+		const item_t LHS_element_type = type_is_reference(enc->sx, LHS_type)
+			? type_reference_get_element_type(enc->sx, LHS_type)
+			: LHS_type;
+		if (type_is_floating(enc->sx, LHS_element_type))
 		{
 			mem_add(enc, instruction_to_floating_ver(instruction));
 		}
@@ -1180,7 +1210,10 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			instruction = instruction_to_address_ver(instruction);
 		}
 
-		if (type_is_floating(enc->sx, type))
+		const item_t element_type = type_is_reference(enc->sx, type)
+			? type_reference_get_element_type(enc->sx, type)
+			: type;
+		if (type_is_floating(enc->sx, element_type))
 		{
 			instruction = instruction_to_floating_ver(instruction);
 		}
@@ -1418,6 +1451,36 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	}
 }
 
+static void emit_structure_assignment(encoder *const enc, const size_t identifier, const node *const initializer)
+{
+	const item_t type = ident_get_type(enc->sx, identifier);
+	if (expression_get_class(initializer) == EXPR_INITIALIZER)
+	{
+		const size_t size = type_structure_get_member_amount(enc->sx, type);
+		for (size_t i = 0; i < size; i++)
+		{
+			const item_t member_type = type_structure_get_member_type(enc->sx, type, i);
+			const node subexpr = expression_initializer_get_subexpr(initializer, i);
+			if (type_is_structure(enc->sx, member_type))
+			{
+				emit_structure_assignment(enc, identifier, &subexpr);
+			}
+			else if (type_is_reference(enc->sx, member_type))
+			{
+				emit_reference_declaration(enc, &subexpr);
+			}
+			else
+			{
+				emit_expression(enc, &subexpr);
+			}
+		}
+	}
+	else 
+	{
+		emit_expression(enc, initializer);
+	}
+}
+
 /**
  *	Emit variable declaration
  *
@@ -1446,7 +1509,18 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 	if (declaration_variable_has_initializer(nd))
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
-		emit_expression(enc, &initializer);
+		if (type_is_structure(enc->sx, type))
+		{
+			emit_structure_assignment(enc, identifier, &initializer);
+		}
+		else if (type_is_reference(enc->sx, type))
+		{
+			emit_reference_declaration(enc, &initializer);
+		}
+		else
+		{
+			emit_expression(enc, &initializer);
+		}
 
 		if (type_is_structure(enc->sx, type))
 		{
@@ -1587,6 +1661,16 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	mem_set(enc, displ_addr, enc->max_local_displ);
 	mem_set(enc, jump_addr, (item_t)mem_size(enc));
 	enc->curr_func = NULL;
+}
+
+static void emit_reference_declaration(encoder *const enc, const node *const initializer)
+{
+	const lvalue variable = emit_lvalue(enc, initializer);
+	if (variable.kind == VARIABLE)
+	{
+		mem_add(enc, IC_LA);
+		mem_add(enc, variable.displ);
+	}
 }
 
 /**

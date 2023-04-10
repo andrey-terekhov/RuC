@@ -97,6 +97,9 @@ typedef enum ERROR
 	invalid_const_pointer_cast,
 	function_type_const,
 	multiple_const_in_type,
+	const_without_init,
+	reference_without_init,
+	reference_to_not_lvalue,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */
@@ -149,6 +152,7 @@ typedef enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
+	amp_before_func,
 
 	empty_bound_without_init,
 

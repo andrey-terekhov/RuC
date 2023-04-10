@@ -232,6 +232,15 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case function_type_const:
 			sprintf(msg, "тип функции не может быть константой");
 			break;
+		case const_without_init:
+			sprintf(msg, "встречено объявление константы без инициализации");
+			break;
+		case reference_without_init:
+			sprintf(msg, "встречено объявление переменной-ссылки без инициализации");
+			break;
+		case reference_to_not_lvalue:
+			sprintf(msg, "Невозможно создать ссылку на выражение, не являющееся lvalue");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:
@@ -415,6 +424,9 @@ static void get_error(const err_t num, char *const msg, va_list args)
 			break;
 		case empty_enum:
 			sprintf(msg, "перечисление должно иметь поля");
+			break;
+		case amp_before_func:
+			sprintf(msg, "& перед описанием функции");
 			break;
 
 		// Tree testing errors
