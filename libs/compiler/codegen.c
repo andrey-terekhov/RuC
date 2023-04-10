@@ -1503,19 +1503,18 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		else
 		{
 			emit_expression(enc, &initializer);
-
-			if (only_strings(enc, &initializer))
-			{
-				usual += 2;
-				mem_set(enc, usual_addr, usual);
-			}
-
-			mem_add(enc, IC_ARR_INIT);
-			mem_add(enc, dimensions);
-			mem_add(enc, length);
-			mem_add(enc, displ);
-			mem_add(enc, usual);
 		}
+		if (only_strings(enc, &initializer))
+		{
+			usual += 2;
+			mem_set(enc, usual_addr, usual);
+		}
+
+		mem_add(enc, IC_ARR_INIT);
+		mem_add(enc, dimensions);
+		mem_add(enc, length);
+		mem_add(enc, displ);
+		mem_add(enc, usual);
 	}
 }
 
