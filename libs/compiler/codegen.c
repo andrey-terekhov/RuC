@@ -1496,19 +1496,26 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	if (has_initializer)
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
-		emit_expression(enc, &initializer);
-
-		if (only_strings(enc, &initializer))
+		if (expression_get_class(&initializer) == EXPR_IDENTIFIER)
 		{
-			usual += 2;
-			mem_set(enc, usual_addr, usual);
+			array_load_initializer(enc, &initializer);
 		}
+		else
+		{
+			emit_expression(enc, &initializer);
 
-		mem_add(enc, IC_ARR_INIT);
-		mem_add(enc, dimensions);
-		mem_add(enc, length);
-		mem_add(enc, displ);
-		mem_add(enc, usual);
+			if (only_strings(enc, &initializer))
+			{
+				usual += 2;
+				mem_set(enc, usual_addr, usual);
+			}
+
+			mem_add(enc, IC_ARR_INIT);
+			mem_add(enc, dimensions);
+			mem_add(enc, length);
+			mem_add(enc, displ);
+			mem_add(enc, usual);
+		}
 	}
 }
 
