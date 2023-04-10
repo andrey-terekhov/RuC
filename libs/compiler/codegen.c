@@ -1258,8 +1258,8 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	mem_add(enc, mem_size(enc) - 2);
 	mem_add(enc, IC_SUB);
 
-	// Копирование его в конец памяти
-	mem_add(enc, IC_COPY0ST);
+	// Копирование его в конец стека
+	mem_add(enc, IC_COPY2ST);
 }
 
 /**
