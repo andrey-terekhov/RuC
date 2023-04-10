@@ -1143,58 +1143,6 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
- *	Emit assignment expression
- *
- *	@param	enc			Encoder
- *	@param	nd			Node in AST
- */
-static void emit_assignment_expression(encoder *const enc, const node *const nd)
-{
-	const node LHS = expression_assignment_get_LHS(nd);
-	const lvalue value = emit_lvalue(enc, &LHS);
-
-	const node RHS = expression_assignment_get_RHS(nd);
-	emit_expression(enc, &RHS);
-
-	const item_t type = expression_get_type(nd);
-	if (type_is_structure(enc->sx, type))
-	{
-		if (value.kind == VARIABLE)
-		{
-			mem_add(enc, IC_COPY0ST_ASSIGN);
-			mem_add(enc, value.displ);
-		}
-		else
-		{
-			mem_add(enc, IC_COPY1ST_ASSIGN);
-		}
-
-		mem_add(enc, (item_t)type_size(enc->sx, type));
-	}
-	else // Скалярное присваивание
-	{
-		const binary_t op = expression_assignment_get_operator(nd);
-		instruction_t instruction = binary_to_instruction(op);
-		if (value.kind == ADDRESS)
-		{
-			instruction = instruction_to_address_ver(instruction);
-		}
-
-		if (type_is_floating(enc->sx, type))
-		{
-			instruction = instruction_to_floating_ver(instruction);
-		}
-
-		mem_add(enc, instruction);
-
-		if (value.kind == VARIABLE)
-		{
-			mem_add(enc, value.displ);
-		}
-	}
-}
-
-/**
  *	Loads copy of array initializer on top of the stack
  *
  *	@param	enc			Encoder
@@ -1278,6 +1226,58 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 
 	// Копирование его в конец стека
 	mem_add(enc, IC_COPY2ST);
+}
+
+/**
+ *	Emit assignment expression
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void emit_assignment_expression(encoder *const enc, const node *const nd)
+{
+	const node LHS = expression_assignment_get_LHS(nd);
+	const lvalue value = emit_lvalue(enc, &LHS);
+
+	const node RHS = expression_assignment_get_RHS(nd);
+	emit_expression(enc, &RHS);
+
+	const item_t type = expression_get_type(nd);
+	if (type_is_structure(enc->sx, type))
+	{
+		if (value.kind == VARIABLE)
+		{
+			mem_add(enc, IC_COPY0ST_ASSIGN);
+			mem_add(enc, value.displ);
+		}
+		else
+		{
+			mem_add(enc, IC_COPY1ST_ASSIGN);
+		}
+
+		mem_add(enc, (item_t)type_size(enc->sx, type));
+	}
+	else // Скалярное присваивание
+	{
+		const binary_t op = expression_assignment_get_operator(nd);
+		instruction_t instruction = binary_to_instruction(op);
+		if (value.kind == ADDRESS)
+		{
+			instruction = instruction_to_address_ver(instruction);
+		}
+
+		if (type_is_floating(enc->sx, type))
+		{
+			instruction = instruction_to_floating_ver(instruction);
+		}
+
+		mem_add(enc, instruction);
+
+		if (value.kind == VARIABLE)
+		{
+			mem_add(enc, value.displ);
+		}
+	}
 }
 
 /**
