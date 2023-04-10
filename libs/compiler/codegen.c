@@ -487,7 +487,7 @@ static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 
 	if (type_is_reference(enc->sx, type))
 	{
-		mem_add(enc, type_is_floating(enc->sx, type_reference_get_element_type(enc->sx, type)) ? IC_LOADD : IC_LOAD);
+		mem_add(enc, IC_LOAD);
 		mem_add(enc, displ);
 		return (lvalue){ .kind = ADDRESS, .type = type, .displ = displ };
 	}
@@ -1130,7 +1130,11 @@ static void emit_binary_expression(encoder *const enc, const node *const nd)
 		}
 
 		const instruction_t instruction = binary_to_instruction(operator);
-		if (type_is_floating(enc->sx, expression_get_type(&LHS)))
+		const item_t LHS_type = expression_get_type(&LHS);
+		const item_t LHS_element_type = type_is_reference(enc->sx, LHS_type)
+			? type_reference_get_element_type(enc->sx, LHS_type)
+			: LHS_type;
+		if (type_is_floating(enc->sx, LHS_element_type))
 		{
 			mem_add(enc, instruction_to_floating_ver(instruction));
 		}
@@ -1206,7 +1210,10 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			instruction = instruction_to_address_ver(instruction);
 		}
 
-		if (type_is_floating(enc->sx, type))
+		const item_t element_type = type_is_reference(enc->sx, type)
+			? type_reference_get_element_type(enc->sx, type)
+			: type;
+		if (type_is_floating(enc->sx, element_type))
 		{
 			instruction = instruction_to_floating_ver(instruction);
 		}
@@ -1467,6 +1474,10 @@ static void emit_structure_assignment(encoder *const enc, const size_t identifie
 				emit_expression(enc, &subexpr);
 			}
 		}
+	}
+	else 
+	{
+		emit_expression(enc, initializer);
 	}
 }
 
