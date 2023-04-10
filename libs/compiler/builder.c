@@ -581,53 +581,6 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	return false;
 }
 
-typedef enum DECL_WITHOUT_INIT_ERROR
-{
-	DECL_WITHOUT_INIT_OK,
-	DECL_WITHOUT_INIT_CONST,
-	DECL_WITHOUT_INIT_REFERENCE,
-} decl_without_init_err_t;
-
-/**
- *	Get error type for declaration without initializer or @c DECL_WITHOUT_INIT_OK if it is allowed
- *
- *	@param	sx			Syntax structure
- *	@param	type		Type
- *
- *	@return @c true if declaration without initializer is allowed, @c false otherwise
- */
-decl_without_init_err_t error_declaration_without_initializer(const syntax *const sx, const item_t type)
-{
-	if (type_is_array(sx, type))
-	{
-		return error_declaration_without_initializer(sx, type_array_get_element_type(sx, type));
-	}
-	else if (type_is_structure(sx, type))
-	{
-		const size_t size = type_structure_get_member_amount(sx, type);
-		for (size_t i = 0; i < size; i++)
-		{
-			const decl_without_init_err_t err = error_declaration_without_initializer(sx, type_structure_get_member_type(sx, type, i));
-			if (err != DECL_WITHOUT_INIT_OK)
-			{
-				return err;
-			}
-		}
-		return DECL_WITHOUT_INIT_OK;
-	}
-	else if (type_is_const(sx, type))
-	{
-		return DECL_WITHOUT_INIT_CONST;
-	}
-	else if (type_is_reference(sx, type))
-	{
-		return DECL_WITHOUT_INIT_REFERENCE;
-	}
-	else
-	{
-		return DECL_WITHOUT_INIT_OK;
-	}
-}
 
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc)
 {
@@ -1336,18 +1289,24 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name,
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
 	}
-	else
+	else if (type_requires_initialization(bldr->sx, variable_type))
 	{
-		decl_without_init_err_t err = error_declaration_without_initializer(bldr->sx, variable_type);
-		switch (err)
+		switch (type_get_class(bldr->sx, variable_type))
 		{
-			case DECL_WITHOUT_INIT_OK:
+			case TYPE_STRUCTURE:
+				semantic_error(bldr, ident_loc, struct_without_init);
 				break;
-			case DECL_WITHOUT_INIT_CONST:
+			case TYPE_ARRAY:
+				semantic_error(bldr, ident_loc, array_without_init);
+				break;
+			case TYPE_CONST:
 				semantic_error(bldr, ident_loc, const_without_init);
 				break;
-			case DECL_WITHOUT_INIT_REFERENCE:
+			case TYPE_REFERENCE:
 				semantic_error(bldr, ident_loc, reference_without_init);
+				break;
+			default:
+				semantic_error(bldr, ident_loc, variable_without_init);
 				break;
 		}
 	}

@@ -235,11 +235,20 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case const_without_init:
 			sprintf(msg, "встречено объявление константы без инициализации");
 			break;
+		case struct_without_init:
+			sprintf(msg, "встречено объявление структуры, нуждающейся в инициализации (с константным полем), без инициализации");
+			break;
+		case array_without_init:
+			sprintf(msg, "встречено объявление массива с элементами, нуждающимися в инициализации (являющимися константным полем), без инициализации");
+			break;
 		case reference_without_init:
 			sprintf(msg, "встречено объявление переменной-ссылки без инициализации");
 			break;
 		case reference_to_not_lvalue:
 			sprintf(msg, "Невозможно создать ссылку на выражение, не являющееся lvalue");
+			break;
+		case variable_without_init:
+			sprintf(msg, "встречено объявление переменной, нуждающейся в инициализации, без инициализации");
 			break;
 
 		// Builtin errors
