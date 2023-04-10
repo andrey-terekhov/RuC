@@ -1171,6 +1171,39 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 		mem_add(enc, (item_t)type_size(enc->sx, type));
 	}
+	else if (type_is_array(enc->sx, type))
+	{
+		item_t current_type = type;
+		item_t dimensions = 0;
+		while (type_is_array(enc->sx, current_type))
+		{
+			current_type = type_array_get_element_type(enc->sx, current_type);
+			dimensions++;
+		}
+
+		item_t usual = 1;
+
+		if (expression_get_class(&RHS) == EXPR_IDENTIFIER)
+		{
+			array_load_initializer(enc, &RHS);
+		}
+		else
+		{
+			emit_expression(enc, &RHS);
+		}
+
+		if (type_is_string(enc->sx, current_type))
+		{
+			usual += 2;
+		}
+
+		const item_t length = (item_t)type_size(enc->sx, type);
+		mem_add(enc, IC_ARR_INIT);
+		mem_add(enc, dimensions);
+		mem_add(enc, length);
+		mem_add(enc, displacements_get(enc, expression_identifier_get_id(&LHS)));
+		mem_add(enc, usual);
+	}
 	else // Скалярное присваивание
 	{
 		const binary_t op = expression_assignment_get_operator(nd);
