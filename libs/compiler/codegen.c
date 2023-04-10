@@ -1195,6 +1195,74 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Loads copy of array initializer on top of the stack
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void array_load_initializer(encoder *const enc, const node *const array)
+{
+	assert(expression_get_class(array) == EXPR_IDENTIFIER && type_is_array(enc->sx, expression_get_type(array)));
+	const lvalue array_lvalue = emit_lvalue(enc, array);
+	item_t current_type = expression_get_type(array);
+
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, array_lvalue.displ);
+	int dimensions = 0;
+	while (type_is_array(enc->sx, current_type))
+	{
+		current_type = type_array_get_element_type(enc->sx, current_type);
+		++dimensions;
+	}
+
+	// Вычисление смещения старта инициализатора (следующий индекс после найденного)
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, array_lvalue.displ);
+	for (int i = 0; i < dimensions - 2; i++)
+	{
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_LOAD);
+		mem_add(enc, mem_size(enc) - 1);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_LI);
+	mem_add(enc, -1);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, mem_size(enc) - 1);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, mem_size(enc) - 1);
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, mem_size(enc) - 2);
+	mem_add(enc, IC_LI);
+	mem_add(enc, dimensions);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_ADD);
+
+	// Увеличение индекс начала (чтобы стал равен началу)
+	mem_add(enc, IC_LI);
+	mem_add(enc, 1);
+	mem_add(enc, IC_ASSIGN_V);
+	mem_add(enc, mem_size(enc) - 3);
+
+	// Вычисление длины инициализатора (конец - начало)
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, mem_size(enc) - 2);
+	mem_add(enc, IC_SUB);
+
+	// Копирование его в конец памяти
+	mem_add(enc, IC_COPY0ST);
+}
+
+/**
  *	Emit initializer
  *
  *	@param	enc			Encoder
@@ -1214,7 +1282,15 @@ static void emit_initializer(encoder *const enc, const node *const nd)
 	for (size_t i = 0; i < size; i++)
 	{
 		const node subexpr = expression_initializer_get_subexpr(nd, i);
-		emit_expression(enc, &subexpr);
+		if (expression_get_class(&subexpr) == EXPR_IDENTIFIER
+			&& type_is_array(enc->sx, expression_get_type(&subexpr)))
+		{
+			array_load_initializer(enc, &subexpr);
+		}
+		else
+		{
+			emit_expression(enc, &subexpr);
+		}
 	}
 }
 
