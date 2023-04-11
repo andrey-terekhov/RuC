@@ -8,43 +8,6 @@ env:
   ARCHIVE_NAME: compiler-${{ github.event.release.tag_name }}
 
 jobs:
-  windows:
-    name: Windows
-    runs-on: windows-latest
-    steps:
-      - name: GitHub repository checkout
-        uses: actions/checkout@v3
-      - name: Build Win32 release
-        run: |
-          mkdir build32 && cd build32 && cmake .. -A Win32 && cd ..
-          cmake --build build32 --config Release
-          mkdir install32 && cmake --install build32 --prefix install32 --config Release
-          Compress-Archive -Path install32\* -DestinationPath ${{ env.ARCHIVE_NAME }}-win32.zip
-      - name: Upload Win32 release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARCHIVE_NAME }}-win32.zip
-          asset_name: ${{ env.ARCHIVE_NAME }}-win32.zip
-          asset_content_type: application/zip
-      - name: Build x64 release
-        run: |
-          mkdir build64 && cd build64 && cmake .. -A x64 && cd ..
-          cmake --build build64 --config Release
-          mkdir install64 && cmake --install build64 --prefix install64 --config Release
-          Compress-Archive -Path install64\* -DestinationPath ${{ env.ARCHIVE_NAME }}-win64.zip
-      - name: Upload x64 release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.ARCHIVE_NAME }}-win64.zip
-          asset_name: ${{ env.ARCHIVE_NAME }}-win64.zip
-          asset_content_type: application/zip
-
   ubuntu:
     name: Ubuntu
     runs-on: ubuntu-latest
