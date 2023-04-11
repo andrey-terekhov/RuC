@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.13.5)
 project(ruc)
 
 
+# Set C/C++ standards
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
+
 # Put all libraries to one folder
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -15,8 +19,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 if(MSVC)
-	set(CMAKE_CXX_STANDARD 20)
-
 	# Starting in Visual Studio 2019 version 16.8, you may specify /std:c11
 	add_compile_options(/W4 /WX /wd4204 /wd4221 /wd5105 /utf-8
 						"$<$<VERSION_GREATER_EQUAL:MSVC_VERSION,1928>:/std:c11>"
@@ -25,8 +27,6 @@ if(MSVC)
 
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
-	set(CMAKE_C_STANDARD 11)
-
 	# Add POSIX flag to declare ‘fileno’ function
 	# Enable -s flag for Release build to remove code info from exec
 	add_compile_options(-Werror=return-type -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-const-variable

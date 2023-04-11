@@ -97,6 +97,10 @@ typedef enum ERROR
 	invalid_const_pointer_cast,
 	function_type_const,
 	multiple_const_in_type,
+	const_without_init,
+	struct_without_init,
+	array_without_init,
+	variable_without_init,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */
@@ -178,7 +182,7 @@ typedef enum WARNING
  *	@param	io			Universal io
  *	@param	num			Error number
  */
-void error(const universal_io *const io, err_t num, ...);
+void error(universal_io *const io, err_t num, ...);
 
 /**
  *	Emit a warning for some problem
@@ -186,7 +190,7 @@ void error(const universal_io *const io, err_t num, ...);
  *	@param	io			Universal io
  *	@param	num			Warning number
  */
-void warning(const universal_io *const io, warning_t num, ...);
+void warning(universal_io *const io, warning_t num, ...);
 
 
 /**
@@ -196,7 +200,7 @@ void warning(const universal_io *const io, warning_t num, ...);
  *	@param	num			Error number
  *	@param	args		Variable list
  */
-void verror(const universal_io *const io, const err_t num, va_list args);
+void verror(universal_io *const io, const err_t num, va_list args);
 
 /**
  *	Emit a warning (embedded version)
@@ -205,7 +209,7 @@ void verror(const universal_io *const io, const err_t num, va_list args);
  *	@param	num			Warning number
  *	@param	args		Variable list
  */
-void vwarning(const universal_io *const io, const warning_t num, va_list args);
+void vwarning(universal_io *const io, const warning_t num, va_list args);
 
 
 /**

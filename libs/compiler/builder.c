@@ -733,7 +733,10 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	{
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t member_type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t type = type_is_const(bldr->sx, struct_type) && !type_is_const(bldr->sx, member_type)
+				? type_const(bldr->sx, member_type)
+				: type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
@@ -1239,6 +1242,24 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 	else if (has_empty_bounds)
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
+	}
+	else if (type_requires_initialization(bldr->sx, variable_type))
+	{
+		switch (type_get_class(bldr->sx, variable_type))
+		{
+			case TYPE_STRUCTURE:
+				semantic_error(bldr, ident_loc, struct_without_init);
+				break;
+			case TYPE_ARRAY:
+				semantic_error(bldr, ident_loc, array_without_init);
+				break;
+			case TYPE_CONST:
+				semantic_error(bldr, ident_loc, const_without_init);
+				break;
+			default:
+				semantic_error(bldr, ident_loc, variable_without_init);
+				break;
+		}
 	}
 
 	// Magic numbers, maybe we need identifiers interface?

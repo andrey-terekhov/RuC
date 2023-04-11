@@ -52,6 +52,8 @@ static void repr_add_keyword(map *const reprtab, const char32_t *const eng, cons
 
 static inline void repr_init(map *const reprtab)
 {
+	repr_add_keyword(reprtab, U"#line", U"#строка", TK_LINE);
+
 	repr_add_keyword(reprtab, U"main", U"главная", TK_MAIN);
 	repr_add_keyword(reprtab, U"char", U"литера", TK_CHAR);
 	repr_add_keyword(reprtab, U"double", U"двойной", TK_DOUBLE);
@@ -585,6 +587,32 @@ size_t type_size(const syntax *const sx, const item_t type)
 	}
 }
 
+bool type_requires_initialization(const syntax *const sx, const item_t type)
+{
+	switch (type_get_class(sx, type))
+	{
+		case TYPE_STRUCTURE:
+		{
+			const size_t size = type_structure_get_member_amount(sx, type);
+			for (size_t i = 0; i < size; i++)
+			{
+				if (type_requires_initialization(sx, type_structure_get_member_type(sx, type, i)))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+		case TYPE_ARRAY:
+			return type_requires_initialization(sx, type_array_get_element_type(sx, type));
+		case TYPE_CONST:
+			return true;
+		default:
+			return false;
+	}
+}
+
 bool type_is_boolean(const syntax *const sx, const item_t type)
 {
 	return type == TYPE_BOOLEAN || (type_is_const(sx, type) && type_is_boolean(sx, type_const_get_unqualified_type(sx, type)));
@@ -891,7 +919,7 @@ scope scope_block_enter(syntax *const sx)
 {
 	if (sx == NULL)
 	{
-		return (scope){ ITEM_MAX, ITEM_MAX };
+		return (scope){ ITEM_MAX, ITEM_MAX, SIZE_MAX };
 	}
 
 	size_t prev_cur_id = sx->cur_id;

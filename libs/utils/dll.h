@@ -17,7 +17,7 @@
 #pragma once
 
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#define EXPORTED __declspec(dllexport)
 
 	#define __attribute__(x)
