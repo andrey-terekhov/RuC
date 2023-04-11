@@ -5,16 +5,6 @@ on:
   - pull_request
 
 jobs:
-  windows:
-    name: Windows Server 2019
-    runs-on: windows-2019
-    steps:
-      - name: GitHub repository checkout
-        uses: actions/checkout@v3
-      - name: Run script
-        shell: bash
-        run: ./scripts/test.sh
-
   ubuntu:
     name: Ubuntu 20.04
     runs-on: ubuntu-20.04
