@@ -22,5 +22,5 @@ sources="src/*.c libs/*/*.c"
 #directories="-Ilibs/utils -Ilibs/preprocessor -Ilibs/compiler"
 
 #$clang_tidy -fix-errors $sources -- $directories
-$clang_format --Werror --dry-run --verbose -style=file:.clang-format $sources $headers
+$clang_format --Werror --dry-run --verbose --style=file:.clang-format $sources $headers
 exit $?
