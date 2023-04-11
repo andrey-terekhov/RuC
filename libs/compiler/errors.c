@@ -233,6 +233,18 @@ static void get_error(const err_t num, char *const msg, va_list args)
 		case function_type_const:
 			sprintf(msg, "тип функции не может быть константой");
 			break;
+		case const_without_init:
+			sprintf(msg, "встречено объявление константы без инициализации");
+			break;
+		case struct_without_init:
+			sprintf(msg, "встречено объявление структуры, нуждающейся в инициализации (с константным полем), без инициализации");
+			break;
+		case array_without_init:
+			sprintf(msg, "встречено объявление массива с элементами, нуждающимися в инициализации (являющимися константным полем), без инициализации");
+			break;
+		case variable_without_init:
+			sprintf(msg, "встречено объявление переменной, нуждающейся в инициализации, без инициализации");
+			break;
 
 		// Builtin errors
 		case too_many_printf_args:

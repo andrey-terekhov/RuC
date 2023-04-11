@@ -376,6 +376,16 @@ type_t type_get_class(const syntax *const sx, const item_t type);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
+ *	Check if variable of type requires initialization
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 if variable of given type requires initialization, @c 0 otherwise
+ */
+bool type_requires_initialization(const syntax *const sx, const item_t type);
+
+/**
  *	Check if type is boolean
  *
  *	@param	sx			Syntax structure
