@@ -56,12 +56,12 @@ static void semantic_warning(builder *const bldr, const location loc, warning_t 
 }
 
 
-static item_t usual_arithmetic_conversions(node *const LHS, node *const RHS)
+static item_t usual_arithmetic_conversions(const syntax *const sx, node *const LHS, node *const RHS)
 {
 	const item_t LHS_type = expression_get_type(LHS);
 	const item_t RHS_type = expression_get_type(RHS);
 
-	if (type_is_floating(LHS_type) || type_is_floating(RHS_type))
+	if (type_is_floating(sx, LHS_type) || type_is_floating(sx, RHS_type))
 	{
 		*LHS = build_cast_expression(TYPE_FLOATING, LHS);
 		*RHS = build_cast_expression(TYPE_FLOATING, RHS);
@@ -333,7 +333,7 @@ static node build_printf_expression(builder *const bldr, node *const callee, nod
 	for (size_t i = 1; i < argc; i++)
 	{
 		node argument = node_vector_get(args, i);
-		if (!check_assignment_operands(bldr, format_types[i - 1], &argument))
+		if (!check_assignment_operands(bldr, format_types[i - 1], &argument, /*is_declaration:*/ true))
 		{
 			// FIXME: кинуть другую ошибку
 			return node_broken();
@@ -437,7 +437,7 @@ builder builder_create(syntax *const sx)
 }
 
 
-bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init)
+bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init, const bool is_declaration)
 {
 	if (!node_is_correct(init))
 	{
@@ -446,12 +446,23 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 	syntax *const sx = bldr->sx;
 	const location loc = node_get_location(init);
+
+	if (type_is_const(sx, expected_type) && !is_declaration)
+	{
+		semantic_error(bldr, loc, assign_to_const);
+		return false;
+	}
+
+	const item_t expected_type_unqualified = type_is_const(sx, expected_type) 
+		? type_const_get_unqualified_type(sx, expected_type)
+		: expected_type;
+
 	if (expression_get_class(init) == EXPR_INITIALIZER)
 	{
 		const size_t actual_inits = expression_initializer_get_size(init);
-		if (type_is_structure(sx, expected_type))
+		if (type_is_structure(sx, expected_type_unqualified))
 		{
-			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type);
+			const size_t expected_inits = type_structure_get_member_amount(sx, expected_type_unqualified);
 			if (expected_inits != actual_inits)
 			{
 				semantic_error(bldr, loc, wrong_init_in_actparam, expected_inits, actual_inits);
@@ -460,30 +471,30 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 
 			for (size_t i = 0; i < actual_inits; i++)
 			{
-				const item_t type = type_structure_get_member_type(sx, expected_type, i);
+				const item_t type = type_structure_get_member_type(sx, expected_type_unqualified, i);
 				node subexpr = expression_initializer_get_subexpr(init, i);
-				if (!check_assignment_operands(bldr, type, &subexpr))
+				if (!check_assignment_operands(bldr, type, &subexpr, is_declaration))
 				{
 					return false;
 				}
 			}
 
-			expression_initializer_set_type(init, expected_type);
+			expression_initializer_set_type(init, expected_type_unqualified);
 			return true;
 		}
-		else if (type_is_array(sx, expected_type))
+		else if (type_is_array(sx, expected_type_unqualified))
 		{
-			const item_t type = type_array_get_element_type(sx, expected_type);
+			const item_t type = type_array_get_element_type(sx, expected_type_unqualified);
 			for (size_t i = 0; i < actual_inits; i++)
 			{
 				node subexpr = expression_initializer_get_subexpr(init, i);
-				if (!check_assignment_operands(bldr, type, &subexpr))
+				if (!check_assignment_operands(bldr, type, &subexpr, is_declaration))
 				{
 					return false;
 				}
 			}
 
-			expression_initializer_set_type(init, expected_type);
+			expression_initializer_set_type(init, expected_type_unqualified);
 			return true;
 		}
 		else
@@ -493,34 +504,50 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 		}
 	}
 
-	const item_t actual_type = expression_get_type(init);
-	if (type_is_floating(expected_type) && type_is_integer(sx, actual_type))
+	const item_t expr_type = expression_get_type(init);
+	const item_t actual_type = type_is_const(sx, expr_type) ? type_const_get_unqualified_type(sx, expr_type) : expr_type;
+	if (type_is_floating(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
 	{
-		*init = build_cast_expression(expected_type, init);
+		*init = build_cast_expression(expected_type_unqualified, init);
 		return true;
 	}
 
-	if (type_is_enum(sx, expected_type) && type_is_enum_field(sx, actual_type))
+	if (type_is_enum(sx, expected_type_unqualified) && type_is_enum_field(sx, actual_type))
 	{
 		return true; // check enum initializer
 	}
 
-	if (type_is_integer(sx, expected_type) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type)))
+	if (type_is_integer(sx, expected_type_unqualified) && (type_is_enum(sx, actual_type) || type_is_enum_field(sx, actual_type)))
 	{
 		return true; // check int initializer
 	}
 
-	if (type_is_integer(sx, expected_type) && type_is_integer(sx, actual_type))
+	if (type_is_integer(sx, expected_type_unqualified) && type_is_integer(sx, actual_type))
 	{
 		return true;
 	}
 
-	if (type_is_pointer(sx, expected_type) && type_is_null_pointer(actual_type))
+	if (type_is_pointer(sx, expected_type_unqualified) && type_is_null_pointer(actual_type))
 	{
 		return true;
 	}
 
-	if (expected_type == actual_type)
+	if (type_is_pointer(sx, expected_type_unqualified) && type_is_pointer(sx, actual_type))
+	{
+		const item_t expected_element_type = type_pointer_get_element_type(sx, expected_type_unqualified);
+		const item_t actual_element_type = type_pointer_get_element_type(sx, actual_type);
+		if (!type_is_const(sx, expected_element_type) && type_is_const(sx, actual_element_type))
+		{
+			semantic_error(bldr, loc, invalid_const_pointer_cast);
+			return false;
+		}
+		if (type_is_const(sx, expected_element_type) && actual_element_type == type_const_get_unqualified_type(sx, expected_element_type))
+		{
+			return true;
+		}
+	}
+
+	if (expected_type_unqualified == actual_type)
 	{
 		return true;
 	}
@@ -653,7 +680,7 @@ node build_call_expression(builder *const bldr, node *const callee
 	{
 		const item_t expected_type = type_function_get_parameter_type(bldr->sx, callee_type, i);
 		node argument = node_vector_get(args, i);
-		if (!check_assignment_operands(bldr, expected_type, &argument))
+		if (!check_assignment_operands(bldr, expected_type, &argument, /*is_declaration:*/ true))
 		{
 			return node_broken();
 		}
@@ -706,7 +733,10 @@ node build_member_expression(builder *const bldr, node *const base, const size_t
 	{
 		if (name == type_structure_get_member_name(bldr->sx, struct_type, i))
 		{
-			const item_t type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t member_type = type_structure_get_member_type(bldr->sx, struct_type, i);
+			const item_t type = type_is_const(bldr->sx, struct_type) && !type_is_const(bldr->sx, member_type)
+				? type_const(bldr->sx, member_type)
+				: type_structure_get_member_type(bldr->sx, struct_type, i);
 			const location loc = { node_get_location(base).begin, id_loc.end };
 
 			return expression_member(type, category, i, is_arrow, base, loc);
@@ -880,7 +910,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 			return node_broken();
 		}
 
-		if (!check_assignment_operands(bldr, left_type, RHS))
+		if (!check_assignment_operands(bldr, left_type, RHS, /*is_declaration:*/ false))
 		{
 			return node_broken();
 		}
@@ -917,7 +947,7 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			const item_t type = usual_arithmetic_conversions(LHS, RHS);
+			const item_t type = usual_arithmetic_conversions(bldr->sx, LHS, RHS);
 			return fold_binary_expression(bldr, type, LHS, RHS, op_kind, loc);
 		}
 
@@ -932,21 +962,21 @@ node build_binary_expression(builder *const bldr, node *const LHS, node *const R
 				return node_broken();
 			}
 
-			usual_arithmetic_conversions(LHS, RHS);
+			usual_arithmetic_conversions(bldr->sx, LHS, RHS);
 			return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 		}
 
 		case BIN_EQ:
 		case BIN_NE:
 		{
-			if (type_is_floating(left_type) || type_is_floating(right_type))
+			if (type_is_floating(bldr->sx, left_type) || type_is_floating(bldr->sx, right_type))
 			{
 				semantic_warning(bldr, op_loc, variable_deviation);
 			}
 
 			if (type_is_arithmetic(bldr->sx, left_type) && type_is_arithmetic(bldr->sx, right_type))
 			{
-				usual_arithmetic_conversions(LHS, RHS);
+				usual_arithmetic_conversions(bldr->sx, LHS, RHS);
 				return fold_binary_expression(bldr, TYPE_BOOLEAN, LHS, RHS, op_kind, loc);
 			}
 
@@ -1047,7 +1077,7 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	const item_t RHS_type = expression_get_type(RHS);
 	if (type_is_arithmetic(bldr->sx, LHS_type) && type_is_arithmetic(bldr->sx, RHS_type))
 	{
-		const item_t type = usual_arithmetic_conversions(LHS, RHS);
+		const item_t type = usual_arithmetic_conversions(bldr->sx, LHS, RHS);
 		return expression_ternary(type, cond, LHS, RHS, loc);
 	}
 
@@ -1107,7 +1137,7 @@ node build_empty_bound_expression(builder *const bldr, const location loc)
 
 
 node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, node_vector *const bounds, const location loc)
+	, const bool was_const, node_vector *const bounds, const location loc)
 {
 	if (type_is_void(type))
 	{
@@ -1115,6 +1145,10 @@ node build_member_declaration(builder *const bldr, const item_t type, const size
 	}
 
 	item_t member_type = was_star ? type_pointer(bldr->sx, type) : type;
+	if (was_const)
+	{
+		member_type = type_const(bldr->sx, member_type);
+	}
 	const size_t bounds_amount = node_vector_size(bounds);
 	for (size_t i = 0; i < bounds_amount; i++)
 	{
@@ -1172,7 +1206,7 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
 }
 
 node build_declarator(builder *const bldr, const item_t type, const size_t name
-   , const bool was_star, node_vector *const bounds, node *const initializer, const location ident_loc)
+   , const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc)
 {
 	if (type_is_void(type))
 	{
@@ -1180,6 +1214,10 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 	}
 
 	item_t variable_type = was_star ? type_pointer(bldr->sx, type) : type;
+	if (was_const)
+	{
+		variable_type = type_const(bldr->sx, variable_type);
+	}
 	const size_t bounds_amount = node_vector_size(bounds);
 
 	bool has_empty_bounds = false;
@@ -1199,11 +1237,29 @@ node build_declarator(builder *const bldr, const item_t type, const size_t name
 
 	if (initializer)
 	{
-		check_assignment_operands(bldr, variable_type, initializer);
+		check_assignment_operands(bldr, variable_type, initializer, /*is_declaration:*/ true);
 	}
 	else if (has_empty_bounds)
 	{
 		semantic_error(bldr, ident_loc, empty_bound_without_init);
+	}
+	else if (type_requires_initialization(bldr->sx, variable_type))
+	{
+		switch (type_get_class(bldr->sx, variable_type))
+		{
+			case TYPE_STRUCTURE:
+				semantic_error(bldr, ident_loc, struct_without_init);
+				break;
+			case TYPE_ARRAY:
+				semantic_error(bldr, ident_loc, array_without_init);
+				break;
+			case TYPE_CONST:
+				semantic_error(bldr, ident_loc, const_without_init);
+				break;
+			default:
+				semantic_error(bldr, ident_loc, variable_without_init);
+				break;
+		}
 	}
 
 	// Magic numbers, maybe we need identifiers interface?
@@ -1420,7 +1476,7 @@ node build_return_statement(builder *const bldr, node *const expr, const locatio
 		// TODO: void*?
 		if (return_type != type_pointer(bldr->sx, TYPE_VOID))
 		{
-			check_assignment_operands(bldr, return_type, expr);
+			check_assignment_operands(bldr, return_type, expr, /*is_declaration:*/ true);
 		}
 
 		loc.end = node_get_location(expr).end;

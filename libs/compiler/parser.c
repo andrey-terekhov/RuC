@@ -765,6 +765,9 @@ static node parse_condition(parser *const prs)
 /**
  *	Parse type specifier
  *
+ *	type-qualifiers:
+ *		`const`
+ *
  *	type-specifier:
  *		`void`
  *		`bool`
@@ -812,6 +815,26 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
 		case TK_FILE:
 			consume_token(prs);
 			return TYPE_FILE;
+
+		case TK_CONST:
+		{
+			consume_token(prs);
+			const item_t type = parse_type_specifier(prs, parent);
+			switch(type)
+			{
+				case TYPE_UNDEFINED:
+					return TYPE_UNDEFINED;
+				default:
+				{
+					if (type_is_const(prs->sx, type))
+					{
+						parser_error(prs, multiple_const_in_type);
+						return TYPE_UNDEFINED;
+					}
+					return type_const(prs->sx, type);
+				}
+			}
+		}
 
 		case TK_IDENTIFIER:
 		{
@@ -883,7 +906,7 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
  *	Parse member declaration
  *
  *	member-declaration:
- *		type-specifier member-declarator `;`
+ *		type-qualifiers type-specifier member-declarator `;`
  *
  *	member-declarator:
  *		`*`[opt] identifier
@@ -898,6 +921,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 {
 	const item_t type = parse_type_specifier(prs, parent);
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
@@ -936,7 +960,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 	}
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	const node member = build_member_declaration(&prs->bld, type, name, was_star, &bounds, ident_loc);
+	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
 
 	node_vector_clear(&bounds);
 	return member;
@@ -1169,6 +1193,7 @@ static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 static node parse_init_declarator(parser *const prs, const item_t type)
 {
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
 		parser_error(prs, expected_identifier_in_declarator);
@@ -1217,7 +1242,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 	}
 
 	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
-	node declarator = build_declarator(&prs->bld, type, name, was_star, &bounds, initializer_ptr, ident_loc);
+	node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
 	node_vector_clear(&bounds);
 
 	return declarator;
@@ -1227,7 +1252,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
  *	Parse declaration
  *
  *	declaration:
- *		type-specifier init-declarator-list[opt] `;`
+ *		type-qualifiers type-specifier init-declarator-list[opt] `;`
  *
  *	init-declarator-list:
  *		init-declarator
@@ -1290,6 +1315,7 @@ static bool is_declaration_specifier(parser *const prs)
 		case TK_ENUM:
 		case TK_FILE:
 		case TK_TYPEDEF:
+		case TK_CONST:
 			return true;
 
 		case TK_IDENTIFIER:
@@ -1865,6 +1891,10 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			{
 				arg_func = 1;
 				type = type_pointer(prs->sx, type);
+				if (try_consume_token(prs, TK_CONST))
+				{
+					type = type_const(prs->sx, type);
+				}
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
@@ -2082,6 +2112,11 @@ static void parse_function_definition(parser *const prs, node *const parent, con
  */
 static void parse_function_declaration(parser *const prs, node *const parent, const item_t type)
 {
+	if (type_is_const(prs->sx, type))
+	{
+		parser_error(prs, function_type_const);
+	}
+
 	const size_t function_num = func_reserve(prs->sx);
 	const size_t function_repr = token_get_ident_name(&prs->tk);
 

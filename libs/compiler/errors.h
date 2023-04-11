@@ -93,6 +93,14 @@ typedef enum ERROR
 	main_should_be_defined,
 	wrong_main_parameters,
 	wrong_main_parameter_type,
+	assign_to_const,
+	invalid_const_pointer_cast,
+	function_type_const,
+	multiple_const_in_type,
+	const_without_init,
+	struct_without_init,
+	array_without_init,
+	variable_without_init,
 
 	// Builtin errors
 	too_many_printf_args,					/**< Too many printf arguments */

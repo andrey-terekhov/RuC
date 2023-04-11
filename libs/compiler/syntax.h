@@ -53,6 +53,7 @@ typedef enum TYPE
 	TYPE_ARRAY,
 	TYPE_POINTER,
 	TYPE_ENUM,
+	TYPE_CONST,
 
 	BEGIN_USER_TYPE = 15,
 } type_t;
@@ -375,13 +376,24 @@ type_t type_get_class(const syntax *const sx, const item_t type);
 size_t type_size(const syntax *const sx, const item_t type);
 
 /**
+ *	Check if variable of type requires initialization
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 if variable of given type requires initialization, @c 0 otherwise
+ */
+bool type_requires_initialization(const syntax *const sx, const item_t type);
+
+/**
  *	Check if type is boolean
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_boolean(const item_t type);
+bool type_is_boolean(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is integer
@@ -396,11 +408,12 @@ bool type_is_integer(const syntax *const sx, const item_t type);
 /**
  *	Check if type is floating
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_floating(const item_t type);
+bool type_is_floating(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is arithmetic
@@ -429,6 +442,15 @@ bool type_is_void(const item_t type);
  *	@return	@c 1 on true, @c 0 on false
  */
 bool type_is_null_pointer(const item_t type);
+
+/**
+ *	Check if type is const type
+ *
+ *	@param	type		Type for check
+ *
+ *	@return	@c 1 on true, @c 0 on false
+ */
+bool type_is_const(const syntax *const sx, const item_t type);
 
 /**
  *	Check if type is array
@@ -542,11 +564,22 @@ bool type_is_undefined(const item_t type);
 /**
  *	Check if type is FILE
  *
+ *	@param	sx			Syntax structure
  *	@param	type		Type for check
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool type_is_file(const item_t type);
+bool type_is_file(const syntax *const sx, const item_t type);
+
+/**
+ *	Get unqualified type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Const type
+ *
+ *	@return	Unqualified type, @c ITEM_MAX on failure
+ */
+item_t type_const_get_unqualified_type(const syntax *const sx, const item_t type);
 
 /**
  *	Get element type
@@ -691,6 +724,16 @@ item_t type_function(syntax *const sx, const item_t return_type, const char *con
  *	@return	Pointer type
  */
 item_t type_pointer(syntax *const sx, const item_t type);
+
+/**
+ *	Create const type
+ *
+ *	@param	sx			Syntax structure
+ *	@param	type		Referenced type
+ *
+ *	@return	Const type
+ */
+item_t type_const(syntax *const sx, const item_t type);
 
 
 /**

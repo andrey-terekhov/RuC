@@ -642,11 +642,11 @@ static void check_type_and_branch(information *const info, const item_t type)
 			{
 				to_code_unconditional_branch(info, info->answer_const ? info->label_true : info->label_false);
 			}
-			else if (type_is_boolean(type))
+			else if (type_is_boolean(info->sx, type))
 			{
 				to_code_unconditional_branch(info, info->answer_const_bool ? info->label_true : info->label_false);
 			}
-			else if (type_is_floating(type))
+			else if (type_is_floating(info->sx, type))
 			{
 				to_code_unconditional_branch(info, info->answer_const_double ? info->label_true : info->label_false);
 			}
@@ -658,11 +658,11 @@ static void check_type_and_branch(information *const info, const item_t type)
 			{
 				to_code_operation_reg_const_integer(info, BIN_NE, info->answer_reg, 0, TYPE_INTEGER);
 			}
-			else if (type_is_boolean(type))
+			else if (type_is_boolean(info->sx, type))
 			{
 				to_code_operation_reg_const_bool(info, BIN_NE, info->answer_reg, false, TYPE_BOOLEAN);
 			}
-			else if (type_is_floating(type))
+			else if (type_is_floating(info->sx, type))
 			{
 				to_code_operation_reg_const_double(info, BIN_NE, info->answer_reg, 0);
 			}
@@ -1043,7 +1043,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		{
 			arguments[i] = info->answer_const;
 		}
-		else if (type_is_boolean(arguments_value_type[i]))
+		else if (type_is_boolean(info->sx, arguments_value_type[i]))
 		{
 			arguments_bool[i] = info->answer_const_bool;
 		}
@@ -1151,7 +1151,7 @@ static void emit_call_expression(information *const info, const node *const nd)
 		{
 			uni_printf(info->sx->io, " %" PRIitem, arguments[i]);
 		}
-		else if (type_is_boolean(arguments_value_type[i]))
+		else if (type_is_boolean(info->sx, arguments_value_type[i]))
 		{
 			uni_printf(info->sx->io, " %s", arguments_bool[i] ? "true" : "false");
 		}
@@ -1334,7 +1334,7 @@ static void emit_unary_expression(information *const info, const node *const nd)
 			{
 				to_code_operation_reg_const_integer(info, BIN_XOR, info->answer_reg, -1, operation_type);
 			}
-			else if (operator == UN_MINUS && type_is_floating(operation_type))
+			else if (operator == UN_MINUS && type_is_floating(info->sx, operation_type))
 			{
 				to_code_operation_const_reg_double(info, BIN_SUB, 0, info->answer_reg);
 			}
@@ -1634,7 +1634,7 @@ static void emit_assignment_expression(information *const info, const node *cons
 			to_code_operation_reg_const_integer(info, assignment_type, info->register_num - 1
 				, info->answer_const, operation_type);
 		}
-		else if (type_is_floating(operation_type))
+		else if (type_is_floating(info->sx, operation_type))
 		{
 			to_code_operation_reg_const_double(info, assignment_type, info->register_num - 1
 				, info->answer_const_double);
@@ -1660,11 +1660,11 @@ static void emit_assignment_expression(information *const info, const node *cons
 	{
 		to_code_store_const_integer(info, info->answer_const, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true, operation_type);
 	}
-	else if (type_is_floating(operation_type))
+	else if (type_is_floating(info->sx, operation_type))
 	{
 		to_code_store_const_double(info, info->answer_const_double, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
-	else if (type_is_boolean(operation_type))
+	else if (type_is_boolean(info->sx, operation_type))
 	{
 		to_code_store_const_bool(info, info->answer_const_bool, id, is_complex, !is_complex ? ident_is_local(info->sx, id) : true);
 	}
@@ -2249,7 +2249,7 @@ static void emit_variable_declaration(information *const info, const node *const
 				{
 					to_code_store_const_integer(info, info->answer_const, info->request_reg, false, is_local, type);
 				}
-				else if (type_is_boolean(type))  
+				else if (type_is_boolean(info->sx, type))  
 				{
 					to_code_store_const_bool(info, info->answer_const_bool, info->request_reg, false, is_local);
 				}
@@ -2278,11 +2278,11 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				to_code_store_const_integer(info, 0, id, false, is_local, type);
 			}
-			else if (type_is_boolean(type))  
+			else if (type_is_boolean(info->sx, type))  
 			{
 				to_code_store_const_bool(info, false, id, false, is_local);
 			}
-			else if (type_is_floating(type))  
+			else if (type_is_floating(info->sx, type))  
 			{
 				to_code_store_const_double(info, 0.0, id, false, is_local);
 			}
@@ -2330,11 +2330,11 @@ static void emit_variable_declaration(information *const info, const node *const
 			{
 				uni_printf(info->sx->io, " 0");
 			}
-			else if (type_is_floating(type))
+			else if (type_is_floating(info->sx, type))
 			{
 				uni_printf(info->sx->io, " 0.0");
 			}
-			else if (type_is_boolean(type))  
+			else if (type_is_boolean(info->sx, type))  
 			{
 				uni_printf(info->sx->io, " false");
 			}
@@ -2802,7 +2802,7 @@ static void emit_return_statement(information *const info, const node *const nd)
 		{
 			uni_printf(info->sx->io, " ret i32 %" PRIitem "\n", info->answer_const);
 		}
-		else if (info->answer_kind == ACONST && type_is_floating(answer_type))
+		else if (info->answer_kind == ACONST && type_is_floating(info->sx, answer_type))
 		{
 			uni_printf(info->sx->io, " ret double %f\n", info->answer_const_double);
 		}
