@@ -14,7 +14,7 @@ $ sudo apt-get -y install git gcc g++ cmake clang-tidy clang-format-9
 
 Для конфигурирования и сборки репозитория воспользуйтесь:
 ```
-$ mkdir build && cd build && cmake .. && cd ..
+$ cmake -S . -B build
 $ cmake --build build --config Release
 ```
 

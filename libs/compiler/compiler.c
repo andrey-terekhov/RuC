@@ -22,7 +22,7 @@
 #include "mipsgen.h"
 #include "llvmgen.h"
 #include "parser.h"
-#include "preprocessor.h"
+#include "macro.h"
 #include "syntax.h"
 #include "uniio.h"
 
@@ -59,23 +59,6 @@ static inline void make_executable(const char *const path)
 #endif
 }
 
-/** Skip linker stage */
-static inline bool skip_linker(const workspace *const ws)
-{
-	for (size_t i = 0; ; i++)
-	{
-		const char *flag = ws_get_flag(ws, i);
-		if (flag == NULL)
-		{
-			return false;
-		}
-		else if (strcmp(flag, "-c") == 0)
-		{
-			return true;
-		}
-	}
-}
-
 
 static status_t compile_from_io(const workspace *const ws, universal_io *const io, const encoder enc)
 {
@@ -90,7 +73,7 @@ static status_t compile_from_io(const workspace *const ws, universal_io *const i
 	int ret = parse(&sx);
 	status_t sts = sts_parse_error;
 
-	if (!ret && !skip_linker(ws))
+	if (!ret && !ws_has_flag(ws, "-c")) // Skip linker stage
 	{
 		ret = !sx_is_correct(&sx);
 		sts = sts_link_error;
@@ -113,6 +96,11 @@ static status_t compile_from_ws(workspace *const ws, const encoder enc)
 	{
 		error_msg("некорректные входные данные");
 		return sts_system_error;
+	}
+
+	if (ws_has_flag(ws, "-E"))
+	{
+		return macro_to_file(ws, ws_get_output(ws)) ? sts_macro_error : sts_success;
 	}
 
 	universal_io io = io_create();
@@ -157,22 +145,17 @@ static status_t compile_from_ws(workspace *const ws, const encoder enc)
 
 status_t compile(workspace *const ws)
 {
-	for (size_t i = 0; ; i++)
+	if (ws_has_flag(ws, "-LLVM"))
 	{
-		const char *flag = ws_get_flag(ws, i);
-
-		if (flag == NULL || strcmp(flag, "-VM") == 0)
-		{
-			return compile_to_vm(ws);
-		}
-		else if (strcmp(flag, "-LLVM") == 0)
-		{
-			return compile_to_llvm(ws);
-		}
-		else if (strcmp(flag, "-MIPS") == 0)
-		{
-			return compile_to_mips(ws);
-		}
+		return compile_to_llvm(ws);
+	}
+	else if (ws_has_flag(ws, "-MIPS"))
+	{
+		return compile_to_mips(ws);
+	}
+	else // if (ws_has_flag(ws, "-VM"))
+	{
+		return compile_to_vm(ws);
 	}
 }
 

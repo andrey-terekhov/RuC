@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#pragma comment(linker, "/STACK:268435456")
 #endif
 

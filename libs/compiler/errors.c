@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "commenter.h"
 #include "item.h"
+#include "locator.h"
 #include "logger.h"
 #include "uniio.h"
 #include "utf8.h"
@@ -463,34 +464,20 @@ static void get_warning(const warning_t num, char *const msg, va_list args)
 }
 
 
-static void output(const universal_io *const io, const char *const msg, const logger system_func
-	, void (*func)(const char *const, const char *const, const char *const, const size_t))
+static void output(universal_io *const io, const char *const msg
+	, const logger system_func, void (*func)(location *const, const char *const))
 {
-	char tag[MAX_TAG_SIZE] = TAG_RUC;
+	location loc = loc_search(io);
 
-	const char *code = in_get_buffer(io);
-	if (code == NULL)
+	if (!loc_is_correct(&loc))
 	{
+		char tag[MAX_TAG_SIZE] = TAG_RUC;
 		in_get_path(io, tag);
 		system_func(tag, msg);
 		return;
 	}
 
-	size_t position = in_get_position(io) - 1;
-	while (position > 0
-		&& (code[position] == ' ' || code[position] == '\t'
-		|| code[position] == '\r' || code[position] == '\n'))
-	{
-		position--;
-	}
-
-	comment cmt = cmt_search(code, position);
-	cmt_get_tag(&cmt, tag);
-
-	char line[MAX_LINE_SIZE];
-	cmt_get_code_line(&cmt, line);
-
-	func(tag, msg, line, cmt_get_symbol(&cmt));
+	func(&loc, msg);
 }
 
 
@@ -503,7 +490,7 @@ static void output(const universal_io *const io, const char *const msg, const lo
  */
 
 
-void error(const universal_io *const io, err_t num, ...)
+void error(universal_io *const io, err_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -513,7 +500,7 @@ void error(const universal_io *const io, err_t num, ...)
 	va_end(args);
 }
 
-void warning(const universal_io *const io, warning_t num, ...)
+void warning(universal_io *const io, warning_t num, ...)
 {
 	va_list args;
 	va_start(args, num);
@@ -524,18 +511,18 @@ void warning(const universal_io *const io, warning_t num, ...)
 }
 
 
-void verror(const universal_io *const io, const err_t num, va_list args)
+void verror(universal_io *const io, const err_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_error(num, msg, args);
-	output(io, msg, &log_system_error, &log_error);
+	output(io, msg, &log_system_error, &log_auto_error);
 }
 
-void vwarning(const universal_io *const io, const warning_t num, va_list args)
+void vwarning(universal_io *const io, const warning_t num, va_list args)
 {
 	char msg[MAX_MSG_SIZE];
 	get_warning(num, msg, args);
-	output(io, msg, &log_system_warning, &log_warning);
+	output(io, msg, &log_system_warning, &log_auto_warning);
 }
 
 

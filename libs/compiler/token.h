@@ -30,6 +30,7 @@ typedef enum TOKEN
 {
 	TK_MAIN = 0,					/**< The main function token */
 	TK_EOF = SHRT_MIN,				/**< End of file token */
+	TK_LINE,						/**< '#line' directive */
 
 	// Keywords
 	TK_ABS,							/**< 'abs' keyword */

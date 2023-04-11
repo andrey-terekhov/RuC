@@ -10,9 +10,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: GitHub repository checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
       - name: Run script
         shell: bash
         run: ./scripts/test.sh
@@ -22,9 +20,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: GitHub repository checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
       - name: Run script
         run: ./scripts/test.sh
 
@@ -33,9 +29,7 @@ jobs:
     runs-on: macos-11
     steps:
       - name: GitHub repository checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
       - name: Set up environment
         run: brew install coreutils
       - name: Run script
