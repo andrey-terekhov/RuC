@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <stddef.h>
 #include "dll.h"
 #include "locator.h"
+#include <stddef.h>
 
 
 #ifdef __cplusplus

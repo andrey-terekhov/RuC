@@ -27,13 +27,13 @@ extern "C" {
 /** Structure for storing information about location */
 typedef struct location
 {
-	universal_io *io;	/**< IO to search and produce marks */
+    universal_io *io; /**< IO to search and produce marks */
 
-	size_t path;		/**< Filename path IO position */
-	size_t code;		/**< Current code line IO position */
+    size_t path;      /**< Filename path IO position */
+    size_t code;      /**< Current code line IO position */
 
-	size_t line;		/**< Line number */
-	size_t symbol;		/**< Symbol in line */
+    size_t line;      /**< Line number */
+    size_t symbol;    /**< Symbol in line */
 } location;
 
 

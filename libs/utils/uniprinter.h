@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <stdio.h>
 #include "dll.h"
 #include "uniio.h"
+#include <stdio.h>
 
 
 #ifdef __cplusplus
@@ -33,9 +33,11 @@ extern "C" {
  *
  *	@return	Return printf-like value
  */
+// clang-format off
 EXPORTED int uni_printf(universal_io *const io, const char *const format, ...)
 	__attribute__((format(printf, 2, 3)))
 	__attribute__((nonnull(2)));
+// clang-format on
 
 /**
  *	Universal function for printing UTF-8 characters

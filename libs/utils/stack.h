@@ -36,7 +36,7 @@ typedef vector stack;
  */
 inline stack stack_create(const size_t alloc)
 {
-	return vector_create(alloc);
+    return vector_create(alloc);
 }
 
 
@@ -50,7 +50,7 @@ inline stack stack_create(const size_t alloc)
  */
 inline int stack_push(stack *const stk, const item_t value)
 {
-	return vector_add(stk, value) != SIZE_MAX ? 0 : -1;
+    return vector_add(stk, value) != SIZE_MAX ? 0 : -1;
 }
 
 /**
@@ -63,7 +63,7 @@ inline int stack_push(stack *const stk, const item_t value)
  */
 inline int stack_push_double(stack *const stk, const double value)
 {
-	return vector_add_double(stk, value) != SIZE_MAX ? 0 : -1;
+    return vector_add_double(stk, value) != SIZE_MAX ? 0 : -1;
 }
 
 /**
@@ -76,7 +76,7 @@ inline int stack_push_double(stack *const stk, const double value)
  */
 inline int stack_push_int64(stack *const stk, const int64_t value)
 {
-	return vector_add_int64(stk, value) != SIZE_MAX ? 0 : -1;
+    return vector_add_int64(stk, value) != SIZE_MAX ? 0 : -1;
 }
 
 
@@ -89,7 +89,7 @@ inline int stack_push_int64(stack *const stk, const int64_t value)
  */
 inline item_t stack_pop(stack *const stk)
 {
-	return vector_remove(stk);
+    return vector_remove(stk);
 }
 
 /**
@@ -101,7 +101,7 @@ inline item_t stack_pop(stack *const stk)
  */
 inline double stack_pop_double(stack *const stk)
 {
-	return vector_remove_double(stk);
+    return vector_remove_double(stk);
 }
 
 /**
@@ -113,7 +113,7 @@ inline double stack_pop_double(stack *const stk)
  */
 inline int64_t stack_pop_int64(stack *const stk)
 {
-	return vector_remove_int64(stk);
+    return vector_remove_int64(stk);
 }
 
 
@@ -126,7 +126,7 @@ inline int64_t stack_pop_int64(stack *const stk)
  */
 inline item_t stack_peek(const stack *const stk)
 {
-	return vector_get(stk, vector_size(stk) - 1);
+    return vector_get(stk, vector_size(stk) - 1);
 }
 
 /**
@@ -138,7 +138,7 @@ inline item_t stack_peek(const stack *const stk)
  */
 inline double stack_peek_double(const stack *const stk)
 {
-	return vector_get_double(stk, vector_size(stk) - DOUBLE_SIZE);
+    return vector_get_double(stk, vector_size(stk) - DOUBLE_SIZE);
 }
 /**
  *	Peek 64-bit value
@@ -149,7 +149,7 @@ inline double stack_peek_double(const stack *const stk)
  */
 inline int64_t stack_peek_int64(const stack *const stk)
 {
-	return vector_get_int64(stk, vector_size(stk) - INT64_SIZE);
+    return vector_get_int64(stk, vector_size(stk) - INT64_SIZE);
 }
 
 
@@ -162,7 +162,7 @@ inline int64_t stack_peek_int64(const stack *const stk)
  */
 inline int stack_reset(stack *const stk)
 {
-	return vector_resize(stk, 0);
+    return vector_resize(stk, 0);
 }
 
 /**
@@ -174,7 +174,7 @@ inline int stack_reset(stack *const stk)
  */
 inline size_t stack_size(const stack *const stk)
 {
-	return vector_size(stk);
+    return vector_size(stk);
 }
 
 /**
@@ -186,7 +186,7 @@ inline size_t stack_size(const stack *const stk)
  */
 inline bool stack_is_correct(const stack *const stk)
 {
-	return vector_is_correct(stk);
+    return vector_is_correct(stk);
 }
 
 
@@ -199,7 +199,7 @@ inline bool stack_is_correct(const stack *const stk)
  */
 inline int stack_clear(stack *const stk)
 {
-	return vector_clear(stk);
+    return vector_clear(stk);
 }
 
 #ifdef __cplusplus

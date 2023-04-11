@@ -18,9 +18,9 @@
 
 
 #ifdef _WIN32
-	#define EXPORTED __declspec(dllexport)
+    #define EXPORTED __declspec(dllexport)
 
-	#define __attribute__(x)
+    #define __attribute__(x)
 #else
-	#define EXPORTED
+    #define EXPORTED
 #endif

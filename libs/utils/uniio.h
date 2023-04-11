@@ -16,12 +16,12 @@
 
 #pragma once
 
+#include "dll.h"
+#include "utf8.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "dll.h"
-#include "utf8.h"
 
 
 #ifdef __cplusplus
@@ -56,23 +56,23 @@ typedef int (*io_func)(universal_io *const io, const char *const format, va_list
 /** Input and output settings */
 struct universal_io
 {
-	FILE *in_file;				/**< Input file */
-	const char *in_buffer;		/**< Input buffer */
+    FILE *in_file;              /**< Input file */
+    const char *in_buffer;      /**< Input buffer */
 
-	size_t in_size;				/**< Size of input buffer */
-	size_t in_position;			/**< Current position of input buffer */
+    size_t in_size;             /**< Size of input buffer */
+    size_t in_position;         /**< Current position of input buffer */
 
-	io_user_func in_user_func;	/**< Input user function */
-	io_func in_func;			/**< Current input function */
+    io_user_func in_user_func;  /**< Input user function */
+    io_func in_func;            /**< Current input function */
 
-	FILE *out_file;				/**< Output file */
-	char *out_buffer;			/**< Output buffer */
+    FILE *out_file;             /**< Output file */
+    char *out_buffer;           /**< Output buffer */
 
-	size_t out_size;			/**< Size of output buffer */
-	size_t out_position;		/**< Current position of output buffer */
+    size_t out_size;            /**< Size of output buffer */
+    size_t out_position;        /**< Current position of output buffer */
 
-	io_user_func out_user_func;	/**< Output user function */
-	io_func out_func;			/**< Current output function */
+    io_user_func out_user_func; /**< Output user function */
+    io_func out_func;           /**< Current output function */
 };
 
 

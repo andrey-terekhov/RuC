@@ -27,9 +27,9 @@ extern "C" {
 /** Vector structure */
 typedef struct vector
 {
-	item_t *array;				/**< Vector array */
-	size_t size;				/**< Size of vector */
-	size_t size_alloc;			/**< Allocated size of vector */
+    item_t *array;     /**< Vector array */
+    size_t size;       /**< Size of vector */
+    size_t size_alloc; /**< Allocated size of vector */
 } vector;
 
 

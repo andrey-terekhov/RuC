@@ -26,8 +26,8 @@ extern "C" {
 /** Tree node */
 typedef struct node
 {
-	vector *tree;			/**< Tree reference */
-	size_t index;			/**< Node index */
+    vector *tree; /**< Tree reference */
+    size_t index; /**< Node index */
 } node;
 
 
@@ -266,7 +266,7 @@ EXPORTED node node_load(vector *const tree, const size_t index);
  *	@param	argc		Amount of new node arguments
  *
  *	@return	Inserted node
- */ 
+ */
 EXPORTED node node_insert(const node *const nd, const item_t type, const size_t argc);
 
 /**

@@ -29,8 +29,8 @@ extern "C" {
 /** Node vector structure */
 typedef struct node_vector
 {
-	vector *tree;			/**< Tree */
-	vector nodes;			/**< Nodes in AST */
+    vector *tree; /**< Tree */
+    vector nodes; /**< Nodes in AST */
 } node_vector;
 
 
@@ -51,26 +51,22 @@ EXPORTED node_vector node_vector_create(void);
  */
 inline size_t node_vector_add(node_vector *const vec, const node *const nd)
 {
-	vec->tree = vec->tree != NULL ? vec->tree : nd->tree;
-	return vec->tree == nd->tree
-		? vector_add(&vec->nodes, (item_t)node_save(nd))
-		: SIZE_MAX;
+    vec->tree = vec->tree != NULL ? vec->tree : nd->tree;
+    return vec->tree == nd->tree ? vector_add(&vec->nodes, (item_t)node_save(nd)) : SIZE_MAX;
 }
 
 /**
  *	Set new node
  *
  *	@param	vec				Node vector
- *	@param	index			Index	
+ *	@param	index			Index
  *	@param	nd				New node
  *
  *	@return	@c 0 on success, @c -1 on failure
  */
 inline int node_vector_set(node_vector *const vec, const size_t index, const node *const nd)
 {
-	return vec->tree == nd->tree
-		? vector_set(&vec->nodes, index, (item_t)node_save(nd))
-		: -1;
+    return vec->tree == nd->tree ? vector_set(&vec->nodes, index, (item_t)node_save(nd)) : -1;
 }
 
 /**
@@ -83,7 +79,7 @@ inline int node_vector_set(node_vector *const vec, const size_t index, const nod
  */
 inline node node_vector_get(const node_vector *const vec, const size_t index)
 {
-	return node_load(vec->tree, (size_t)vector_get(&vec->nodes, index));
+    return node_load(vec->tree, (size_t)vector_get(&vec->nodes, index));
 }
 
 /**
@@ -95,7 +91,7 @@ inline node node_vector_get(const node_vector *const vec, const size_t index)
  */
 inline size_t node_vector_size(const node_vector *const vec)
 {
-	return vec == NULL ? 0 : vector_size(&vec->nodes);
+    return vec == NULL ? 0 : vector_size(&vec->nodes);
 }
 
 /**
@@ -107,7 +103,7 @@ inline size_t node_vector_size(const node_vector *const vec)
  */
 inline bool node_vector_is_correct(const node_vector *const vec)
 {
-	return vec != NULL && vector_is_correct(vec->tree) && vector_is_correct(&vec->nodes);
+    return vec != NULL && vector_is_correct(vec->tree) && vector_is_correct(&vec->nodes);
 }
 
 /**
@@ -119,7 +115,7 @@ inline bool node_vector_is_correct(const node_vector *const vec)
  */
 inline int node_vector_clear(node_vector *const vec)
 {
-	return vector_clear(&vec->nodes);
+    return vector_clear(&vec->nodes);
 }
 
 #ifdef __cplusplus
