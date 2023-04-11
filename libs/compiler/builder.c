@@ -556,7 +556,6 @@ bool check_assignment_operands(builder *const bldr, const item_t expected_type, 
 	return false;
 }
 
-
 node build_identifier_expression(builder *const bldr, const size_t name, const location loc)
 {
 	const item_t identifier = repr_get_reference(bldr->sx, name);
