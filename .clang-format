@@ -1,4 +1,6 @@
-﻿AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+﻿BasedOnStyle: LLVM
+
+#AlignConsecutiveMacros: AcrossEmptyLinesAndComments
 AllowShortFunctionsOnASingleLine: None
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -30,3 +32,7 @@ SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 TabWidth: 4
 UseTab: Never
+AlignTrailingComments: true
+PointerAlignment: Right
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
