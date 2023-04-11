@@ -476,7 +476,7 @@ static lvalue emit_identifier_lvalue(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = expression_identifier_get_id(nd);
 	const item_t type = ident_get_type(enc->sx, identifier);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
+	const item_t unqualified_type = type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	const item_t displ = displacements_get(enc, identifier);
 
 	return (lvalue){ .kind = VARIABLE, .type = unqualified_type, .displ = displ };
@@ -580,7 +580,7 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 static lvalue emit_indirection_lvalue(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
+	const item_t unqualified_type = type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	const node operand = expression_unary_get_operand(nd);
 	const lvalue value = emit_lvalue(enc, &operand);
 	if (value.kind == VARIABLE)
@@ -634,7 +634,7 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
 static void emit_literal_expression(encoder *const enc, const node *const nd)
 {
 	const item_t type = expression_get_type(nd);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
+	const item_t unqualified_type = type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	switch (type_get_class(enc->sx, unqualified_type))
 	{
 		case TYPE_NULL_POINTER:
@@ -775,7 +775,7 @@ static void compress_ident(encoder *const enc, const size_t ref)
 
 	const item_t new_ref = (item_t)vector_size(&enc->identifiers) - 1;
 	const item_t type = ident_get_type(enc->sx, ref);
-	const item_t unqualified_type =  type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
+	const item_t unqualified_type = type_is_const(enc->sx, type) ? type_const_get_unqualified_type(enc->sx, type) : type;
 	vector_add(&enc->identifiers, (item_t)vector_size(&enc->representations) - 2);
 	vector_add(&enc->identifiers, unqualified_type);
 	vector_add(&enc->identifiers, displacements_get(enc, ref));
