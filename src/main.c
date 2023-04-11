@@ -15,7 +15,7 @@
  */
 
 #ifdef _WIN32
-	#pragma comment(linker, "/STACK:268435456")
+    #pragma comment(linker, "/STACK:268435456")
 #endif
 
 #include "compiler.h"
@@ -28,21 +28,21 @@ const char *name = "../tests/executable/output/printf/string_rus.c";
 
 int main(int argc, const char *argv[])
 {
-	workspace ws = ws_parse_args(argc, argv);
+    workspace ws = ws_parse_args(argc, argv);
 
-	if (argc < 2)
-	{
-		ws_add_file(&ws, name);
-		ws_add_flag(&ws, "-Wno");
-		ws_set_output(&ws, "export.txt");
-	}
+    if (argc < 2)
+    {
+        ws_add_file(&ws, name);
+        ws_add_flag(&ws, "-Wno");
+        ws_set_output(&ws, "export.txt");
+    }
 
 #ifdef TESTING_EXIT_CODE
-	const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
+    const int ret = compile(&ws) ? TESTING_EXIT_CODE : 0;
 #else
-	const int ret = compile(&ws);
+    const int ret = compile(&ws);
 #endif
 
-	ws_clear(&ws);
-	return ret;
+    ws_clear(&ws);
+    return ret;
 }
