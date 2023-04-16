@@ -337,6 +337,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd);
 static rvalue emit_void_expression(encoder *const enc, const node *const nd);
 static void emit_structure_init(encoder *const enc, const lvalue *const target, const node *const initializer);
 static void emit_statement(encoder *const enc, const node *const nd);
+static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval);
 
 
 static size_t mips_type_size(const syntax *const sx, const item_t type)
@@ -1122,10 +1123,11 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 		system_error(node_unexpected);
 	}
 
-	const size_t index = hash_add(&enc->displacements, identifier, 3);
+	const size_t index = hash_add(&enc->displacements, identifier, 4);
 	hash_set_by_index(&enc->displacements, index, 0, (is_register) ? 1 : 0);
 	hash_set_by_index(&enc->displacements, index, 1, location);
 	hash_set_by_index(&enc->displacements, index, 2, base_reg);
+	hash_set_by_index(&enc->displacements, index, 3, /* Пользуется только с настоящими lvalue (не адресами) */ false);
 
 	if (!is_local)
 	{
@@ -1141,13 +1143,15 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
  *	@param	enc					Encoder
  *	@param	identifier			Identifier for adding to the table
  *	@param	value				Lvalue for adding to the table
+ *	@param 	is_lvalue_address   Bool that defines if lvalue is lvalue of the identifier or its lvalue with address on the identifier
  */
-static void displacements_set(encoder *const enc, const size_t identifier, const lvalue *const value)
+static void displacements_set(encoder *const enc, const size_t identifier, const lvalue *const value, bool is_lvalue_address)
 {
-	const size_t index = hash_add(&enc->displacements, identifier, 3);
+	const size_t index = hash_add(&enc->displacements, identifier, 4);
 	hash_set_by_index(&enc->displacements, index, 0, (value->kind == LVALUE_KIND_REGISTER) ? 1 : 0);
 	hash_set_by_index(&enc->displacements, index, 1, value->loc.displ);
 	hash_set_by_index(&enc->displacements, index, 2, value->base_reg);
+	hash_set_by_index(&enc->displacements, index, 3, is_lvalue_address);
 }
 
 /**
@@ -1164,10 +1168,30 @@ static lvalue displacements_get(encoder *const enc, const size_t identifier)
 	const size_t displacement = (size_t)hash_get(&enc->displacements, identifier, 1);
 	const mips_register_t base_reg = hash_get(&enc->displacements, identifier, 2);
 	const item_t type = ident_get_type(enc->sx, identifier);
+	const bool is_address = hash_get(&enc->displacements, identifier, 3);
 
 	const lvalue_kind_t kind = (is_register) ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK;
+	if (is_address)
+	{
+		const lvalue address_lvalue = (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .type = TYPE_INTEGER };
+		const rvalue address_rvalue = emit_load_of_lvalue(enc, &address_lvalue);
+		return (lvalue) {.kind = LVALUE_KIND_STACK, .base_reg = address_rvalue.val.reg_num, .loc.displ = 0, .type = type};
+	}
 
 	return (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+}
+
+/**
+ *	Is identifier load its address in register in order to calculate expression that uses him
+ *
+ *	@param	enc					Encoder
+ *	@param	identifier			Identifier in the table
+ *
+ *	@return bool defining if the identifier loads its address in register
+ */
+static bool is_identifier_has_address_loaded(encoder *const enc, const size_t identifier)
+{
+	return hash_get(&enc->displacements, identifier, 3);
 }
 
 /**
@@ -3239,7 +3263,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 			// Вносим переменную в таблицу символов
 			const lvalue value = {.kind = LVALUE_KIND_REGISTER, .type = type, .loc.reg_num = curr_reg, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			displacements_set(enc, id, &value, /* Т к не рассматриваются адресные типы */ false);
 		}
 		else
 		{
@@ -3248,7 +3272,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
 
 			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
-			displacements_set(enc, id, &value);
+			displacements_set(enc, id, &value, /* Т к не рассматриваются адресные типы */ false);
 		}
 	}
 
