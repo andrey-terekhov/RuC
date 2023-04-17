@@ -1161,6 +1161,8 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		++dimensions;
 	}
 
+	const size_t element_size = type_size(enc->sx, current_type);
+
 	if (dimensions == 1)
 	{
 		// Начало инициализатора
@@ -1175,6 +1177,9 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		mem_add(enc, 0);
 		mem_add(enc, IC_LAT);
 		mem_add(enc, IC_LI);
+		mem_add(enc, element_size);
+		mem_add(enc, IC_MUL);
+		mem_add(enc, IC_LI);
 		mem_add(enc, 1);
 		mem_add(enc, IC_ADD);
 
@@ -1183,10 +1188,22 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		return;
 	}
 
-	// Вычисление смещения старта инициализатора (следующий индекс после найденного)
+	// Вычисление смещения старта инициализатора
 	mem_add(enc, IC_LOAD);
 	mem_add(enc, array_lvalue.displ);
-	for (int i = 0; i < dimensions - 2; i++)
+	for (int i = 0; i < dimensions - 1; i++)
+	{
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_LI);
+	mem_add(enc, -dimensions);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
+	mem_add(enc, IC_LOAD);
+	mem_add(enc, array_lvalue.displ);
+	for (int i = 0; i < dimensions - 1; i++)
 	{
 		mem_add(enc, IC_LI);
 		mem_add(enc, -1);
@@ -1204,21 +1221,9 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	mem_add(enc, -1);
 	mem_add(enc, IC_ADD);
 	mem_add(enc, IC_LAT);
-	mem_add(enc, IC_ADD);
-
-	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
-	mem_add(enc, IC_COPY_FROM_END);
-	mem_add(enc, 0);
 	mem_add(enc, IC_LI);
-	mem_add(enc, -1);
-	mem_add(enc, IC_ADD);
-	mem_add(enc, IC_LAT);
-	mem_add(enc, IC_COPY_FROM_END);
-	mem_add(enc, 0);
-	mem_add(enc, IC_LI);
-	mem_add(enc, -1);
-	mem_add(enc, IC_ADD);
-	mem_add(enc, IC_LAT);
+	mem_add(enc, element_size);
+	mem_add(enc, IC_MUL);
 	mem_add(enc, IC_ADD);
 
 	// Вычисление длины инициализатора (конец - начало)
