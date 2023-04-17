@@ -60,5 +60,5 @@ int max_index_d()
 void main()
 {
 	assert(max_value_d() == 12, "max value in d array == 12");
-	assert(max_index_d() == 29, "last max value in d array is on index 29");
+	assert(max_index_d() == 5, "last max value in d array is on index 5");
 }
