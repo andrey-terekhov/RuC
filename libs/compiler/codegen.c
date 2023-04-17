@@ -1191,7 +1191,6 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		mem_add(enc, IC_LI);
 		mem_add(enc, -1);
 		mem_add(enc, IC_ADD);
-		mem_add(enc, IC_COPY1ST);
 		mem_add(enc, IC_COPY_FROM_END);
 		mem_add(enc, 0);
 		mem_add(enc, IC_LAT);
@@ -1210,11 +1209,14 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
 	mem_add(enc, IC_COPY_FROM_END);
 	mem_add(enc, 0);
+	mem_add(enc, IC_LI);
+	mem_add(enc, -1);
+	mem_add(enc, IC_ADD);
 	mem_add(enc, IC_LAT);
 	mem_add(enc, IC_COPY_FROM_END);
-	mem_add(enc, 1);
+	mem_add(enc, 0);
 	mem_add(enc, IC_LI);
-	mem_add(enc, dimensions);
+	mem_add(enc, -1);
 	mem_add(enc, IC_ADD);
 	mem_add(enc, IC_LAT);
 	mem_add(enc, IC_ADD);
