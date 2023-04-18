@@ -508,9 +508,18 @@ static size_t ir_param_value_get_num(const ir_value *const value)
 	return node_get_arg(value, 1);
 }
 
+static size_t ir_param_value_get_displ(const ir_value *const value)
+{
+	return node_get_arg(value, 2);
+}
+
 static size_t ir_global_value_get_id(const ir_value *const value)
 {
 	return node_get_arg(value, 1);
+}
+static size_t ir_global_value_get_displ(const ir_value *const value)
+{
+	return node_get_arg(value, 2);
 }
 
 const char* ir_global_value_get_spelling(const ir_value *const value, const syntax *const sx)
@@ -3433,9 +3442,15 @@ static lvalue ir_value_to_lvalue(const ir_value *const value)
 		case IR_VALUE_KIND_LOCAL:
 			return create_local_lvalue(ir_value_get_type(value), ir_local_value_get_dipsl(value));
 		case IR_VALUE_KIND_PARAM:
-			return create_param_lvalue(ir_value_get_type(value), ir_param_value_get_num(value));
+			if (param_lvalue_has_displ(value))
+				return create_param_lvalue_with_displ(ir_value_get_type(value), ir_param_value_get_num(value), ir_param_value_get_displ(value));
+			else
+				return create_param_lvalue(ir_value_get_type(value), ir_param_value_get_num(value));
 		case IR_VALUE_KIND_GLOBAL:
-			return create_global_lvalue(ir_value_get_type(value), ir_global_value_get_id(value));
+			if (global_lvalue_has_displ(value))
+				return create_global_lvalue_with_displ(ir_value_get_type(value), ir_global_value_get_id(value), ir_global_value_get_displ(value));
+			else
+				return create_global_lvalue(ir_value_get_type(value), ir_global_value_get_id(value));
 		default:
 			unreachable();
 			break;

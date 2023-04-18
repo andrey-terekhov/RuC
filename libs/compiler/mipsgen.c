@@ -1523,7 +1523,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	ir_builder builder = create_ir_builder(&module, sx);
 
 	ir_emit_module(&builder, &root);
-	ir_dump(&builder);
+	// ir_dump(&builder);
 
 	mips_encoder enc = create_mips_encoder(sx);
 
