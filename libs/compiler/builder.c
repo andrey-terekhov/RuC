@@ -649,7 +649,10 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
 	}
 
 	const item_t index_type = expression_get_type(index);
-	if (!type_is_integer(bldr->sx, index_type))
+	const item_t index_element_type = type_is_reference(bldr->sx, index_type)
+		? type_reference_get_element_type(bldr->sx, index_type) 
+		: index_type;
+	if (!type_is_integer(bldr->sx, index_element_type))
 	{
 		semantic_error(bldr, node_get_location(index), array_subscript_not_integer);
 		return node_broken();
