@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 
-#define TAG_MACRO "macro"
+#define TAG_MACRO      "macro"
 
 #define ERROR_TAG_SIZE STRING_SIZE
 #define ERROR_MSG_SIZE STRING_SIZE
