@@ -30,20 +30,20 @@ extern "C" {
 /** Parser structure */
 typedef struct parser
 {
-	linker *lk;						/**< Linker structure */
-	storage *stg;					/**< Macro storage */
+    linker *lk;   /**< Linker structure */
+    storage *stg; /**< Macro storage */
 
-	universal_io *io;				/**< Universal IO structure */
-	location *prev;					/**< Parent macro location */
-	location *loc;					/**< Current location */
+    universal_io *io; /**< Universal IO structure */
+    location *prev;   /**< Parent macro location */
+    location *loc;    /**< Current location */
 
-	size_t include;					/**< Current include depth */
-	size_t call;					/**< Current macro call depth */
+    size_t include; /**< Current include depth */
+    size_t call;    /**< Current macro call depth */
 
-	bool is_recovery_disabled;		/**< Set, if error recovery & multiple output disabled */
-	bool is_line_required;			/**< Set, if position directive required */
-	bool is_macro_processed;		/**< Set, if macro block processed */
-	bool was_error;					/**< Set, if error message occurred */
+    bool is_recovery_disabled; /**< Set, if error recovery & multiple output disabled */
+    bool is_line_required;     /**< Set, if position directive required */
+    bool is_macro_processed;   /**< Set, if macro block processed */
+    bool was_error;            /**< Set, if error message occurred */
 } parser;
 
 

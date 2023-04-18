@@ -29,54 +29,54 @@ extern "C" {
 /** Operator Precedence */
 typedef enum TOKEN
 {
-	TK_L_BOUND,			/**< '('  operator */
-	TK_R_BOUND,			/**< ')'  operator */
+    TK_L_BOUND, /**< '('  operator */
+    TK_R_BOUND, /**< ')'  operator */
 
-	TK_COMPL,			/**< '~'  operator */
-	TK_NOT,				/**< '!'  operator */
-	TK_U_NEGATION,		/**< '-'  operator */
-	TK_U_PLUS,			/**< '+'  operator */
+    TK_COMPL,      /**< '~'  operator */
+    TK_NOT,        /**< '!'  operator */
+    TK_U_NEGATION, /**< '-'  operator */
+    TK_U_PLUS,     /**< '+'  operator */
 
-	TK_MULT,			/**< '*'  operator */
-	TK_DIV,				/**< '/'  operator */
-	TK_MOD,				/**< '%'  operator */
+    TK_MULT, /**< '*'  operator */
+    TK_DIV,  /**< '/'  operator */
+    TK_MOD,  /**< '%'  operator */
 
-	TK_ADD,				/**< '+'  operator */
-	TK_SUB,				/**< '-'  operator */
+    TK_ADD, /**< '+'  operator */
+    TK_SUB, /**< '-'  operator */
 
-	TK_L_SHIFT,			/**< '<<' operator */
-	TK_R_SHIFT,			/**< '>>' operator */
+    TK_L_SHIFT, /**< '<<' operator */
+    TK_R_SHIFT, /**< '>>' operator */
 
-	TK_LESS,			/**< '<'  operator */
-	TK_GREATER,			/**< '>'  operator */
-	TK_LESS_EQ,			/**< '<=' operator */
-	TK_GREATER_EQ,		/**< '>=' operator */
+    TK_LESS,       /**< '<'  operator */
+    TK_GREATER,    /**< '>'  operator */
+    TK_LESS_EQ,    /**< '<=' operator */
+    TK_GREATER_EQ, /**< '>=' operator */
 
-	TK_EQ,				/**< '==' operator */
-	TK_NOT_EQ,			/**< '!=' operator */
+    TK_EQ,     /**< '==' operator */
+    TK_NOT_EQ, /**< '!=' operator */
 
-	TK_BIT_AND,			/**< '&'  operator */
+    TK_BIT_AND, /**< '&'  operator */
 
-	TK_XOR,				/**< '^'  operator */
+    TK_XOR, /**< '^'  operator */
 
-	TK_BIT_OR,			/**< '|'  operator */
+    TK_BIT_OR, /**< '|'  operator */
 
-	TK_AND,				/**< '&&' operator */
+    TK_AND, /**< '&&' operator */
 
-	TK_OR,				/**< '||' operator */
+    TK_OR, /**< '||' operator */
 } token_t;
 
 /** Computer structure */
 typedef struct computer
 {
-	stack numbers;					/**< Numbers stack */
-	stack operators;				/**< Operators stack */
+    stack numbers;   /**< Numbers stack */
+    stack operators; /**< Operators stack */
 
-	location loc;					/**< Directive location */
-	universal_io *io;				/**< IO for location assembly */
-	const char *directive;			/**< Directive name for error emitting */
+    location loc;          /**< Directive location */
+    universal_io *io;      /**< IO for location assembly */
+    const char *directive; /**< Directive name for error emitting */
 
-	bool was_number;				/**< Set, if last push is number */
+    bool was_number; /**< Set, if last push is number */
 } computer;
 
 

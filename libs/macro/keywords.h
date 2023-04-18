@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <stddef.h>
 #include "map.h"
+#include <stddef.h>
 
 
 #define MAX_KEYWORD_SIZE 64
@@ -29,33 +29,33 @@ extern "C" {
 
 typedef enum KEYWORD
 {
-	ERROR_KEYWORD,
-	BEGIN_KEYWORD,
+    ERROR_KEYWORD,
+    BEGIN_KEYWORD,
 
-	KW_INCLUDE,					/**< '#include'	keyword	*/
-	KW_LINE,					/**< '#line'	keyword	*/
+    KW_INCLUDE, /**< '#include'	keyword	*/
+    KW_LINE,    /**< '#line'	keyword	*/
 
-	KW_DEFINE,					/**< '#define'	keyword	*/
-	KW_SET,						/**< '#set'		keyword	*/
-	KW_UNDEF,					/**< '#undef'	keyword	*/
+    KW_DEFINE, /**< '#define'	keyword	*/
+    KW_SET,    /**< '#set'		keyword	*/
+    KW_UNDEF,  /**< '#undef'	keyword	*/
 
-	KW_MACRO,					/**< '#macro'	keyword	*/
-	KW_ENDM,					/**< '#endm'	keyword	*/
+    KW_MACRO, /**< '#macro'	keyword	*/
+    KW_ENDM,  /**< '#endm'	keyword	*/
 
-	KW_IFDEF,					/**< '#ifdef'	keyword	*/
-	KW_IFNDEF,					/**< '#ifndef'	keyword	*/
-	KW_IF,						/**< '#if'		keyword	*/
-	KW_ELIF,					/**< '#elif'	keyword	*/
-	KW_ELSE,					/**< '#else'	keyword	*/
-	KW_ENDIF,					/**< '#endif'	keyword	*/
+    KW_IFDEF,  /**< '#ifdef'	keyword	*/
+    KW_IFNDEF, /**< '#ifndef'	keyword	*/
+    KW_IF,     /**< '#if'		keyword	*/
+    KW_ELIF,   /**< '#elif'	keyword	*/
+    KW_ELSE,   /**< '#else'	keyword	*/
+    KW_ENDIF,  /**< '#endif'	keyword	*/
 
-	KW_EVAL,					/**< '#eval'	keyword	*/
+    KW_EVAL, /**< '#eval'	keyword	*/
 
-	KW_WHILE,					/**< '#while'	keyword	*/
-	KW_ENDW,					/**< '#endw'	keyword	*/
+    KW_WHILE, /**< '#while'	keyword	*/
+    KW_ENDW,  /**< '#endw'	keyword	*/
 
-	END_KEYWORD,
-	NON_KEYWORD,
+    END_KEYWORD,
+    NON_KEYWORD,
 } keyword_t;
 
 
@@ -97,7 +97,7 @@ size_t kw_after(const char *const directive, char *const buffer);
  */
 inline bool kw_is_correct(const keyword_t kw)
 {
-	return BEGIN_KEYWORD < kw && kw < END_KEYWORD;
+    return BEGIN_KEYWORD < kw && kw < END_KEYWORD;
 }
 
 #ifdef __cplusplus
