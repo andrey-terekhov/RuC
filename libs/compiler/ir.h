@@ -73,7 +73,7 @@ typedef struct rvalue
 	size_t id;
 	union 
 	{
-		char* string;
+		size_t string;
 		float float_;
 		int int_;
 	} value;
@@ -82,7 +82,7 @@ typedef struct rvalue
 rvalue create_temp_rvalue(const item_t type, const item_t id);
 rvalue create_imm_int_rvalue(const int value);
 rvalue create_imm_float_rvalue(const float value);
-rvalue create_imm_string_rvalue(const char* value);
+rvalue create_imm_string_rvalue(const size_t value);
 rvalue create_generic_rvalue(const size_t id);
 
 rvalue_kind rvalue_get_kind(const rvalue *const value);
@@ -91,14 +91,15 @@ item_t rvalue_get_type(const rvalue *const value);
 item_t temp_rvalue_get_id(const rvalue *const value);
 int imm_int_rvalue_get_value(const rvalue *const value);
 float imm_float_rvalue_get_value(const rvalue *const value);
-char* imm_string_rvalue_get_value(const rvalue *const value);
+size_t imm_string_rvalue_get_value(const rvalue *const value);
 size_t generic_rvalue_get_id(const rvalue *const value);
 
 typedef enum lvalue_kind
 {
 	LVALUE_KIND_GLOBAL,
 	LVALUE_KIND_LOCAL,
-	LVALUE_KIND_PARAM
+	LVALUE_KIND_PARAM,
+	LVALUE_KIND_GENERIC
 } lvalue_kind;
 
 /**
@@ -116,20 +117,29 @@ typedef struct lvalue
 {
 	lvalue_kind kind;
 	item_t type;
+	item_t id;
 	size_t num;
 	size_t displ;
 } lvalue;
 
-lvalue create_local_lvalue(const item_t displ);
-lvalue create_param_lvalue(const size_t num);
-lvalue create_global_lvalue(const item_t displ);
+lvalue create_local_lvalue(const item_t type, const item_t displ);
+lvalue create_param_lvalue(const item_t type, const size_t num);
+lvalue create_param_lvalue_with_displ(const item_t type, const size_t num, const size_t displ);
+lvalue create_global_lvalue(const item_t type, const item_t id);
+lvalue create_global_lvalue_with_displ(const item_t type, const size_t id, const size_t displ);
+lvalue create_generic_lvalue(const item_t type, const item_t data);
 
 lvalue_kind lvalue_get_kind(const lvalue *const value);
 item_t lvalue_get_type(const lvalue *const value);
 
-size_t param_lvalue_get_num(const lvalue *const value);
 size_t local_lvalue_get_displ(const lvalue *const value);
+size_t param_lvalue_get_num(const lvalue *const value);
+size_t param_lvalue_has_displ(const lvalue *const value);
+size_t param_lvalue_get_displ(const lvalue *const value);
+size_t global_lvalue_get_id(const lvalue *const value);
+size_t global_lvalue_has_displ(const lvalue *const value);
 size_t global_lvalue_get_displ(const lvalue *const value);
+size_t generic_lvalue_get_displ(const lvalue *const value);
 
 
 
@@ -145,7 +155,8 @@ typedef enum label_kind
 	LABEL_KIND_NEXT,
 	LABEL_KIND_AND,
 	LABEL_KIND_OR,
-	LABEL_KIND_FUNCEND
+	LABEL_KIND_FUNCEND,
+	LABEL_KIND_STRING
 } label_kind;
 
 /**
@@ -166,7 +177,7 @@ typedef struct label
 label create_label(const label_kind kind, const size_t id);
 
 label_kind label_get_kind(const label *const label);
-label_kind label_get_kind(const label *const label);
+size_t label_get_id(const label *const label);
 
 /**
  *	@~english
@@ -183,6 +194,7 @@ typedef struct exetrn_data
 
 item_t extern_data_get_id(const extern_data *const data);
 item_t extern_data_get_type(const extern_data *const data);
+const char* extern_data_get_spelling(const extern_data *const data, const syntax *const sx);
 
 /**
  *	@~english
@@ -195,10 +207,24 @@ typedef struct global_data
 {
 	item_t id;
 	item_t type;
+
+	bool has_value;
+
+	union {
+		int int_;
+		float float_;
+		char* string;
+	} value;
 } global_data;
 
 item_t global_data_get_id(const global_data *const data);
 item_t global_data_get_type(const global_data *const data);
+const char* global_data_get_spelling(const global_data *const data, const syntax *const sx);
+
+bool global_data_has_value(const global_data *const data);
+int global_data_get_int_value(const global_data *const data);
+float global_data_get_float_value(const global_data *const data);
+const char* global_data_get_string_value(const global_data *const data);
 
 /**
  *	@~english
@@ -212,11 +238,27 @@ typedef struct function_data
 	item_t id;
 	item_t type;
 
+	/**
+	 *	@~english @brief An amout of function parameters.
+	 *	@~russian @brief Количество параметров функции.
+	 */
 	size_t param_count;
 
+	/**
+	 *	@~english @brief Leaf - function, that doesn't invoke other functions.
+	 *	@~russian @brief Листовые функции - такие, которые не вызвают другие функции.
+	 */
 	bool is_leaf;
 
+	/**
+	 *	@~english @brief The size of allocated memory for local storage.
+	 *	@~russian @brief Размер выделяемой памяти для локальных переменных.
+	 */
 	size_t local_size;
+	/**
+	 *	@~english @brief Maximum amounts of arguments of called functions.
+	 *	@~russian @brief Максимальное число аргументов у вызываемых функций.
+	 */
 	size_t max_call_arguments;
 } function_data;
 
@@ -313,7 +355,7 @@ typedef struct ir_gens
 	ir_gen_rr_instr_func gen_ftoi;
 	ir_gen_rr_instr_func gen_itof;
 
-	ir_gen_rn_instr_func gen_param;
+	ir_gen_rn_instr_func gen_push;
 	ir_gen_fr_instr_func gen_call;
 	ir_gen_rn_instr_func gen_ret;
 
