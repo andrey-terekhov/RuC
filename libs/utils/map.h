@@ -35,10 +35,10 @@ typedef struct map_hash map_hash;
 /** Associative array (Dictionary) */
 typedef struct map
 {
-    char *keys;          /**< Keys storage */
-    size_t keys_size;    /**< Size of keys storage */
-    size_t keys_next;    /**< Next size position */
-    size_t keys_alloc;   /**< Allocated size of keys storage */
+    char *keys;        /**< Keys storage */
+    size_t keys_size;  /**< Size of keys storage */
+    size_t keys_next;  /**< Next size position */
+    size_t keys_alloc; /**< Allocated size of keys storage */
 
     map_hash *values;    /**< Values storage */
     size_t values_size;  /**< Size of values storage */

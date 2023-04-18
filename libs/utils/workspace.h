@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 
-#define MAX_PATHS 128
+#define MAX_PATHS    128
 #define MAX_ARG_SIZE 1024
 
 
@@ -35,9 +35,9 @@ extern "C" {
 /** Structure for parsing start arguments of program */
 typedef struct workspace
 {
-    strings files;             /**< Files list */
-    strings dirs;              /**< Directories list */
-    strings flags;             /**< Flags list */
+    strings files; /**< Files list */
+    strings dirs;  /**< Directories list */
+    strings flags; /**< Flags list */
 
     char output[MAX_ARG_SIZE]; /**< Output file name */
     bool was_error;            /**< @c 0 if no errors */

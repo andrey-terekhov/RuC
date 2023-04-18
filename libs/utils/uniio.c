@@ -44,11 +44,11 @@ static inline bool is_specifier(const char ch)
            || ch == 'x' || ch == 'X'                                                     // Hexadecimal integer
            || ch == 'f' || ch == 'F'                                                     // Floating point number
            || ch == 'e' || ch == 'E' || ch == 'g' || ch == 'G' || ch == 'a' || ch == 'A' || ch == 'c' ||
-           ch == 'C'                                                                     // Character
-           || ch == 's' || ch == 'S'                                                     // String of characters
-           || ch == 'p'                                                                  // Pointer address
-           || ch == '['                                                                  // Scanset
-           || ch == 'n';                                                                 // Count
+           ch == 'C'                 // Character
+           || ch == 's' || ch == 'S' // String of characters
+           || ch == 'p'              // Pointer address
+           || ch == '['              // Scanset
+           || ch == 'n';             // Count
 }
 
 static int scan_file_arg(universal_io *const io, const char *const format, const size_t size, void *arg)

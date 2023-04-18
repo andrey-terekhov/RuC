@@ -32,9 +32,9 @@ typedef struct strings
     size_t all_strings_size;  /**< Size of strings storage */
     size_t all_strings_alloc; /**< Allocated size of strings storage */
 
-    size_t *indexes;          /**< Indexes array */
-    size_t indexes_size;      /**< Size of indexes array */
-    size_t indexes_alloc;     /**< Allocated size of indexes array */
+    size_t *indexes;      /**< Indexes array */
+    size_t indexes_size;  /**< Size of indexes array */
+    size_t indexes_alloc; /**< Allocated size of indexes array */
 } strings;
 
 
