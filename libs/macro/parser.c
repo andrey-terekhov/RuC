@@ -709,8 +709,8 @@ static inline void parse_observation(parser *const prs, const size_t index, stor
         {
             const size_t current = storage_search(stg, prs->io);
             uni_printf(prs->io, "%s",
-                       kw_is_correct(current) || current == SIZE_MAX ? storage_last_read(stg) :
-                                                                       storage_get_by_index(stg, current));
+                       kw_is_correct(current) || current == SIZE_MAX ? storage_last_read(stg)
+                                                                     : storage_get_by_index(stg, current));
         }
         else if (ch == '\'' || ch == '"')
         {

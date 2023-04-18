@@ -69,32 +69,32 @@ int kw_add(map *const as)
 
 size_t kw_without(const char *const directive, char *const buffer)
 {
-    return directive == NULL || buffer == NULL ? 0 :
-                                                 sprintf(buffer, "%s",
-                                                         directive[4] == 'm'                  ? "#macro" :
-                                                         directive[4] == 'M'                  ? "#MACRO" :
-                                                         directive[4] == 'w'                  ? "#while" :
-                                                         directive[4] == 'W'                  ? "#WHILE" :
-                                                         directive[1] == 'e'                  ? "#if" :
-                                                         directive[1] == 'E'                  ? "#IF" :
-                                                         utf8_convert(&directive[1]) == U'и'  ? "#если" :
-                                                         utf8_convert(&directive[1]) == U'И'  ? "#ЕСЛИ" :
-                                                         utf8_convert(&directive[11]) == U'е' ? "#если" :
-                                                         utf8_convert(&directive[11]) == U'Е' ? "#ЕСЛИ" :
-                                                         utf8_convert(&directive[11]) == U'м' ? "#макро" :
-                                                         utf8_convert(&directive[11]) == U'М' ? "#МАКРО" :
-                                                         utf8_convert(&directive[11]) == U'п' ? "#пока" :
-                                                         utf8_convert(&directive[11]) == U'П' ? "#ПОКА" :
-                                                                                                "");
+    return directive == NULL || buffer == NULL ? 0
+                                               : sprintf(buffer, "%s",
+                                                         directive[4] == 'm'                    ? "#macro"
+                                                         : directive[4] == 'M'                  ? "#MACRO"
+                                                         : directive[4] == 'w'                  ? "#while"
+                                                         : directive[4] == 'W'                  ? "#WHILE"
+                                                         : directive[1] == 'e'                  ? "#if"
+                                                         : directive[1] == 'E'                  ? "#IF"
+                                                         : utf8_convert(&directive[1]) == U'и'  ? "#если"
+                                                         : utf8_convert(&directive[1]) == U'И'  ? "#ЕСЛИ"
+                                                         : utf8_convert(&directive[11]) == U'е' ? "#если"
+                                                         : utf8_convert(&directive[11]) == U'Е' ? "#ЕСЛИ"
+                                                         : utf8_convert(&directive[11]) == U'м' ? "#макро"
+                                                         : utf8_convert(&directive[11]) == U'М' ? "#МАКРО"
+                                                         : utf8_convert(&directive[11]) == U'п' ? "#пока"
+                                                         : utf8_convert(&directive[11]) == U'П' ? "#ПОКА"
+                                                                                                : "");
 }
 
 size_t kw_after(const char *const directive, char *const buffer)
 {
-    return directive == NULL || buffer == NULL ? 0 :
-                                                 sprintf(buffer, "%s",
-                                                         directive[1] == 'e'                 ? "#else" :
-                                                         directive[1] == 'E'                 ? "#ELSE" :
-                                                         utf8_convert(&directive[1]) == U'и' ? "#иначе" :
-                                                         utf8_convert(&directive[1]) == U'И' ? "#ИНАЧЕ" :
-                                                                                               "");
+    return directive == NULL || buffer == NULL ? 0
+                                               : sprintf(buffer, "%s",
+                                                         directive[1] == 'e'                   ? "#else"
+                                                         : directive[1] == 'E'                 ? "#ELSE"
+                                                         : utf8_convert(&directive[1]) == U'и' ? "#иначе"
+                                                         : utf8_convert(&directive[1]) == U'И' ? "#ИНАЧЕ"
+                                                                                               : "");
 }

@@ -189,9 +189,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
             size_t index = sprintf(msg, "ожидалась ',' или ')', найдено " QUOTE);
 
             const size_t position = in_get_position(io);
-            index += utf8_is_letter(character) ? uni_scan_identifier(io, &msg[index]) :
-                     utf8_is_digit(character)  ? uni_scan_number(io, &msg[index]) :
-                                                 utf8_to_string(&msg[index], character);
+            index += utf8_is_letter(character)  ? uni_scan_identifier(io, &msg[index])
+                     : utf8_is_digit(character) ? uni_scan_number(io, &msg[index])
+                                                : utf8_to_string(&msg[index], character);
             in_set_position(io, position);
 
             sprintf(&msg[index], QUOTE);
@@ -218,9 +218,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 
             sprintf(msg, "макросу " QUOTE "%s" QUOTE " требуется %zu аргумент%s, но передан%s только %zu", name,
                     expected,
-                    one  ? "" :
-                    many ? "ов" :
-                           "а",
+                    one    ? ""
+                    : many ? "ов"
+                           : "а",
                     actual % 10 == 1 && actual % 100 != 11 ? "" : "о", actual);
         }
         break;
@@ -235,9 +235,9 @@ static void get_error(const error_t num, char *const msg, va_list args)
 
             sprintf(msg, "макросу " QUOTE "%s" QUOTE " передан%s %zu аргумент%s, но принимает он только %zu", name,
                     one ? "" : "о", actual,
-                    one  ? "" :
-                    many ? "ов" :
-                           "а",
+                    one    ? ""
+                    : many ? "ов"
+                           : "а",
                     expected);
         }
         break;
