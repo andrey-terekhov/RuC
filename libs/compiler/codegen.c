@@ -1208,6 +1208,9 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 		mem_add(enc, IC_COPY_FROM_END);
 		mem_add(enc, 0);
 		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_LI);
+		mem_add(enc, element_size);
+		mem_add(enc, IC_MUL);
 		mem_add(enc, IC_ADD);
 		mem_add(enc, IC_LAT);
 	}
@@ -1266,11 +1269,11 @@ static void subarray_load_initializer(encoder *const enc, const node *const arra
 		mem_add(enc, 0);
 		mem_add(enc, IC_LAT);
 		mem_add(enc, IC_LI);
-		mem_add(enc, 1);
-		mem_add(enc, IC_ADD);
-		mem_add(enc, IC_LI);
 		mem_add(enc, element_size);
 		mem_add(enc, IC_MUL);
+		mem_add(enc, IC_LI);
+		mem_add(enc, 1);
+		mem_add(enc, IC_ADD);
 
 		// Копирование его в конец стека
 		mem_add(enc, IC_COPY2ST);
