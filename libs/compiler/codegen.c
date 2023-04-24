@@ -1151,7 +1151,7 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 static void array_load_initializer(encoder *const enc, const node *const array)
 {
 	assert((expression_get_class(array) == EXPR_IDENTIFIER || expression_get_class(array) == EXPR_MEMBER) && type_is_array(enc->sx, expression_get_type(array)));
-	const lvalue array_lvalue = emit_lvalue(enc, array);
+	emit_expression(enc, array);
 	item_t current_type = expression_get_type(array);
 
 	int dimensions = 0;
@@ -1166,7 +1166,6 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	if (dimensions == 1)
 	{
 		// Начало инициализатора
-		emit_load_of_lvalue(enc, array_lvalue);
 		mem_add(enc, IC_LI);
 		mem_add(enc, -1);
 		mem_add(enc, IC_ADD);
@@ -1188,7 +1187,6 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	}
 
 	// Вычисление смещения старта инициализатора
-	emit_load_of_lvalue(enc, array_lvalue);
 	for (int i = 0; i < dimensions - 1; i++)
 	{
 		mem_add(enc, IC_LAT);
@@ -1199,7 +1197,7 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 	mem_add(enc, IC_ADD);
 
 	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
-	emit_load_of_lvalue(enc, array_lvalue);
+	emit_expression(enc, array);
 	for (int i = 0; i < dimensions - 1; i++)
 	{
 		mem_add(enc, IC_LI);
@@ -1244,7 +1242,7 @@ static void array_load_initializer(encoder *const enc, const node *const array)
 static void subarray_load_initializer(encoder *const enc, const node *const array)
 {
 	assert(expression_get_class(array) == EXPR_SUBSCRIPT && type_is_array(enc->sx, expression_get_type(array)));
-	const lvalue array_lvalue = emit_lvalue(enc, array);
+	emit_expression(enc, array);
 	item_t current_type = expression_get_type(array);
 
 	int dimensions = 0;
@@ -1259,7 +1257,6 @@ static void subarray_load_initializer(encoder *const enc, const node *const arra
 	if (dimensions == 1)
 	{
 		// Начало инициализатора
-		emit_load_of_lvalue(enc, array_lvalue);
 		mem_add(enc, IC_LI);
 		mem_add(enc, -1);
 		mem_add(enc, IC_ADD);
@@ -1281,7 +1278,6 @@ static void subarray_load_initializer(encoder *const enc, const node *const arra
 	}
 
 	// Вычисление смещения старта инициализатора
-	emit_load_of_lvalue(enc, array_lvalue);
 	for (int i = 0; i < dimensions - 1; i++)
 	{
 		mem_add(enc, IC_LAT);
@@ -1292,7 +1288,7 @@ static void subarray_load_initializer(encoder *const enc, const node *const arra
 	mem_add(enc, IC_ADD);
 
 	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
-	emit_load_of_lvalue(enc, array_lvalue);
+	emit_expression(enc, array);
 	for (int i = 0; i < dimensions - 1; i++)
 	{
 		mem_add(enc, IC_LI);
