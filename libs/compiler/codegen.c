@@ -1150,7 +1150,7 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
  */
 static void array_load_initializer(encoder *const enc, const node *const array)
 {
-	assert(expression_get_class(array) == EXPR_IDENTIFIER && type_is_array(enc->sx, expression_get_type(array)));
+	assert((expression_get_class(array) == EXPR_IDENTIFIER || expression_get_class(array) == EXPR_MEMBER) && type_is_array(enc->sx, expression_get_type(array)));
 	const lvalue array_lvalue = emit_lvalue(enc, array);
 	item_t current_type = expression_get_type(array);
 
