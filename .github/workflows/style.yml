@@ -15,3 +15,4 @@ jobs:
           fetch-depth: 0
       - name: Run style check script
         run: ./scripts/style.sh
+             clang-format --version
