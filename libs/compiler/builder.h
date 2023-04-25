@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include "errors.h"
 #include "node_vector.h"
 #include "operations.h"
 #include "syntax.h"
 #include "tree.h"
+#include <stdbool.h>
 
 
 #ifdef __cplusplus
@@ -31,11 +31,11 @@ extern "C" {
 /** AST builder */
 typedef struct builder
 {
-	syntax *sx;				/**< Syntax structure */
+    syntax *sx; /**< Syntax structure */
 
-	node context;			/**< Context for creating new nodes */
+    node context; /**< Context for creating new nodes */
 
-	item_t func_type;		/**< Type of current parsed function */
+    item_t func_type; /**< Type of current parsed function */
 } builder;
 
 
@@ -59,7 +59,8 @@ builder builder_create(syntax *const sx);
  *
  *	@return	@c 1 on true, @c 0 on false
  */
-bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init, const bool can_assign_to_const);
+bool check_assignment_operands(builder *const bldr, const item_t expected_type, node *const init,
+                               const bool can_assign_to_const);
 
 /**
  *	Build an identifier expression
@@ -148,8 +149,8 @@ node build_string_literal_expression(builder *const bldr, const size_t index, co
  *
  *	@return	Subscript expression node
  */
-node build_subscript_expression(builder *const bldr, node *const base, node *const index
-	, const location l_loc, const location r_loc);
+node build_subscript_expression(builder *const bldr, node *const base, node *const index, const location l_loc,
+                                const location r_loc);
 
 /**
  *	Build a call expression
@@ -162,8 +163,8 @@ node build_subscript_expression(builder *const bldr, node *const base, node *con
  *
  *	@return	Call expression node
  */
-node build_call_expression(builder *const bldr, node *const callee
-	, node_vector *const args, const location l_loc, const location r_loc);
+node build_call_expression(builder *const bldr, node *const callee, node_vector *const args, const location l_loc,
+                           const location r_loc);
 
 /**
  *	Build a member expression
@@ -177,8 +178,8 @@ node build_call_expression(builder *const bldr, node *const callee
  *
  *	@return	Member expression node
  */
-node build_member_expression(builder *const bldr, node *const base, const size_t name
-	, const bool is_arrow, const location op_loc, const location id_loc);
+node build_member_expression(builder *const bldr, node *const base, const size_t name, const bool is_arrow,
+                             const location op_loc, const location id_loc);
 
 /**
  *	Build a cast expression
@@ -213,8 +214,8 @@ node build_unary_expression(builder *const bldr, node *const operand, const unar
  *
  *	@return	Binary expression node
  */
-node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS
-	, const binary_t op_kind, const location op_loc);
+node build_binary_expression(builder *const bldr, node *const LHS, node *const RHS, const binary_t op_kind,
+                             const location op_loc);
 
 /**
  *	Build a ternary expression
@@ -285,8 +286,8 @@ node build_empty_bound_expression(builder *const bldr, const location loc);
  *
  *	@return	Member declaration
  */
-node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star
-	, const bool was_const, node_vector *const bounds, const location loc);
+node build_member_declaration(builder *const bldr, const item_t type, const size_t name, const bool was_star,
+                              const bool was_const, node_vector *const bounds, const location loc);
 
 /**
  *	Build an empty struct declaration
@@ -324,8 +325,9 @@ node build_struct_declaration(builder *const bldr, node *const declaration, node
  *
  *	@return	Declarator
  */
-node build_declarator(builder *const bldr, const item_t type, const size_t name
-	, const bool was_star, const bool was_const, node_vector *const bounds, node *const initializer, const location ident_loc);
+node build_declarator(builder *const bldr, const item_t type, const size_t name, const bool was_star,
+                      const bool was_const, node_vector *const bounds, node *const initializer,
+                      const location ident_loc);
 
 /**
  *	Build an empty declaration
@@ -346,8 +348,8 @@ node build_empty_declaration(builder *const bldr);
  *
  *	@return	Declaration
  */
-node build_declaration(builder *const bldr, node *const declaration
-	, node_vector *const declarators, const location semi_loc);
+node build_declaration(builder *const bldr, node *const declaration, node_vector *const declarators,
+                       const location semi_loc);
 
 
 /**
@@ -406,8 +408,8 @@ node build_null_statement(builder *const bldr, const location semi_loc);
  *
  *	@return	If statement
  */
-node build_if_statement(builder *const bldr, node *const cond
-	, node *const then_stmt, node *const else_stmt, const location if_loc);
+node build_if_statement(builder *const bldr, node *const cond, node *const then_stmt, node *const else_stmt,
+                        const location if_loc);
 
 /**
  *	Build a switch statement
@@ -457,8 +459,8 @@ node build_do_statement(builder *const bldr, node *const body, node *const cond,
  *
  *	@return	For statement
  */
-node build_for_statement(builder *const bldr, node *const init
-	, node *const cond, node *const incr, node *const body, const location for_loc);
+node build_for_statement(builder *const bldr, node *const init, node *const cond, node *const incr, node *const body,
+                         const location for_loc);
 
 /**
  *	Build a continue statement

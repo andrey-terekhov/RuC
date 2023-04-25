@@ -20,47 +20,47 @@
 
 reporter reporter_create(const workspace *const ws)
 {
-	reporter rprt;
-	rprt.is_recovery_disabled = ws_has_flag(ws, "-Wno");
-	rprt.errors = 0;
-	rprt.warnings = 0;
+    reporter rprt;
+    rprt.is_recovery_disabled = ws_has_flag(ws, "-Wno");
+    rprt.errors = 0;
+    rprt.warnings = 0;
 
-	return rprt;
+    return rprt;
 }
 
 size_t reporter_get_errors_number(reporter *const rprt)
 {
-	return rprt->errors;
+    return rprt->errors;
 }
 
 void report_error(reporter *const rprt, universal_io *const io, const location loc, const err_t num, va_list args)
 {
-	if (rprt->is_recovery_disabled && rprt->errors != 0)
-	{
-		return;
-	}
+    if (rprt->is_recovery_disabled && rprt->errors != 0)
+    {
+        return;
+    }
 
-	const size_t prev_loc = in_get_position(io);
-	in_set_position(io, loc.begin);
+    const size_t prev_loc = in_get_position(io);
+    in_set_position(io, loc.begin);
 
-	verror(io, num, args);
-	rprt->errors++;
+    verror(io, num, args);
+    rprt->errors++;
 
-	in_set_position(io, prev_loc);
+    in_set_position(io, prev_loc);
 }
 
 void report_warning(reporter *const rprt, universal_io *const io, const location loc, const warning_t num, va_list args)
 {
-	if (rprt->is_recovery_disabled && rprt->errors != 0)
-	{
-		return;
-	}
+    if (rprt->is_recovery_disabled && rprt->errors != 0)
+    {
+        return;
+    }
 
-	const size_t prev_loc = in_get_position(io);
-	in_set_position(io, loc.begin);
+    const size_t prev_loc = in_get_position(io);
+    in_set_position(io, loc.begin);
 
-	vwarning(io, num, args);
-	rprt->warnings++;
+    vwarning(io, num, args);
+    rprt->warnings++;
 
-	in_set_position(io, prev_loc);
+    in_set_position(io, prev_loc);
 }

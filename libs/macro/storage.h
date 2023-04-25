@@ -29,9 +29,9 @@ extern "C" {
 /** Macro storage*/
 typedef struct storage
 {
-	map as;				/**< Map structure */
-	hash hs;			/**< Hash table */
-	strings vec;		/**< Strings vector */
+    map as;      /**< Map structure */
+    hash hs;     /**< Hash table */
+    strings vec; /**< Strings vector */
 } storage;
 
 
@@ -115,7 +115,7 @@ const char *storage_get_by_index(const storage *const stg, const size_t id);
  */
 inline const char *storage_get_by_utf8(storage *const stg, const char32_t *const id)
 {
-	return storage_get_by_index(stg, storage_get_index_by_utf8(stg, id));
+    return storage_get_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -128,7 +128,7 @@ inline const char *storage_get_by_utf8(storage *const stg, const char32_t *const
  */
 inline const char *storage_get(storage *const stg, const char *const id)
 {
-	return storage_get_by_index(stg, storage_get_index(stg, id));
+    return storage_get_by_index(stg, storage_get_index(stg, id));
 }
 
 /**
@@ -151,7 +151,7 @@ size_t storage_get_args_by_index(const storage *const stg, const size_t id);
  */
 inline size_t storage_get_args_by_utf8(storage *const stg, const char32_t *const id)
 {
-	return storage_get_args_by_index(stg, storage_get_index_by_utf8(stg, id));
+    return storage_get_args_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -164,7 +164,7 @@ inline size_t storage_get_args_by_utf8(storage *const stg, const char32_t *const
  */
 inline size_t storage_get_args(storage *const stg, const char *const id)
 {
-	return storage_get_args_by_index(stg, storage_get_index(stg, id));
+    return storage_get_args_by_index(stg, storage_get_index(stg, id));
 }
 
 
@@ -190,7 +190,7 @@ size_t storage_set_by_index(storage *const stg, const size_t id, const char *val
  */
 inline size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, const char *value)
 {
-	return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
+    return storage_set_by_index(stg, storage_get_index_by_utf8(stg, id), value);
 }
 
 /**
@@ -204,7 +204,7 @@ inline size_t storage_set_by_utf8(storage *const stg, const char32_t *const id, 
  */
 inline size_t storage_set(storage *const stg, const char *const id, const char *value)
 {
-	return storage_set_by_index(stg, storage_get_index(stg, id), value);
+    return storage_set_by_index(stg, storage_get_index(stg, id), value);
 }
 
 /**
@@ -229,7 +229,7 @@ size_t storage_set_args_by_index(storage *const stg, const size_t id, const size
  */
 inline size_t storage_set_args_by_utf8(storage *const stg, const char32_t *const id, const size_t args)
 {
-	return storage_set_args_by_index(stg, storage_get_index_by_utf8(stg, id), args);
+    return storage_set_args_by_index(stg, storage_get_index_by_utf8(stg, id), args);
 }
 
 /**
@@ -243,7 +243,7 @@ inline size_t storage_set_args_by_utf8(storage *const stg, const char32_t *const
  */
 inline size_t storage_set_args(storage *const stg, const char *const id, const size_t args)
 {
-	return storage_set_args_by_index(stg, storage_get_index(stg, id), args);
+    return storage_set_args_by_index(stg, storage_get_index(stg, id), args);
 }
 
 
@@ -267,7 +267,7 @@ int storage_remove_by_index(storage *const stg, const size_t id);
  */
 inline int storage_remove_by_utf8(storage *const stg, const char32_t *const id)
 {
-	return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
+    return storage_remove_by_index(stg, storage_get_index_by_utf8(stg, id));
 }
 
 /**
@@ -280,7 +280,7 @@ inline int storage_remove_by_utf8(storage *const stg, const char32_t *const id)
  */
 inline int storage_remove(storage *const stg, const char *const id)
 {
-	return storage_remove_by_index(stg, storage_get_index(stg, id));
+    return storage_remove_by_index(stg, storage_get_index(stg, id));
 }
 
 

@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <limits.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 #include "map.h"
 #include "reporter.h"
 #include "strings.h"
 #include "tree.h"
 #include "vector.h"
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 #define MAX_STRING_LENGTH 128
@@ -37,64 +37,64 @@ extern "C" {
 /** Type qualifiers */
 typedef enum TYPE
 {
-	TYPE_VARARG			= -9,
-	TYPE_NULL_POINTER,
-	TYPE_FILE,
-	TYPE_VOID,
-	TYPE_BOOLEAN		= -4,
-	TYPE_FLOATING,
-	TYPE_CHARACTER,
-	TYPE_INTEGER,
-	TYPE_UNDEFINED,
+    TYPE_VARARG = -9,
+    TYPE_NULL_POINTER,
+    TYPE_FILE,
+    TYPE_VOID,
+    TYPE_BOOLEAN = -4,
+    TYPE_FLOATING,
+    TYPE_CHARACTER,
+    TYPE_INTEGER,
+    TYPE_UNDEFINED,
 
-	TYPE_MSG_INFO 		= 2,
-	TYPE_FUNCTION		= 1001,
-	TYPE_STRUCTURE,
-	TYPE_ARRAY,
-	TYPE_POINTER,
-	TYPE_ENUM,
-	TYPE_CONST,
+    TYPE_MSG_INFO = 2,
+    TYPE_FUNCTION = 1001,
+    TYPE_STRUCTURE,
+    TYPE_ARRAY,
+    TYPE_POINTER,
+    TYPE_ENUM,
+    TYPE_CONST,
 
-	BEGIN_USER_TYPE = 15,
+    BEGIN_USER_TYPE = 15,
 } type_t;
 
 
 /** Global vars definition */
 typedef struct syntax
 {
-	universal_io *io;			/**< Universal io structure */
-	reporter rprt;				/**< Reporter */
+    universal_io *io; /**< Universal io structure */
+    reporter rprt;    /**< Reporter */
 
-	strings string_literals;	/**< String literals list */
+    strings string_literals; /**< String literals list */
 
-	vector predef;				/**< Predefined functions table */
-	vector functions;			/**< Functions table */
+    vector predef;    /**< Predefined functions table */
+    vector functions; /**< Functions table */
 
-	vector tree;				/**< Tree table */
+    vector tree; /**< Tree table */
 
-	vector identifiers;			/**< Identifiers table */
-	size_t cur_id;				/**< Start of current scope in identifiers table */
+    vector identifiers; /**< Identifiers table */
+    size_t cur_id;      /**< Start of current scope in identifiers table */
 
-	vector types;				/**< Types table */
-	size_t start_type;			/**< Start of last record in types table */
+    vector types;      /**< Types table */
+    size_t start_type; /**< Start of last record in types table */
 
-	map representations;		/**< Representations table */
+    map representations; /**< Representations table */
 
-	item_t max_displ;			/**< Max displacement */
-	item_t max_displg;			/**< Max displacement */
+    item_t max_displ;  /**< Max displacement */
+    item_t max_displg; /**< Max displacement */
 
-	item_t displ;				/**< Stack displacement in current scope */
-	item_t lg;					/**< Displacement from l (+1) or g (-1) */
+    item_t displ; /**< Stack displacement in current scope */
+    item_t lg;    /**< Displacement from l (+1) or g (-1) */
 
-	size_t ref_main;			/**< Main function reference */
+    size_t ref_main; /**< Main function reference */
 } syntax;
 
 /** Scope */
 typedef struct scope
 {
-	item_t displ;
-	item_t lg;
-	size_t cur_id;
+    item_t displ;
+    item_t lg;
+    size_t cur_id;
 } scope;
 
 
@@ -145,7 +145,7 @@ size_t string_add(syntax *const sx, const vector *const str);
  *
  *	@return	String, @c NULL on failure
  */
-const char* string_get(const syntax *const sx, const size_t index);
+const char *string_get(const syntax *const sx, const size_t index);
 
 /**
  *	Get length of a string

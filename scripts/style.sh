@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Needed clang clang-format clang-format-9 clang-tidy
+# Needed clang clang-format clang-format-10 (clang-tidy)
 
-clang_tidy="clang-tidy"
-clang_format="clang-format-9"
+#clang_tidy="clang-tidy"
+clang_format="clang-format-10"
 
 which $clang_format >/dev/null 2>/dev/null
 if [ "$?" != "0" ] ; then
@@ -19,7 +19,11 @@ headers="libs/*/*.h"
 sources="src/*.c libs/*/*.c"
 
 # TO-DO auto include directory `-Ipath_to_dir`
-directories="-Ilibs/utils -Ilibs/preprocessor -Ilibs/compiler"
+#directories="-Ilibs/utils -Ilibs/preprocessor -Ilibs/compiler"
 
-$clang_tidy -fix-errors $sources -- $directories
-$clang_format -i $sources $headers
+#$clang_tidy -fix-errors $sources -- $directories
+echo "\n\nXML with replacements"
+$clang_format --Werror --verbose --output-replacements-xml -style=file $sources $headers
+echo "\n\nResult run"
+$clang_format --Werror --dry-run --verbose -style=file $sources $headers
+exit $?

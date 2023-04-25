@@ -15,87 +15,87 @@
  */
 
 #include "linker.h"
-#include <string.h>
-#include "item.h"
 #include "error.h"
+#include "item.h"
+#include <string.h>
 
 #ifndef _WIN32
-	#include <unistd.h>
+    #include <unistd.h>
 #else
-	#define F_OK 0
+    #define F_OK 0
 
-	extern int access(const char *path, int mode);
+extern int access(const char *path, int mode);
 #endif
 
 
 static void linker_make_path(char *const buffer, const char *const name, const char *const path, const bool is_file)
 {
-	size_t index = 0;
+    size_t index = 0;
 
-	if (path != NULL)
-	{
-		if (is_file)
-		{
-			char *slash = strrchr(path, '/');
-			if (slash != NULL)
-			{
-				index = slash - path + 1;
-				strncpy(buffer, path, index);
-			}
-		}
-		else
-		{
-			index = sprintf(buffer, "%s/", path);
-		}
-	}
+    if (path != NULL)
+    {
+        if (is_file)
+        {
+            char *slash = strrchr(path, '/');
+            if (slash != NULL)
+            {
+                index = slash - path + 1;
+                strncpy(buffer, path, index);
+            }
+        }
+        else
+        {
+            index = sprintf(buffer, "%s/", path);
+        }
+    }
 
-	for (size_t i = 0; name[i] != '\0'; i++)
-	{
-		buffer[index] = name[i] == '\\' ? '/' : name[i];
-		index += name[i] == '\n' || (name[i] == '\\' && name[i + 1] != '\\') ? 0 : 1;
-	}
-	buffer[index] = '\0';
+    for (size_t i = 0; name[i] != '\0'; i++)
+    {
+        buffer[index] = name[i] == '\\' ? '/' : name[i];
+        index += name[i] == '\n' || (name[i] == '\\' && name[i + 1] != '\\') ? 0 : 1;
+    }
+    buffer[index] = '\0';
 }
 
 static inline size_t linker_internal_path(linker *const lk, const char *const file)
 {
-	char path[MAX_ARG_SIZE];
-	linker_make_path(path, file, ws_get_file(lk->ws, lk->current), true);
+    char path[MAX_ARG_SIZE];
+    linker_make_path(path, file, ws_get_file(lk->ws, lk->current), true);
 
-	if (access(path, F_OK) != -1)
-	{
-		const size_t size = ws_get_files_num(lk->ws);
-		const size_t index = ws_add_file(lk->ws, path);
-		if (index == size)
-		{
-			vector_add(&lk->included, 0);
-		}
-		return index;
-	}
+    if (access(path, F_OK) != -1)
+    {
+        const size_t size = ws_get_files_num(lk->ws);
+        const size_t index = ws_add_file(lk->ws, path);
+        if (index == size)
+        {
+            vector_add(&lk->included, 0);
+        }
+        return index;
+    }
 
-	return SIZE_MAX;
+    return SIZE_MAX;
 }
 
 static inline size_t linker_external_path(linker *const lk, const char *const file)
 {
-	char path[MAX_ARG_SIZE];
-	for (size_t i = 0; i < ws_get_dirs_num(lk->ws); i++)
-	{
-		linker_make_path(path, file, ws_get_dir(lk->ws, i), false);
+    char path[MAX_ARG_SIZE];
+    for (size_t i = 0; i < ws_get_dirs_num(lk->ws); i++)
+    {
+        linker_make_path(path, file, ws_get_dir(lk->ws, i), false);
 
-		if (access(path, F_OK) != -1)
-		{
-			const size_t size = ws_get_files_num(lk->ws);
-			const size_t index = ws_add_file(lk->ws, path);
-			if (index == size)
-			{
-				vector_add(&lk->included, 0);
-			}
-			return index;
-		}
-	}
+        if (access(path, F_OK) != -1)
+        {
+            const size_t size = ws_get_files_num(lk->ws);
+            const size_t index = ws_add_file(lk->ws, path);
+            if (index == size)
+            {
+                vector_add(&lk->included, 0);
+            }
+            return index;
+        }
+    }
 
-	return SIZE_MAX;
+    return SIZE_MAX;
 }
 
 
@@ -110,103 +110,104 @@ static inline size_t linker_external_path(linker *const lk, const char *const fi
 
 linker linker_create(workspace *const ws)
 {
-	linker lk = { .ws = ws, .sources = ws_get_files_num(ws),
-		.included = vector_create(MAX_PATHS), .current = SIZE_MAX };
+    linker lk = {
+        .ws = ws, .sources = ws_get_files_num(ws), .included = vector_create(MAX_PATHS), .current = SIZE_MAX
+    };
 
-	vector_increase(&lk.included, lk.sources);
-	return lk;
+    vector_increase(&lk.included, lk.sources);
+    return lk;
 }
 
 
 universal_io linker_add_source(linker *const lk, const size_t index)
 {
-	universal_io input = io_create();
+    universal_io input = io_create();
 
-	if (linker_is_correct(lk) && in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
-	{
-		vector_set(&lk->included, index, 1);
-		lk->current = index;
-	}
+    if (linker_is_correct(lk) && in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
+    {
+        vector_set(&lk->included, index, 1);
+        lk->current = index;
+    }
 
-	return input;
+    return input;
 }
 
 universal_io linker_add_header(linker *const lk, const size_t index)
 {
-	universal_io input = io_create();
-	if (linker_is_correct(lk) && vector_get(&lk->included, index) != 1
-		&& in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
-	{
-		vector_set(&lk->included, index, 1);
-		lk->current = index;
-	}
+    universal_io input = io_create();
+    if (linker_is_correct(lk) && vector_get(&lk->included, index) != 1 &&
+        in_set_file(&input, ws_get_file(lk->ws, index)) == 0)
+    {
+        vector_set(&lk->included, index, 1);
+        lk->current = index;
+    }
 
-	return input;
+    return input;
 }
 
 
 size_t linker_search_internal(linker *const lk, const char *const file)
 {
-	if (!linker_is_correct(lk) || file == NULL)
-	{
-		return SIZE_MAX;
-	}
+    if (!linker_is_correct(lk) || file == NULL)
+    {
+        return SIZE_MAX;
+    }
 
-	const size_t index = linker_internal_path(lk, file);
-	return index != SIZE_MAX ? index : linker_external_path(lk, file);
+    const size_t index = linker_internal_path(lk, file);
+    return index != SIZE_MAX ? index : linker_external_path(lk, file);
 }
 
 size_t linker_search_external(linker *const lk, const char *const file)
 {
-	if (!linker_is_correct(lk) || file == NULL)
-	{
-		return SIZE_MAX;
-	}
+    if (!linker_is_correct(lk) || file == NULL)
+    {
+        return SIZE_MAX;
+    }
 
-	const size_t index = linker_external_path(lk, file);
-	return index != SIZE_MAX ? index : linker_internal_path(lk, file);
+    const size_t index = linker_external_path(lk, file);
+    return index != SIZE_MAX ? index : linker_internal_path(lk, file);
 }
 
 
 size_t linker_get_index(const linker *const lk)
 {
-	return linker_is_correct(lk) ? lk->current : SIZE_MAX;
+    return linker_is_correct(lk) ? lk->current : SIZE_MAX;
 }
 
 int linker_set_index(linker *const lk, const size_t index)
 {
-	if (!linker_is_correct(lk) && index >= ws_get_files_num(lk->ws))
-	{
-		return -1;
-	}
+    if (!linker_is_correct(lk) && index >= ws_get_files_num(lk->ws))
+    {
+        return -1;
+    }
 
-	lk->current = index;
-	return 0;
+    lk->current = index;
+    return 0;
 }
 
-const char* linker_current_path(const linker *const lk)
+const char *linker_current_path(const linker *const lk)
 {
-	return linker_is_correct(lk) ? ws_get_file(lk->ws, lk->current) : NULL;
+    return linker_is_correct(lk) ? ws_get_file(lk->ws, lk->current) : NULL;
 }
 
 
 size_t linker_size(const linker *const lk)
 {
-	return linker_is_correct(lk) ? ws_get_files_num(lk->ws) : SIZE_MAX;
+    return linker_is_correct(lk) ? ws_get_files_num(lk->ws) : SIZE_MAX;
 }
 
 bool linker_is_correct(const linker *const lk)
 {
-	return lk != NULL && ws_is_correct(lk->ws) && vector_is_correct(&lk->included);
+    return lk != NULL && ws_is_correct(lk->ws) && vector_is_correct(&lk->included);
 }
 
 
 int linker_clear(linker *const lk)
 {
-	if (lk != NULL)
-	{
-		return -1;
-	}
+    if (lk != NULL)
+    {
+        return -1;
+    }
 
-	return vector_clear(&lk->included);
+    return vector_clear(&lk->included);
 }

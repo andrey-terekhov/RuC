@@ -155,7 +155,7 @@ EXPORTED size_t hash_set_int64(hash *const hs, const item_t key, const size_t nu
  */
 inline item_t hash_get_key(const hash *const hs, const size_t index)
 {
-	return vector_get(hs, index + 1);
+    return vector_get(hs, index + 1);
 }
 
 /**
@@ -168,8 +168,8 @@ inline item_t hash_get_key(const hash *const hs, const size_t index)
  */
 inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
 {
-	const item_t amount = vector_get(hs, index + 2);
-	return index != SIZE_MAX && amount != ITEM_MAX ? (size_t)amount : 0;
+    const item_t amount = vector_get(hs, index + 2);
+    return index != SIZE_MAX && amount != ITEM_MAX ? (size_t)amount : 0;
 }
 
 
@@ -184,7 +184,7 @@ inline size_t hash_get_amount_by_index(const hash *const hs, const size_t index)
  */
 inline item_t hash_get_by_index(const hash *const hs, const size_t index, const size_t num)
 {
-	return num < hash_get_amount_by_index(hs, index) ? vector_get(hs, index + 3 + num) : ITEM_MAX;
+    return num < hash_get_amount_by_index(hs, index) ? vector_get(hs, index + 3 + num) : ITEM_MAX;
 }
 
 /**
@@ -198,7 +198,7 @@ inline item_t hash_get_by_index(const hash *const hs, const size_t index, const 
  */
 inline double hash_get_double_by_index(const hash *const hs, const size_t index, const size_t num)
 {
-	return num + DOUBLE_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_double(hs, index + 3 + num) : DBL_MAX;
+    return num + DOUBLE_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_double(hs, index + 3 + num) : DBL_MAX;
 }
 
 /**
@@ -212,7 +212,7 @@ inline double hash_get_double_by_index(const hash *const hs, const size_t index,
  */
 inline int64_t hash_get_int64_by_index(const hash *const hs, const size_t index, const size_t num)
 {
-	return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_int64(hs, index + 3 + num) : LLONG_MAX;
+    return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_get_int64(hs, index + 3 + num) : LLONG_MAX;
 }
 
 
@@ -228,7 +228,7 @@ inline int64_t hash_get_int64_by_index(const hash *const hs, const size_t index,
  */
 inline int hash_set_by_index(hash *const hs, const size_t index, const size_t num, const item_t value)
 {
-	return num < hash_get_amount_by_index(hs, index) ? vector_set(hs, index + 3 + num, value) : -1;
+    return num < hash_get_amount_by_index(hs, index) ? vector_set(hs, index + 3 + num, value) : -1;
 }
 
 /**
@@ -243,7 +243,8 @@ inline int hash_set_by_index(hash *const hs, const size_t index, const size_t nu
  */
 inline size_t hash_set_double_by_index(hash *const hs, const size_t index, const size_t num, const double value)
 {
-	return num + DOUBLE_SIZE <= hash_get_amount_by_index(hs, index) ? vector_set_double(hs, index + 3 + num, value) : SIZE_MAX;
+    return num + DOUBLE_SIZE <= hash_get_amount_by_index(hs, index) ? vector_set_double(hs, index + 3 + num, value)
+                                                                    : SIZE_MAX;
 }
 
 /**
@@ -258,7 +259,8 @@ inline size_t hash_set_double_by_index(hash *const hs, const size_t index, const
  */
 inline size_t hash_set_int64_by_index(hash *const hs, const size_t index, const size_t num, const int64_t value)
 {
-	return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_set_int64(hs, index + 3 + num, value) : SIZE_MAX;
+    return num + INT64_SIZE <= hash_get_amount_by_index(hs, index) ? vector_set_int64(hs, index + 3 + num, value)
+                                                                   : SIZE_MAX;
 }
 
 
@@ -282,7 +284,7 @@ EXPORTED int hash_remove(hash *const hs, const item_t key);
  */
 inline int hash_remove_by_index(hash *const hs, const size_t index)
 {
-	return index != SIZE_MAX ? vector_set(hs, index + 1, ITEM_MAX) : -1;
+    return index != SIZE_MAX ? vector_set(hs, index + 1, ITEM_MAX) : -1;
 }
 
 
@@ -295,7 +297,7 @@ inline int hash_remove_by_index(hash *const hs, const size_t index)
  */
 inline bool hash_is_correct(const hash *const hs)
 {
-	return vector_is_correct(hs) && vector_size(hs) >= MAX_HASH;
+    return vector_is_correct(hs) && vector_size(hs) >= MAX_HASH;
 }
 
 
@@ -308,7 +310,7 @@ inline bool hash_is_correct(const hash *const hs)
  */
 inline int hash_clear(hash *const hs)
 {
-	return vector_clear(hs);
+    return vector_clear(hs);
 }
 
 #ifdef __cplusplus

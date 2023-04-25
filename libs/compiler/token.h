@@ -16,10 +16,10 @@
 
 #pragma once
 
+#include "utf8.h"
 #include <assert.h>
 #include <limits.h>
 #include <stdint.h>
-#include "utf8.h"
 
 
 #ifdef __cplusplus
@@ -28,117 +28,117 @@ extern "C" {
 
 typedef enum TOKEN
 {
-	TK_MAIN = 0,					/**< The main function token */
-	TK_EOF = SHRT_MIN,				/**< End of file token */
-	TK_LINE,						/**< '#line' directive */
+    TK_MAIN = 0,       /**< The main function token */
+    TK_EOF = SHRT_MIN, /**< End of file token */
+    TK_LINE,           /**< '#line' directive */
 
-	// Keywords
-	TK_ABS,							/**< 'abs' keyword */
-	TK_BOOL,						/**< 'bool' keyword */
-	TK_BREAK,						/**< 'break' keyword */
-	TK_CASE,						/**< 'case' keyword */
-	TK_CHAR,						/**< 'char' keyword */
-	TK_CONST, 						/**< 'const' keyword */
-	TK_CONTINUE,					/**< 'continue' keyword */
-	TK_DEFAULT,						/**< 'default' keyword */
-	TK_DO,							/**< 'do' keyword */
-	TK_DOUBLE,						/**< 'double' keyword */
-	TK_ELSE,						/**< 'else' keyword */
-	TK_ENUM,						/**< 'enum' keyword */
-	TK_FALSE,						/**< 'false' keyword */
-	TK_FILE,						/**< 'file' keyword */
-	TK_FLOAT,						/**< 'float' keyword */
-	TK_FOR,							/**< 'for' keyword */
-	TK_IF,							/**< 'if' keyword */
-	TK_INT,							/**< 'int' keyword */
-	TK_LONG,						/**< 'long' keyword */
-	TK_NULL,						/**< 'null' keyword */
-	TK_RETURN,						/**< 'return' keyword */
-	TK_STRUCT,						/**< 'struct' keyword */
-	TK_SWITCH,						/**< 'switch' keyword */
-	TK_TRUE,						/**< 'true' keyword */
-	TK_TYPEDEF,						/**< 'typedef' keyword */
-	TK_UPB,							/**< 'upb' keyword */
-	TK_VOID,						/**< 'void' keyword */
-	TK_WHILE,						/**< 'while' keyword */
+    // Keywords
+    TK_ABS,      /**< 'abs' keyword */
+    TK_BOOL,     /**< 'bool' keyword */
+    TK_BREAK,    /**< 'break' keyword */
+    TK_CASE,     /**< 'case' keyword */
+    TK_CHAR,     /**< 'char' keyword */
+    TK_CONST,    /**< 'const' keyword */
+    TK_CONTINUE, /**< 'continue' keyword */
+    TK_DEFAULT,  /**< 'default' keyword */
+    TK_DO,       /**< 'do' keyword */
+    TK_DOUBLE,   /**< 'double' keyword */
+    TK_ELSE,     /**< 'else' keyword */
+    TK_ENUM,     /**< 'enum' keyword */
+    TK_FALSE,    /**< 'false' keyword */
+    TK_FILE,     /**< 'file' keyword */
+    TK_FLOAT,    /**< 'float' keyword */
+    TK_FOR,      /**< 'for' keyword */
+    TK_IF,       /**< 'if' keyword */
+    TK_INT,      /**< 'int' keyword */
+    TK_LONG,     /**< 'long' keyword */
+    TK_NULL,     /**< 'null' keyword */
+    TK_RETURN,   /**< 'return' keyword */
+    TK_STRUCT,   /**< 'struct' keyword */
+    TK_SWITCH,   /**< 'switch' keyword */
+    TK_TRUE,     /**< 'true' keyword */
+    TK_TYPEDEF,  /**< 'typedef' keyword */
+    TK_UPB,      /**< 'upb' keyword */
+    TK_VOID,     /**< 'void' keyword */
+    TK_WHILE,    /**< 'while' keyword */
 
-	// Identifiers
-	TK_IDENTIFIER,					/**< Identifier */
+    // Identifiers
+    TK_IDENTIFIER, /**< Identifier */
 
-	// Literals
-	TK_INT_LITERAL,					/**< Integer literal */
-	TK_FLOAT_LITERAL,				/**< Floating literal */
-	TK_CHAR_LITERAL,				/**< Character literal */
-	TK_STRING_LITERAL,				/**< String literal */
+    // Literals
+    TK_INT_LITERAL,    /**< Integer literal */
+    TK_FLOAT_LITERAL,  /**< Floating literal */
+    TK_CHAR_LITERAL,   /**< Character literal */
+    TK_STRING_LITERAL, /**< String literal */
 
-	// Punctuators
-	TK_L_SQUARE,					/**< '[' punctuator */
-	TK_L_PAREN,						/**< '(' punctuator */
-	TK_L_BRACE,						/**< '{' punctuator */
-	TK_R_SQUARE		= 0x01,			/**< ']' punctuator */
-	TK_R_PAREN		= 0x02,			/**< ')' punctuator */
-	TK_R_BRACE		= 0x04,			/**< '}' punctuator */
-	TK_COMMA		= 0x08,			/**< ',' punctuator */
-	TK_COLON		= 0x10,			/**< ':' punctuator */
-	TK_SEMICOLON	= 0x20,			/**< ';' punctuator */
-	TK_QUESTION 	= TK_L_BRACE+1,	/**< '?' punctuator */
-	TK_TILDE,						/**< '~' punctuator */
-	TK_PERIOD,						/**< '.' punctuator */
-	TK_PLUS,						/**< '+' punctuator */
-	TK_MINUS,						/**< '-' punctuator */
-	TK_STAR,						/**< '*' punctuator */
-	TK_SLASH,						/**< '/' punctuator */
-	TK_PERCENT,						/**< '%' punctuator */
-	TK_EXCLAIM,						/**< '!' punctuator */
-	TK_CARET,						/**< '^' punctuator */
-	TK_PIPE,						/**< '|' punctuator */
-	TK_AMP,							/**< '&' punctuator */
-	TK_EQUAL,						/**< '=' punctuator */
-	TK_LESS,						/**< '<' punctuator */
-	TK_GREATER,						/**< '>' punctuator */
-	TK_ARROW,						/**< '->' punctuator */
-	TK_PLUS_EQUAL,					/**< '+=' punctuator */
-	TK_PLUS_PLUS,					/**< '++' punctuator */
-	TK_MINUS_EQUAL,					/**< '-=' punctuator */
-	TK_MINUS_MINUS,					/**< '--' punctuator */
-	TK_STAR_EQUAL,					/**< '*=' punctuator */
-	TK_SLASH_EQUAL,					/**< '/=' punctuator */
-	TK_PERCENT_EQUAL,				/**< '%=' punctuator */
-	TK_EXCLAIM_EQUAL,				/**< '!=' punctuator */
-	TK_CARET_EQUAL,					/**< '^=' punctuator */
-	TK_PIPE_EQUAL,					/**< '|=' punctuator */
-	TK_PIPE_PIPE,					/**< '||' punctuator */
-	TK_AMP_EQUAL,					/**< '&=' punctuator */
-	TK_AMP_AMP,						/**< '&&' punctuator */
-	TK_EQUAL_EQUAL,					/**< '==' punctuator */
-	TK_LESS_EQUAL,					/**< '<=' punctuator */
-	TK_LESS_LESS,					/**< '<<' punctuator */
-	TK_GREATER_EQUAL,				/**< '>=' punctuator */
-	TK_GREATER_GREATER,				/**< '>>' punctuator */
-	TK_LESS_LESS_EQUAL,				/**< '<<=' punctuator */
-	TK_GREATER_GREATER_EQUAL,		/**< '>>=' punctuator */
+    // Punctuators
+    TK_L_SQUARE,                  /**< '[' punctuator */
+    TK_L_PAREN,                   /**< '(' punctuator */
+    TK_L_BRACE,                   /**< '{' punctuator */
+    TK_R_SQUARE = 0x01,           /**< ']' punctuator */
+    TK_R_PAREN = 0x02,            /**< ')' punctuator */
+    TK_R_BRACE = 0x04,            /**< '}' punctuator */
+    TK_COMMA = 0x08,              /**< ',' punctuator */
+    TK_COLON = 0x10,              /**< ':' punctuator */
+    TK_SEMICOLON = 0x20,          /**< ';' punctuator */
+    TK_QUESTION = TK_L_BRACE + 1, /**< '?' punctuator */
+    TK_TILDE,                     /**< '~' punctuator */
+    TK_PERIOD,                    /**< '.' punctuator */
+    TK_PLUS,                      /**< '+' punctuator */
+    TK_MINUS,                     /**< '-' punctuator */
+    TK_STAR,                      /**< '*' punctuator */
+    TK_SLASH,                     /**< '/' punctuator */
+    TK_PERCENT,                   /**< '%' punctuator */
+    TK_EXCLAIM,                   /**< '!' punctuator */
+    TK_CARET,                     /**< '^' punctuator */
+    TK_PIPE,                      /**< '|' punctuator */
+    TK_AMP,                       /**< '&' punctuator */
+    TK_EQUAL,                     /**< '=' punctuator */
+    TK_LESS,                      /**< '<' punctuator */
+    TK_GREATER,                   /**< '>' punctuator */
+    TK_ARROW,                     /**< '->' punctuator */
+    TK_PLUS_EQUAL,                /**< '+=' punctuator */
+    TK_PLUS_PLUS,                 /**< '++' punctuator */
+    TK_MINUS_EQUAL,               /**< '-=' punctuator */
+    TK_MINUS_MINUS,               /**< '--' punctuator */
+    TK_STAR_EQUAL,                /**< '*=' punctuator */
+    TK_SLASH_EQUAL,               /**< '/=' punctuator */
+    TK_PERCENT_EQUAL,             /**< '%=' punctuator */
+    TK_EXCLAIM_EQUAL,             /**< '!=' punctuator */
+    TK_CARET_EQUAL,               /**< '^=' punctuator */
+    TK_PIPE_EQUAL,                /**< '|=' punctuator */
+    TK_PIPE_PIPE,                 /**< '||' punctuator */
+    TK_AMP_EQUAL,                 /**< '&=' punctuator */
+    TK_AMP_AMP,                   /**< '&&' punctuator */
+    TK_EQUAL_EQUAL,               /**< '==' punctuator */
+    TK_LESS_EQUAL,                /**< '<=' punctuator */
+    TK_LESS_LESS,                 /**< '<<' punctuator */
+    TK_GREATER_EQUAL,             /**< '>=' punctuator */
+    TK_GREATER_GREATER,           /**< '>>' punctuator */
+    TK_LESS_LESS_EQUAL,           /**< '<<=' punctuator */
+    TK_GREATER_GREATER_EQUAL,     /**< '>>=' punctuator */
 } token_t;
 
 /** Source location */
 typedef struct location
 {
-	size_t begin;
-	size_t end;
+    size_t begin;
+    size_t end;
 } location;
 
 /** Token representation */
 typedef struct token
 {
-	location loc;					/**< Source location */
-	token_t kind;					/**< Token kind */
-	union
-	{
-		size_t ident_repr;			/**< Index of representation in representation table */
-		char32_t char_value;		/**< Value of character literal */
-		uint64_t int_value;			/**< Value of integer literal */
-		double float_value;			/**< Value of floating literal */
-		size_t string_num;			/**< Index of string literal in strings vector */
-	} data;
+    location loc; /**< Source location */
+    token_t kind; /**< Token kind */
+    union
+    {
+        size_t ident_repr;   /**< Index of representation in representation table */
+        char32_t char_value; /**< Value of character literal */
+        uint64_t int_value;  /**< Value of integer literal */
+        double float_value;  /**< Value of floating literal */
+        size_t string_num;   /**< Index of string literal in strings vector */
+    } data;
 } token;
 
 

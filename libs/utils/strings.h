@@ -28,13 +28,13 @@ extern "C" {
 /** Strings vector */
 typedef struct strings
 {
-	char *all_strings;				/**< Strings storage */
-	size_t all_strings_size;		/**< Size of strings storage */
-	size_t all_strings_alloc;		/**< Allocated size of strings storage */
+    char *all_strings;        /**< Strings storage */
+    size_t all_strings_size;  /**< Size of strings storage */
+    size_t all_strings_alloc; /**< Allocated size of strings storage */
 
-	size_t *indexes;				/**< Indexes array */
-	size_t indexes_size;			/**< Size of indexes array */
-	size_t indexes_alloc;			/**< Allocated size of indexes array */
+    size_t *indexes;      /**< Indexes array */
+    size_t indexes_size;  /**< Size of indexes array */
+    size_t indexes_alloc; /**< Allocated size of indexes array */
 } strings;
 
 

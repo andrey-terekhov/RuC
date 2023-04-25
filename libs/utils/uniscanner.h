@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "dll.h"
 #include "uniio.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 
 #define MAX_SYMBOL_SIZE 8
@@ -37,9 +37,11 @@ extern "C" {
  *
  *	@return	Return scanf-like value
  */
+// clang-format off
 EXPORTED int uni_scanf(universal_io *const io, const char *const format, ...)
 	__attribute__((format(scanf, 2, 3)))
 	__attribute__((nonnull(2)));
+// clang-format on
 
 /**
  *	Universal function for scanning UTF-8 characters

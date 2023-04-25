@@ -28,10 +28,10 @@ extern "C" {
 /** Reporter */
 typedef struct reporter
 {
-	size_t errors;							/**< Number of reported errors */
-	size_t warnings;						/**< Number of reported warnings */
+    size_t errors;   /**< Number of reported errors */
+    size_t warnings; /**< Number of reported warnings */
 
-	bool is_recovery_disabled;				/**< Set, if error recovery & multiple output disabled */
+    bool is_recovery_disabled; /**< Set, if error recovery & multiple output disabled */
 } reporter;
 
 
@@ -67,11 +67,12 @@ void report_error(reporter *const rprt, universal_io *const io, const location l
  *
  *	@param	rprt		Reporter
  *	@param	io			Universal io
- *	@param	loc			Warning location	
+ *	@param	loc			Warning location
  *	@param	num			Warning code
  *	@param	args		Variable list
  */
-void report_warning(reporter *const rprt, universal_io *const io, const location loc, const warning_t num, va_list args);
+void report_warning(reporter *const rprt, universal_io *const io, const location loc, const warning_t num,
+                    va_list args);
 
 #ifdef __cplusplus
 } /* extern "C" */

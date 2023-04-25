@@ -28,19 +28,19 @@ typedef struct environment environment;
 /** Structure for connecting files */
 typedef struct linker
 {
-	workspace *ws;				/**< Initial arguments */
+    workspace *ws; /**< Initial arguments */
 
-	int included[MAX_PATHS];	/**< List of already added files */
-	size_t count; 				/**< Number of added files */
+    int included[MAX_PATHS]; /**< List of already added files */
+    size_t count;            /**< Number of added files */
 
-	size_t current; 			/**< Index of the current file */
+    size_t current; /**< Index of the current file */
 } linker;
 
 
 /**
  *	Create linker structure
  *
- *	@param	ws		Workspace structure	 
+ *	@param	ws		Workspace structure
  *
  *	@return	Linker structure
  */

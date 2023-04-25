@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "workspace.h"
-#include "vector.h"
 #include "uniio.h"
+#include "vector.h"
+#include "workspace.h"
 
 
 #define TAG_LINKER "linker"
@@ -31,12 +31,12 @@ extern "C" {
 /** Linker structure */
 typedef struct linker
 {
-	workspace *ws;				/**< Sources files */
-	const size_t sources; 		/**< Number of sources files */
+    workspace *ws;        /**< Sources files */
+    const size_t sources; /**< Number of sources files */
 
-	vector included;			/**< List of included files */
+    vector included; /**< List of included files */
 
-	size_t current; 			/**< Index of current file */
+    size_t current; /**< Index of current file */
 } linker;
 
 
@@ -99,7 +99,7 @@ size_t linker_search_external(linker *const lk, const char *const file);
  *
  *	@return	Path to file, @c NULL on failure
  */
-const char* linker_current_path(const linker *const lk);
+const char *linker_current_path(const linker *const lk);
 
 /**
  *	Get current path index

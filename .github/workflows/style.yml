@@ -1,0 +1,17 @@
+name: Style guide test
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  ubuntu:
+    name: Ubuntu 20.04
+    runs-on: ubuntu-20.04
+    steps:
+      - name: GitHub repository checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run style check script
+        run: ./scripts/style.sh

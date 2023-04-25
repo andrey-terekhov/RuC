@@ -16,59 +16,59 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include "dll.h"
 #include <float.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "dll.h"
 
 
 #ifndef ITEM
-	#define ITEM -64
+    #define ITEM -64
 #endif
 
 #if ITEM > 32
-	#define ITEM_TYPE uint64_t
-	#define ITEM_MIN 0
-	#define ITEM_MAX ULLONG_MAX
-	#define PRIitem PRIu64
+    #define ITEM_TYPE uint64_t
+    #define ITEM_MIN 0
+    #define ITEM_MAX ULLONG_MAX
+    #define PRIitem PRIu64
 #elif ITEM > 16
-	#define ITEM_TYPE uint32_t
-	#define ITEM_MIN 0
-	#define ITEM_MAX UINT_MAX
-	#define PRIitem PRIu32
+    #define ITEM_TYPE uint32_t
+    #define ITEM_MIN 0
+    #define ITEM_MAX UINT_MAX
+    #define PRIitem PRIu32
 #elif ITEM > 8
-	#define ITEM_TYPE uint16_t
-	#define ITEM_MIN 0
-	#define ITEM_MAX USHRT_MAX
-	#define PRIitem PRIu16
+    #define ITEM_TYPE uint16_t
+    #define ITEM_MIN 0
+    #define ITEM_MAX USHRT_MAX
+    #define PRIitem PRIu16
 #elif ITEM >= 0
-	#define ITEM_TYPE uint8_t
-	#define ITEM_MIN 0
-	#define ITEM_MAX UCHAR_MAX
-	#define PRIitem PRIu8
+    #define ITEM_TYPE uint8_t
+    #define ITEM_MIN 0
+    #define ITEM_MAX UCHAR_MAX
+    #define PRIitem PRIu8
 #elif ITEM >= -8
-	#define ITEM_TYPE int8_t
-	#define ITEM_MIN CHAR_MIN
-	#define ITEM_MAX CHAR_MAX
-	#define PRIitem PRIi8
+    #define ITEM_TYPE int8_t
+    #define ITEM_MIN CHAR_MIN
+    #define ITEM_MAX CHAR_MAX
+    #define PRIitem PRIi8
 #elif ITEM >= -16
-	#define ITEM_TYPE int16_t
-	#define ITEM_MIN SHRT_MIN
-	#define ITEM_MAX SHRT_MAX
-	#define PRIitem PRIi16
+    #define ITEM_TYPE int16_t
+    #define ITEM_MIN SHRT_MIN
+    #define ITEM_MAX SHRT_MAX
+    #define PRIitem PRIi16
 #elif ITEM >= -32
-	#define ITEM_TYPE int32_t
-	#define ITEM_MIN INT_MIN
-	#define ITEM_MAX INT_MAX
-	#define PRIitem PRIi32
+    #define ITEM_TYPE int32_t
+    #define ITEM_MIN INT_MIN
+    #define ITEM_MAX INT_MAX
+    #define PRIitem PRIi32
 #else
-	#define ITEM_TYPE int64_t
-	#define ITEM_MIN LLONG_MIN
-	#define ITEM_MAX LLONG_MAX
-	#define PRIitem PRIi64
+    #define ITEM_TYPE int64_t
+    #define ITEM_MIN LLONG_MIN
+    #define ITEM_MAX LLONG_MAX
+    #define PRIitem PRIi64
 #endif
 
 #define DOUBLE_SIZE (sizeof(double) / sizeof(ITEM_TYPE))
@@ -85,16 +85,16 @@ typedef struct workspace workspace;
 /** Item type for output tables */
 typedef enum ITEM_STATUS
 {
-	item_error = -1,		/**< Error code */
-	item_int64,				/**< Item is int64_t */
-	item_int32,				/**< Item is int32_t */
-	item_int16,				/**< Item is int16_t */
-	item_int8,				/**< Item is int8_t */
-	item_uint64,			/**< Item is uint64_t */
-	item_uint32,			/**< Item is uint32_t */
-	item_uint16,			/**< Item is uint16_t */
-	item_uint8,				/**< Item is uint8_t */
-	item_types,				/**< Max item types */
+    item_error = -1, /**< Error code */
+    item_int64,      /**< Item is int64_t */
+    item_int32,      /**< Item is int32_t */
+    item_int16,      /**< Item is int16_t */
+    item_int8,       /**< Item is int8_t */
+    item_uint64,     /**< Item is uint64_t */
+    item_uint32,     /**< Item is uint32_t */
+    item_uint16,     /**< Item is uint16_t */
+    item_uint8,      /**< Item is uint8_t */
+    item_types,      /**< Max item types */
 } item_status;
 
 /** Item type */
