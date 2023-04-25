@@ -22,5 +22,8 @@ sources="src/*.c libs/*/*.c"
 #directories="-Ilibs/utils -Ilibs/preprocessor -Ilibs/compiler"
 
 #$clang_tidy -fix-errors $sources -- $directories
+echo "\n\nXML with replacements"
 $clang_format --Werror --verbose --output-replacements-xml -style=file $sources $headers
+echo "\n\nResult run"
+$clang_format --Werror --dry-run --verbose -style=file $sources $headers
 exit $?
