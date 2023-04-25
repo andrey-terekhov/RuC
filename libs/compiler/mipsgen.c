@@ -58,33 +58,6 @@ inline unreachable(const char* msg)
 	#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
-
-// // static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
-// // static const size_t HASH_TABLE_SIZE = 1024;			/**< Размер хеш-таблицы для смещений и регистров */
-// // static const bool IS_ON_STACK = true;				/**< Хранится ли переменная на стеке */
-
-// // static const size_t WORD_LENGTH = 4;				/**< Длина слова данных */
-// // static const size_t HALF_WORD_LENGTH = 2;			/**< Длина половины слова данных */
-
-// // static const size_t LOW_DYN_BORDER = 0x10010000;	/**< Нижняя граница динамической памяти */
-// // static const size_t HEAP_DISPL = 897000;				/**< Смещение кучи относительно глобальной памяти */
-
-// // static const size_t SP_SIZE = 4;					/**< Размер регистра $sp для его сохранения */
-// // static const size_t RA_SIZE = 4;					/**< Размер регистра $ra для его сохранения */
-
-// // static const size_t TEMP_FP_REG_AMOUNT = 12;		/**< Количество временных регистров для чисел с плавающей точкой */
-// // static const size_t TEMP_REG_AMOUNT = 10;			/**< Количество обычных временных регистров */
-// // static const size_t ARG_REG_AMOUNT = 4;				/**< Количество регистров-аргументов для функций */
-
-// // static const size_t PRESERVED_REG_AMOUNT = 8;		/**< Количество сохраняемых регистров общего назначения */
-// // static const size_t PRESERVED_FP_REG_AMOUNT = 10;	/**< Количество сохраняемых регистров с плавающей точкой */
-
-// // static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lvalue */
-
-// // /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
-// // static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
-// // 											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
-
 #define mips_printf(enc, ...)\
 	do {\
 		uni_printf(enc->io, __VA_ARGS__);\
@@ -230,19 +203,6 @@ typedef enum mips_ic
 	MIPS_IC_BEQ,
 	MIPS_IC_BLT,
 	MIPS_IC_BLE,
-	// MIPS_IC_BLEZ,		/**< Branch on Less Than or Equal to Zero.
-	// 						To test a GPR then do a PC-relative conditional branch */
-	// MIPS_IC_BLTZ,		/**< Branch on Less Than Zero.
-	// 						To test a GPR then do a PC-relative conditional branch */
-	// MIPS_IC_BGEZ,		/**< Branch on Greater Than or Equal to Zero.
-	// 						To test a GPR then do a PC-relative conditional branch */
-	// MIPS_IC_BGTZ,		/**< Branch on Greater Than Zero.
-	// 						To test a GPR then do a PC-relative conditional branch */
-	// MIPS_IC_BEQ,		/**< Branch on Equal.
-	// 						To compare GPRs then do a PC-relative conditional branch */
-	// MIPS_IC_BNE,		/**< Branch on Not Equal.
-	// 						To compare GPRs then do a PC-relative conditional branch */
-
 	MIPS_IC_LA,			/**< Load the address of a named memory
 							location into a register (не из вышеуказанной книги)*/
 
@@ -874,9 +834,6 @@ static void mips_print_label(mips_encoder *const enc, const label *const lbl)
 			break;
 		case LABEL_KIND_FUNCEND:
 			mips_printf(enc, "FUNCEND");
-		// 	break;
-		// case LABEL_KIND_STRING:
-		// 	mips_printf(enc, "STRING");
 			break;
 		case LABEL_KIND_ELSE:
 			mips_printf(enc, "ELSE");
@@ -896,9 +853,6 @@ static void mips_print_label(mips_encoder *const enc, const label *const lbl)
 		case LABEL_KIND_STRING:
 			mips_printf(enc, "STRING");
 			break;
-		// case LABEL_KIND_CASE:
-		// 	mips_printf(enc, "CASE");
-			break;
 	}
 	mips_printf(enc, "%zu", lbl->id);
 }
@@ -908,10 +862,6 @@ static void mips_gen_nop(mips_encoder *const enc)
 	(void) enc;
 }
 
-// static void mips_print_instr_rir(mips_encoder *const enc, const mips_register op1, const item_t op2, const mips_register op3)
-// {
-
-// }
 
 static void mips_to_code_f(mips_encoder *const enc, const item_t id)
 {
@@ -1184,9 +1134,6 @@ static lvalue mips_get_param_lvalue(mips_encoder *const enc, const size_t num)
 
 static void mips_gen_push(mips_encoder *const enc, const rvalue *const value)
 {
-	//const lvalue param_value = create_param_lvalue(i);
-	//mips_gen_store(enc, value, param_value);
-
 	const rvalue *pushed_value = value;
 
 	if (type_is_floating(rvalue_get_type(value)))
@@ -1270,7 +1217,6 @@ static void mips_gen_global(mips_encoder *const enc, const global_data *const gl
 	{
 		unimplemented();
 	}
-
 }
 
 
@@ -1288,11 +1234,10 @@ static inline void mips_find_displs_for_function(mips_encoder *const enc, const 
 	const size_t call_arguments_size = (!is_leaf) ? max(function_data_get_max_call_arguments(data), 4) * 4 : 0;
 
 
-	const size_t total_displ = saved_registers_size /*+ saved_arguments_size*/ + local_size + call_arguments_size;
+	const size_t total_displ = saved_registers_size + local_size + call_arguments_size;
 	const size_t padding_size = (total_displ % 8 == 0) ? 0 : 4;
 
 	const size_t function_displ = total_displ + padding_size;
-	//const size_t arguments_displ = function_displ - saved_registers_size;
 	const size_t arguments_displ = function_displ + saved_arguments_size;
 	const size_t local_displ = function_displ - saved_registers_size - padding_size;
 	const size_t call_arguments_displ = local_displ - local_size;
@@ -1336,7 +1281,6 @@ static void mips_gen_funciton_begin(mips_encoder *const enc, const function_data
 	mips_gen_store(enc, &MIPS_RA_RVALUE, &saved_ra_lvalue);
 	mips_gen_store(enc, &MIPS_FP_RVALUE, &saved_fp_lvalue);
 	mips_gen_move(enc, &MIPS_SP_RVALUE, &MIPS_FP_RVALUE);
-	//mips_gen_store(enc, &MIPS_);
 
 	mips_commentf(enc, "saving registers\n");
 
@@ -1523,7 +1467,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	ir_builder builder = create_ir_builder(&module, sx);
 
 	ir_emit_module(&builder, &root);
-	// ir_dump(&builder);
 
 	mips_encoder enc = create_mips_encoder(sx);
 
