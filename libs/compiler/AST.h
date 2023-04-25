@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <stdlib.h>
 #include "node_vector.h"
 #include "operations.h"
 #include "syntax.h"
 #include "tree.h"
+#include <stdlib.h>
 
 
 #ifdef __cplusplus
@@ -30,55 +30,55 @@ extern "C" {
 /** Value category */
 typedef enum CATEGORY
 {
-	LVALUE,					/**< An expression that designates an object */
-	RVALUE,					/**< An expression detached from any specific storage */
+    LVALUE, /**< An expression that designates an object */
+    RVALUE, /**< An expression detached from any specific storage */
 } category_t;
 
 /** Expression class */
 typedef enum EXPRESSION
 {
-	EXPR_IDENTIFIER,	/**< Identifier expression */
-	EXPR_LITERAL,		/**< Literal expression */
-	EXPR_SUBSCRIPT,		/**< Subscript expression */
-	EXPR_CALL,			/**< Call expression */
-	EXPR_MEMBER,		/**< Member expression */
-	EXPR_CAST,			/**< Cast expression */
-	EXPR_UNARY,			/**< Unary expression */
-	EXPR_BINARY,		/**< Binary expression */
-	EXPR_TERNARY,		/**< Ternary expression */
-	EXPR_ASSIGNMENT,	/**< Assignment expression */
-	EXPR_INITIALIZER,	/**< Initializer */
-	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
-	EXPR_INVALID,		/**< Invalid expression */
+    EXPR_IDENTIFIER,  /**< Identifier expression */
+    EXPR_LITERAL,     /**< Literal expression */
+    EXPR_SUBSCRIPT,   /**< Subscript expression */
+    EXPR_CALL,        /**< Call expression */
+    EXPR_MEMBER,      /**< Member expression */
+    EXPR_CAST,        /**< Cast expression */
+    EXPR_UNARY,       /**< Unary expression */
+    EXPR_BINARY,      /**< Binary expression */
+    EXPR_TERNARY,     /**< Ternary expression */
+    EXPR_ASSIGNMENT,  /**< Assignment expression */
+    EXPR_INITIALIZER, /**< Initializer */
+    EXPR_EMPTY_BOUND, /**< Empty array size expression */
+    EXPR_INVALID,     /**< Invalid expression */
 } expression_t;
 
 /** Statement class */
 typedef enum STATEMENT
 {
-	STMT_DECL,			/**< Declaration statement */
-	STMT_CASE,			/**< Case statement */
-	STMT_DEFAULT,		/**< Default statement */
-	STMT_COMPOUND,		/**< Compound statement */
-	STMT_EXPR,			/**< Expression statement */
-	STMT_NULL,			/**< Null statement */
-	STMT_IF,			/**< If statement */
-	STMT_SWITCH,		/**< Switch statement */
-	STMT_WHILE,			/**< While statement */
-	STMT_DO,			/**< Do statement */
-	STMT_FOR,			/**< For statement */
-	STMT_CONTINUE,		/**< Continue statement */
-	STMT_BREAK,			/**< Break statement */
-	STMT_RETURN,		/**< Return statement */
+    STMT_DECL,     /**< Declaration statement */
+    STMT_CASE,     /**< Case statement */
+    STMT_DEFAULT,  /**< Default statement */
+    STMT_COMPOUND, /**< Compound statement */
+    STMT_EXPR,     /**< Expression statement */
+    STMT_NULL,     /**< Null statement */
+    STMT_IF,       /**< If statement */
+    STMT_SWITCH,   /**< Switch statement */
+    STMT_WHILE,    /**< While statement */
+    STMT_DO,       /**< Do statement */
+    STMT_FOR,      /**< For statement */
+    STMT_CONTINUE, /**< Continue statement */
+    STMT_BREAK,    /**< Break statement */
+    STMT_RETURN,   /**< Return statement */
 } statement_t;
 
 /** Declaration class */
 typedef enum DECLARATION
 {
-	DECL_VAR,			/**< Variable declaration */
-	DECL_FUNC,			/**< Function declaration */
-	DECL_MEMBER,		/**< Member declaration */
-	DECL_STRUCT,		/**< Struct declaration */
-	DECL_INVALID,		/**< Invalid declaration */
+    DECL_VAR,     /**< Variable declaration */
+    DECL_FUNC,    /**< Function declaration */
+    DECL_MEMBER,  /**< Member declaration */
+    DECL_STRUCT,  /**< Struct declaration */
+    DECL_INVALID, /**< Invalid declaration */
 } declaration_t;
 
 
@@ -89,7 +89,7 @@ typedef enum DECLARATION
  */
 inline node node_broken(void)
 {
-	return node_load(NULL, SIZE_MAX);
+    return node_load(NULL, SIZE_MAX);
 }
 
 /**
@@ -120,7 +120,7 @@ expression_t expression_get_class(const node *const nd);
  */
 inline item_t expression_get_type(const node *const nd)
 {
-	return node_get_arg(nd, 0);
+    return node_get_arg(nd, 0);
 }
 
 /**
@@ -132,7 +132,7 @@ inline item_t expression_get_type(const node *const nd)
  */
 inline bool expression_is_lvalue(const node *const nd)
 {
-	return node_get_arg(nd, 1) == LVALUE;
+    return node_get_arg(nd, 1) == LVALUE;
 }
 
 
@@ -363,8 +363,8 @@ node expression_call_get_argument(const node *const nd, const size_t index);
  *
  *	@return	Member expression
  */
-node expression_member(const item_t type, const category_t ctg
-	, const size_t index, bool is_arrow, node *const base, const location loc);
+node expression_member(const item_t type, const category_t ctg, const size_t index, bool is_arrow, node *const base,
+                       const location loc);
 
 /**
  *	Get base expression of member expression
@@ -1067,8 +1067,8 @@ declaration_t declaration_get_class(const node *const nd);
  *
  *	@return	Member declaration
  */
-node declaration_member(node *const context, const item_t type, const size_t name
-	, node_vector *const bounds, const location loc);
+node declaration_member(node *const context, const item_t type, const size_t name, node_vector *const bounds,
+                        const location loc);
 
 /**
  *	Get name of member in member declaration
@@ -1194,8 +1194,8 @@ node declaration_struct_get_member(const node *const nd, const size_t index);
  *
  *	@return	Variable declaration
  */
-node declaration_variable(node *const context, const size_t id, node_vector *const bounds
-	, node *const initializer, const location loc);
+node declaration_variable(node *const context, const size_t id, node_vector *const bounds, node *const initializer,
+                          const location loc);
 
 /**
  *	Get variable identifier in variable declaration

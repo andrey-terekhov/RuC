@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include "errors.h"
 #include "syntax.h"
 #include "token.h"
 #include "uniio.h"
 #include "workspace.h"
+#include <stdbool.h>
 
 
 #ifdef __cplusplus
@@ -31,10 +31,10 @@ extern "C" {
 /** Lexer structure */
 typedef struct lexer
 {
-	syntax *sx;								/**< Syntax structure */
+    syntax *sx; /**< Syntax structure */
 
-	char32_t character;						/**< Current character */
-	vector lexstr;							/**< Representation of the read string literal */
+    char32_t character; /**< Current character */
+    vector lexstr;      /**< Representation of the read string literal */
 } lexer;
 
 /**

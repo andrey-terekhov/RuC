@@ -28,96 +28,96 @@
 
 location token_get_location(const token *const tk)
 {
-	return tk->loc;
+    return tk->loc;
 }
 
 token_t token_get_kind(const token *const tk)
 {
-	return tk->kind;
+    return tk->kind;
 }
 
 bool token_is(const token *const tk, const token_t kind)
 {
-	return tk->kind == kind;
+    return tk->kind == kind;
 }
 
 bool token_is_not(const token *const tk, const token_t kind)
 {
-	return tk->kind != kind;
+    return tk->kind != kind;
 }
 
 
 token token_identifier(const location loc, const size_t name)
 {
-	return (token){ .loc = loc, .kind = TK_IDENTIFIER, .data.ident_repr = name };
+    return (token){ .loc = loc, .kind = TK_IDENTIFIER, .data.ident_repr = name };
 }
 
 size_t token_get_ident_name(const token *const tk)
 {
-	assert(tk->kind == TK_IDENTIFIER);
-	return tk->data.ident_repr;
+    assert(tk->kind == TK_IDENTIFIER);
+    return tk->data.ident_repr;
 }
 
 
 token token_char_literal(const location loc, const char32_t value)
 {
-	return (token){ .loc = loc, .kind = TK_CHAR_LITERAL, .data.char_value = value };
+    return (token){ .loc = loc, .kind = TK_CHAR_LITERAL, .data.char_value = value };
 }
 
 char32_t token_get_char_value(const token *const tk)
 {
-	assert(tk->kind == TK_CHAR_LITERAL);
-	return tk->data.char_value;
+    assert(tk->kind == TK_CHAR_LITERAL);
+    return tk->data.char_value;
 }
 
 
 token token_int_literal(const location loc, const uint64_t value)
 {
-	return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
+    return (token){ .loc = loc, .kind = TK_INT_LITERAL, .data.int_value = value };
 }
 
 uint64_t token_get_int_value(const token *const tk)
 {
-	assert(tk->kind == TK_INT_LITERAL);
-	return tk->data.int_value;
+    assert(tk->kind == TK_INT_LITERAL);
+    return tk->data.int_value;
 }
 
 
 token token_float_literal(const location loc, const double value)
 {
-	return (token){ .loc = loc, .kind = TK_FLOAT_LITERAL, .data.float_value = value };
+    return (token){ .loc = loc, .kind = TK_FLOAT_LITERAL, .data.float_value = value };
 }
 
 double token_get_float_value(const token *const tk)
 {
-	assert(tk->kind == TK_FLOAT_LITERAL);
-	return tk->data.float_value;
+    assert(tk->kind == TK_FLOAT_LITERAL);
+    return tk->data.float_value;
 }
 
 
 token token_string_literal(const location loc, const size_t string_num)
 {
-	return (token){ .loc = loc, .kind = TK_STRING_LITERAL, .data.string_num = string_num };
+    return (token){ .loc = loc, .kind = TK_STRING_LITERAL, .data.string_num = string_num };
 }
 
 size_t token_get_string_num(const token *const tk)
 {
-	assert(tk->kind == TK_STRING_LITERAL);
-	return tk->data.string_num;
+    assert(tk->kind == TK_STRING_LITERAL);
+    return tk->data.string_num;
 }
 
 
 token token_eof(void)
 {
-	return (token){ .loc = { SIZE_MAX, SIZE_MAX }, .kind = TK_EOF };
+    return (token){ .loc = { SIZE_MAX, SIZE_MAX }, .kind = TK_EOF };
 }
 
 token token_keyword(const location loc, const token_t kind)
 {
-	return (token){ .loc = loc, .kind = kind };
+    return (token){ .loc = loc, .kind = kind };
 }
 
 token token_punctuator(const location loc, const token_t kind)
 {
-	return (token){ .loc = loc, .kind = kind };
+    return (token){ .loc = loc, .kind = kind };
 }

@@ -1,6 +1,6 @@
 ﻿BasedOnStyle: LLVM
 
-#AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
 AllowShortFunctionsOnASingleLine: None
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -34,5 +34,6 @@ TabWidth: 4
 UseTab: Never
 AlignTrailingComments: true
 PointerAlignment: Right
+BreakBeforeTernaryOperators: true
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true

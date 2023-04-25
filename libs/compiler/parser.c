@@ -15,10 +15,10 @@
  */
 
 #include "parser.h"
-#include <stdbool.h>
 #include "builder.h"
 #include "lexer.h"
 #include "writer.h"
+#include <stdbool.h>
 
 
 static const char *const DEFAULT_TREE = "tree.txt";
@@ -27,26 +27,26 @@ static const char *const DEFAULT_TREE = "tree.txt";
 /** Parser */
 typedef struct parser
 {
-	syntax *const sx;					/**< Syntax structure */
+    syntax *const sx; /**< Syntax structure */
 
-	builder bld;						/**< AST builder */
-	lexer lxr;							/**< Lexer */
-	token tk;							/**< Current 'peek token' */
+    builder bld; /**< AST builder */
+    lexer lxr;   /**< Lexer */
+    token tk;    /**< Current 'peek token' */
 
-	size_t array_dimensions;			/**< Array dimensions counter */
+    size_t array_dimensions; /**< Array dimensions counter */
 
-	int func_def;						/**< @c 0 for function without arguments,
-											@c 1 for function definition,
-											@c 2 for function declaration,
-											@c 3 for others */
+    int func_def; /**< @c 0 for function without arguments,
+                      @c 1 for function definition,
+                      @c 2 for function declaration,
+                      @c 3 for others */
 
-	int flag_empty_bounds;				/**< Set, if array declaration has empty bounds */
+    int flag_empty_bounds; /**< Set, if array declaration has empty bounds */
 
-	bool is_in_switch;					/**< Set, if parser is in switch body */
-	bool is_in_loop;					/**< Set, if parser is in loop body */
+    bool is_in_switch; /**< Set, if parser is in switch body */
+    bool is_in_loop;   /**< Set, if parser is in loop body */
 
-	bool was_return;					/**< Set, if was return in parsed function */
-	bool was_type_def;					/**< Set, if was type definition */
+    bool was_return;   /**< Set, if was return in parsed function */
+    bool was_type_def; /**< Set, if was type definition */
 } parser;
 
 
@@ -76,15 +76,15 @@ static node parse_statement(parser *const prs);
  */
 static inline parser parser_create(syntax *const sx)
 {
-	parser prs = { .sx = sx, .lxr = lexer_create(sx) };
-	prs.bld = builder_create(sx);
+    parser prs = { .sx = sx, .lxr = lexer_create(sx) };
+    prs.bld = builder_create(sx);
 
-	prs.is_in_loop = false;
-	prs.is_in_switch = false;
+    prs.is_in_loop = false;
+    prs.is_in_switch = false;
 
-	consume_token(&prs);
+    consume_token(&prs);
 
-	return prs;
+    return prs;
 }
 
 /**
@@ -94,7 +94,7 @@ static inline parser parser_create(syntax *const sx)
  */
 static inline void parser_clear(parser *const prs)
 {
-	lexer_clear(&prs->lxr);
+    lexer_clear(&prs->lxr);
 }
 
 /**
@@ -105,14 +105,14 @@ static inline void parser_clear(parser *const prs)
  */
 static void parser_error(parser *const prs, err_t num, ...)
 {
-	const location loc = token_get_location(&prs->tk);
+    const location loc = token_get_location(&prs->tk);
 
-	va_list args;
-	va_start(args, num);
+    va_list args;
+    va_start(args, num);
 
-	report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
+    report_error(&prs->sx->rprt, prs->sx->io, loc, num, args);
 
-	va_end(args);
+    va_end(args);
 }
 
 /**
@@ -124,9 +124,9 @@ static void parser_error(parser *const prs, err_t num, ...)
  */
 static location consume_token(parser *const prs)
 {
-	location prev_loc = token_get_location(&prs->tk);
-	prs->tk = lex(&prs->lxr);
-	return prev_loc;
+    location prev_loc = token_get_location(&prs->tk);
+    prs->tk = lex(&prs->lxr);
+    return prev_loc;
 }
 
 /**
@@ -138,7 +138,7 @@ static location consume_token(parser *const prs)
  */
 static inline token_t peek_token(parser *const prs)
 {
-	return peek(&prs->lxr);
+    return peek(&prs->lxr);
 }
 
 /**
@@ -151,13 +151,13 @@ static inline token_t peek_token(parser *const prs)
  */
 static bool try_consume_token(parser *const prs, const token_t expected)
 {
-	if (token_is(&prs->tk, expected))
-	{
-		consume_token(prs);
-		return true;
-	}
+    if (token_is(&prs->tk, expected))
+    {
+        consume_token(prs);
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 /**
@@ -170,30 +170,30 @@ static bool try_consume_token(parser *const prs, const token_t expected)
  */
 static void expect_and_consume(parser *const prs, const token_t expected, const err_t err)
 {
-	if (try_consume_token(prs, expected))
-	{
-		return;
-	}
+    if (try_consume_token(prs, expected))
+    {
+        return;
+    }
 
-	if (expected == TK_SEMICOLON && peek_token(prs) == TK_SEMICOLON)
-	{
-		const token_t curr_token = token_get_kind(&prs->tk);
-		if (curr_token == TK_R_PAREN || curr_token == TK_R_SQUARE)
-		{
-			parser_error(prs, extraneous_bracket_before_semi);
-			consume_token(prs);	// `)` or `]`
-			consume_token(prs);	// `;`
-			return;
-		}
-	}
+    if (expected == TK_SEMICOLON && peek_token(prs) == TK_SEMICOLON)
+    {
+        const token_t curr_token = token_get_kind(&prs->tk);
+        if (curr_token == TK_R_PAREN || curr_token == TK_R_SQUARE)
+        {
+            parser_error(prs, extraneous_bracket_before_semi);
+            consume_token(prs); // `)` or `]`
+            consume_token(prs); // `;`
+            return;
+        }
+    }
 
-	parser_error(prs, err);
+    parser_error(prs, err);
 }
 
 /** Check if the set of tokens has token in it */
 static inline bool has_token_set(const uint8_t tokens, const token_t token)
 {
-	return (tokens & token) != 0;
+    return (tokens & token) != 0;
 }
 
 /**
@@ -204,45 +204,45 @@ static inline bool has_token_set(const uint8_t tokens, const token_t token)
  */
 static void skip_until(parser *const prs, const uint8_t tokens)
 {
-	while (token_is_not(&prs->tk, TK_EOF))
-	{
-		switch (token_get_kind(&prs->tk))
-		{
-			case TK_L_PAREN:
-				consume_token(prs);
-				skip_until(prs, TK_R_PAREN);
-				break;
+    while (token_is_not(&prs->tk, TK_EOF))
+    {
+        switch (token_get_kind(&prs->tk))
+        {
+            case TK_L_PAREN:
+                consume_token(prs);
+                skip_until(prs, TK_R_PAREN);
+                break;
 
-			case TK_L_SQUARE:
-				consume_token(prs);
-				skip_until(prs, TK_R_SQUARE);
-				break;
+            case TK_L_SQUARE:
+                consume_token(prs);
+                skip_until(prs, TK_R_SQUARE);
+                break;
 
-			case TK_L_BRACE:
-				consume_token(prs);
-				skip_until(prs, TK_R_BRACE);
-				break;
+            case TK_L_BRACE:
+                consume_token(prs);
+                skip_until(prs, TK_R_BRACE);
+                break;
 
-			case TK_QUESTION:
-				consume_token(prs);
-				skip_until(prs, TK_COLON);
-				break;
+            case TK_QUESTION:
+                consume_token(prs);
+                skip_until(prs, TK_COLON);
+                break;
 
-			case TK_R_PAREN:
-			case TK_R_SQUARE:
-			case TK_R_BRACE:
-			case TK_COLON:
-			case TK_SEMICOLON:
-				if (has_token_set(tokens, token_get_kind(&prs->tk)))
-				{
-					return;
-				}
+            case TK_R_PAREN:
+            case TK_R_SQUARE:
+            case TK_R_BRACE:
+            case TK_COLON:
+            case TK_SEMICOLON:
+                if (has_token_set(tokens, token_get_kind(&prs->tk)))
+                {
+                    return;
+                }
 
-			default:
-				consume_token(prs);
-				break;
-		}
-	}
+            default:
+                consume_token(prs);
+                break;
+        }
+    }
 }
 
 /**
@@ -261,18 +261,18 @@ static void skip_until(parser *const prs, const uint8_t tokens)
  */
 static size_t to_identab(parser *const prs, const size_t repr, const item_t type, const item_t mode)
 {
-	const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
+    const size_t ret = ident_add(prs->sx, repr, type, mode, prs->func_def);
 
-	if (ret == SIZE_MAX)
-	{
-		parser_error(prs, redefinition_of_main);
-	}
-	else if (ret == SIZE_MAX - 1)
-	{
-		parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
-	}
+    if (ret == SIZE_MAX)
+    {
+        parser_error(prs, redefinition_of_main);
+    }
+    else if (ret == SIZE_MAX - 1)
+    {
+        parser_error(prs, repeated_decl, repr_get_name(prs->sx, repr));
+    }
 
-	return ret;
+    return ret;
 }
 
 
@@ -300,75 +300,75 @@ static size_t to_identab(parser *const prs, const size_t repr, const item_t type
  */
 static node parse_primary_expression(parser *const prs)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_IDENTIFIER:
-		{
-			const size_t name = token_get_ident_name(&prs->tk);
-			const location loc = consume_token(prs);
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_IDENTIFIER:
+        {
+            const size_t name = token_get_ident_name(&prs->tk);
+            const location loc = consume_token(prs);
 
-			return build_identifier_expression(&prs->bld, name, loc);
-		}
+            return build_identifier_expression(&prs->bld, name, loc);
+        }
 
-		case TK_CHAR_LITERAL:
-		{
-			const char32_t value = token_get_char_value(&prs->tk);
-			const location loc = consume_token(prs);
+        case TK_CHAR_LITERAL:
+        {
+            const char32_t value = token_get_char_value(&prs->tk);
+            const location loc = consume_token(prs);
 
-			return build_character_literal_expression(&prs->bld, value, loc);
-		}
+            return build_character_literal_expression(&prs->bld, value, loc);
+        }
 
-		case TK_INT_LITERAL:
-		{
-			const item_t value = (item_t)token_get_int_value(&prs->tk);
-			const location loc = consume_token(prs);
+        case TK_INT_LITERAL:
+        {
+            const item_t value = (item_t)token_get_int_value(&prs->tk);
+            const location loc = consume_token(prs);
 
-			return build_integer_literal_expression(&prs->bld, value, loc);
-		}
+            return build_integer_literal_expression(&prs->bld, value, loc);
+        }
 
-		case TK_FLOAT_LITERAL:
-		{
-			const double value = token_get_float_value(&prs->tk);
-			const location loc = consume_token(prs);
+        case TK_FLOAT_LITERAL:
+        {
+            const double value = token_get_float_value(&prs->tk);
+            const location loc = consume_token(prs);
 
-			return build_floating_literal_expression(&prs->bld, value, loc);
-		}
+            return build_floating_literal_expression(&prs->bld, value, loc);
+        }
 
-		case TK_STRING_LITERAL:
-		{
-			const size_t value = token_get_string_num(&prs->tk);
-			const location loc = consume_token(prs);
+        case TK_STRING_LITERAL:
+        {
+            const size_t value = token_get_string_num(&prs->tk);
+            const location loc = consume_token(prs);
 
-			return build_string_literal_expression(&prs->bld, value, loc);
-		}
+            return build_string_literal_expression(&prs->bld, value, loc);
+        }
 
-		case TK_NULL:
-			return build_null_literal_expression(&prs->bld, consume_token(prs));
+        case TK_NULL:
+            return build_null_literal_expression(&prs->bld, consume_token(prs));
 
-		case TK_TRUE:
-			return build_boolean_literal_expression(&prs->bld, true, consume_token(prs));
+        case TK_TRUE:
+            return build_boolean_literal_expression(&prs->bld, true, consume_token(prs));
 
-		case TK_FALSE:
-			return build_boolean_literal_expression(&prs->bld, false, consume_token(prs));
+        case TK_FALSE:
+            return build_boolean_literal_expression(&prs->bld, false, consume_token(prs));
 
-		case TK_L_PAREN:
-		{
-			const location l_loc = consume_token(prs);
-			const node subexpr = parse_expression(prs);
+        case TK_L_PAREN:
+        {
+            const location l_loc = consume_token(prs);
+            const node subexpr = parse_expression(prs);
 
-			if (!try_consume_token(prs, TK_R_PAREN))
-			{
-				parser_error(prs, expected_r_paren, l_loc);
-				return node_broken();
-			}
+            if (!try_consume_token(prs, TK_R_PAREN))
+            {
+                parser_error(prs, expected_r_paren, l_loc);
+                return node_broken();
+            }
 
-			return subexpr;
-		}
+            return subexpr;
+        }
 
-		default:
-			parser_error(prs, expected_expression);
-			return node_broken();
-	}
+        default:
+            parser_error(prs, expected_expression);
+            return node_broken();
+    }
 }
 
 /**
@@ -384,15 +384,15 @@ static node parse_primary_expression(parser *const prs)
  */
 static node_vector parse_initializer_list(parser *const prs)
 {
-	node_vector result = node_vector_create();
+    node_vector result = node_vector_create();
 
-	do
-	{
-		const node initializer = parse_initializer(prs);
-		node_vector_add(&result, &initializer);
-	} while (try_consume_token(prs, TK_COMMA));
+    do
+    {
+        const node initializer = parse_initializer(prs);
+        node_vector_add(&result, &initializer);
+    } while (try_consume_token(prs, TK_COMMA));
 
-	return result;
+    return result;
 }
 
 /**
@@ -413,103 +413,103 @@ static node_vector parse_initializer_list(parser *const prs)
  */
 static node parse_postfix_expression(parser *const prs)
 {
-	node operand = parse_primary_expression(prs);
+    node operand = parse_primary_expression(prs);
 
-	while (true)
-	{
-		switch (token_get_kind(&prs->tk))
-		{
-			default:
-				return operand;
+    while (true)
+    {
+        switch (token_get_kind(&prs->tk))
+        {
+            default:
+                return operand;
 
-			case TK_L_SQUARE:
-			{
-				const location l_loc = consume_token(prs);
-				node index = parse_expression(prs);
+            case TK_L_SQUARE:
+            {
+                const location l_loc = consume_token(prs);
+                node index = parse_expression(prs);
 
-				if (token_is(&prs->tk, TK_R_SQUARE))
-				{
-					const location r_loc = consume_token(prs);
-					operand = build_subscript_expression(&prs->bld, &operand, &index, l_loc, r_loc);
-				}
-				else
-				{
-					parser_error(prs, expected_r_square, l_loc);
-					skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
-					try_consume_token(prs, TK_R_SQUARE);
-					operand = node_broken();
-				}
+                if (token_is(&prs->tk, TK_R_SQUARE))
+                {
+                    const location r_loc = consume_token(prs);
+                    operand = build_subscript_expression(&prs->bld, &operand, &index, l_loc, r_loc);
+                }
+                else
+                {
+                    parser_error(prs, expected_r_square, l_loc);
+                    skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+                    try_consume_token(prs, TK_R_SQUARE);
+                    operand = node_broken();
+                }
 
-				continue;
-			}
+                continue;
+            }
 
-			case TK_L_PAREN:
-			{
-				const location l_loc = consume_token(prs);
+            case TK_L_PAREN:
+            {
+                const location l_loc = consume_token(prs);
 
-				if (token_is(&prs->tk, TK_R_PAREN))
-				{
-					const location r_loc = consume_token(prs);
-					operand = build_call_expression(&prs->bld, &operand, NULL, l_loc, r_loc);
+                if (token_is(&prs->tk, TK_R_PAREN))
+                {
+                    const location r_loc = consume_token(prs);
+                    operand = build_call_expression(&prs->bld, &operand, NULL, l_loc, r_loc);
 
-					continue;
-				}
+                    continue;
+                }
 
-				node_vector args = parse_initializer_list(prs);
-				if (token_is(&prs->tk, TK_R_PAREN))
-				{
-					const location r_loc = consume_token(prs);
-					operand = build_call_expression(&prs->bld, &operand, &args, l_loc, r_loc);
-				}
-				else
-				{
-					parser_error(prs, expected_r_paren, l_loc);
-					skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-					try_consume_token(prs, TK_R_PAREN);
-					operand = node_broken();
-				}
+                node_vector args = parse_initializer_list(prs);
+                if (token_is(&prs->tk, TK_R_PAREN))
+                {
+                    const location r_loc = consume_token(prs);
+                    operand = build_call_expression(&prs->bld, &operand, &args, l_loc, r_loc);
+                }
+                else
+                {
+                    parser_error(prs, expected_r_paren, l_loc);
+                    skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+                    try_consume_token(prs, TK_R_PAREN);
+                    operand = node_broken();
+                }
 
-				node_vector_clear(&args);
-				continue;
-			}
+                node_vector_clear(&args);
+                continue;
+            }
 
-			case TK_PERIOD:
-			case TK_ARROW:
-			{
-				const bool is_arrow = token_is(&prs->tk, TK_ARROW);
-				const location op_loc = consume_token(prs);
+            case TK_PERIOD:
+            case TK_ARROW:
+            {
+                const bool is_arrow = token_is(&prs->tk, TK_ARROW);
+                const location op_loc = consume_token(prs);
 
-				if (token_is(&prs->tk, TK_IDENTIFIER))
-				{
-					const size_t name = token_get_ident_name(&prs->tk);
-					const location id_loc = consume_token(prs);
+                if (token_is(&prs->tk, TK_IDENTIFIER))
+                {
+                    const size_t name = token_get_ident_name(&prs->tk);
+                    const location id_loc = consume_token(prs);
 
-					operand = build_member_expression(&prs->bld, &operand, name, is_arrow, op_loc, id_loc);
-				}
-				else
-				{
-					parser_error(prs, expected_identifier_in_member_expr);
-					operand = node_broken();
-				}
+                    operand = build_member_expression(&prs->bld, &operand, name, is_arrow, op_loc, id_loc);
+                }
+                else
+                {
+                    parser_error(prs, expected_identifier_in_member_expr);
+                    operand = node_broken();
+                }
 
-				continue;
-			}
+                continue;
+            }
 
-			case TK_PLUS_PLUS:
-			{
-				const location op_loc = consume_token(prs);
-				operand = build_unary_expression(&prs->bld, &operand, UN_POSTINC, op_loc);
-				continue;
-			}
+            case TK_PLUS_PLUS:
+            {
+                const location op_loc = consume_token(prs);
+                operand = build_unary_expression(&prs->bld, &operand, UN_POSTINC, op_loc);
+                continue;
+            }
 
-			case TK_MINUS_MINUS:
-			{
-				const location op_loc = consume_token(prs);
-				operand = build_unary_expression(&prs->bld, &operand, UN_POSTDEC, op_loc);
-				continue;
-			}
-		}
-	}
+            case TK_MINUS_MINUS:
+            {
+                const location op_loc = consume_token(prs);
+                operand = build_unary_expression(&prs->bld, &operand, UN_POSTDEC, op_loc);
+                continue;
+            }
+        }
+    }
 }
 
 /**
@@ -530,28 +530,28 @@ static node parse_postfix_expression(parser *const prs)
  */
 static node parse_unary_expression(parser *const prs)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		default:
-			return parse_postfix_expression(prs);
+    switch (token_get_kind(&prs->tk))
+    {
+        default:
+            return parse_postfix_expression(prs);
 
-		case TK_PLUS_PLUS:
-		case TK_MINUS_MINUS:
-		case TK_AMP:
-		case TK_STAR:
-		case TK_MINUS:
-		case TK_TILDE:
-		case TK_EXCLAIM:
-		case TK_ABS:
-		case TK_UPB:
-		{
-			const unary_t operator = token_to_unary(token_get_kind(&prs->tk));
-			const location op_loc = consume_token(prs);
-			node operand = parse_unary_expression(prs);
+        case TK_PLUS_PLUS:
+        case TK_MINUS_MINUS:
+        case TK_AMP:
+        case TK_STAR:
+        case TK_MINUS:
+        case TK_TILDE:
+        case TK_EXCLAIM:
+        case TK_ABS:
+        case TK_UPB:
+        {
+            const unary_t operator= token_to_unary(token_get_kind(&prs->tk));
+            const location op_loc = consume_token(prs);
+            node operand = parse_unary_expression(prs);
 
-			return build_unary_expression(&prs->bld, &operand, operator, op_loc);
-		}
-	}
+            return build_unary_expression(&prs->bld, &operand, operator, op_loc);
+        }
+    }
 }
 
 /**
@@ -565,52 +565,52 @@ static node parse_unary_expression(parser *const prs)
  */
 static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, const precedence_t min_prec)
 {
-	precedence_t next_token_prec = get_operator_precedence(token_get_kind(&prs->tk));
-	while (next_token_prec >= min_prec)
-	{
-		const token_t op_token_kind = token_get_kind(&prs->tk);
-		location op_loc = consume_token(prs);
+    precedence_t next_token_prec = get_operator_precedence(token_get_kind(&prs->tk));
+    while (next_token_prec >= min_prec)
+    {
+        const token_t op_token_kind = token_get_kind(&prs->tk);
+        location op_loc = consume_token(prs);
 
-		const bool is_binary = next_token_prec != PREC_CONDITIONAL;
-		node middle = node_broken();
-		if (!is_binary)
-		{
-			middle = parse_initializer(prs);
+        const bool is_binary = next_token_prec != PREC_CONDITIONAL;
+        node middle = node_broken();
+        if (!is_binary)
+        {
+            middle = parse_initializer(prs);
 
-			if (token_is(&prs->tk, TK_COLON))
-			{
-				op_loc = consume_token(prs);
-			}
-			else
-			{
-				parser_error(prs, expected_colon_in_conditional_expr, op_loc);
-			}
-		}
+            if (token_is(&prs->tk, TK_COLON))
+            {
+                op_loc = consume_token(prs);
+            }
+            else
+            {
+                parser_error(prs, expected_colon_in_conditional_expr, op_loc);
+            }
+        }
 
-		node RHS = token_is(&prs->tk, TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
+        node RHS = token_is(&prs->tk, TK_L_BRACE) ? parse_initializer(prs) : parse_unary_expression(prs);
 
-		const precedence_t this_prec = next_token_prec;
-		next_token_prec = get_operator_precedence(token_get_kind(&prs->tk));
+        const precedence_t this_prec = next_token_prec;
+        next_token_prec = get_operator_precedence(token_get_kind(&prs->tk));
 
-		const bool is_right_associative = this_prec == PREC_CONDITIONAL || this_prec == PREC_ASSIGNMENT;
-		if (this_prec < next_token_prec || (this_prec == next_token_prec && is_right_associative))
-		{
-			RHS = parse_RHS_of_binary_expression(prs, &RHS, (this_prec + !is_right_associative));
-			next_token_prec = get_operator_precedence((token_get_kind(&prs->tk)));
-		}
+        const bool is_right_associative = this_prec == PREC_CONDITIONAL || this_prec == PREC_ASSIGNMENT;
+        if (this_prec < next_token_prec || (this_prec == next_token_prec && is_right_associative))
+        {
+            RHS = parse_RHS_of_binary_expression(prs, &RHS, (this_prec + !is_right_associative));
+            next_token_prec = get_operator_precedence((token_get_kind(&prs->tk)));
+        }
 
-		if (is_binary)
-		{
-			const binary_t op_kind = token_to_binary(op_token_kind);
-			*LHS = build_binary_expression(&prs->bld, LHS, &RHS, op_kind, op_loc);
-		}
-		else
-		{
-			*LHS = build_ternary_expression(&prs->bld, LHS, &middle, &RHS, op_loc);
-		}
-	}
+        if (is_binary)
+        {
+            const binary_t op_kind = token_to_binary(op_token_kind);
+            *LHS = build_binary_expression(&prs->bld, LHS, &RHS, op_kind, op_loc);
+        }
+        else
+        {
+            *LHS = build_ternary_expression(&prs->bld, LHS, &middle, &RHS, op_loc);
+        }
+    }
 
-	return *LHS;
+    return *LHS;
 }
 
 /**
@@ -629,8 +629,8 @@ static node parse_RHS_of_binary_expression(parser *const prs, node *const LHS, c
  */
 static node parse_assignment_expression(parser *const prs)
 {
-	node LHS = parse_unary_expression(prs);
-	return parse_RHS_of_binary_expression(prs, &LHS, PREC_ASSIGNMENT);
+    node LHS = parse_unary_expression(prs);
+    return parse_RHS_of_binary_expression(prs, &LHS, PREC_ASSIGNMENT);
 }
 
 /**
@@ -646,8 +646,8 @@ static node parse_assignment_expression(parser *const prs)
  */
 static node parse_expression(parser *const prs)
 {
-	node LHS = parse_assignment_expression(prs);
-	return parse_RHS_of_binary_expression(prs, &LHS, PREC_COMMA);
+    node LHS = parse_assignment_expression(prs);
+    return parse_RHS_of_binary_expression(prs, &LHS, PREC_COMMA);
 }
 
 /**
@@ -662,10 +662,10 @@ static node parse_expression(parser *const prs)
  */
 static node parse_constant_expression(parser *const prs)
 {
-	node LHS = parse_unary_expression(prs);
-	LHS = parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
+    node LHS = parse_unary_expression(prs);
+    LHS = parse_RHS_of_binary_expression(prs, &LHS, PREC_CONDITIONAL);
 
-	return build_constant_expression(&prs->bld, &LHS);
+    return build_constant_expression(&prs->bld, &LHS);
 }
 
 /**
@@ -681,37 +681,37 @@ static node parse_constant_expression(parser *const prs)
  */
 static node parse_initializer(parser *const prs)
 {
-	if (token_is(&prs->tk, TK_L_BRACE))
-	{
-		const location l_loc = consume_token(prs);
+    if (token_is(&prs->tk, TK_L_BRACE))
+    {
+        const location l_loc = consume_token(prs);
 
-		if (try_consume_token(prs, TK_R_BRACE))
-		{
-			parser_error(prs, empty_initializer);
-			return node_broken();
-		}
+        if (try_consume_token(prs, TK_R_BRACE))
+        {
+            parser_error(prs, empty_initializer);
+            return node_broken();
+        }
 
-		node_vector inits = parse_initializer_list(prs);
-		if (token_is(&prs->tk, TK_R_BRACE))
-		{
-			const location r_loc = consume_token(prs);
-			const node result = build_initializer(&prs->bld, &inits, l_loc, r_loc);
+        node_vector inits = parse_initializer_list(prs);
+        if (token_is(&prs->tk, TK_R_BRACE))
+        {
+            const location r_loc = consume_token(prs);
+            const node result = build_initializer(&prs->bld, &inits, l_loc, r_loc);
 
-			node_vector_clear(&inits);
-			return result;
-		}
-		else
-		{
-			parser_error(prs, expected_r_brace, l_loc);
-			skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
-			try_consume_token(prs, TK_R_BRACE);
+            node_vector_clear(&inits);
+            return result;
+        }
+        else
+        {
+            parser_error(prs, expected_r_brace, l_loc);
+            skip_until(prs, TK_R_BRACE | TK_SEMICOLON);
+            try_consume_token(prs, TK_R_BRACE);
 
-			node_vector_clear(&inits);
-			return node_broken();
-		}
-	}
+            node_vector_clear(&inits);
+            return node_broken();
+        }
+    }
 
-	return parse_assignment_expression(prs);
+    return parse_assignment_expression(prs);
 }
 
 /**
@@ -725,40 +725,45 @@ static node parse_initializer(parser *const prs)
  */
 static node parse_condition(parser *const prs)
 {
-	if (token_is_not(&prs->tk, TK_L_PAREN))
-	{
-		parser_error(prs, expected_l_paren_in_condition);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (token_is_not(&prs->tk, TK_L_PAREN))
+    {
+        parser_error(prs, expected_l_paren_in_condition);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	const location l_loc = consume_token(prs);
+    const location l_loc = consume_token(prs);
 
-	node condition = parse_expression(prs);
-	if (!node_is_correct(&condition))
-	{
-		skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-		try_consume_token(prs, TK_R_PAREN);
-		return node_broken();
-	}
+    node condition = parse_expression(prs);
+    if (!node_is_correct(&condition))
+    {
+        skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+        try_consume_token(prs, TK_R_PAREN);
+        return node_broken();
+    }
 
-	if (!try_consume_token(prs, TK_R_PAREN))
-	{
-		parser_error(prs, expected_r_paren, l_loc);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!try_consume_token(prs, TK_R_PAREN))
+    {
+        parser_error(prs, expected_r_paren, l_loc);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	return build_condition(&prs->bld, &condition);
+    return build_condition(&prs->bld, &condition);
 }
 
 
 /*
- *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __     ______
- *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __ \   /\ "-.\ \   /\  ___\
- *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.  \  \ \___  \
- *	 \ \____-  \ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
- *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/   \/_____/
+ *	 _____     ______     ______     __         ______     ______     ______     ______   __     ______     __   __
+ *______
+ *	/\  __-.  /\  ___\   /\  ___\   /\ \       /\  __ \   /\  == \   /\  __ \   /\__  _\ /\ \   /\  __
+ *\   /\ "-.\ \   /\  ___\
+ *	\ \ \/\ \ \ \  __\   \ \ \____  \ \ \____  \ \  __ \  \ \  __<   \ \  __ \  \/_/\ \/ \ \ \  \ \ \/\ \  \ \ \-.
+ *\  \ \___  \
+ *	 \ \____-
+ *\ \_____\  \ \_____\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_\ \_\    \ \_\  \ \_\  \ \_____\  \ \_\\"\_\  \/\_____\
+ *	  \/____/   \/_____/   \/_____/   \/_____/   \/_/\/_/   \/_/ /_/   \/_/\/_/     \/_/   \/_/   \/_____/   \/_/ \/_/
+ *\/_____/
  */
 
 
@@ -788,118 +793,117 @@ static node parse_condition(parser *const prs)
  */
 static item_t parse_type_specifier(parser *const prs, const node *const parent)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_VOID:
-			consume_token(prs);
-			return TYPE_VOID;
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_VOID:
+            consume_token(prs);
+            return TYPE_VOID;
 
-		case TK_BOOL:
-			consume_token(prs);
-			return TYPE_BOOLEAN;
+        case TK_BOOL:
+            consume_token(prs);
+            return TYPE_BOOLEAN;
 
-		case TK_CHAR:
-			consume_token(prs);
-			return TYPE_CHARACTER;
+        case TK_CHAR:
+            consume_token(prs);
+            return TYPE_CHARACTER;
 
-		case TK_INT:
-		case TK_LONG:
-			consume_token(prs);
-			return TYPE_INTEGER;
+        case TK_INT:
+        case TK_LONG:
+            consume_token(prs);
+            return TYPE_INTEGER;
 
-		case TK_FLOAT:
-		case TK_DOUBLE:
-			consume_token(prs);
-			return TYPE_FLOATING;
+        case TK_FLOAT:
+        case TK_DOUBLE:
+            consume_token(prs);
+            return TYPE_FLOATING;
 
-		case TK_FILE:
-			consume_token(prs);
-			return TYPE_FILE;
+        case TK_FILE:
+            consume_token(prs);
+            return TYPE_FILE;
 
-		case TK_CONST:
-		{
-			consume_token(prs);
-			const item_t type = parse_type_specifier(prs, parent);
-			switch(type)
-			{
-				case TYPE_UNDEFINED:
-					return TYPE_UNDEFINED;
-				default:
-				{
-					if (type_is_const(prs->sx, type))
-					{
-						parser_error(prs, multiple_const_in_type);
-						return TYPE_UNDEFINED;
-					}
-					return type_const(prs->sx, type);
-				}
-			}
-		}
+        case TK_CONST:
+        {
+            consume_token(prs);
+            const item_t type = parse_type_specifier(prs, parent);
+            switch (type)
+            {
+                case TYPE_UNDEFINED:
+                    return TYPE_UNDEFINED;
+                default:
+                {
+                    if (type_is_const(prs->sx, type))
+                    {
+                        parser_error(prs, multiple_const_in_type);
+                        return TYPE_UNDEFINED;
+                    }
+                    return type_const(prs->sx, type);
+                }
+            }
+        }
 
-		case TK_IDENTIFIER:
-		{
-			const size_t name = token_get_ident_name(&prs->tk);
-			const item_t id = repr_get_reference(prs->sx, name);
-			consume_token(prs);
+        case TK_IDENTIFIER:
+        {
+            const size_t name = token_get_ident_name(&prs->tk);
+            const item_t id = repr_get_reference(prs->sx, name);
+            consume_token(prs);
 
-			if (id == ITEM_MAX || !ident_is_type_specifier(prs->sx, (size_t)id))
-			{
-				parser_error(prs, ident_not_type);
-				return TYPE_UNDEFINED;
-			}
+            if (id == ITEM_MAX || !ident_is_type_specifier(prs->sx, (size_t)id))
+            {
+                parser_error(prs, ident_not_type);
+                return TYPE_UNDEFINED;
+            }
 
-			return ident_get_type(prs->sx, (size_t)id);
-		}
+            return ident_get_type(prs->sx, (size_t)id);
+        }
 
-		case TK_STRUCT:
-			return parse_struct_specifier(prs, parent);
+        case TK_STRUCT:
+            return parse_struct_specifier(prs, parent);
 
-		case TK_ENUM:
-		{
-			consume_token(prs);
-			return parse_enum_specifier(prs, parent);
-		}
+        case TK_ENUM:
+        {
+            consume_token(prs);
+            return parse_enum_specifier(prs, parent);
+        }
 
-		case TK_TYPEDEF:
-		{
-			consume_token(prs);
-			item_t type = parse_type_specifier(prs, parent);
-			if (type_is_undefined(type))
-			{
-				skip_until(prs, TK_SEMICOLON);
-				return TYPE_UNDEFINED;
-			}
-			if (token_is(&prs->tk, TK_STAR))
-			{
-				consume_token(prs);
-				type = type_pointer(prs->sx, type);
-			}
-			if (token_is(&prs->tk, TK_IDENTIFIER))
-			{
-				const size_t repr = token_get_ident_name(&prs->tk);
-				consume_token(prs);
-				to_identab(prs, repr, 1000, type);
-				prs->was_type_def = true;
-				if (token_is_not(&prs->tk, TK_SEMICOLON))
-				{
-					parser_error(prs, expected_semi_after_decl);
-					return TYPE_UNDEFINED;
+        case TK_TYPEDEF:
+        {
+            consume_token(prs);
+            item_t type = parse_type_specifier(prs, parent);
+            if (type_is_undefined(type))
+            {
+                skip_until(prs, TK_SEMICOLON);
+                return TYPE_UNDEFINED;
+            }
+            if (token_is(&prs->tk, TK_STAR))
+            {
+                consume_token(prs);
+                type = type_pointer(prs->sx, type);
+            }
+            if (token_is(&prs->tk, TK_IDENTIFIER))
+            {
+                const size_t repr = token_get_ident_name(&prs->tk);
+                consume_token(prs);
+                to_identab(prs, repr, 1000, type);
+                prs->was_type_def = true;
+                if (token_is_not(&prs->tk, TK_SEMICOLON))
+                {
+                    parser_error(prs, expected_semi_after_decl);
+                    return TYPE_UNDEFINED;
+                }
+                return type;
+            }
+            else
+            {
+                parser_error(prs, typedef_requires_a_name);
+                skip_until(prs, TK_SEMICOLON);
+                return TYPE_UNDEFINED;
+            }
+        }
 
-				}
-				return type;
-			}
-			else
-			{
-				parser_error(prs, typedef_requires_a_name);
-				skip_until(prs, TK_SEMICOLON);
-				return TYPE_UNDEFINED;
-			}
-		}
-
-		default:
-			parser_error(prs, not_decl);
-			return TYPE_UNDEFINED;
-	}
+        default:
+            parser_error(prs, not_decl);
+            return TYPE_UNDEFINED;
+    }
 }
 
 /**
@@ -919,51 +923,51 @@ static item_t parse_type_specifier(parser *const prs, const node *const parent)
  */
 static node parse_member_declaration(parser *const prs, const node *const parent)
 {
-	const item_t type = parse_type_specifier(prs, parent);
-	const bool was_star = try_consume_token(prs, TK_STAR);
-	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
+    const item_t type = parse_type_specifier(prs, parent);
+    const bool was_star = try_consume_token(prs, TK_STAR);
+    const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 
-	if (token_is_not(&prs->tk, TK_IDENTIFIER))
-	{
-		parser_error(prs, expected_member_name);
-		skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
-		try_consume_token(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (token_is_not(&prs->tk, TK_IDENTIFIER))
+    {
+        parser_error(prs, expected_member_name);
+        skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+        try_consume_token(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	const size_t name = token_get_ident_name(&prs->tk);
-	const location ident_loc = consume_token(prs);
+    const size_t name = token_get_ident_name(&prs->tk);
+    const location ident_loc = consume_token(prs);
 
-	node_vector bounds = node_vector_create();
-	while (try_consume_token(prs, TK_L_SQUARE))
-	{
-		if (try_consume_token(prs, TK_R_SQUARE))
-		{
-			parser_error(prs, array_member_must_have_bounds);
-			continue;
-		}
+    node_vector bounds = node_vector_create();
+    while (try_consume_token(prs, TK_L_SQUARE))
+    {
+        if (try_consume_token(prs, TK_R_SQUARE))
+        {
+            parser_error(prs, array_member_must_have_bounds);
+            continue;
+        }
 
-		const node bound = parse_expression(prs);
-		node_vector_add(&bounds, &bound);
+        const node bound = parse_expression(prs);
+        node_vector_add(&bounds, &bound);
 
-		if (!node_is_correct(&bound))
-		{
-			skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
-			try_consume_token(prs, TK_R_SQUARE);
-		}
-		else if (!try_consume_token(prs, TK_R_SQUARE))
-		{
-			parser_error(prs, expected_r_square);
-			skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
-			try_consume_token(prs, TK_R_SQUARE);
-		}
-	}
+        if (!node_is_correct(&bound))
+        {
+            skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+            try_consume_token(prs, TK_R_SQUARE);
+        }
+        else if (!try_consume_token(prs, TK_R_SQUARE))
+        {
+            parser_error(prs, expected_r_square);
+            skip_until(prs, TK_R_SQUARE | TK_SEMICOLON);
+            try_consume_token(prs, TK_R_SQUARE);
+        }
+    }
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
+    const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
 
-	node_vector_clear(&bounds);
-	return member;
+    node_vector_clear(&bounds);
+    return member;
 }
 
 /**
@@ -983,28 +987,28 @@ static node parse_member_declaration(parser *const prs, const node *const parent
  */
 static item_t parse_struct_declaration(parser *const prs, const node *const parent, location struct_loc, size_t name)
 {
-	prs->was_type_def = true;	// FIXME: this is only until global declarations refactoring
-	assert(token_is(&prs->tk, TK_L_BRACE));
-	consume_token(prs);
+    prs->was_type_def = true; // FIXME: this is only until global declarations refactoring
+    assert(token_is(&prs->tk, TK_L_BRACE));
+    consume_token(prs);
 
-	node declaration = build_empty_struct_declaration(&prs->bld, name, struct_loc);
+    node declaration = build_empty_struct_declaration(&prs->bld, name, struct_loc);
 
-	node_vector members = node_vector_create();
-	while (!try_consume_token(prs, TK_R_BRACE))
-	{
-		const node member = parse_member_declaration(prs, &declaration);
-		node_vector_add(&members, &member);
-	}
+    node_vector members = node_vector_create();
+    while (!try_consume_token(prs, TK_R_BRACE))
+    {
+        const node member = parse_member_declaration(prs, &declaration);
+        node_vector_add(&members, &member);
+    }
 
-	const node result = build_struct_declaration(&prs->bld, &declaration, &members);
+    const node result = build_struct_declaration(&prs->bld, &declaration, &members);
 
-	// FIXME: need a more beautiful way to do this
-	node temp = node_add_child(parent, OP_NOP);
-	node_swap(&result, &temp);
-	node_remove(&temp);
+    // FIXME: need a more beautiful way to do this
+    node temp = node_add_child(parent, OP_NOP);
+    node_swap(&result, &temp);
+    node_remove(&temp);
 
-	node_vector_clear(&members);
-	return declaration_struct_get_type(&result);
+    node_vector_clear(&members);
+    return declaration_struct_get_type(&result);
 }
 
 /**
@@ -1021,154 +1025,153 @@ static item_t parse_struct_declaration(parser *const prs, const node *const pare
  */
 static item_t parse_struct_specifier(parser *const prs, const node *const parent)
 {
-	assert(token_is(&prs->tk, TK_STRUCT));
-	const location struct_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_STRUCT));
+    const location struct_loc = consume_token(prs);
 
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_L_BRACE:
-			return parse_struct_declaration(prs, parent, struct_loc, SIZE_MAX);
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_L_BRACE:
+            return parse_struct_declaration(prs, parent, struct_loc, SIZE_MAX);
 
-		case TK_IDENTIFIER:
-		{
-			const size_t name = token_get_ident_name(&prs->tk);
-			consume_token(prs);
+        case TK_IDENTIFIER:
+        {
+            const size_t name = token_get_ident_name(&prs->tk);
+            consume_token(prs);
 
-			if (token_is(&prs->tk, TK_L_BRACE))
-			{
-				return parse_struct_declaration(prs, parent, struct_loc, name);
-			}
+            if (token_is(&prs->tk, TK_L_BRACE))
+            {
+                return parse_struct_declaration(prs, parent, struct_loc, name);
+            }
 
-			const item_t id = repr_get_reference(prs->sx, name);
-			if (id == ITEM_MAX)
-			{
-				parser_error(prs, use_of_undeclared_identifier, repr_get_name(prs->sx, name));
-				return TYPE_UNDEFINED;
-			}
+            const item_t id = repr_get_reference(prs->sx, name);
+            if (id == ITEM_MAX)
+            {
+                parser_error(prs, use_of_undeclared_identifier, repr_get_name(prs->sx, name));
+                return TYPE_UNDEFINED;
+            }
 
-			return ident_get_type(prs->sx, (size_t)id);
-		}
+            return ident_get_type(prs->sx, (size_t)id);
+        }
 
-		default:
-			parser_error(prs, wrong_struct);
-			return TYPE_UNDEFINED;
-	}
+        default:
+            parser_error(prs, wrong_struct);
+            return TYPE_UNDEFINED;
+    }
 }
 
 static void parse_init_enum_field_declarator(parser *const prs, item_t type, item_t number, size_t name)
 {
-	const size_t old_id = to_identab(prs, name, 0, type);
-	ident_set_displ(prs->sx, old_id, number);
+    const size_t old_id = to_identab(prs, name, 0, type);
+    ident_set_displ(prs->sx, old_id, number);
 }
 
 static item_t parse_enum_declaration_list(parser *const prs, const node *const parent)
 {
-	consume_token(prs);
-	if (try_consume_token(prs, TK_R_BRACE))
-	{
-		parser_error(prs, empty_enum);
-		return TYPE_UNDEFINED;
-	}
+    consume_token(prs);
+    if (try_consume_token(prs, TK_R_BRACE))
+    {
+        parser_error(prs, empty_enum);
+        return TYPE_UNDEFINED;
+    }
 
-	size_t local_md = 2;
-	item_t field_value = 0;
-	item_t local_modetab[100];
+    size_t local_md = 2;
+    item_t field_value = 0;
+    item_t local_modetab[100];
 
-	const item_t type = type_add(prs->sx, (item_t[]){ TYPE_ENUM }, 1);
+    const item_t type = type_add(prs->sx, (item_t[]){ TYPE_ENUM }, 1);
 
-	do
-	{
-		if (token_is_not(&prs->tk, TK_IDENTIFIER))
-		{
-			parser_error(prs, wait_ident_after_comma_in_enum);
-			skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
-		}
+    do
+    {
+        if (token_is_not(&prs->tk, TK_IDENTIFIER))
+        {
+            parser_error(prs, wait_ident_after_comma_in_enum);
+            skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+        }
 
-		const size_t name = token_get_ident_name(&prs->tk);
-		consume_token(prs);
+        const size_t name = token_get_ident_name(&prs->tk);
+        consume_token(prs);
 
-		if (token_is(&prs->tk, TK_EQUAL))
-		{
+        if (token_is(&prs->tk, TK_EQUAL))
+        {
+            consume_token(prs);
+            node_copy(&prs->bld.context, parent);
 
-			consume_token(prs);
-			node_copy(&prs->bld.context, parent);
+            node expr = parse_constant_expression(prs);
+            if (!node_is_correct(&expr))
+            {
+                continue;
+            }
+            const item_t type_expr = expression_get_type(&expr);
+            field_value = expression_literal_get_integer(&expr);
+            node_remove(&expr);
 
-			node expr = parse_constant_expression(prs);
-			if (!node_is_correct(&expr))
-			{
-				continue;
-			}
-			const item_t type_expr = expression_get_type(&expr);
-			field_value = expression_literal_get_integer(&expr);
-			node_remove(&expr);
+            if (field_value == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
+            {
+                parser_error(prs, not_const_int_expr);
+                return TYPE_UNDEFINED;
+            }
+            parse_init_enum_field_declarator(prs, -type, field_value++, name);
+        }
+        else
+        {
+            parse_init_enum_field_declarator(prs, -type, field_value++, name);
+        }
 
-			if (field_value == INT_MAX || (type_expr != TYPE_INTEGER && type_expr != type))
-			{
-				parser_error(prs, not_const_int_expr);
-				return TYPE_UNDEFINED;
-			}
-			parse_init_enum_field_declarator(prs, -type, field_value++, name);
-		}
-		else
-		{
-			parse_init_enum_field_declarator(prs, -type, field_value++, name);
-		}
+        local_modetab[local_md++] = field_value - 1;
+        local_modetab[local_md++] = (item_t)name;
+        if (token_is(&prs->tk, TK_R_BRACE))
+        {
+            continue;
+        }
+        expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
+    } while (!try_consume_token(prs, TK_R_BRACE));
 
-		local_modetab[local_md++] = field_value - 1;
-		local_modetab[local_md++] = (item_t)name;
-		if (token_is(&prs->tk, TK_R_BRACE))
-		{
-			continue;
-		}
-		expect_and_consume(prs, TK_COMMA, no_comma_in_enum);
-	} while (!try_consume_token(prs, TK_R_BRACE));
+    local_modetab[1] = (item_t)(local_md - 2);
+    local_modetab[0] = local_modetab[2] / 2;
 
-	local_modetab[1] = (item_t)(local_md - 2);
-	local_modetab[0] = local_modetab[2] / 2;
-
-	type_enum_add_fields(prs->sx, local_modetab, local_md);
-	return type;
+    type_enum_add_fields(prs->sx, local_modetab, local_md);
+    return type;
 }
 
 static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_L_BRACE:
-		{
-			const item_t type = parse_enum_declaration_list(prs, parent);
-			prs->was_type_def = true;
-			return type;
-		}
-		case TK_IDENTIFIER:
-		{
-			const size_t repr = token_get_ident_name(&prs->tk);
-			consume_token(prs);
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_L_BRACE:
+        {
+            const item_t type = parse_enum_declaration_list(prs, parent);
+            prs->was_type_def = true;
+            return type;
+        }
+        case TK_IDENTIFIER:
+        {
+            const size_t repr = token_get_ident_name(&prs->tk);
+            consume_token(prs);
 
-			if (token_is(&prs->tk, TK_L_BRACE))
-			{
-				const item_t type = parse_enum_declaration_list(prs, parent);
-				const size_t id = to_identab(prs, repr, 1000, type);
-				prs->was_type_def = true;
-				return ident_get_type(prs->sx, (size_t)id);
-			}
-			else // if (parser->next_token != l_brace)
-			{
-				const item_t id = repr_get_reference(prs->sx, repr);
+            if (token_is(&prs->tk, TK_L_BRACE))
+            {
+                const item_t type = parse_enum_declaration_list(prs, parent);
+                const size_t id = to_identab(prs, repr, 1000, type);
+                prs->was_type_def = true;
+                return ident_get_type(prs->sx, (size_t)id);
+            }
+            else // if (parser->next_token != l_brace)
+            {
+                const item_t id = repr_get_reference(prs->sx, repr);
 
-				if (id == ITEM_MAX)
-				{
-					parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
-					return TYPE_UNDEFINED;
-				}
-				return ident_get_type(prs->sx, (size_t)id);
-			}
-		}
+                if (id == ITEM_MAX)
+                {
+                    parser_error(prs, ident_is_not_declared, repr_get_name(prs->sx, repr));
+                    return TYPE_UNDEFINED;
+                }
+                return ident_get_type(prs->sx, (size_t)id);
+            }
+        }
 
-		default:
-			parser_error(prs, wrong_struct);
-			return TYPE_UNDEFINED;
-	}
+        default:
+            parser_error(prs, wrong_struct);
+            return TYPE_UNDEFINED;
+    }
 }
 
 /**
@@ -1192,60 +1195,60 @@ static item_t parse_enum_specifier(parser *const prs, const node *const parent)
  */
 static node parse_init_declarator(parser *const prs, const item_t type)
 {
-	const bool was_star = try_consume_token(prs, TK_STAR);
-	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
-	if (token_is_not(&prs->tk, TK_IDENTIFIER))
-	{
-		parser_error(prs, expected_identifier_in_declarator);
-		skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		return node_broken();
-	}
+    const bool was_star = try_consume_token(prs, TK_STAR);
+    const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
+    if (token_is_not(&prs->tk, TK_IDENTIFIER))
+    {
+        parser_error(prs, expected_identifier_in_declarator);
+        skip_until(prs, TK_COMMA | TK_SEMICOLON);
+        return node_broken();
+    }
 
-	const size_t name = token_get_ident_name(&prs->tk);
-	const location ident_loc = consume_token(prs);
+    const size_t name = token_get_ident_name(&prs->tk);
+    const location ident_loc = consume_token(prs);
 
-	node_vector bounds = node_vector_create();
-	while (try_consume_token(prs, TK_L_SQUARE))
-	{
-		if (token_is(&prs->tk, TK_R_SQUARE))
-		{
-			const location loc = consume_token(prs);
-			const node empty_bound = build_empty_bound_expression(&prs->bld, loc);
-			node_vector_add(&bounds, &empty_bound);
-			continue;
-		}
+    node_vector bounds = node_vector_create();
+    while (try_consume_token(prs, TK_L_SQUARE))
+    {
+        if (token_is(&prs->tk, TK_R_SQUARE))
+        {
+            const location loc = consume_token(prs);
+            const node empty_bound = build_empty_bound_expression(&prs->bld, loc);
+            node_vector_add(&bounds, &empty_bound);
+            continue;
+        }
 
-		const node bound = parse_expression(prs);
-		node_vector_add(&bounds, &bound);
+        const node bound = parse_expression(prs);
+        node_vector_add(&bounds, &bound);
 
-		if (!node_is_correct(&bound))
-		{
-			skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
-			try_consume_token(prs, TK_R_SQUARE);
-		}
-		else if (!try_consume_token(prs, TK_R_SQUARE))
-		{
-			parser_error(prs, expected_r_square);
-			skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
-			try_consume_token(prs, TK_R_SQUARE);
-		}
-	}
+        if (!node_is_correct(&bound))
+        {
+            skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+            try_consume_token(prs, TK_R_SQUARE);
+        }
+        else if (!try_consume_token(prs, TK_R_SQUARE))
+        {
+            parser_error(prs, expected_r_square);
+            skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_SEMICOLON);
+            try_consume_token(prs, TK_R_SQUARE);
+        }
+    }
 
-	node initializer = node_broken();
-	if (try_consume_token(prs, TK_EQUAL))
-	{
-		initializer = parse_initializer(prs);
-		if (!node_is_correct(&initializer))
-		{
-			skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		}
-	}
+    node initializer = node_broken();
+    if (try_consume_token(prs, TK_EQUAL))
+    {
+        initializer = parse_initializer(prs);
+        if (!node_is_correct(&initializer))
+        {
+            skip_until(prs, TK_COMMA | TK_SEMICOLON);
+        }
+    }
 
-	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
-	node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
-	node_vector_clear(&bounds);
+    node *initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
+    node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
+    node_vector_clear(&bounds);
 
-	return declarator;
+    return declarator;
 }
 
 /**
@@ -1264,29 +1267,29 @@ static node parse_init_declarator(parser *const prs, const item_t type)
  */
 static node parse_declaration(parser *const prs)
 {
-	node declaration = build_empty_declaration(&prs->bld);
-	const location start_loc = token_get_location(&prs->tk);
+    node declaration = build_empty_declaration(&prs->bld);
+    const location start_loc = token_get_location(&prs->tk);
 
-	const item_t type = parse_type_specifier(prs, &declaration);
-	node_vector declarators = node_vector_create();
+    const item_t type = parse_type_specifier(prs, &declaration);
+    node_vector declarators = node_vector_create();
 
-	if (token_is_not(&prs->tk, TK_SEMICOLON))
-	{
-		do
-		{
-			const node declarator = parse_init_declarator(prs, type);
-			node_vector_add(&declarators, &declarator);
-		} while (try_consume_token(prs, TK_COMMA));
-	}
+    if (token_is_not(&prs->tk, TK_SEMICOLON))
+    {
+        do
+        {
+            const node declarator = parse_init_declarator(prs, type);
+            node_vector_add(&declarators, &declarator);
+        } while (try_consume_token(prs, TK_COMMA));
+    }
 
-	const location end_loc = token_get_location(&prs->tk);
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
+    const location end_loc = token_get_location(&prs->tk);
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
 
-	const location loc = { start_loc.begin, end_loc.end };
-	const node result = build_declaration(&prs->bld, &declaration, &declarators, loc);
-	node_vector_clear(&declarators);
+    const location loc = { start_loc.begin, end_loc.end };
+    const node result = build_declaration(&prs->bld, &declaration, &declarators, loc);
+    node_vector_clear(&declarators);
 
-	return result;
+    return result;
 }
 
 
@@ -1302,37 +1305,37 @@ static node parse_declaration(parser *const prs)
 /** Check if current token is part of a declaration specifier */
 static bool is_declaration_specifier(parser *const prs)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_VOID:
-		case TK_BOOL:
-		case TK_CHAR:
-		case TK_INT:
-		case TK_LONG:
-		case TK_FLOAT:
-		case TK_DOUBLE:
-		case TK_STRUCT:
-		case TK_ENUM:
-		case TK_FILE:
-		case TK_TYPEDEF:
-		case TK_CONST:
-			return true;
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_VOID:
+        case TK_BOOL:
+        case TK_CHAR:
+        case TK_INT:
+        case TK_LONG:
+        case TK_FLOAT:
+        case TK_DOUBLE:
+        case TK_STRUCT:
+        case TK_ENUM:
+        case TK_FILE:
+        case TK_TYPEDEF:
+        case TK_CONST:
+            return true;
 
-		case TK_IDENTIFIER:
-		{
-			const size_t name = token_get_ident_name(&prs->tk);
-			const item_t id = repr_get_reference(prs->sx, name);
-			if (id == ITEM_MAX)
-			{
-				return false;
-			}
+        case TK_IDENTIFIER:
+        {
+            const size_t name = token_get_ident_name(&prs->tk);
+            const item_t id = repr_get_reference(prs->sx, name);
+            if (id == ITEM_MAX)
+            {
+                return false;
+            }
 
-			return ident_is_type_specifier(prs->sx, (size_t)id);
-		}
+            return ident_is_type_specifier(prs->sx, (size_t)id);
+        }
 
-		default:
-			return false;
-	}
+        default:
+            return false;
+    }
 }
 
 /**
@@ -1347,27 +1350,27 @@ static bool is_declaration_specifier(parser *const prs)
  */
 static node parse_case_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_CASE));
-	const location case_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_CASE));
+    const location case_loc = consume_token(prs);
 
-	if (!prs->is_in_switch)
-	{
-		parser_error(prs, case_not_in_switch);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!prs->is_in_switch)
+    {
+        parser_error(prs, case_not_in_switch);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	node expr = parse_constant_expression(prs);
-	if (!node_is_correct(&expr))
-	{
-		skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
-		return node_broken();
-	}
+    node expr = parse_constant_expression(prs);
+    if (!node_is_correct(&expr))
+    {
+        skip_until(prs, TK_SEMICOLON | TK_R_BRACE);
+        return node_broken();
+    }
 
-	expect_and_consume(prs, TK_COLON, expected_colon_after_case);
-	node substmt = parse_statement(prs);
+    expect_and_consume(prs, TK_COLON, expected_colon_after_case);
+    node substmt = parse_statement(prs);
 
-	return build_case_statement(&prs->bld, &expr, &substmt, case_loc);
+    return build_case_statement(&prs->bld, &expr, &substmt, case_loc);
 }
 
 /**
@@ -1382,20 +1385,20 @@ static node parse_case_statement(parser *const prs)
  */
 static node parse_default_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_DEFAULT));
-	const location default_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_DEFAULT));
+    const location default_loc = consume_token(prs);
 
-	if (!prs->is_in_switch)
-	{
-		parser_error(prs, default_not_in_switch);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!prs->is_in_switch)
+    {
+        parser_error(prs, default_not_in_switch);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	expect_and_consume(prs, TK_COLON, expected_colon_after_default);
-	node substmt = parse_statement(prs);
+    expect_and_consume(prs, TK_COLON, expected_colon_after_default);
+    node substmt = parse_statement(prs);
 
-	return build_default_statement(&prs->bld, &substmt, default_loc);
+    return build_default_statement(&prs->bld, &substmt, default_loc);
 }
 
 /**
@@ -1418,27 +1421,27 @@ static node parse_default_statement(parser *const prs)
  */
 static node parse_compound_statement_body(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_L_BRACE));
-	const location l_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_L_BRACE));
+    const location l_loc = consume_token(prs);
 
-	node_vector stmts = node_vector_create();
-	while (token_is_not(&prs->tk, TK_R_BRACE) && token_is_not(&prs->tk, TK_EOF))
-	{
-		const node stmt = is_declaration_specifier(prs) ? parse_declaration(prs) : parse_statement(prs);
-		node_vector_add(&stmts, &stmt);
-	}
+    node_vector stmts = node_vector_create();
+    while (token_is_not(&prs->tk, TK_R_BRACE) && token_is_not(&prs->tk, TK_EOF))
+    {
+        const node stmt = is_declaration_specifier(prs) ? parse_declaration(prs) : parse_statement(prs);
+        node_vector_add(&stmts, &stmt);
+    }
 
-	if (token_is_not(&prs->tk, TK_R_BRACE))
-	{
-		parser_error(prs, expected_r_brace, l_loc);
-		node_vector_clear(&stmts);
-		return node_broken();
-	}
+    if (token_is_not(&prs->tk, TK_R_BRACE))
+    {
+        parser_error(prs, expected_r_brace, l_loc);
+        node_vector_clear(&stmts);
+        return node_broken();
+    }
 
-	const location r_loc = consume_token(prs);
-	node result = build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
-	node_vector_clear(&stmts);
-	return result;
+    const location r_loc = consume_token(prs);
+    node result = build_compound_statement(&prs->bld, &stmts, l_loc, r_loc);
+    node_vector_clear(&stmts);
+    return result;
 }
 
 /**
@@ -1450,11 +1453,11 @@ static node parse_compound_statement_body(parser *const prs)
  */
 static node parse_compound_statement(parser *const prs)
 {
-	const scope scp = scope_block_enter(prs->sx);
-	node body = parse_compound_statement_body(prs);
+    const scope scp = scope_block_enter(prs->sx);
+    node body = parse_compound_statement_body(prs);
 
-	scope_block_exit(prs->sx, scp);
-	return body;
+    scope_block_exit(prs->sx, scp);
+    return body;
 }
 
 /**
@@ -1469,15 +1472,15 @@ static node parse_compound_statement(parser *const prs)
  */
 static node parse_expression_statement(parser *const prs)
 {
-	const node expr = parse_expression(prs);
-	if (!node_is_correct(&expr))
-	{
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    const node expr = parse_expression(prs);
+    if (!node_is_correct(&expr))
+    {
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_expr);
-	return expr;
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_expr);
+    return expr;
 }
 
 /**
@@ -1493,19 +1496,19 @@ static node parse_expression_statement(parser *const prs)
  */
 static node parse_if_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_IF));
-	const location if_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_IF));
+    const location if_loc = consume_token(prs);
 
-	node condition = parse_condition(prs);
-	node then_stmt = parse_statement(prs);
+    node condition = parse_condition(prs);
+    node then_stmt = parse_statement(prs);
 
-	if (try_consume_token(prs, TK_ELSE))
-	{
-		node else_stmt = parse_statement(prs);
-		return build_if_statement(&prs->bld, &condition, &then_stmt, &else_stmt, if_loc);
-	}
+    if (try_consume_token(prs, TK_ELSE))
+    {
+        node else_stmt = parse_statement(prs);
+        return build_if_statement(&prs->bld, &condition, &then_stmt, &else_stmt, if_loc);
+    }
 
-	return build_if_statement(&prs->bld, &condition, &then_stmt, NULL, if_loc);
+    return build_if_statement(&prs->bld, &condition, &then_stmt, NULL, if_loc);
 }
 
 /**
@@ -1520,17 +1523,17 @@ static node parse_if_statement(parser *const prs)
  */
 static node parse_switch_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_SWITCH));
-	const location switch_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_SWITCH));
+    const location switch_loc = consume_token(prs);
 
-	node condition = parse_condition(prs);
+    node condition = parse_condition(prs);
 
-	const bool old_in_switch = prs->is_in_switch;
-	prs->is_in_switch = true;
-	node body = parse_statement(prs);
-	prs->is_in_switch = old_in_switch;
+    const bool old_in_switch = prs->is_in_switch;
+    prs->is_in_switch = true;
+    node body = parse_statement(prs);
+    prs->is_in_switch = old_in_switch;
 
-	return build_switch_statement(&prs->bld, &condition, &body, switch_loc);
+    return build_switch_statement(&prs->bld, &condition, &body, switch_loc);
 }
 
 /**
@@ -1545,17 +1548,17 @@ static node parse_switch_statement(parser *const prs)
  */
 static node parse_while_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_WHILE));
-	const location while_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_WHILE));
+    const location while_loc = consume_token(prs);
 
-	node condition = parse_condition(prs);
+    node condition = parse_condition(prs);
 
-	const bool old_in_loop = prs->is_in_loop;
-	prs->is_in_loop = true;
-	node body = parse_statement(prs);
-	prs->is_in_loop = old_in_loop;
+    const bool old_in_loop = prs->is_in_loop;
+    prs->is_in_loop = true;
+    node body = parse_statement(prs);
+    prs->is_in_loop = old_in_loop;
 
-	return build_while_statement(&prs->bld, &condition, &body, while_loc);
+    return build_while_statement(&prs->bld, &condition, &body, while_loc);
 }
 
 /**
@@ -1570,25 +1573,25 @@ static node parse_while_statement(parser *const prs)
  */
 static node parse_do_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_DO));
-	const location do_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_DO));
+    const location do_loc = consume_token(prs);
 
-	const bool old_in_loop = prs->is_in_loop;
-	prs->is_in_loop = true;
-	node body = parse_statement(prs);
-	prs->is_in_loop = old_in_loop;
+    const bool old_in_loop = prs->is_in_loop;
+    prs->is_in_loop = true;
+    node body = parse_statement(prs);
+    prs->is_in_loop = old_in_loop;
 
-	if (!try_consume_token(prs, TK_WHILE))
-	{
-		parser_error(prs, expected_while, do_loc);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!try_consume_token(prs, TK_WHILE))
+    {
+        parser_error(prs, expected_while, do_loc);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	node condition = parse_condition(prs);
+    node condition = parse_condition(prs);
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
-	return build_do_statement(&prs->bld, &body, &condition, do_loc);
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+    return build_do_statement(&prs->bld, &body, &condition, do_loc);
 }
 
 /**
@@ -1604,94 +1607,94 @@ static node parse_do_statement(parser *const prs)
  */
 static node parse_for_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_FOR));
-	const location for_loc = consume_token(prs);
-	const scope scp = scope_block_enter(prs->sx);
+    assert(token_is(&prs->tk, TK_FOR));
+    const location for_loc = consume_token(prs);
+    const scope scp = scope_block_enter(prs->sx);
 
-	if (token_is_not(&prs->tk, TK_L_PAREN))
-	{
-		parser_error(prs, expected_l_paren_after_for);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (token_is_not(&prs->tk, TK_L_PAREN))
+    {
+        parser_error(prs, expected_l_paren_after_for);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	const location l_loc = consume_token(prs);
+    const location l_loc = consume_token(prs);
 
-	node init;
-	const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
-	if (has_init)
-	{
-		if (is_declaration_specifier(prs))
-		{
-			init = parse_declaration(prs);
-		}
-		else
-		{
-			init = parse_expression(prs);
-			if (!node_is_correct(&init))
-			{
-				skip_until(prs, TK_SEMICOLON);
-				return node_broken();
-			}
+    node init;
+    const bool has_init = !try_consume_token(prs, TK_SEMICOLON);
+    if (has_init)
+    {
+        if (is_declaration_specifier(prs))
+        {
+            init = parse_declaration(prs);
+        }
+        else
+        {
+            init = parse_expression(prs);
+            if (!node_is_correct(&init))
+            {
+                skip_until(prs, TK_SEMICOLON);
+                return node_broken();
+            }
 
-			if (!try_consume_token(prs, TK_SEMICOLON))
-			{
-				parser_error(prs, expected_semi_in_for_specifier);
-				skip_until(prs, TK_SEMICOLON);
-				return node_broken();
-			}
-		}
-	}
+            if (!try_consume_token(prs, TK_SEMICOLON))
+            {
+                parser_error(prs, expected_semi_in_for_specifier);
+                skip_until(prs, TK_SEMICOLON);
+                return node_broken();
+            }
+        }
+    }
 
-	node cond;
-	const bool has_cond = !try_consume_token(prs, TK_SEMICOLON);
-	if (has_cond)
-	{
-		cond = parse_expression(prs);
-		if (!node_is_correct(&cond))
-		{
-			skip_until(prs, TK_SEMICOLON);
-			return node_broken();
-		}
+    node cond;
+    const bool has_cond = !try_consume_token(prs, TK_SEMICOLON);
+    if (has_cond)
+    {
+        cond = parse_expression(prs);
+        if (!node_is_correct(&cond))
+        {
+            skip_until(prs, TK_SEMICOLON);
+            return node_broken();
+        }
 
-		if (!try_consume_token(prs, TK_SEMICOLON))
-		{
-			parser_error(prs, expected_semi_in_for_specifier);
-			skip_until(prs, TK_SEMICOLON);
-			return node_broken();
-		}
-	}
+        if (!try_consume_token(prs, TK_SEMICOLON))
+        {
+            parser_error(prs, expected_semi_in_for_specifier);
+            skip_until(prs, TK_SEMICOLON);
+            return node_broken();
+        }
+    }
 
-	node incr;
-	const bool has_incr = token_is_not(&prs->tk, TK_R_PAREN);
-	if (has_incr)
-	{
-		incr = parse_expression(prs);
-		if (!node_is_correct(&incr))
-		{
-			skip_until(prs, TK_SEMICOLON);
-			return node_broken();
-		}
-	}
+    node incr;
+    const bool has_incr = token_is_not(&prs->tk, TK_R_PAREN);
+    if (has_incr)
+    {
+        incr = parse_expression(prs);
+        if (!node_is_correct(&incr))
+        {
+            skip_until(prs, TK_SEMICOLON);
+            return node_broken();
+        }
+    }
 
-	if (!try_consume_token(prs, TK_R_PAREN))
-	{
-		parser_error(prs, expected_r_paren, l_loc);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!try_consume_token(prs, TK_R_PAREN))
+    {
+        parser_error(prs, expected_r_paren, l_loc);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	const bool old_in_loop = prs->is_in_loop;
-	prs->is_in_loop = true;
-	node body = parse_statement(prs);
-	prs->is_in_loop = old_in_loop;
+    const bool old_in_loop = prs->is_in_loop;
+    prs->is_in_loop = true;
+    node body = parse_statement(prs);
+    prs->is_in_loop = old_in_loop;
 
-	scope_block_exit(prs->sx, scp);
+    scope_block_exit(prs->sx, scp);
 
-	node* init_ptr = has_init ? &init : NULL;
-	node* cond_ptr = has_cond ? &cond : NULL;
-	node* incr_ptr = has_incr ? &incr : NULL;
-	return build_for_statement(&prs->bld, init_ptr, cond_ptr, incr_ptr, &body, for_loc);
+    node *init_ptr = has_init ? &init : NULL;
+    node *cond_ptr = has_cond ? &cond : NULL;
+    node *incr_ptr = has_incr ? &incr : NULL;
+    return build_for_statement(&prs->bld, init_ptr, cond_ptr, incr_ptr, &body, for_loc);
 }
 
 /**
@@ -1706,18 +1709,18 @@ static node parse_for_statement(parser *const prs)
  */
 static node parse_continue_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_CONTINUE));
-	const location continue_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_CONTINUE));
+    const location continue_loc = consume_token(prs);
 
-	if (!prs->is_in_loop)
-	{
-		parser_error(prs, continue_not_in_loop);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!prs->is_in_loop)
+    {
+        parser_error(prs, continue_not_in_loop);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
-	return build_continue_statement(&prs->bld, continue_loc);
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+    return build_continue_statement(&prs->bld, continue_loc);
 }
 
 /**
@@ -1732,18 +1735,18 @@ static node parse_continue_statement(parser *const prs)
  */
 static node parse_break_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_BREAK));
-	const location break_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_BREAK));
+    const location break_loc = consume_token(prs);
 
-	if (!(prs->is_in_loop || prs->is_in_switch))
-	{
-		parser_error(prs, break_not_in_loop_or_switch);
-		skip_until(prs, TK_SEMICOLON);
-		return node_broken();
-	}
+    if (!(prs->is_in_loop || prs->is_in_switch))
+    {
+        parser_error(prs, break_not_in_loop_or_switch);
+        skip_until(prs, TK_SEMICOLON);
+        return node_broken();
+    }
 
-	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
-	return build_break_statement(&prs->bld, break_loc);
+    expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+    return build_break_statement(&prs->bld, break_loc);
 }
 
 /**
@@ -1758,24 +1761,24 @@ static node parse_break_statement(parser *const prs)
  */
 static node parse_return_statement(parser *const prs)
 {
-	assert(token_is(&prs->tk, TK_RETURN));
-	const location return_loc = consume_token(prs);
+    assert(token_is(&prs->tk, TK_RETURN));
+    const location return_loc = consume_token(prs);
 
-	prs->was_return = true;
-	if (try_consume_token(prs, TK_SEMICOLON))
-	{
-		return build_return_statement(&prs->bld, NULL, return_loc);
-	}
+    prs->was_return = true;
+    if (try_consume_token(prs, TK_SEMICOLON))
+    {
+        return build_return_statement(&prs->bld, NULL, return_loc);
+    }
 
-	node expr = parse_expression(prs);
-	if (node_is_correct(&expr))
-	{
-		expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
-		return build_return_statement(&prs->bld, &expr, return_loc);
-	}
+    node expr = parse_expression(prs);
+    if (node_is_correct(&expr))
+    {
+        expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_stmt);
+        return build_return_statement(&prs->bld, &expr, return_loc);
+    }
 
-	skip_until(prs, TK_SEMICOLON);
-	return node_broken();
+    skip_until(prs, TK_SEMICOLON);
+    return node_broken();
 }
 
 /**
@@ -1795,47 +1798,47 @@ static node parse_return_statement(parser *const prs)
  */
 static node parse_statement(parser *const prs)
 {
-	switch (token_get_kind(&prs->tk))
-	{
-		case TK_CASE:
-			return parse_case_statement(prs);
+    switch (token_get_kind(&prs->tk))
+    {
+        case TK_CASE:
+            return parse_case_statement(prs);
 
-		case TK_DEFAULT:
-			return parse_default_statement(prs);
+        case TK_DEFAULT:
+            return parse_default_statement(prs);
 
-		case TK_L_BRACE:
-			return parse_compound_statement(prs);
+        case TK_L_BRACE:
+            return parse_compound_statement(prs);
 
-		case TK_SEMICOLON:
-			return build_null_statement(&prs->bld, consume_token(prs));
+        case TK_SEMICOLON:
+            return build_null_statement(&prs->bld, consume_token(prs));
 
-		case TK_IF:
-			return parse_if_statement(prs);
+        case TK_IF:
+            return parse_if_statement(prs);
 
-		case TK_SWITCH:
-			return parse_switch_statement(prs);
+        case TK_SWITCH:
+            return parse_switch_statement(prs);
 
-		case TK_WHILE:
-			return parse_while_statement(prs);
+        case TK_WHILE:
+            return parse_while_statement(prs);
 
-		case TK_DO:
-			return parse_do_statement(prs);
+        case TK_DO:
+            return parse_do_statement(prs);
 
-		case TK_FOR:
-			return parse_for_statement(prs);
+        case TK_FOR:
+            return parse_for_statement(prs);
 
-		case TK_CONTINUE:
-			return parse_continue_statement(prs);
+        case TK_CONTINUE:
+            return parse_continue_statement(prs);
 
-		case TK_BREAK:
-			return parse_break_statement(prs);
+        case TK_BREAK:
+            return parse_break_statement(prs);
 
-		case TK_RETURN:
-			return parse_return_statement(prs);
+        case TK_RETURN:
+            return parse_return_statement(prs);
 
-		default:
-			return parse_expression_statement(prs);
-	}
+        default:
+            return parse_expression_statement(prs);
+    }
 }
 
 
@@ -1869,158 +1872,158 @@ static node parse_statement(parser *const prs)
  */
 static item_t parse_function_declarator(parser *const prs, const int level, int func_def, const item_t return_type)
 {
-	item_t local_modetab[100];
-	size_t local_md = 3;
-	size_t args = 0;
+    item_t local_modetab[100];
+    size_t local_md = 3;
+    size_t args = 0;
 
-	if (try_consume_token(prs, TK_R_PAREN))
-	{
-		prs->func_def = 0;
-	}
-	else
-	{
-		do
-		{
-			int arg_func = 0;	/**< Тип возврата функции-параметра:
-									 @c 0 - обычный тип,
-									 @c 1 - была `*`,
-									 @c 2 - была `[` */
-			item_t type = parse_type_specifier(prs, NULL);
+    if (try_consume_token(prs, TK_R_PAREN))
+    {
+        prs->func_def = 0;
+    }
+    else
+    {
+        do
+        {
+            int arg_func = 0; /**< Тип возврата функции-параметра:
+                                   @c 0 - обычный тип,
+                                   @c 1 - была `*`,
+                                   @c 2 - была `[` */
+            item_t type = parse_type_specifier(prs, NULL);
 
-			if (try_consume_token(prs, TK_STAR))
-			{
-				arg_func = 1;
-				type = type_pointer(prs->sx, type);
-				if (try_consume_token(prs, TK_CONST))
-				{
-					type = type_const(prs->sx, type);
-				}
-			}
+            if (try_consume_token(prs, TK_STAR))
+            {
+                arg_func = 1;
+                type = type_pointer(prs->sx, type);
+                if (try_consume_token(prs, TK_CONST))
+                {
+                    type = type_const(prs->sx, type);
+                }
+            }
 
-			// На 1 уровне это может быть определением функции или предописанием;
-			// На остальных уровнях - только декларатором (без идентов)
-			bool was_ident = false;
-			if (level)
-			{
-				if (token_is(&prs->tk, TK_IDENTIFIER))
-				{
-					was_ident = true;
-					func_add(prs->sx, (item_t)token_get_ident_name(&prs->tk));
-					consume_token(prs);
-				}
-			}
-			else if (token_is(&prs->tk, TK_IDENTIFIER))
-			{
-				parser_error(prs, ident_in_declarator);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				try_consume_token(prs, TK_R_PAREN);
-				return TYPE_UNDEFINED;
-			}
+            // На 1 уровне это может быть определением функции или предописанием;
+            // На остальных уровнях - только декларатором (без идентов)
+            bool was_ident = false;
+            if (level)
+            {
+                if (token_is(&prs->tk, TK_IDENTIFIER))
+                {
+                    was_ident = true;
+                    func_add(prs->sx, (item_t)token_get_ident_name(&prs->tk));
+                    consume_token(prs);
+                }
+            }
+            else if (token_is(&prs->tk, TK_IDENTIFIER))
+            {
+                parser_error(prs, ident_in_declarator);
+                skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+                try_consume_token(prs, TK_R_PAREN);
+                return TYPE_UNDEFINED;
+            }
 
-			if (type_is_void(type) && token_is_not(&prs->tk, TK_L_PAREN))
-			{
-				parser_error(prs, par_type_void_with_nofun);
-			}
+            if (type_is_void(type) && token_is_not(&prs->tk, TK_L_PAREN))
+            {
+                parser_error(prs, par_type_void_with_nofun);
+            }
 
-			if (token_is(&prs->tk, TK_L_SQUARE))
-			{
-				arg_func = 2;
-				if (type_is_pointer(prs->sx, type) && !was_ident)
-				{
-					parser_error(prs, aster_with_row);
-				}
+            if (token_is(&prs->tk, TK_L_SQUARE))
+            {
+                arg_func = 2;
+                if (type_is_pointer(prs->sx, type) && !was_ident)
+                {
+                    parser_error(prs, aster_with_row);
+                }
 
-				while (try_consume_token(prs, TK_L_SQUARE))
-				{
-					type = type_array(prs->sx, type);
-					if (!try_consume_token(prs, TK_R_SQUARE))
-					{
-						parser_error(prs, wait_right_sq_br);
-						skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-						try_consume_token(prs, TK_R_SQUARE);
-					}
-				}
-			}
+                while (try_consume_token(prs, TK_L_SQUARE))
+                {
+                    type = type_array(prs->sx, type);
+                    if (!try_consume_token(prs, TK_R_SQUARE))
+                    {
+                        parser_error(prs, wait_right_sq_br);
+                        skip_until(prs, TK_R_SQUARE | TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+                        try_consume_token(prs, TK_R_SQUARE);
+                    }
+                }
+            }
 
-			if (try_consume_token(prs, TK_L_PAREN))
-			{
-				expect_and_consume(prs, TK_STAR, wrong_func_as_arg);
-				if (token_is(&prs->tk, TK_IDENTIFIER))
-				{
-					if (level)
-					{
-						if (!was_ident)
-						{
-							was_ident = true;
-						}
-						else
-						{
-							parser_error(prs, two_idents_for_1_declarer);
-							return TYPE_UNDEFINED;
-						}
-						func_add(prs->sx, -((item_t)token_get_ident_name(&prs->tk)));
-						consume_token(prs);
-					}
-					else
-					{
-						parser_error(prs, ident_in_declarator);
-						return TYPE_UNDEFINED;
-					}
-				}
+            if (try_consume_token(prs, TK_L_PAREN))
+            {
+                expect_and_consume(prs, TK_STAR, wrong_func_as_arg);
+                if (token_is(&prs->tk, TK_IDENTIFIER))
+                {
+                    if (level)
+                    {
+                        if (!was_ident)
+                        {
+                            was_ident = true;
+                        }
+                        else
+                        {
+                            parser_error(prs, two_idents_for_1_declarer);
+                            return TYPE_UNDEFINED;
+                        }
+                        func_add(prs->sx, -((item_t)token_get_ident_name(&prs->tk)));
+                        consume_token(prs);
+                    }
+                    else
+                    {
+                        parser_error(prs, ident_in_declarator);
+                        return TYPE_UNDEFINED;
+                    }
+                }
 
-				expect_and_consume(prs, TK_R_PAREN, no_right_br_in_arg_func);
-				expect_and_consume(prs, TK_L_PAREN, wrong_func_as_arg);
-				if (arg_func == 1)
-				{
-					parser_error(prs, aster_before_func);
-					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-				}
-				else if (arg_func == 2)
-				{
-					parser_error(prs, array_before_func);
-					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
-				}
+                expect_and_consume(prs, TK_R_PAREN, no_right_br_in_arg_func);
+                expect_and_consume(prs, TK_L_PAREN, wrong_func_as_arg);
+                if (arg_func == 1)
+                {
+                    parser_error(prs, aster_before_func);
+                    skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+                }
+                else if (arg_func == 2)
+                {
+                    parser_error(prs, array_before_func);
+                    skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+                }
 
-				const int old_func_def = prs->func_def;
-				type = parse_function_declarator(prs, 0, 2, type);
-				prs->func_def = old_func_def;
-			}
-			if (func_def == 3)
-			{
-				func_def = was_ident ? 1 : 2;
-			}
-			else if (func_def == 2 && was_ident)
-			{
-				parser_error(prs, wait_declarator);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				// На случай, если после этого заголовка стоит тело функции
-				if (try_consume_token(prs, TK_L_BRACE))
-				{
-					skip_until(prs, TK_R_BRACE);
-					try_consume_token(prs, TK_R_BRACE);
-				}
-				return TYPE_UNDEFINED;
-			}
-			else if (func_def == 1 && !was_ident)
-			{
-				parser_error(prs, wait_definition);
-				skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
-				return TYPE_UNDEFINED;
-			}
+                const int old_func_def = prs->func_def;
+                type = parse_function_declarator(prs, 0, 2, type);
+                prs->func_def = old_func_def;
+            }
+            if (func_def == 3)
+            {
+                func_def = was_ident ? 1 : 2;
+            }
+            else if (func_def == 2 && was_ident)
+            {
+                parser_error(prs, wait_declarator);
+                skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+                // На случай, если после этого заголовка стоит тело функции
+                if (try_consume_token(prs, TK_L_BRACE))
+                {
+                    skip_until(prs, TK_R_BRACE);
+                    try_consume_token(prs, TK_R_BRACE);
+                }
+                return TYPE_UNDEFINED;
+            }
+            else if (func_def == 1 && !was_ident)
+            {
+                parser_error(prs, wait_definition);
+                skip_until(prs, TK_R_PAREN | TK_SEMICOLON);
+                return TYPE_UNDEFINED;
+            }
 
-			args++;
-			local_modetab[local_md++] = type;
-		} while (try_consume_token(prs, TK_COMMA));
+            args++;
+            local_modetab[local_md++] = type;
+        } while (try_consume_token(prs, TK_COMMA));
 
-		expect_and_consume(prs, TK_R_PAREN, wrong_param_list);
-		prs->func_def = func_def;
-	}
+        expect_and_consume(prs, TK_R_PAREN, wrong_param_list);
+        prs->func_def = func_def;
+    }
 
-	local_modetab[0] = TYPE_FUNCTION;
-	local_modetab[1] = return_type;
-	local_modetab[2] = (item_t)args;
+    local_modetab[0] = TYPE_FUNCTION;
+    local_modetab[1] = return_type;
+    local_modetab[2] = (item_t)args;
 
-	return type_add(prs->sx, local_modetab, local_md);
+    return type_add(prs->sx, local_modetab, local_md);
 }
 
 /**
@@ -2032,75 +2035,75 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
  */
 static void parse_function_definition(parser *const prs, node *const parent, const size_t function_id)
 {
-	if (function_id == SIZE_MAX)
-	{
-		// skip whole function body
-		skip_until(prs, TK_R_BRACE);
-		try_consume_token(prs, TK_R_BRACE);
-		return;
-	}
+    if (function_id == SIZE_MAX)
+    {
+        // skip whole function body
+        skip_until(prs, TK_R_BRACE);
+        try_consume_token(prs, TK_R_BRACE);
+        return;
+    }
 
-	prs->bld.func_type = ident_get_type(prs->sx, function_id);
-	const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
-	const size_t param_number = type_function_get_parameter_amount(prs->sx, prs->bld.func_type);
+    prs->bld.func_type = ident_get_type(prs->sx, function_id);
+    const size_t function_number = (size_t)ident_get_displ(prs->sx, function_id);
+    const size_t param_number = type_function_get_parameter_amount(prs->sx, prs->bld.func_type);
 
-	prs->was_return = 0;
+    prs->was_return = 0;
 
-	const size_t prev = ident_get_prev(prs->sx, function_id);
-	if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
-	{
-		if (prs->bld.func_type != ident_get_type(prs->sx, prev))
-		{
-			parser_error(prs, decl_and_def_have_diff_type);
-			skip_until(prs, TK_R_BRACE);
-			try_consume_token(prs, TK_R_BRACE);
-			return;
-		}
-		ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
-	}
+    const size_t prev = ident_get_prev(prs->sx, function_id);
+    if (prev > 1 && prev != ITEM_MAX - 1) // Был прототип
+    {
+        if (prs->bld.func_type != ident_get_type(prs->sx, prev))
+        {
+            parser_error(prs, decl_and_def_have_diff_type);
+            skip_until(prs, TK_R_BRACE);
+            try_consume_token(prs, TK_R_BRACE);
+            return;
+        }
+        ident_set_displ(prs->sx, (size_t)prev, (item_t)function_number);
+    }
 
-	node nd = node_add_child(parent, OP_FUNC_DEF);
-	node_add_arg(&nd, (item_t)function_id);
-	node_add_arg(&nd, 0); // for max_displ
+    node nd = node_add_child(parent, OP_FUNC_DEF);
+    node_add_arg(&nd, (item_t)function_id);
+    node_add_arg(&nd, 0); // for max_displ
 
-	const item_t old_displ = scope_func_enter(prs->sx);
+    const item_t old_displ = scope_func_enter(prs->sx);
 
-	for (size_t i = 0; i < param_number; i++)
-	{
-		item_t type = type_function_get_parameter_type(prs->sx, prs->bld.func_type, i);
-		const item_t repr = func_get(prs->sx, function_number + i + 1);
+    for (size_t i = 0; i < param_number; i++)
+    {
+        item_t type = type_function_get_parameter_type(prs->sx, prs->bld.func_type, i);
+        const item_t repr = func_get(prs->sx, function_number + i + 1);
 
-		const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
+        const size_t id = to_identab(prs, (size_t)llabs(repr), repr > 0 ? 0 : -1, type);
 
-		size_t dim = 0;
-		while (type_is_array(prs->sx, type))
-		{
-			dim++;
-			type = type_array_get_element_type(prs->sx, type);
-		}
+        size_t dim = 0;
+        while (type_is_array(prs->sx, type))
+        {
+            dim++;
+            type = type_array_get_element_type(prs->sx, type);
+        }
 
-		node param = node_add_child(&nd, OP_DECL_VAR);
-		node_add_arg(&param, (item_t)id);	// id
-		node_add_arg(&param, (item_t)dim);	// dim
-		node_add_arg(&param, false);		// has init
-	}
+        node param = node_add_child(&nd, OP_DECL_VAR);
+        node_add_arg(&param, (item_t)id);  // id
+        node_add_arg(&param, (item_t)dim); // dim
+        node_add_arg(&param, false);       // has init
+    }
 
-	func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
+    func_set(prs->sx, function_number, (item_t)node_save(&nd)); // Ссылка на расположение в дереве
 
-	node_copy(&prs->bld.context, &nd);
-	node body = parse_compound_statement_body(prs);
+    node_copy(&prs->bld.context, &nd);
+    node body = parse_compound_statement_body(prs);
 
-	node temp = node_add_child(&nd, OP_NOP);
-	node_swap(&body, &temp);
-	node_remove(&temp);
+    node temp = node_add_child(&nd, OP_NOP);
+    node_swap(&body, &temp);
+    node_remove(&temp);
 
-	if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
-	{
-		parser_error(prs, nonvoid_func_void_return);
-	}
+    if (type_function_get_return_type(prs->sx, prs->bld.func_type) != TYPE_VOID && !prs->was_return)
+    {
+        parser_error(prs, nonvoid_func_void_return);
+    }
 
-	const item_t max_displ = scope_func_exit(prs->sx, old_displ);
-	node_set_arg(&nd, 1, max_displ);
+    const item_t max_displ = scope_func_exit(prs->sx, old_displ);
+    node_set_arg(&nd, 1, max_displ);
 }
 
 /**
@@ -2112,76 +2115,76 @@ static void parse_function_definition(parser *const prs, node *const parent, con
  */
 static void parse_function_declaration(parser *const prs, node *const parent, const item_t type)
 {
-	if (type_is_const(prs->sx, type))
-	{
-		parser_error(prs, function_type_const);
-	}
+    if (type_is_const(prs->sx, type))
+    {
+        parser_error(prs, function_type_const);
+    }
 
-	const size_t function_num = func_reserve(prs->sx);
-	const size_t function_repr = token_get_ident_name(&prs->tk);
+    const size_t function_num = func_reserve(prs->sx);
+    const size_t function_repr = token_get_ident_name(&prs->tk);
 
-	consume_token(prs);	// TK_IDENTIFIER
-	consume_token(prs);	// TK_L_PAREN
-	const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
+    consume_token(prs); // TK_IDENTIFIER
+    consume_token(prs); // TK_L_PAREN
+    const item_t function_mode = parse_function_declarator(prs, 1, 3, type);
 
-	if (prs->func_def == 0 && token_is(&prs->tk, TK_L_BRACE))
-	{
-		prs->func_def = 1;
-	}
-	else if (prs->func_def == 0)
-	{
-		prs->func_def = 2;
-	}
+    if (prs->func_def == 0 && token_is(&prs->tk, TK_L_BRACE))
+    {
+        prs->func_def = 1;
+    }
+    else if (prs->func_def == 0)
+    {
+        prs->func_def = 2;
+    }
 
-	if (repr_get_reference(prs->sx, function_repr) == TK_MAIN)
-	{
-		const type_t type_class = type_get_class(prs->sx, type);
-		if (type_class != TYPE_INTEGER && type_class != TYPE_VOID)
-		{
-			parser_error(prs, main_should_return_int_or_void);
-		}
+    if (repr_get_reference(prs->sx, function_repr) == TK_MAIN)
+    {
+        const type_t type_class = type_get_class(prs->sx, type);
+        if (type_class != TYPE_INTEGER && type_class != TYPE_VOID)
+        {
+            parser_error(prs, main_should_return_int_or_void);
+        }
 
-		if (prs->func_def != 1)
-		{
-			parser_error(prs, main_should_be_defined);
-		}
+        if (prs->func_def != 1)
+        {
+            parser_error(prs, main_should_be_defined);
+        }
 
-		const size_t parameters = type_function_get_parameter_amount(prs->sx, function_mode);
-		if (parameters > 1)
-		{
-			parser_error(prs, wrong_main_parameters);
-		}
-		else if (parameters == 1)
-		{
-			const item_t parameter_type = type_function_get_parameter_type(prs->sx, function_mode, 0);
-			if (parameter_type != type_array(prs->sx, type_string(prs->sx)))
-			{
-				parser_error(prs, wrong_main_parameter_type);
-			}
-		}
-	}
+        const size_t parameters = type_function_get_parameter_amount(prs->sx, function_mode);
+        if (parameters > 1)
+        {
+            parser_error(prs, wrong_main_parameters);
+        }
+        else if (parameters == 1)
+        {
+            const item_t parameter_type = type_function_get_parameter_type(prs->sx, function_mode, 0);
+            if (parameter_type != type_array(prs->sx, type_string(prs->sx)))
+            {
+                parser_error(prs, wrong_main_parameter_type);
+            }
+        }
+    }
 
-	const size_t function_id = to_identab(prs, function_repr, (item_t)function_num, function_mode);
+    const size_t function_id = to_identab(prs, function_repr, (item_t)function_num, function_mode);
 
-	if (token_is(&prs->tk, TK_L_BRACE))
-	{
-		if (prs->func_def == 1)
-		{
-			parse_function_definition(prs, parent, function_id);
-		}
-		else
-		{
-			parser_error(prs, func_decl_req_params);
-			skip_until(prs, TK_R_BRACE);
-			try_consume_token(prs, TK_R_BRACE);
-		}
-	}
-	else if (prs->func_def == 1)
-	{
-		parser_error(prs, function_has_no_body);
-		// На тот случай, если после неправильного декларатора стоит `;`
-		try_consume_token(prs, TK_SEMICOLON);
-	}
+    if (token_is(&prs->tk, TK_L_BRACE))
+    {
+        if (prs->func_def == 1)
+        {
+            parse_function_definition(prs, parent, function_id);
+        }
+        else
+        {
+            parser_error(prs, func_decl_req_params);
+            skip_until(prs, TK_R_BRACE);
+            try_consume_token(prs, TK_R_BRACE);
+        }
+    }
+    else if (prs->func_def == 1)
+    {
+        parser_error(prs, function_has_no_body);
+        // На тот случай, если после неправильного декларатора стоит `;`
+        try_consume_token(prs, TK_SEMICOLON);
+    }
 }
 
 /**
@@ -2192,54 +2195,54 @@ static void parse_function_declaration(parser *const prs, node *const parent, co
  */
 static void parse_external_definition(parser *const prs, node *const root)
 {
-	prs->was_type_def = 0;
-	prs->func_def = 3;
-	const item_t group_type = parse_type_specifier(prs, root);
+    prs->was_type_def = 0;
+    prs->func_def = 3;
+    const item_t group_type = parse_type_specifier(prs, root);
 
-	if (prs->was_type_def && try_consume_token(prs, TK_SEMICOLON))
-	{
-		return;
-	}
+    if (prs->was_type_def && try_consume_token(prs, TK_SEMICOLON))
+    {
+        return;
+    }
 
-	do
-	{
-		item_t type = group_type;
-		if (token_is(&prs->tk, TK_STAR))
-		{
-			consume_token(prs);
-			type = type_pointer(prs->sx, group_type);
-		}
+    do
+    {
+        item_t type = group_type;
+        if (token_is(&prs->tk, TK_STAR))
+        {
+            consume_token(prs);
+            type = type_pointer(prs->sx, group_type);
+        }
 
-		if (token_is(&prs->tk, TK_IDENTIFIER))
-		{
-			if (peek_token(prs) == TK_L_PAREN)
-			{
-				parse_function_declaration(prs, root, type);
-			}
-			else if (type_is_void(group_type))
-			{
-				parser_error(prs, only_functions_may_have_type_VOID);
-			}
-			else
-			{
-				node declarator = parse_init_declarator(prs, type);
+        if (token_is(&prs->tk, TK_IDENTIFIER))
+        {
+            if (peek_token(prs) == TK_L_PAREN)
+            {
+                parse_function_declaration(prs, root, type);
+            }
+            else if (type_is_void(group_type))
+            {
+                parser_error(prs, only_functions_may_have_type_VOID);
+            }
+            else
+            {
+                node declarator = parse_init_declarator(prs, type);
 
-				node temp = node_add_child(root, OP_NOP);
-				node_swap(&declarator, &temp);
-				node_remove(&temp);
-			}
-		}
-		else
-		{
-			parser_error(prs, after_type_must_be_ident);
-			skip_until(prs, TK_COMMA | TK_SEMICOLON);
-		}
-	} while (try_consume_token(prs, TK_COMMA));
+                node temp = node_add_child(root, OP_NOP);
+                node_swap(&declarator, &temp);
+                node_remove(&temp);
+            }
+        }
+        else
+        {
+            parser_error(prs, after_type_must_be_ident);
+            skip_until(prs, TK_COMMA | TK_SEMICOLON);
+        }
+    } while (try_consume_token(prs, TK_COMMA));
 
-	if (prs->func_def != 1)
-	{
-		expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	}
+    if (prs->func_def != 1)
+    {
+        expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
+    }
 }
 
 /**
@@ -2250,10 +2253,10 @@ static void parse_external_definition(parser *const prs, node *const root)
  */
 static void parse_translation_unit(parser *const prs, node *const root)
 {
-	do
-	{
-		parse_external_definition(prs, root);
-	} while (token_is_not(&prs->tk, TK_EOF));
+    do
+    {
+        parse_external_definition(prs, root);
+    } while (token_is_not(&prs->tk, TK_EOF));
 }
 
 
@@ -2268,22 +2271,22 @@ static void parse_translation_unit(parser *const prs, node *const root)
 
 int parse(syntax *const sx)
 {
-	if (sx == NULL)
-	{
-		return -1;
-	}
+    if (sx == NULL)
+    {
+        return -1;
+    }
 
-	parser prs = parser_create(sx);
-	node root = node_get_root(&sx->tree);
-	node_copy(&prs.bld.context, &root);
+    parser prs = parser_create(sx);
+    node root = node_get_root(&sx->tree);
+    node_copy(&prs.bld.context, &root);
 
-	parse_translation_unit(&prs, &root);
+    parse_translation_unit(&prs, &root);
 
 #ifndef NDEBUG
-	write_tree(DEFAULT_TREE, sx);
+    write_tree(DEFAULT_TREE, sx);
 #endif
 
-	parser_clear(&prs);
-	// Временное решение - парсер не проверяет таблицы
-	return sx->rprt.errors == 0 ? 0 : -1;
+    parser_clear(&prs);
+    // Временное решение - парсер не проверяет таблицы
+    return sx->rprt.errors == 0 ? 0 : -1;
 }
