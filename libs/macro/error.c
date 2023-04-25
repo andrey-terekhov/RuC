@@ -23,8 +23,8 @@
 #include <stdio.h>
 
 
-#define TAG_MACRO    "macro"
-#define QUOTE        "\""
+#define TAG_MACRO "macro"
+#define QUOTE "\""
 
 #define MAX_TAG_SIZE 1024
 #define MAX_MSG_SIZE 4096

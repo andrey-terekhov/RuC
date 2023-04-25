@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 
-#define MAX_PATHS    128
+#define MAX_PATHS 128
 #define MAX_ARG_SIZE 1024
 
 

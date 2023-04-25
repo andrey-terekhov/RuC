@@ -23,9 +23,9 @@
 
 
 #define MAX_FUNCTION_ARGS 128
-#define MAX_PRINTF_ARGS   128
-#define MAX_CASES         4096
-#define MAX_NAME          4096
+#define MAX_PRINTF_ARGS 128
+#define MAX_CASES 4096
+#define MAX_NAME 4096
 
 
 static const size_t HASH_TABLE_SIZE = 1024;

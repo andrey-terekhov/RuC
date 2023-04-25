@@ -19,7 +19,7 @@
 #include "environment.h"
 
 
-#define LOGIC      0
+#define LOGIC 0
 #define ARITHMETIC 1
 
 

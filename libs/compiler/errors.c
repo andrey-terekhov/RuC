@@ -26,10 +26,10 @@
 #include <stdio.h>
 
 
-#define TAG_RUC       "ruc"
+#define TAG_RUC "ruc"
 
-#define MAX_TAG_SIZE  128
-#define MAX_MSG_SIZE  MAX_TAG_SIZE * 4
+#define MAX_TAG_SIZE 128
+#define MAX_MSG_SIZE MAX_TAG_SIZE * 4
 #define MAX_LINE_SIZE MAX_TAG_SIZE * 4
 
 

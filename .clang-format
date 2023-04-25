@@ -1,6 +1,6 @@
 ﻿BasedOnStyle: LLVM
 
-AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+#AlignConsecutiveMacros: AcrossEmptyLinesAndComments
 AllowShortFunctionsOnASingleLine: None
 BreakBeforeBraces: Custom
 BraceWrapping:

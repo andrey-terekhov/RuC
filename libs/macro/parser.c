@@ -25,12 +25,12 @@
 #include <string.h>
 
 
-#define MAX_INDEX_SIZE   21
-#define MAX_MASK_SIZE    51
+#define MAX_INDEX_SIZE 21
+#define MAX_MASK_SIZE 51
 
-#define MASK_SUFFIX      "_"
-#define MASK_ARGUMENT    "__ARG_"
-#define MASK_STRING      "__STR_"
+#define MASK_SUFFIX "_"
+#define MASK_ARGUMENT "__ARG_"
+#define MASK_STRING "__STR_"
 #define MASK_TOKEN_PASTE "#__TKP_"
 
 

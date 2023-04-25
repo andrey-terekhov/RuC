@@ -22,7 +22,7 @@
 
 
 #define MAX_ELEM_SIZE 32
-#define INDENT        "  "
+#define INDENT "  "
 
 
 /** AST writer */

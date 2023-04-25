@@ -19,7 +19,7 @@
 #include "vector.h"
 
 
-#define MAX_HASH   256
+#define MAX_HASH 256
 #define VALUE_SIZE 4
 
 
