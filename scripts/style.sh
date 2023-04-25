@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# Needed clang clang-format clang-format-10 (clang-tidy)
+# Needed clang clang-format clang-format-14 (clang-tidy)
 
 #clang_tidy="clang-tidy"
-clang_format="clang-format-10"
+clang_format="clang-format-14"
 
 which $clang_format >/dev/null 2>/dev/null
 if [ "$?" != "0" ] ; then
