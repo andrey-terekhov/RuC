@@ -1292,7 +1292,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			{
 				usual += 2;
 			}
-			const item_t length = (item_t)type_size(enc->sx, type);
+			const item_t length = (item_t)type_size(enc->sx, current_type);
 			mem_add(enc, IC_ARR_INIT);
 			mem_add(enc, dimensions);
 			mem_add(enc, length);
@@ -1310,8 +1310,8 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 			mem_add(enc, IC_SLICE);
 
-			const item_t type = expression_get_type(nd);
-			mem_add(enc, (item_t)type_size(enc->sx, type));
+			const item_t subscript_type = expression_get_type(nd);
+			mem_add(enc, (item_t)type_size(enc->sx, subscript_type));
 
 
 			size_t usual = 1;
@@ -1320,7 +1320,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 				usual += 2;
 			}
 
-			const item_t length = (item_t)type_size(enc->sx, type);
+			const item_t length = (item_t)type_size(enc->sx, current_type);
 			mem_add(enc, IC_ARR_INIT_STACK_ADDR);
 			mem_add(enc, dimensions);
 			mem_add(enc, length);
