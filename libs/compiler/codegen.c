@@ -1310,8 +1310,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 
 			mem_add(enc, IC_SLICE);
 
-			const item_t subscript_type = expression_get_type(nd);
-			mem_add(enc, (item_t)type_size(enc->sx, subscript_type));
+			mem_add(enc, (item_t)type_size(enc->sx, type));
 
 
 			size_t usual = 1;
@@ -1326,7 +1325,6 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			mem_add(enc, length);
 			mem_add(enc, usual);
 		}
-
 	}
 	else // Скалярное присваивание
 	{
