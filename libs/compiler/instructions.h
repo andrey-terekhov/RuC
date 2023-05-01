@@ -194,6 +194,8 @@ typedef enum INSTURCTION
 	IC_STRING_INIT,				/**< 'STRINGINIT' instruction code */
 	IC_ARR_INIT,				/**< 'ARRINIT' instruction code */
 	IC_STRUCT_WITH_ARR,			/**< 'STRUCTWITHARR' instruction code */
+	IC_ARR_INIT_STACK_ADDR,		/**< 'ARRINITSTACKADDR' instruction code */
+	IC_SET_ARR_INIT_START,		/**< 'SETARRINITSTART' instruction code */
 
 	IC_BEG_INIT = 9481,			/**< 'BEGINIT' instruction code */
 	IC_ROWING,					/**< 'ROWING' instruction code */
