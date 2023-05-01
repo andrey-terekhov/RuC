@@ -1273,7 +1273,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			dimensions++;
 		}
 
-
+		mem_add(enc, IC_SET_ARR_INIT_START);
 		if (expression_get_class(&RHS) == EXPR_IDENTIFIER || expression_get_class(&RHS) == EXPR_MEMBER
 			|| expression_get_class(&RHS) == EXPR_SUBSCRIPT)
 		{
@@ -1297,6 +1297,33 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			mem_add(enc, dimensions);
 			mem_add(enc, length);
 			mem_add(enc, displacements_get(enc, expression_identifier_get_id(&LHS)));
+			mem_add(enc, usual);
+		}
+		else if (expression_get_class(&LHS) == EXPR_SUBSCRIPT)
+		{
+			// Address loading
+			const node base = expression_subscript_get_base(&LHS);
+			emit_expression(enc, &base);
+
+			const node index = expression_subscript_get_index(&LHS);
+			emit_expression(enc, &index);
+
+			mem_add(enc, IC_SLICE);
+
+			const item_t type = expression_get_type(nd);
+			mem_add(enc, (item_t)type_size(enc->sx, type));
+
+
+			size_t usual = 1;
+			if (type_is_string(enc->sx, current_type))
+			{
+				usual += 2;
+			}
+
+			const item_t length = (item_t)type_size(enc->sx, type);
+			mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+			mem_add(enc, dimensions);
+			mem_add(enc, length);
 			mem_add(enc, usual);
 		}
 
