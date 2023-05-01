@@ -1333,9 +1333,10 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 				usual += 2;
 			}
 
-			// Address loading (not arrow)
+			// Address loading
 			const node base = expression_member_get_base(&LHS);
 			const item_t base_type = expression_get_type(&base);
+			const bool is_arrow = expression_member_is_arrow(&LHS);
 			const size_t member_index = expression_member_get_member_index(&LHS);
 
 			item_t member_displ = 0;
@@ -1345,20 +1346,9 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 				member_displ += (item_t)type_size(enc->sx, member_type);
 			}
 
-			const lvalue base_value = emit_lvalue(enc, &base);
-			if (base_value.kind == VARIABLE)
+			if (is_arrow)
 			{
-				const item_t displ = base_value.displ > 0 ? base_value.displ + member_displ : base_value.displ - member_displ;
-
-				const item_t length = (item_t)type_size(enc->sx, current_type);
-				mem_add(enc, IC_ARR_INIT);
-				mem_add(enc, dimensions);
-				mem_add(enc, length);
-				mem_add(enc, displ);
-				mem_add(enc, usual);
-			}
-			else
-			{
+				emit_expression(enc, &base);
 				mem_add(enc, IC_SELECT);
 				mem_add(enc, member_displ);
 
@@ -1367,6 +1357,32 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 				mem_add(enc, dimensions);
 				mem_add(enc, length);
 				mem_add(enc, usual);
+			}
+			else
+			{
+				const lvalue base_value = emit_lvalue(enc, &base);
+				if (base_value.kind == VARIABLE)
+				{
+					const item_t displ = base_value.displ > 0 ? base_value.displ + member_displ : base_value.displ - member_displ;
+
+					const item_t length = (item_t)type_size(enc->sx, current_type);
+					mem_add(enc, IC_ARR_INIT);
+					mem_add(enc, dimensions);
+					mem_add(enc, length);
+					mem_add(enc, displ);
+					mem_add(enc, usual);
+				}
+				else
+				{
+					mem_add(enc, IC_SELECT);
+					mem_add(enc, member_displ);
+
+					const item_t length = (item_t)type_size(enc->sx, current_type);
+					mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+					mem_add(enc, dimensions);
+					mem_add(enc, length);
+					mem_add(enc, usual);
+				}
 			}
 		}
 	}
