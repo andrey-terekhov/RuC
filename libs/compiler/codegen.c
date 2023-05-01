@@ -1325,6 +1325,50 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			mem_add(enc, length);
 			mem_add(enc, usual);
 		}
+		else if (expression_get_class(&LHS) == EXPR_MEMBER)
+		{
+			size_t usual = 1;
+			if (type_is_string(enc->sx, current_type))
+			{
+				usual += 2;
+			}
+
+			// Address loading (not arrow)
+			const node base = expression_member_get_base(&LHS);
+			const item_t base_type = expression_get_type(&base);
+			const size_t member_index = expression_member_get_member_index(&LHS);
+
+			item_t member_displ = 0;
+			for (size_t i = 0; i < member_index; i++)
+			{
+				const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
+				member_displ += (item_t)type_size(enc->sx, member_type);
+			}
+
+			const lvalue base_value = emit_lvalue(enc, &base);
+			if (base_value.kind == VARIABLE)
+			{
+				const item_t displ = base_value.displ > 0 ? base_value.displ + member_displ : base_value.displ - member_displ;
+
+				const item_t length = (item_t)type_size(enc->sx, current_type);
+				mem_add(enc, IC_ARR_INIT);
+				mem_add(enc, dimensions);
+				mem_add(enc, length);
+				mem_add(enc, displ);
+				mem_add(enc, usual);
+			}
+			else
+			{
+				mem_add(enc, IC_SELECT);
+				mem_add(enc, member_displ);
+
+				const item_t length = (item_t)type_size(enc->sx, current_type);
+				mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+				mem_add(enc, dimensions);
+				mem_add(enc, length);
+				mem_add(enc, usual);
+			}
+		}
 	}
 	else // Скалярное присваивание
 	{
