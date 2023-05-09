@@ -1114,7 +1114,10 @@ node build_ternary_expression(builder *const bldr, node *const cond, node *const
 	}
 
 	const item_t cond_type = expression_get_type(cond);
-	if (!type_is_scalar(bldr->sx, cond_type))
+	const item_t cond_element_type = type_is_reference(bldr->sx, cond_type)
+		? type_reference_get_element_type(bldr->sx, cond_type)
+		: cond_type;
+	if (!type_is_scalar(bldr->sx, cond_element_type))
 	{
 		semantic_error(bldr, node_get_location(cond), condition_must_be_scalar);
 		return node_broken();
