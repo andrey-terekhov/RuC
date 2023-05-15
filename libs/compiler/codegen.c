@@ -1246,9 +1246,12 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 	const lvalue value = emit_lvalue(enc, &LHS);
 
 	const node RHS = expression_assignment_get_RHS(nd);
-	emit_expression(enc, &RHS);
 
 	const item_t type = expression_get_type(nd);
+	if (!type_is_array(enc->sx, type)) {
+		emit_expression(enc, &RHS);
+	}
+
 	if (type_is_structure(enc->sx, type))
 	{
 		if (value.kind == VARIABLE)
