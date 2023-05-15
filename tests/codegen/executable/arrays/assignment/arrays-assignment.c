@@ -35,9 +35,9 @@ void main()
 	assert(c[1][0][0] == 2, "c[1][0][0] must be 2");
 	assert(c[1][0][1] == 3, "c[1][0][1] must be 3");
 	assert(c[1][0][2] == 4, "c[1][0][2] must be 4");
-	assert(c[1][1][0] == 2, "c[1][1][0] must be 1");
-	assert(c[1][1][1] == 3, "c[1][1][1] must be 2");
-	assert(c[1][1][2] == 4, "c[1][1][2] must be 3");
+	assert(c[1][1][0] == 2, "c[1][1][0] must be 2");
+	assert(c[1][1][1] == 3, "c[1][1][1] must be 3");
+	assert(c[1][1][2] == 4, "c[1][1][2] must be 4");
 
 	a = b[1];
 
@@ -71,8 +71,29 @@ void main()
 	assert(c[1][0][0] == 2, "c[1][0][0] must be 2");
 	assert(c[1][0][1] == 3, "c[1][0][1] must be 3");
 	assert(c[1][0][2] == 4, "c[1][0][2] must be 4");
-	assert(c[1][1][0] == 2, "c[1][1][0] must be 1");
-	assert(c[1][1][1] == 3, "c[1][1][1] must be 2");
-	assert(c[1][1][2] == 4, "c[1][1][2] must be 3");
+	assert(c[1][1][0] == 2, "c[1][1][0] must be 2");
+	assert(c[1][1][1] == 3, "c[1][1][1] must be 3");
+	assert(c[1][1][2] == 4, "c[1][1][2] must be 4");
+
+	/*
+
+	c = {c[0], c[1]};
+
+
+	assert(c[0][0][0] == 1, "c[0][0][0] must be 1");
+	assert(c[0][0][1] == 2, "c[0][0][1] must be 2");
+	assert(c[0][0][2] == 3, "c[0][0][2] must be 3");
+	assert(c[0][1][0] == 7, "c[0][1][0] must be 7");
+	assert(c[0][1][1] == 8, "c[0][1][1] must be 8");
+	assert(c[0][1][2] == 9, "c[0][1][2] must be 9");
+	assert(c[1][0][0] == 2, "c[1][0][0] must be 2");
+	assert(c[1][0][1] == 3, "c[1][0][1] must be 3");
+	assert(c[1][0][2] == 4, "c[1][0][2] must be 4");
+	assert(c[1][1][0] == 2, "c[1][1][0] must be 2");
+	assert(c[1][1][1] == 3, "c[1][1][1] must be 3");
+	assert(c[1][1][2] == 4, "c[1][1][2] must be 4");
+
+	*/
+
 }
 
