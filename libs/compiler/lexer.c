@@ -124,7 +124,7 @@ static inline void skip_block_comment(lexer *const lxr)
  */
 static token lex_identifier_or_keyword(lexer *const lxr)
 {
-	assert(utf8_is_letter(lxr->character));
+	assert(utf8_is_letter(lxr->character) || lxr->character == '#');
 	const size_t loc_begin = in_get_position(lxr->sx->io);
 
 	uni_unscan_char(lxr->sx->io, lxr->character);
@@ -489,10 +489,17 @@ token lex(lexer *const lxr)
 				return token_eof();
 
 			default:
-				if (utf8_is_letter(lxr->character))
+				if (utf8_is_letter(lxr->character) || lxr->character == '#')
 				{
 					// Keywords and identifiers
-					return lex_identifier_or_keyword(lxr);
+					const token token = lex_identifier_or_keyword(lxr);
+					if (token_is(&token, TK_LINE))
+					{
+						skip_line_comment(lxr);
+						continue;
+					}
+
+					return token;
 				}
 				else
 				{

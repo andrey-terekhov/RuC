@@ -449,7 +449,7 @@ compiling()
 test()
 {
 	# Do not use names with spaces!
-	for path in `find $dir_test -name *.c`
+	for path in `find $dir_test -name *.c | sort`
 	do
 		sources=$path
 
@@ -458,13 +458,13 @@ test()
 		fi
 	done
 
-	for include in `find $dir_test -name $subdir_include -type d`
+	for include in `find $dir_test -name $subdir_include -type d | sort`
 	do
 		for path in `ls -d $include/*`
 		do
-			sources=`find $path -name *.c`
+			sources=`find $path -name *.c | sort`
 
-			for subdir in `find $path -name *.h`
+			for subdir in `find $path -name *.h | sort`
 			do
 				temp=`dirname $subdir`
 				sources="$sources -I$temp"
