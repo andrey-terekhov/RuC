@@ -1936,7 +1936,7 @@ static void emit_expression(information *const info, const node *const nd)
 {
 	switch (expression_get_class(nd))
 	{
-		case EXPR_CAST:
+		case EXPR_ARITHMETIC_CAST:
 			emit_cast_expression(info, nd);
 			return;
 

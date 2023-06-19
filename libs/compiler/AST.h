@@ -37,19 +37,20 @@ typedef enum CATEGORY
 /** Expression class */
 typedef enum EXPRESSION
 {
-	EXPR_IDENTIFIER,	/**< Identifier expression */
-	EXPR_LITERAL,		/**< Literal expression */
-	EXPR_SUBSCRIPT,		/**< Subscript expression */
-	EXPR_CALL,			/**< Call expression */
-	EXPR_MEMBER,		/**< Member expression */
-	EXPR_CAST,			/**< Cast expression */
-	EXPR_UNARY,			/**< Unary expression */
-	EXPR_BINARY,		/**< Binary expression */
-	EXPR_TERNARY,		/**< Ternary expression */
-	EXPR_ASSIGNMENT,	/**< Assignment expression */
-	EXPR_INITIALIZER,	/**< Initializer */
-	EXPR_EMPTY_BOUND,	/**< Empty array size expression */
-	EXPR_INVALID,		/**< Invalid expression */
+	EXPR_IDENTIFIER,		/**< Identifier expression */
+	EXPR_LITERAL,			/**< Literal expression */
+	EXPR_SUBSCRIPT,			/**< Subscript expression */
+	EXPR_CALL,				/**< Call expression */
+	EXPR_MEMBER,			/**< Member expression */
+	EXPR_ARITHMETIC_CAST,	/**< Arithmetic cast expression */
+	EXPR_REFERENCE_CAST,	/**< Reference cast expression */
+	EXPR_UNARY,				/**< Unary expression */
+	EXPR_BINARY,			/**< Binary expression */
+	EXPR_TERNARY,			/**< Ternary expression */
+	EXPR_ASSIGNMENT,		/**< Assignment expression */
+	EXPR_INITIALIZER,		/**< Initializer */
+	EXPR_EMPTY_BOUND,		/**< Empty array size expression */
+	EXPR_INVALID,			/**< Invalid expression */
 } expression_t;
 
 /** Statement class */
@@ -404,7 +405,7 @@ bool expression_member_is_arrow(const node *const nd);
  *
  *	@return	Cast expression
  */
-node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
+node expression_arithmetic_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc);
 
 /**
  *	Get source type of cast expression

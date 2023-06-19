@@ -812,7 +812,7 @@ node build_cast_expression(const syntax *const sx, const item_t target_type, nod
 			return result;
 		}
 
-		return expression_cast(target_type, source_type, expr, loc);
+		return expression_arithmetic_cast(target_type, source_type, expr, loc);
 	}
 
 	return *expr;
