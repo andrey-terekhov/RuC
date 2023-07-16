@@ -170,7 +170,7 @@ void main(char argv[][]) { /* ... */ }
 
 # 3. Обозначения
 * В используемых в этой статье обозначениях синтаксические нетерминалы обозначаются курсивом, а терминалы - жирным шрифтом. Двоеточие (:), следующее за нетерминалом, означает начало его определения. Альтернативные определения перечислены на отдельных строках, за исключением случаев, когда им предшествуют слова "one of". Опциональная синтаксическая конструкция обозначается подстрочным "opt", так что
-  >`{` _expression_ ₒₚₜ `}`
+  >`{` _expression_ ₒₚₜ `}`
 
   означает опциональное выражение в фигурных скобках.
 
@@ -277,7 +277,7 @@ void main(char argv[][]) { /* ... */ }
   >    _keyword_\
   >    _identifier_\
   >    _literal_\
-  >    _punctuator_\
+  >    _punctuator_
 * **Семантика**
   * _Токен_ — это минимальный лексический элемент языка. Категории **токенов**: _ключевые слова_, _идентификаторы_, _литералы_ и _знаки препинания_. 
 
@@ -299,7 +299,7 @@ void main(char argv[][]) { /* ... */ }
   >    _q-char_\
   >    _q-char-sequence_ _q-char_\
   > _q-char_:\
-  >    любой элемент базового набора символо кроме символа новой строки и `"`\
+  >    любой элемент базового набора символо кроме символа новой строки и `"`
 * **Семантика**
   * Токены препроцессора имени заголовка должны появляться только в директиве препроцессора `#include`. Последовательности в обеих формах имен заголовков сопоставляются с заголовками или с именами внешних исходных файлов, как указано в разделе **12.2. Включение файлов**.
   * Если какой-либо из символов `'` или `\`, или одна из последовательностей символов `/*` или `//` появляется в последовательности q-символов или последовательности h-символов, или символ `"` появляется в последовательности h-символов, поведение не определено.
@@ -335,7 +335,7 @@ void main(char argv[][]) { /* ... */ }
   >    bool    булево    BOOL    БУЛЕВО\
   >    true    истина    TRUE    ИСТИНА\
   >    false    ложь    FALSE    ЛОЖЬ\
-  >    const    конст    CONST    КОНСТ\
+  >    const    конст    CONST    КОНСТ
 * **Семантика**
   * Вышеупомянутые токены (с учетом регистра) зарезервированы для использования в качестве ключевых слов и не должны использоваться в других целях.
 
@@ -352,14 +352,14 @@ void main(char argv[][]) { /* ... */ }
   >    `A` `B` `C` `D` `E` `F` `G` `H` `I` `J` `K` `L` `M` `N` `O` `P` `Q` `R` `S` `T` `U` `V` `W` `X` `Y` `Z`\
   >    `а` `б` `в` `г` `д` `е` `ж` `з` `и` `й` `к` `л` `м` `н` `о` `п` `р` `с` `т` `у` `ф` `х` `ц` `ч` `ш` `щ` `ъ` `ы` `ь` `э` `ю` `я`\
   >    `А` `Б` `В` `Г` `Д` `Е` `Ж` `З` `И` `Й` `К` `Л` `М` `Н` `О` `П` `Р` `С` `Т` `У` `Ф` `Х` `Ц` `Ч` `Ш` `Щ` `Ъ` `Ы` `Ь` `Э` `Ю` `Я`\
-  > _digit_: one of\
+  > _digit_: одно из\
   >    `0` `1` `2` `3` `4` `5` `6` `7` `8` `9`
 * **Семантика**
   * Идентификатор представляет собой последовательность нецифровых символов (включая подчеркивание _, строчные и прописные латинские и кириллические буквы и другие символы) и цифр, которая обозначает один или несколько объектов, как описано в разделе **4.1. Область видимости идентификаторов**. Строчные и прописные буквы различны. Ограничения на максимальную длину идентификатора нет.
 
 ## 6.8. Литералы
 * **Синтаксис**
-  > _literal_:
+  > _literal_:\
   >    _integer-literal_\
   >    _floating-literal_\
   >    _enumeration-literal_\
@@ -415,7 +415,7 @@ void main(char argv[][]) { /* ... */ }
 ## 6.8.2. Вещественные литералы
 * **Синтаксис**
   > _floating-literal_:\
-  >    _fractional-literal_ _exponent-part_ ₒₚₜ
+  >    _fractional-literal_ _exponent-part_ ₒₚₜ\
   >    _digit-sequence_ _exponent-part_\
   > _fractional-literal_:\
   >    _digit-sequence_ ₒₚₜ `.` _digit-sequence_\
@@ -493,10 +493,10 @@ void main(char argv[][]) { /* ... */ }
   > _punctuator_: одно из\
   >    `[` `]` `(` `)` `{` `}` `.` `->`\
   >    `++` `--` `&` `*` `+` `-` `˜` `!`\
-  >    `/` `%` `<<` `>>` `<` `>` `<=` `>=` `==` `!=` `ˆ` `|` `&&` ||`\
-  >    `?` `:` `;` `...`
-  >    `=` `*=` `/=` `%=` `+=` `-=` `<<=` `>>=` `&=` `ˆ=` `|=`
-  >    `,` `#`
+  >    `/` `%` `<<` `>>` `<` `>` `<=` `>=` `==` `!=` `ˆ` `|` `&&` `||`\
+  >    `?` `:` `;` `...`\
+  >    `=` `*=` `/=` `%=` `+=` `-=` `<<=` `>>=` `&=` `ˆ=` `|=`\
+  >    `,` `#`\
 * **Семантика**
   * Пунктуатор – это набор символов, имеющий самостоятельное синтаксическое и семантическое значение. В зависимости от контекста, он может задавать операцию, которая должна быть выполнена (которая, в свою очередь, может дать значение или указатель функции, произвести побочный эффект или некоторую их комбинацию), и в этом случае он известен как _оператор_ (другие формы оператора также существуют в некоторых контекстах). _Операнд_ — это сущность, над которой действует оператор.
 
@@ -523,7 +523,7 @@ void main(char argv[][]) { /* ... */ }
   > _postfix-expression:_\
   >    _primary-expression_\
   >    _postfix-expression_ `[` _expression_ `]`\
-  >    _postfix-expression_ `(` _argument-expression-list_ ₒₚₜ `)`\
+  >    _postfix-expression_ `(` _argument-expression-list_ ₒₚₜ `)`\
   >    _postfix-expression_ `.` _identifier_\
   >    _postfix-expression_ `->` _identifier_\
   >    _postfix-expression_ `++`\
@@ -671,8 +671,8 @@ void main(char argv[][]) { /* ... */ }
 * **Синтаксис**
   > _relational-expression:_\
   >    _shift-expression_\
-  >    _relational-expression_ `< ` _shift-expression_\
-  >    _relational-expression_ `> ` _shift-expression_\
+  >    _relational-expression_ `< ` _shift-expression_\
+  >    _relational-expression_ `> ` _shift-expression_\
   >    _relational-expression_ `<=` _shift-expression_\
   >    _relational-expression_ `>=` _shift-expression_
 * **Ограничения**
@@ -775,7 +775,7 @@ void main(char argv[][]) { /* ... */ }
   >    _conditional-expression_\
   >    _unary-expression_ _assignment-operator_ _initializer_\
   >\
-  > _assignment-operator:_ one of\
+  > _assignment-operator:_ one of\
   >    `=` `*=` `/=` `%=` `+=` `-=` `<<=` `>>=` `&=` `ˆ=` `|=`
 * **Ограничения**
   * Первый операнд оператора присваивания должен быть модифицируемым lvalue.
@@ -860,7 +860,7 @@ void main(char argv[][]) { /* ... */ }
 ### 9.1.1. Спецификаторы структур
 * **Синтаксис**
   > _struct-specifier:_\
-  >    `struct` _identifier_ ₒₚₜ `{` _struct-declaration-list_ `}`\
+  >    `struct` _identifier_ ₒₚₜ `{` _struct-declaration-list_ `}`\
   >    `struct` _identifier_\
   >\
   > _struct-declaration-list:_\
@@ -868,7 +868,7 @@ void main(char argv[][]) { /* ... */ }
   >    _struct-declaration-list_ _struct-declaration_\
   >\
   > _struct-declaration:_\
-  >    _type-qualifier_ ₒₚₜ _type-specifier_ _declarator_ `;`\
+  >    _type-qualifier_ ₒₚₜ _type-specifier_ _declarator_ `;`\
   >    _function-declaration_ `;`
 * **Ограничения**
   * Структура не может содержать поле **неполного** или **функционального** типа (поэтому структура не может содержать экземпляр самой себя, но может содержать указатель на экземпляр самой себя).
@@ -880,8 +880,8 @@ void main(char argv[][]) { /* ... */ }
 ### 9.1.2. Спецификаторы перечислений
 * **Синтаксис**
   > _enum-specifier:_\
-  >    `enum` _identifier_ ₒₚₜ `{` _enumerator-list_ `}`\
-  >    `enum` _identifier_ ₒₚₜ `{` _enumerator-list_ `,` `}`\
+  >    `enum` _identifier_ ₒₚₜ `{` _enumerator-list_ `}`\
+  >    `enum` _identifier_ ₒₚₜ `{` _enumerator-list_ `,` `}`\
   >    `enum` _identifier_\
   >\
   > _enumerator-list:_\
@@ -913,7 +913,7 @@ void main(char argv[][]) { /* ... */ }
 ## 9.3. Объявления переменных
 * **Синтаксис**
   > _variable-declaration:_\
-  >    _storage-class-specifier_ ₒₚₜ _type-qualifier_ ₒₚₜ _type-specifier_ _init-declarator-list_ ₒₚₜ\
+  >    _storage-class-specifier_ ₒₚₜ _type-qualifier_ ₒₚₜ _type-specifier_ _init-declarator-list_ ₒₚₜ\
   >\
   > _init-declarator-list:_\
   >    _init-declarator_\
@@ -924,11 +924,11 @@ void main(char argv[][]) { /* ... */ }
   >    _declarator_ `=` _initializer_\
   >\
   > _declarator:_\
-  >    `*` ₒₚₜ `&` ₒₚₜ _type-qualifier_ ₒₚₜ _direct-declarator_\
+  >    `*` ₒₚₜ `&` ₒₚₜ _type-qualifier_ ₒₚₜ _direct-declarator_\
   >\
   > _direct-declarator:_\
   >    _identifier_\
-  >    _direct-declarator_ `[` _assignment-expression_ ₒₚₜ `]`
+  >    _direct-declarator_ `[` _assignment-expression_ ₒₚₜ `]`
 * **Ограничения**
   * Объявление должно содержать хотя бы одно описание типа структуры или перечисления или хотя бы один декларатор.
   * К концу объявления тип объявляемого объекта должен быть полным.
@@ -963,11 +963,11 @@ void main(char argv[][]) { /* ... */ }
 ## 9.4. Объявления функций
 * **Синтаксис**
   > _function-declaration:_\
-  >    _return-type-specifier_ _function-declarator_ `(` _parameter-list_ ₒₚₜ `)`\
+  >    _return-type-specifier_ _function-declarator_ `(` _parameter-list_ ₒₚₜ `)`\
   >\
   > _return-type-specicifier:_\
-  >    _type-qualifier_ ₒₚₜ _type-specifier_ `*` ₒₚₜ\
-  >    _return-type-specicifier_ `[` _constant-expression_ ₒₚₜ `]`\
+  >    _type-qualifier_ ₒₚₜ _type-specifier_ `*` ₒₚₜ\
+  >    _return-type-specicifier_ `[` _constant-expression_ ₒₚₜ `]`\
   >\
   > _function-declarator:_\
   >    _identifier_\
@@ -979,7 +979,7 @@ void main(char argv[][]) { /* ... */ }
   >\
   > _parameter-declaration:_\
   >    _type-name_\
-  >    _type-qualifier_ ₒₚₜ _type-specifier_ _declarator_\
+  >    _type-qualifier_ ₒₚₜ _type-specifier_ _declarator_\
   >    _function-declaration_
 * **Ограничения**
   * Объявляемая функция не может возвращать значение **функционального** типа.
@@ -1009,13 +1009,13 @@ void main(char argv[][]) { /* ... */ }
   >    _function-type-name_\
   >\
   > _variable-type-name:_\
-  >    _type-qualifier_ ₒₚₜ _type-specifier_ `*` ₒₚₜ _abstract-declarator_ ₒₚₜ\
+  >    _type-qualifier_ ₒₚₜ _type-specifier_ `*` ₒₚₜ _abstract-declarator_ ₒₚₜ\
   >\
   > _abstract-declarator:_\
-  >    _abstract-declarator_ ₒₚₜ `[` _assignment-expression_ ₒₚₜ `]`\
+  >    _abstract-declarator_ ₒₚₜ `[` _assignment-expression_ ₒₚₜ `]`\
   >\
   > _function-type-name:_\
-  >    _return-type-specifier_ _function-pointer_ ₒₚₜ `(` _parameter-list_ ₒₚₜ `)`\
+  >    _return-type-specifier_ _function-pointer_ ₒₚₜ `(` _parameter-list_ ₒₚₜ `)`\
   >\
   > _function-pointer:_\
   >    `(` `*` `)`
@@ -1084,7 +1084,7 @@ void main(char argv[][]) { /* ... */ }
 ## 10.2. Составной оператор
 * **Синтаксис**
   > _compound-statement:_\
-  >    `{` _block-item-list_ ₒₚₜ `}`\
+  >    `{` _block-item-list_ ₒₚₜ `}`\
   >\
   > _block-item-list:_\
   >    _block-item_\
@@ -1099,7 +1099,7 @@ void main(char argv[][]) { /* ... */ }
 ## 10.3. Оператор-выражение и пустой оператор
 * **Синтаксис**
   > _expression-statement:_\
-  >    _expression_ ₒₚₜ `;`
+  >    _expression_ ₒₚₜ `;`
 * **Семантика**
   * Выражение оператора-выражения вычисляется для его побочных эффектов (например, присваиваний и вызовов функций).
   * _Пустой оператор_ (состоящий только из `;`) не производит операций.
@@ -1155,10 +1155,10 @@ void main(char argv[][]) { /* ... */ }
 ### 10.5. Операторы итераций
 * **Синтаксис**
   > _iteration-statement:_\
-  >    `while` `(` _expression_ `)` _statement_\
+  >    `while` `(` _expression_ `)` _statement_\
   >    `do` _statement_ `while` `(` _expression_ `)` `;`\
-  >    `for` `(` _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `)` _statement_\
-  >    `for` `(` _declaration_ _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `)` _statement_
+  >    `for` `(` _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `)` _statement_\
+  >    `for` `(` _declaration_ _expression_ ₒₚₜ `;` _expression_ ₒₚₜ `)` _statement_
 * **Ограничения**
   * Управляющее выражение оператора итерации должно иметь **скалярный** тип.
 * **Семантика**
@@ -1183,7 +1183,7 @@ void main(char argv[][]) { /* ... */ }
   > _jump-statement:_\
   >    `continue` `;`\
   >    `break` `;`\
-  >    `return` _expression_ ₒₚₜ `;`
+  >    `return` _expression_ ₒₚₜ `;`
 * **Семантика**
   * Оператор перехода означает безусловный переход.
 
@@ -1279,7 +1279,7 @@ void main(char argv[][]) { /* ... */ }
   >    `#` _define-word_ _identifier_ _parameter-list_ ₒₚₜ\
   >                      _replacement-list_ _new-line_\
   >    `#` `undef` _identifier_ _new-line_\
-  >    `#` `macro` _identifier_ _parameter-list_ ₒₚₜ _new-line_ 
+  >    `#` `macro` _identifier_ _parameter-list_ ₒₚₜ _new-line_ 
   >             _group_ _endm-line_\
   >    `#` `while` _pp-tokens_ _new-line_ _group_ _endw-line_\
   >    `#` `eval` _pp-tokens_ _new-line_\
