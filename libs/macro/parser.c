@@ -1465,7 +1465,11 @@ static item_t parse_expression(parser *const prs)
 {
 	location loc = parse_location(prs);
 	char directive[MAX_KEYWORD_SIZE];
-	sprintf(directive, "%s", storage_last_read(prs->stg));
+	const char *last_read = storage_last_read(prs->stg);
+	if (last_read)
+	{
+		sprintf(directive, "%s", last_read);
+	}
 
 	char32_t character = skip_until(prs, false);
 	if (character == '\n' || character == (char32_t)EOF)
