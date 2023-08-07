@@ -6,11 +6,11 @@ void main()
 
     printid(s1);
     printid(s2);
-    strcat(&s1, s2);
+    char s3[] = strcat(s1, s2);
     
-    printid(s1);
-    strcat(&s1, "123");
-    printid(s1);
+    printid(s3);
+    char s4[] = strcat(s1, "123");
+    printid(s4);
 
     
 }

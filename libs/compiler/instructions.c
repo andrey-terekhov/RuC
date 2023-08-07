@@ -35,14 +35,11 @@ instruction_t builtin_to_instruction(const builtin_t func)
 		case BI_ASIN:					return IC_ASIN;
 		case BI_RAND:					return IC_RAND;
 		case BI_ROUND:					return IC_ROUND;
-		case BI_STRCPY:					return IC_STRCPY;
 		case BI_STRNCPY:				return IC_STRNCPY;
 		case BI_STRCAT:					return IC_STRCAT;
-		case BI_STRNCAT:				return IC_STRNCAT;
 		case BI_STRCMP:					return IC_STRCMP;
 		case BI_STRNCMP:				return IC_STRNCMP;
 		case BI_STRSTR:					return IC_STRSTR;
-		case BI_STRLEN:					return IC_STRLEN;
 		case BI_ASSERT:					return IC_ASSERT;
 		case BI_MSG_SEND:				return IC_MSG_SEND;
 		case BI_MSG_RECEIVE:			return IC_MSG_RECEIVE;
