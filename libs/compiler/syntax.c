@@ -192,14 +192,11 @@ static void ident_init(syntax *const sx)
 	builtin_add(sx, U"rand", U"случ", type_function(sx, TYPE_FLOATING, ""));
 	builtin_add(sx, U"round", U"округл", type_function(sx, TYPE_INTEGER, "f"));
 
-	builtin_add(sx, U"strcpy", U"копир_строку", type_function(sx, TYPE_VOID, "Ss"));
-	builtin_add(sx, U"strncpy", U"копир_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
-	builtin_add(sx, U"strcat", U"конкат_строки", type_function(sx, TYPE_VOID, "Ss"));
-	builtin_add(sx, U"strncat", U"конкат_н_симв", type_function(sx, TYPE_VOID, "Ssi"));
+	builtin_add(sx, U"strncpy", U"копир_н_симв", type_function(sx, type_string(sx), "si"));
+	builtin_add(sx, U"strcat", U"конкат_строки", type_function(sx, type_string(sx), "ss"));
 	builtin_add(sx, U"strcmp", U"сравн_строк", type_function(sx, TYPE_INTEGER, "ss"));
 	builtin_add(sx, U"strncmp", U"сравн_н_симв", type_function(sx, TYPE_INTEGER, "ssi"));
 	builtin_add(sx, U"strstr", U"нач_подстрок", type_function(sx, TYPE_INTEGER, "ss"));
-	builtin_add(sx, U"strlen", U"длина", type_function(sx, TYPE_INTEGER, "s"));
 
 	builtin_add(sx, U"send_int_to_robot", U"послать_цел_на_робот", type_function(sx, TYPE_VOID, "iI"));
 	builtin_add(sx, U"send_float_to_robot", U"послать_вещ_на_робот", type_function(sx, TYPE_VOID, "iF"));
