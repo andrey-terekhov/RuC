@@ -1151,6 +1151,95 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Loads copy of array initializer on top of the stack
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void array_load_initializer(encoder *const enc, const node *const array)
+{
+	assert((expression_get_class(array) == EXPR_IDENTIFIER || expression_get_class(array) == EXPR_MEMBER
+			|| expression_get_class(array) == EXPR_SUBSCRIPT) && type_is_array(enc->sx, expression_get_type(array)));
+	emit_expression(enc, array);
+	item_t current_type = expression_get_type(array);
+
+	int dimensions = 0;
+	while (type_is_array(enc->sx, current_type))
+	{
+		current_type = type_array_get_element_type(enc->sx, current_type);
+		++dimensions;
+	}
+
+	const size_t element_size = type_size(enc->sx, current_type);
+
+	if (dimensions == 1)
+	{
+		// Начало инициализатора
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+
+		// Его размер
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_LI);
+		mem_add(enc, element_size);
+		mem_add(enc, IC_MUL);
+		mem_add(enc, IC_LI);
+		mem_add(enc, 1);
+		mem_add(enc, IC_ADD);
+
+		// Копирование его в конец стека
+		mem_add(enc, IC_COPY2ST);
+		return;
+	}
+
+	// Вычисление смещения старта инициализатора
+	for (int i = 0; i < dimensions - 1; i++)
+	{
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_LI);
+	mem_add(enc, -dimensions);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
+	emit_expression(enc, array);
+	for (int i = 0; i < dimensions - 1; i++)
+	{
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
+	mem_add(enc, IC_LI);
+	mem_add(enc, -1);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_LI);
+	mem_add(enc, element_size);
+	mem_add(enc, IC_MUL);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление длины инициализатора (конец - начало)
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
+	mem_add(enc, IC_SUB);
+
+	// Копирование его в конец стека
+	mem_add(enc, IC_COPY2ST);
+}
+
+/**
  *	Emit assignment expression
  *
  *	@param	enc			Encoder
@@ -1222,7 +1311,16 @@ static void emit_initializer(encoder *const enc, const node *const nd)
 	for (size_t i = 0; i < size; i++)
 	{
 		const node subexpr = expression_initializer_get_subexpr(nd, i);
-		emit_expression(enc, &subexpr);
+		if (type_is_array(enc->sx, expression_get_type(&subexpr)) &&
+			(expression_get_class(&subexpr) == EXPR_IDENTIFIER || expression_get_class(&subexpr) == EXPR_MEMBER
+			 || expression_get_class(&subexpr) == EXPR_SUBSCRIPT))
+		{
+			array_load_initializer(enc, &subexpr);
+		}
+		else
+		{
+			emit_expression(enc, &subexpr);
+		}
 	}
 }
 
@@ -1415,7 +1513,14 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	if (has_initializer)
 	{
 		const node initializer = declaration_variable_get_initializer(nd);
-		emit_expression(enc, &initializer);
+		if (expression_get_class(&initializer) == EXPR_IDENTIFIER || expression_get_class(&initializer) == EXPR_MEMBER || expression_get_class(&initializer) == EXPR_SUBSCRIPT)
+		{
+			array_load_initializer(enc, &initializer);
+		}
+		else
+		{
+			emit_expression(enc, &initializer);
+		}
 
 		if (only_strings(enc, &initializer))
 		{
