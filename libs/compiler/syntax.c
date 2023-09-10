@@ -604,6 +604,7 @@ bool type_requires_initialization(const syntax *const sx, const item_t type)
 		case TYPE_ARRAY:
 			return type_requires_initialization(sx, type_array_get_element_type(sx, type));
 		case TYPE_CONST:
+		case TYPE_REFERENCE:
 			return true;
 		default:
 			return false;
@@ -679,6 +680,11 @@ bool type_is_pointer(const syntax *const sx, const item_t type)
 {
 	return type_is_const(sx, type) ? type_is_pointer(sx, type_const_get_unqualified_type(sx, type))
 		: type > 0 && type_get(sx, (size_t)type) == TYPE_POINTER;
+}
+
+bool type_is_reference(const syntax *const sx, const item_t type)
+{
+	return type > 0 && type_get(sx, (size_t)type) == TYPE_REFERENCE;
 }
 
 bool type_is_scalar(const syntax *const sx, const item_t type)
@@ -779,6 +785,11 @@ item_t type_pointer_get_element_type(const syntax *const sx, const item_t type)
 {
 	return type_is_const(sx, type) ? type_pointer_get_element_type(sx, type_const_get_unqualified_type(sx, type))
 		: type_is_pointer(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
+}
+
+item_t type_reference_get_element_type(const syntax *const sx, const item_t type)
+{
+	return type_is_reference(sx, type) ? type_get(sx, (size_t)type + 1) : ITEM_MAX;
 }
 
 item_t type_array(syntax *const sx, const item_t type)
@@ -883,6 +894,11 @@ item_t type_pointer(syntax *const sx, const item_t type)
 item_t type_const(syntax *const sx, const item_t type)
 {
 	return type_add(sx, (item_t[]){ TYPE_CONST, type }, 2);
+}
+
+item_t type_reference(syntax *const sx, const item_t type)
+{
+	return type_add(sx, (item_t[]){ TYPE_REFERENCE, type }, 2);
 }
 
 bool type_is_undefined(const item_t type)
