@@ -263,6 +263,11 @@ static inline item_t functions_get(encoder *const enc, const size_t identifier)
 	return abs(displ);
 }
 
+static inline bool type_has_double_size(const encoder *const enc, const item_t type)
+{
+	return (type_is_floating(enc->sx, type) || (type_is_pointer(enc->sx, type) && type_is_file(enc->sx, type_pointer_get_element_type(enc->sx, type))));
+}
+
 
 static void addr_begin_condition(encoder *const enc, const size_t addr)
 {
@@ -440,7 +445,7 @@ static void emit_load_of_lvalue(encoder *const enc, lvalue value)
 			}
 			else
 			{
-				mem_add(enc, type_is_floating(enc->sx, value.type) ? IC_LOADD : IC_LOAD);
+				mem_add(enc, type_has_double_size(enc, value.type) ? IC_LOADD : IC_LOAD);
 				mem_add(enc, value.displ);
 			}
 
@@ -1188,7 +1193,7 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 			instruction = instruction_to_address_ver(instruction);
 		}
 
-		if (type_is_floating(enc->sx, type))
+		if (type_has_double_size(enc, type))
 		{
 			instruction = instruction_to_floating_ver(instruction);
 		}
@@ -1470,7 +1475,7 @@ static void emit_variable_declaration(encoder *const enc, const node *const nd)
 		}
 		else
 		{
-			mem_add(enc, type_is_floating(enc->sx, unqualified_type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
+			mem_add(enc, type_has_double_size(enc, unqualified_type) ? IC_ASSIGN_R_V : IC_ASSIGN_V);
 			mem_add(enc, displ);
 		}
 	}
