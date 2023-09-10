@@ -574,7 +574,7 @@ size_t type_size(const syntax *const sx, const item_t type)
 	{
 		return (size_t)type_get(sx, (size_t)type + 1);
 	}
-	else if (type_is_floating(sx, type))
+	else if (type_is_floating(sx, type) || (type_is_floating(sx, type) || (type_is_pointer(sx, type) && type_is_file(sx, type_pointer_get_element_type(sx, type)))))
 	{
 		return 2;
 	}
