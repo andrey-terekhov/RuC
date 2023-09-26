@@ -16,7 +16,7 @@ virtual:
   script:
     - ./scripts/test.sh
   tags:
-  - R2LIN
+  - Linux
 
 llvm-intel:
   stage: llvm
@@ -28,7 +28,7 @@ llvm-intel:
     - patch ./scripts/test.sh < ./scripts/llvm.patch
     - ./scripts/test.sh
   tags:
-  - R2LIN
+  - Linux
 
 llvm-uemu:
   stage: llvm
@@ -42,7 +42,7 @@ llvm-uemu:
     - ./scripts/test.sh -d
   allow_failure: true
   tags:
-  - R2LIN
+  - Linux
 
 llvm-baikal:
   stage: llvm
@@ -54,7 +54,7 @@ llvm-baikal:
     - ./scripts/test.sh -d
   allow_failure: true
   tags:
-  - R2LIN
+  - Linux
 
 mips-uemu:
   stage: mips
@@ -68,7 +68,7 @@ mips-uemu:
     - ./scripts/test.sh -d
   allow_failure: true
   tags:
-  - R2LIN
+  - Linux
 
 mips-baikal:
   stage: mips
@@ -80,4 +80,4 @@ mips-baikal:
     - ./scripts/test.sh -d
   allow_failure: true
   tags:
-  - R2LIN
+  - Linux
