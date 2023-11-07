@@ -20,6 +20,7 @@
 #include "codegen.h"
 #include "errors.h"
 #include "mipsgen.h"
+#include "riscvgen.h"
 #include "llvmgen.h"
 #include "parser.h"
 #include "macro.h"
@@ -153,6 +154,10 @@ status_t compile(workspace *const ws)
 	{
 		return compile_to_mips(ws);
 	}
+	else if (ws_has_flag(ws, "-RISCV"))
+	{
+		return compile_to_riscv(ws);
+	}
 	else // if (ws_has_flag(ws, "-VM"))
 	{
 		return compile_to_vm(ws);
@@ -196,6 +201,16 @@ int compile_to_mips(workspace *const ws)
 	return compile_from_ws(ws, &encode_to_mips);
 }
 
+int compile_to_riscv(workspace *const ws)
+{
+	if (ws_get_output(ws) == NULL)
+	{
+		ws_set_output(ws, DEFAULT_MIPS);
+	}
+
+	return compile_from_ws(ws, &encode_to_riscv);
+}
+
 
 
 int auto_compile(const int argc, const char *const *const argv)
@@ -229,6 +244,16 @@ int auto_compile_to_mips(const int argc, const char *const *const argv)
 	ws_clear(&ws);
 	return ret;
 }
+
+int auto_compile_to_riscv(const int argc, const char *const *const argv)
+{
+	workspace ws = ws_parse_args(argc, argv);
+	const int ret = compile_to_riscv(&ws);
+	ws_clear(&ws);
+	return ret;
+}
+
+
 
 
 int no_macro_compile_to_vm(const char *const path)
@@ -267,6 +292,21 @@ int no_macro_compile_to_llvm(const char *const path)
 }
 
 int no_macro_compile_to_mips(const char *const path)
+{
+	universal_io io = io_create();
+	in_set_file(&io, path);
+
+	workspace ws = ws_create();
+	ws_add_file(&ws, path);
+	ws_set_output(&ws, DEFAULT_MIPS);
+	out_set_file(&io, ws_get_output(&ws));
+
+	const int ret = compile_from_io(&ws, &io, &encode_to_mips);
+	ws_clear(&ws);
+	return ret;
+}
+
+int no_macro_compile_to_risv(const char *const path)
 {
 	universal_io io = io_create();
 	in_set_file(&io, path);
