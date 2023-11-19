@@ -14,7 +14,7 @@
  *	limitations under the License.
  */
 
-#include "riscvgen.h"
+#include "mipsgen.h"
 #include "AST.h"
 #include "hash.h"
 #include "operations.h"
@@ -2167,141 +2167,48 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
  */
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
+
+
+	universal_io *const old_io = enc->sx->io;
+	universal_io new_io = io_create();
+	out_set_buffer(&new_io, BUFFER_SIZE);
+	enc->sx->io = &new_io;
+
+
 	const node callee = expression_call_get_callee(nd);
-	// Конвертируем в указатель на функцию
-	// FIXME: хотим рассмотреть любой callee как указатель
-	// на данный момент это не поддержано в билдере, когда будет сделано -- добавить в emit_expression()
-	// и применяем функцию emit_identifier_expression (т.к. его категория в билдере будет проставлена как rvalue)
+
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
+	assert (func_ref >= BEGIN_USER_FUNC);
+	assert (params_amount == 0);
 
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
 
-	if (func_ref >= BEGIN_USER_FUNC)
-	{
-		size_t f_arg_count = 0;
-		size_t arg_count = 0;
-		size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
-		lvalue prev_arg_displ[4 /* за $a0-$a3 */
-									+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
+	
+	size_t f_arg_count = 0;
+	size_t arg_count = 0;
+	size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
+	lvalue prev_arg_displ[4 /* за $a0-$a3 */
+								+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
 
-		uni_printf(enc->sx->io, "\t# setting up $sp:\n");
-		if (displ_for_parameters)
-		{
-			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
-		}
 
-		uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
+	// uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
 
-		// TODO: структуры / массивы в параметры
-		size_t arg_reg_count = 0;
-		for (size_t i = 0; i < params_amount; i++)
-		{
-			const node arg = expression_call_get_argument(nd, i);
-			const rvalue tmp = emit_expression(enc, &arg);
-			const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+	size_t arg_reg_count = 0;
 
-			if ((type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				uni_printf(enc->sx->io, "\t# saving ");
-				mips_register_to_io(enc->sx->io, (type_is_floating(enc->sx, arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count));
-				uni_printf(enc->sx->io, " value on stack:\n");
-			}
-			else
-			{
-				uni_printf(enc->sx->io, "\t# parameter on stack:\n");
-			}
+	const label label_func = { .kind = L_FUNC, .num = func_ref };
+	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
 
-			const lvalue tmp_arg_lvalue = {
-				.base_reg = R_SP,
-				// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
-				// второй на 2*WORD_LENGTH и т.д.
-				.loc.displ = i * WORD_LENGTH,
-				.kind = LVALUE_KIND_STACK,
-				.type = arg_rvalue.type
-			};
 
-			const rvalue arg_saved_rvalue = {
-				.kind = RVALUE_KIND_REGISTER,
-				.val.reg_num = (type_is_floating(enc->sx, arg_rvalue.type)
-					? R_FA0 + f_arg_count
-					: R_A0 + arg_count),
-				.type = arg_rvalue.type,
-				.from_lvalue = !FROM_LVALUE
-			};
-			// Сохранение текущего регистра-аргумента на стек либо передача аргументов на стек
-			emit_store_of_rvalue(
-				enc,
-				&tmp_arg_lvalue,
-				(type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT
-					? &arg_saved_rvalue	// Сохранение значения в регистре-аргументе
-					: &arg_rvalue		// Передача аргумента
-			);
+	uni_printf(enc->sx->io, "\n");
 
-			// Если это передача параметров в регистры-аргументы
-			if ((type_is_floating(enc->sx, arg_rvalue.type) ? f_arg_count : arg_count) < ARG_REG_AMOUNT)
-			{
-				// Аргументы рассматриваются в данном случае как регистровые переменные
-				emit_move_rvalue_to_register(
-					enc,
-					type_is_floating(enc->sx, arg_rvalue.type)
-						? (R_FA0 + f_arg_count)
-						: (R_A0 + arg_count),
-					&arg_rvalue);
+	char *buffer = out_extract_buffer(enc->sx->io);
 
-				// Запоминаем, куда положили текущее значение, лежавшее в регистре-аргументе
-				prev_arg_displ[arg_reg_count++] = tmp_arg_lvalue;
-			}
-
-			if (type_is_floating(enc->sx, arg_rvalue.type))
-			{
-				f_arg_count += 2;
-			}
-			else
-			{
-				arg_count += 1;
-			}
-
-			free_rvalue(enc, &arg_rvalue);
-		}
-
-		const label label_func = { .kind = L_FUNC, .num = func_ref };
-		emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
-
-		// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
-		uni_printf(enc->sx->io, "\n\t# data restoring:\n");
-
-		size_t i = 0, j = 0;	// Счётчик обычных и floating point регистров-аргументов соответственно
-		while (i + j < arg_reg_count)
-		{
-			uni_printf(enc->sx->io, "\n");
-
-			const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i + j]);
-			emit_move_rvalue_to_register(
-				enc,
-				type_is_floating(enc->sx, prev_arg_displ[i + j].type) ? (R_FA0 + 2 * j++) : (R_A0 + i++),
-				&tmp_rval
-			);
-
-			free_rvalue(enc, &tmp_rval);
-		}
-
-		if (displ_for_parameters)
-		{
-			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
-		}
-
-		uni_printf(enc->sx->io, "\n");
-	}
-	else
-	{
-		return emit_builtin_call(enc, nd);
-	}
-
+	printf("%s", buffer);
+	free(buffer);
+	enc->sx->io = old_io;
 	return (rvalue) {
 		.kind = RVALUE_KIND_REGISTER,
 		.type = return_type,
@@ -3958,12 +3865,12 @@ int encode_to_riscv(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	pregen(sx);
-	strings_declaration(&enc);
+	// pregen(sx);
+	// strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
-	postgen(&enc);
+	// postgen(&enc);
 
 	hash_clear(&enc.displacements);
 	return ret;

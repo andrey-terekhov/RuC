@@ -38,6 +38,7 @@ static const char *const DEFAULT_MACRO = "macro.txt";
 static const char *const DEFAULT_VM = "out.ruc";
 static const char *const DEFAULT_LLVM = "out.ll";
 static const char *const DEFAULT_MIPS = "out.s";
+static const char *const DEFAULT_RISCV = "/dev/null";
 
 
 typedef int (*encoder)(const workspace *const ws, syntax *const sx);
@@ -205,7 +206,7 @@ int compile_to_riscv(workspace *const ws)
 {
 	if (ws_get_output(ws) == NULL)
 	{
-		ws_set_output(ws, DEFAULT_MIPS);
+		ws_set_output(ws, DEFAULT_RISCV);
 	}
 
 	return compile_from_ws(ws, &encode_to_riscv);
