@@ -2225,6 +2225,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		// транслируем аргумент, в объекте rvalue информация о его типе
 		// TODO: что если аргумент - структура, которая сохранена на стеке
 		// TODO: что если аргумент - структура или тип, который занимает несколько регистров?
+		// TODO: возможно оптимизировать трансляцию указанного выше, меняя порядок аргументов
 		const rvalue tmp = emit_expression(enc, &arg);
 
 		assert(tmp.kind == RVALUE_KIND_CONST);
