@@ -42,7 +42,7 @@ static const size_t RA_SIZE = 4;					/**< Размер регистра $ra дл
 
 static const size_t TEMP_FP_REG_AMOUNT = 12;		/**< Количество временных регистров для чисел с плавающей точкой */
 static const size_t TEMP_REG_AMOUNT = 10;			/**< Количество обычных временных регистров */
-static const size_t ARG_REG_AMOUNT = 4;				/**< Количество регистров-аргументов для функций */
+static const size_t ARG_REG_AMOUNT = 8;				/**< Количество регистров-аргументов для функций */
 
 static const size_t PRESERVED_REG_AMOUNT = 8;		/**< Количество сохраняемых регистров общего назначения */
 static const size_t PRESERVED_FP_REG_AMOUNT = 10;	/**< Количество сохраняемых регистров с плавающей точкой */
@@ -67,7 +67,11 @@ typedef enum MIPS_REGISTER
 	R_A0,
 	R_A1,
 	R_A2,
-	R_A3,				/**< Used for passing arguments to functions; values are not
+	R_A3,
+	R_A4,
+	R_A5,
+	R_A6,
+	R_A7,				/**< Used for passing arguments to functions; values are not
 							preserved across function calls */
 
 	R_T0,
@@ -608,7 +612,7 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 	switch (reg)
 	{
 		case R_ZERO:
-			uni_printf(io, "$0");
+			uni_printf(io, "x0");
 			break;
 		case R_AT:
 			uni_printf(io, "$at");
@@ -622,73 +626,84 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 			break;
 
 		case R_A0:
-			uni_printf(io, "$a0");
+			uni_printf(io, "a0");
 			break;
 		case R_A1:
-			uni_printf(io, "$a1");
+			uni_printf(io, "a1");
 			break;
 		case R_A2:
-			uni_printf(io, "$a2");
+			uni_printf(io, "a2");
 			break;
 		case R_A3:
-			uni_printf(io, "$a3");
+			uni_printf(io, "a3");
 			break;
-
+		case R_A4:
+			uni_printf(io, "a4");
+			break;
+		case R_A5:
+			uni_printf(io, "a5");
+			break;
+		case R_A6:
+			uni_printf(io, "a6");
+			break;
+		case R_A7:
+			uni_printf(io, "a7");
+			break;
 		case R_T0:
-			uni_printf(io, "$t0");
+			uni_printf(io, "t0");
 			break;
 		case R_T1:
-			uni_printf(io, "$t1");
+			uni_printf(io, "t1");
 			break;
 		case R_T2:
-			uni_printf(io, "$t2");
+			uni_printf(io, "t2");
 			break;
 		case R_T3:
-			uni_printf(io, "$t3");
+			uni_printf(io, "t3");
 			break;
 		case R_T4:
-			uni_printf(io, "$t4");
+			uni_printf(io, "t4");
 			break;
 		case R_T5:
-			uni_printf(io, "$t5");
+			uni_printf(io, "t5");
 			break;
 		case R_T6:
-			uni_printf(io, "$t6");
+			uni_printf(io, "t6");
 			break;
 		case R_T7:
-			uni_printf(io, "$t7");
+			uni_printf(io, "t7");
 			break;
 
 		case R_S0:
-			uni_printf(io, "$s0");
+			uni_printf(io, "s0");
 			break;
 		case R_S1:
-			uni_printf(io, "$s1");
+			uni_printf(io, "s1");
 			break;
 		case R_S2:
-			uni_printf(io, "$s2");
+			uni_printf(io, "s2");
 			break;
 		case R_S3:
-			uni_printf(io, "$s3");
+			uni_printf(io, "s3");
 			break;
 		case R_S4:
-			uni_printf(io, "$s4");
+			uni_printf(io, "s4");
 			break;
 		case R_S5:
-			uni_printf(io, "$s5");
+			uni_printf(io, "s5");
 			break;
 		case R_S6:
-			uni_printf(io, "$s6");
+			uni_printf(io, "s6");
 			break;
 		case R_S7:
-			uni_printf(io, "$s7");
+			uni_printf(io, "s7");
 			break;
 
 		case R_T8:
-			uni_printf(io, "$t8");
+			uni_printf(io, "t8");
 			break;
 		case R_T9:
-			uni_printf(io, "$t9");
+			uni_printf(io, "t9");
 			break;
 
 		case R_K0:
@@ -702,13 +717,13 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 			uni_printf(io, "$gp");
 			break;
 		case R_SP:
-			uni_printf(io, "$sp");
+			uni_printf(io, "sp");
 			break;
 		case R_FP:
-			uni_printf(io, "$fp");
+			uni_printf(io, "fp");
 			break;
 		case R_RA:
-			uni_printf(io, "$ra");
+			uni_printf(io, "ra");
 			break;
 
 		case R_FV0:
@@ -818,7 +833,7 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 	switch (instruction)
 	{
 		case IC_MIPS_MOVE:
-			uni_printf(io, "move");
+			uni_printf(io, "mv");
 			break;
 		case IC_MIPS_LI:
 			uni_printf(io, "li");
@@ -1238,6 +1253,8 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
 	uni_printf(enc->sx->io, " ");
+	uni_printf(enc->sx->io, "ra");
+	uni_printf(enc->sx->io, ", ");
 	emit_label(enc, lbl);
 	uni_printf(enc->sx->io, "\n");
 }
@@ -2167,45 +2184,127 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
  */
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
-
-
+	// сейчас поддерживается только вызов с аргументами-литералами
 	universal_io *const old_io = enc->sx->io;
 	universal_io new_io = io_create();
-	out_set_buffer(&new_io, BUFFER_SIZE);
+	out_set_buffer(&new_io, BUFFER_SIZE); // создаем новый буфер для вывода call expressions
 	enc->sx->io = &new_io;
 
-
 	const node callee = expression_call_get_callee(nd);
-
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
-	assert (func_ref >= BEGIN_USER_FUNC);
-	assert (params_amount == 0);
+	assert (func_ref >= BEGIN_USER_FUNC); // поддерживаются только пользовательнские функции
 
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
-
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
-
 	
-	size_t f_arg_count = 0;
-	size_t arg_count = 0;
-	size_t displ_for_parameters = (params_amount - 1) * WORD_LENGTH;
-	lvalue prev_arg_displ[4 /* за $a0-$a3 */
-								+ 4 / 2 /* за $fa0, $fa2 (т.к. single precision)*/];
+	// stack displacement: насколько нужно сместить стек, чтобы сохранить текущие значение регистров
+	size_t displ_for_parameters = params_amount * WORD_LENGTH;
+	// previous arguments displacement: здесь сохраняем на какой позиции мы сохранили каждый регистр,
+	// чтобы после возврата из функции  их восстановить
+	lvalue prev_arg_displ[ARG_REG_AMOUNT]; 
+
+	// сдвигаем стек на кол-сто аргументов. В стеке хранятся или забекапенные данные, 
+	// которые были в регистрах a0-a7, или аргументы, которые не поместились в регистры.
+	// TODO: почему в mipsgen стек не сдвигается здесь, если аргумент один, но
+	// 		 вместо этого в вызываемой функции sp сдвигается на слово?
+	if (params_amount >= 1)
+	{
+		uni_printf(enc->sx->io, "\t # displacing stack for parameters\n");
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
+	}
+
+	uni_printf(enc->sx->io, "\n\t# passing %d parameters \n", params_amount);
 
 
-	// uni_printf(enc->sx->io, "\n\t# parameters passing:\n");
+	assert(params_amount <= ARG_REG_AMOUNT);
 
-	size_t arg_reg_count = 0;
+	for (size_t i = 0; i < params_amount; i++)
+	{
+		const node arg = expression_call_get_argument(nd, i);
+		// транслируем аргумент, в объекте rvalue информация о его типе
+		// TODO: что если аргумент - структура, которая сохранена на стеке
+		// TODO: что если аргумент - структура или тип, который занимает несколько регистров?
+		const rvalue tmp = emit_expression(enc, &arg);
 
+		assert(tmp.kind == RVALUE_KIND_CONST);
+		const rvalue arg_rvalue = emit_load_of_immediate(enc, &tmp);
+
+
+		uni_printf(enc->sx->io, "\t# type %d\n ", arg_rvalue.type);
+		uni_printf(enc->sx->io, "\t# backuping ");
+		mips_register_to_io(enc->sx->io, (R_A0 + i));
+		uni_printf(enc->sx->io, " value on stack:\n");
+			
+
+		// tmp_arg_lvalue представляет место на стеке, куда сохраняем регистры a0-a7
+		// TODO: подумать, правильно ли использовать call convention из MIPS:
+		//		 первый на WORD_LENGTH выше предыдущего положения $fp,
+		// 		 второй на 2*WORD_LENGTH и т.д.
+		const lvalue tmp_arg_lvalue = {
+			.base_reg = R_SP,
+			.loc.displ = i * WORD_LENGTH,
+			.kind = LVALUE_KIND_STACK,
+			.type = arg_rvalue.type
+		};
+
+		// arg_saved_rvalue представляет значение регистра, которое мы будем сохранять на стек
+		const rvalue arg_saved_rvalue = {
+			.kind = RVALUE_KIND_REGISTER,
+			.val.reg_num = (R_A0 + i),
+			.type = arg_rvalue.type,
+			.from_lvalue = !FROM_LVALUE
+		};
+		// сохранение текущего регистра-аргумента на стек для последующего восстановления
+		emit_store_of_rvalue(
+			enc,
+			&tmp_arg_lvalue,
+			&arg_saved_rvalue
+		);
+		assert(!type_is_floating(enc->sx, arg_rvalue.type));
+
+		// теперь записываем в регистры a0-a7 передаваемые аргументы
+		emit_move_rvalue_to_register(
+			enc,
+			R_A0 + i,
+			&arg_rvalue
+		);
+
+		// Запоминаем lvalue объект, который представляет забекапенное значение a0
+		prev_arg_displ[i] = tmp_arg_lvalue;	
+		free_rvalue(enc, &arg_rvalue);
+	}
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
+	// выполняем прыжок в функцию по относительному смещению (метке)
 	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
-
-
 	uni_printf(enc->sx->io, "\n");
+	if(params_amount > 0) uni_printf(enc->sx->io, "\n\t# register restoring:\n");
+	
+	// восстановление значений регистров a0-a7 со стека 
+	for (size_t i = 0; i < params_amount; ++i)
+	{
+		uni_printf(enc->sx->io, "\n");
+		// загружаем во временный регистр значение аргумента со стека
+		const rvalue tmp_rval = emit_load_of_lvalue(enc, &prev_arg_displ[i]);
+		assert(!type_is_floating(enc->sx, prev_arg_displ[i].type));
+		// теперь возвращаем изначальное значение регистра a0-a7
+		emit_move_rvalue_to_register(
+			enc,
+			R_A0 + i,
+			&tmp_rval
+		);
+		// говорим, что больше не используем регистр, где записан tmp_rval
+		free_rvalue(enc, &tmp_rval);
+	}
 
+	// возвращаем stack pointer в изначальное состояние
+	if (params_amount >= 1)
+	{
+		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
+	}
+
+	// сброс буфера и вывод на экран для отладки
 	char *buffer = out_extract_buffer(enc->sx->io);
-
 	printf("%s", buffer);
 	free(buffer);
 	enc->sx->io = old_io;
