@@ -170,7 +170,7 @@ typedef enum INSTRUCTION
 	IC_RISCV_MUL,		/**< To multiply two words and write the result to a GPR */
 	IC_RISCV_DIV,		/**< DIV performs a signed 32-bit integer division, and places
 							the 32-bit quotient result in the destination register */
-	IC_RISCV_MOD,		/**< MOD performs a signed 32-bit integer division, and places
+	IC_RISCV_REM,		/**< MOD performs a signed 32-bit integer division, and places
 							the 32-bit remainder result in the destination register.
 							The remainder result has the same sign as the dividend */
 	IC_RISCV_SLLV,		/**< To left-shift a word by a variable number of bits */
@@ -545,7 +545,7 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 
 		case BIN_REM_ASSIGN:
 		case BIN_REM:
-			return IC_RISCV_MOD;
+			return IC_RISCV_REM;
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
@@ -854,8 +854,8 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_DIV:
 			uni_printf(io, "div");
 			break;
-		case IC_RISCV_MOD:
-			uni_printf(io, "mod");
+		case IC_RISCV_REM:
+			uni_printf(io, "rem");
 			break;
 		case IC_RISCV_SLLV:
 			uni_printf(io, "sllv");
@@ -2193,7 +2193,6 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	}
 
 	uni_printf(enc->sx->io, "\n\t# passing %zu parameters \n", params_amount);
-
 
 	assert(params_amount <= ARG_REG_AMOUNT);
 
