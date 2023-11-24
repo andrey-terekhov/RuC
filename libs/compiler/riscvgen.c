@@ -3943,12 +3943,12 @@ int encode_to_riscv(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	pregen(sx);
-	strings_declaration(&enc);
+	// pregen(sx);
+	// strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
-	postgen(&enc);
+	// postgen(&enc);
 
 	hash_clear(&enc.displacements);
 	return ret;
