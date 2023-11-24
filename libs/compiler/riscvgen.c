@@ -159,8 +159,8 @@ typedef enum INSTRUCTION
 							stores them in the destination register (не из вышеуказанной книги) */
 
 	IC_RISCV_ADDI,		/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	IC_RISCV_SLL,		/**< To left-shift a word by a fixed number of bits */
-	IC_RISCV_SRA,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_RISCV_SLLI,		/**< To left-shift a word by a fixed number of bits */
+	IC_RISCV_SRAI,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
 	IC_RISCV_ANDI,		/**< To do a bitwise logical AND with a constant */
 	IC_RISCV_XORI,		/**< To do a bitwise logical Exclusive OR with a constant */
 	IC_RISCV_ORI,		/**< To do a bitwise logical OR with a constant */
@@ -170,11 +170,11 @@ typedef enum INSTRUCTION
 	IC_RISCV_MUL,		/**< To multiply two words and write the result to a GPR */
 	IC_RISCV_DIV,		/**< DIV performs a signed 32-bit integer division, and places
 							the 32-bit quotient result in the destination register */
-	IC_RISCV_MOD,		/**< MOD performs a signed 32-bit integer division, and places
+	IC_RISCV_REM,		/**< MOD performs a signed 32-bit integer division, and places
 							the 32-bit remainder result in the destination register.
 							The remainder result has the same sign as the dividend */
-	IC_RISCV_SLLV,		/**< To left-shift a word by a variable number of bits */
-	IC_RISCV_SRAV,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_RISCV_SLL,		/**< To left-shift a word by a variable number of bits */
+	IC_RISCV_SRA,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
 	IC_RISCV_AND,		/**< To do a bitwise logical AND */
 	IC_RISCV_XOR,		/**< To do a bitwise logical Exclusive OR */
 	IC_RISCV_OR,			/**< To do a bitwise logical OR */
@@ -545,15 +545,15 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 
 		case BIN_REM_ASSIGN:
 		case BIN_REM:
-			return IC_RISCV_MOD;
+			return IC_RISCV_REM;
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
-			return (is_imm) ? IC_RISCV_SLL : IC_RISCV_SLLV;
+			return (is_imm) ? IC_RISCV_SLLI : IC_RISCV_SLL;
 
 		case BIN_SHR_ASSIGN:
 		case BIN_SHR:
-			return (is_imm) ? IC_RISCV_SRA : IC_RISCV_SRAV;
+			return (is_imm) ? IC_RISCV_SRAI : IC_RISCV_SRA;
 
 		case BIN_AND_ASSIGN:
 		case BIN_AND:
@@ -648,6 +648,7 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_T6:
 			uni_printf(io, "t6");
 			break;
+
 		case R_S0:
 			uni_printf(io, "s0");
 			break;
@@ -826,11 +827,11 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_ADDI:
 			uni_printf(io, "addi");
 			break;
-		case IC_RISCV_SLL:
-			uni_printf(io, "sll");
+		case IC_RISCV_SLLI:
+			uni_printf(io, "slli");
 			break;
-		case IC_RISCV_SRA:
-			uni_printf(io, "sra");
+		case IC_RISCV_SRAI:
+			uni_printf(io, "srai");
 			break;
 		case IC_RISCV_ANDI:
 			uni_printf(io, "andi");
@@ -854,14 +855,14 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_DIV:
 			uni_printf(io, "div");
 			break;
-		case IC_RISCV_MOD:
-			uni_printf(io, "mod");
+		case IC_RISCV_REM:
+			uni_printf(io, "rem");
 			break;
-		case IC_RISCV_SLLV:
-			uni_printf(io, "sllv");
+		case IC_RISCV_SLL:
+			uni_printf(io, "sll");
 			break;
-		case IC_RISCV_SRAV:
-			uni_printf(io, "srav");
+		case IC_RISCV_SRA:
+			uni_printf(io, "sra");
 			break;
 		case IC_RISCV_AND:
 			uni_printf(io, "and");
@@ -2193,7 +2194,6 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	}
 
 	uni_printf(enc->sx->io, "\n\t# passing %zu parameters \n", params_amount);
-
 
 	assert(params_amount <= ARG_REG_AMOUNT);
 
@@ -3943,12 +3943,12 @@ int encode_to_riscv(const workspace *const ws, syntax *const sx)
 		enc.registers[i] = false;
 	}
 
-	pregen(sx);
-	strings_declaration(&enc);
+	// pregen(sx);
+	// strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
-	postgen(&enc);
+	// postgen(&enc);
 
 	hash_clear(&enc.displacements);
 	return ret;
