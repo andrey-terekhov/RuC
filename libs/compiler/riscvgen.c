@@ -41,10 +41,10 @@ static const size_t SP_SIZE = 4;					/**< Размер регистра $sp дл
 static const size_t RA_SIZE = 4;					/**< Размер регистра $ra для его сохранения */
 
 static const size_t TEMP_FP_REG_AMOUNT = 12;		/**< Количество временных регистров для чисел с плавающей точкой */
-static const size_t TEMP_REG_AMOUNT = 10;			/**< Количество обычных временных регистров */
+static const size_t TEMP_REG_AMOUNT = 7;			/**< Количество обычных временных регистров */
 static const size_t ARG_REG_AMOUNT = 8;				/**< Количество регистров-аргументов для функций */
 
-static const size_t PRESERVED_REG_AMOUNT = 8;		/**< Количество сохраняемых регистров общего назначения */
+static const size_t PRESERVED_REG_AMOUNT = 12;		/**< Количество сохраняемых регистров общего назначения */
 static const size_t PRESERVED_FP_REG_AMOUNT = 10;	/**< Количество сохраняемых регистров с плавающей точкой */
 
 static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lvalue */
@@ -80,9 +80,9 @@ typedef enum MIPS_REGISTER
 	R_T3,
 	R_T4,
 	R_T5,
-	R_T6,
-	R_T7,				/**< Temporary registers used for expression evaluation;
+	R_T6,				/**< Temporary registers used for expression evaluation;
 							values are not preserved across function calls */
+
 
 	R_S0,
 	R_S1,
@@ -91,14 +91,11 @@ typedef enum MIPS_REGISTER
 	R_S4,
 	R_S5,
 	R_S6,
-	R_S7,				/**< Saved registers; values are preserved across function calls */
-
-	R_T8,
-	R_T9,				/**< Temporary registers used for expression evaluations;
-							values are not preserved across function calls. When
-							calling position independent functions $25 (R_T9) must contain
-							the address of the called function */
-
+	R_S7,
+	R_S8,
+	R_S9,
+	R_S10,
+	R_S11,				/**< Saved registers; values are preserved across function calls */
 	R_K0,
 	R_K1,				/**< Used only by the operating system */
 
@@ -156,84 +153,84 @@ typedef enum MIPS_REGISTER
 // Set Manual 2016
 typedef enum INSTRUCTION
 {
-	IC_MIPS_MOVE,		/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
-	IC_MIPS_LI,			/**< MIPS Pseudo-Instruction. Load a constant into a register */
-	IC_MIPS_NOT,		/**< MIPS Pseudo-Instruction. Flips the bits of the source register and
+	IC_RISCV_MOVE,		/**< MIPS Pseudo-Instruction. Move the contents of one register to another */
+	IC_RISCV_LI,			/**< MIPS Pseudo-Instruction. Load a constant into a register */
+	IC_RISCV_NOT,		/**< MIPS Pseudo-Instruction. Flips the bits of the source register and
 							stores them in the destination register (не из вышеуказанной книги) */
 
-	IC_MIPS_ADDI,		/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	IC_MIPS_SLL,		/**< To left-shift a word by a fixed number of bits */
-	IC_MIPS_SRA,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
-	IC_MIPS_ANDI,		/**< To do a bitwise logical AND with a constant */
-	IC_MIPS_XORI,		/**< To do a bitwise logical Exclusive OR with a constant */
-	IC_MIPS_ORI,		/**< To do a bitwise logical OR with a constant */
+	IC_RISCV_ADDI,		/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
+	IC_RISCV_SLL,		/**< To left-shift a word by a fixed number of bits */
+	IC_RISCV_SRA,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_RISCV_ANDI,		/**< To do a bitwise logical AND with a constant */
+	IC_RISCV_XORI,		/**< To do a bitwise logical Exclusive OR with a constant */
+	IC_RISCV_ORI,		/**< To do a bitwise logical OR with a constant */
 
-	IC_MIPS_ADD,		/**< To add 32-bit integers. If an overflow occurs, then trap */
-	IC_MIPS_SUB,		/**< To subtract 32-bit integers. If overflow occurs, then trap */
-	IC_MIPS_MUL,		/**< To multiply two words and write the result to a GPR */
-	IC_MIPS_DIV,		/**< DIV performs a signed 32-bit integer division, and places
+	IC_RISCV_ADD,		/**< To add 32-bit integers. If an overflow occurs, then trap */
+	IC_RISCV_SUB,		/**< To subtract 32-bit integers. If overflow occurs, then trap */
+	IC_RISCV_MUL,		/**< To multiply two words and write the result to a GPR */
+	IC_RISCV_DIV,		/**< DIV performs a signed 32-bit integer division, and places
 							the 32-bit quotient result in the destination register */
-	IC_MIPS_MOD,		/**< MOD performs a signed 32-bit integer division, and places
+	IC_RISCV_MOD,		/**< MOD performs a signed 32-bit integer division, and places
 							the 32-bit remainder result in the destination register.
 							The remainder result has the same sign as the dividend */
-	IC_MIPS_SLLV,		/**< To left-shift a word by a variable number of bits */
-	IC_MIPS_SRAV,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
-	IC_MIPS_AND,		/**< To do a bitwise logical AND */
-	IC_MIPS_XOR,		/**< To do a bitwise logical Exclusive OR */
-	IC_MIPS_OR,			/**< To do a bitwise logical OR */
+	IC_RISCV_SLLV,		/**< To left-shift a word by a variable number of bits */
+	IC_RISCV_SRAV,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_RISCV_AND,		/**< To do a bitwise logical AND */
+	IC_RISCV_XOR,		/**< To do a bitwise logical Exclusive OR */
+	IC_RISCV_OR,			/**< To do a bitwise logical OR */
 
-	IC_MIPS_SW,			/**< To store a word to memory */
-	IC_MIPS_LW,			/**< To load a word from memory as a signed value */
+	IC_RISCV_SW,			/**< To store a word to memory */
+	IC_RISCV_LW,			/**< To load a word from memory as a signed value */
 
-	IC_MIPS_JR,			/**< To execute a branch to an instruction address in a register */
-	IC_MIPS_JAL,		/**< To execute a procedure call within the current 256MB-aligned region */
-	IC_MIPS_J,			/**< To branch within the current 256 MB-aligned region */
+	IC_RISCV_JR,			/**< To execute a branch to an instruction address in a register */
+	IC_RISCV_JAL,		/**< To execute a procedure call within the current 256MB-aligned region */
+	IC_RISCV_J,			/**< To branch within the current 256 MB-aligned region */
 
-	IC_MIPS_BLEZ,		/**< Branch on Less Than or Equal to Zero.
+	IC_RISCV_BLEZ,		/**< Branch on Less Than or Equal to Zero.
 							To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BLTZ,		/**< Branch on Less Than Zero.
+	IC_RISCV_BLTZ,		/**< Branch on Less Than Zero.
 							To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BGEZ,		/**< Branch on Greater Than or Equal to Zero.
+	IC_RISCV_BGEZ,		/**< Branch on Greater Than or Equal to Zero.
 							To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BGTZ,		/**< Branch on Greater Than Zero.
+	IC_RISCV_BGTZ,		/**< Branch on Greater Than Zero.
 							To test a GPR then do a PC-relative conditional branch */
-	IC_MIPS_BEQ,		/**< Branch on Equal.
+	IC_RISCV_BEQ,		/**< Branch on Equal.
 							To compare GPRs then do a PC-relative conditional branch */
-	IC_MIPS_BNE,		/**< Branch on Not Equal.
+	IC_RISCV_BNE,		/**< Branch on Not Equal.
 							To compare GPRs then do a PC-relative conditional branch */
 
-	IC_MIPS_LA,			/**< Load the address of a named memory
+	IC_RISCV_LA,			/**< Load the address of a named memory
 							location into a register (не из вышеуказанной книги)*/
 
-	IC_MIPS_SLTIU,		/**< Set on Less Than Immediate Unsigned.
+	IC_RISCV_SLTIU,		/**< Set on Less Than Immediate Unsigned.
 							To record the result of an unsigned less-than comparison with a constant. */
 
-	IC_MIPS_NOP,		/**< To perform no operation */
+	IC_RISCV_NOP,		/**< To perform no operation */
 
 	/** Floating point operations. Single precision. */
-	IC_MIPS_ADD_S,		/**< To add FP values. */
-	IC_MIPS_SUB_S,		/**< To subtract FP values. */
-	IC_MIPS_MUL_S,		/**< To multiply FP values. */
-	IC_MIPS_DIV_S,		/**< To divide FP values. */
+	IC_RISCV_ADD_S,		/**< To add FP values. */
+	IC_RISCV_SUB_S,		/**< To subtract FP values. */
+	IC_RISCV_MUL_S,		/**< To multiply FP values. */
+	IC_RISCV_DIV_S,		/**< To divide FP values. */
 
-	IC_MIPS_ABS_S,		/**< Floating Point Absolute Value*/
-	IC_MIPS_ABS,		/**< GPR absolute value (не из вышеуказанной книги). MIPS Pseudo-Instruction. */
+	IC_RISCV_ABS_S,		/**< Floating Point Absolute Value*/
+	IC_RISCV_ABS,		/**< GPR absolute value (не из вышеуказанной книги). MIPS Pseudo-Instruction. */
 
-	IC_MIPS_S_S,		/**< MIPS Pseudo instruction. To store a doubleword from an FPR to memory. */
-	IC_MIPS_L_S,		/**< MIPS Pseudo instruction. To load a doubleword from memory to an FPR. */
+	IC_RISCV_S_S,		/**< MIPS Pseudo instruction. To store a doubleword from an FPR to memory. */
+	IC_RISCV_L_S,		/**< MIPS Pseudo instruction. To load a doubleword from memory to an FPR. */
 
-	IC_MIPS_LI_S,		/**< MIPS Pseudo-Instruction. Load a FP constant into a FPR. */
+	IC_RISCV_LI_S,		/**< MIPS Pseudo-Instruction. Load a FP constant into a FPR. */
 
-	IC_MIPS_MOV_S,		/**< The value in first FPR is placed into second FPR. */
+	IC_RISCV_MOV_S,		/**< The value in first FPR is placed into second FPR. */
 
-	IC_MIPS_MFC_1,		/**< Move word from Floating Point.
+	IC_RISCV_MFC_1,		/**< Move word from Floating Point.
 							To copy a word from an FPU (CP1) general register to a GPR. */
-	IC_MIPS_MFHC_1,		/**< To copy a word from the high half of an FPU (CP1)
+	IC_RISCV_MFHC_1,		/**< To copy a word from the high half of an FPU (CP1)
 							general register to a GPR. */
 
-	IC_MIPS_CVT_D_S,	/**< To convert an FP value to double FP. */
-	IC_MIPS_CVT_S_W,	/**< To convert fixed point value to single FP. */
-	IC_MIPS_CVT_W_S,	/**< To convert single FP to fixed point value */
+	IC_RISCV_CVT_D_S,	/**< To convert an FP value to double FP. */
+	IC_RISCV_CVT_S_W,	/**< To convert fixed point value to single FP. */
+	IC_RISCV_CVT_W_S,	/**< To convert single FP to fixed point value */
 } mips_instruction_t;
 
 
@@ -379,19 +376,10 @@ static void lock_register(encoder *const enc, const mips_register_t reg)
 		case R_T4:
 		case R_T5:
 		case R_T6:
-		case R_T7:
 			if (!enc->registers[reg - R_T0])
 			{
 				// Регистр занят => освобождаем
 				enc->registers[reg - R_T0] = true;
-			}
-			return;
-
-		case R_T8:
-		case R_T9:
-			if (!enc->registers[reg - R_T8 + /* индекс R_T8 в enc->registers */ 8])
-			{
-				enc->registers[reg - R_T8 + 8] = true;
 			}
 			return;
 
@@ -483,20 +471,10 @@ static void free_register(encoder *const enc, const mips_register_t reg)
 		case R_T4:
 		case R_T5:
 		case R_T6:
-		case R_T7:
 			if (enc->registers[reg - R_T0])
 			{
 				// Регистр занят => освобождаем
 				enc->registers[reg - R_T0] = false;
-			}
-			return;
-
-		case R_T8:
-		case R_T9:
-			if (enc->registers[reg - R_T8 + /* индекс R_T8 в enc->registers */ 8])
-			{
-				// Регистр занят => освобождаем
-				enc->registers[reg - R_T8 + 8] = false;
 			}
 			return;
 
@@ -551,59 +529,59 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 	{
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			return (is_imm) ? IC_MIPS_ADDI : IC_MIPS_ADD;
+			return (is_imm) ? IC_RISCV_ADDI : IC_RISCV_ADD;
 
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-			return (is_imm) ? IC_MIPS_ADDI : IC_MIPS_SUB;
+			return (is_imm) ? IC_RISCV_ADDI : IC_RISCV_SUB;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
-			return IC_MIPS_MUL;
+			return IC_RISCV_MUL;
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			return IC_MIPS_DIV;
+			return IC_RISCV_DIV;
 
 		case BIN_REM_ASSIGN:
 		case BIN_REM:
-			return IC_MIPS_MOD;
+			return IC_RISCV_MOD;
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
-			return (is_imm) ? IC_MIPS_SLL : IC_MIPS_SLLV;
+			return (is_imm) ? IC_RISCV_SLL : IC_RISCV_SLLV;
 
 		case BIN_SHR_ASSIGN:
 		case BIN_SHR:
-			return (is_imm) ? IC_MIPS_SRA : IC_MIPS_SRAV;
+			return (is_imm) ? IC_RISCV_SRA : IC_RISCV_SRAV;
 
 		case BIN_AND_ASSIGN:
 		case BIN_AND:
-			return (is_imm) ? IC_MIPS_ANDI : IC_MIPS_AND;
+			return (is_imm) ? IC_RISCV_ANDI : IC_RISCV_AND;
 
 		case BIN_XOR_ASSIGN:
 		case BIN_XOR:
-			return (is_imm) ? IC_MIPS_XORI : IC_MIPS_XOR;
+			return (is_imm) ? IC_RISCV_XORI : IC_RISCV_XOR;
 
 		case BIN_OR_ASSIGN:
 		case BIN_OR:
-			return (is_imm) ? IC_MIPS_ORI : IC_MIPS_OR;
+			return (is_imm) ? IC_RISCV_ORI : IC_RISCV_OR;
 
 		case BIN_EQ:
-			return IC_MIPS_BEQ;
+			return IC_RISCV_BEQ;
 		case BIN_NE:
-			return IC_MIPS_BNE;
+			return IC_RISCV_BNE;
 		case BIN_GT:
-			return IC_MIPS_BGTZ;
+			return IC_RISCV_BGTZ;
 		case BIN_LT:
-			return IC_MIPS_BLTZ;
+			return IC_RISCV_BLTZ;
 		case BIN_GE:
-			return IC_MIPS_BGEZ;
+			return IC_RISCV_BGEZ;
 		case BIN_LE:
-			return IC_MIPS_BLEZ;
+			return IC_RISCV_BLEZ;
 
 		default:
-			return IC_MIPS_NOP;
+			return IC_RISCV_NOP;
 	}
 }
 
@@ -670,10 +648,6 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_T6:
 			uni_printf(io, "t6");
 			break;
-		case R_T7:
-			uni_printf(io, "t7");
-			break;
-
 		case R_S0:
 			uni_printf(io, "s0");
 			break;
@@ -698,14 +672,18 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_S7:
 			uni_printf(io, "s7");
 			break;
-
-		case R_T8:
-			uni_printf(io, "t8");
+		case R_S8:
+			uni_printf(io, "s8");
 			break;
-		case R_T9:
-			uni_printf(io, "t9");
+		case R_S9:
+			uni_printf(io, "s9");
 			break;
-
+		case R_S10:
+			uni_printf(io, "s10");
+			break;
+		case R_S11:
+			uni_printf(io, "s11");
+			break;
 		case R_K0:
 			uni_printf(io, "$k0");
 			break;
@@ -714,7 +692,7 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 			break;
 
 		case R_GP:
-			uni_printf(io, "$gp");
+			uni_printf(io, "gp");
 			break;
 		case R_SP:
 			uni_printf(io, "sp");
@@ -832,162 +810,162 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 {
 	switch (instruction)
 	{
-		case IC_MIPS_MOVE:
+		case IC_RISCV_MOVE:
 			uni_printf(io, "mv");
 			break;
-		case IC_MIPS_LI:
+		case IC_RISCV_LI:
 			uni_printf(io, "li");
 			break;
-		case IC_MIPS_LA:
+		case IC_RISCV_LA:
 			uni_printf(io, "la");
 			break;
-		case IC_MIPS_NOT:
+		case IC_RISCV_NOT:
 			uni_printf(io, "not");
 			break;
 
-		case IC_MIPS_ADDI:
+		case IC_RISCV_ADDI:
 			uni_printf(io, "addi");
 			break;
-		case IC_MIPS_SLL:
+		case IC_RISCV_SLL:
 			uni_printf(io, "sll");
 			break;
-		case IC_MIPS_SRA:
+		case IC_RISCV_SRA:
 			uni_printf(io, "sra");
 			break;
-		case IC_MIPS_ANDI:
+		case IC_RISCV_ANDI:
 			uni_printf(io, "andi");
 			break;
-		case IC_MIPS_XORI:
+		case IC_RISCV_XORI:
 			uni_printf(io, "xori");
 			break;
-		case IC_MIPS_ORI:
+		case IC_RISCV_ORI:
 			uni_printf(io, "ori");
 			break;
 
-		case IC_MIPS_ADD:
+		case IC_RISCV_ADD:
 			uni_printf(io, "add");
 			break;
-		case IC_MIPS_SUB:
+		case IC_RISCV_SUB:
 			uni_printf(io, "sub");
 			break;
-		case IC_MIPS_MUL:
+		case IC_RISCV_MUL:
 			uni_printf(io, "mul");
 			break;
-		case IC_MIPS_DIV:
+		case IC_RISCV_DIV:
 			uni_printf(io, "div");
 			break;
-		case IC_MIPS_MOD:
+		case IC_RISCV_MOD:
 			uni_printf(io, "mod");
 			break;
-		case IC_MIPS_SLLV:
+		case IC_RISCV_SLLV:
 			uni_printf(io, "sllv");
 			break;
-		case IC_MIPS_SRAV:
+		case IC_RISCV_SRAV:
 			uni_printf(io, "srav");
 			break;
-		case IC_MIPS_AND:
+		case IC_RISCV_AND:
 			uni_printf(io, "and");
 			break;
-		case IC_MIPS_XOR:
+		case IC_RISCV_XOR:
 			uni_printf(io, "xor");
 			break;
-		case IC_MIPS_OR:
+		case IC_RISCV_OR:
 			uni_printf(io, "or");
 			break;
 
-		case IC_MIPS_SW:
+		case IC_RISCV_SW:
 			uni_printf(io, "sw");
 			break;
-		case IC_MIPS_LW:
+		case IC_RISCV_LW:
 			uni_printf(io, "lw");
 			break;
 
-		case IC_MIPS_JR:
+		case IC_RISCV_JR:
 			uni_printf(io, "jr");
 			break;
-		case IC_MIPS_JAL:
+		case IC_RISCV_JAL:
 			uni_printf(io, "jal");
 			break;
-		case IC_MIPS_J:
+		case IC_RISCV_J:
 			uni_printf(io, "j");
 			break;
 
-		case IC_MIPS_BLEZ:
+		case IC_RISCV_BLEZ:
 			uni_printf(io, "blez");
 			break;
-		case IC_MIPS_BLTZ:
+		case IC_RISCV_BLTZ:
 			uni_printf(io, "bltz");
 			break;
-		case IC_MIPS_BGEZ:
+		case IC_RISCV_BGEZ:
 			uni_printf(io, "bgez");
 			break;
-		case IC_MIPS_BGTZ:
+		case IC_RISCV_BGTZ:
 			uni_printf(io, "bgtz");
 			break;
-		case IC_MIPS_BEQ:
+		case IC_RISCV_BEQ:
 			uni_printf(io, "beq");
 			break;
-		case IC_MIPS_BNE:
+		case IC_RISCV_BNE:
 			uni_printf(io, "bne");
 			break;
 
-		case IC_MIPS_SLTIU:
+		case IC_RISCV_SLTIU:
 			uni_printf(io, "sltiu");
 			break;
 
-		case IC_MIPS_NOP:
+		case IC_RISCV_NOP:
 			uni_printf(io, "nop");
 			break;
 
-		case IC_MIPS_ADD_S:
+		case IC_RISCV_ADD_S:
 			uni_printf(io, "add.s");
 			break;
-		case IC_MIPS_SUB_S:
+		case IC_RISCV_SUB_S:
 			uni_printf(io, "sub.s");
 			break;
-		case IC_MIPS_MUL_S:
+		case IC_RISCV_MUL_S:
 			uni_printf(io, "mul.s");
 			break;
-		case IC_MIPS_DIV_S:
+		case IC_RISCV_DIV_S:
 			uni_printf(io, "div.s");
 			break;
 
-		case IC_MIPS_ABS_S:
+		case IC_RISCV_ABS_S:
 			uni_printf(io, "abs.s");
 			break;
-		case IC_MIPS_ABS:
+		case IC_RISCV_ABS:
 			uni_printf(io, "abs");
 			break;
 
-		case IC_MIPS_S_S:
+		case IC_RISCV_S_S:
 			uni_printf(io, "s.s");
 			break;
-		case IC_MIPS_L_S:
+		case IC_RISCV_L_S:
 			uni_printf(io, "l.s");
 			break;
 
-		case IC_MIPS_LI_S:
+		case IC_RISCV_LI_S:
 			uni_printf(io, "li.s");
 			break;
 
-		case IC_MIPS_MOV_S:
+		case IC_RISCV_MOV_S:
 			uni_printf(io, "mov.s");
 			break;
 
-		case IC_MIPS_MFC_1:
+		case IC_RISCV_MFC_1:
 			uni_printf(io, "mfc1");
 			break;
-		case IC_MIPS_MFHC_1:
+		case IC_RISCV_MFHC_1:
 			uni_printf(io, "mfhc1");
 			break;
 
-		case IC_MIPS_CVT_D_S:
+		case IC_RISCV_CVT_D_S:
 			uni_printf(io, "cvt.d.s");
 			break;
-		case IC_MIPS_CVT_S_W:
+		case IC_RISCV_CVT_S_W:
 			uni_printf(io, "cvt.s.w");
 			break;
-		case IC_MIPS_CVT_W_S:
+		case IC_RISCV_CVT_W_S:
 			uni_printf(io, "cvt.w.s");
 			break;
 	}
@@ -1248,7 +1226,7 @@ static void emit_label_declaration(encoder *const enc, const label *const lbl)
  */
 static void emit_unconditional_branch(encoder *const enc, const mips_instruction_t instruction, const label *const lbl)
 {
-	assert(instruction == IC_MIPS_J || instruction == IC_MIPS_JAL);
+	assert(instruction == IC_RISCV_J || instruction == IC_RISCV_JAL);
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1272,7 +1250,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
 	{
 		if (value->val.int_val == 0)
 		{
-			emit_unconditional_branch(enc, IC_MIPS_J, lbl);
+			emit_unconditional_branch(enc, IC_RISCV_J, lbl);
 		}
 	}
 	else
@@ -1282,7 +1260,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
 		uni_printf(enc->sx->io, " ");
 		rvalue_to_io(enc, value);
 		uni_printf(enc->sx->io, ", ");
-		if (instruction == IC_MIPS_BEQ || instruction == IC_MIPS_BNE)
+		if (instruction == IC_RISCV_BEQ || instruction == IC_RISCV_BNE)
 		{
 			mips_register_to_io(enc->sx->io, R_ZERO);
 			uni_printf(enc->sx->io, ", ");
@@ -1301,7 +1279,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
  */
 static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction, const mips_register_t reg)
 {
-	assert(instruction == IC_MIPS_JR);
+	assert(instruction == IC_RISCV_JR);
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1333,7 +1311,7 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 	assert(value->kind == RVALUE_KIND_CONST);
 
 	const mips_register_t reg = (type_is_floating(enc->sx, value->type)) ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = (type_is_floating(enc->sx, value->type)) ? IC_MIPS_LI_S : IC_MIPS_LI;
+	const mips_instruction_t instruction = (type_is_floating(enc->sx, value->type)) ? IC_RISCV_LI_S : IC_RISCV_LI;
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1386,7 +1364,7 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 
 	const bool is_floating = type_is_floating(enc->sx, lval->type);
 	const mips_register_t reg = is_floating ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = is_floating ? IC_MIPS_L_S : IC_MIPS_LW;
+	const mips_instruction_t instruction = is_floating ? IC_RISCV_L_S : IC_RISCV_LW;
 
 	const rvalue result = {
 		.kind = RVALUE_KIND_REGISTER,
@@ -1594,7 +1572,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
-		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_MIPS_LI : IC_MIPS_LI_S;
+		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_RISCV_LI : IC_RISCV_LI_S;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1613,7 +1591,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 	}
 	else
 	{
-		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_MIPS_MOVE : IC_MIPS_MFC_1;
+		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_RISCV_MOVE : IC_RISCV_MFC_1;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1642,7 +1620,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if (value->val.reg_num != target->loc.reg_num)
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_MIPS_MOV_S : IC_MIPS_MOVE;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_MOV_S : IC_RISCV_MOVE;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1656,7 +1634,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if ((!type_is_structure(enc->sx, target->type)) && (!type_is_array(enc->sx, target->type)))
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_MIPS_S_S : IC_MIPS_SW;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_S_S : IC_RISCV_SW;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1679,7 +1657,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 			{
 				// Загружаем указатель на массив
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_MIPS_SW);
+				instruction_to_io(enc->sx->io, IC_RISCV_SW);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, &reg_value);
 				uni_printf(enc->sx->io, ", %" PRIitem "(", target->loc.displ);
@@ -1772,7 +1750,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
+				instruction_to_io(enc->sx->io, IC_RISCV_SUB);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
@@ -1785,7 +1763,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				emit_conditional_branch(enc, instruction, dest, &label_else);
 
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				instruction_to_io(enc->sx->io, IC_RISCV_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", 1\n");
@@ -1833,7 +1811,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 
 				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
+				instruction_to_io(enc->sx->io, IC_RISCV_SUB);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
@@ -1846,7 +1824,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				emit_conditional_branch(enc, instruction, dest, &label_else);
 
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				instruction_to_io(enc->sx->io, IC_RISCV_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", 1\n");
@@ -1975,7 +1953,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 		// Всегда хотим сохранять $a0 и $a1
 		to_code_2R_I(
 			enc->sx->io,
-			IC_MIPS_ADDI,
+			IC_RISCV_ADDI,
 			R_SP,
 			R_SP,
 			-(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
@@ -2024,7 +2002,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 
 			uni_printf(enc->sx->io, "\tjal printf\n");
 			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+			instruction_to_io(enc->sx->io, IC_RISCV_NOP);
 			uni_printf(enc->sx->io, "\n");
 
 			free_rvalue(enc, &arg_rvalue);
@@ -2052,7 +2030,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 
 			// Конвертируем single to double
 			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_CVT_D_S);
+			instruction_to_io(enc->sx->io, IC_RISCV_CVT_D_S);
 			uni_printf(enc->sx->io, " ");
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, ", ");
@@ -2063,7 +2041,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			// Даже для floating point!
 			// %lo из arg_rvalue в $a1
 			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFC_1);
+			instruction_to_io(enc->sx->io, IC_RISCV_MFC_1);
 			uni_printf(enc->sx->io, " ");
 			mips_register_to_io(enc->sx->io, R_A1);
 			uni_printf(enc->sx->io, ", ");
@@ -2072,7 +2050,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 
 			// %hi из arg_rvalue в $a2
 			uni_printf(enc->sx->io, "\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_MFHC_1);
+			instruction_to_io(enc->sx->io, IC_RISCV_MFHC_1);
 			uni_printf(enc->sx->io, " ");
 			mips_register_to_io(enc->sx->io, R_A2);
 			uni_printf(enc->sx->io, ", ");
@@ -2083,7 +2061,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
 			uni_printf(enc->sx->io, "\tjal printf\n\t");
-			instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+			instruction_to_io(enc->sx->io, IC_RISCV_NOP);
 			uni_printf(enc->sx->io, "\n");
 
 			// Восстановление регистров-аргументов -- они могут понадобится в дальнейшем
@@ -2111,7 +2089,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 
 		to_code_2R_I(
 			enc->sx->io,
-			IC_MIPS_ADDI,
+			IC_RISCV_ADDI,
 			R_SP,
 			R_SP,
 			(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
@@ -2139,7 +2117,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
 	uni_printf(enc->sx->io, "\tjal printf\n");
 	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_NOP);
+	instruction_to_io(enc->sx->io, IC_RISCV_NOP);
 	uni_printf(enc->sx->io, "\n");
 
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
@@ -2211,10 +2189,10 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	if (params_amount >= 1)
 	{
 		uni_printf(enc->sx->io, "\t # displacing stack for parameters\n");
-		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
+		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
 	}
 
-	uni_printf(enc->sx->io, "\n\t# passing %d parameters \n", params_amount);
+	uni_printf(enc->sx->io, "\n\t# passing %zu parameters \n", params_amount);
 
 
 	assert(params_amount <= ARG_REG_AMOUNT);
@@ -2232,7 +2210,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		const rvalue arg_rvalue = emit_load_of_immediate(enc, &tmp);
 
 
-		uni_printf(enc->sx->io, "\t# type %d\n ", arg_rvalue.type);
+		uni_printf(enc->sx->io, "\t# type %zu\n ", arg_rvalue.type);
 		uni_printf(enc->sx->io, "\t# backuping ");
 		mips_register_to_io(enc->sx->io, (R_A0 + i));
 		uni_printf(enc->sx->io, " value on stack:\n");
@@ -2277,7 +2255,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	}
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
 	// выполняем прыжок в функцию по относительному смещению (метке)
-	emit_unconditional_branch(enc, IC_MIPS_JAL, &label_func);
+	emit_unconditional_branch(enc, IC_RISCV_JAL, &label_func);
 	uni_printf(enc->sx->io, "\n");
 	if(params_amount > 0) uni_printf(enc->sx->io, "\n\t# register restoring:\n");
 	
@@ -2301,7 +2279,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	// возвращаем stack pointer в изначальное состояние
 	if (params_amount >= 1)
 	{
-		to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
+		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
 	}
 
 	// сброс буфера и вывод на экран для отладки
@@ -2360,8 +2338,8 @@ static rvalue emit_cast_expression(encoder *const enc, const node *const nd)
 		};
 
 		// FIXME: избавится от to_code функций
-		to_code_2R(enc->sx->io, IC_MIPS_MFC_1, value.val.reg_num, result.val.reg_num);
-		to_code_2R(enc->sx->io, IC_MIPS_CVT_S_W, result.val.reg_num, result.val.reg_num);
+		to_code_2R(enc->sx->io, IC_RISCV_MFC_1, value.val.reg_num, result.val.reg_num);
+		to_code_2R(enc->sx->io, IC_RISCV_CVT_S_W, result.val.reg_num, result.val.reg_num);
 
 		free_rvalue(enc, &value);
 		return result;
@@ -2460,7 +2438,7 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue value = emit_expression(enc, &operand);
 
-			to_code_2R_I(enc->sx->io, IC_MIPS_SLTIU, value.val.reg_num, value.val.reg_num, 1);
+			to_code_2R_I(enc->sx->io, IC_RISCV_SLTIU, value.val.reg_num, value.val.reg_num, 1);
 			return value;
 		}
 
@@ -2468,7 +2446,7 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
-			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_MIPS_ABS_S : IC_MIPS_ABS;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_RISCV_ABS_S : IC_RISCV_ABS;
 
 			to_code_2R(enc->sx->io, instruction, operand_rvalue.val.reg_num, operand_rvalue.val.reg_num);
 			return operand_rvalue;
@@ -2490,7 +2468,7 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 
 			to_code_2R_I(
 				enc->sx->io,
-				IC_MIPS_ADDI,
+				IC_RISCV_ADDI,
 				result_rvalue.val.reg_num,
 				operand_lvalue.base_reg,
 				operand_lvalue.loc.displ
@@ -2548,7 +2526,7 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			const item_t curr_label_num = enc->label_num++;
 			const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
-			const mips_instruction_t instruction = (operator == BIN_LOG_OR) ? IC_MIPS_BNE : IC_MIPS_BEQ;
+			const mips_instruction_t instruction = (operator == BIN_LOG_OR) ? IC_RISCV_BNE : IC_RISCV_BEQ;
 			emit_conditional_branch(enc, instruction, &lhs_rvalue, &label_end);
 
 			free_rvalue(enc, &lhs_rvalue);
@@ -2589,7 +2567,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const size_t label_num = enc->label_num++;
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 
-	const mips_instruction_t instruction = IC_MIPS_BNE;
+	const mips_instruction_t instruction = IC_RISCV_BNE;
 	emit_conditional_branch(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
@@ -2601,7 +2579,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	free_rvalue(enc, &LHS_rvalue);
 
 	const label label_end = { .kind = L_END, .num = label_num };
-	emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
+	emit_unconditional_branch(enc, IC_RISCV_J, &label_end);
 	emit_label_declaration(enc, &label_else);
 
 	const node RHS = expression_ternary_get_RHS(nd);
@@ -2876,7 +2854,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 
 	// FIXME: через emit_binary_operation()
 	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_ADDI);
+	instruction_to_io(enc->sx->io, IC_RISCV_ADDI);
 	uni_printf(enc->sx->io, " ");
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
@@ -2884,7 +2862,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	uni_printf(enc->sx->io, ", %" PRIitem "\n", -(item_t)amount);
 
 	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_MIPS_BNE);
+	instruction_to_io(enc->sx->io, IC_RISCV_BNE);
 	uni_printf(enc->sx->io, " ");
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
@@ -2902,7 +2880,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 			// Сдвиг адреса на размер массива + 1 (за размер следующего измерения)
 			const mips_register_t reg = get_register(enc);
 			// FIXME: создать отдельные rvalue и lvalue и через emit_load_of_lvalue()
-			to_code_R_I_R(enc->sx->io, IC_MIPS_LW, reg, 0, addr->val.reg_num);	// адрес следующего измерения
+			to_code_R_I_R(enc->sx->io, IC_RISCV_LW, reg, 0, addr->val.reg_num);	// адрес следующего измерения
 
 			const rvalue next_addr = {
 				.from_lvalue = !FROM_LVALUE,
@@ -2914,7 +2892,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 			emit_array_init(enc, nd, dimension + 1, &subexpr, &next_addr);
 
 			// Сдвиг адреса
-			to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, addr->val.reg_num, addr->val.reg_num, -(item_t)WORD_LENGTH);
+			to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, addr->val.reg_num, addr->val.reg_num, -(item_t)WORD_LENGTH);
 			uni_printf(enc->sx->io, "\n");
 			free_register(enc, reg);
 		}
@@ -2933,7 +2911,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 			{
 				to_code_2R_I(
 					enc->sx->io,
-					IC_MIPS_ADDI,
+					IC_RISCV_ADDI,
 					addr->val.reg_num,
 					addr->val.reg_num,
 					-4
@@ -2986,7 +2964,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	const bool has_init = declaration_variable_has_initializer(nd);
 
 	// Сдвигаем, чтобы размер первого измерения был перед массивом
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
+	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, -4);
 	const lvalue variable = displacements_add(enc, identifier, false);
 	const rvalue value = {
 		.from_lvalue = !FROM_LVALUE,
@@ -2994,19 +2972,19 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		.val.reg_num = get_register(enc),
 		.type = TYPE_INTEGER
 	};
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, value.val.reg_num, R_SP);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, value.val.reg_num, R_SP);
 	const lvalue target = {.kind = variable.kind, .type = TYPE_INTEGER, .loc = variable.loc, .base_reg = variable.base_reg};
 	emit_store_of_rvalue(enc, &target, &value);
 	free_rvalue(enc, &value);
 
 	// FIXME: Переделать регистры-аргументы
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S0, R_A0);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S1, R_A1);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S2, R_A2);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S3, R_A3);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S0, R_A0);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S1, R_A1);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S2, R_A2);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S3, R_A3);
 
 	// Загрузка адреса в $a0
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_SP);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_SP);
 
 	// Загрузка размера массива в $a1
 	const node dim_size = declaration_variable_get_bound(nd, 0);
@@ -3019,8 +2997,8 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	if (dim >= 2)
 	{
 		// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_A0);
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_A1);
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A2, R_A0);
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A3, R_A1);
 	}
 
 	uni_printf(enc->sx->io, "\tjal DEFARR1\n");
@@ -3028,23 +3006,23 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	for (size_t j = 1; j < dim; j++)
 	{
 		// Загрузка адреса в $a0
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_V0);
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_V0);
 		// Загрузка размера массива в $a1
 		const node try_dim_size = declaration_variable_get_bound(nd, j);
 		const rvalue bound = emit_bound(enc, &try_dim_size, nd);
 		emit_move_rvalue_to_register(enc, R_A1, &bound);
 		free_rvalue(enc, &bound);
 
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S5, R_A0);
-		to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_S6, R_A1);
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S5, R_A0);
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S6, R_A1);
 
 		uni_printf(enc->sx->io, "\tjal DEFARR2\n");
 
 		if (j != dim - 1)
 		{
 			// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
-			to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_T5);
-			to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_T6);
+			to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A2, R_T5);
+			to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A3, R_T6);
 		}
 	}
 
@@ -3059,12 +3037,12 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &variable_value);
 	}
 
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_SP, R_V0);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_SP, R_V0);
 
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A0, R_S0);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A1, R_S1);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A2, R_S2);
-	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_A3, R_S3);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_S0);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A1, R_S1);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A2, R_S2);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A3, R_S3);
 }
 
 /**
@@ -3181,13 +3159,13 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	// Сохранение оберегаемых регистров перед началом работы функции
 	// FIXME: избавиться от функций to_code
 	uni_printf(enc->sx->io, "\n\t# preserved registers:\n");
-	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_RA, -(item_t)RA_SIZE, R_SP);
-	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
+	to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_RA, -(item_t)RA_SIZE, R_SP);
+	to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
 
 	// Сохранение s0-s7
 	for (size_t i = 0; i < PRESERVED_REG_AMOUNT; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
+		to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
@@ -3195,7 +3173,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
 	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_MIPS_S_S, R_FS0 + 2 * i
+		to_code_R_I_R(enc->sx->io, IC_RISCV_S_S, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за $s0-$s7 */)
 			, R_SP);
 	}
@@ -3269,12 +3247,12 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
 	// $fp указывает на конец статики (которое в данный момент равно концу динамики)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
+	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
 	// $sp указывает на конец динамики (которое в данный момент равно концу статики)
 	// Смещаем $sp ниже конца статики (чтобы он не совпадал с $fp)
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
+	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
 
 	uni_printf(enc->sx->io, "%s", buffer);
 	free(buffer);
@@ -3286,14 +3264,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
 	// Ставим $fp на его положение в предыдущей функции
-	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
+	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n");
 
 	// Восстановление $s0-$s7
 	for (size_t i = 0; i < PRESERVED_REG_AMOUNT; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
+		to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
@@ -3301,19 +3279,19 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	// Восстановление $fs0-$fs7
 	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_MIPS_L_S, R_FS0 + 2 * i
+		to_code_R_I_R(enc->sx->io, IC_RISCV_L_S, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + /* за s0-s7 */ 8 * WORD_LENGTH), R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
 
 	// Возвращаем $sp его положение в предыдущей функции
-	to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
+	to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
 
-	to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_RA, -(item_t)(RA_SIZE), R_SP);
+	to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_RA, -(item_t)(RA_SIZE), R_SP);
 
 	// Прыгаем далее
-	emit_register_branch(enc, IC_MIPS_JR, R_RA);
+	emit_register_branch(enc, IC_RISCV_JR, R_RA);
 }
 
 static void emit_declaration(encoder *const enc, const node *const nd)
@@ -3429,7 +3407,7 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 	const label label_end = { .kind = L_END, .num = label_num };
 
 	const bool has_else = statement_if_has_else_substmt(nd);
-	const mips_instruction_t instruction = IC_MIPS_BEQ;
+	const mips_instruction_t instruction = IC_RISCV_BEQ;
 	emit_conditional_branch(enc, instruction, &value, has_else ? &label_else : &label_end);
 	free_rvalue(enc, &value);
 
@@ -3438,7 +3416,7 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 
 	if (has_else)
 	{
-		emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
+		emit_unconditional_branch(enc, IC_RISCV_J, &label_end);
 		emit_label_declaration(enc, &label_else);
 
 		const node else_substmt = statement_if_get_else_substmt(nd);
@@ -3494,7 +3472,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 				.type = TYPE_INTEGER
 			};
 			emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
-			emit_conditional_branch(enc, IC_MIPS_BEQ, &result_rvalue, &label_case);
+			emit_conditional_branch(enc, IC_RISCV_BEQ, &result_rvalue, &label_case);
 
 			free_rvalue(enc, &result_rvalue);
 		}
@@ -3508,12 +3486,12 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 	if (default_index != -1)
 	{
 		const label label_default = { .kind = L_CASE, .num = (size_t)default_index };
-		emit_unconditional_branch(enc, IC_MIPS_J, &label_default);
+		emit_unconditional_branch(enc, IC_RISCV_J, &label_default);
 	}
 	else
 	{
 		// Нет default => можем попасть в ситуацию, когда требуется пропустить все case'ы
-		emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
+		emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_break);
 	}
 
 	free_rvalue(enc, &condition_rvalue);
@@ -3567,14 +3545,14 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 	const node condition = statement_while_get_condition(nd);
 	const rvalue value = emit_expression(enc, &condition);
 
-	const mips_instruction_t instruction = IC_MIPS_BEQ;
+	const mips_instruction_t instruction = IC_RISCV_BEQ;
 	emit_conditional_branch(enc, instruction, &value, &label_end);
 	free_rvalue(enc, &value);
 
 	const node body = statement_while_get_body(nd);
 	emit_statement(enc, &body);
 
-	emit_unconditional_branch(enc, IC_MIPS_J, &label_begin);
+	emit_unconditional_branch(enc, IC_RISCV_J, &label_begin);
 	emit_label_declaration(enc, &label_end);
 
 	enc->label_continue = old_continue;
@@ -3608,7 +3586,7 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 	const node condition = statement_do_get_condition(nd);
 	const rvalue value = emit_expression(enc, &condition);
 
-	const mips_instruction_t instruction = IC_MIPS_BNE;
+	const mips_instruction_t instruction = IC_RISCV_BNE;
 	emit_conditional_branch(enc, instruction, &value, &label_begin);
 	emit_label_declaration(enc, &label_end);
 	free_rvalue(enc, &value);
@@ -3647,7 +3625,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 	{
 		const node condition = statement_for_get_condition(nd);
 		const rvalue value = emit_expression(enc, &condition);
-		const mips_instruction_t instruction = IC_MIPS_BEQ;
+		const mips_instruction_t instruction = IC_RISCV_BEQ;
 		emit_conditional_branch(enc, instruction, &value, &label_end);
 		free_rvalue(enc, &value);
 	}
@@ -3661,7 +3639,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 		emit_void_expression(enc, &increment);
 	}
 
-	emit_unconditional_branch(enc, IC_MIPS_J, &label_begin);
+	emit_unconditional_branch(enc, IC_RISCV_J, &label_begin);
 	emit_label_declaration(enc, &label_end);
 
 	enc->label_continue = old_continue;
@@ -3677,7 +3655,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
  */
 static void emit_continue_statement(encoder *const enc)
 {
-	emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_continue);
+	emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_continue);
 }
 
 /**
@@ -3687,7 +3665,7 @@ static void emit_continue_statement(encoder *const enc)
  */
 static void emit_break_statement(encoder *const enc)
 {
-	emit_unconditional_branch(enc, IC_MIPS_J, &enc->label_break);
+	emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_break);
 }
 
 /**
@@ -3710,7 +3688,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 	}
 
 	const label label_end = { .kind = L_FUNCEND, .num = enc->curr_function_ident };
-	emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
+	emit_unconditional_branch(enc, IC_RISCV_J, &label_end);
 }
 
 /**
@@ -3833,11 +3811,11 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
 
 	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	to_code_2R(sx->io, IC_RISCV_MOVE, R_FP, R_SP);
+	to_code_2R_I(sx->io, IC_RISCV_ADDI, R_SP, R_SP, -4);
+	to_code_R_I_R(sx->io, IC_RISCV_SW, R_RA, 0, R_SP);
+	to_code_R_I(sx->io, IC_RISCV_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(sx->io, IC_RISCV_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
 	uni_printf(sx->io, "\n");
 }
 
@@ -3891,8 +3869,8 @@ static void strings_declaration(encoder *const enc)
 	uni_printf(enc->sx->io, "\tjal MAIN\n");
 
 	// Выход из программы в конце работы
-	to_code_R_I_R(enc->sx->io, IC_MIPS_LW, R_RA, 0, R_SP);
-	emit_register_branch(enc, IC_MIPS_JR, R_RA);
+	to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_RA, 0, R_SP);
+	emit_register_branch(enc, IC_RISCV_JR, R_RA);
 }
 
 static void postgen(encoder *const enc)
