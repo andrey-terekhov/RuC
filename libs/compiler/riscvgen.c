@@ -648,6 +648,7 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_T6:
 			uni_printf(io, "t6");
 			break;
+
 		case R_S0:
 			uni_printf(io, "s0");
 			break;
