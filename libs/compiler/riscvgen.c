@@ -159,8 +159,8 @@ typedef enum INSTRUCTION
 							stores them in the destination register (не из вышеуказанной книги) */
 
 	IC_RISCV_ADDI,		/**< To add a constant to a 32-bit integer. If overflow occurs, then trap */
-	IC_RISCV_SLL,		/**< To left-shift a word by a fixed number of bits */
-	IC_RISCV_SRA,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
+	IC_RISCV_SLLI,		/**< To left-shift a word by a fixed number of bits */
+	IC_RISCV_SRAI,		/**< To execute an arithmetic right-shift of a word by a fixed number of bits */
 	IC_RISCV_ANDI,		/**< To do a bitwise logical AND with a constant */
 	IC_RISCV_XORI,		/**< To do a bitwise logical Exclusive OR with a constant */
 	IC_RISCV_ORI,		/**< To do a bitwise logical OR with a constant */
@@ -173,8 +173,8 @@ typedef enum INSTRUCTION
 	IC_RISCV_REM,		/**< MOD performs a signed 32-bit integer division, and places
 							the 32-bit remainder result in the destination register.
 							The remainder result has the same sign as the dividend */
-	IC_RISCV_SLLV,		/**< To left-shift a word by a variable number of bits */
-	IC_RISCV_SRAV,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
+	IC_RISCV_SLL,		/**< To left-shift a word by a variable number of bits */
+	IC_RISCV_SRA,		/**< To execute an arithmetic right-shift of a word by a variable number of bits */
 	IC_RISCV_AND,		/**< To do a bitwise logical AND */
 	IC_RISCV_XOR,		/**< To do a bitwise logical Exclusive OR */
 	IC_RISCV_OR,			/**< To do a bitwise logical OR */
@@ -549,11 +549,11 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 
 		case BIN_SHL_ASSIGN:
 		case BIN_SHL:
-			return (is_imm) ? IC_RISCV_SLL : IC_RISCV_SLLV;
+			return (is_imm) ? IC_RISCV_SLLI : IC_RISCV_SLL;
 
 		case BIN_SHR_ASSIGN:
 		case BIN_SHR:
-			return (is_imm) ? IC_RISCV_SRA : IC_RISCV_SRAV;
+			return (is_imm) ? IC_RISCV_SRAI : IC_RISCV_SRA;
 
 		case BIN_AND_ASSIGN:
 		case BIN_AND:
@@ -826,11 +826,11 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_ADDI:
 			uni_printf(io, "addi");
 			break;
-		case IC_RISCV_SLL:
-			uni_printf(io, "sll");
+		case IC_RISCV_SLLI:
+			uni_printf(io, "slli");
 			break;
-		case IC_RISCV_SRA:
-			uni_printf(io, "sra");
+		case IC_RISCV_SRAI:
+			uni_printf(io, "srai");
 			break;
 		case IC_RISCV_ANDI:
 			uni_printf(io, "andi");
@@ -857,11 +857,11 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_REM:
 			uni_printf(io, "rem");
 			break;
-		case IC_RISCV_SLLV:
-			uni_printf(io, "sllv");
+		case IC_RISCV_SLL:
+			uni_printf(io, "sll");
 			break;
-		case IC_RISCV_SRAV:
-			uni_printf(io, "srav");
+		case IC_RISCV_SRA:
+			uni_printf(io, "sra");
 			break;
 		case IC_RISCV_AND:
 			uni_printf(io, "and");
