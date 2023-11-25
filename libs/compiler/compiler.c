@@ -38,7 +38,7 @@ static const char *const DEFAULT_MACRO = "macro.txt";
 static const char *const DEFAULT_VM = "out.ruc";
 static const char *const DEFAULT_LLVM = "out.ll";
 static const char *const DEFAULT_MIPS = "out.s";
-static const char *const DEFAULT_RISCV = "/dev/null";
+static const char *const DEFAULT_RISCV = "out-riscv.s";
 
 
 typedef int (*encoder)(const workspace *const ws, syntax *const sx);
