@@ -37,20 +37,20 @@ static const size_t HALF_WORD_LENGTH = 2;			/**< Длина половины с�
 static const size_t LOW_DYN_BORDER = 0x10010000;	/**< Нижняя граница динамической памяти */
 static const size_t HEAP_DISPL = 8000;				/**< Смещение кучи относительно глобальной памяти */
 
-static const size_t SP_SIZE = 4;					/**< Размер регистра $sp для его сохранения */
-static const size_t RA_SIZE = 4;					/**< Размер регистра $ra для его сохранения */
+static const size_t SP_SIZE = 4;					/**< Размер регистра sp для его сохранения */
+static const size_t RA_SIZE = 4;					/**< Размер регистра ra для его сохранения */
 
 static const size_t TEMP_FP_REG_AMOUNT = 12;		/**< Количество временных регистров для чисел с плавающей точкой */
 static const size_t TEMP_REG_AMOUNT = 7;			/**< Количество обычных временных регистров */
 static const size_t ARG_REG_AMOUNT = 8;				/**< Количество регистров-аргументов для функций */
 
 static const size_t PRESERVED_REG_AMOUNT = 12;		/**< Количество сохраняемых регистров общего назначения */
-static const size_t PRESERVED_FP_REG_AMOUNT = 10;	/**< Количество сохраняемых регистров с плавающей точкой */
+static const size_t PRESERVED_FP_REG_AMOUNT = 12;	/**< Количество сохраняемых регистров с плавающей точкой */
 
 static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lvalue */
 
 /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
-static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 +
+static const size_t FUNC_DISPL_PRESEREVED = /* за sp */ 4 + /* за ra */ 4 +
 											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
 
 
@@ -58,14 +58,11 @@ static const size_t FUNC_DISPL_PRESEREVED = /* за $sp */ 4 + /* за $ra */ 4 
 typedef enum MIPS_REGISTER
 {
 	R_ZERO,				/**< Always has the value 0 */
-	R_AT,				/**< Temporary, generally used by assembler */
-
-	R_V0,
-	R_V1,				/**< Used for expression evaluations and to hold the integer
-							and pointer type function return values */
 
 	R_A0,
-	R_A1,
+	R_A1,				/**< Used for expression evaluations and to hold the integer
+							and pointer type function return values */
+
 	R_A2,
 	R_A3,
 	R_A4,
@@ -96,8 +93,6 @@ typedef enum MIPS_REGISTER
 	R_S9,
 	R_S10,
 	R_S11,				/**< Saved registers; values are preserved across function calls */
-	R_K0,
-	R_K1,				/**< Used only by the operating system */
 
 	R_GP,				/**< Global pointer and context pointer */
 	R_SP,				/**< Stack pointer */
@@ -109,17 +104,17 @@ typedef enum MIPS_REGISTER
 	// Для чисел с двойной точностью используется пара регистров:
 	// - регистр с чётным номером содержит младшие 32 бита числа;
 	// - регистр с нечётным номером содержит старшие 32 бита числа.
-	R_FV0,
-	R_FV1,
-	R_FV2,
-	R_FV3,				/**< Used to hold floating-point type function results;
-							single-precision uses $f0 and double-precision uses
-							the register pair $f0..$f1 */
-
 	R_FA0,
-	R_FA1,
+	R_FA1,              /**< Used to hold floating-point type function results;
+							single-precision uses f0 and double-precision uses
+							the register pair f0..f1 */
+
 	R_FA2,
-	R_FA3,				/**< Used for passing arguments to functions */
+	R_FA3,				
+	R_FA4,
+	R_FA5,
+	R_FA6,
+	R_FA7,				/**< Used for passing arguments to functions */
 
 	R_FT0,
 	R_FT1,
@@ -208,20 +203,24 @@ typedef enum INSTRUCTION
 	IC_RISCV_NOP,		/**< To perform no operation */
 
 	/** Floating point operations. Single precision. */
-	IC_RISCV_ADD_S,		/**< To add FP values. */
-	IC_RISCV_SUB_S,		/**< To subtract FP values. */
-	IC_RISCV_MUL_S,		/**< To multiply FP values. */
-	IC_RISCV_DIV_S,		/**< To divide FP values. */
+	// TODO: use all this instructions in real operations, now they are only declared
+	IC_RISCV_FADD,		/**< To add FP values. */
+	IC_RISCV_FSUB,		/**< To subtract FP values. */
+	IC_RISCV_FMUL,		/**< To multiply FP values. */
+	IC_RISCV_FDIV,		/**< To divide FP values. */
 
-	IC_RISCV_ABS_S,		/**< Floating Point Absolute Value*/
+	IC_RISCV_FABS,		/**< Floating Point Absolute Value Single Precision*/
+	IC_RISCV_DABS,		/**< Floating Point Absolute Value Double Precition*/
+
+	// TODO: here is no abs for integers in risc-v
 	IC_RISCV_ABS,		/**< GPR absolute value (не из вышеуказанной книги). MIPS Pseudo-Instruction. */
 
-	IC_RISCV_S_S,		/**< MIPS Pseudo instruction. To store a doubleword from an FPR to memory. */
-	IC_RISCV_L_S,		/**< MIPS Pseudo instruction. To load a doubleword from memory to an FPR. */
+	// TODO: remove this instruction, they are not presented in risc-v
 
-	IC_RISCV_LI_S,		/**< MIPS Pseudo-Instruction. Load a FP constant into a FPR. */
+	IC_RISCV_FSD,		/**< RISCV Pseudo instruction. To store a doubleword from an FPR to memory. */
+	IC_RISCV_FLD,		/**< RISCV Pseudo instruction. To load a doubleword from memory to an FPR. */
 
-	IC_RISCV_MOV_S,		/**< The value in first FPR is placed into second FPR. */
+	IC_RISCV_FMOV,		/**< The value in first FPR is placed into second FPR. */
 
 	IC_RISCV_MFC_1,		/**< Move word from Floating Point.
 							To copy a word from an FPU (CP1) general register to a GPR. */
@@ -301,8 +300,8 @@ typedef struct encoder
 {
 	syntax *sx;								/**< Структура syntax с таблицами */
 
-	size_t max_displ;						/**< Максимальное смещение от $sp */
-	size_t global_displ;					/**< Смещение от $gp */
+	size_t max_displ;						/**< Максимальное смещение от sp */
+	size_t global_displ;					/**< Смещение от gp */
 
 	hash displacements;						/**< Хеш таблица с информацией о расположении идентификаторов:
 												@c key		- ссылка на таблицу идентификаторов
@@ -520,28 +519,30 @@ static void free_rvalue(encoder *const enc, const rvalue *const rval)
  *
  *	@param	operation_type		Type of operation in AST
  *	@param	is_imm				@c True if the instruction is immediate, @c False otherwise
+  *	@param	is_floating		    @c True if the operands are float, @c False otherwise
  *
  *	@return	MIPS binary instruction
  */
-static mips_instruction_t get_bin_instruction(const binary_t operation_type, const bool is_imm)
+static mips_instruction_t get_bin_instruction(const binary_t operation_type, const bool is_imm,
+											  const bool is_floating)
 {
 	switch (operation_type)
 	{
 		case BIN_ADD_ASSIGN:
 		case BIN_ADD:
-			return (is_imm) ? IC_RISCV_ADDI : IC_RISCV_ADD;
+			return (is_floating) ? IC_RISCV_FADD : (is_imm) ? IC_RISCV_ADDI : IC_RISCV_ADD;
 
 		case BIN_SUB_ASSIGN:
 		case BIN_SUB:
-			return (is_imm) ? IC_RISCV_ADDI : IC_RISCV_SUB;
+			return (is_floating) ? IC_RISCV_FSUB : (is_imm) ? IC_RISCV_ADDI : IC_RISCV_SUB;
 
 		case BIN_MUL_ASSIGN:
 		case BIN_MUL:
-			return IC_RISCV_MUL;
+			return (is_floating) ? IC_RISCV_FMUL : IC_RISCV_MUL;
 
 		case BIN_DIV_ASSIGN:
 		case BIN_DIV:
-			return IC_RISCV_DIV;
+			return (is_floating) ? IC_RISCV_FDIV : IC_RISCV_DIV;
 
 		case BIN_REM_ASSIGN:
 		case BIN_REM:
@@ -567,6 +568,7 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 		case BIN_OR:
 			return (is_imm) ? IC_RISCV_ORI : IC_RISCV_OR;
 
+		// TODO: use floating logical operations before branching
 		case BIN_EQ:
 			return IC_RISCV_BEQ;
 		case BIN_NE:
@@ -591,16 +593,6 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 	{
 		case R_ZERO:
 			uni_printf(io, "x0");
-			break;
-		case R_AT:
-			uni_printf(io, "$at");
-			break;
-
-		case R_V0:
-			uni_printf(io, "$v0");
-			break;
-		case R_V1:
-			uni_printf(io, "$v1");
 			break;
 
 		case R_A0:
@@ -685,12 +677,6 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 		case R_S11:
 			uni_printf(io, "s11");
 			break;
-		case R_K0:
-			uni_printf(io, "$k0");
-			break;
-		case R_K1:
-			uni_printf(io, "$k1");
-			break;
 
 		case R_GP:
 			uni_printf(io, "gp");
@@ -705,104 +691,105 @@ static void mips_register_to_io(universal_io *const io, const mips_register_t re
 			uni_printf(io, "ra");
 			break;
 
-		case R_FV0:
-			uni_printf(io, "$f0");
-			break;
-		case R_FV1:
-			uni_printf(io, "$f1");
-			break;
-		case R_FV2:
-			uni_printf(io, "$f2");
-			break;
-		case R_FV3:
-			uni_printf(io, "$f3");
-			break;
-
 		case R_FT0:
-			uni_printf(io, "$f4");
+			uni_printf(io, "f0");
 			break;
 		case R_FT1:
-			uni_printf(io, "$f5");
+			uni_printf(io, "f1");
 			break;
 		case R_FT2:
-			uni_printf(io, "$f6");
+			uni_printf(io, "f2");
 			break;
 		case R_FT3:
-			uni_printf(io, "$f7");
+			uni_printf(io, "f3");
 			break;
 		case R_FT4:
-			uni_printf(io, "$f8");
+			uni_printf(io, "f4");
 			break;
 		case R_FT5:
-			uni_printf(io, "$f9");
+			uni_printf(io, "f5");
 			break;
 		case R_FT6:
-			uni_printf(io, "$f10");
+			uni_printf(io, "f6");
 			break;
 		case R_FT7:
-			uni_printf(io, "$f11");
+			uni_printf(io, "f7");
 			break;
-		case R_FT8:
-			uni_printf(io, "$f16");
+		
+		case R_FS0:
+			uni_printf(io, "f8");
 			break;
-		case R_FT9:
-			uni_printf(io, "$f17");
-			break;
-		case R_FT10:
-			uni_printf(io, "$f18");
-			break;
-		case R_FT11:
-			uni_printf(io, "$f19");
+		case R_FS1:
+			uni_printf(io, "f9");
 			break;
 
 		case R_FA0:
-			uni_printf(io, "$f12");
+			uni_printf(io, "f10");
 			break;
 		case R_FA1:
-			uni_printf(io, "$f13");
+			uni_printf(io, "f11");
 			break;
 		case R_FA2:
-			uni_printf(io, "$f14");
+			uni_printf(io, "f12");
 			break;
 		case R_FA3:
-			uni_printf(io, "$f15");
+			uni_printf(io, "f13");
+			break;
+		case R_FA4:
+			uni_printf(io, "f14");
+			break;
+		case R_FA5:
+			uni_printf(io, "f15");
+			break;
+		case R_FA6:
+			uni_printf(io, "f16");
+			break;
+		case R_FA7:
+			uni_printf(io, "f17");
 			break;
 
-		case R_FS0:
-			uni_printf(io, "$f20");
-			break;
-		case R_FS1:
-			uni_printf(io, "$f21");
-			break;
 		case R_FS2:
-			uni_printf(io, "$f22");
+			uni_printf(io, "f18");
 			break;
 		case R_FS3:
-			uni_printf(io, "$f23");
+			uni_printf(io, "f19");
 			break;
 		case R_FS4:
-			uni_printf(io, "$f24");
+			uni_printf(io, "f20");
 			break;
 		case R_FS5:
-			uni_printf(io, "$f25");
+			uni_printf(io, "f21");
 			break;
 		case R_FS6:
-			uni_printf(io, "$f26");
+			uni_printf(io, "f22");
 			break;
 		case R_FS7:
-			uni_printf(io, "$f27");
+			uni_printf(io, "f23");
 			break;
 		case R_FS8:
-			uni_printf(io, "$f28");
+			uni_printf(io, "f24");
 			break;
 		case R_FS9:
-			uni_printf(io, "$f29");
+			uni_printf(io, "f25");
 			break;
 		case R_FS10:
-			uni_printf(io, "$f30");
+			uni_printf(io, "f26");
 			break;
 		case R_FS11:
-			uni_printf(io, "$f31");
+			uni_printf(io, "f27");
+			break;
+		
+		case R_FT8:
+			uni_printf(io, "f28");
+			break;
+		case R_FT9:
+			uni_printf(io, "f29");
+			break;
+		case R_FT10:
+			uni_printf(io, "f30");
+			break;
+		case R_FT11:
+			uni_printf(io, "f31");
 			break;
 	}
 }
@@ -918,39 +905,40 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			uni_printf(io, "nop");
 			break;
 
-		case IC_RISCV_ADD_S:
-			uni_printf(io, "add.s");
+		case IC_RISCV_FADD:
+			uni_printf(io, "fadd.s");
 			break;
-		case IC_RISCV_SUB_S:
-			uni_printf(io, "sub.s");
+		case IC_RISCV_FSUB:
+			uni_printf(io, "fsub.s");
 			break;
-		case IC_RISCV_MUL_S:
-			uni_printf(io, "mul.s");
+		case IC_RISCV_FMUL:
+			uni_printf(io, "fmul.s");
 			break;
-		case IC_RISCV_DIV_S:
-			uni_printf(io, "div.s");
+		case IC_RISCV_FDIV:
+			uni_printf(io, "fdiv.s");
 			break;
 
-		case IC_RISCV_ABS_S:
-			uni_printf(io, "abs.s");
+		case IC_RISCV_FABS:
+			uni_printf(io, "fabs.s");
 			break;
+		case IC_RISCV_DABS:
+			uni_printf(io, "fabs.d");
+			break;
+
+		// TODO: remove later
 		case IC_RISCV_ABS:
 			uni_printf(io, "abs");
 			break;
 
-		case IC_RISCV_S_S:
-			uni_printf(io, "s.s");
+		case IC_RISCV_FSD:
+			uni_printf(io, "fsd");
 			break;
-		case IC_RISCV_L_S:
-			uni_printf(io, "l.s");
-			break;
-
-		case IC_RISCV_LI_S:
-			uni_printf(io, "li.s");
+		case IC_RISCV_FLD:
+			uni_printf(io, "fld");
 			break;
 
-		case IC_RISCV_MOV_S:
-			uni_printf(io, "mov.s");
+		case IC_RISCV_FMOV:
+			uni_printf(io, "mov");
 			break;
 
 		case IC_RISCV_MFC_1:
@@ -1312,7 +1300,8 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 	assert(value->kind == RVALUE_KIND_CONST);
 
 	const mips_register_t reg = (type_is_floating(enc->sx, value->type)) ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = (type_is_floating(enc->sx, value->type)) ? IC_RISCV_LI_S : IC_RISCV_LI;
+	// TODO: use dobule li instruction for double
+	const mips_instruction_t instruction = IC_RISCV_LI;
 
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
@@ -1365,7 +1354,7 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 
 	const bool is_floating = type_is_floating(enc->sx, lval->type);
 	const mips_register_t reg = is_floating ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = is_floating ? IC_RISCV_L_S : IC_RISCV_LW;
+	const mips_instruction_t instruction = is_floating ? IC_RISCV_FLD : IC_RISCV_LW;
 
 	const rvalue result = {
 		.kind = RVALUE_KIND_REGISTER,
@@ -1573,7 +1562,8 @@ static void emit_move_rvalue_to_register(encoder *const enc
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
-		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_RISCV_LI : IC_RISCV_LI_S;
+		// TODO: use li twice for move double
+		const mips_instruction_t instruction = IC_RISCV_LI;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1592,7 +1582,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 	}
 	else
 	{
-		const mips_instruction_t instruction = !type_is_floating(enc->sx, value->type) ? IC_RISCV_MOVE : IC_RISCV_MFC_1;
+		const mips_instruction_t instruction = IC_RISCV_MOVE;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1621,7 +1611,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if (value->val.reg_num != target->loc.reg_num)
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_MOV_S : IC_RISCV_MOVE;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FMOV : IC_RISCV_MOVE;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1635,7 +1625,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if ((!type_is_structure(enc->sx, target->type)) && (!type_is_array(enc->sx, target->type)))
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_S_S : IC_RISCV_SW;
+			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FSD : IC_RISCV_SW;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1736,6 +1726,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 	assert(first_operand->kind != RVALUE_KIND_VOID);
 	assert(second_operand->kind != RVALUE_KIND_VOID);
 
+	const bool is_floating = type_is_floating(enc->sx, dest->type);
+
 	if ((first_operand->kind == RVALUE_KIND_REGISTER) && (second_operand->kind == RVALUE_KIND_REGISTER))
 	{
 		switch (operator)
@@ -1751,6 +1743,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				uni_printf(enc->sx->io, "\t");
+				// TODO: find unary sub for float
 				instruction_to_io(enc->sx->io, IC_RISCV_SUB);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
@@ -1760,7 +1753,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				rvalue_to_io(enc, second_operand);
 				uni_printf(enc->sx->io, "\n");
 
-				const mips_instruction_t instruction = get_bin_instruction(operator, false);
+				const mips_instruction_t instruction = get_bin_instruction(operator, false, is_floating);
 				emit_conditional_branch(enc, instruction, dest, &label_else);
 
 				uni_printf(enc->sx->io, "\t");
@@ -1780,7 +1773,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(
 					enc->sx->io,
-					get_bin_instruction(operator, /* Два регистра => 0 в get_bin_instruction() -> */ 0)
+					get_bin_instruction(operator, false, is_floating /* Два регистра => 0 в get_bin_instruction() -> */)
 				);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
@@ -1821,7 +1814,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				rvalue_to_io(enc, &real_second_operand);
 				uni_printf(enc->sx->io, "\n");
 
-				const mips_instruction_t instruction = get_bin_instruction(operator, false);
+				const mips_instruction_t instruction = get_bin_instruction(operator, false, is_floating);
 				emit_conditional_branch(enc, instruction, dest, &label_else);
 
 				uni_printf(enc->sx->io, "\t");
@@ -1852,7 +1845,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(
 					enc->sx->io,
 					get_bin_instruction(operator,
-										/* Один регистр => true в get_bin_instruction() -> */ !does_need_instruction_working_with_both_operands_in_registers)
+										/* Один регистр => true в get_bin_instruction() -> */ !does_need_instruction_working_with_both_operands_in_registers,
+										is_floating)
 				);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
@@ -1951,19 +1945,19 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 		const rvalue arg_rvalue = (val.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &val) : val;
 		const item_t arg_rvalue_type = arg_rvalue.type;
 
-		// Всегда хотим сохранять $a0 и $a1
+		// Всегда хотим сохранять a0 и a1
 		to_code_2R_I(
 			enc->sx->io,
 			IC_RISCV_ADDI,
 			R_SP,
 			R_SP,
-			-(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+			-(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* a0 и a1 */ 1 : /* a0, a1 и a2 */ 2)
 		);
 		uni_printf(enc->sx->io, "\n");
 
 		const lvalue a0_lval = {
 			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+			// по call convention: первый на WORD_LENGTH выше предыдущего положения fp,
 			// второй на 2*WORD_LENGTH и т.д.
 			.loc.displ = 0,
 			.kind = LVALUE_KIND_STACK,
@@ -1979,7 +1973,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 
 		const lvalue a1_lval = {
 			.base_reg = R_SP,
-			// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+			// по call convention: первый на WORD_LENGTH выше предыдущего положения fp,
 			// второй на 2*WORD_LENGTH и т.д.
 			.loc.displ = WORD_LENGTH,
 			.kind = LVALUE_KIND_STACK,
@@ -1998,8 +1992,8 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\n");
 			emit_move_rvalue_to_register(enc, R_A1, &arg_rvalue);
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+			uni_printf(enc->sx->io, "\tlui t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+			uni_printf(enc->sx->io, "\taddiu a0, t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
 			uni_printf(enc->sx->io, "\tjal printf\n");
 			uni_printf(enc->sx->io, "\t");
@@ -2015,7 +2009,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			const lvalue a2_lval = {
 				.base_reg = R_SP,
 				// по call convention: первый на WORD_LENGTH выше предыдущего положения
-				// $fp, второй на 2*WORD_LENGTH и т.д.
+				// fp, второй на 2*WORD_LENGTH и т.д.
 				.loc.displ = 2 * WORD_LENGTH,
 				.type = TYPE_INTEGER,
 				.kind = LVALUE_KIND_STACK
@@ -2038,9 +2032,9 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, "\n");
 
-			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в $a0-$a3
+			// Следующие действия необходимы, т.к. аргументы в builtin-функции обязаны передаваться в a0-a3
 			// Даже для floating point!
-			// %lo из arg_rvalue в $a1
+			// %lo из arg_rvalue в a1
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, IC_RISCV_MFC_1);
 			uni_printf(enc->sx->io, " ");
@@ -2049,7 +2043,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, "\n");
 
-			// %hi из arg_rvalue в $a2
+			// %hi из arg_rvalue в a2
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, IC_RISCV_MFHC_1);
 			uni_printf(enc->sx->io, " ");
@@ -2058,8 +2052,8 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, "\n");
 
-			uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
-			uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
+			uni_printf(enc->sx->io, "\tlui t1, %%hi(STRING%zu)\n", index + (i - 1) * amount);
+			uni_printf(enc->sx->io, "\taddiu a0, t1, %%lo(STRING%zu)\n", index + (i - 1) * amount);
 
 			uni_printf(enc->sx->io, "\tjal printf\n\t");
 			instruction_to_io(enc->sx->io, IC_RISCV_NOP);
@@ -2093,14 +2087,14 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			IC_RISCV_ADDI,
 			R_SP,
 			R_SP,
-			(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* $a0 и $a1 */ 1 : /* $a0, $a1 и $a2 */ 2)
+			(item_t)WORD_LENGTH * (!type_is_floating(enc->sx, arg_rvalue_type) ? /* a0 и a1 */ 1 : /* a0, a1 и a2 */ 2)
 		);
 		uni_printf(enc->sx->io, "\n");
 	}
 
 	const lvalue a0_lval = {
 		.base_reg = R_SP,
-		// по call convention: первый на WORD_LENGTH выше предыдущего положения $fp,
+		// по call convention: первый на WORD_LENGTH выше предыдущего положения fp,
 		// второй на 2*WORD_LENGTH и т.д.
 		.loc.displ = 0,
 		.kind = LVALUE_KIND_STACK,
@@ -2114,8 +2108,8 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 	};
 	emit_store_of_rvalue(enc, &a0_lval, &a0_rval);
 
-	uni_printf(enc->sx->io, "\tlui $t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
-	uni_printf(enc->sx->io, "\taddiu $a0, $t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+	uni_printf(enc->sx->io, "\tlui t1, %%hi(STRING%zu)\n", index + (parameters_amount - 1) * amount);
+	uni_printf(enc->sx->io, "\taddiu a0, t1, %%lo(STRING%zu)\n", index + (parameters_amount - 1) * amount);
 	uni_printf(enc->sx->io, "\tjal printf\n");
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, IC_RISCV_NOP);
@@ -2218,7 +2212,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 
 		// tmp_arg_lvalue представляет место на стеке, куда сохраняем регистры a0-a7
 		// TODO: подумать, правильно ли использовать call convention из MIPS:
-		//		 первый на WORD_LENGTH выше предыдущего положения $fp,
+		//		 первый на WORD_LENGTH выше предыдущего положения fp,
 		// 		 второй на 2*WORD_LENGTH и т.д.
 		const lvalue tmp_arg_lvalue = {
 			.base_reg = R_SP,
@@ -2290,7 +2284,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 	return (rvalue) {
 		.kind = RVALUE_KIND_REGISTER,
 		.type = return_type,
-		.val.reg_num = type_is_floating(enc->sx, return_type) ? R_FV0 : R_V0,
+		.val.reg_num = type_is_floating(enc->sx, return_type) ? R_FA0 : R_A0,
 		.from_lvalue = !FROM_LVALUE
 	};
 }
@@ -2446,7 +2440,8 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 		{
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
-			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_RISCV_ABS_S : IC_RISCV_ABS;
+			// TODO: use something else for integer abs
+			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_RISCV_FABS : IC_RISCV_ABS;
 
 			to_code_2R(enc->sx->io, instruction, operand_rvalue.val.reg_num, operand_rvalue.val.reg_num);
 			return operand_rvalue;
@@ -2983,10 +2978,10 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S2, R_A2);
 	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_S3, R_A3);
 
-	// Загрузка адреса в $a0
+	// Загрузка адреса в a0
 	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_SP);
 
-	// Загрузка размера массива в $a1
+	// Загрузка размера массива в a1
 	const node dim_size = declaration_variable_get_bound(nd, 0);
 	const rvalue tmp = emit_expression(enc, &dim_size);
 	const rvalue second_arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
@@ -2996,7 +2991,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 	const size_t dim = declaration_variable_get_bounds_amount(nd);
 	if (dim >= 2)
 	{
-		// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
+		// Предварительно загрузим в a2 и a3 адрес первого элемента и размер соответственно
 		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A2, R_A0);
 		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A3, R_A1);
 	}
@@ -3005,9 +3000,9 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 	for (size_t j = 1; j < dim; j++)
 	{
-		// Загрузка адреса в $a0
-		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_V0);
-		// Загрузка размера массива в $a1
+		// Загрузка адреса в a0
+		to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_A0);
+		// Загрузка размера массива в a1
 		const node try_dim_size = declaration_variable_get_bound(nd, j);
 		const rvalue bound = emit_bound(enc, &try_dim_size, nd);
 		emit_move_rvalue_to_register(enc, R_A1, &bound);
@@ -3020,7 +3015,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 
 		if (j != dim - 1)
 		{
-			// Предварительно загрузим в $a2 и $a3 адрес первого элемента и размер соответственно
+			// Предварительно загрузим в a2 и a3 адрес первого элемента и размер соответственно
 			to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A2, R_T5);
 			to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A3, R_T6);
 		}
@@ -3037,7 +3032,7 @@ static void emit_array_declaration(encoder *const enc, const node *const nd)
 		free_rvalue(enc, &variable_value);
 	}
 
-	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_SP, R_V0);
+	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_SP, R_A0);
 
 	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A0, R_S0);
 	to_code_2R(enc->sx->io, IC_RISCV_MOVE, R_A1, R_S1);
@@ -3173,8 +3168,8 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
 	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_RISCV_S_S, R_FS0 + 2 * i
-			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за $s0-$s7 */)
+		to_code_R_I_R(enc->sx->io, IC_RISCV_FSD, R_FS0 + 2 * i
+			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за s0-s7 */)
 			, R_SP);
 	}
 
@@ -3230,7 +3225,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		{
 			const item_t type = ident_get_type(enc->sx, id);
 			const size_t displ = i * WORD_LENGTH + FUNC_DISPL_PRESEREVED + WORD_LENGTH;
-			uni_printf(enc->sx->io, "is on stack at offset %zu from $fp\n", displ);
+			uni_printf(enc->sx->io, "is on stack at offset %zu from fp\n", displ);
 
 			const lvalue value = {.kind = LVALUE_KIND_STACK, .type = type, .loc.displ = displ, .base_reg = R_FP };
 			displacements_set(enc, id, &value);
@@ -3245,13 +3240,13 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	char *buffer = out_extract_buffer(enc->sx->io);
 	enc->sx->io = old_io;
 
-	uni_printf(enc->sx->io, "\n\t# setting up $fp:\n");
-	// $fp указывает на конец статики (которое в данный момент равно концу динамики)
+	uni_printf(enc->sx->io, "\n\t# setting up fp:\n");
+	// fp указывает на конец статики (которое в данный момент равно концу динамики)
 	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_FP, R_SP, -(item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
-	uni_printf(enc->sx->io, "\n\t# setting up $sp:\n");
-	// $sp указывает на конец динамики (которое в данный момент равно концу статики)
-	// Смещаем $sp ниже конца статики (чтобы он не совпадал с $fp)
+	uni_printf(enc->sx->io, "\n\t# setting up sp:\n");
+	// sp указывает на конец динамики (которое в данный момент равно концу статики)
+	// Смещаем sp ниже конца статики (чтобы он не совпадал с fp)
 	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_FP, -(item_t)(WORD_LENGTH + enc->max_displ));
 
 	uni_printf(enc->sx->io, "%s", buffer);
@@ -3263,12 +3258,12 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	// Восстановление стека после работы функции
 	uni_printf(enc->sx->io, "\n\t# data restoring:\n");
 
-	// Ставим $fp на его положение в предыдущей функции
+	// Ставим fp на его положение в предыдущей функции
 	to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_FP, (item_t)(FUNC_DISPL_PRESEREVED + WORD_LENGTH));
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Восстановление $s0-$s7
+	// Восстановление s0-s7
 	for (size_t i = 0; i < PRESERVED_REG_AMOUNT; i++)
 	{
 		to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
@@ -3276,16 +3271,16 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Восстановление $fs0-$fs7
+	// Восстановление fs0-fs7
 	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_RISCV_L_S, R_FS0 + 2 * i
+		to_code_R_I_R(enc->sx->io, IC_RISCV_FLD, R_FS0 + 2 * i
 			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + /* за s0-s7 */ 8 * WORD_LENGTH), R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Возвращаем $sp его положение в предыдущей функции
+	// Возвращаем sp его положение в предыдущей функции
 	to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
 
 	to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_RA, -(item_t)(RA_SIZE), R_SP);
@@ -3681,7 +3676,7 @@ static void emit_return_statement(encoder *const enc, const node *const nd)
 		const node expression = statement_return_get_expression(nd);
 		const rvalue value = emit_expression(enc, &expression);
 
-		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_V0, .type = value.type };
+		const lvalue return_lval = { .kind = LVALUE_KIND_REGISTER, .loc.reg_num = R_A0, .type = value.type };
 
 		emit_store_of_rvalue(enc, &return_lval, &value);
 		free_rvalue(enc, &value);
@@ -3807,10 +3802,10 @@ static void pregen(syntax *const sx)
 
 	// инициализация gp
 	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
-	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
-	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
+	uni_printf(sx->io, "\tlui gp, %%hi(__gnu_local_gp)\n");
+	uni_printf(sx->io, "\taddiu gp, gp, %%lo(__gnu_local_gp)\n");
 
-	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
+	// FIXME: сделать для ra, sp и fp отдельные глобальные rvalue
 	to_code_2R(sx->io, IC_RISCV_MOVE, R_FP, R_SP);
 	to_code_2R_I(sx->io, IC_RISCV_ADDI, R_SP, R_SP, -4);
 	to_code_R_I_R(sx->io, IC_RISCV_SW, R_RA, 0, R_SP);
