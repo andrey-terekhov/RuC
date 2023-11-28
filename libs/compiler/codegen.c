@@ -1156,6 +1156,95 @@ static void emit_ternary_expression(encoder *const enc, const node *const nd)
 }
 
 /**
+ *	Loads copy of array initializer on top of the stack
+ *
+ *	@param	enc			Encoder
+ *	@param	nd			Node in AST
+ */
+static void array_load_initializer(encoder *const enc, const node *const array)
+{
+	assert((expression_get_class(array) == EXPR_IDENTIFIER || expression_get_class(array) == EXPR_MEMBER
+			|| expression_get_class(array) == EXPR_SUBSCRIPT) && type_is_array(enc->sx, expression_get_type(array)));
+	emit_expression(enc, array);
+	item_t current_type = expression_get_type(array);
+
+	int dimensions = 0;
+	while (type_is_array(enc->sx, current_type))
+	{
+		current_type = type_array_get_element_type(enc->sx, current_type);
+		++dimensions;
+	}
+
+	const size_t element_size = type_size(enc->sx, current_type);
+
+	if (dimensions == 1)
+	{
+		// Начало инициализатора
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+
+		// Его размер
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_LI);
+		mem_add(enc, element_size);
+		mem_add(enc, IC_MUL);
+		mem_add(enc, IC_LI);
+		mem_add(enc, 1);
+		mem_add(enc, IC_ADD);
+
+		// Копирование его в конец стека
+		mem_add(enc, IC_COPY2ST);
+		return;
+	}
+
+	// Вычисление смещения старта инициализатора
+	for (int i = 0; i < dimensions - 1; i++)
+	{
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_LI);
+	mem_add(enc, -dimensions);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление смещения конца инициализатора (предыдущий индекс относительно найденного)
+	emit_expression(enc, array);
+	for (int i = 0; i < dimensions - 1; i++)
+	{
+		mem_add(enc, IC_LI);
+		mem_add(enc, -1);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_COPY_FROM_END);
+		mem_add(enc, 0);
+		mem_add(enc, IC_LAT);
+		mem_add(enc, IC_ADD);
+		mem_add(enc, IC_LAT);
+	}
+
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 0);
+	mem_add(enc, IC_LI);
+	mem_add(enc, -1);
+	mem_add(enc, IC_ADD);
+	mem_add(enc, IC_LAT);
+	mem_add(enc, IC_LI);
+	mem_add(enc, element_size);
+	mem_add(enc, IC_MUL);
+	mem_add(enc, IC_ADD);
+
+	// Вычисление длины инициализатора (конец - начало)
+	mem_add(enc, IC_COPY_FROM_END);
+	mem_add(enc, 1);
+	mem_add(enc, IC_SUB);
+
+	// Копирование его в конец стека
+	mem_add(enc, IC_COPY2ST);
+}
+
+/**
  *	Emit assignment expression
  *
  *	@param	enc			Encoder
@@ -1167,9 +1256,12 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 	const lvalue value = emit_lvalue(enc, &LHS);
 
 	const node RHS = expression_assignment_get_RHS(nd);
-	emit_expression(enc, &RHS);
 
 	const item_t type = expression_get_type(nd);
+	if (!type_is_array(enc->sx, type)) {
+		emit_expression(enc, &RHS);
+	}
+
 	if (type_is_structure(enc->sx, type))
 	{
 		if (value.kind == VARIABLE)
@@ -1183,6 +1275,129 @@ static void emit_assignment_expression(encoder *const enc, const node *const nd)
 		}
 
 		mem_add(enc, (item_t)type_size(enc->sx, type));
+	}
+	else if (type_is_array(enc->sx, type))
+	{
+		item_t current_type = type;
+		item_t dimensions = 0;
+		while (type_is_array(enc->sx, current_type))
+		{
+			current_type = type_array_get_element_type(enc->sx, current_type);
+			dimensions++;
+		}
+
+		mem_add(enc, IC_SET_ARR_INIT_START);
+		if (expression_get_class(&RHS) == EXPR_IDENTIFIER || expression_get_class(&RHS) == EXPR_MEMBER
+			|| expression_get_class(&RHS) == EXPR_SUBSCRIPT)
+		{
+			array_load_initializer(enc, &RHS);
+		}
+		else
+		{
+			emit_expression(enc, &RHS);
+		}
+
+
+		if (expression_get_class(&LHS) == EXPR_IDENTIFIER)
+		{
+			size_t usual = 1;
+			if (type_is_string(enc->sx, current_type))
+			{
+				usual += 2;
+			}
+			const item_t length = (item_t)type_size(enc->sx, current_type);
+			mem_add(enc, IC_ARR_INIT);
+			mem_add(enc, dimensions);
+			mem_add(enc, length);
+			mem_add(enc, displacements_get(enc, expression_identifier_get_id(&LHS)));
+			mem_add(enc, usual);
+		}
+		else if (expression_get_class(&LHS) == EXPR_SUBSCRIPT)
+		{
+			// Address loading
+			const node base = expression_subscript_get_base(&LHS);
+			emit_expression(enc, &base);
+
+			const node index = expression_subscript_get_index(&LHS);
+			emit_expression(enc, &index);
+
+			mem_add(enc, IC_SLICE);
+
+			mem_add(enc, (item_t)type_size(enc->sx, type));
+
+
+			size_t usual = 1;
+			if (type_is_string(enc->sx, current_type))
+			{
+				usual += 2;
+			}
+
+			const item_t length = (item_t)type_size(enc->sx, current_type);
+			mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+			mem_add(enc, dimensions);
+			mem_add(enc, length);
+			mem_add(enc, usual);
+		}
+		else if (expression_get_class(&LHS) == EXPR_MEMBER)
+		{
+			size_t usual = 1;
+			if (type_is_string(enc->sx, current_type))
+			{
+				usual += 2;
+			}
+
+			// Address loading
+			const node base = expression_member_get_base(&LHS);
+			const item_t base_type = expression_get_type(&base);
+			const bool is_arrow = expression_member_is_arrow(&LHS);
+			const size_t member_index = expression_member_get_member_index(&LHS);
+
+			item_t member_displ = 0;
+			for (size_t i = 0; i < member_index; i++)
+			{
+				const item_t member_type = type_structure_get_member_type(enc->sx, base_type, i);
+				member_displ += (item_t)type_size(enc->sx, member_type);
+			}
+
+			if (is_arrow)
+			{
+				emit_expression(enc, &base);
+				mem_add(enc, IC_SELECT);
+				mem_add(enc, member_displ);
+
+				const item_t length = (item_t)type_size(enc->sx, current_type);
+				mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+				mem_add(enc, dimensions);
+				mem_add(enc, length);
+				mem_add(enc, usual);
+			}
+			else
+			{
+				const lvalue base_value = emit_lvalue(enc, &base);
+				if (base_value.kind == VARIABLE)
+				{
+					const item_t displ = base_value.displ > 0 ? base_value.displ + member_displ : base_value.displ - member_displ;
+
+					const item_t length = (item_t)type_size(enc->sx, current_type);
+					mem_add(enc, IC_ARR_INIT);
+					mem_add(enc, dimensions);
+					mem_add(enc, length);
+					mem_add(enc, displ);
+					mem_add(enc, usual);
+				}
+				else
+				{
+					mem_add(enc, IC_SELECT);
+					mem_add(enc, member_displ);
+
+					const item_t length = (item_t)type_size(enc->sx, current_type);
+					mem_add(enc, IC_ARR_INIT_STACK_ADDR);
+					mem_add(enc, dimensions);
+					mem_add(enc, length);
+					mem_add(enc, usual);
+				}
+			}
+		}
 	}
 	else // Скалярное присваивание
 	{
@@ -1227,7 +1442,16 @@ static void emit_initializer(encoder *const enc, const node *const nd)
 	for (size_t i = 0; i < size; i++)
 	{
 		const node subexpr = expression_initializer_get_subexpr(nd, i);
-		emit_expression(enc, &subexpr);
+		if (type_is_array(enc->sx, expression_get_type(&subexpr)) &&
+			(expression_get_class(&subexpr) == EXPR_IDENTIFIER || expression_get_class(&subexpr) == EXPR_MEMBER
+			 || expression_get_class(&subexpr) == EXPR_SUBSCRIPT))
+		{
+			array_load_initializer(enc, &subexpr);
+		}
+		else
+		{
+			emit_expression(enc, &subexpr);
+		}
 	}
 }
 

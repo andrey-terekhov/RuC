@@ -194,6 +194,8 @@ typedef enum INSTURCTION
 	IC_STRING_INIT,				/**< 'STRINGINIT' instruction code */
 	IC_ARR_INIT,				/**< 'ARRINIT' instruction code */
 	IC_STRUCT_WITH_ARR,			/**< 'STRUCTWITHARR' instruction code */
+	IC_ARR_INIT_STACK_ADDR,		/**< 'ARRINITSTACKADDR' instruction code */
+	IC_SET_ARR_INIT_START,		/**< 'SETARRINITSTART' instruction code */
 
 	IC_BEG_INIT = 9481,			/**< 'BEGINIT' instruction code */
 	IC_ROWING,					/**< 'ROWING' instruction code */
@@ -208,6 +210,8 @@ typedef enum INSTURCTION
 	IC_COPY0ST_ASSIGN,			/**< 'COPY0STASS' instruction code */
 	IC_COPY1ST_ASSIGN,			/**< 'COPY1STASS' instruction code */
 	IC_COPYST,					/**< 'COPYST' instruction code */
+	IC_COPY2ST,                 /**< 'COPY2ST' instruction code */
+	IC_COPY_FROM_END,			/**< 'COPYLAST' instruction code */
 
 	IC_ABS	= 9534,				/**< 'ABS' instruction code */
 	IC_SQRT,					/**< 'SQRT' instruction code */
