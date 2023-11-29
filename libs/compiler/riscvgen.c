@@ -2158,10 +2158,10 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
 	// сейчас поддерживается только вызов с аргументами-литералами
-	universal_io *const old_io = enc->sx->io;
-	universal_io new_io = io_create();
-	out_set_buffer(&new_io, BUFFER_SIZE); // создаем новый буфер для вывода call expressions
-	enc->sx->io = &new_io;
+	// universal_io *const old_io = enc->sx->io;
+	// universal_io new_io = io_create();
+	// out_set_buffer(&new_io, BUFFER_SIZE); // создаем новый буфер для вывода call expressions
+	// enc->sx->io = &new_io;
 
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
@@ -2276,11 +2276,11 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
 	}
 
-	// сброс буфера и вывод на экран для отладки
-	char *buffer = out_extract_buffer(enc->sx->io);
-	printf("%s", buffer);
-	free(buffer);
-	enc->sx->io = old_io;
+	// // сброс буфера и вывод на экран для отладки
+	// char *buffer = out_extract_buffer(enc->sx->io);
+	// printf("%s", buffer);
+	// free(buffer);
+	// enc->sx->io = old_io;
 	return (rvalue) {
 		.kind = RVALUE_KIND_REGISTER,
 		.type = return_type,
