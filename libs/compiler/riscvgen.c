@@ -208,6 +208,7 @@ typedef enum INSTRUCTION
 	IC_RISCV_FSUB,		/**< To subtract FP values. */
 	IC_RISCV_FMUL,		/**< To multiply FP values. */
 	IC_RISCV_FDIV,		/**< To divide FP values. */
+	IC_RISCV_FMVI,		/**< To move data from int register to float register. */
 
 	IC_RISCV_FABS,		/**< Floating Point Absolute Value Single Precision*/
 	IC_RISCV_DABS,		/**< Floating Point Absolute Value Double Precition*/
@@ -587,7 +588,7 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 	}
 }
 
-static void mips_register_to_io(universal_io *const io, const mips_register_t reg)
+static void riscv_register_to_io(universal_io *const io, const mips_register_t reg)
 {
 	switch (reg)
 	{
@@ -917,6 +918,9 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_FDIV:
 			uni_printf(io, "fdiv.s");
 			break;
+		case IC_RISCV_FMVI:
+			uni_printf(io, "fmv.w.x");
+			break;
 
 		case IC_RISCV_FABS:
 			uni_printf(io, "fabs.s");
@@ -967,9 +971,9 @@ static void to_code_2R(universal_io *const io, const mips_instruction_t instruct
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, fst_reg);
+	riscv_register_to_io(io, fst_reg);
 	uni_printf(io, ", ");
-	mips_register_to_io(io, snd_reg);
+	riscv_register_to_io(io, snd_reg);
 	uni_printf(io, "\n");
 }
 
@@ -980,9 +984,9 @@ static void to_code_2R_I(universal_io *const io, const mips_instruction_t instru
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, fst_reg);
+	riscv_register_to_io(io, fst_reg);
 	uni_printf(io, ", ");
-	mips_register_to_io(io, snd_reg);
+	riscv_register_to_io(io, snd_reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
@@ -993,9 +997,9 @@ static void to_code_R_I_R(universal_io *const io, const mips_instruction_t instr
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, fst_reg);
+	riscv_register_to_io(io, fst_reg);
 	uni_printf(io, ", %" PRIitem "(", imm);
-	mips_register_to_io(io, snd_reg);
+	riscv_register_to_io(io, snd_reg);
 	uni_printf(io, ")\n");
 }
 
@@ -1006,7 +1010,7 @@ static void to_code_R_I(universal_io *const io, const mips_instruction_t instruc
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
-	mips_register_to_io(io, reg);
+	riscv_register_to_io(io, reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
 }
 
@@ -1052,7 +1056,7 @@ static void rvalue_to_io(encoder *const enc, const rvalue *const rval)
 	}
 	else
 	{
-		mips_register_to_io(enc->sx->io, rval->val.reg_num);
+		riscv_register_to_io(enc->sx->io, rval->val.reg_num);
 	}
 }
 
@@ -1066,12 +1070,12 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 {
 	if (value->kind == LVALUE_KIND_REGISTER)
 	{
-		mips_register_to_io(enc->sx->io, value->loc.reg_num);
+		riscv_register_to_io(enc->sx->io, value->loc.reg_num);
 	}
 	else
 	{
 		uni_printf(enc->sx->io, "%" PRIitem "(", value->loc.displ);
-		mips_register_to_io(enc->sx->io, value->base_reg);
+		riscv_register_to_io(enc->sx->io, value->base_reg);
 		uni_printf(enc->sx->io, ")\n");
 	}
 }
@@ -1251,7 +1255,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
 		uni_printf(enc->sx->io, ", ");
 		if (instruction == IC_RISCV_BEQ || instruction == IC_RISCV_BNE)
 		{
-			mips_register_to_io(enc->sx->io, R_ZERO);
+			riscv_register_to_io(enc->sx->io, R_ZERO);
 			uni_printf(enc->sx->io, ", ");
 		}
 		// иначе инструкции вида B..Z -- сравнение с нулём прямо в них
@@ -1273,7 +1277,7 @@ static void emit_register_branch(encoder *const enc, const mips_instruction_t in
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
 	uni_printf(enc->sx->io, " ");
-	mips_register_to_io(enc->sx->io, reg);
+	riscv_register_to_io(enc->sx->io, reg);
 	uni_printf(enc->sx->io, "\n");
 }
 
@@ -1287,6 +1291,29 @@ static void emit_register_branch(encoder *const enc, const mips_instruction_t in
  */
 
 
+static void emit_load_hex_to_register(encoder *const enc, uint32_t value, mips_register_t reg)
+{
+	// li x5, 0x40a00000
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, IC_RISCV_LI);
+	uni_printf(enc->sx->io, " ");
+	riscv_register_to_io(enc->sx->io, reg);
+	uni_printf(enc->sx->io, ", ");
+	uni_printf(enc->sx->io, "0x%08x\n", value);
+}
+
+static void emit_load_int_to_float_registers(encoder *const enc, mips_register_t reg, mips_register_t float_reg)
+{
+	// fmv.w.x f0, x5
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, IC_RISCV_FMVI);
+	uni_printf(enc->sx->io, " ");
+	riscv_register_to_io(enc->sx->io, float_reg);
+	uni_printf(enc->sx->io, ", ");
+	riscv_register_to_io(enc->sx->io, reg);
+	uni_printf(enc->sx->io, "\n");
+}
+
 /**
  *	Creates register kind rvalue and stores there constant kind rvalue
  *
@@ -1298,18 +1325,30 @@ static void emit_register_branch(encoder *const enc, const mips_instruction_t in
 static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const value)
 {
 	assert(value->kind == RVALUE_KIND_CONST);
-
-	const mips_register_t reg = (type_is_floating(enc->sx, value->type)) ? get_float_register(enc) : get_register(enc);
-	// TODO: use dobule li instruction for double
+	const bool is_floating = type_is_floating(enc->sx, value->type);
+	mips_register_t reg = get_register(enc);
 	const mips_instruction_t instruction = IC_RISCV_LI;
 
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, instruction);
-	uni_printf(enc->sx->io, " ");
-	mips_register_to_io(enc->sx->io, reg);
-	uni_printf(enc->sx->io, ", ");
-	rvalue_to_io(enc, value);
-	uni_printf(enc->sx->io, "\n");
+	if (is_floating) {
+		const uint64_t real_val = *(uint64_t*)&value->val.float_val;
+		const uint32_t hex_val1 = real_val >> 32;
+		const uint32_t hex_val2 = (real_val << 32) >> 32;
+		const mips_register_t float_reg = get_float_register(enc);
+
+		emit_load_hex_to_register(enc, hex_val1, reg);
+		emit_load_int_to_float_registers(enc, reg, float_reg);
+		emit_load_hex_to_register(enc, hex_val2, reg);
+		emit_load_int_to_float_registers(enc, reg, float_reg + 1);
+		reg = float_reg;
+	} else {
+		uni_printf(enc->sx->io, "\t");
+		instruction_to_io(enc->sx->io, instruction);
+		uni_printf(enc->sx->io, " ");
+		riscv_register_to_io(enc->sx->io, reg);
+		uni_printf(enc->sx->io, ", ");
+		rvalue_to_io(enc, value);
+		uni_printf(enc->sx->io, "\n");
+	}
 
 	return (rvalue) {
 		.from_lvalue = !FROM_LVALUE,
@@ -1368,7 +1407,7 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 	uni_printf(enc->sx->io, " ");
 	rvalue_to_io(enc, &result);
 	uni_printf(enc->sx->io, ", %" PRIitem "(", lval->loc.displ);
-	mips_register_to_io(enc->sx->io, lval->base_reg);
+	riscv_register_to_io(enc->sx->io, lval->base_reg);
 	uni_printf(enc->sx->io, ")\n");
 
 	// Для любых скалярных типов ничего не произойдёт,
@@ -1567,7 +1606,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
-		mips_register_to_io(enc->sx->io, target);
+		riscv_register_to_io(enc->sx->io, target);
 		uni_printf(enc->sx->io, ", ");
 		rvalue_to_io(enc, value);
 		uni_printf(enc->sx->io, "\n");
@@ -1577,7 +1616,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 	if (value->val.reg_num == target)
 	{
 		uni_printf(enc->sx->io, "\t# stays in register ");
-		mips_register_to_io(enc->sx->io, target);
+		riscv_register_to_io(enc->sx->io, target);
 		uni_printf(enc->sx->io, ":\n");
 	}
 	else
@@ -1586,7 +1625,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
-		mips_register_to_io(enc->sx->io, target);
+		riscv_register_to_io(enc->sx->io, target);
 		uni_printf(enc->sx->io, ", ");
 		rvalue_to_io(enc, value);
 		uni_printf(enc->sx->io, "\n");
@@ -1652,7 +1691,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, &reg_value);
 				uni_printf(enc->sx->io, ", %" PRIitem "(", target->loc.displ);
-				mips_register_to_io(enc->sx->io, target->base_reg);
+				riscv_register_to_io(enc->sx->io, target->base_reg);
 				uni_printf(enc->sx->io, ")\n\n");
 				return;
 			}
@@ -2038,7 +2077,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, IC_RISCV_MFC_1);
 			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A1);
+			riscv_register_to_io(enc->sx->io, R_A1);
 			uni_printf(enc->sx->io, ", ");
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, "\n");
@@ -2047,7 +2086,7 @@ static rvalue emit_printf_expression(encoder *const enc, const node *const nd)
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, IC_RISCV_MFHC_1);
 			uni_printf(enc->sx->io, " ");
-			mips_register_to_io(enc->sx->io, R_A2);
+			riscv_register_to_io(enc->sx->io, R_A2);
 			uni_printf(enc->sx->io, ", ");
 			rvalue_to_io(enc, &arg_rvalue);
 			uni_printf(enc->sx->io, "\n");
@@ -2206,7 +2245,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 
 		uni_printf(enc->sx->io, "\t# type %zu\n ", arg_rvalue.type);
 		uni_printf(enc->sx->io, "\t# backuping ");
-		mips_register_to_io(enc->sx->io, (R_A0 + i));
+		riscv_register_to_io(enc->sx->io, (R_A0 + i));
 		uni_printf(enc->sx->io, " value on stack:\n");
 			
 
@@ -2861,7 +2900,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 	uni_printf(enc->sx->io, " ");
 	rvalue_to_io(enc, &bound_rvalue);
 	uni_printf(enc->sx->io, ", ");
-	mips_register_to_io(enc->sx->io, R_ZERO);
+	riscv_register_to_io(enc->sx->io, R_ZERO);
 	uni_printf(enc->sx->io, ", error\n");	// FIXME: error согласно RUNTIME'му
 
 	free_rvalue(enc, &bound_rvalue);
@@ -3214,7 +3253,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 				? R_FA0 + 2 * floating_register_arguments_amount++
 				: R_A0 + register_arguments_amount++;
 			uni_printf(enc->sx->io, "is in register ");
-			mips_register_to_io(enc->sx->io, curr_reg);
+			riscv_register_to_io(enc->sx->io, curr_reg);
 			uni_printf(enc->sx->io, "\n");
 
 			// Вносим переменную в таблицу символов
