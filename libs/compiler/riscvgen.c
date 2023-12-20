@@ -181,13 +181,9 @@ typedef enum INSTRUCTION
 	IC_RISCV_JAL,		/**< To execute a procedure call within the current 256MB-aligned region */
 	IC_RISCV_J,			/**< To branch within the current 256 MB-aligned region */
 
-	IC_RISCV_BLEZ,		/**< Branch on Less Than or Equal to Zero.
+	IC_RISCV_BLT,		/**< Branch on Less Than Zero.
 							To test a GPR then do a PC-relative conditional branch */
-	IC_RISCV_BLTZ,		/**< Branch on Less Than Zero.
-							To test a GPR then do a PC-relative conditional branch */
-	IC_RISCV_BGEZ,		/**< Branch on Greater Than or Equal to Zero.
-							To test a GPR then do a PC-relative conditional branch */
-	IC_RISCV_BGTZ,		/**< Branch on Greater Than Zero.
+	IC_RISCV_BGE,		/**< Branch on Greater Than or Equal to Zero.
 							To test a GPR then do a PC-relative conditional branch */
 	IC_RISCV_BEQ,		/**< Branch on Equal.
 							To compare GPRs then do a PC-relative conditional branch */
@@ -241,6 +237,7 @@ typedef enum LABEL
 	L_NEXT,				/**< Тип метки -- следующая функция */
 	L_FUNCEND,			/**< Тип метки -- выход из функции */
 	L_STRING,			/**< Тип метки -- строка */
+	L_THEN,				/**< Тип метки -- переход по then */
 	L_ELSE,				/**< Тип метки -- переход по else */
 	L_END,				/**< Тип метки -- переход в конец конструкции */
 	L_BEGIN_CYCLE,		/**< Тип метки -- переход в начало цикла */
@@ -316,6 +313,8 @@ typedef struct encoder
 	size_t case_label_num;					/**< Номер метки-перехода по case */
 	label label_else;						/**< Метка перехода на else */
 	label label_continue;					/**< Метка continue */
+	label label_if_true;					/**< Метка перехода по then */
+	label label_if_false;					/**< Метка перехода по else */
 	label label_break;						/**< Метка break */
 	size_t curr_function_ident;				/**< Идентификатор текущей функций */
 
@@ -575,13 +574,11 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 		case BIN_NE:
 			return IC_RISCV_BNE;
 		case BIN_GT:
-			return IC_RISCV_BGTZ;
 		case BIN_LT:
-			return IC_RISCV_BLTZ;
+			return IC_RISCV_BLT;
 		case BIN_GE:
-			return IC_RISCV_BGEZ;
 		case BIN_LE:
-			return IC_RISCV_BLEZ;
+			return IC_RISCV_BGE;
 
 		default:
 			return IC_RISCV_NOP;
@@ -879,17 +876,12 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			uni_printf(io, "j");
 			break;
 
-		case IC_RISCV_BLEZ:
-			uni_printf(io, "blez");
+
+		case IC_RISCV_BLT:
+			uni_printf(io, "blt");
 			break;
-		case IC_RISCV_BLTZ:
-			uni_printf(io, "bltz");
-			break;
-		case IC_RISCV_BGEZ:
-			uni_printf(io, "bgez");
-			break;
-		case IC_RISCV_BGTZ:
-			uni_printf(io, "bgtz");
+		case IC_RISCV_BGE:
+			uni_printf(io, "bge");
 			break;
 		case IC_RISCV_BEQ:
 			uni_printf(io, "beq");
@@ -1182,6 +1174,9 @@ static void emit_label(encoder *const enc, const label *const lbl)
 		case L_STRING:
 			uni_printf(io, "STRING");
 			break;
+		case L_THEN:
+			uni_printf(io, "THEN");
+			break;
 		case L_ELSE:
 			uni_printf(io, "ELSE");
 			break;
@@ -1224,8 +1219,6 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
 	uni_printf(enc->sx->io, "\t");
 	instruction_to_io(enc->sx->io, instruction);
 	uni_printf(enc->sx->io, " ");
-	uni_printf(enc->sx->io, "ra");
-	uni_printf(enc->sx->io, ", ");
 	emit_label(enc, lbl);
 	uni_printf(enc->sx->io, "\n");
 }
@@ -1236,8 +1229,8 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
  *	@param	enc					Encoder
  *	@param	label				Label for conditional jump
  */
-static void emit_conditional_branch(encoder *const enc, const mips_instruction_t instruction
-	, const rvalue *const value, const label *const lbl)
+static void emit_conditional_branch_old(encoder *const enc, const mips_instruction_t instruction,
+                                        const rvalue *const value, const label *const lbl)
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
@@ -1262,6 +1255,28 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
 		emit_label(enc, lbl);
 		uni_printf(enc->sx->io, "\n");
 	}
+}
+
+/**
+ *	Emit conditional branch
+ *
+ *	@param	enc					Encoder
+ *	@param	label				Label for conditional jump
+ */
+static void emit_conditional_branch(encoder *const enc, const mips_instruction_t instruction,
+                                    const rvalue *const first_operand, const rvalue *const second_operand,
+                                    const label *const lbl)
+{
+	// TODO: Handle constant
+	uni_printf(enc->sx->io, "\t");
+	instruction_to_io(enc->sx->io, instruction);
+	uni_printf(enc->sx->io, " ");
+	rvalue_to_io(enc, first_operand);
+	uni_printf(enc->sx->io, ", ");
+	rvalue_to_io(enc, second_operand);
+	uni_printf(enc->sx->io, ", ");
+	emit_label(enc, lbl);
+	uni_printf(enc->sx->io, "\n");
 }
 
 /**
@@ -1778,42 +1793,27 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_EQ:
 			case BIN_NE:
 			{
-				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
+				const mips_instruction_t instruction = get_bin_instruction(operator, false, false);
 
-				uni_printf(enc->sx->io, "\t");
-				// TODO: find unary sub for float
-				instruction_to_io(enc->sx->io, IC_RISCV_SUB);
-				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, first_operand);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, second_operand);
-				uni_printf(enc->sx->io, "\n");
 
-				const mips_instruction_t instruction = get_bin_instruction(operator, false, is_floating);
-				emit_conditional_branch(enc, instruction, dest, &label_else);
+				if ((operator == BIN_LE) || (operator == BIN_GT))
+				{
+					// we need to reverse order of operands
+					emit_conditional_branch(enc, instruction, second_operand, first_operand, &enc->label_if_true);
+				}
+				else
+				{
+					emit_conditional_branch(enc, instruction, first_operand, second_operand, &enc->label_if_true);
+				}
 
-				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_RISCV_LI);
-				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
-
-				emit_label_declaration(enc, &label_else);
-
-				uni_printf(enc->sx->io, "\n");
+				emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_if_false);
 			}
 			break;
 
 			default:
 			{
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(
-					enc->sx->io,
-					get_bin_instruction(operator, false, is_floating /* Два регистра => 0 в get_bin_instruction() -> */)
-				);
+				instruction_to_io(enc->sx->io, get_bin_instruction(operator, false, is_floating /* Два регистра => 0 в get_bin_instruction() -> */));
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
@@ -1839,32 +1839,19 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_EQ:
 			case BIN_NE:
 			{
-				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
+				const mips_instruction_t instruction = get_bin_instruction(operator, false, false);
 
-				// Записываем <значение из first_operand> - <значение из second_operand> в dest
-				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_RISCV_SUB);
-				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, &real_first_operand);
-				uni_printf(enc->sx->io, ", ");
-				rvalue_to_io(enc, &real_second_operand);
-				uni_printf(enc->sx->io, "\n");
+				if ((operator == BIN_LE) || (operator == BIN_GT))
+				{
+					// we need to reverse order of operands
+					emit_conditional_branch(enc, instruction, &real_second_operand, &real_first_operand, &enc->label_if_true);
+				}
+				else
+				{
+					emit_conditional_branch(enc, instruction, &real_first_operand, &real_second_operand, &enc->label_if_false);
+				}
 
-				const mips_instruction_t instruction = get_bin_instruction(operator, false, is_floating);
-				emit_conditional_branch(enc, instruction, dest, &label_else);
-
-				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, IC_RISCV_LI);
-				uni_printf(enc->sx->io, " ");
-				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
-
-				emit_label_declaration(enc, &label_else);
-
-				uni_printf(enc->sx->io, "\n");
+				emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_if_false);
 				break;
 			}
 
@@ -2543,32 +2530,68 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 	const node LHS = expression_binary_get_LHS(nd);
 	const node RHS = expression_binary_get_RHS(nd);
 
+	const label old_label_if_true = enc->label_if_true;
+	const label old_label_if_false = enc->label_if_false;
+
 	switch (operator)
 	{
 		case BIN_COMMA:
 		{
 			emit_void_expression(enc, &LHS);
+
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
+
 			return emit_expression(enc, &RHS);
 		}
-
 		case BIN_LOG_OR:
-		case BIN_LOG_AND:
 		{
-			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
-			// Случай константы нужно сделать в билдере, на данный момент отсутствует
-
 			const item_t curr_label_num = enc->label_num++;
 			const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
-			const mips_instruction_t instruction = (operator == BIN_LOG_OR) ? IC_RISCV_BNE : IC_RISCV_BEQ;
-			emit_conditional_branch(enc, instruction, &lhs_rvalue, &label_end);
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = label_end;
+
+			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
+
+			emit_label_declaration(enc, &label_end);
 
 			free_rvalue(enc, &lhs_rvalue);
+
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
 
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
 			assert(lhs_rvalue.val.reg_num == rhs_rvalue.val.reg_num);
 
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
+
+			return rhs_rvalue;
+		}
+		case BIN_LOG_AND:
+		{
+			const item_t curr_label_num = enc->label_num++;
+			const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
+
+			enc->label_if_true = label_end;
+			enc->label_if_false = old_label_if_false;
+
+			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
+
 			emit_label_declaration(enc, &label_end);
+
+			free_rvalue(enc, &lhs_rvalue);
+
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
+
+			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
+			assert(lhs_rvalue.val.reg_num == rhs_rvalue.val.reg_num);
+
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
+
 			return rhs_rvalue;
 		}
 
@@ -2580,6 +2603,10 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 			emit_binary_operation(enc, &lhs_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
 
 			free_rvalue(enc, &rhs_rvalue);
+
+			enc->label_if_true = old_label_if_true;
+			enc->label_if_false = old_label_if_false;
+
 			return lhs_rvalue;
 		}
 	}
@@ -2602,7 +2629,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 
 	const mips_instruction_t instruction = IC_RISCV_BNE;
-	emit_conditional_branch(enc, instruction, &value, &label_else);
+	emit_conditional_branch_old(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
 	const rvalue result = {.kind = RVALUE_KIND_REGISTER, .val.reg_num = get_register(enc), .from_lvalue = !FROM_LVALUE, .type = expression_get_type(nd)};
@@ -3433,32 +3460,42 @@ static void emit_compound_statement(encoder *const enc, const node *const nd)
  */
 static void emit_if_statement(encoder *const enc, const node *const nd)
 {
-	const node condition = statement_if_get_condition(nd);
-	const rvalue value = emit_expression(enc, &condition);
-
 	const size_t label_num = enc->label_num++;
+	const label label_then = { .kind = L_THEN, .num = label_num };
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 	const label label_end = { .kind = L_END, .num = label_num };
 
+	const label old_label_if_true = enc->label_if_true;
+	const label old_label_if_false = enc->label_if_false;
+
+	enc->label_if_true = label_then;
+	enc->label_if_false = label_else;
+
+	const node condition = statement_if_get_condition(nd);
+	const rvalue value = emit_expression(enc, &condition);
+
 	const bool has_else = statement_if_has_else_substmt(nd);
-	const mips_instruction_t instruction = IC_RISCV_BEQ;
-	emit_conditional_branch(enc, instruction, &value, has_else ? &label_else : &label_end);
+
 	free_rvalue(enc, &value);
+
+	emit_label_declaration(enc, &label_then);
 
 	const node then_substmt = statement_if_get_then_substmt(nd);
 	emit_statement(enc, &then_substmt);
-
+	emit_unconditional_branch(enc, IC_RISCV_J, &label_end);
+	emit_label_declaration(enc, &label_else);
 	if (has_else)
 	{
-		emit_unconditional_branch(enc, IC_RISCV_J, &label_end);
-		emit_label_declaration(enc, &label_else);
-
 		const node else_substmt = statement_if_get_else_substmt(nd);
 		emit_statement(enc, &else_substmt);
 	}
 
 	emit_label_declaration(enc, &label_end);
+
+	enc->label_if_true = old_label_if_true;
+	enc->label_if_false = old_label_if_false;
 }
+
 
 /**
  *	Emit switch statement
@@ -3506,7 +3543,7 @@ static void emit_switch_statement(encoder *const enc, const node *const nd)
 				.type = TYPE_INTEGER
 			};
 			emit_binary_operation(enc, &result_rvalue, &condition_rvalue, &case_expr_rvalue, BIN_EQ);
-			emit_conditional_branch(enc, IC_RISCV_BEQ, &result_rvalue, &label_case);
+			emit_conditional_branch_old(enc, IC_RISCV_BEQ, &result_rvalue, &label_case);
 
 			free_rvalue(enc, &result_rvalue);
 		}
@@ -3580,7 +3617,7 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 	const rvalue value = emit_expression(enc, &condition);
 
 	const mips_instruction_t instruction = IC_RISCV_BEQ;
-	emit_conditional_branch(enc, instruction, &value, &label_end);
+	emit_conditional_branch_old(enc, instruction, &value, &label_end);
 	free_rvalue(enc, &value);
 
 	const node body = statement_while_get_body(nd);
@@ -3621,7 +3658,7 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 	const rvalue value = emit_expression(enc, &condition);
 
 	const mips_instruction_t instruction = IC_RISCV_BNE;
-	emit_conditional_branch(enc, instruction, &value, &label_begin);
+	emit_conditional_branch_old(enc, instruction, &value, &label_begin);
 	emit_label_declaration(enc, &label_end);
 	free_rvalue(enc, &value);
 
@@ -3660,7 +3697,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 		const node condition = statement_for_get_condition(nd);
 		const rvalue value = emit_expression(enc, &condition);
 		const mips_instruction_t instruction = IC_RISCV_BEQ;
-		emit_conditional_branch(enc, instruction, &value, &label_end);
+		emit_conditional_branch_old(enc, instruction, &value, &label_end);
 		free_rvalue(enc, &value);
 	}
 
