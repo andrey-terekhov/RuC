@@ -2183,20 +2183,21 @@ static rvalue emit_builtin_call(encoder *const enc, const node *const nd)
  */
 static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 {
-	// сейчас поддерживается только вызов с аргументами-литералами
-	// universal_io *const old_io = enc->sx->io;
-	// universal_io new_io = io_create();
-	// out_set_buffer(&new_io, BUFFER_SIZE); // создаем новый буфер для вывода call expressions
-	// enc->sx->io = &new_io;
-
 	const node callee = expression_call_get_callee(nd);
 	const size_t func_ref = expression_identifier_get_id(&callee);
 	const size_t params_amount = expression_call_get_arguments_amount(nd);
 	assert (func_ref >= BEGIN_USER_FUNC); // поддерживаются только пользовательнские функции
-
+	
 	const item_t return_type = type_function_get_return_type(enc->sx, expression_get_type(&callee));
 	uni_printf(enc->sx->io, "\t# \"%s\" function call:\n", ident_get_spelling(enc->sx, func_ref));
-	
+
+	rvalue ret = {
+		.kind = RVALUE_KIND_REGISTER,
+		.type = return_type,
+		.val.reg_num = R_A0,
+		.from_lvalue = !FROM_LVALUE
+	};
+
 	// stack displacement: насколько нужно сместить стек, чтобы сохранить текущие значение регистров
 	size_t displ_for_parameters = params_amount * WORD_LENGTH;
 	// previous arguments displacement: здесь сохраняем на какой позиции мы сохранили каждый регистр,
@@ -2213,12 +2214,28 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, -(item_t)(displ_for_parameters));
 	}
 
+	assert(params_amount < ARG_REG_AMOUNT);
 	uni_printf(enc->sx->io, "\n\t# passing %zu parameters \n", params_amount);
 
-	assert(params_amount <= ARG_REG_AMOUNT);
+	const lvalue ret_lvalue = {
+		.base_reg = R_SP,
+		.loc.displ = 0 ,
+		.kind = LVALUE_KIND_STACK,
+		.type = return_type
+	};
 
-	for (size_t i = 0; i < params_amount; i++)
+	// сохраняем на стеке a0 до обработки аргументов, 
+	// так как он используется также для хранения
+	// возвращаемого значения
+	emit_store_of_rvalue(
+		enc,
+		&ret_lvalue, 
+		&ret
+	);
+
+	for (size_t i = params_amount; i-- > 0;) // arguments, from last to first
 	{
+
 		const node arg = expression_call_get_argument(nd, i);
 		// транслируем аргумент, в объекте rvalue информация о его типе
 		// TODO: что если аргумент - структура, которая сохранена на стеке
@@ -2226,15 +2243,16 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		// TODO: возможно оптимизировать трансляцию указанного выше, меняя порядок аргументов
 		const rvalue tmp = emit_expression(enc, &arg);
 
-		assert(tmp.kind == RVALUE_KIND_CONST);
-		const rvalue arg_rvalue = emit_load_of_immediate(enc, &tmp);
+		const rvalue arg_rvalue = (tmp.kind == RVALUE_KIND_CONST) ? emit_load_of_immediate(enc, &tmp) : tmp;
+		assert(!type_is_floating(enc->sx, arg_rvalue.type));
 
+		if(i < ARG_REG_AMOUNT){
+			uni_printf(enc->sx->io, "\t# type %zu\n ", arg_rvalue.type);
+			uni_printf(enc->sx->io, "\t# backuping ");
+			riscv_register_to_io(enc->sx->io, (R_A0 + i));
+			uni_printf(enc->sx->io, " value on stack:\n");
+		}
 
-		uni_printf(enc->sx->io, "\t# type %zu\n ", arg_rvalue.type);
-		uni_printf(enc->sx->io, "\t# backuping ");
-		riscv_register_to_io(enc->sx->io, (R_A0 + i));
-		uni_printf(enc->sx->io, " value on stack:\n");
-			
 
 		// tmp_arg_lvalue представляет место на стеке, куда сохраняем регистры a0-a7
 		// TODO: подумать, правильно ли использовать call convention из MIPS:
@@ -2253,34 +2271,52 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 			.val.reg_num = (R_A0 + i),
 			.type = arg_rvalue.type,
 			.from_lvalue = !FROM_LVALUE
-		};
-		// сохранение текущего регистра-аргумента на стек для последующего восстановления
-		emit_store_of_rvalue(
-			enc,
-			&tmp_arg_lvalue,
-			&arg_saved_rvalue
-		);
-		assert(!type_is_floating(enc->sx, arg_rvalue.type));
+		}; 
+		// сохранение текущего регистра-аргумента на стек
+		// для последующего восстановления
+		if (i > 0) {
+			emit_store_of_rvalue(
+				enc,
+				&tmp_arg_lvalue, 
+				i < ARG_REG_AMOUNT ? &arg_saved_rvalue : &arg_rvalue
+			);
+		} else if (i == 0) {
+			// восстанавливаем a0 со стека, поскольку
+			// он мог измениться из-за вложенных вызовов
+			const rvalue tmp_rval = emit_load_of_lvalue(enc, &ret_lvalue);
 
-		// теперь записываем в регистры a0-a7 передаваемые аргументы
-		emit_move_rvalue_to_register(
-			enc,
-			R_A0 + i,
-			&arg_rvalue
-		);
+			emit_move_rvalue_to_register(
+				enc,
+				R_A0,
+				&tmp_rval
+			);
+			free_rvalue(enc, &tmp_rval);
+		}
 
-		// Запоминаем lvalue объект, который представляет забекапенное значение a0
-		prev_arg_displ[i] = tmp_arg_lvalue;	
+		if (i < ARG_REG_AMOUNT) {
+			// теперь записываем в регистры a0-a7 передаваемые аргументы
+
+			emit_move_rvalue_to_register(
+				enc,
+				R_A0 + i,
+				&arg_rvalue
+			);
+
+			// Запоминаем lvalue объект, который представляет забекапенное значение a0
+			prev_arg_displ[i] = tmp_arg_lvalue;	
+		}
+
 		free_rvalue(enc, &arg_rvalue);
 	}
 	const label label_func = { .kind = L_FUNC, .num = func_ref };
 	// выполняем прыжок в функцию по относительному смещению (метке)
 	emit_unconditional_branch(enc, IC_RISCV_JAL, &label_func);
 	uni_printf(enc->sx->io, "\n");
-	if(params_amount > 0) uni_printf(enc->sx->io, "\n\t# register restoring:\n");
+	if (params_amount > 0) uni_printf(enc->sx->io, "\n\t# register restoring:\n");
 	
+
 	// восстановление значений регистров a0-a7 со стека 
-	for (size_t i = 0; i < params_amount; ++i)
+	for (size_t i = 1; i < params_amount; ++i)
 	{
 		uni_printf(enc->sx->io, "\n");
 		// загружаем во временный регистр значение аргумента со стека
@@ -2302,17 +2338,7 @@ static rvalue emit_call_expression(encoder *const enc, const node *const nd)
 		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, (item_t)displ_for_parameters);
 	}
 
-	// // сброс буфера и вывод на экран для отладки
-	// char *buffer = out_extract_buffer(enc->sx->io);
-	// printf("%s", buffer);
-	// free(buffer);
-	// enc->sx->io = old_io;
-	return (rvalue) {
-		.kind = RVALUE_KIND_REGISTER,
-		.type = return_type,
-		.val.reg_num = type_is_floating(enc->sx, return_type) ? R_FA0 : R_A0,
-		.from_lvalue = !FROM_LVALUE
-	};
+	return ret;
 }
 
 /**
