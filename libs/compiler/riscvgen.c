@@ -51,7 +51,7 @@ static const bool FROM_LVALUE = 1;					/**< Получен ли rvalue из lval
 
 /**< Смещение в стеке для сохранения оберегаемых регистров, без учёта оптимизаций */
 static const size_t FUNC_DISPL_PRESEREVED = /* за sp */ 4 + /* за ra */ 4 +
-											/* fs0-fs10 (одинарная точность): */ 5 * 4 + /* s0-s7: */ 8 * 4;
+											/* fs0-fs11 (двойная точность): */ 12 * 8 + /* s0-s11: */ 12 * 4;
 
 
 // Назначение регистров взято из документации SYSTEM V APPLICATION BINARY INTERFACE MIPS RISC Processor, 3rd Edition
@@ -355,7 +355,7 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
 	}
 	else
 	{
-		return WORD_LENGTH;
+		return (type_is_floating(sx, type) ? 2 : 1) * WORD_LENGTH;
 	}
 }
 
@@ -1290,30 +1290,6 @@ static void emit_register_branch(encoder *const enc, const mips_instruction_t in
  *	  \/_____/   \/_/\/_/   \/_/     \/_/ /_/   \/_____/   \/_____/   \/_____/   \/_/   \/_____/   \/_/ \/_/   \/_____/
  */
 
-
-static void emit_load_hex_to_register(encoder *const enc, uint32_t value, mips_register_t reg)
-{
-	// li x5, 0x40a00000
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_RISCV_LI);
-	uni_printf(enc->sx->io, " ");
-	riscv_register_to_io(enc->sx->io, reg);
-	uni_printf(enc->sx->io, ", ");
-	uni_printf(enc->sx->io, "0x%08x\n", value);
-}
-
-static void emit_load_int_to_float_registers(encoder *const enc, mips_register_t reg, mips_register_t float_reg)
-{
-	// fmv.w.x f0, x5
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, IC_RISCV_FMVI);
-	uni_printf(enc->sx->io, " ");
-	riscv_register_to_io(enc->sx->io, float_reg);
-	uni_printf(enc->sx->io, ", ");
-	riscv_register_to_io(enc->sx->io, reg);
-	uni_printf(enc->sx->io, "\n");
-}
-
 /**
  *	Creates register kind rvalue and stores there constant kind rvalue
  *
@@ -1334,11 +1310,20 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 		const uint32_t hex_val1 = real_val >> 32;
 		const uint32_t hex_val2 = (real_val << 32) >> 32;
 		const mips_register_t float_reg = get_float_register(enc);
-
-		emit_load_hex_to_register(enc, hex_val1, reg);
-		emit_load_int_to_float_registers(enc, reg, float_reg);
-		emit_load_hex_to_register(enc, hex_val2, reg);
-		emit_load_int_to_float_registers(enc, reg, float_reg + 1);
+		// addi  sp, sp, -8
+		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, -(item_t)WORD_LENGTH * 2);
+		// li t0, val1
+		to_code_R_I(enc->sx->io, IC_RISCV_LI, R_T0, hex_val1);
+		// sw t2, -4(sp)
+		to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_T0, -(item_t)WORD_LENGTH, R_SP);
+		// li t0, val2
+		to_code_R_I(enc->sx->io, IC_RISCV_LI, R_T0, hex_val2);
+		// sw t2, 0(sp)
+		to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_T0, (item_t)0, R_SP);
+		// fld fi, 0(sp)
+		to_code_R_I_R(enc->sx->io, IC_RISCV_FLD, float_reg, (item_t)0, R_SP);
+		// addi  sp, sp, 8
+		to_code_2R_I(enc->sx->io, IC_RISCV_ADDI, R_SP, R_SP, (item_t)WORD_LENGTH * 2);
 		reg = float_reg;
 	} else {
 		uni_printf(enc->sx->io, "\t");
@@ -3196,7 +3181,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 	to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_RA, -(item_t)RA_SIZE, R_SP);
 	to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_FP, -(item_t)(RA_SIZE + SP_SIZE), R_SP);
 
-	// Сохранение s0-s7
+	// Сохранение s0-s11
 	for (size_t i = 0; i < PRESERVED_REG_AMOUNT; i++)
 	{
 		to_code_R_I_R(enc->sx->io, IC_RISCV_SW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
@@ -3204,12 +3189,12 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Сохранение fs0-fs10 (в цикле 5, т.к. операции одинарной точности => нужны только четные регистры)
-	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
+	// Сохранение fs0-fs11
+	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_RISCV_FSD, R_FS0 + 2 * i
-			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + PRESERVED_REG_AMOUNT * WORD_LENGTH /* за s0-s7 */)
-			, R_SP);
+		to_code_R_I_R(enc->sx->io, IC_RISCV_FSD, R_FS0 + i
+			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * (WORD_LENGTH * 2) +
+			PRESERVED_REG_AMOUNT * WORD_LENGTH /* за s0-s11 */), R_SP);
 	}
 
 	// Выравнивание смещения на 8
@@ -3243,14 +3228,14 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 		const bool argument_is_register = !argument_is_float 
 			? register_arguments_amount < ARG_REG_AMOUNT 
-			: floating_register_arguments_amount < ARG_REG_AMOUNT / 2;
+			: floating_register_arguments_amount < ARG_REG_AMOUNT;
 
 		if (argument_is_register)
 		{
 			// Рассматриваем их как регистровые переменные
 			const item_t type = ident_get_type(enc->sx, id);
 			const mips_register_t curr_reg = argument_is_float 
-				? R_FA0 + 2 * floating_register_arguments_amount++
+				? R_FA0 + floating_register_arguments_amount++
 				: R_A0 + register_arguments_amount++;
 			uni_printf(enc->sx->io, "is in register ");
 			riscv_register_to_io(enc->sx->io, curr_reg);
@@ -3302,7 +3287,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Восстановление s0-s7
+	// Восстановление s0-s11
 	for (size_t i = 0; i < PRESERVED_REG_AMOUNT; i++)
 	{
 		to_code_R_I_R(enc->sx->io, IC_RISCV_LW, R_S0 + i, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH), R_SP);
@@ -3310,11 +3295,11 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 
 	uni_printf(enc->sx->io, "\n");
 
-	// Восстановление fs0-fs7
-	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT / 2; i++)
+	// Восстановление fs0-fs11
+	for (size_t i = 0; i < PRESERVED_FP_REG_AMOUNT; i++)
 	{
-		to_code_R_I_R(enc->sx->io, IC_RISCV_FLD, R_FS0 + 2 * i
-			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * WORD_LENGTH + /* за s0-s7 */ 8 * WORD_LENGTH), R_SP);
+		to_code_R_I_R(enc->sx->io, IC_RISCV_FLD, R_FS0 + i
+			, -(item_t)(RA_SIZE + SP_SIZE + (i + 1) * (WORD_LENGTH * 2) + /* за s0-s11 */ PRESERVED_REG_AMOUNT * WORD_LENGTH), R_SP);
 	}
 
 	uni_printf(enc->sx->io, "\n");
