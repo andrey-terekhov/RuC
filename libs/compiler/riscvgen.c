@@ -141,7 +141,7 @@ typedef enum MIPS_REGISTER
 	R_FS9,
 	R_FS10,
 	R_FS11				/**< Saved registers; their values are preserved across function calls */
-} mips_register_t;
+} riscv_register_t;
 
 // Назначение команд взято из документации MIPS® Architecture for Programmers
 // Volume II-A: The MIPS32® Instruction
@@ -189,6 +189,11 @@ typedef enum INSTRUCTION
 							To compare GPRs then do a PC-relative conditional branch */
 	IC_RISCV_BNE,		/**< Branch on Not Equal.
 							To compare GPRs then do a PC-relative conditional branch */
+	IC_RISCV_FEQ,		/**< Equal comparison between floating-point registers rs1 and rs2
+							 and record the Boolean result in integer register rd:
+							 x[rd] = f[rs1] == f[rs2] */
+	IC_RISCV_FLT,		/**< x[rd] = f[rs1] < f[rs2] */
+	IC_RISCV_FLE,		/**< x[rd] = f[rs1] <= f[rs2] */
 
 	IC_RISCV_LA,			/**< Load the address of a named memory
 							location into a register (не из вышеуказанной книги)*/
@@ -227,7 +232,7 @@ typedef enum INSTRUCTION
 	IC_RISCV_CVT_D_S,	/**< To convert an FP value to double FP. */
 	IC_RISCV_CVT_S_W,	/**< To convert fixed point value to single FP. */
 	IC_RISCV_CVT_W_S,	/**< To convert single FP to fixed point value */
-} mips_instruction_t;
+} riscv_instruction_t;
 
 
 typedef enum LABEL
@@ -261,7 +266,7 @@ typedef enum LVALUE_KIND
 typedef struct lvalue
 {
 	lvalue_kind_t kind;				/**< Value kind */
-	mips_register_t base_reg;			/**< Base register */
+	riscv_register_t base_reg;			/**< Base register */
 	union								/**< Value location */
 	{
 		item_t reg_num;						/**< Register where the value is stored */
@@ -281,10 +286,10 @@ typedef enum RVALUE_KIND
 
 typedef struct rvalue
 {
-	const rvalue_kind_t kind;				/**< Value kind */
-	const item_t type;						/**< Value type */
-	const bool from_lvalue;					/**< Was the rvalue instance formed from lvalue */
-	const union
+	rvalue_kind_t kind;				/**< Value kind */
+	item_t type;						/**< Value type */
+	bool from_lvalue;					/**< Was the rvalue instance formed from lvalue */
+	union
 	{
 		item_t reg_num;						/**< Where the value is stored */
 		item_t int_val;						/**< Value of integer (character, boolean) literal */
@@ -306,8 +311,8 @@ typedef struct encoder
 												@c value[0]	- флаг, лежит ли переменная на стеке или в регистре
 												@c value[1]	- смещение или номер регистра */
 
-	mips_register_t next_register;			/**< Следующий обычный регистр для выделения */
-	mips_register_t next_float_register;	/**< Следующий регистр с плавающей точкой для выделения */
+	riscv_register_t next_register;			/**< Следующий обычный регистр для выделения */
+	riscv_register_t next_float_register;	/**< Следующий регистр с плавающей точкой для выделения */
 
 	size_t label_num;						/**< Номер метки */
 	size_t case_label_num;					/**< Номер метки-перехода по case */
@@ -364,7 +369,7 @@ static size_t mips_type_size(const syntax *const sx, const item_t type)
  *	@param	enc					Encoder
  *	@param	reg					Register to lock
  */
-static void lock_register(encoder *const enc, const mips_register_t reg)
+static void lock_register(encoder *const enc, const riscv_register_t reg)
 {
 	switch (reg)
 	{
@@ -412,7 +417,7 @@ static void lock_register(encoder *const enc, const mips_register_t reg)
  *
  *	@return	General purpose register
  */
-static mips_register_t get_register(encoder *const enc)
+static riscv_register_t get_register(encoder *const enc)
 {
 	// Ищем первый свободный регистр
 	size_t i = 0;
@@ -436,7 +441,7 @@ static mips_register_t get_register(encoder *const enc)
  *
  *	@return	Register			Floating point register
  */
-static mips_register_t get_float_register(encoder *const enc)
+static riscv_register_t get_float_register(encoder *const enc)
 {
 	// Ищем первый свободный регистр
 	size_t i = TEMP_REG_AMOUNT;
@@ -459,7 +464,7 @@ static mips_register_t get_float_register(encoder *const enc)
  *	@param	enc					Encoder
  *	@param	reg					Register to set as free
  */
-static void free_register(encoder *const enc, const mips_register_t reg)
+static void free_register(encoder *const enc, const riscv_register_t reg)
 {
 	switch (reg)
 	{
@@ -523,7 +528,7 @@ static void free_rvalue(encoder *const enc, const rvalue *const rval)
  *
  *	@return	MIPS binary instruction
  */
-static mips_instruction_t get_bin_instruction(const binary_t operation_type, const bool is_imm,
+static riscv_instruction_t get_bin_instruction(const binary_t operation_type, const bool is_imm,
 											  const bool is_floating)
 {
 	switch (operation_type)
@@ -568,24 +573,23 @@ static mips_instruction_t get_bin_instruction(const binary_t operation_type, con
 		case BIN_OR:
 			return (is_imm) ? IC_RISCV_ORI : IC_RISCV_OR;
 
-		// TODO: use floating logical operations before branching
 		case BIN_EQ:
-			return IC_RISCV_BEQ;
+			return is_floating ? IC_RISCV_FEQ : IC_RISCV_BEQ;
 		case BIN_NE:
 			return IC_RISCV_BNE;
 		case BIN_GT:
 		case BIN_LT:
-			return IC_RISCV_BLT;
+			return is_floating ? IC_RISCV_FLT : IC_RISCV_BLT;
 		case BIN_GE:
 		case BIN_LE:
-			return IC_RISCV_BGE;
+			return is_floating ? IC_RISCV_FLE : IC_RISCV_BGE;
 
 		default:
 			return IC_RISCV_NOP;
 	}
 }
 
-static void riscv_register_to_io(universal_io *const io, const mips_register_t reg)
+static void riscv_register_to_io(universal_io *const io, const riscv_register_t reg)
 {
 	switch (reg)
 	{
@@ -792,7 +796,7 @@ static void riscv_register_to_io(universal_io *const io, const mips_register_t r
 	}
 }
 
-static void instruction_to_io(universal_io *const io, const mips_instruction_t instruction)
+static void instruction_to_io(universal_io *const io, const riscv_instruction_t instruction)
 {
 	switch (instruction)
 	{
@@ -889,6 +893,15 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 		case IC_RISCV_BNE:
 			uni_printf(io, "bne");
 			break;
+		case IC_RISCV_FEQ:
+			uni_printf(io, "feq.d");
+			break;
+		case IC_RISCV_FLT:
+			uni_printf(io, "flt.d");
+			break;
+		case IC_RISCV_FLE:
+			uni_printf(io, "fle.d");
+			break;
 
 		case IC_RISCV_SLTIU:
 			uni_printf(io, "sltiu");
@@ -899,16 +912,16 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 			break;
 
 		case IC_RISCV_FADD:
-			uni_printf(io, "fadd.s");
+			uni_printf(io, "fadd.d");
 			break;
 		case IC_RISCV_FSUB:
-			uni_printf(io, "fsub.s");
+			uni_printf(io, "fsub.d");
 			break;
 		case IC_RISCV_FMUL:
-			uni_printf(io, "fmul.s");
+			uni_printf(io, "fmul.d");
 			break;
 		case IC_RISCV_FDIV:
-			uni_printf(io, "fdiv.s");
+			uni_printf(io, "fdiv.d");
 			break;
 		case IC_RISCV_FMVI:
 			uni_printf(io, "fmv.w.x");
@@ -956,54 +969,63 @@ static void instruction_to_io(universal_io *const io, const mips_instruction_t i
 	}
 }
 
-// Вид инструкции:	instr	fst_reg, snd_reg
-static void to_code_2R(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t fst_reg, const mips_register_t snd_reg)
-{
-	uni_printf(io, "\t");
-	instruction_to_io(io, instruction);
-	uni_printf(io, " ");
-	riscv_register_to_io(io, fst_reg);
-	uni_printf(io, ", ");
-	riscv_register_to_io(io, snd_reg);
-	uni_printf(io, "\n");
-}
-
-// Вид инструкции:	instr	fst_reg, snd_reg, imm
-static void to_code_2R_I(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t fst_reg, const mips_register_t snd_reg, const item_t imm)
-{
-	uni_printf(io, "\t");
-	instruction_to_io(io, instruction);
-	uni_printf(io, " ");
-	riscv_register_to_io(io, fst_reg);
-	uni_printf(io, ", ");
-	riscv_register_to_io(io, snd_reg);
-	uni_printf(io, ", %" PRIitem "\n", imm);
-}
-
-// Вид инструкции:	instr	fst_reg, imm(snd_reg)
-static void to_code_R_I_R(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t fst_reg, const item_t imm, const mips_register_t snd_reg)
-{
-	uni_printf(io, "\t");
-	instruction_to_io(io, instruction);
-	uni_printf(io, " ");
-	riscv_register_to_io(io, fst_reg);
-	uni_printf(io, ", %" PRIitem "(", imm);
-	riscv_register_to_io(io, snd_reg);
-	uni_printf(io, ")\n");
-}
-
-// Вид инструкции:	instr	reg, imm
-static void to_code_R_I(universal_io *const io, const mips_instruction_t instruction
-	, const mips_register_t reg, const item_t imm)
+// Начало инструкции:	instr reg, 
+static void to_code_begin(universal_io * const io, const riscv_instruction_t instruction
+	, const riscv_register_t reg)
 {
 	uni_printf(io, "\t");
 	instruction_to_io(io, instruction);
 	uni_printf(io, " ");
 	riscv_register_to_io(io, reg);
+	uni_printf(io, ", ");
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg, thd_reg
+static void to_code_3R(universal_io *const io, const riscv_instruction_t instruction
+	, const riscv_register_t fst_reg, const riscv_register_t snd_reg
+	, const riscv_register_t thd_reg)
+{
+	to_code_begin(io, instruction, fst_reg);
+	riscv_register_to_io(io, snd_reg);
+	uni_printf(io, ", ");
+	riscv_register_to_io(io, thd_reg);
+	uni_printf(io, "\n");
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg
+static void to_code_2R(universal_io *const io, const riscv_instruction_t instruction
+	, const riscv_register_t fst_reg, const riscv_register_t snd_reg)
+{
+	to_code_begin(io, instruction, fst_reg);
+	riscv_register_to_io(io, snd_reg);
+	uni_printf(io, "\n");
+}
+
+// Вид инструкции:	instr	fst_reg, snd_reg, imm
+static void to_code_2R_I(universal_io *const io, const riscv_instruction_t instruction
+	, const riscv_register_t fst_reg, const riscv_register_t snd_reg, const item_t imm)
+{
+	to_code_begin(io, instruction, fst_reg);
+	riscv_register_to_io(io, snd_reg);
 	uni_printf(io, ", %" PRIitem "\n", imm);
+}
+
+// Вид инструкции:	instr	fst_reg, imm(snd_reg)
+static void to_code_R_I_R(universal_io *const io, const riscv_instruction_t instruction
+	, const riscv_register_t fst_reg, const item_t imm, const riscv_register_t snd_reg)
+{
+	to_code_begin(io, instruction, fst_reg);
+	uni_printf(io, "%" PRIitem "(", imm);
+	riscv_register_to_io(io, snd_reg);
+	uni_printf(io, ")\n");
+}
+
+// Вид инструкции:	instr	reg, imm
+static void to_code_R_I(universal_io *const io, const riscv_instruction_t instruction
+	, const riscv_register_t reg, const item_t imm)
+{
+	to_code_begin(io, instruction, reg);
+	uni_printf(io, "%" PRIitem "\n", imm);
 }
 
 /**
@@ -1085,7 +1107,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 	// TODO: выдача сохраняемых регистров 
 	assert(is_register == false);
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const mips_register_t base_reg = is_local ? R_FP : R_GP;
+	const riscv_register_t base_reg = is_local ? R_FP : R_GP;
 	const item_t type = ident_get_type(enc->sx, identifier);
 	if (is_local && !is_register)
 	{
@@ -1140,7 +1162,7 @@ static lvalue displacements_get(encoder *const enc, const size_t identifier)
 {
 	const bool is_register = (hash_get(&enc->displacements, identifier, 0) == 1);
 	const size_t displacement = (size_t)hash_get(&enc->displacements, identifier, 1);
-	const mips_register_t base_reg = hash_get(&enc->displacements, identifier, 2);
+	const riscv_register_t base_reg = hash_get(&enc->displacements, identifier, 2);
 	const item_t type = ident_get_type(enc->sx, identifier);
 
 	const lvalue_kind_t kind = (is_register) ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK;
@@ -1212,7 +1234,7 @@ static void emit_label_declaration(encoder *const enc, const label *const lbl)
  *	@param	enc					Encoder
  *	@param	label				Label for unconditional jump
  */
-static void emit_unconditional_branch(encoder *const enc, const mips_instruction_t instruction, const label *const lbl)
+static void emit_unconditional_branch(encoder *const enc, const riscv_instruction_t instruction, const label *const lbl)
 {
 	assert(instruction == IC_RISCV_J || instruction == IC_RISCV_JAL);
 
@@ -1229,7 +1251,7 @@ static void emit_unconditional_branch(encoder *const enc, const mips_instruction
  *	@param	enc					Encoder
  *	@param	label				Label for conditional jump
  */
-static void emit_conditional_branch_old(encoder *const enc, const mips_instruction_t instruction,
+static void emit_conditional_branch_old(encoder *const enc, const riscv_instruction_t instruction,
                                         const rvalue *const value, const label *const lbl)
 {
 	if (value->kind == RVALUE_KIND_CONST)
@@ -1246,12 +1268,8 @@ static void emit_conditional_branch_old(encoder *const enc, const mips_instructi
 		uni_printf(enc->sx->io, " ");
 		rvalue_to_io(enc, value);
 		uni_printf(enc->sx->io, ", ");
-		if (instruction == IC_RISCV_BEQ || instruction == IC_RISCV_BNE)
-		{
-			riscv_register_to_io(enc->sx->io, R_ZERO);
-			uni_printf(enc->sx->io, ", ");
-		}
-		// иначе инструкции вида B..Z -- сравнение с нулём прямо в них
+		riscv_register_to_io(enc->sx->io, R_ZERO);
+		uni_printf(enc->sx->io, ", ");
 		emit_label(enc, lbl);
 		uni_printf(enc->sx->io, "\n");
 	}
@@ -1263,7 +1281,7 @@ static void emit_conditional_branch_old(encoder *const enc, const mips_instructi
  *	@param	enc					Encoder
  *	@param	label				Label for conditional jump
  */
-static void emit_conditional_branch(encoder *const enc, const mips_instruction_t instruction,
+static void emit_conditional_branch(encoder *const enc, const riscv_instruction_t instruction,
                                     const rvalue *const first_operand, const rvalue *const second_operand,
                                     const label *const lbl)
 {
@@ -1285,7 +1303,7 @@ static void emit_conditional_branch(encoder *const enc, const mips_instruction_t
  *	@param	enc					Encoder
  *	@param	reg					Register
  */
-static void emit_register_branch(encoder *const enc, const mips_instruction_t instruction, const mips_register_t reg)
+static void emit_register_branch(encoder *const enc, const riscv_instruction_t instruction, const riscv_register_t reg)
 {
 	assert(instruction == IC_RISCV_JR);
 
@@ -1317,14 +1335,14 @@ static rvalue emit_load_of_immediate(encoder *const enc, const rvalue *const val
 {
 	assert(value->kind == RVALUE_KIND_CONST);
 	const bool is_floating = type_is_floating(enc->sx, value->type);
-	mips_register_t reg = get_register(enc);
-	const mips_instruction_t instruction = IC_RISCV_LI;
+	riscv_register_t reg = get_register(enc);
+	const riscv_instruction_t instruction = IC_RISCV_LI;
 
 	if (is_floating) {
 		const uint64_t real_val = *(uint64_t*)&value->val.float_val;
 		const uint32_t hex_val1 = real_val >> 32;
 		const uint32_t hex_val2 = (real_val << 32) >> 32;
-		const mips_register_t float_reg = get_float_register(enc);
+		const riscv_register_t float_reg = get_float_register(enc);
 		// li t0, val1
 		to_code_R_I(enc->sx->io, IC_RISCV_LI, R_T0, hex_val1);
 		// sw t0, -4(fp)
@@ -1388,8 +1406,8 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 	}
 
 	const bool is_floating = type_is_floating(enc->sx, lval->type);
-	const mips_register_t reg = is_floating ? get_float_register(enc) : get_register(enc);
-	const mips_instruction_t instruction = is_floating ? IC_RISCV_FLD : IC_RISCV_LW;
+	const riscv_register_t reg = is_floating ? get_float_register(enc) : get_register(enc);
+	const riscv_instruction_t instruction = is_floating ? IC_RISCV_FLD : IC_RISCV_LW;
 
 	const rvalue result = {
 		.kind = RVALUE_KIND_REGISTER,
@@ -1593,12 +1611,12 @@ static lvalue emit_lvalue(encoder *const enc, const node *const nd)
  *	@param	value				Rvalue to store
  */
 static void emit_move_rvalue_to_register(encoder *const enc
-	, const mips_register_t target, const rvalue *const value)
+	, const riscv_register_t target, const rvalue *const value)
 {
 	if (value->kind == RVALUE_KIND_CONST)
 	{
 		// TODO: use li twice for move double
-		const mips_instruction_t instruction = IC_RISCV_LI;
+		const riscv_instruction_t instruction = IC_RISCV_LI;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1617,7 +1635,7 @@ static void emit_move_rvalue_to_register(encoder *const enc
 	}
 	else
 	{
-		const mips_instruction_t instruction = IC_RISCV_MOVE;
+		const riscv_instruction_t instruction = IC_RISCV_MOVE;
 		uni_printf(enc->sx->io, "\t");
 		instruction_to_io(enc->sx->io, instruction);
 		uni_printf(enc->sx->io, " ");
@@ -1646,7 +1664,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if (value->val.reg_num != target->loc.reg_num)
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FMOV : IC_RISCV_MOVE;
+			const riscv_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FMOV : IC_RISCV_MOVE;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1660,7 +1678,7 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 	{
 		if ((!type_is_structure(enc->sx, target->type)) && (!type_is_array(enc->sx, target->type)))
 		{
-			const mips_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FSD : IC_RISCV_SW;
+			const riscv_instruction_t instruction = type_is_floating(enc->sx, value->type) ? IC_RISCV_FSD : IC_RISCV_SW;
 			uni_printf(enc->sx->io, "\t");
 			instruction_to_io(enc->sx->io, instruction);
 			uni_printf(enc->sx->io, " ");
@@ -1742,6 +1760,32 @@ static rvalue emit_operand_load(encoder *const enc, const rvalue *const operand,
 	}
 }
 
+static void emit_bin_registers_cond_branching(encoder *const enc, const rvalue * const dest
+	, const rvalue * first_operand, const rvalue * second_operand, binary_t operator)
+{
+	const bool is_floating = type_is_floating(enc->sx, first_operand->type);
+	if (operator == BIN_GT || (is_floating && operator == BIN_GE) ||
+		(!is_floating && BIN_LE))
+	{
+		const rvalue * tmp = first_operand;
+		first_operand = second_operand;
+		second_operand = tmp;
+	}
+	const riscv_instruction_t instruction =
+		get_bin_instruction(is_floating ? BIN_NE : operator, false, false);
+	if (!is_floating)
+	{
+		emit_conditional_branch(enc, instruction, first_operand, second_operand, &enc->label_if_true);
+	}
+	else
+	{
+		to_code_3R(enc->sx->io, get_bin_instruction(operator, false, true), dest->val.reg_num,
+				   first_operand->val.reg_num, second_operand->val.reg_num);
+		emit_conditional_branch_old(enc, instruction, dest, &enc->label_if_true);
+	}
+	emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_if_false);
+}
+
 /**
  *	Emit binary operation with two rvalues
  *
@@ -1773,28 +1817,16 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_GE:
 			case BIN_EQ:
 			case BIN_NE:
-			{
-				const mips_instruction_t instruction = get_bin_instruction(operator, false, false);
-
-
-				if ((operator == BIN_LE) || (operator == BIN_GT))
-				{
-					// we need to reverse order of operands
-					emit_conditional_branch(enc, instruction, second_operand, first_operand, &enc->label_if_true);
-				}
-				else
-				{
-					emit_conditional_branch(enc, instruction, first_operand, second_operand, &enc->label_if_true);
-				}
-
-				emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_if_false);
-			}
-			break;
-
+				emit_bin_registers_cond_branching(enc, dest, first_operand, second_operand, operator);
+				break;
 			default:
 			{
 				uni_printf(enc->sx->io, "\t");
-				instruction_to_io(enc->sx->io, get_bin_instruction(operator, false, is_floating /* Два регистра => 0 в get_bin_instruction() -> */));
+				instruction_to_io(
+					enc->sx->io,
+					get_bin_instruction(operator, false, is_floating
+						/* Два регистра => 0 в get_bin_instruction() -> */)
+				);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
 				uni_printf(enc->sx->io, ", ");
@@ -1819,23 +1851,9 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_GE:
 			case BIN_EQ:
 			case BIN_NE:
-			{
-				const mips_instruction_t instruction = get_bin_instruction(operator, false, false);
-
-				if ((operator == BIN_LE) || (operator == BIN_GT))
-				{
-					// we need to reverse order of operands
-					emit_conditional_branch(enc, instruction, &real_second_operand, &real_first_operand, &enc->label_if_true);
-				}
-				else
-				{
-					emit_conditional_branch(enc, instruction, &real_first_operand, &real_second_operand, &enc->label_if_false);
-				}
-
-				emit_unconditional_branch(enc, IC_RISCV_J, &enc->label_if_false);
+				emit_bin_registers_cond_branching(enc, dest, &real_first_operand,
+					&real_second_operand, operator);
 				break;
-			}
-
 			default:
 			{
 				bool does_need_instruction_working_with_both_operands_in_registers =
@@ -2474,7 +2492,8 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 			const node operand = expression_unary_get_operand(nd);
 			const rvalue operand_rvalue = emit_expression(enc, &operand);
 			// TODO: use something else for integer abs
-			const mips_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ? IC_RISCV_FABS : IC_RISCV_ABS;
+			const riscv_instruction_t instruction = type_is_floating(enc->sx, operand_rvalue.type) ?
+				IC_RISCV_FABS : IC_RISCV_ABS;
 
 			to_code_2R(enc->sx->io, instruction, operand_rvalue.val.reg_num, operand_rvalue.val.reg_num);
 			return operand_rvalue;
@@ -2521,6 +2540,13 @@ static rvalue emit_unary_expression(encoder *const enc, const node *const nd)
 			system_error(node_unexpected);
 			return RVALUE_VOID;
 	}
+}
+
+static bool is_binary_cond_operator(binary_t operator)
+{
+	return operator == BIN_LE || operator == BIN_LT
+		|| operator == BIN_GE || operator == BIN_GT
+		|| operator == BIN_NE || operator == BIN_EQ;
 }
 
 /**
@@ -2606,15 +2632,30 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 		{
 			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
-
-			emit_binary_operation(enc, &lhs_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
-
-			free_rvalue(enc, &rhs_rvalue);
+			rvalue assign_val = lhs_rvalue;
+			bool clear_lhs = false, clear_rhs = true;
+			// for assignment var = const + var;
+			if (lhs_rvalue.kind == RVALUE_KIND_CONST) {
+				assign_val = rhs_rvalue;
+				clear_lhs = true;
+				clear_rhs = false;
+			}
+			if (is_binary_cond_operator(operator)) {
+				assign_val.kind = RVALUE_KIND_REGISTER;
+				assign_val.val.reg_num = get_register(enc);
+				assign_val.type = TYPE_INTEGER;
+				assign_val.from_lvalue = false;
+				clear_lhs = clear_rhs = true;
+			}
+			emit_binary_operation(enc, &assign_val, &lhs_rvalue, &rhs_rvalue, operator);
 
 			enc->label_if_true = old_label_if_true;
 			enc->label_if_false = old_label_if_false;
-
-			return lhs_rvalue;
+			if (clear_lhs)
+				free_rvalue(enc, &lhs_rvalue);
+			if (clear_rhs)
+				free_rvalue(enc, &rhs_rvalue);
+			return assign_val;
 		}
 	}
 }
@@ -2635,7 +2676,7 @@ static rvalue emit_ternary_expression(encoder *const enc, const node *const nd)
 	const size_t label_num = enc->label_num++;
 	const label label_else = { .kind = L_ELSE, .num = label_num };
 
-	const mips_instruction_t instruction = IC_RISCV_BNE;
+	const riscv_instruction_t instruction = IC_RISCV_BNE;
 	emit_conditional_branch_old(enc, instruction, &value, &label_else);
 	free_rvalue(enc, &value);
 
@@ -2946,7 +2987,7 @@ static void emit_array_init(encoder *const enc, const node *const nd, const size
 		if (expression_get_class(&subexpr) == EXPR_INITIALIZER)
 		{
 			// Сдвиг адреса на размер массива + 1 (за размер следующего измерения)
-			const mips_register_t reg = get_register(enc);
+			const riscv_register_t reg = get_register(enc);
 			// FIXME: создать отдельные rvalue и lvalue и через emit_load_of_lvalue()
 			to_code_R_I_R(enc->sx->io, IC_RISCV_LW, reg, 0, addr->val.reg_num);	// адрес следующего измерения
 
@@ -3283,7 +3324,7 @@ static void emit_function_definition(encoder *const enc, const node *const nd)
 		{
 			// Рассматриваем их как регистровые переменные
 			const item_t type = ident_get_type(enc->sx, id);
-			const mips_register_t curr_reg = argument_is_float 
+			const riscv_register_t curr_reg = argument_is_float 
 				? R_FA0 + floating_register_arguments_amount++
 				: R_A0 + register_arguments_amount++;
 			uni_printf(enc->sx->io, "is in register ");
@@ -3482,7 +3523,6 @@ static void emit_if_statement(encoder *const enc, const node *const nd)
 	const rvalue value = emit_expression(enc, &condition);
 
 	const bool has_else = statement_if_has_else_substmt(nd);
-
 	free_rvalue(enc, &value);
 
 	emit_label_declaration(enc, &label_then);
@@ -3623,7 +3663,7 @@ static void emit_while_statement(encoder *const enc, const node *const nd)
 	const node condition = statement_while_get_condition(nd);
 	const rvalue value = emit_expression(enc, &condition);
 
-	const mips_instruction_t instruction = IC_RISCV_BEQ;
+	const riscv_instruction_t instruction = IC_RISCV_BEQ;
 	emit_conditional_branch_old(enc, instruction, &value, &label_end);
 	free_rvalue(enc, &value);
 
@@ -3664,7 +3704,7 @@ static void emit_do_statement(encoder *const enc, const node *const nd)
 	const node condition = statement_do_get_condition(nd);
 	const rvalue value = emit_expression(enc, &condition);
 
-	const mips_instruction_t instruction = IC_RISCV_BNE;
+	const riscv_instruction_t instruction = IC_RISCV_BNE;
 	emit_conditional_branch_old(enc, instruction, &value, &label_begin);
 	emit_label_declaration(enc, &label_end);
 	free_rvalue(enc, &value);
@@ -3703,7 +3743,7 @@ static void emit_for_statement(encoder *const enc, const node *const nd)
 	{
 		const node condition = statement_for_get_condition(nd);
 		const rvalue value = emit_expression(enc, &condition);
-		const mips_instruction_t instruction = IC_RISCV_BEQ;
+		const riscv_instruction_t instruction = IC_RISCV_BEQ;
 		emit_conditional_branch_old(enc, instruction, &value, &label_end);
 		free_rvalue(enc, &value);
 	}
