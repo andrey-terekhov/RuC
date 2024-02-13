@@ -28,6 +28,7 @@
 
 
 static const size_t BUFFER_SIZE = 65536;			/**< Размер буфера для тела функции */
+static const size_t GLOBAL_DECL_SIZE = 128;			/**< Размер вектора для хранения деклараций глобальных переменных*/
 static const size_t HASH_TABLE_SIZE = 1024;			/**< Размер хеш-таблицы для смещений и регистров */
 static const bool IS_ON_STACK = true;				/**< Хранится ли переменная на стеке */
 
@@ -258,6 +259,7 @@ typedef enum LVALUE_KIND
 {
 	LVALUE_KIND_STACK,
 	LVALUE_KIND_REGISTER,
+	LVALUE_KIND_OBJECT
 } lvalue_kind_t;
 
 typedef struct lvalue
@@ -269,6 +271,7 @@ typedef struct lvalue
 		item_t reg_num;						/**< Register where the value is stored */
 		item_t displ;						/**< Stack displacement where the value is stored */
 	} loc;
+	char *var_spelling;                     /**< Variable identifier (for object variables)*/
 	item_t type;						/**< Value type */
 } lvalue;
 
@@ -301,7 +304,7 @@ typedef struct encoder
 	syntax *sx;								/**< Структура syntax с таблицами */
 
 	size_t max_displ;						/**< Максимальное смещение от $sp */
-	size_t global_displ;					/**< Смещение от $gp */
+	vector global_declarations;				/**< Вектор с индексами узлов-деклараций глобальных переменных: */
 
 	hash displacements;						/**< Хеш таблица с информацией о расположении идентификаторов:
 												@c key		- ссылка на таблицу идентификаторов
@@ -1086,6 +1089,10 @@ static void lvalue_to_io(encoder *const enc, const lvalue *const value)
 	{
 		mips_register_to_io(enc->sx->io, value->loc.reg_num);
 	}
+	else if (value->kind == LVALUE_KIND_OBJECT)
+	{
+		uni_printf(enc->sx->io, "(%s)", value->var_spelling);
+	}
 	else
 	{
 		uni_printf(enc->sx->io, "%" PRIitem "(", value->loc.displ);
@@ -1107,14 +1114,14 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 	// TODO: выдача сохраняемых регистров 
 	assert(is_register == false);
 	const bool is_local = ident_is_local(enc->sx, identifier);
-	const mips_register_t base_reg = is_local ? R_FP : R_GP;
+	const mips_register_t base_reg = R_FP;
 	const item_t type = ident_get_type(enc->sx, identifier);
 	if (is_local && !is_register)
 	{
 		enc->scope_displ += mips_type_size(enc->sx, type);
 		enc->max_displ = max(enc->scope_displ, enc->max_displ);
 	}
-	const item_t location = is_local ? -(item_t)enc->scope_displ : (item_t)enc->global_displ;
+	const item_t location = is_local ? -(item_t)enc->scope_displ : 0;
 
 	if ((!is_local) && (is_register))	// Запрет на глобальные регистровые переменные
 	{
@@ -1123,13 +1130,19 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 	}
 
 	const size_t index = hash_add(&enc->displacements, identifier, 3);
-	hash_set_by_index(&enc->displacements, index, 0, (is_register) ? 1 : 0);
+	hash_set_by_index(&enc->displacements, index, 0, (is_local) ? ((is_register) ? LVALUE_KIND_REGISTER: LVALUE_KIND_STACK) : LVALUE_KIND_OBJECT);
 	hash_set_by_index(&enc->displacements, index, 1, location);
 	hash_set_by_index(&enc->displacements, index, 2, base_reg);
 
 	if (!is_local)
 	{
-		enc->global_displ += mips_type_size(enc->sx, type);
+		return (lvalue) { 
+			.kind = LVALUE_KIND_OBJECT,
+			.base_reg = base_reg,
+			.loc.displ = location,
+			.var_spelling = (char *)ident_get_spelling(enc->sx, identifier),
+			.type = type 
+		};
 	}
 
 	return (lvalue) { .kind = is_register ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK, .base_reg = base_reg, .loc.displ = location, .type = type };
@@ -1145,7 +1158,7 @@ static lvalue displacements_add(encoder *const enc, const size_t identifier, con
 static void displacements_set(encoder *const enc, const size_t identifier, const lvalue *const value)
 {
 	const size_t index = hash_add(&enc->displacements, identifier, 3);
-	hash_set_by_index(&enc->displacements, index, 0, (value->kind == LVALUE_KIND_REGISTER) ? 1 : 0);
+	hash_set_by_index(&enc->displacements, index, 0, value->kind);
 	hash_set_by_index(&enc->displacements, index, 1, value->loc.displ);
 	hash_set_by_index(&enc->displacements, index, 2, value->base_reg);
 }
@@ -1160,14 +1173,12 @@ static void displacements_set(encoder *const enc, const size_t identifier, const
  */
 static lvalue displacements_get(encoder *const enc, const size_t identifier)
 {
-	const bool is_register = (hash_get(&enc->displacements, identifier, 0) == 1);
+	const lvalue_kind_t kind = hash_get(&enc->displacements, identifier, 0);
 	const size_t displacement = (size_t)hash_get(&enc->displacements, identifier, 1);
 	const mips_register_t base_reg = hash_get(&enc->displacements, identifier, 2);
 	const item_t type = ident_get_type(enc->sx, identifier);
 
-	const lvalue_kind_t kind = (is_register) ? LVALUE_KIND_REGISTER : LVALUE_KIND_STACK;
-
-	return (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .type = type };
+	return (lvalue) { .kind = kind, .base_reg = base_reg, .loc.displ = displacement, .var_spelling = (char *)ident_get_spelling(enc->sx, identifier), .type = type };
 }
 
 /**
@@ -1378,13 +1389,58 @@ static rvalue emit_load_of_lvalue(encoder *const enc, const lvalue *const lval)
 		.type = lval->type,
 	};
 
-	uni_printf(enc->sx->io, "\t");
-	instruction_to_io(enc->sx->io, instruction);
-	uni_printf(enc->sx->io, " ");
-	rvalue_to_io(enc, &result);
-	uni_printf(enc->sx->io, ", %" PRIitem "(", lval->loc.displ);
-	mips_register_to_io(enc->sx->io, lval->base_reg);
-	uni_printf(enc->sx->io, ")\n");
+	if (lval->kind == LVALUE_KIND_OBJECT)
+	{
+		const mips_register_t base_reg = is_floating ? get_register(enc) : reg;
+		uni_printf(enc->sx->io, "\tlui ");
+		mips_register_to_io(enc->sx->io, base_reg);
+		uni_printf(enc->sx->io, ", %%hi");
+		lvalue_to_io(enc, lval);
+		uni_printf(enc->sx->io, "\n");
+
+		if (lval->loc.displ == 0)
+		{
+			uni_printf(enc->sx->io, "\t");
+			instruction_to_io(enc->sx->io, instruction);
+			uni_printf(enc->sx->io, " ");
+			rvalue_to_io(enc, &result);
+			uni_printf(enc->sx->io, ", %%lo");
+			lvalue_to_io(enc, lval);
+			uni_printf(enc->sx->io, "(");
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ")\n");
+		}
+		else
+		{
+			uni_printf(enc->sx->io, "\taddiu ");
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ", ");
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ", %%lo");
+			lvalue_to_io(enc, lval);
+			uni_printf(enc->sx->io, "\n");
+
+			uni_printf(enc->sx->io, "\t");
+			instruction_to_io(enc->sx->io, instruction);
+			uni_printf(enc->sx->io, " ");
+			rvalue_to_io(enc, &result);
+			uni_printf(enc->sx->io, ", %" PRIitem "(", lval->loc.displ);
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ")\n");
+
+			free_register(enc, base_reg);
+		}
+	}
+	else 
+	{
+		uni_printf(enc->sx->io, "\t");
+		instruction_to_io(enc->sx->io, instruction);
+		uni_printf(enc->sx->io, " ");
+		rvalue_to_io(enc, &result);
+		uni_printf(enc->sx->io, ", %" PRIitem "(", lval->loc.displ);
+		mips_register_to_io(enc->sx->io, lval->base_reg);
+		uni_printf(enc->sx->io, ")\n");
+	}
 
 	// Для любых скалярных типов ничего не произойдёт,
 	// а для остальных освобождается base_reg, в котором хранилось смещение
@@ -1499,9 +1555,10 @@ static lvalue emit_member_lvalue(encoder *const enc, const node *const nd)
 		const lvalue base_lvalue = emit_lvalue(enc, &base);
 		const size_t displ = (size_t)(base_lvalue.loc.displ + member_displ);
 		return (lvalue) {
-			.kind = LVALUE_KIND_STACK,
+			.kind = base_lvalue.kind,
 			.base_reg = base_lvalue.base_reg,
 			.loc.displ = displ,
+			.var_spelling = base_lvalue.var_spelling,
 			.type = type
 		};
 	}
@@ -1634,6 +1691,81 @@ static void emit_store_of_rvalue(encoder *const enc, const lvalue *const target,
 			rvalue_to_io(enc, &reg_value);
 			uni_printf(enc->sx->io, "\n");
 		}
+	}
+	else if (target->kind == LVALUE_KIND_OBJECT)
+	{
+		const mips_register_t base_reg = get_register(enc);
+		uni_printf(enc->sx->io, "\tlui ");
+		mips_register_to_io(enc->sx->io, base_reg);
+		uni_printf(enc->sx->io, ", %%hi");
+		lvalue_to_io(enc, target);
+		uni_printf(enc->sx->io, "\n");
+		if (target->loc.displ != 0) 
+		{
+			uni_printf(enc->sx->io, "\taddiu ");
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ", ");
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ", %%lo");
+			lvalue_to_io(enc, target);
+			uni_printf(enc->sx->io, "\n");
+		}
+
+		if ((!type_is_structure(enc->sx, target->type)) && (!type_is_array(enc->sx, target->type)))
+		{
+			const mips_instruction_t instruction = type_is_floating(value->type) ? IC_MIPS_S_S : IC_MIPS_SW;
+			uni_printf(enc->sx->io, "\t");
+			instruction_to_io(enc->sx->io, instruction);
+			uni_printf(enc->sx->io, " ");
+			rvalue_to_io(enc, &reg_value);
+			if (target->loc.displ == 0)
+			{
+				uni_printf(enc->sx->io, ", %%lo");
+				lvalue_to_io(enc, target);
+				uni_printf(enc->sx->io, "(");
+			}
+			else
+			{
+				uni_printf(enc->sx->io, ", %" PRIitem "(", target->loc.displ);
+			}
+			mips_register_to_io(enc->sx->io, base_reg);
+			uni_printf(enc->sx->io, ")\n");
+
+			// Освобождаем регистр только в том случае, если он был занят на этом уровне. Выше не лезем.
+			if (value->kind == RVALUE_KIND_CONST)
+			{
+				free_rvalue(enc, &reg_value);
+			}
+
+			free_register(enc, target->base_reg);
+		}
+		else
+		{
+			if (type_is_array(enc->sx, target->type))
+			{
+				// Загружаем указатель на массив
+				uni_printf(enc->sx->io, "\t");
+				instruction_to_io(enc->sx->io, IC_MIPS_SW);
+				uni_printf(enc->sx->io, " ");
+				rvalue_to_io(enc, &reg_value);
+				if (target->loc.displ == 0)
+				{
+					uni_printf(enc->sx->io, ", %%lo");
+					lvalue_to_io(enc, target);
+					uni_printf(enc->sx->io, "(");
+				}
+				else
+				{
+					uni_printf(enc->sx->io, ", %" PRIitem "(", target->loc.displ);
+			}
+				mips_register_to_io(enc->sx->io, target->base_reg);
+				uni_printf(enc->sx->io, ")\n\n");
+				return;
+			}
+			// else кусок должен быть не достижим
+		}
+
+		free_register(enc, base_reg);
 	}
 	else
 	{
@@ -2638,7 +2770,8 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 			const lvalue value_word = {
 				.base_reg = RHS_lvalue.base_reg,
 				.loc.displ = RHS_lvalue.loc.displ + i,
-				.kind = LVALUE_KIND_STACK,
+				.kind = RHS_lvalue.kind,
+				.var_spelling = RHS_lvalue.var_spelling,
 				.type = TYPE_INTEGER
 			};
 			const rvalue proxy = emit_load_of_lvalue(enc, &value_word);
@@ -2646,8 +2779,9 @@ static rvalue emit_struct_assignment(encoder *const enc, const lvalue *const tar
 			// Отправляем их в variable
 			const lvalue target_word = {
 				.base_reg = target->base_reg,
-				.kind = LVALUE_KIND_STACK,
+				.kind = target->kind,
 				.loc.displ = target->loc.displ + i,
+				.var_spelling = target->var_spelling,
 				.type = TYPE_INTEGER
 			};
 			emit_store_of_rvalue(enc, &target_word, &proxy);
@@ -3081,6 +3215,7 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 			.base_reg = target->base_reg,
 			.kind = target->kind,
 			.loc.displ = target->loc.displ + displ,
+			.var_spelling = target->var_spelling,
 			.type = type
 		};
 		displ += mips_type_size(enc->sx, type);
@@ -3106,6 +3241,46 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 }
 
 /**
+ *	Emit global variable declaration
+ *
+ *	@param	enc					Encoder
+ *	@param	nd					Node in AST
+ */
+static void emit_global_variable_declaration(encoder *const enc, const node *const nd)
+{
+	const size_t identifier = declaration_variable_get_id(nd);
+	const item_t type = ident_get_type(enc->sx, identifier);
+	const size_t size = mips_type_size(enc->sx, type);
+	const char *spelling = ident_get_spelling(enc->sx, identifier);
+
+	uni_printf(enc->sx->io, "\t# \"%s\" variable declaration:\n", spelling);
+	uni_printf(enc->sx->io, "\t.type\t%s,@object\n", spelling);
+	uni_printf(enc->sx->io, "\t.data\n");
+	uni_printf(enc->sx->io, "\t.globl\t%s\n", spelling);
+	uni_printf(enc->sx->io, "\t.p2align\t\t2\n");
+	uni_printf(enc->sx->io, "%s:\n", spelling);
+	for (size_t i=0; i < size; i+=4) 
+	{
+		uni_printf(enc->sx->io, "\t.4byte\t0\n");
+	}
+	uni_printf(enc->sx->io, "\t.size\t%s, %" PRIu64 "\n", spelling, size);
+	uni_printf(enc->sx->io, "\t.text\n");
+
+	if (type_is_array(enc->sx, type))
+	{
+		emit_array_declaration(enc, nd);
+	}
+	else
+	{
+		displacements_add(enc, identifier, false);
+		if (declaration_variable_has_initializer(nd))
+		{
+			vector_add(&enc->global_declarations, nd->index);
+		}
+	}
+}
+
+/**
  *	Emit variable declaration
  *
  *	@param	enc					Encoder
@@ -3114,6 +3289,14 @@ static void emit_structure_init(encoder *const enc, const lvalue *const target, 
 static void emit_variable_declaration(encoder *const enc, const node *const nd)
 {
 	const size_t identifier = declaration_variable_get_id(nd);
+	const bool is_local = ident_is_local(enc->sx, identifier);
+
+	if (!is_local) 
+	{
+		emit_global_variable_declaration(enc, nd);
+		return;
+	}
+
 	uni_printf(enc->sx->io, "\t# \"%s\" variable declaration:\n", ident_get_spelling(enc->sx, identifier));
 
 	const item_t type = ident_get_type(enc->sx, identifier);
@@ -3813,25 +3996,6 @@ static void pregen(syntax *const sx)
 	uni_printf(sx->io, "\t.text\n");					// последующий код будет перенесён в текстовый сегмент памяти
 	// выравнивание последующих данных / команд по границе, кратной 2^n байт (в данном случае 2^2 = 4)
 	uni_printf(sx->io, "\t.align 2\n");
-
-	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
-	uni_printf(sx->io, "\n\t.globl\tmain\n");
-	uni_printf(sx->io, "\t.ent\tmain\n");				// начало процедуры main
-	uni_printf(sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
-	uni_printf(sx->io, "main:\n");
-
-	// инициализация gp
-	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
-	uni_printf(sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
-	uni_printf(sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
-
-	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
-	to_code_2R(sx->io, IC_MIPS_MOVE, R_FP, R_SP);
-	to_code_2R_I(sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
-	to_code_R_I(sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
-	to_code_R_I_R(sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
-	uni_printf(sx->io, "\n");
 }
 
 // создаём метки всех строк в программе
@@ -3890,6 +4054,54 @@ static void strings_declaration(encoder *const enc)
 
 static void postgen(encoder *const enc)
 {
+	// делает метку main глобальной -- её можно вызывать извне кода (например, используется при линковке)
+	uni_printf(enc->sx->io, "\n\t.globl\tmain\n");
+	uni_printf(enc->sx->io, "\t.ent\tmain\n");				// начало процедуры main
+	uni_printf(enc->sx->io, "\t.type\tmain, @function\n");	// тип "main" -- функция
+	uni_printf(enc->sx->io, "main:\n");
+
+	// инициализация gp
+	// "__gnu_local_gp" -- локация в памяти, где лежит Global Pointer
+	uni_printf(enc->sx->io, "\tlui $gp, %%hi(__gnu_local_gp)\n");
+	uni_printf(enc->sx->io, "\taddiu $gp, $gp, %%lo(__gnu_local_gp)\n");
+
+	// FIXME: сделать для $ra, $sp и $fp отдельные глобальные rvalue
+	to_code_2R(enc->sx->io, IC_MIPS_MOVE, R_FP, R_SP);
+	to_code_2R_I(enc->sx->io, IC_MIPS_ADDI, R_SP, R_SP, -4);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_RA, 0, R_SP);
+	to_code_R_I(enc->sx->io, IC_MIPS_LI, R_T0, LOW_DYN_BORDER);
+	to_code_R_I_R(enc->sx->io, IC_MIPS_SW, R_T0, -(item_t)HEAP_DISPL - 60, R_GP);
+	uni_printf(enc->sx->io, "\n");
+
+	const size_t global_declarations_amount = vector_size(&enc->global_declarations);
+	for (size_t i = 0; i < global_declarations_amount; i++)
+	{
+		const node nd = {.tree=&enc->sx->tree, .index=(size_t)vector_get(&enc->global_declarations, i)};
+
+		const size_t identifier = declaration_variable_get_id(&nd);
+		const item_t type = ident_get_type(enc->sx, identifier);
+		const node initializer = declaration_variable_get_initializer(&nd);
+		const char *spelling = ident_get_spelling(enc->sx, identifier);
+
+		uni_printf(enc->sx->io, "\t# \"%s\" variable declaration:\n", spelling);
+
+		const lvalue variable = displacements_get(enc, identifier);
+		if (type_is_structure(enc->sx, type))
+		{
+			const rvalue tmp = emit_struct_assignment(enc, &variable, &initializer);
+			free_rvalue(enc, &tmp);
+		}
+		else
+		{
+			const rvalue value = emit_expression(enc, &initializer);
+
+			emit_store_of_rvalue(enc, &variable, &value);
+			free_rvalue(enc, &value);
+		}
+	}
+
+	strings_declaration(enc);
+
 	// FIXME: целиком runtime.s не вставить, т.к. не понятно, что делать с modetab
 	// По этой причине вставляю только defarr
 	uni_printf(enc->sx->io, "\n\n# defarr\n\
@@ -3949,7 +4161,7 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	enc.case_label_num = 1;
 
 	enc.scope_displ = 0;
-	enc.global_displ = 0;
+	enc.global_declarations = vector_create(HASH_TABLE_SIZE);
 
 	enc.displacements = hash_create(HASH_TABLE_SIZE);
 
@@ -3959,7 +4171,6 @@ int encode_to_mips(const workspace *const ws, syntax *const sx)
 	}
 
 	pregen(sx);
-	strings_declaration(&enc);
 	// TODO: нормальное получение корня
 	const node root = node_get_root(&enc.sx->tree);
 	const int ret = emit_translation_unit(&enc, &root);
