@@ -89,6 +89,7 @@ typedef enum ERROR
 	nonvoid_func_void_return,				/**< Non-void function should return a value */
 	bad_type_in_ret,
 	wrong_init,
+	wrong_init_type,
 	main_should_return_int_or_void,
 	main_should_be_defined,
 	wrong_main_parameters,
