@@ -1752,7 +1752,8 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			case BIN_NE:
 			{
 				const item_t curr_label_num = enc->label_num++;
-				const label label_else = { .kind = L_END, .num = (size_t)curr_label_num };
+				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
+				const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				uni_printf(enc->sx->io, "\t");
 				instruction_to_io(enc->sx->io, IC_MIPS_SUB);
@@ -1771,10 +1772,18 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
+				uni_printf(enc->sx->io, ", 0\n");
+				emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 
 				emit_label_declaration(enc, &label_else);
 
+				uni_printf(enc->sx->io, "\t");
+				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				uni_printf(enc->sx->io, " ");
+				rvalue_to_io(enc, dest);
+				uni_printf(enc->sx->io, ", 1\n");
+
+				emit_label_declaration(enc, &label_end);
 				uni_printf(enc->sx->io, "\n");
 			}
 			break;
@@ -1813,6 +1822,7 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 			{
 				const item_t curr_label_num = enc->label_num++;
 				const label label_else = { .kind = L_ELSE, .num = (size_t)curr_label_num };
+				const label label_end = { .kind = L_END, .num = (size_t)curr_label_num };
 
 				// Записываем <значение из first_operand> - <значение из second_operand> в dest
 				uni_printf(enc->sx->io, "\t");
@@ -1832,9 +1842,18 @@ static void emit_binary_operation(encoder *const enc, const rvalue *const dest
 				instruction_to_io(enc->sx->io, IC_MIPS_LI);
 				uni_printf(enc->sx->io, " ");
 				rvalue_to_io(enc, dest);
-				uni_printf(enc->sx->io, ", 1\n");
+				uni_printf(enc->sx->io, ", 0\n");
+				emit_unconditional_branch(enc, IC_MIPS_J, &label_end);
 
 				emit_label_declaration(enc, &label_else);
+
+				uni_printf(enc->sx->io, "\t");
+				instruction_to_io(enc->sx->io, IC_MIPS_LI);
+				uni_printf(enc->sx->io, " ");
+				rvalue_to_io(enc, dest);
+				uni_printf(enc->sx->io, ", 1\n");
+
+				emit_label_declaration(enc, &label_end);
 
 				uni_printf(enc->sx->io, "\n");
 				break;
@@ -2557,11 +2576,21 @@ static rvalue emit_binary_expression(encoder *const enc, const node *const nd)
 		{
 			const rvalue lhs_rvalue = emit_expression(enc, &LHS);
 			const rvalue rhs_rvalue = emit_expression(enc, &RHS);
+			const item_t result_type = expression_get_type(nd); 
+			const item_t result_reg_num = type_is_floating(result_type) ? get_float_register(enc) : get_register(enc);
 
-			emit_binary_operation(enc, &lhs_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
+			const rvalue result_rvalue = {
+				.from_lvalue = !FROM_LVALUE,
+				.kind = RVALUE_KIND_REGISTER,
+				.val.reg_num = result_reg_num,
+				.type = result_type
+			};
 
+			emit_binary_operation(enc, &result_rvalue, &lhs_rvalue, &rhs_rvalue, operator);
+
+			free_rvalue(enc, &lhs_rvalue);
 			free_rvalue(enc, &rhs_rvalue);
-			return lhs_rvalue;
+			return result_rvalue;
 		}
 	}
 }
