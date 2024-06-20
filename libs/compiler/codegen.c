@@ -1260,7 +1260,7 @@ static void emit_expression(encoder *const enc, const node *const nd)
 			emit_member_expression(enc, nd);
 			return;
 
-		case EXPR_CAST:
+		case EXPR_ARITHMETIC_CAST:
 			emit_cast_expression(enc, nd);
 			return;
 

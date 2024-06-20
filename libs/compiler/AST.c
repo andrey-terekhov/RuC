@@ -65,7 +65,7 @@ expression_t expression_get_class(const node *const nd)
 		case OP_SELECT:
 			return EXPR_MEMBER;
 		case OP_CAST:
-		   return EXPR_CAST;
+		   return EXPR_ARITHMETIC_CAST;
 		case OP_UNARY:
 			return EXPR_UNARY;
 		case OP_BINARY:
@@ -317,7 +317,7 @@ bool expression_member_is_arrow(const node *const nd)
 }
 
 
-node expression_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc)
+node expression_arithmetic_cast(const item_t target_type, const item_t source_type, node *const expr, const location loc)
 {
 	node nd = node_insert(expr, OP_CAST, 5);		// Операнд выражения
 

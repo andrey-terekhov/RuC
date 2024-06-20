@@ -2792,7 +2792,7 @@ static rvalue emit_expression(encoder *const enc, const node *const nd)
 		case EXPR_MEMBER:
 			return emit_member_expression(enc, nd);
 
-		case EXPR_CAST:
+		case EXPR_ARITHMETIC_CAST:
 			return emit_cast_expression(enc, nd);
 
 		case EXPR_UNARY:

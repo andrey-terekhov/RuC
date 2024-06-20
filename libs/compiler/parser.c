@@ -921,6 +921,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 {
 	const item_t type = parse_type_specifier(prs, parent);
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_amp = was_star ? false : try_consume_token(prs, TK_AMP);
 	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
@@ -960,7 +961,7 @@ static node parse_member_declaration(parser *const prs, const node *const parent
 	}
 
 	expect_and_consume(prs, TK_SEMICOLON, expected_semi_after_decl);
-	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_const, &bounds, ident_loc);
+	const node member = build_member_declaration(&prs->bld, type, name, was_star, was_amp, was_const, &bounds, ident_loc);
 
 	node_vector_clear(&bounds);
 	return member;
@@ -1193,6 +1194,7 @@ static item_t parse_enum_specifier(parser *const prs, const node *const parent)
 static node parse_init_declarator(parser *const prs, const item_t type)
 {
 	const bool was_star = try_consume_token(prs, TK_STAR);
+	const bool was_amp = was_star ? false : try_consume_token(prs, TK_AMP);
 	const bool was_const = was_star ? try_consume_token(prs, TK_CONST) : false;
 	if (token_is_not(&prs->tk, TK_IDENTIFIER))
 	{
@@ -1242,7 +1244,7 @@ static node parse_init_declarator(parser *const prs, const item_t type)
 	}
 
 	node* initializer_ptr = node_is_correct(&initializer) ? &initializer : NULL;
-	node declarator = build_declarator(&prs->bld, type, name, was_star, was_const, &bounds, initializer_ptr, ident_loc);
+	node declarator = build_declarator(&prs->bld, type, name, was_star, was_amp, was_const, &bounds, initializer_ptr, ident_loc);
 	node_vector_clear(&bounds);
 
 	return declarator;
@@ -1884,7 +1886,8 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 			int arg_func = 0;	/**< Тип возврата функции-параметра:
 									 @c 0 - обычный тип,
 									 @c 1 - была `*`,
-									 @c 2 - была `[` */
+									 @c 2 - была `[` 
+									 @c 3 - была `&` */
 			item_t type = parse_type_specifier(prs, NULL);
 
 			if (try_consume_token(prs, TK_STAR))
@@ -1895,6 +1898,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				{
 					type = type_const(prs->sx, type);
 				}
+			}
+			else if (try_consume_token(prs, TK_AMP))
+			{
+				arg_func = 3;
+				type = type_reference(prs->sx, type);
 			}
 
 			// На 1 уровне это может быть определением функции или предописанием;
@@ -1978,6 +1986,11 @@ static item_t parse_function_declarator(parser *const prs, const int level, int 
 				else if (arg_func == 2)
 				{
 					parser_error(prs, array_before_func);
+					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
+				}
+				else if (arg_func == 3)
+				{
+					parser_error(prs, amp_before_func); 
 					skip_until(prs, TK_COMMA | TK_R_PAREN | TK_SEMICOLON);
 				}
 

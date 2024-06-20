@@ -430,7 +430,7 @@ static void write_member_expression(writer *const wrt, const node *const nd)
  */
 static void write_cast_expression(writer *const wrt, const node *const nd)
 {
-	write_line(wrt, "EXPR_CAST from ");
+	write_line(wrt, "EXPR_ARITHMETIC_CAST from ");
 
 	const item_t target_type = expression_get_type(nd);
 	const item_t source_type = expression_cast_get_source_type(nd);
@@ -569,7 +569,7 @@ static void write_expression(writer *const wrt, const node *const nd)
 			write_member_expression(wrt, nd);
 			break;
 
-		case EXPR_CAST:
+		case EXPR_ARITHMETIC_CAST:
 			write_cast_expression(wrt, nd);
 			break;
 
@@ -2189,6 +2189,14 @@ int write_type_spelling(const syntax *const sx, const item_t type, char *const b
 				index += write_type_spelling(sx, element_type, &buffer[index]);
 				return index; 
 			}
+		}
+
+		case TYPE_REFERENCE:
+		{
+			const item_t element_type = type_reference_get_element_type(sx, type);
+			int index = write_type_spelling(sx, element_type, buffer);
+			index += sprintf(&buffer[index], "&");
+			return index;
 		}
 
 		default:

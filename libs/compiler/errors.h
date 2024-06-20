@@ -100,6 +100,8 @@ typedef enum ERROR
 	const_without_init,
 	struct_without_init,
 	array_without_init,
+	reference_without_init,					/**< Declaration of reference variable requires an initializer */
+	reference_to_not_lvalue,				/**< Lvalue reference cannot bind to rvalue */
 	variable_without_init,
 
 	// Builtin errors
@@ -153,6 +155,7 @@ typedef enum ERROR
 	empty_init,
 	ident_not_type,
 	not_decl,
+	amp_before_func,
 
 	empty_bound_without_init,
 
